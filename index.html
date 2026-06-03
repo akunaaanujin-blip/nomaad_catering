@@ -54,20 +54,22 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .tier.buf .t-badge{background:var(--amber-soft);color:#8a5a12}
 .tier.shr .t-badge{background:#efe7d2;color:#7a6224}
 
-/* ── MENU SECTIONS ── */
-.msec{margin-top:34px}
-.msec-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:2px solid var(--line);padding-bottom:10px;margin-bottom:16px;flex-wrap:wrap}
-.msec-head h3{font-family:'Lora',Georgia,serif;font-size:23px;font-weight:700;letter-spacing:-.4px;display:flex;align-items:center;gap:10px}
-.msec-head .price-pill{font-size:14px;font-weight:800;color:#fff;background:var(--accent);padding:6px 14px;border-radius:999px;white-space:nowrap}
-.msec.buf .msec-head .price-pill{background:var(--amber)}
-.msec-head .lead{font-size:13.5px;color:var(--muted);flex-basis:100%;margin-top:2px;line-height:1.55}
-.dishes{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 22px}
-.dish{display:flex;gap:12px;align-items:baseline;padding:11px 4px;border-bottom:1px dotted var(--line)}
-.dish .d-main{flex:1}
-.dish .d-name{font-size:15.5px;font-weight:700;letter-spacing:-.1px}
-.dish .d-meat{font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:2px 8px;border-radius:999px;margin-left:7px;white-space:nowrap}
-.dish .d-desc{font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.5}
-.subhead{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin:18px 4px 8px}
+/* ── MENU SECTIONS — compact accordion ── */
+.msec{margin-top:20px}
+.msec-header{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px;cursor:pointer;box-shadow:0 1px 3px rgba(32,39,31,.05);transition:box-shadow .15s;user-select:none}
+.msec-header:hover{box-shadow:0 3px 10px rgba(32,39,31,.09)}
+.msec-header h3{font-family:'Lora',Georgia,serif;font-size:17px;font-weight:700;flex:1}
+.msec-header .price-pill{font-size:13px;font-weight:800;color:#fff;background:var(--accent);padding:5px 13px;border-radius:999px;white-space:nowrap}
+.msec.buf .msec-header .price-pill{background:var(--amber)}
+.msec-chev{font-size:12px;color:var(--muted);transition:transform .2s}
+.msec-body{display:none;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-top:none;border-radius:0 0 12px 12px}
+.msec-body.open{display:block}
+.dish-list{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 12px}
+.dish-item{font-size:13px;padding:5px 4px;border-bottom:1px dotted var(--line);color:var(--ink);display:flex;align-items:center;gap:6px}
+.dish-item::before{content:'·';color:var(--accent);font-weight:700}
+.subhead{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin:14px 0 8px}
+/* буу хуучин dishes класс */
+.dishes{display:none}
 
 /* ── BOODOG ── */
 .boodog{background:linear-gradient(135deg,#1F4A38,#2E6049);color:#fff;border-radius:var(--radius);padding:26px 24px;display:flex;gap:22px;align-items:center;flex-wrap:wrap;box-shadow:var(--shadow);margin-top:14px}
@@ -97,6 +99,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .dish-chip.sel-blue{background:#2c6a8f;border-color:#2c6a8f;color:#fff;font-weight:600}
 .dish-chip.sel-purple{background:#5b3f8a;border-color:#5b3f8a;color:#fff;font-weight:600}
 .dish-chip.disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+/* Идэвхгүй selector блок */
+.dish-select.dimmed{opacity:.35;pointer-events:none;filter:grayscale(40%)}
+.dim-label{font-size:12px;font-weight:600;color:var(--muted);text-align:center;padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;display:none}
+.dish-select.dimmed .dim-label{display:block}
 /* Тоо оруулах */
 .qty-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border:1.5px solid var(--line);border-radius:10px;margin-top:6px}
 .qty-row .qty-name{flex:1;font-size:13px;font-weight:600;color:var(--ink)}
@@ -191,47 +197,77 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
     </div>
   </section>
 
-  <!-- Порц -->
+  <!-- Порц — compact accordion -->
   <section class="msec por">
-    <div class="msec-head">
+    <div class="msec-header" onclick="toggleMsec(this)">
       <h3>🍱 Порц хоол</h3>
       <span class="price-pill">₮38,000 / хүн</span>
-      <div class="lead">Гол мах + будаа/хачир. Доорх сонголтоос нэгийг сонгоно. Захиалгаар хослуулж болно.</div>
+      <span class="msec-chev">▼</span>
     </div>
-    <div class="dishes">
-      <div class="dish"><div class="d-main"><span class="d-name">Соусанд жигнэсэн хонины мах<span class="d-meat">Хонь</span></span><div class="d-desc">Зөөлөн жигнэсэн хонь, гэрийн соустай.</div></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Гахайн цорой<span class="d-meat">Гахай</span></span><div class="d-desc">Шаржигнуулсан, гадаргуу нь карамелжсан.</div></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Жеюүг — гахайн амталсан мах<span class="d-meat">Гахай</span></span><div class="d-desc">Халуун ногоотой маринадад дэвтээсэн.</div></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Терияки соустай тахиа<span class="d-meat">Тахиа</span></span><div class="d-desc">Кунжуттай, гялгар терияки соустай.</div></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Шаржигнуур тахиа<span class="d-meat">Тахиа</span></span><div class="d-desc">Шинээр шарсан, шаржигнуур гадаргуутай.</div></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Мини шорлог<span class="d-meat">Гахай · Тахиа</span></span><div class="d-desc">Шорон дээр шарсан холимог мах.</div></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Цуйван<span class="d-meat">Холимог</span></span><div class="d-desc">Гар гоймон, мах ногоотой — шинээр.</div></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Хуушуур (4 ш)<span class="d-meat">Холимог</span></span><div class="d-desc">Гүн шарсан, алтан бор шаржигнуур.</div></div></div>
+    <div class="msec-body">
+      <div class="dish-list">
+        <div class="dish-item">Соусанд жигнэсэн хонины мах</div>
+        <div class="dish-item">Хорхог</div>
+        <div class="dish-item">Мини шорлог /гахай, тахиа/</div>
+        <div class="dish-item">Гахайн цорой</div>
+        <div class="dish-item">Гахайн амталсан мах</div>
+        <div class="dish-item">Терияки соустай тахиа</div>
+        <div class="dish-item">Шаржигнуур тахиа</div>
+        <div class="dish-item">Цуйван</div>
+        <div class="dish-item">Хуушуур</div>
+      </div>
     </div>
   </section>
 
-  <!-- Буфет -->
+  <!-- Буфет — compact accordion -->
   <section class="msec buf">
-    <div class="msec-head">
+    <div class="msec-header" onclick="toggleMsec(this)">
       <h3>🍴 Буфет</h3>
       <span class="price-pill">₮54,000 / хүн</span>
-      <div class="lead">Олон төрлийн мах, дагалдах салад, шөл, хачираар бүрдсэн өөрөө авах ширээ.</div>
+      <span class="msec-chev">▼</span>
     </div>
-    <div class="subhead">Гол мах — 3 төрлийг сонгоно</div>
-    <div class="dishes">
-      <div class="dish"><div class="d-main"><span class="d-name">Соусанд жигнэсэн хонины мах<span class="d-meat">Хонь</span></span></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Хонь шарсан хавирга<span class="d-meat">Хонь</span></span></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Гахайн цорой<span class="d-meat">Гахай</span></span></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Терияки соустай тахиа<span class="d-meat">Тахиа</span></span></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Шаржигнуур тахиа<span class="d-meat">Тахиа</span></span></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Мини шорлог<span class="d-meat">Гахай · Тахиа</span></span></div></div>
-    </div>
-    <div class="subhead">Дагалдах — оруулсан үнэнд</div>
-    <div class="dishes">
-      <div class="dish"><div class="d-main"><span class="d-name">Улирлын 2 төрлийн салад</span></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Халуун шөл</span></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Хачир — төмс / ногоо</span></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Цагаан будаа</span></div></div>
+    <div class="msec-body">
+      <div class="subhead">🥩 Мах — 3 төрөл</div>
+      <div class="dish-list">
+        <div class="dish-item">Соусанд жигнэсэн хонины мах</div>
+        <div class="dish-item">Хорхог</div>
+        <div class="dish-item">Мини шорлог</div>
+        <div class="dish-item">Гахайн цорой</div>
+        <div class="dish-item">Гахайн амталсан мах</div>
+        <div class="dish-item">Терияки соустай тахиа</div>
+        <div class="dish-item">Шаржигнуур тахиа</div>
+        <div class="dish-item">Цуйван</div>
+        <div class="dish-item">Хуушуур</div>
+      </div>
+      <div class="subhead">🥗 Салад — 2 төрөл</div>
+      <div class="dish-list">
+        <div class="dish-item">Шинэ ногооны салад</div>
+        <div class="dish-item">Нийслэл салад</div>
+        <div class="dish-item">Пүнтүүзтэй салад</div>
+        <div class="dish-item">Байцааны салад</div>
+        <div class="dish-item">Луувангийн салад</div>
+        <div class="dish-item">Гоймонгийн салад</div>
+      </div>
+      <div class="subhead">🍚 Хачир — 2 төрөл</div>
+      <div class="dish-list">
+        <div class="dish-item">Амталсан будаа</div>
+        <div class="dish-item">Шарсан төмс</div>
+        <div class="dish-item">Төмсний нухаш</div>
+        <div class="dish-item">Хуурсан ногоо</div>
+        <div class="dish-item">Мантуу</div>
+        <div class="dish-item">Сийртэй гоймон</div>
+        <div class="dish-item">Амталсан өргөст хэмх</div>
+      </div>
+      <div class="subhead">🍜 Шөл — 1 төрөл</div>
+      <div class="dish-list">
+        <div class="dish-item">Брокли зутан шөл</div>
+        <div class="dish-item">Мөөгтэй зутан шөл</div>
+        <div class="dish-item">Нарийн ногооны шөл</div>
+        <div class="dish-item">Бантан</div>
+        <div class="dish-item">Далайн байцаатай шөл</div>
+        <div class="dish-item">Халуун ногоотой шөл</div>
+        <div class="dish-item">Ясны шөл</div>
+      </div>
     </div>
   </section>
 
@@ -303,6 +339,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
 
         <!-- ── ПОРЦ хоолны сонголт ── -->
         <div class="order-field full dish-select" id="por-select">
+          <div class="dim-label">⛔ Буфет сонгосон тул порц идэвхгүй байна</div>
           <div class="sel-group">
             <div class="sel-group-head">
               <div class="sel-group-title">🍱 Порц хоол — хамгийн ихдээ 3 сонгоно</div>
@@ -327,6 +364,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
 
         <!-- ── БУФЕТ сонголт ── -->
         <div class="order-field full dish-select" id="buf-select">
+          <div class="dim-label">⛔ Порц сонгосон тул буфет идэвхгүй байна</div>
 
           <!-- МАХ -->
           <div class="sel-group">
@@ -449,10 +487,31 @@ const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A
 
 // ── Үйлчилгээ сонгоход харагдах хэсэг ──
 function onSvcChange() {
-  var val = document.getElementById('of-svc').value;
-  document.getElementById('por-select').classList.toggle('show', val==='por'||val==='por_boodog');
-  document.getElementById('buf-select').classList.toggle('show', val==='buf'||val==='buf_boodog');
+  var val    = document.getElementById('of-svc').value;
+  var porEl  = document.getElementById('por-select');
+  var bufEl  = document.getElementById('buf-select');
+  var isPor  = val==='por'||val==='por_boodog';
+  var isBuf  = val==='buf'||val==='buf_boodog';
+  var isBoth = val==='por_boodog'||val==='buf_boodog';
+
+  // Порц хэсэг
+  if (isPor || isBuf) { porEl.classList.add('show'); } else { porEl.classList.remove('show'); }
+  porEl.classList.toggle('dimmed', isBuf && !isPor);
+
+  // Буфет хэсэг
+  if (isBuf || isPor) { bufEl.classList.add('show'); } else { bufEl.classList.remove('show'); }
+  bufEl.classList.toggle('dimmed', isPor && !isBuf);
+
   updateDishesField();
+}
+
+// ── Accordion меню ──
+function toggleMsec(header) {
+  var body = header.nextElementSibling;
+  var chev = header.querySelector('.msec-chev');
+  body.classList.toggle('open');
+  chev.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : '';
+  header.style.borderRadius = body.classList.contains('open') ? '12px 12px 0 0' : '12px';
 }
 
 // ── Chip сонгох / болиулах ──
@@ -503,20 +562,40 @@ function toggleDish(btn) {
 function renderQty() {
   var container = document.getElementById('por-qty');
   var selected  = document.querySelectorAll('.dish-chip[data-g="por"].sel-green');
+  var maxPax    = parseInt(document.getElementById('of-pax').value) || 9999;
   var html = '';
   selected.forEach(function(btn) {
-    var name = btn.textContent.trim();
+    var name   = btn.textContent.trim();
     var safeId = 'qty_' + name.replace(/[^a-zA-Z0-9]/g,'_').substring(0,20);
     var existing = document.getElementById(safeId);
     var val = existing ? existing.value : '';
     html += '<div class="qty-row">' +
       '<span class="qty-name">'+name+'</span>' +
       '<span class="qty-unit">порц:</span>' +
-      '<input type="number" id="'+safeId+'" min="1" placeholder="тоо" value="'+val+'" oninput="updateDishesField()">' +
+      '<input type="number" id="'+safeId+'" min="1" max="'+maxPax+'" placeholder="тоо" value="'+val+'"' +
+      ' oninput="clampQty(this);updateDishesField()">' +
     '</div>';
   });
   container.innerHTML = html;
 }
+
+// ── Тоог хязгаарлах ──
+function clampQty(inp) {
+  var maxPax = parseInt(document.getElementById('of-pax').value) || 9999;
+  var v = parseInt(inp.value) || 0;
+  if (v > maxPax) { inp.value = maxPax; inp.style.borderColor='var(--amber)'; }
+  else { inp.style.borderColor=''; }
+}
+
+// Хүний тоо өөрчлөгдөхөд qty-г дахин шалгах
+document.addEventListener('DOMContentLoaded', function() {
+  var paxInp = document.getElementById('of-pax');
+  if (paxInp) paxInp.addEventListener('input', function() {
+    document.querySelectorAll('.qty-row input[type=number]').forEach(clampQty);
+    renderQty();
+    updateDishesField();
+  });
+});
 
 // ── Сонгосон хоолуудыг hidden field-д хадгалах ──
 function updateDishesField() {
