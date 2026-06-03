@@ -82,8 +82,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .boodog .b-price .u{font-size:12px;color:var(--sand);font-weight:600}
 
 /* ── DISH SELECTOR ── */
-.dish-select{display:none;margin-top:4px}
-.dish-select.show{display:block}
+.dish-select{display:none !important;margin-top:4px}
+.dish-select.show{display:block !important}
+.dish-select.show{display:block !important}
 .sel-group{margin-bottom:16px}
 .sel-group-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .sel-group-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
@@ -286,10 +287,6 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
     </div>
   </section>
 
-  <div class="note">
-    <b>Захиалгын нөхцөл:</b> Үнэ нь нэг хүний (порц/буфет) болон нэгж (боодог) дүн. Тээвэр, үйлчлэгч, тоног төхөөрөмжийг арга хэмжээний хэмжээнээс хамааруулан тооцно. Хүний тоо, цэсээ урьдчилан баталгаажуулна уу.
-  </div>
-
   <!-- ═══ ЗАХИАЛГА ӨГӨХ ═══ -->
   <div class="order-box" id="order">
     <h3>📋 Захиалга өгөх</h3>
@@ -307,7 +304,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
       <div class="order-grid">
         <div class="order-field">
           <label>Байгууллагын нэр</label>
-          <input type="text" name="Baiguullaga" id="of-org" placeholder="Төрийн банк ХК" required>
+          <input type="text" name="Baiguullaga" id="of-org" placeholder="Байгууллагын нэр" required>
         </div>
         <div class="order-field">
           <label>Холбоо барих нэр</label>
@@ -315,11 +312,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         </div>
         <div class="order-field">
           <label>Утасны дугаар</label>
-          <input type="tel" name="Utas" id="of-phone" placeholder="99112233" required>
+          <input type="tel" name="Utas" id="of-phone" placeholder="Утасны дугаар" required>
         </div>
         <div class="order-field">
-          <label>Арга хэмжээний огноо</label>
-          <input type="date" name="Arga_hemjeenii_ognoo" id="of-date" required>
+          <label>Огноо</label>
+          <input type="text" name="Arga_hemjeenii_ognoo" id="of-date" placeholder="жж/сс/өө эсвэл ойролцоо хугацаа">
         </div>
         <div class="order-field">
           <label>Хүний тоо</label>
@@ -469,6 +466,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
   </div>
 
   <footer>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:6px;line-height:1.6">Үнэ нь нэг хүний (порц/буфет) болон нэгж (боодог) дүн. Тээвэр, үйлчлэгч, тоног төхөөрөмжийг хэмжээнээс хамааруулан тооцно.</p>
     <p>© 2026 NOMAAD Catering · Чимун ХХК · nomaadcatering.mn</p>
   </footer>
 
