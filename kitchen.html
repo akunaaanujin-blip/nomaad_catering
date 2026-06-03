@@ -1044,6 +1044,7 @@ function showOrders() {
 }
 function hideOrders() {
   document.getElementById('orders-panel').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // Google Sheet "Захиалга" — Publish to web CSV URL
