@@ -1047,44 +1047,25 @@ function hideOrders() {
 }
 
 function loadOrders() {
-  if (SHEETS_URL === 'YOUR_APPS_SCRIPT_URL') {
-    document.getElementById('orders-url-notice').style.display = 'block';
-    document.getElementById('orders-container').innerHTML = '';
-    return;
-  }
-  document.getElementById('orders-container').innerHTML = '<div class="orders-loading">⏳ Захиалгуудыг уншиж байна...</div>';
+  document.getElementById('orders-container').innerHTML = '<div class="orders-loading">⏳ Уншиж байна...</div>';
+  // Өмнөх script-г устга
+  var old = document.getElementById('jsonp-s');
+  if (old) old.remove();
 
-  fetch(SHEETS_URL + '?action=orders', {
-    method: 'GET',
-    credentials: 'omit',
-    redirect: 'follow'
-  })
-    .then(r => {
-      if (!r.ok) throw new Error(r.status);
-      return r.json();
-    })
-    .then(data => renderOrders(data.orders || []))
-    .catch(err => {
-      // JSONP fallback — Apps Script redirect CORS issue
-      loadOrdersJSONP();
-    });
-}
-
-function loadOrdersJSONP() {
-  // JSONP — Apps Script CORS redirect-г тойрох
-  const cb = 'cb_' + Date.now();
+  var cb = 'orders_cb_' + Date.now();
   window[cb] = function(data) {
     delete window[cb];
-    document.getElementById('jsonp-script')?.remove();
+    var s = document.getElementById('jsonp-s');
+    if (s) s.remove();
     renderOrders(data.orders || []);
   };
-  const s = document.createElement('script');
-  s.id  = 'jsonp-script';
+  var s = document.createElement('script');
+  s.id  = 'jsonp-s';
   s.src = SHEETS_URL + '?action=orders&callback=' + cb;
-  s.onerror = () => {
+  s.onerror = function() {
     delete window[cb];
     document.getElementById('orders-container').innerHTML =
-      '<div class="orders-empty">❌ Apps Script URL буруу эсвэл deploy хийгдээгүй байна.</div>';
+      '<div class="orders-empty">❌ Уншиж чадсангүй. Хуудсыг дахин нээнэ үү.</div>';
   };
   document.body.appendChild(s);
 }
@@ -1096,27 +1077,33 @@ function renderOrders(orders) {
     return;
   }
 
-  const statusClass = { 'Шинэ': 'status-new', 'Хийгдэж байна': 'status-progress', 'Дууссан': 'status-done' };
+  var statusClass = { 'New': 'status-new', 'Шинэ': 'status-new', 'Хийгдэж байна': 'status-progress', 'Дууссан': 'status-done' };
 
-  el.innerHTML = `<div class="order-cards">` + orders.map(o => `
-    <div class="order-card">
-      <div class="oc-head">
-        <div>
-          <div class="oc-org">${o.байгууллага || '—'}</div>
-          <div class="oc-date">Бүртгэсэн: ${o.огноо || '—'}</div>
-        </div>
-        <span class="oc-status ${statusClass[o.статус] || 'status-new'}">${o.статус || 'Шинэ'}</span>
-      </div>
-      <div class="oc-body">
-        <div class="oc-row"><span class="oc-label">👤 Нэр</span><span class="oc-val">${o.нэр || '—'}</span></div>
-        <div class="oc-row"><span class="oc-label">📞 Утас</span><span class="oc-val">${o.утас || '—'}</span></div>
-        <div class="oc-row"><span class="oc-label">📅 Огноо</span><span class="oc-val">${o.арга_хэмжээний_огноо || '—'}</span></div>
-        <div class="oc-row"><span class="oc-label">👥 Хүн</span><span class="oc-val">${o.хүн || '—'}</span></div>
-        <div class="oc-row"><span class="oc-label">🍴 Үйлчилгээ</span><span class="oc-val">${o.үйлчилгээ || '—'}</span></div>
-        ${o.тэмдэглэл ? `<div class="oc-row"><span class="oc-label">📝 Тэмдэглэл</span><span class="oc-val">${o.тэмдэглэл}</span></div>` : ''}
-      </div>
-    </div>
-  `).join('') + `</div>`;
+  var html = '<div class="order-cards">';
+  for (var i = 0; i < orders.length; i++) {
+    var o = orders[i];
+    var sc = statusClass[o.status] || statusClass[o.statус] || 'status-new';
+    var st = o.status === 'New' ? 'Шинэ' : (o.status || 'Шинэ');
+    html += '<div class="order-card">' +
+      '<div class="oc-head">' +
+        '<div>' +
+          '<div class="oc-org">' + (o.baiguullaga || '—') + '</div>' +
+          '<div class="oc-date">Бүртгэсэн: ' + (o.ognoo || '—') + '</div>' +
+        '</div>' +
+        '<span class="oc-status ' + sc + '">' + st + '</span>' +
+      '</div>' +
+      '<div class="oc-body">' +
+        '<div class="oc-row"><span class="oc-label">👤 Нэр</span><span class="oc-val">' + (o.ner || '—') + '</span></div>' +
+        '<div class="oc-row"><span class="oc-label">📞 Утас</span><span class="oc-val">' + (o.utas || '—') + '</span></div>' +
+        '<div class="oc-row"><span class="oc-label">📅 Огноо</span><span class="oc-val">' + (o.arga_ognoo || '—') + '</span></div>' +
+        '<div class="oc-row"><span class="oc-label">👥 Хүн</span><span class="oc-val">' + (o.hun || '—') + '</span></div>' +
+        '<div class="oc-row"><span class="oc-label">🍴 Үйлчилгээ</span><span class="oc-val">' + (o.uilchilgee || '—') + '</span></div>' +
+        (o.temdegleg ? '<div class="oc-row"><span class="oc-label">📝 Тэмдэглэл</span><span class="oc-val">' + o.temdegleg + '</span></div>' : '') +
+      '</div>' +
+    '</div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
 }
 </script>
 </body>
