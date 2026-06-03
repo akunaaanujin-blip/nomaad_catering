@@ -56,31 +56,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .tier.ugl::before{background:#2c6a8f}
 .tier.ugl .t-badge{background:#dceaf5;color:#1f516e}
 
-/* ── ЦАГ / ДАВТАМЖ ── */
-.schedule-box{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-top:4px}
-.schedule-box .sb-head{background:linear-gradient(135deg,#1F4A38,#2E6049);padding:12px 16px;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
-.schedule-box .sb-body{padding:16px}
-.sb-row{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
-.sb-row:last-child{margin-bottom:0}
-.sb-label{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
-.time-chips{display:flex;gap:8px;flex-wrap:wrap}
-.time-chip{font-family:inherit;font-size:13px;font-weight:500;padding:8px 16px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
-.time-chip:hover{border-color:var(--accent);color:var(--accent)}
-.time-chip.tc-sel{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
-.time-chip .tc-icon{font-size:16px}
-.freq-options{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.freq-card{background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .15s;text-align:center}
-.freq-card:hover{border-color:var(--accent)}
-.freq-card.fc-sel{border-color:var(--accent);background:var(--accent-soft)}
-.freq-card .fc-icon{font-size:22px;margin-bottom:4px}
-.freq-card .fc-title{font-size:13px;font-weight:700;color:var(--ink)}
-.freq-card .fc-sub{font-size:11px;color:var(--muted);margin-top:2px}
-.freq-card.fc-sel .fc-title{color:var(--accent)}
-.freq-input-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;background:var(--bg);border:1.5px solid var(--line);border-radius:10px}
-.freq-input-row label{font-size:13px;font-weight:600;color:var(--ink);flex:1}
-.freq-input-row input{width:70px;font-family:inherit;font-size:15px;font-weight:700;text-align:center;border:1.5px solid var(--line);border-radius:8px;padding:6px 8px;outline:none;transition:border-color .15s}
-.freq-input-row input:focus{border-color:var(--accent)}
-.freq-input-row span{font-size:12px;color:var(--muted)}
 
 /* ── ҮЙЛЧИЛГЭЭНИЙ ТОО ── */
 .svc-count-chips{display:flex;gap:8px;margin-top:8px}
@@ -294,10 +269,6 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
           <input type="tel" name="Utas" id="of-phone" placeholder="Утасны дугаар" required>
         </div>
         <div class="order-field">
-          <label>Огноо</label>
-          <input type="date" name="Arga_hemjeenii_ognoo" id="of-date">
-        </div>
-        <div class="order-field">
           <label>Хүний тоо</label>
           <input type="number" name="Hunii_too" id="of-pax" value="0" min="0" required>
         </div>
@@ -469,10 +440,10 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
           <div class="event-box">
             <div class="ev-label">🎯 Арга хэмжээний төрөл <span style="font-size:11px;font-weight:500;color:var(--muted)">(заавал биш)</span></div>
             <div class="event-chips">
+              <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🏢</span>Байгууллагын корпорат арга хэмжээ</button>
               <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🏛️</span>Албан хурал</button>
               <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🎉</span>Найр · баяр</button>
               <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🏆</span>Team-building</button>
-              <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🏢</span>Байгууллагын корпорат арга хэмжээ</button>
               <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🥂</span>Хүлээн авалт</button>
               <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🎂</span>Ойн баяр</button>
               <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🌿</span>Гадаа арга хэмжээ</button>
@@ -482,56 +453,6 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         </div>
         <input type="hidden" name="Arga_hemjeenii_turul" id="of-event">
 
-        <!-- ── ЦАГ & ДАВТАМЖ ── -->
-        <div class="order-field full">
-          <div class="schedule-box">
-            <div class="sb-head">🕐 Үйлчилгээний цаг & давтамж <span style="font-size:11px;opacity:.75;font-weight:500">(заавал биш)</span></div>
-            <div class="sb-body">
-              <!-- Өдрийн цаг -->
-              <div class="sb-row">
-                <div class="sb-label">Хоолны цаг</div>
-                <div class="time-chips">
-                  <button type="button" class="time-chip" onclick="toggleTime(this)" data-val="Өглөө">
-                    <span class="tc-icon">🌅</span> Өглөө
-                  </button>
-                  <button type="button" class="time-chip" onclick="toggleTime(this)" data-val="Өдөр">
-                    <span class="tc-icon">☀️</span> Өдөр
-                  </button>
-                  <button type="button" class="time-chip" onclick="toggleTime(this)" data-val="Орой">
-                    <span class="tc-icon">🌆</span> Орой
-                  </button>
-                </div>
-              </div>
-              <!-- Давтамж -->
-              <div class="sb-row">
-                <div class="sb-label">Давтамж</div>
-                <div class="freq-options">
-                  <div class="freq-card" onclick="selectFreq(this,'once')">
-                    <div class="fc-icon">1️⃣</div>
-                    <div class="fc-title">Нэг удаа</div>
-                    <div class="fc-sub">Тусгай арга хэмжээ</div>
-                  </div>
-                  <div class="freq-card" onclick="selectFreq(this,'weekly')">
-                    <div class="fc-icon">📅</div>
-                    <div class="fc-title">7 хоногт</div>
-                    <div class="fc-sub">Долоо хоног бүр</div>
-                  </div>
-                  <div class="freq-card" onclick="selectFreq(this,'monthly')">
-                    <div class="fc-icon">🗓️</div>
-                    <div class="fc-title">Сард</div>
-                    <div class="fc-sub">Сар бүр</div>
-                  </div>
-                </div>
-                <div class="freq-input-row" id="freq-count-row" style="display:none">
-                  <label id="freq-count-label">7 хоногт хэдэн удаа?</label>
-                  <input type="number" id="freq-count" min="1" max="31" value="1" oninput="updateSchedule()">
-                  <span id="freq-count-unit">удаа</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <input type="hidden" name="Tsag_davtamj" id="of-schedule">
 
         <!-- Нэмэлт санал -->
         <div class="order-field full">
@@ -600,40 +521,6 @@ function toggleEvent(btn) {
   document.getElementById('of-event').value = sel.join(', ');
 }
 
-// ── Цаг & Давтамж ──
-var selFreq = '';
-function toggleTime(btn) {
-  btn.classList.toggle('tc-sel');
-  updateSchedule();
-}
-function selectFreq(card, type) {
-  document.querySelectorAll('.freq-card').forEach(function(c){ c.classList.remove('fc-sel'); });
-  card.classList.add('fc-sel');
-  selFreq = type;
-  var row = document.getElementById('freq-count-row');
-  var lbl = document.getElementById('freq-count-label');
-  if (type === 'weekly') {
-    row.style.display = 'flex';
-    lbl.textContent = '7 хоногт хэдэн удаа?';
-  } else if (type === 'monthly') {
-    row.style.display = 'flex';
-    lbl.textContent = 'Сард хэдэн удаа?';
-  } else {
-    row.style.display = 'none';
-  }
-  updateSchedule();
-}
-function updateSchedule() {
-  var times = [];
-  document.querySelectorAll('.time-chip.tc-sel').forEach(function(b){ times.push(b.dataset.val); });
-  var freq = '';
-  if (selFreq === 'once') freq = 'Нэг удаа';
-  else if (selFreq === 'weekly') freq = '7 хоногт ' + (document.getElementById('freq-count').value||1) + ' удаа';
-  else if (selFreq === 'monthly') freq = 'Сард ' + (document.getElementById('freq-count').value||1) + ' удаа';
-  var val = (times.length ? times.join(', ') : '') + (freq ? (times.length ? ' · ' : '') + freq : '');
-  document.getElementById('of-schedule').value = val;
-}
-
 // ── Нэмэлт сонголт ──
 function toggleNemeltu(btn) {
   btn.classList.toggle('sel-n');
@@ -668,16 +555,42 @@ function setSvcCount(btn) {
 function renderSvcRows() {
   var container = document.getElementById('svc-rows');
   if (!container) return;
+  // Хуучин утгуудыг хадгалах
+  var oldVals = [], oldDates = [], oldTimes = [];
+  for (var j = 0; j < 3; j++) {
+    var os = document.getElementById('svc-sel-' + j);
+    var od = document.getElementById('svc-date-' + j);
+    var ot = document.getElementById('svc-time-' + j);
+    oldVals[j]  = os ? os.value : '';
+    oldDates[j] = od ? od.value : '';
+    oldTimes[j] = ot ? ot.value : '';
+  }
   var html = '';
   for (var i = 0; i < svcCount; i++) {
     html += '<div class="svc-row">' +
       '<div class="svc-row-label">' + ORDINALS[i] + ' үйлчилгээ</div>' +
-      '<select id="svc-sel-' + i + '" data-idx="' + i + '" onchange="refreshPanels()">' +
-      SVC_OPTIONS.map(function(o){ return '<option value="'+o.v+'">'+o.l+'</option>'; }).join('') +
-      '</select>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:4px">' +
+        '<div><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Үйлчилгээний төрөл</div>' +
+        '<select id="svc-sel-' + i + '" onchange="refreshPanels()">' +
+        SVC_OPTIONS.map(function(o){ return '<option value="'+o.v+'">'+o.l+'</option>'; }).join('') +
+        '</select></div>' +
+        '<div><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Огноо</div>' +
+        '<input type="date" id="svc-date-' + i + '" style="margin-top:0"></div>' +
+        '<div><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Цаг</div>' +
+        '<input type="time" id="svc-time-' + i + '" style="margin-top:0"></div>' +
+      '</div>' +
     '</div>';
   }
   container.innerHTML = html;
+  // Хуучин утгуудыг сэргээх
+  for (var k = 0; k < svcCount; k++) {
+    var s = document.getElementById('svc-sel-' + k);
+    var d = document.getElementById('svc-date-' + k);
+    var t = document.getElementById('svc-time-' + k);
+    if (s && oldVals[k])  s.value = oldVals[k];
+    if (d && oldDates[k]) d.value = oldDates[k];
+    if (t && oldTimes[k]) t.value = oldTimes[k];
+  }
   refreshPanels();
 }
 
@@ -866,16 +779,21 @@ function updateDishesField() {
   }
   if (hasBoodog) parts.push('Хонь боодог × ' + boodog_n + ' ширхэг');
 
-  // Үйлчилгээний мөрийн утгуудыг нэмэх
+  // Үйлчилгээний мөрийн утгуудыг нэмэх (огноо, цагтай)
   var svcParts = [];
   for (var _j = 0; _j < svcCount; _j++) {
     var _sv = document.getElementById('svc-sel-' + _j);
     if (_sv && _sv.value) {
       var opt = SVC_OPTIONS.filter(function(o){ return o.v === _sv.value; })[0];
-      if (opt && opt.v) svcParts.push(ORDINALS[_j] + ' ' + opt.l);
+      if (opt && opt.v) {
+        var _d = document.getElementById('svc-date-' + _j);
+        var _t = document.getElementById('svc-time-' + _j);
+        var dtStr = (_d && _d.value ? ' · ' + _d.value : '') + (_t && _t.value ? ' ' + _t.value : '');
+        svcParts.push(ORDINALS[_j] + ' ' + opt.l + dtStr);
+      }
     }
   }
-  if (svcParts.length) parts.unshift(svcParts.join(' + '));
+  if (svcParts.length) parts.unshift(svcParts.join(' | '));
 
   // Өглөөний цай
   var hasUg = false;
@@ -907,7 +825,6 @@ async function handleSubmit(e) {
     байгууллага: document.getElementById('of-org').value.trim(),
     нэр:         document.getElementById('of-name').value.trim(),
     утас:        document.getElementById('of-phone').value.trim(),
-    арга_хэмжээний_огноо: document.getElementById('of-date').value,
     хүн:         document.getElementById('of-pax').value,
     үйлчилгээ:  document.getElementById('of-dishes').value,
     тэмдэглэл:  document.getElementById('of-note').value.trim(),
