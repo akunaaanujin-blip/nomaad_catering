@@ -288,7 +288,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         <!-- ── АРГА ХЭМЖЭЭНИЙ ТӨРӨЛ ── -->
         <div class="order-field">
           <label>Арга хэмжээний төрөл <span style="font-weight:400;color:var(--muted)">(заавал биш)</span></label>
-          <select id="of-event" name="Arga_hemjeenii_turul" onchange="document.getElementById('of-event-hidden').value=this.value">
+          <select id="of-event" name="Arga_hemjeenii_turul" onchange="calcPrice()">
             <option value="">— Сонгоно уу —</option>
             <option>Nomaad camp</option>
             <option>Байгууллагын корпорат арга хэмжээ</option>
@@ -598,7 +598,9 @@ function calcPrice() {
     total += amt;
   }
   var box = document.getElementById('price-box');
-  if (!lines.length) { if (box) box.style.display = 'none'; return; }
+  var eventSel = document.getElementById('of-event');
+  var isNomaadCamp = eventSel && eventSel.value === 'Nomaad camp';
+  if (!lines.length || isNomaadCamp) { if (box) box.style.display = 'none'; return; }
   box.style.display = 'block';
   document.getElementById('price-lines').innerHTML = lines.map(function(l) {
     return '<div class="price-line"><span>' + l.label + '</span><span>₮' + l.amt.toLocaleString() + '</span></div>';
