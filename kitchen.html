@@ -1047,27 +1047,41 @@ function hideOrders() {
 }
 
 function loadOrders() {
-  document.getElementById('orders-container').innerHTML = '<div class="orders-loading">⏳ Уншиж байна...</div>';
-  // Өмнөх script-г устга
-  var old = document.getElementById('jsonp-s');
+  var el = document.getElementById('orders-container');
+  el.innerHTML = '<div class="orders-loading">⏳ Уншиж байна...</div>';
+
+  // Өмнөх script-г цэвэрлэх
+  var old = document.getElementById('_ords');
   if (old) old.remove();
 
-  var cb = 'orders_cb_' + Date.now();
-  window[cb] = function(data) {
-    delete window[cb];
-    var s = document.getElementById('jsonp-s');
+  // JSONP callback нэр
+  var cbName = '_ordcb' + Date.now();
+
+  // Timeout — 8 секундэд хариу ирэхгүй бол алдаа
+  var timer = setTimeout(function() {
+    delete window[cbName];
+    var s = document.getElementById('_ords');
     if (s) s.remove();
-    renderOrders(data.orders || []);
+    el.innerHTML = '<div class="orders-empty">❌ Холболт удааширлаа. Дахин оролдоно уу.</div>';
+  }, 8000);
+
+  window[cbName] = function(data) {
+    clearTimeout(timer);
+    delete window[cbName];
+    var s = document.getElementById('_ords');
+    if (s) s.remove();
+    renderOrders((data && data.orders) ? data.orders : []);
   };
+
   var s = document.createElement('script');
-  s.id  = 'jsonp-s';
-  s.src = SHEETS_URL + '?action=orders&callback=' + cb;
+  s.id = '_ords';
+  s.src = SHEETS_URL + '?action=orders&callback=' + cbName;
   s.onerror = function() {
-    delete window[cb];
-    document.getElementById('orders-container').innerHTML =
-      '<div class="orders-empty">❌ Уншиж чадсангүй. Хуудсыг дахин нээнэ үү.</div>';
+    clearTimeout(timer);
+    delete window[cbName];
+    el.innerHTML = '<div class="orders-empty">❌ Apps Script холбогдсонгүй.</div>';
   };
-  document.body.appendChild(s);
+  document.head.appendChild(s);
 }
 
 function renderOrders(orders) {
