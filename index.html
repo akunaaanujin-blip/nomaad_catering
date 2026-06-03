@@ -304,34 +304,61 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
 </main>
 
 <script>
+// ← Apps Script deploy хийсний дараа URL-г энд тавина
+const SHEETS_URL = 'YOUR_APPS_SCRIPT_URL';
+
+// WhatsApp дугаар (97699xxxxxx хэлбэрт)
+const WA_NUMBER = '97699000000';
+
 function submitOrder(e) {
   e.preventDefault();
-  const org   = document.getElementById('of-org').value;
-  const name  = document.getElementById('of-name').value;
-  const phone = document.getElementById('of-phone').value;
+  const org   = document.getElementById('of-org').value.trim();
+  const name  = document.getElementById('of-name').value.trim();
+  const phone = document.getElementById('of-phone').value.trim();
   const date  = document.getElementById('of-date').value;
   const pax   = document.getElementById('of-pax').value;
   const svc   = document.getElementById('of-svc').value;
-  const note  = document.getElementById('of-note').value;
+  const note  = document.getElementById('of-note').value.trim();
 
-  // WhatsApp руу мессеж илгээх
-  const msg = encodeURIComponent(
-    `🍽️ *NOMAAD Catering захиалга*\n\n` +
-    `🏢 Байгууллага: ${org}\n` +
-    `👤 Нэр: ${name}\n` +
-    `📞 Утас: ${phone}\n` +
-    `📅 Огноо: ${date}\n` +
-    `👥 Хүн: ${pax}\n` +
-    `🍴 Үйлчилгээ: ${svc}\n` +
-    (note ? `📝 Тэмдэглэл: ${note}` : '')
-  );
+  const btn = document.querySelector('.btn-order');
+  btn.disabled = true;
+  btn.textContent = '⏳ Илгээж байна...';
 
-  // Утасны дугаараа оруулна (99xxxxxx → 97699xxxxxx)
-  const WA_NUMBER = '97699000000';
-  window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`, '_blank');
+  const payload = {
+    type: 'order',
+    байгууллага: org,
+    нэр: name,
+    утас: phone,
+    арга_хэмжээний_огноо: date,
+    хүн: pax,
+    үйлчилгээ: svc,
+    тэмдэглэл: note,
+  };
 
-  document.getElementById('order-form').style.display = 'none';
-  document.getElementById('order-success').style.display = 'block';
+  // Google Sheets-д хадгалах
+  const savePromise = SHEETS_URL !== 'YOUR_APPS_SCRIPT_URL'
+    ? fetch(SHEETS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }).catch(() => {})
+    : Promise.resolve();
+
+  savePromise.finally(() => {
+    // WhatsApp мессеж
+    const msg = encodeURIComponent(
+      `🍽️ *NOMAAD Catering захиалга*\n\n` +
+      `🏢 Байгууллага: ${org}\n` +
+      `👤 Нэр: ${name}\n` +
+      `📞 Утас: ${phone}\n` +
+      `📅 Арга хэмжээ: ${date}\n` +
+      `👥 Хүн: ${pax}\n` +
+      `🍴 Үйлчилгээ: ${svc}\n` +
+      (note ? `📝 Тэмдэглэл: ${note}` : '')
+    );
+    window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`, '_blank');
+
+    document.getElementById('order-form').style.display = 'none';
+    document.getElementById('order-success').style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '✉️ Захиалга илгээх';
+  });
 }
 </script>
 </body>

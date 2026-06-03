@@ -217,6 +217,29 @@ footer b{color:var(--ink)}
 .lock-btn{width:100%;font-family:inherit;font-size:14px;font-weight:700;background:#1F4A38;color:#fff;border:none;border-radius:12px;padding:13px;cursor:pointer;transition:opacity .15s}
 .lock-btn:hover{opacity:.88}
 .lock-err{font-size:13px;color:#BB4A36;margin-top:10px;display:none}
+
+/* ── Захиалга хэсэг ── */
+.order-section{max-width:1180px;margin:0 auto;padding:22px 18px 48px}
+.orders-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.orders-toolbar h2{font-family:'Lora',Georgia,serif;font-size:20px;font-weight:700;flex:1}
+.btn-refresh{font-family:inherit;font-size:12.5px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;transition:opacity .15s}
+.btn-refresh:hover{opacity:.85}
+.order-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.order-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.oc-head{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line)}
+.oc-org{font-weight:700;font-size:14px;color:var(--ink)}
+.oc-date{font-size:11px;color:var(--muted)}
+.oc-body{padding:14px 16px;display:flex;flex-direction:column;gap:7px}
+.oc-row{display:flex;gap:8px;font-size:13px}
+.oc-label{font-size:11px;font-weight:700;color:var(--muted);min-width:80px;padding-top:1px}
+.oc-val{color:var(--ink);flex:1}
+.oc-status{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700}
+.status-new{background:#dceaf5;color:#1a4a7a}
+.status-progress{background:var(--amber-soft);color:#7a4a10}
+.status-done{background:var(--accent-soft);color:#1F4A38}
+.orders-empty{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px}
+.orders-loading{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px}
+.url-notice{background:var(--amber-soft);border:1px solid #ecd9c5;border-radius:12px;padding:14px 18px;font-size:13px;color:#7a4f23;line-height:1.6;margin-bottom:20px}
 </style>
 </head>
 <body>
@@ -272,9 +295,29 @@ footer b{color:var(--ink)}
     <div class="brand">
       <div class="logo"><span class="dot">🍽️</span><div><h1>Хоолны технологи &amp; нөөц</h1><p>NOMAAD Catering · Чимун ХХК — гүн хөлдөөгчтэй кейтеринг</p></div></div>
     </div>
-    <a href="index.html" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:rgba(255,255,255,.16);padding:7px 14px;border-radius:999px;color:#fff;text-decoration:none;white-space:nowrap">← Меню</a>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button onclick="showOrders()" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:var(--amber);border:none;padding:7px 16px;border-radius:999px;color:#fff;cursor:pointer;white-space:nowrap">📋 Ирсэн захиалга</button>
+      <a href="index.html" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:rgba(255,255,255,.16);padding:7px 14px;border-radius:999px;color:#fff;text-decoration:none;white-space:nowrap">← Меню</a>
+    </div>
   </div>
 </header>
+
+<!-- ═══ ИРСЭН ЗАХИАЛГА ═══ -->
+<div id="orders-panel" style="display:none;background:var(--bg)">
+  <div class="order-section">
+    <div class="orders-toolbar">
+      <h2>📋 Ирсэн захиалгууд</h2>
+      <button class="btn-refresh" onclick="loadOrders()">🔄 Шинэчлэх</button>
+      <button onclick="hideOrders()" style="font-family:inherit;font-size:12px;font-weight:600;background:none;border:1.5px solid var(--line);border-radius:8px;padding:7px 14px;cursor:pointer;color:var(--muted)">✕ Хаах</button>
+    </div>
+    <div id="orders-url-notice" class="url-notice" style="display:none">
+      ⚠️ <strong>Apps Script URL тохируулаагүй байна.</strong> kitchen.html болон index.html-д <code>SHEETS_URL</code>-г тавиад дахин deploy хийнэ үү.
+    </div>
+    <div id="orders-container">
+      <div class="orders-loading">⏳ Уншиж байна...</div>
+    </div>
+  </div>
+</div>
 
 <div class="panel">
   <div class="wrap controls">
@@ -991,6 +1034,63 @@ function setStatus(type, msg) {
   const el = document.getElementById('save-status');
   el.className = 'save-status ' + type;
   el.textContent = msg;
+}
+
+// ── Ирсэн захиалга ──────────────────────────────────────
+function showOrders() {
+  document.getElementById('orders-panel').style.display = 'block';
+  document.getElementById('orders-panel').scrollIntoView({ behavior: 'smooth' });
+  loadOrders();
+}
+function hideOrders() {
+  document.getElementById('orders-panel').style.display = 'none';
+}
+
+function loadOrders() {
+  if (SHEETS_URL === 'YOUR_APPS_SCRIPT_URL') {
+    document.getElementById('orders-url-notice').style.display = 'block';
+    document.getElementById('orders-container').innerHTML = '';
+    return;
+  }
+  document.getElementById('orders-container').innerHTML = '<div class="orders-loading">⏳ Захиалгуудыг уншиж байна...</div>';
+
+  fetch(SHEETS_URL + '?action=orders')
+    .then(r => r.json())
+    .then(data => renderOrders(data.orders || []))
+    .catch(() => {
+      document.getElementById('orders-container').innerHTML =
+        '<div class="orders-empty">❌ Уншиж чадсангүй. Интернэт болон URL шалгана уу.</div>';
+    });
+}
+
+function renderOrders(orders) {
+  const el = document.getElementById('orders-container');
+  if (!orders.length) {
+    el.innerHTML = '<div class="orders-empty">📭 Одоогоор захиалга байхгүй байна.</div>';
+    return;
+  }
+
+  const statusClass = { 'Шинэ': 'status-new', 'Хийгдэж байна': 'status-progress', 'Дууссан': 'status-done' };
+
+  el.innerHTML = `<div class="order-cards">` + orders.map(o => `
+    <div class="order-card">
+      <div class="oc-head">
+        <div>
+          <div class="oc-org">${o.байгууллага || '—'}</div>
+          <div class="oc-date">Бүртгэсэн: ${o.огноо || '—'}</div>
+        </div>
+        <span class="oc-status ${statusClass[o.статус] || 'status-new'}">${o.статус || 'Шинэ'}</span>
+      </div>
+      <div class="oc-body">
+        <div class="oc-row"><span class="oc-label">👤 Нэр</span><span class="oc-val">${o.нэр || '—'}</span></div>
+        <div class="oc-row"><span class="oc-label">📞 Утас</span><span class="oc-val">${o.утас || '—'}</span></div>
+        <div class="oc-row"><span class="oc-label">📅 Огноо</span><span class="oc-val">${o.арга_хэмжээний_огноо || '—'}</span></div>
+        <div class="oc-row"><span class="oc-label">👥 Хүн</span><span class="oc-val">${o.хүн || '—'}</span></div>
+        <div class="oc-row"><span class="oc-label">🍴 Үйлчилгээ</span><span class="oc-val">${o.үйлчилгээ || '—'}</span></div>
+        ${o.тэмдэглэл ? `<div class="oc-row"><span class="oc-label">📝 Тэмдэглэл</span><span class="oc-val">${o.тэмдэглэл}</span></div>` : ''}
+      </div>
+    </div>
+  `).join('') + `</div>`;
 }
 </script>
 </body>
