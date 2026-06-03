@@ -113,6 +113,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .n-chip.sel-n{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
 .n-chip .free{font-size:10px;background:var(--accent-soft);color:var(--accent);border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:700}
 .n-chip.sel-n .free{background:rgba(255,255,255,.25);color:#fff}
+.n-price{font-size:11px;color:var(--muted);margin-left:4px;font-weight:500}
+.n-chip.sel-n .n-price{color:rgba(255,255,255,.75)}
 
 /* ── DISH SELECTOR ── */
 .dish-select{display:none !important;margin-top:4px}
@@ -457,11 +459,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
           <div class="nemeltu-box">
             <div class="n-title">🍕 Нэмэлт сонголт <span style="font-size:11px;font-weight:500;color:#a07040">(заавал биш)</span></div>
             <div class="nemeltu-chips">
-              <button type="button" class="n-chip" data-name="Жимсний платер" onclick="toggleNemeltu(this)">Жимсний платер</button>
-              <button type="button" class="n-chip" data-name="Cup cake &amp; Egg tart" onclick="toggleNemeltu(this)">Cup cake &amp; Egg tart</button>
-              <button type="button" class="n-chip" data-name="Мини пицца" onclick="toggleNemeltu(this)">Мини пицца</button>
-              <button type="button" class="n-chip" data-name="Мини бургер" onclick="toggleNemeltu(this)">Мини бургер</button>
-              <button type="button" class="n-chip" data-name="Cheese ball" onclick="toggleNemeltu(this)">Cheese ball</button>
+              <button type="button" class="n-chip" data-name="Жимсний платер" onclick="toggleNemeltu(this)">Жимсний платер <span class="n-price">~₮8,000</span></button>
+              <button type="button" class="n-chip" data-name="Cup cake &amp; Egg tart" onclick="toggleNemeltu(this)">Cup cake & Egg tart <span class="n-price">~₮6,000</span></button>
+              <button type="button" class="n-chip" data-name="Мини пицца" onclick="toggleNemeltu(this)">Мини пицца <span class="n-price">~₮7,000</span></button>
+              <button type="button" class="n-chip" data-name="Мини бургер" onclick="toggleNemeltu(this)">Мини бургер <span class="n-price">~₮7,500</span></button>
+              <button type="button" class="n-chip" data-name="Cheese ball" onclick="toggleNemeltu(this)">Cheese ball <span class="n-price">~₮5,000</span></button>
             </div>
             <div style="font-size:11px;font-weight:700;color:#a07040;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 6px">Уух зүйл — үнэгүй</div>
             <div class="nemeltu-chips">
