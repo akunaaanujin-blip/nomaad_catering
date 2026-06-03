@@ -1003,22 +1003,46 @@ async function confirmPayment() {
   var btn = document.getElementById('payment-confirm-btn');
   btn.disabled = true;
   btn.textContent = '⏳ Илгээж байна...';
-  var amount = document.getElementById('payment-amount').textContent;
-  var ref    = document.getElementById('payment-ref').textContent;
-  var org    = document.getElementById('of-org').value.trim();
-  var name   = document.getElementById('of-name').value.trim();
-  var phone  = document.getElementById('of-phone').value.trim();
+
+  var amount  = document.getElementById('payment-amount').textContent;
+  var ref     = document.getElementById('payment-ref').textContent;
+  var org     = document.getElementById('of-org').value.trim();
+  var name    = document.getElementById('of-name').value.trim();
+  var phone   = document.getElementById('of-phone').value.trim();
+  var email   = document.getElementById('of-email').value.trim();
+  var pax     = document.getElementById('of-pax').value;
+  var loc     = document.getElementById('of-location').value.trim();
+  var evnt    = document.getElementById('of-event').value;
+  var endDate = document.getElementById('of-end-date').value;
+  var dishes  = document.getElementById('of-dishes').value;
+  var nemeltu = document.getElementById('of-nemeltu').value;
+  var note    = document.getElementById('of-note').value.trim();
+  var startDate = (document.getElementById('svc-date-0') || {}).value || '';
+  var startTime = (document.getElementById('svc-time-0') || {}).value || '';
+  var totalEl   = document.getElementById('price-total');
+  var totalText = totalEl ? (totalEl.textContent.match(/₮[\d,]+/) || [''])[0] : '';
+
   try {
     var fd = new FormData();
     fd.append('access_key', 'e2c4a089-97e4-4630-a616-a6eae9fc13ea');
     fd.append('subject', '💳 NOMAAD — Төлбөр шилжүүлсэн мэдэгдэл');
     fd.append('from_name', 'NOMAAD Catering Website');
-    fd.append('Байгууллага', org);
-    fd.append('Нэр', name);
-    fd.append('Утас', phone);
-    fd.append('Дүн', amount);
-    fd.append('Гүйлгээний_утга', ref);
-    fd.append('Мэдэгдэл', 'Захиалагч төлбөр шилжүүлсэн гэж мэдэгдлээ.');
+    fd.append('Мэдэгдэл',          '⚠️ Захиалагч урьдчилгаа төлбөр шилжүүлсэн гэж мэдэгдлээ.');
+    fd.append('Байгууллага',        org);
+    fd.append('Нэр',                name);
+    fd.append('Утас',               phone);
+    if (email)    fd.append('Email',             email);
+    fd.append('Hunii_too',          pax + ' хүн');
+    if (loc)      fd.append('Gazar',             loc);
+    if (evnt)     fd.append('Arga_hemjee',        evnt);
+    if (startDate) fd.append('Ehleh_ognoo',      startDate + (startTime ? ' ' + startTime : ''));
+    if (endDate)  fd.append('Duusah_ognoo',       endDate);
+    if (dishes)   fd.append('Uychilgee',          dishes);
+    if (nemeltu)  fd.append('Nemeltu',            nemeltu);
+    if (note)     fd.append('Temdegleg',          note);
+    fd.append('Shiljuulsen_dun',    amount);
+    if (totalText) fd.append('Niit_dun',          totalText);
+    fd.append('Guilgeenii_utga',    ref);
     await fetch('https://api.web3forms.com/submit', {
       method: 'POST', body: fd, headers: { 'Accept': 'application/json' }
     });
