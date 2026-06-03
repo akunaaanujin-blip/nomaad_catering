@@ -453,19 +453,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
     <div class="order-success" id="order-success">
       ✅ Захиалга амжилттай илгээгдлээ! Бид 24 цагийн дотор тантай холбогдоно.
     </div>
-    <p class="order-note">Яаралтай бол шууд залгаарай: <strong>📞 99xxxxxx</strong> · 09:00–19:00</p>
+    <p class="order-note">Захиалга илгээсний дараа бид тантай холбогдоно.</p>
   </div>
 
   <!-- ═══ ХОЛБОО ═══ -->
   <div class="contact-strip">
-    <div class="cs-item">
-      <div class="ci-icon">📞</div>
-      <div><div class="ci-label">Утас</div><div class="ci-val"><a href="tel:99000000">99xxxxxx</a></div></div>
-    </div>
-    <div class="cs-item">
-      <div class="ci-icon">🕐</div>
-      <div><div class="ci-label">Цагийн хуваарь</div><div class="ci-val">09:00 – 19:00</div></div>
-    </div>
     <div class="cs-item">
       <div class="ci-icon">🌐</div>
       <div><div class="ci-label">Вэбсайт</div><div class="ci-val">nomaadcatering.mn</div></div>
@@ -487,20 +479,19 @@ const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A
 
 // ── Үйлчилгээ сонгоход харагдах хэсэг ──
 function onSvcChange() {
-  var val    = document.getElementById('of-svc').value;
-  var porEl  = document.getElementById('por-select');
-  var bufEl  = document.getElementById('buf-select');
-  var isPor  = val==='por'||val==='por_boodog';
-  var isBuf  = val==='buf'||val==='buf_boodog';
-  var isBoth = val==='por_boodog'||val==='buf_boodog';
+  var val   = document.getElementById('of-svc').value;
+  var porEl = document.getElementById('por-select');
+  var bufEl = document.getElementById('buf-select');
+  var isPor = val==='por'||val==='por_boodog';
+  var isBuf = val==='buf'||val==='buf_boodog';
 
-  // Порц хэсэг
-  if (isPor || isBuf) { porEl.classList.add('show'); } else { porEl.classList.remove('show'); }
-  porEl.classList.toggle('dimmed', isBuf && !isPor);
+  // Порц — зөвхөн порц сонгосон үед харагдана
+  porEl.classList.toggle('show', isPor);
+  porEl.classList.remove('dimmed');
 
-  // Буфет хэсэг
-  if (isBuf || isPor) { bufEl.classList.add('show'); } else { bufEl.classList.remove('show'); }
-  bufEl.classList.toggle('dimmed', isPor && !isBuf);
+  // Буфет — зөвхөн буфет сонгосон үед харагдана
+  bufEl.classList.toggle('show', isBuf);
+  bufEl.classList.remove('dimmed');
 
   updateDishesField();
 }
@@ -581,20 +572,23 @@ function renderQty() {
 
 // ── Тоог хязгаарлах ──
 function clampQty(inp) {
-  var maxPax = parseInt(document.getElementById('of-pax').value) || 9999;
+  var maxPax = parseInt(document.getElementById('of-pax').value) || 0;
   var v = parseInt(inp.value) || 0;
-  if (v > maxPax) { inp.value = maxPax; inp.style.borderColor='var(--amber)'; }
-  else { inp.style.borderColor=''; }
+  if (maxPax > 0 && v > maxPax) {
+    inp.value = maxPax;
+    inp.style.borderColor = 'var(--amber)';
+    inp.title = 'Хүний тооноос (' + maxPax + ') хэтрэхгүй';
+  } else {
+    inp.style.borderColor = '';
+    inp.title = '';
+  }
+  updateDishesField();
 }
 
-// Хүний тоо өөрчлөгдөхөд qty-г дахин шалгах
-document.addEventListener('DOMContentLoaded', function() {
-  var paxInp = document.getElementById('of-pax');
-  if (paxInp) paxInp.addEventListener('input', function() {
-    document.querySelectorAll('.qty-row input[type=number]').forEach(clampQty);
-    renderQty();
-    updateDishesField();
-  });
+// Хүний тоо өөрчлөгдөхөд qty бүрийг шалгах
+document.getElementById('of-pax').addEventListener('input', function() {
+  document.querySelectorAll('#por-qty input[type=number]').forEach(clampQty);
+  renderQty();
 });
 
 // ── Сонгосон хоолуудыг hidden field-д хадгалах ──
