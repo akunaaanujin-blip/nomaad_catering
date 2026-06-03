@@ -215,6 +215,23 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
   </section>
 
 
+  <!-- Өглөөний цай -->
+  <div class="uguluun-card">
+    <div class="u-ico">☕</div>
+    <div class="u-main">
+      <h3>Өглөөний цай</h3>
+      <div class="u-sub">Байгууллагын өглөөний цай, хурал дагалдах хөнгөн зооглолт</div>
+      <div class="uguluun-list">
+        <span>Брокли зутан</span>
+        <span>Хулууны зутан</span>
+        <span>Мөөгтэй шөл</span>
+        <span>Нарийн ногооны шөл</span>
+        <span>Бантан</span>
+        <span>Өндөг · талх · өргөст хэмх</span>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ ЗАХИАЛГА ӨГӨХ ═══ -->
   <div class="order-box" id="order">
     <h3>📋 Захиалга өгөх</h3>
@@ -259,6 +276,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
             <option value="boodog">Хонь боодог (₮900,000)</option>
             <option value="buf_boodog">Буфет + Хонь боодог</option>
             <option value="por_boodog">Порц + Хонь боодог</option>
+            <option value="uguluun">Өглөөний цай</option>
           </select>
         </div>
 
@@ -388,6 +406,25 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
           </div>
         </div>
 
+        <!-- ── ӨГЛӨӨНИЙ ЦАЙ сонголт ── -->
+        <div class="order-field full dish-select" id="uguluun-select">
+          <div class="sel-group">
+            <div class="sel-group-head">
+              <div class="sel-group-title">☕ Өглөөний цайны зооглолт — 1 сонгоно</div>
+              <span class="sel-badge green" id="uguluun-badge">0 / 1</span>
+            </div>
+            <div class="dish-chips">
+              <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Брокли зутан</button>
+              <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Хулууны зутан</button>
+              <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Мөөгтэй шөл</button>
+              <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Нарийн ногооны шөл</button>
+              <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Бантан</button>
+              <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Өндөг · талх · өргөст хэмх</button>
+            </div>
+            <p class="sel-hint" id="uguluun-qty-note">* Нийт хүний тоогоор бэлдэгдэнэ</p>
+          </div>
+        </div>
+
         <!-- Сонгосон хоол (hidden) -->
         <input type="hidden" name="Songoson_hool" id="of-dishes">
 
@@ -420,36 +457,6 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
       ✅ Захиалга амжилттай илгээгдлээ! Бид 24 цагийн дотор тантай холбогдоно.
     </div>
     <p class="order-note">Захиалга илгээсний дараа бид тантай холбогдоно.</p>
-  </div>
-
-  <!-- Хонь боодог -->
-  <div class="boodog" style="margin-top:20px">
-    <div class="b-ico">🐑</div>
-    <div class="b-main">
-      <h3>Хонь боодог</h3>
-      <p>Бүтэн хонийг уламжлалт аргаар, улаасан чулуугаар боодон болгож, ширээгээр ёслол төгөлдөр гаргана. Тусгай арга хэмжээ болон хүндэт зочны хүлээн авалтад тохиромжтой. Урьдчилан захиална уу.</p>
-    </div>
-    <div class="b-price">
-      <div class="v">₮900,000</div>
-      <div class="u">бүтэн хонь · 8–12 хүнд</div>
-    </div>
-  </div>
-
-  <!-- Өглөөний цай -->
-  <div class="uguluun-card">
-    <div class="u-ico">☕</div>
-    <div class="u-main">
-      <h3>Өглөөний цай</h3>
-      <div class="u-sub">Байгууллагын өглөөний цай, хурал дагалдах хөнгөн зооглолт</div>
-      <div class="uguluun-list">
-        <span>Брокли зутан</span>
-        <span>Хулууны зутан</span>
-        <span>Мөөгтэй шөл</span>
-        <span>Нарийн ногооны шөл</span>
-        <span>Бантан</span>
-        <span>Өндөг · талх · өргөст хэмх</span>
-      </div>
-    </div>
   </div>
 
   <!-- ═══ ХОЛБОО ═══ -->
@@ -496,15 +503,25 @@ function onSvcChange() {
   var porEl    = document.getElementById('por-select');
   var bufEl    = document.getElementById('buf-select');
   var boodogEl = document.getElementById('boodog-select');
-  var isPor    = val==='por'||val==='por_boodog';
-  var isBuf    = val==='buf'||val==='buf_boodog';
-  var isBoodog = val==='boodog'||val==='buf_boodog'||val==='por_boodog';
+  var isPor      = val==='por'||val==='por_boodog';
+  var isBuf      = val==='buf'||val==='buf_boodog';
+  var isBoodog   = val==='boodog'||val==='buf_boodog'||val==='por_boodog';
+  var isUguluun  = val==='uguluun';
+  var ugEl       = document.getElementById('uguluun-select');
 
   porEl.classList.toggle('show', isPor);
   porEl.classList.remove('dimmed');
   bufEl.classList.toggle('show', isBuf);
   bufEl.classList.remove('dimmed');
   boodogEl.classList.toggle('show', isBoodog);
+  if (ugEl) ugEl.classList.toggle('show', isUguluun);
+
+  // Өглөөний цайн тайлбарт хүний тоо харуулах
+  if (isUguluun) {
+    var pax = parseInt(document.getElementById('of-pax').value) || 0;
+    var note = document.getElementById('uguluun-qty-note');
+    if (note && pax > 0) note.textContent = '* Нийт ' + pax + ' хүнд бэлдэгдэнэ';
+  }
 
   updateBoodog();
   updateDishesField();
@@ -540,11 +557,11 @@ function toggleMsec(header) {
 // ── Chip сонгох / болиулах ──
 var GROUP_COLORS = {
   'por':'sel-green','buf-mah':'sel-amber','buf-sal':'sel-green',
-  'buf-hac':'sel-amber','buf-shol':'sel-blue'
+  'buf-hac':'sel-amber','buf-shol':'sel-blue','uguluun':'sel-green'
 };
 var GROUP_BADGE = {
   'por':'por-badge','buf-mah':'buf-mah-badge','buf-sal':'buf-sal-badge',
-  'buf-hac':'buf-hac-badge','buf-shol':'buf-shol-badge'
+  'buf-hac':'buf-hac-badge','buf-shol':'buf-shol-badge','uguluun':'uguluun-badge'
 };
 
 function toggleDish(btn) {
@@ -669,6 +686,14 @@ function updateDishesField() {
   var val = document.getElementById('of-svc').value;
   if (val==='boodog'||val==='buf_boodog'||val==='por_boodog') {
     parts.push('Хонь боодог × ' + boodog_n + ' ширхэг');
+  }
+
+  // Өглөөний цай
+  if (val==='uguluun') {
+    var pax = document.getElementById('of-pax').value || '';
+    document.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(b) {
+      parts.push('Өглөөний цай: ' + b.textContent.trim() + (pax ? ' × ' + pax + ' хүн' : ''));
+    });
   }
 
   document.getElementById('of-dishes').value = parts.join(' | ');
