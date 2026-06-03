@@ -82,6 +82,15 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .freq-input-row input:focus{border-color:var(--accent)}
 .freq-input-row span{font-size:12px;color:var(--muted)}
 
+/* ── ҮЙЛЧИЛГЭЭНИЙ ТОО ── */
+.svc-count-chips{display:flex;gap:8px;margin-top:8px}
+.svc-cnt{font-family:inherit;font-size:16px;font-weight:700;width:44px;height:44px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--muted);cursor:pointer;transition:all .15s}
+.svc-cnt:hover{border-color:var(--accent);color:var(--accent)}
+.svc-cnt.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.svc-row{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.svc-row-label{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.svc-row select{margin-top:0}
+
 /* ── АРГА ХЭМЖЭЭНИЙ ТӨРӨЛ ── */
 .event-box{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-top:4px}
 .event-box .ev-label{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
@@ -292,17 +301,19 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
           <label>Хүний тоо</label>
           <input type="number" name="Hunii_too" id="of-pax" value="0" min="0" required>
         </div>
+        <!-- Үйлчилгээний тоо -->
         <div class="order-field">
-          <label>Үйлчилгээний төрөл</label>
-          <select name="Uilchilgee" id="of-svc" onchange="onSvcChange()">
-            <option value="">— Сонгоно уу —</option>
-            <option value="por">Порц хоол (₮38,000/хүн)</option>
-            <option value="buf">Буфет (₮54,000/хүн)</option>
-            <option value="boodog">Хонь боодог (₮900,000)</option>
-            <option value="buf_boodog">Буфет + Хонь боодог</option>
-            <option value="por_boodog">Порц + Хонь боодог</option>
-            <option value="uguluun">Өглөөний цай</option>
-          </select>
+          <label>Үйлчилгээний тоо</label>
+          <div class="svc-count-chips">
+            <button type="button" class="svc-cnt active" data-n="1" onclick="setSvcCount(this)">1</button>
+            <button type="button" class="svc-cnt" data-n="2" onclick="setSvcCount(this)">2</button>
+            <button type="button" class="svc-cnt" data-n="3" onclick="setSvcCount(this)">3</button>
+          </div>
+        </div>
+
+        <!-- Үйлчилгээний төрлүүд — динамик -->
+        <div class="order-field full" id="svc-rows-wrap">
+          <div id="svc-rows"></div>
         </div>
 
         <!-- ── ПОРЦ хоолны сонголт ── -->
@@ -634,36 +645,63 @@ function toggleNemeltu(btn) {
 }
 
 var boodog_n = 1;
+var svcCount = 1;
 
-// ── Үйлчилгээ сонгоход харагдах хэсэг ──
-function onSvcChange() {
-  var val      = document.getElementById('of-svc').value;
+var SVC_OPTIONS = [
+  {v:'',        l:'— Сонгоно уу —'},
+  {v:'por',     l:'Порц хоол (₮38,000/хүн)'},
+  {v:'buf',     l:'Буфет (₮54,000/хүн)'},
+  {v:'boodog',  l:'Хонь боодог (₮900,000)'},
+  {v:'uguluun', l:'Өглөөний цай (₮12,000/хүн)'},
+];
+var ORDINALS = ['1-р', '2-р', '3-р'];
+
+// ── Үйлчилгээний тоо ──
+function setSvcCount(btn) {
+  document.querySelectorAll('.svc-cnt').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  svcCount = parseInt(btn.dataset.n);
+  renderSvcRows();
+  updateDishesField();
+}
+
+function renderSvcRows() {
+  var container = document.getElementById('svc-rows');
+  if (!container) return;
+  var html = '';
+  for (var i = 0; i < svcCount; i++) {
+    html += '<div class="svc-row">' +
+      '<div class="svc-row-label">' + ORDINALS[i] + ' үйлчилгээ</div>' +
+      '<select id="svc-sel-' + i + '" data-idx="' + i + '" onchange="refreshPanels()">' +
+      SVC_OPTIONS.map(function(o){ return '<option value="'+o.v+'">'+o.l+'</option>'; }).join('') +
+      '</select>' +
+    '</div>';
+  }
+  container.innerHTML = html;
+  refreshPanels();
+}
+
+function refreshPanels() {
+  var vals = [];
+  for (var i = 0; i < svcCount; i++) {
+    var s = document.getElementById('svc-sel-' + i);
+    if (s) vals.push(s.value);
+  }
+  var has = function(v){ return vals.indexOf(v) >= 0; };
   var porEl    = document.getElementById('por-select');
   var bufEl    = document.getElementById('buf-select');
   var boodogEl = document.getElementById('boodog-select');
-  var isPor      = val==='por'||val==='por_boodog';
-  var isBuf      = val==='buf'||val==='buf_boodog';
-  var isBoodog   = val==='boodog'||val==='buf_boodog'||val==='por_boodog';
-  var isUguluun  = val==='uguluun';
-  var ugEl       = document.getElementById('uguluun-select');
-
-  porEl.classList.toggle('show', isPor);
-  porEl.classList.remove('dimmed');
-  bufEl.classList.toggle('show', isBuf);
-  bufEl.classList.remove('dimmed');
-  boodogEl.classList.toggle('show', isBoodog);
-  if (ugEl) ugEl.classList.toggle('show', isUguluun);
-
-  // Өглөөний цайн тайлбарт хүний тоо харуулах
-  if (isUguluun) {
-    var pax = parseInt(document.getElementById('of-pax').value) || 0;
-    var note = document.getElementById('uguluun-qty-note');
-    if (note && pax > 0) note.textContent = '* Нийт ' + pax + ' хүнд бэлдэгдэнэ';
-  }
-
+  var ugEl     = document.getElementById('uguluun-select');
+  if (porEl)    porEl.classList.toggle('show', has('por'));
+  if (bufEl)    bufEl.classList.toggle('show', has('buf'));
+  if (boodogEl) boodogEl.classList.toggle('show', has('boodog'));
+  if (ugEl)     ugEl.classList.toggle('show', has('uguluun'));
   updateBoodog();
   updateDishesField();
 }
+
+// Legacy
+function onSvcChange() { refreshPanels(); }
 
 // ── Хонь боодогийн тоо ──
 function changeBootdog(delta) {
@@ -821,13 +859,31 @@ function updateDishesField() {
   });
 
   // Хонь боодог
-  var val = document.getElementById('of-svc').value;
-  if (val==='boodog'||val==='buf_boodog'||val==='por_boodog') {
-    parts.push('Хонь боодог × ' + boodog_n + ' ширхэг');
+  var hasBoodog = false;
+  for (var _i = 0; _i < svcCount; _i++) {
+    var _s = document.getElementById('svc-sel-' + _i);
+    if (_s && _s.value === 'boodog') { hasBoodog = true; break; }
   }
+  if (hasBoodog) parts.push('Хонь боодог × ' + boodog_n + ' ширхэг');
+
+  // Үйлчилгээний мөрийн утгуудыг нэмэх
+  var svcParts = [];
+  for (var _j = 0; _j < svcCount; _j++) {
+    var _sv = document.getElementById('svc-sel-' + _j);
+    if (_sv && _sv.value) {
+      var opt = SVC_OPTIONS.filter(function(o){ return o.v === _sv.value; })[0];
+      if (opt && opt.v) svcParts.push(ORDINALS[_j] + ' ' + opt.l);
+    }
+  }
+  if (svcParts.length) parts.unshift(svcParts.join(' + '));
 
   // Өглөөний цай
-  if (val==='uguluun') {
+  var hasUg = false;
+  for (var _k = 0; _k < svcCount; _k++) {
+    var _su = document.getElementById('svc-sel-' + _k);
+    if (_su && _su.value === 'uguluun') { hasUg = true; break; }
+  }
+  if (hasUg) {
     var pax = document.getElementById('of-pax').value || '';
     document.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(b) {
       parts.push('Өглөөний цай: ' + b.textContent.trim() + (pax ? ' × ' + pax + ' хүн' : ''));
@@ -853,7 +909,7 @@ async function handleSubmit(e) {
     утас:        document.getElementById('of-phone').value.trim(),
     арга_хэмжээний_огноо: document.getElementById('of-date').value,
     хүн:         document.getElementById('of-pax').value,
-    үйлчилгээ:  document.getElementById('of-svc').value,
+    үйлчилгээ:  document.getElementById('of-dishes').value,
     тэмдэглэл:  document.getElementById('of-note').value.trim(),
   };
 
@@ -887,6 +943,9 @@ async function handleSubmit(e) {
     btn.textContent = '✉️ Захиалга илгээх';
   }
 }
+
+// Хуудас ачаалахад 1 мөр харуулах
+renderSvcRows();
 </script>
 </body>
 </html>
