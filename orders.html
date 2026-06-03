@@ -129,17 +129,36 @@ function switchTab(t) {
 
 async function loadOrders() {
   document.getElementById('last-refresh').textContent = 'Ачааллаж байна...';
+  var errMsg = function(detail) {
+    return '<div class="empty">⚠️ Өгөгдөл ачааллахад алдаа гарлаа.<br>' +
+      '<small style="color:#c0392b">' + detail + '</small><br><br>' +
+      '<small>Apps Script editor-т <strong>doGet</strong> функц байгаа эсэхийг шалгаад,<br>шинэ version-оор Deploy хийнэ үү.</small></div>';
+  };
   try {
     var res  = await fetch(SHEETS_URL, { redirect: 'follow' });
-    var data = await res.json();
+    var text = await res.text();
+    var data;
+    try {
+      data = JSON.parse(text);
+    } catch(pe) {
+      document.getElementById('list-nomaad').innerHTML = errMsg('Хариу JSON биш байна — Apps Script-д doGet алга байж болно');
+      document.getElementById('list-busad').innerHTML  = errMsg('Хариу JSON биш байна');
+      document.getElementById('last-refresh').textContent = 'Алдаа — Apps Script шинэчлэх шаардлагатай';
+      return;
+    }
+    if (data.error) {
+      document.getElementById('list-nomaad').innerHTML = errMsg(data.error);
+      document.getElementById('list-busad').innerHTML  = errMsg(data.error);
+      document.getElementById('last-refresh').textContent = 'Алдаа';
+      return;
+    }
     renderSection('nomaad', data.nomaad || []);
     renderSection('busad',  data.busad  || []);
     document.getElementById('last-refresh').textContent =
       'Сүүлд шинэчлэгдсэн: ' + new Date().toLocaleString('mn-MN');
   } catch(e) {
-    var msg = '<div class="empty">⚠️ Өгөгдөл ачааллахад алдаа гарлаа.<br><small>Apps Script-г шинэ deploy хийсэн эсэхийг шалгана уу.</small></div>';
-    document.getElementById('list-nomaad').innerHTML = msg;
-    document.getElementById('list-busad').innerHTML  = msg;
+    document.getElementById('list-nomaad').innerHTML = errMsg(e.message || 'Network алдаа');
+    document.getElementById('list-busad').innerHTML  = errMsg(e.message || 'Network алдаа');
     document.getElementById('last-refresh').textContent = 'Алдаа гарлаа';
   }
 }
