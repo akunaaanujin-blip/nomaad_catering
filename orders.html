@@ -3,197 +3,208 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NOMAAD · Захиалгууд</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@600;700&display=swap" rel="stylesheet">
+<title>NOMAAD Catering — Захиалгууд</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:wght@600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#F5F0E6;--surface:#fff;--ink:#20271F;--muted:#8A8276;--line:#E2E6DF;--accent:#1F4A38;--accent-soft:#E3EDE7;--amber:#C8743F;--amber-soft:#F5E2D5;--red:#BB4A36;--shadow:0 1px 3px rgba(32,39,31,.07),0 8px 20px rgba(32,39,31,.08)}
+:root{
+  --bg:#F5F0E6;--surface:#fff;--ink:#20271F;--muted:#8A8276;
+  --line:#E2E6DF;--accent:#1F4A38;--accent-soft:#E3EDE7;
+  --amber:#C8743F;--amber-soft:#F5E2D5;--radius:14px;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);padding-bottom:60px}
+.band{height:6px;background:linear-gradient(90deg,#1F4A38 0 25%,#6B8E6F 25% 50%,#D9C7A3 50% 75%,#C8743F 75%)}
+.topbar{background:linear-gradient(135deg,#163528,#1F4A38 55%,#2E6049);color:#fff;padding:22px 0}
+.wrap{max-width:1100px;margin:0 auto;padding:0 18px}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.dot-ico{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:17px}
+.brand h1{font-family:'Lora',serif;font-size:20px;font-weight:700}
+.tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:rgba(255,255,255,.16);padding:5px 12px;border-radius:999px}
+.btn-refresh{font-family:inherit;font-size:12px;font-weight:700;background:rgba(255,255,255,.18);color:#fff;border:1.5px solid rgba(255,255,255,.3);border-radius:8px;padding:7px 14px;cursor:pointer;transition:all .15s}
+.btn-refresh:hover{background:rgba(255,255,255,.28)}
 
-/* Lock */
-#lock{position:fixed;inset:0;background:linear-gradient(135deg,#152E22,#1F4A38);z-index:999;display:flex;align-items:center;justify-content:center}
-.lock-box{background:#fff;border-radius:20px;padding:40px;max-width:360px;width:90%;text-align:center}
-.lock-icon{font-size:40px;margin-bottom:12px}
-.lock-title{font-family:'Lora',serif;font-size:22px;font-weight:700;margin-bottom:6px}
-.lock-sub{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.5}
-.lock-inp{width:100%;font-size:20px;font-weight:700;letter-spacing:6px;text-align:center;border:2px solid var(--line);border-radius:12px;padding:12px;outline:none;margin-bottom:12px;transition:border-color .2s}
-.lock-inp:focus{border-color:var(--accent)}
-.lock-btn{width:100%;font-family:inherit;font-size:14px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px;cursor:pointer}
-.lock-btn:hover{opacity:.88}
-.lock-err{font-size:13px;color:var(--red);margin-top:10px;display:none}
+#denied{display:none;text-align:center;padding:100px 20px}
+#denied h2{font-family:'Lora',serif;font-size:28px;margin-bottom:12px;color:var(--accent)}
+#denied p{color:var(--muted);font-size:15px}
 
-/* Header */
-.header{background:linear-gradient(135deg,#152E22,#1F4A38,#2E6049);color:#fff;padding:20px 24px}
-.header-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.h-brand{display:flex;align-items:center;gap:10px}
-.h-icon{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.15);display:grid;place-items:center;font-size:18px}
-.h-title{font-family:'Lora',serif;font-size:18px;font-weight:700}
-.h-sub{font-size:12px;opacity:.75;margin-top:2px}
-.h-back{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:rgba(255,255,255,.15);border:none;padding:7px 14px;border-radius:999px;color:#fff;cursor:pointer;text-decoration:none}
+#main{display:none}
+.page-title{padding:28px 0 4px;font-family:'Lora',serif;font-size:24px;font-weight:700}
+.page-sub{color:var(--muted);font-size:13px;margin-bottom:22px}
 
-/* Toolbar */
-.toolbar{max-width:1100px;margin:24px auto 0;padding:0 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.toolbar h2{font-family:'Lora',serif;font-size:20px;font-weight:700;flex:1}
-.btn-ref{font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 18px;cursor:pointer}
-.btn-ref:hover{opacity:.88}
-.count-badge{font-size:12px;font-weight:700;background:var(--accent-soft);color:var(--accent);padding:4px 12px;border-radius:999px}
+.tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--line)}
+.tab-btn{font-family:inherit;font-size:13px;font-weight:700;padding:10px 22px;border:none;border-bottom:3px solid transparent;background:none;cursor:pointer;color:var(--muted);margin-bottom:-2px;transition:all .15s}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
 
-/* Cards */
-.cards{max-width:1100px;margin:20px auto 40px;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
-.card-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-.c-org{font-weight:700;font-size:15px}
-.c-date{font-size:11px;color:var(--muted);margin-top:2px}
-.c-status{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px}
-.s-new{background:#dceaf5;color:#1a4a7a}
-.s-prog{background:var(--amber-soft);color:#7a4a10}
-.s-done{background:var(--accent-soft);color:var(--accent)}
-.card-body{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
-.row{display:flex;gap:8px;font-size:13px}
-.row .lbl{font-size:11px;font-weight:700;color:var(--muted);min-width:80px;flex-shrink:0;padding-top:1px}
-.row .val{color:var(--ink)}
-.empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;grid-column:1/-1}
-.loading{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;grid-column:1/-1}
-@media(max-width:500px){.cards{grid-template-columns:1fr}}
+.stats{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px;flex:1;min-width:130px}
+.stat-card .sv{font-family:'Lora',serif;font-size:28px;font-weight:700;color:var(--accent)}
+.stat-card .sl{font-size:12px;color:var(--muted);margin-top:2px}
+.stat-card.paid .sv{color:#27543f}
+.stat-card.pending .sv{color:var(--amber)}
+
+.orders-list{display:flex;flex-direction:column;gap:12px}
+.order-card{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--radius);padding:18px 20px}
+.order-card.new-order{border-color:var(--amber);background:#fffcf9}
+.order-card.paid-order{border-color:#6B8E6F;background:#f7fdf9}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.card-org{font-size:16px;font-weight:700}
+.card-name{font-size:13px;color:var(--muted);margin-top:2px}
+.status-badge{font-size:11px;font-weight:700;padding:5px 12px;border-radius:999px;flex-shrink:0}
+.status-badge.paid{background:#d4edda;color:#155724}
+.status-badge.new{background:var(--amber-soft);color:#7a4010}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px 14px;margin-bottom:12px}
+.cg-item .cl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.cg-item .cv{font-size:13px;color:var(--ink);font-weight:500}
+.card-svc{font-size:12px;color:var(--muted);background:var(--bg);border-radius:8px;padding:8px 12px;line-height:1.7;margin-bottom:8px;word-break:break-word}
+.card-price{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.price-tag{font-size:12px;font-weight:700;padding:5px 12px;border-radius:8px}
+.price-tag.total{background:var(--accent-soft);color:var(--accent)}
+.price-tag.half{background:var(--amber-soft);color:#7a4010}
+.card-date{font-size:11px;color:var(--muted);margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.empty{text-align:center;padding:50px;color:var(--muted);font-size:14px}
+@media(max-width:600px){.card-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
-
-<div id="lock">
-  <div class="lock-box">
-    <div class="lock-icon">🔐</div>
-    <div class="lock-title">NOMAAD Catering</div>
-    <div class="lock-sub">Тогооч болон удирдагч нарт зориулагдсан.<br>Нууц үгээ оруулна уу.</div>
-    <input class="lock-inp" id="li" type="password" placeholder="••••" maxlength="20" onkeydown="if(event.key==='Enter')auth()">
-    <button class="lock-btn" onclick="auth()">Нэвтрэх →</button>
-    <div class="lock-err" id="le">⚠️ Нууц үг буруу</div>
-  </div>
-</div>
-
-<div id="app" style="display:none">
-  <div class="header">
-    <div class="header-inner">
-      <div class="h-brand">
-        <div class="h-icon">📋</div>
-        <div>
-          <div class="h-title">Ирсэн захиалгууд</div>
-          <div class="h-sub">NOMAAD Catering · Чимун ХХК</div>
-        </div>
-      </div>
-      <a class="h-back" href="kitchen.html#nomaad2026">← Технологи карт</a>
+<div class="band"></div>
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand">
+      <div class="dot-ico">🍽️</div>
+      <div><h1>NOMAAD Catering</h1><div style="font-size:12px;opacity:.75;margin-top:2px">Захиалгын хяналтын самбар</div></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <span class="tag">Orders 2026</span>
+      <button class="btn-refresh" onclick="loadOrders()">↻ Шинэчлэх</button>
     </div>
   </div>
+</header>
 
-  <div class="toolbar">
-    <h2>📋 Захиалгууд</h2>
-    <span class="count-badge" id="cnt">...</span>
-    <button class="btn-ref" onclick="load()">🔄 Шинэчлэх</button>
-  </div>
-
-  <div class="cards" id="cards">
-    <div class="loading">⏳ Уншиж байна...</div>
-  </div>
+<div id="denied">
+  <h2>🔒 Хандах эрхгүй</h2>
+  <p>Энэ хуудас зөвхөн эрх бүхий хүнд нээлттэй.</p>
 </div>
 
+<main id="main" class="wrap">
+  <div class="page-title">📋 Захиалгуудын жагсаалт</div>
+  <p class="page-sub" id="last-refresh">Ачааллаж байна...</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('nomaad')">⛺ Nomaad camp</button>
+    <button class="tab-btn" onclick="switchTab('busad')">🍴 Бусад захиалга</button>
+  </div>
+
+  <div id="tab-nomaad" class="tab-panel active">
+    <div class="stats" id="stats-nomaad"></div>
+    <div class="orders-list" id="list-nomaad"><div class="empty">Ачааллаж байна...</div></div>
+  </div>
+  <div id="tab-busad" class="tab-panel">
+    <div class="stats" id="stats-busad"></div>
+    <div class="orders-list" id="list-busad"><div class="empty">Ачааллаж байна...</div></div>
+  </div>
+</main>
+
 <script>
-var PASS = 'nomaad2026';
-var KEY  = 'nomaad_orders_auth';
-var CSV  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTgmE0uJku8GxYhIua11kx0_h-LeRXF-MCGvGeAh6qCTsAo1x6wcdBvNey6Jn-6F8_hVIFmLIGqmEsx/pub?gid=635195893&single=true&output=csv';
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
 
-function auth() {
-  var v = document.getElementById('li').value;
-  if (v === PASS || location.hash === '#' + PASS) {
-    sessionStorage.setItem(KEY, 'ok');
-    document.getElementById('lock').style.display = 'none';
-    document.getElementById('app').style.display  = 'block';
-    load();
+function checkAccess() {
+  if (window.location.hash.replace('#','') === 'nomaad2026') {
+    document.getElementById('main').style.display = 'block';
+    loadOrders();
   } else {
-    document.getElementById('le').style.display = 'block';
+    document.getElementById('denied').style.display = 'block';
   }
 }
 
-// Hash нэвтрэлт
-if (location.hash === '#' + PASS || sessionStorage.getItem(KEY) === 'ok') {
-  document.getElementById('lock').style.display = 'none';
-  document.getElementById('app').style.display  = 'block';
+function switchTab(t) {
+  document.querySelectorAll('.tab-btn').forEach(function(b,i){
+    b.classList.toggle('active', (t==='nomaad'?0:1)===i);
+  });
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('tab-'+t).classList.add('active');
 }
 
-function load() {
-  var el = document.getElementById('cards');
-  el.innerHTML = '<div class="loading">⏳ Уншиж байна...</div>';
-  document.getElementById('cnt').textContent = '...';
-
-  fetch(CSV)
-    .then(function(r) {
-      if (!r.ok) throw new Error(r.status);
-      return r.text();
-    })
-    .then(function(text) {
-      var orders = parseCSV(text);
-      render(orders);
-    })
-    .catch(function(e) {
-      el.innerHTML = '<div class="empty">❌ Уншиж чадсангүй: ' + e.message + '</div>';
-    });
-}
-
-function parseCSV(text) {
-  var rows = text.trim().split('\n');
-  var result = [];
-  for (var i = rows.length - 1; i >= 1; i--) {
-    var c = splitRow(rows[i]);
-    if (!c[1] && !c[2]) continue;
-    result.push({date:c[0],org:c[1],name:c[2],phone:c[3],evdate:c[4],pax:c[5],svc:c[6],note:c[7],status:c[8]||'New'});
+async function loadOrders() {
+  document.getElementById('last-refresh').textContent = 'Ачааллаж байна...';
+  try {
+    var res  = await fetch(SHEETS_URL, { redirect: 'follow' });
+    var data = await res.json();
+    renderSection('nomaad', data.nomaad || []);
+    renderSection('busad',  data.busad  || []);
+    document.getElementById('last-refresh').textContent =
+      'Сүүлд шинэчлэгдсэн: ' + new Date().toLocaleString('mn-MN');
+  } catch(e) {
+    var msg = '<div class="empty">⚠️ Өгөгдөл ачааллахад алдаа гарлаа.<br><small>Apps Script-г шинэ deploy хийсэн эсэхийг шалгана уу.</small></div>';
+    document.getElementById('list-nomaad').innerHTML = msg;
+    document.getElementById('list-busad').innerHTML  = msg;
+    document.getElementById('last-refresh').textContent = 'Алдаа гарлаа';
   }
-  return result;
 }
 
-function splitRow(row) {
-  var cols=[], cur='', q=false;
-  for (var i=0; i<row.length; i++) {
-    var ch=row[i];
-    if (ch==='"') { q=!q; }
-    else if (ch===',' && !q) { cols.push(cur); cur=''; }
-    else { cur+=ch; }
-  }
-  cols.push(cur);
-  return cols;
-}
+function renderSection(key, orders) {
+  var statsEl = document.getElementById('stats-'+key);
+  var listEl  = document.getElementById('list-'+key);
+  var paid    = orders.filter(function(o){ return o['Төлбөр төлсөн'] === true; });
+  var pending = orders.filter(function(o){ return o['Төлбөр төлсөн'] !== true; });
 
-function render(orders) {
-  document.getElementById('cnt').textContent = orders.length + ' захиалга';
+  statsEl.innerHTML =
+    stat('Нийт захиалга', orders.length, '') +
+    stat('Хүлээгдэж байна', pending.length, 'pending') +
+    stat('Төлбөр төлсөн', paid.length, 'paid');
+
   if (!orders.length) {
-    document.getElementById('cards').innerHTML = '<div class="empty">📭 Одоогоор захиалга байхгүй байна.</div>';
+    listEl.innerHTML = '<div class="empty">Одоогоор захиалга байхгүй байна.</div>';
     return;
   }
-  var sc = {New:'s-new','Шинэ':'s-new','Хийгдэж байна':'s-prog','Дууссан':'s-done'};
-  var st = {New:'Шинэ'};
-  var h = '';
-  for (var i=0; i<orders.length; i++) {
-    var o=orders[i], cls=sc[o.status]||'s-new', stxt=st[o.status]||o.status;
-    h += '<div class="card">' +
-      '<div class="card-head">' +
-        '<div><div class="c-org">'+(o.org||'—')+'</div><div class="c-date">'+o.date+'</div></div>' +
-        '<span class="c-status '+cls+'">'+stxt+'</span>' +
+
+  var sorted = pending.concat(paid);
+  listEl.innerHTML = sorted.map(function(o) {
+    var isPaid  = o['Төлбөр төлсөн'] === true;
+    var date    = o['Огноо'] ? new Date(o['Огноо']).toLocaleString('mn-MN') : '';
+    return '<div class="order-card '+(isPaid?'paid-order':'new-order')+'">' +
+      '<div class="card-top">' +
+        '<div>' +
+          '<div class="card-org">'+(esc(o['Байгууллага']||'—'))+'</div>' +
+          '<div class="card-name">'+(esc(o['Нэр']||''))+(o['Утас']?' · '+esc(o['Утас']):'')+'</div>' +
+        '</div>' +
+        '<span class="status-badge '+(isPaid?'paid':'new')+'">'+(isPaid?'✅ Төлбөр төлсөн':'⏳ Хүлээгдэж байна')+'</span>' +
       '</div>' +
-      '<div class="card-body">' +
-        row('👤 Нэр', o.name) +
-        row('📞 Утас', o.phone) +
-        row('📅 Огноо', o.evdate||'—') +
-        row('👥 Хүн', o.pax||'—') +
-        row('🍴 Үйлчилгээ', o.svc||'—') +
-        (o.note ? row('📝 Тэмдэглэл', o.note) : '') +
-      '</div></div>';
-  }
-  document.getElementById('cards').innerHTML = h;
+      '<div class="card-grid">' +
+        ci('Хүний тоо',  o['Хүний тоо']) +
+        ci('Арга хэмжээ', o['Арга хэмжээ']) +
+        ci('Газар',       o['Газар']) +
+        ci('Эхлэх',       o['Эхлэх огноо']) +
+        ci('Дуусах',      o['Дуусах өдөр']) +
+        ci('И-мэйл',     o['И-мэйл']) +
+      '</div>' +
+      (o['Үйлчилгээ'] ? '<div class="card-svc">'+esc(o['Үйлчилгээ'])+'</div>' : '') +
+      (o['Нэмэлт']    ? '<div class="card-svc" style="background:#fffbf5">🍕 '+esc(o['Нэмэлт'])+'</div>' : '') +
+      (o['Тэмдэглэл'] ? '<div class="card-svc" style="color:#5e3c19">💬 '+esc(o['Тэмдэглэл'])+'</div>' : '') +
+      '<div class="card-price">' +
+        (o['Нийт дүн']       ? '<span class="price-tag total">Нийт: '+esc(String(o['Нийт дүн']))+'</span>' : '') +
+        (o['Урьдчилгаа 50%'] ? '<span class="price-tag half">50%: '+esc(String(o['Урьдчилгаа 50%']))+'</span>' : '') +
+      '</div>' +
+      (date ? '<div class="card-date">📅 Захиалсан: '+date+'</div>' : '') +
+    '</div>';
+  }).join('');
 }
 
-function row(l, v) {
-  return '<div class="row"><span class="lbl">'+l+'</span><span class="val">'+(v||'—')+'</span></div>';
+function stat(label, val, cls) {
+  return '<div class="stat-card '+cls+'"><div class="sv">'+val+'</div><div class="sl">'+label+'</div></div>';
+}
+function ci(label, val) {
+  if (!val) return '';
+  return '<div class="cg-item"><div class="cl">'+label+'</div><div class="cv">'+esc(String(val))+'</div></div>';
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// Автоматаар ачааллах
-if (sessionStorage.getItem(KEY)==='ok' || location.hash==='#'+PASS) load();
+checkAccess();
+window.addEventListener('hashchange', function(){ location.reload(); });
 </script>
 </body>
 </html>
