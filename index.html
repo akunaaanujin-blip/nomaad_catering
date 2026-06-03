@@ -59,8 +59,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 
 /* ── ҮЙЛЧИЛГЭЭНИЙ МӨРҮҮД ── */
 .svc-row{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
-.svc-row:first-child{border-color:var(--accent);background:var(--accent-soft)}
-.dish-select.show:first-of-type{border:1.5px solid var(--accent);background:var(--accent-soft);border-radius:12px}
 .btn-add-svc{font-family:inherit;font-size:13px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:1.5px dashed var(--accent);border-radius:10px;padding:10px;cursor:pointer;width:100%;margin-top:4px;transition:all .15s}
 .btn-add-svc:hover{background:var(--accent);color:#fff}
 .btn-svc-remove{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);color:var(--muted);font-size:15px;cursor:pointer;line-height:1;flex-shrink:0;transition:all .15s}
@@ -250,7 +248,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
   <!-- ═══ ЗАХИАЛГА ӨГӨХ ═══ -->
   <div class="order-box" id="order">
     <h3>📋 Захиалга өгөх</h3>
-    <p class="sub">Доорх маягтыг бөглөн илгээгээрэй. Бид тантай 24 цагийн дотор холбогдоно.</p>
+    <p class="sub" id="order-sub">Доорх маягтыг бөглөн илгээгээрэй. Бид тантай 24 цагийн дотор холбогдоно.</p>
 
     <form id="order-form"
           action="https://api.web3forms.com/submit"
@@ -495,6 +493,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
     <div class="order-success" id="order-success">
       ✅ Захиалга амжилттай илгээгдлээ! Бид 24 цагийн дотор тантай холбогдоно.
     </div>
+    <div id="order-summary" style="display:none"></div>
 
     <!-- Төлбөрийн мэдээлэл -->
     <div id="payment-box" style="display:none;margin-top:16px;background:var(--surface);border:1.5px solid var(--accent);border-radius:var(--radius);padding:24px">
@@ -650,6 +649,18 @@ function calcPrice() {
 
 var boodog_n = 1;
 var svcCount = 1;
+var ORDINALS = ['1-р','2-р','3-р','4-р','5-р'];
+
+function buildTimeOptions() {
+  var opts = '<option value="">— Цаг —</option>';
+  for (var _h = 6; _h <= 22; _h++) {
+    var hh = (_h < 10 ? '0' : '') + _h;
+    opts += '<option value="'+hh+':00">'+hh+':00</option>';
+    opts += '<option value="'+hh+':30">'+hh+':30</option>';
+  }
+  opts += '<option value="23:00">23:00</option>';
+  return opts;
+}
 
 var SVC_OPTIONS = [
   {v:'',        l:'— Сонгоно уу —'},
@@ -675,7 +686,7 @@ function buildSvcRowHTML(i) {
       SVC_OPTIONS.map(function(o){return '<option value="'+o.v+'">'+o.l+'</option>';}).join('')+
       '</select></div>' +
       '<div><div style="'+colStyle+'">Огноо</div><input type="date" id="svc-date-'+i+'" style="margin-top:0"></div>' +
-      '<div><div style="'+colStyle+'">Цаг</div><input type="time" id="svc-time-'+i+'" style="margin-top:0"></div>' +
+      '<div><div style="'+colStyle+'">Цаг</div><select id="svc-time-'+i+'" style="margin-top:0">'+buildTimeOptions()+'</select></div>' +
     '</div>';
 }
 
@@ -1053,10 +1064,12 @@ async function handleSubmit(e) {
     });
 
     form.style.display = 'none';
+    document.getElementById('order-sub').style.display = 'none';
     document.getElementById('order-success').style.display = 'block';
 
     var eventVal = document.getElementById('of-event').value;
     var isNomaadCamp = eventVal === 'Nomaad camp' || !eventVal;
+    showOrderSummary(isNomaadCamp);
     if (!isNomaadCamp) {
       var payBox = document.getElementById('payment-box');
       payBox.style.display = 'block';
@@ -1074,11 +1087,97 @@ async function handleSubmit(e) {
     }
   } catch(err) {
     form.style.display = 'none';
+    document.getElementById('order-sub').style.display = 'none';
     document.getElementById('order-success').style.display = 'block';
   } finally {
     btn.disabled    = false;
     btn.textContent = '✉️ Захиалга илгээх';
   }
+}
+
+function showOrderSummary(isNomaadCamp) {
+  var org    = document.getElementById('of-org').value.trim();
+  var name   = document.getElementById('of-name').value.trim();
+  var phone  = document.getElementById('of-phone').value.trim();
+  var email  = document.getElementById('of-email').value.trim();
+  var pax    = document.getElementById('of-pax').value;
+  var loc    = document.getElementById('of-location').value.trim();
+  var evnt   = document.getElementById('of-event').value;
+  var note   = document.getElementById('of-note').value.trim();
+  var nemeltu = document.getElementById('of-nemeltu').value;
+
+  function sumRow(label, val) {
+    if (!val) return '';
+    return '<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 12px;background:var(--bg);border-radius:8px;font-size:13px">' +
+      '<span style="color:var(--muted);font-weight:600;flex-shrink:0">' + label + '</span>' +
+      '<span style="font-weight:600;text-align:right">' + val + '</span>' +
+    '</div>';
+  }
+
+  var svcLines = '';
+  for (var i = 0; i < svcCount; i++) {
+    var s = document.getElementById('svc-sel-' + i);
+    var d = document.getElementById('svc-date-' + i);
+    var t = document.getElementById('svc-time-' + i);
+    if (s && s.value) {
+      var opt = SVC_OPTIONS.filter(function(o){ return o.v === s.value; })[0];
+      if (opt && opt.v) {
+        var dt = (d && d.value ? d.value : '') + (t && t.value ? ' ' + t.value : '');
+        svcLines += sumRow(ORDINALS[i] + ' үйлчилгээ', opt.l + (dt ? ' · ' + dt : ''));
+      }
+    }
+  }
+
+  var dishParts = [];
+  document.querySelectorAll('.dish-chip[data-g="por"].sel-green').forEach(function(btn) {
+    var nm = btn.textContent.trim();
+    var safeId = 'qty_' + nm.replace(/[^a-zA-Z0-9]/g,'_').substring(0,20);
+    var qtyEl = document.getElementById(safeId);
+    dishParts.push(nm + (qtyEl && qtyEl.value ? ' (' + qtyEl.value + ' порц)' : ''));
+  });
+  ['buf-mah','buf-sal','buf-hac','buf-shol'].forEach(function(g) {
+    var cls = GROUP_COLORS[g];
+    document.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).forEach(function(btn) {
+      dishParts.push(btn.textContent.trim());
+    });
+  });
+  document.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(btn) {
+    dishParts.push('Өглөөний цай: ' + btn.textContent.trim());
+  });
+  var hasBoodog = false;
+  for (var _i = 0; _i < svcCount; _i++) {
+    var _s = document.getElementById('svc-sel-' + _i);
+    if (_s && _s.value === 'boodog') { hasBoodog = true; break; }
+  }
+  if (hasBoodog) dishParts.push('Хонь боодог × ' + boodog_n + ' ширхэг');
+
+  var totalText = '';
+  if (!isNomaadCamp) {
+    var totalEl = document.getElementById('price-total');
+    if (totalEl) {
+      var m = totalEl.textContent.match(/₮[\d,]+/);
+      if (m) totalText = m[0];
+    }
+  }
+
+  var html = '<div style="background:var(--surface);border:1.5px solid var(--line);border-radius:var(--radius);padding:20px;margin-top:4px">' +
+    '<div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">📋 Захиалгын дэлгэрэнгүй</div>' +
+    '<div style="display:flex;flex-direction:column;gap:6px">' +
+    sumRow('Байгууллага', org) +
+    sumRow('Холбоо барих', name + (phone ? ' · ' + phone : '')) +
+    (email ? sumRow('И-мэйл', email) : '') +
+    sumRow('Хүний тоо', pax ? pax + ' хүн' : '') +
+    (loc ? sumRow('Газар', loc) : '') +
+    (evnt ? sumRow('Арга хэмжээ', evnt) : '') +
+    svcLines +
+    (dishParts.length ? sumRow('Сонгосон хоол', dishParts.join(' · ')) : '') +
+    (nemeltu ? sumRow('Нэмэлт', nemeltu) : '') +
+    (note ? sumRow('Тусгай хүсэлт', note) : '') +
+    (totalText ? sumRow('Нийт дүн', totalText) : '') +
+    '</div></div>';
+
+  var sumDiv = document.getElementById('order-summary');
+  if (sumDiv) { sumDiv.innerHTML = html; sumDiv.style.display = 'block'; }
 }
 
 // Хуудас ачаалахад 1 мөр харуулах
