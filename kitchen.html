@@ -144,6 +144,24 @@ body{font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;backgroun
 .menu-tog input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
 .cost-val{font-size:12.5px;font-weight:700;color:#8a5a12}
 
+/* ── Save to Sheets ── */
+.savebox{max-width:1180px;margin:14px auto 0;padding:0 18px}
+.savebox-inner{background:var(--surface);border:1.5px solid #2C6A8F;border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.savebox-head{background:#dceaf5;padding:13px 16px;font-size:13px;font-weight:700;color:#1a4f6e;display:flex;align-items:center;gap:8px}
+.savebox-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;padding:15px 16px 16px}
+.sf{display:flex;flex-direction:column;gap:5px}
+.sf label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.sf input,.sf select{font-family:inherit;font-size:14px;font-weight:600;color:var(--ink);background:#f9fbf9;border:1.5px solid var(--line);border-radius:10px;padding:8px 11px;transition:border-color .15s}
+.sf input:focus,.sf select:focus{outline:none;border-color:#2C6A8F}
+.save-actions{padding:0 16px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.btn-save{font-family:inherit;font-size:13.5px;font-weight:700;background:#2C6A8F;color:#fff;border:none;border-radius:10px;padding:11px 22px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:background .15s}
+.btn-save:hover{background:#1a4f6e}
+.btn-save:disabled{opacity:.5;cursor:not-allowed}
+.save-status{font-size:13px;font-weight:600;padding:8px 13px;border-radius:9px;display:none}
+.save-status.ok{background:#e4ede8;color:#1d5235;display:block}
+.save-status.err{background:#f8e2dd;color:#9a3522;display:block}
+.save-status.loading{background:#dceaf5;color:#1a4f6e;display:block}
+
 footer{text-align:center;color:var(--muted);font-size:12px;margin-top:34px;line-height:1.7}
 footer b{color:var(--ink)}
 .contact-bar{display:inline-flex;gap:18px;flex-wrap:wrap;justify-content:center;align-items:center;background:var(--accent-soft);border:1px solid var(--line);border-radius:999px;padding:9px 20px;margin:10px auto 4px;color:#27543f;font-weight:600;font-size:12.5px}
@@ -209,6 +227,43 @@ footer b{color:var(--ink)}
   </details>
 </div>
 <div class="cost-summary" id="cost-summary"></div>
+
+<!-- Google Sheets хадгалах -->
+<div class="savebox">
+  <div class="savebox-inner">
+    <div class="savebox-head">📊 Тооцоог Google Drive-д хадгалах</div>
+    <div class="savebox-fields">
+      <div class="sf"><label>Захиалагч нэр</label><input id="sv-client" type="text" placeholder="Төрийн банк"></div>
+      <div class="sf"><label>Арга хэмжээний огноо</label><input id="sv-date" type="date"></div>
+      <div class="sf"><label>Арга хэмжээний төрөл</label>
+        <select id="sv-type">
+          <option>Албан хурал</option>
+          <option>Team-building</option>
+          <option>Гадаа найр</option>
+          <option>BBQ үдэш</option>
+          <option>Хүлээн авалт</option>
+          <option>Бусад</option>
+        </select>
+      </div>
+      <div class="sf"><label>Үйлчилгээний төрөл</label>
+        <select id="sv-svc">
+          <option>Буфет</option>
+          <option>Порц</option>
+          <option>Буфет + Боодог</option>
+          <option>Порц + Боодог</option>
+          <option>Холимог</option>
+        </select>
+      </div>
+      <div class="sf"><label>Тэмдэглэл</label><input id="sv-note" type="text" placeholder="Нэмэлт мэдээлэл"></div>
+    </div>
+    <div class="save-actions">
+      <button class="btn-save" id="btn-save" onclick="saveToSheets()">
+        <span>📤</span> Google Sheets-д хадгалах
+      </button>
+      <div class="save-status" id="save-status"></div>
+    </div>
+  </div>
+</div>
 
 <main class="wrap">
   <div class="summary" id="summary"></div>
@@ -586,6 +641,87 @@ document.querySelectorAll('input[data-price]').forEach(inp=>{
   });
 });
 render();
+
+// ── Google Sheets хадгалах ──
+// Доорх URL-г Apps Script deploy хийсний дараа солино
+const SHEETS_URL = 'YOUR_APPS_SCRIPT_URL';
+
+// Өнөөдрийн огноог default утга болгох
+document.getElementById('sv-date').value = new Date().toISOString().split('T')[0];
+
+function saveToSheets() {
+  const client = document.getElementById('sv-client').value.trim();
+  if (!client) {
+    alert('Захиалагчийн нэрийг оруулна уу!');
+    document.getElementById('sv-client').focus();
+    return;
+  }
+  if (SHEETS_URL === 'YOUR_APPS_SCRIPT_URL') {
+    setStatus('err', '⚠️ Эхлээд Apps Script URL-г kitchen.html-д тохируулна уу (доорх зааврыг үзнэ үү).');
+    return;
+  }
+
+  // Тооцооны утгуудыг цуглуулах
+  const people = document.getElementById('ppl').value || '0';
+  const aptBtn = document.querySelector('.apt-btn.active');
+  const aptLabel = aptBtn ? aptBtn.textContent : '';
+  const menuDishes = DISHES.filter((d, i) => MENU['d' + i]).map(d => d.name).join(', ') || '—';
+
+  let meatCost = 0, nMenu = 0;
+  DISHES.forEach((d, i) => { if (MENU['d' + i]) { meatCost += dishCost(d); nMenu++; } });
+  const sideCost = (+PRICES._sides || 0) * (+people);
+  const totalCost = meatCost + sideCost;
+  const perPerson = +people > 0 ? Math.round(totalCost / +people) : 0;
+
+  const prices = Object.entries(PRICES)
+    .filter(([k]) => k !== '_sides')
+    .map(([k, v]) => `${k}: ₮${Number(v).toLocaleString('mn-MN')}/кг`)
+    .join(' · ') || '—';
+
+  const row = {
+    огноо: document.getElementById('sv-date').value,
+    захиалагч: client,
+    арга_хэмжээ: document.getElementById('sv-type').value,
+    үйлчилгээ: document.getElementById('sv-svc').value,
+    хүн: people,
+    идэх_хандлага: aptLabel,
+    сонгосон_хоол: menuDishes,
+    мах_өртөг: Math.round(meatCost),
+    дагалдах_өртөг: Math.round(sideCost),
+    нийт_өртөг: Math.round(totalCost),
+    нэг_хүний_өртөг: perPerson,
+    махны_үнэ: prices,
+    дагалдах_нэг_хүн: PRICES._sides || '',
+    тэмдэглэл: document.getElementById('sv-note').value.trim()
+  };
+
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  setStatus('loading', '⏳ Хадгалж байна...');
+
+  fetch(SHEETS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(row)
+  })
+    .then(r => r.json())
+    .then(res => {
+      if (res.status === 'ok') {
+        setStatus('ok', `✅ "${client}" — ${people} хүний тооцоо Google Sheets-д хадгалагдлаа!`);
+        document.getElementById('sv-note').value = '';
+      } else {
+        setStatus('err', '❌ Алдаа гарлаа: ' + (res.error || 'тодорхойгүй'));
+      }
+    })
+    .catch(() => setStatus('err', '❌ Холболт амжилтгүй. Интернэт болон URL-г шалгана уу.'))
+    .finally(() => { btn.disabled = false; });
+}
+
+function setStatus(type, msg) {
+  const el = document.getElementById('save-status');
+  el.className = 'save-status ' + type;
+  el.textContent = msg;
+}
 </script>
 </body>
 </html>
