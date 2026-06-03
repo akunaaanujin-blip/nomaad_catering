@@ -7,13 +7,12 @@
 <meta name="description" content="NOMAAD Catering — Чимун ХХК. Порц хоол, буфет, хонь боодог. Байгууллагын арга хэмжээ, эвентийн кейтеринг.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:wght@500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#F5F0E6; --surface:#ffffff; --ink:#20271F; --muted:#8A8276;
   --line:#E2E6DF; --accent:#1F4A38; --accent-soft:#E3EDE7;
   --amber:#C8743F; --amber-soft:#F5E2D5; --sand:#D9C7A3;
-  --blue:#2c6a8f; --blue-soft:#dceaf5;
   --shadow:0 1px 2px rgba(32,39,31,.06),0 8px 24px rgba(32,39,31,.07);
   --radius:16px;
 }
@@ -22,24 +21,16 @@ html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
 body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;padding-bottom:60px}
 .wrap{max-width:1080px;margin:0 auto;padding:0 18px}
 
-/* ── BAND ── */
 .nomad-band{height:6px;background:linear-gradient(90deg,#1F4A38 0%,#1F4A38 25%,#6B8E6F 25%,#6B8E6F 50%,#D9C7A3 50%,#D9C7A3 75%,#C8743F 75%,#C8743F 100%)}
 
 /* ── TOPBAR ── */
-.topbar{background:linear-gradient(135deg,#163528 0%,#1F4A38 55%,#2E6049 100%);color:#fff;padding:26px 0 0}
-.topbar-row{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:0 0 22px}
+.topbar{background:linear-gradient(135deg,#163528 0%,#1F4A38 55%,#2E6049 100%);color:#fff;padding:26px 0 22px}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
 .brand .logo{display:inline-flex;align-items:center;gap:11px}
 .brand h1{font-family:'Lora',Georgia,serif;font-size:22px;font-weight:700;letter-spacing:-.2px}
 .brand p{font-size:13px;opacity:.85;font-weight:500;margin-top:2px}
 .dot-ico{width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:19px}
 .tag-pill{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:rgba(255,255,255,.16);padding:5px 11px;border-radius:999px}
-
-/* ── NAV TABS (header доор) ── */
-.nav-tabs{display:flex;gap:0;overflow-x:auto;scrollbar-width:none;border-top:1px solid rgba(255,255,255,.1)}
-.nav-tabs::-webkit-scrollbar{display:none}
-.nav-tab{padding:10px 18px;font-size:13px;font-weight:600;color:rgba(255,255,255,.6);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .18s;text-decoration:none}
-.nav-tab:hover{color:#fff;background:rgba(255,255,255,.07)}
-.nav-tab.active{color:#fff;border-bottom-color:#D9C7A3}
 
 /* ── HERO ── */
 .hero{padding:34px 0 8px;text-align:center}
@@ -88,48 +79,45 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .boodog .b-price .v{font-family:'Lora',Georgia,serif;font-size:34px;font-weight:700;letter-spacing:-1px}
 .boodog .b-price .u{font-size:12px;color:var(--sand);font-weight:600}
 
+/* ── ORDER SECTION ── */
+.order-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px;margin-top:40px}
+.order-box h3{font-family:'Lora',Georgia,serif;font-size:22px;font-weight:700;margin-bottom:6px}
+.order-box .sub{font-size:13.5px;color:var(--muted);margin-bottom:24px;line-height:1.55}
+.order-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:20px}
+.order-field{display:flex;flex-direction:column;gap:6px}
+.order-field label{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.order-field input,.order-field select,.order-field textarea{
+  font-family:inherit;font-size:14px;color:var(--ink);background:var(--bg);
+  border:1.5px solid var(--line);border-radius:10px;padding:10px 13px;
+  outline:none;transition:border-color .18s;resize:none;
+}
+.order-field input:focus,.order-field select:focus,.order-field textarea:focus{border-color:var(--accent)}
+.order-field.full{grid-column:1/-1}
+.btn-order{width:100%;font-family:inherit;font-size:14px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:13px;cursor:pointer;transition:opacity .15s;margin-top:4px}
+.btn-order:hover{opacity:.88}
+.order-note{font-size:12px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.6}
+.order-success{display:none;background:var(--accent-soft);border:1px solid #b8d4c4;border-radius:10px;padding:16px;text-align:center;font-size:14px;font-weight:600;color:var(--accent);margin-top:16px}
+
+/* ── CONTACT BAR ── */
+.contact-strip{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.cs-item{flex:1;min-width:160px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}
+.cs-item .ci-icon{font-size:22px}
+.cs-item .ci-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.cs-item .ci-val{font-size:14px;font-weight:700;color:var(--ink);margin-top:2px}
+.cs-item a{color:var(--ink);text-decoration:none}
+
 /* ── NOTE ── */
 .note{background:var(--amber-soft);border:1px solid #ecd9c5;border-radius:12px;padding:14px 18px;margin-top:26px;font-size:13px;color:#7a4f23;line-height:1.6}
 .note b{color:#5e3c19}
 
-/* ── SECTION DIVIDER ── */
-.sec-divider{display:flex;align-items:center;gap:14px;margin:52px 0 6px}
-.sec-divider::before,.sec-divider::after{content:'';flex:1;height:1.5px;background:var(--line)}
-.sec-divider span{font-family:'Lora',Georgia,serif;font-size:20px;font-weight:700;white-space:nowrap;color:var(--ink)}
-
-/* ── STORAGE SECTIONS (kitchen(1).html загвар) ── */
-.inv-section{margin-bottom:28px}
-.inv-head{padding:12px 18px;border-radius:12px 12px 0 0;font-size:13px;font-weight:700;display:flex;align-items:center;gap:10px}
-.inv-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-top:none;border-radius:0 0 12px 12px;overflow:hidden;box-shadow:var(--shadow)}
-.inv-table th{background:#EDEAE3;padding:10px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);text-align:left}
-.inv-table td{padding:10px 14px;font-size:13px;border-top:1px solid var(--line)}
-.inv-table tr:hover td{background:#FAFAF7}
-.badge{display:inline-block;padding:2px 9px;border-radius:5px;font-size:11px;font-weight:600}
-.b-cold{background:#dceaf5;color:#1f516e;border:1px solid #b8d4e8}
-.b-freeze{background:#dde8f5;color:#1a4a7a;border:1px solid #b4cce8}
-.b-dry{background:#f5ead5;color:#7a5a10;border:1px solid #e0cc96}
-.b-prep{background:var(--accent-soft);color:#1F4A38;border:1px solid #b8d4c4}
-
-/* ── HACCP CARDS ── */
-.haccp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:24px}
-.haccp-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
-.haccp-temp{font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent)}
-.haccp-label{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.4}
-
-.haccp-note{background:var(--amber-soft);border:1px solid #ecd9c5;border-radius:10px;padding:13px 16px;font-size:12.5px;color:#7a4f23;line-height:1.7}
-.haccp-note strong{color:#5e3c19}
-
 /* ── FOOTER ── */
-footer{text-align:center;color:var(--muted);font-size:12px;margin-top:34px;line-height:1.7}
-footer b{color:var(--ink)}
-.contact-bar{display:inline-flex;gap:18px;flex-wrap:wrap;justify-content:center;align-items:center;background:var(--accent-soft);border:1px solid var(--line);border-radius:999px;padding:10px 22px;margin:12px auto 6px;color:#27543f;font-weight:600;font-size:13px}
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-height:1.7}
 
 @media(max-width:760px){
   .tiers{grid-template-columns:1fr}
   .dishes{grid-template-columns:1fr}
   .boodog .b-price{text-align:left;width:100%}
   .hero h2{font-size:28px}
-  .haccp-grid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
 </head>
@@ -138,32 +126,22 @@ footer b{color:var(--ink)}
 <div class="nomad-band"></div>
 <header class="topbar">
   <div class="wrap">
-    <div class="topbar-row">
-      <div class="brand">
-        <div class="logo"><span class="dot-ico">🍽️</span><div><h1>NOMAAD Catering</h1><p>Чимун ХХК · Эвент ба байгууллагын кейтеринг</p></div></div>
-      </div>
-      <span class="tag-pill">Меню 2026</span>
+    <div class="brand">
+      <div class="logo"><span class="dot-ico">🍽️</span><div><h1>NOMAAD Catering</h1><p>Чимун ХХК · Эвент ба байгууллагын кейтеринг</p></div></div>
     </div>
-    <nav class="nav-tabs">
-      <a class="nav-tab active" href="#menu">🍽️ Меню</a>
-      <a class="nav-tab" href="#kitchen">🧪 Технологи карт</a>
-      <a class="nav-tab" href="#prep">❄️ Боловсруулсан нөөц</a>
-      <a class="nav-tab" href="#raw">🥬 Боловсруулаагүй нөөц</a>
-      <a class="nav-tab" href="#haccp">🌡️ HACCP</a>
-    </nav>
+    <span class="tag-pill">Меню 2026</span>
   </div>
 </header>
 
 <main class="wrap">
 
-  <!-- ═══ МЕНЮ ═══ -->
-  <div id="menu"></div>
   <section class="hero">
     <div class="eyebrow">Меню 2026</div>
     <h2>Байгальд тааруулсан тансаг хоол</h2>
-    <p>Гүн хөлдөөгчтэй технологиор бэлдсэн, шинэлэг амттай хоолыг арга хэмжээний газарт тань халуунаар хүргэнэ.</p>
+    <p>Гүн хөлдөөгчтэй технологиор бэлдсэн, шинэлэг амттай хоолыг арга хэмжээний газарт тань халуунаар хүргэнэ. Порц, буфет, уламжлалт хонь боодгоос сонгоно уу.</p>
   </section>
 
+  <!-- Үнийн карт -->
   <section class="tiers">
     <div class="tier por">
       <div class="t-name">Порц хоол</div>
@@ -185,6 +163,7 @@ footer b{color:var(--ink)}
     </div>
   </section>
 
+  <!-- Порц -->
   <section class="msec por">
     <div class="msec-head">
       <h3>🍱 Порц хоол</h3>
@@ -203,13 +182,14 @@ footer b{color:var(--ink)}
     </div>
   </section>
 
+  <!-- Буфет -->
   <section class="msec buf">
     <div class="msec-head">
       <h3>🍴 Буфет</h3>
       <span class="price-pill">₮54,000 / хүн</span>
       <div class="lead">Олон төрлийн мах, дагалдах салад, шөл, хачираар бүрдсэн өөрөө авах ширээ.</div>
     </div>
-    <div class="subhead">Гол мах</div>
+    <div class="subhead">Гол мах — 3 төрлийг сонгоно</div>
     <div class="dishes">
       <div class="dish"><div class="d-main"><span class="d-name">Соусанд жигнэсэн хонины мах<span class="d-meat">Хонь</span></span></div></div>
       <div class="dish"><div class="d-main"><span class="d-name">Хонь шарсан хавирга<span class="d-meat">Хонь</span></span></div></div>
@@ -218,21 +198,22 @@ footer b{color:var(--ink)}
       <div class="dish"><div class="d-main"><span class="d-name">Шаржигнуур тахиа<span class="d-meat">Тахиа</span></span></div></div>
       <div class="dish"><div class="d-main"><span class="d-name">Мини шорлог<span class="d-meat">Гахай · Тахиа</span></span></div></div>
     </div>
-    <div class="subhead">Дагалдах</div>
+    <div class="subhead">Дагалдах — оруулсан үнэнд</div>
     <div class="dishes">
-      <div class="dish"><div class="d-main"><span class="d-name">Улирлын салад</span><div class="d-desc">2 төрлийн шинэ салад.</div></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Халуун шөл</span><div class="d-desc">Өдрийн шинэ шөл.</div></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Хачир — төмс, ногоо</span><div class="d-desc">Жигнэсэн улирлын ногоо.</div></div></div>
-      <div class="dish"><div class="d-main"><span class="d-name">Цагаан будаа</span><div class="d-desc">Уурын будаа.</div></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Улирлын 2 төрлийн салад</span></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Халуун шөл</span></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Хачир — төмс / ногоо</span></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Цагаан будаа</span></div></div>
     </div>
   </section>
 
+  <!-- Хонь боодог -->
   <section class="msec">
     <div class="boodog">
       <div class="b-ico">🐑</div>
       <div class="b-main">
         <h3>Хонь боодог</h3>
-        <p>Бүтэн хонийг уламжлалт аргаар, улаасан чулуугаар боодон болгож, ширээгээр ёслол төгөлдөр гаргана. Урьдчилан захиална.</p>
+        <p>Бүтэн хонийг уламжлалт аргаар, улаасан чулуугаар боодон болгож, ширээгээр ёслол төгөлдөр гаргана. Тусгай арга хэмжээ болон хүндэт зочны хүлээн авалтад тохиромжтой. Урьдчилан захиална уу.</p>
       </div>
       <div class="b-price">
         <div class="v">₮900,000</div>
@@ -242,216 +223,116 @@ footer b{color:var(--ink)}
   </section>
 
   <div class="note">
-    <b>Захиалгын нөхцөл:</b> Үнэ нь нэг хүний (порц/буфет) болон нэгж (боодог) дүн. Тээвэр, үйлчлэгч, тоног төхөөрөмж зэргийг арга хэмжээний хэмжээнээс хамааруулан тооцно.
+    <b>Захиалгын нөхцөл:</b> Үнэ нь нэг хүний (порц/буфет) болон нэгж (боодог) дүн. Тээвэр, үйлчлэгч, тоног төхөөрөмжийг арга хэмжээний хэмжээнээс хамааруулан тооцно. Хүний тоо, цэсээ урьдчилан баталгаажуулна уу.
   </div>
 
-  <!-- ═══ ТЕХНОЛОГИ КАРТ линк ═══ -->
-  <div id="kitchen" style="margin-top:52px;text-align:center">
-    <a href="kitchen.html" style="display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;padding:14px 28px;border-radius:12px;text-decoration:none;box-shadow:var(--shadow)">
-      🧪 Технологи карт &amp; нөөц тооцоолол →
-    </a>
-    <p style="font-size:12.5px;color:var(--muted);margin-top:10px">Хүний тоо, идэх хандлагаар махны хэрэгцээ, зардлыг тооцоолно</p>
+  <!-- ═══ ЗАХИАЛГА ӨГӨХ ═══ -->
+  <div class="order-box" id="order">
+    <h3>📋 Захиалга өгөх</h3>
+    <p class="sub">Доорх маягтыг бөглөн илгээгээрэй. Бид тантай 24 цагийн дотор холбогдоно.</p>
+
+    <form id="order-form" onsubmit="submitOrder(event)">
+      <div class="order-grid">
+        <div class="order-field">
+          <label>Байгууллагын нэр</label>
+          <input type="text" id="of-org" placeholder="Төрийн банк ХК" required>
+        </div>
+        <div class="order-field">
+          <label>Холбоо барих нэр</label>
+          <input type="text" id="of-name" placeholder="Овог Нэр" required>
+        </div>
+        <div class="order-field">
+          <label>Утасны дугаар</label>
+          <input type="tel" id="of-phone" placeholder="99112233" required>
+        </div>
+        <div class="order-field">
+          <label>Арга хэмжээний огноо</label>
+          <input type="date" id="of-date" required>
+        </div>
+        <div class="order-field">
+          <label>Хүний тоо</label>
+          <input type="number" id="of-pax" placeholder="50" min="1" required>
+        </div>
+        <div class="order-field">
+          <label>Үйлчилгээний төрөл</label>
+          <select id="of-svc">
+            <option value="">— Сонгоно уу —</option>
+            <option>Порц хоол (₮38,000/хүн)</option>
+            <option>Буфет (₮54,000/хүн)</option>
+            <option>Хонь боодог (₮900,000)</option>
+            <option>Буфет + Хонь боодог</option>
+            <option>Порц + Хонь боодог</option>
+          </select>
+        </div>
+        <div class="order-field full">
+          <label>Нэмэлт мэдээлэл / Тусгай хүсэлт</label>
+          <textarea id="of-note" rows="3" placeholder="Арга хэмжээний газар, нэмэлт хүсэлт..."></textarea>
+        </div>
+      </div>
+      <button type="submit" class="btn-order">✉️ Захиалга илгээх</button>
+    </form>
+    <div class="order-success" id="order-success">
+      ✅ Захиалга амжилттай илгээгдлээ! Бид 24 цагийн дотор тантай холбогдоно.
+    </div>
+    <p class="order-note">Яаралтай бол шууд залгаарай: <strong>📞 99xxxxxx</strong> · 09:00–19:00</p>
   </div>
 
-  <!-- ═══ БОЛОВСРУУЛСАН НӨӨЦ ═══ -->
-  <div class="sec-divider" style="margin-top:60px"><span id="prep">❄️ Боловсруулсан нөөц</span></div>
-  <p style="font-size:13px;color:var(--muted);margin-bottom:24px">Урьдчилан бэлдэж гүн хөлдөөгчид (−18°C) хадгалах боловсруулсан бэлдэцүүд.</p>
-
-  <div class="inv-section">
-    <div class="inv-head" style="background:rgba(31,74,56,.1);color:#1F4A38;border:1px solid var(--line);border-bottom:none">🥩 МАХ — БОЛОВСРУУЛСАН БЭЛДЭЦ</div>
-    <table class="inv-table">
-      <thead><tr><th>Бэлдэц</th><th>Гарах хоол</th><th>Боловсруулалт</th><th>Хадгалалт</th><th>Хугацаа</th></tr></thead>
-      <tbody>
-        <tr><td>Хонины мах — маринадласан</td><td>Соусанд жигнэсэн хонины мах</td><td>Маринад + вакуум уут</td><td><span class="badge b-freeze">−18°C</span></td><td>30 хоног</td></tr>
-        <tr><td>Хорхогийн мах — хэрчсэн</td><td>Хорхог</td><td>Хэрчих + давсалах</td><td><span class="badge b-freeze">−18°C</span></td><td>30 хоног</td></tr>
-        <tr><td>Шорлогийн мах — шиш дээр ороосон</td><td>Мини шорлог</td><td>Зүсэх + шиш дээр ороох</td><td><span class="badge b-freeze">−18°C</span></td><td>14 хоног</td></tr>
-        <tr><td>Гахайн цорой — маринадласан</td><td>Гахайн цорой</td><td>Маринад + вакуум</td><td><span class="badge b-freeze">−18°C</span></td><td>21 хоног</td></tr>
-        <tr><td>Гахайн амталсан мах — бэлэн</td><td>Жеюүг</td><td>Жигнэсэн + blast chill + хөлдөөсөн</td><td><span class="badge b-freeze">−18°C</span></td><td>30 хоног</td></tr>
-        <tr><td>Терияки тахиа — маринадласан</td><td>Терияки соустай тахиа</td><td>Маринад + вакуум</td><td><span class="badge b-freeze">−18°C</span></td><td>14 хоног</td></tr>
-        <tr><td>Шаржигнуур тахиа — бэлэн</td><td>Шаржигнуур тахиа</td><td>Жигнэсэн + blast chill + хөлдөөсөн</td><td><span class="badge b-freeze">−18°C</span></td><td>30 хоног</td></tr>
-      </tbody>
-    </table>
+  <!-- ═══ ХОЛБОО ═══ -->
+  <div class="contact-strip">
+    <div class="cs-item">
+      <div class="ci-icon">📞</div>
+      <div><div class="ci-label">Утас</div><div class="ci-val"><a href="tel:99000000">99xxxxxx</a></div></div>
+    </div>
+    <div class="cs-item">
+      <div class="ci-icon">🕐</div>
+      <div><div class="ci-label">Цагийн хуваарь</div><div class="ci-val">09:00 – 19:00</div></div>
+    </div>
+    <div class="cs-item">
+      <div class="ci-icon">🌐</div>
+      <div><div class="ci-label">Вэбсайт</div><div class="ci-val">nomaadcatering.mn</div></div>
+    </div>
+    <div class="cs-item">
+      <div class="ci-icon">📍</div>
+      <div><div class="ci-label">Байршил</div><div class="ci-val">Улаанбаатар</div></div>
+    </div>
   </div>
 
-  <div class="inv-section">
-    <div class="inv-head" style="background:rgba(31,74,56,.1);color:#1F4A38;border:1px solid var(--line);border-bottom:none">🥟 ГУРИЛАН ХООЛ — БЭЛДЭЦ</div>
-    <table class="inv-table">
-      <thead><tr><th>Бэлдэц</th><th>Гарах хоол</th><th>Боловсруулалт</th><th>Хадгалалт</th><th>Хугацаа</th></tr></thead>
-      <tbody>
-        <tr><td>Хуушуур — хэлбэршүүлсэн</td><td>Хуушуур</td><td>Зуурах + дүүргэх + хэлбэршүүлэх</td><td><span class="badge b-freeze">−18°C</span></td><td>30 хоног</td></tr>
-        <tr><td>Мантуу — жигнэсэн</td><td>Мантуу</td><td>Зуурах + хэлбэршүүлэх + жигнэх</td><td><span class="badge b-freeze">−18°C</span></td><td>30 хоног</td></tr>
-        <tr><td>Цуйванд зориулсан гоймон — хэрчсэн</td><td>Цуйван</td><td>Зуурах + нимгэлэх + хэрчих</td><td><span class="badge b-freeze">−18°C</span></td><td>14 хоног</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="inv-section">
-    <div class="inv-head" style="background:rgba(31,74,56,.1);color:#1F4A38;border:1px solid var(--line);border-bottom:none">🍜 ШӨЛ, ЗУТАН — БЭЛДЭЦ</div>
-    <table class="inv-table">
-      <thead><tr><th>Бэлдэц</th><th>Гарах хоол</th><th>Боловсруулалт</th><th>Хадгалалт</th><th>Хугацаа</th></tr></thead>
-      <tbody>
-        <tr><td>Ясны бульон — чанасан</td><td>Ясны шөл · Бантан · Цуйван</td><td>Чанах ≥75°C → blast chill → хөлдөөх</td><td><span class="badge b-freeze">−18°C</span></td><td>30 хоног</td></tr>
-        <tr><td>Брокли зутан — бэлэн</td><td>Брокли зутан · Өглөөний цай</td><td>Чанах → блендер → хөлдөөх</td><td><span class="badge b-freeze">−18°C</span></td><td>14 хоног</td></tr>
-        <tr><td>Хулууны зутан — бэлэн</td><td>Хулууны зутан</td><td>Чанах → блендер → хөлдөөх</td><td><span class="badge b-freeze">−18°C</span></td><td>14 хоног</td></tr>
-        <tr><td>Мөөгтэй шөл — бэлэн</td><td>Мөөгтэй шөл</td><td>Чанах → хөлдөөх</td><td><span class="badge b-freeze">−18°C</span></td><td>14 хоног</td></tr>
-        <tr><td>Нарийн ногооны шөл — бэлэн</td><td>Нарийн ногооны шөл</td><td>Чанах → хөлдөөх</td><td><span class="badge b-freeze">−18°C</span></td><td>14 хоног</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="inv-section">
-    <div class="inv-head" style="background:rgba(31,74,56,.1);color:#1F4A38;border:1px solid var(--line);border-bottom:none">🥗 САЛАД, ХАЧИР — БЭЛДЭЦ</div>
-    <table class="inv-table">
-      <thead><tr><th>Бэлдэц</th><th>Гарах хоол</th><th>Боловсруулалт</th><th>Хадгалалт</th><th>Хугацаа</th></tr></thead>
-      <tbody>
-        <tr><td>Нийслэл салад — хэрчсэн (майонезгүй)</td><td>Нийслэл салад</td><td>Чанах + хэрчих</td><td><span class="badge b-cold">≤4°C</span></td><td>2 хоног</td></tr>
-        <tr><td>Луувангийн салад — маринадласан</td><td>Луувангийн салад</td><td>Хэрчих + маринад</td><td><span class="badge b-cold">≤4°C</span></td><td>3 хоног</td></tr>
-        <tr><td>Амталсан өргөст хэмх — маринадласан</td><td>Амталсан өргөст хэмх</td><td>Хэрчих + давс + цуу</td><td><span class="badge b-cold">≤4°C</span></td><td>3 хоног</td></tr>
-        <tr><td>Амталсан будаа — чанасан</td><td>Амталсан будаа</td><td>Чанах + амтлах</td><td><span class="badge b-cold">≤4°C</span></td><td>2 хоног</td></tr>
-        <tr><td>Төмсний нухаш — бэлэн</td><td>Төмсний нухаш</td><td>Чанах + нухах + тосолох</td><td><span class="badge b-cold">≤4°C</span></td><td>2 хоног</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- ═══ БОЛОВСРУУЛААГҮЙ НӨӨЦ ═══ -->
-  <div class="sec-divider" style="margin-top:56px"><span id="raw">🥬 Боловсруулаагүй нөөц</span></div>
-  <p style="font-size:13px;color:var(--muted);margin-bottom:24px">Менюний бүх хоолд шаардлагатай түүхий орцуудыг ангилан харуулав.</p>
-
-  <div class="inv-section">
-    <div class="inv-head" style="background:rgba(200,116,63,.12);color:#8a4a1a;border:1px solid var(--line);border-bottom:none">🥩 МАХ, АМЬТНЫ ГАРАЛТАЙ БҮТЭЭГДЭХҮҮН</div>
-    <table class="inv-table">
-      <thead><tr><th>Бүтээгдэхүүн</th><th>Хэрэглэх хоол</th><th>Хадгалалт</th><th>Тэмдэглэл</th></tr></thead>
-      <tbody>
-        <tr><td>Хонины мах (зөөлөн, ясгүй)</td><td>Соусанд жигнэсэн · Хорхог</td><td><span class="badge b-freeze">−18°C</span></td><td>FIFO · 30 хоног</td></tr>
-        <tr><td>Хонины мах (ястай, бортго)</td><td>Хорхог · Ясны шөл</td><td><span class="badge b-freeze">−18°C</span></td><td>FIFO · 30 хоног</td></tr>
-        <tr><td>Гахайн мах (цорой)</td><td>Гахайн цорой · Мини шорлог</td><td><span class="badge b-freeze">−18°C</span></td><td>FIFO · 21 хоног</td></tr>
-        <tr><td>Гахайн мах (амталсан хэсэг)</td><td>Жеюүг</td><td><span class="badge b-freeze">−18°C</span></td><td>FIFO · 30 хоног</td></tr>
-        <tr><td>Тахианы мах (гуя / цээж)</td><td>Шорлог · Терияки · Шаржигнуур</td><td><span class="badge b-freeze">−18°C</span></td><td>FIFO · 30 хоног</td></tr>
-        <tr><td>Хонины / үхрийн фарш</td><td>Хуушуур · Цуйван</td><td><span class="badge b-freeze">−18°C</span></td><td>24ц доторхи ашиглах</td></tr>
-        <tr><td>Өндөг</td><td>Бантан · Өглөөний цай</td><td><span class="badge b-cold">≤4°C</span></td><td>7 хоног</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="inv-section">
-    <div class="inv-head" style="background:rgba(107,142,111,.15);color:#2E6049;border:1px solid var(--line);border-bottom:none">🥬 ШИНЭ НОГОО</div>
-    <table class="inv-table">
-      <thead><tr><th>Бүтээгдэхүүн</th><th>Хэрэглэх хоол</th><th>Хадгалалт</th><th>Тэмдэглэл</th></tr></thead>
-      <tbody>
-        <tr><td>Төмс</td><td>Шарсан төмс · Төмсний нухаш</td><td><span class="badge b-dry">Хуурай · харанхуй</span></td><td>2–4 долоо хоног</td></tr>
-        <tr><td>Сонгино (хуурай)</td><td>Бүх мах · салад · шөл</td><td><span class="badge b-dry">Хуурай</span></td><td>—</td></tr>
-        <tr><td>Часник (сармис)</td><td>Мах · соус</td><td><span class="badge b-dry">Хуурай</span></td><td>—</td></tr>
-        <tr><td>Байцаа (цагаан)</td><td>Байцааны салад · Хуурсан ногоо</td><td><span class="badge b-cold">≤4°C</span></td><td>7–10 хоног</td></tr>
-        <tr><td>Лууван</td><td>Нийслэл · Луувангийн салад</td><td><span class="badge b-cold">≤4°C</span></td><td>—</td></tr>
-        <tr><td>Пүнтүүз</td><td>Пүнтүүзтэй салад</td><td><span class="badge b-cold">≤4°C</span></td><td>—</td></tr>
-        <tr><td>Өргөст хэмх</td><td>Шинэ ногооны салад · Амталсан · Өглөөний цай</td><td><span class="badge b-cold">≤4°C</span></td><td>5–7 хоног</td></tr>
-        <tr><td>Улаан лооль</td><td>Шинэ ногооны салад</td><td><span class="badge b-cold">≤4°C</span></td><td>—</td></tr>
-        <tr><td>Брокли</td><td>Брокли зутан · Өглөөний цай</td><td><span class="badge b-cold">≤4°C</span></td><td>3–5 хоног</td></tr>
-        <tr><td>Мөөг (шинэ)</td><td>Мөөгтэй шөл</td><td><span class="badge b-cold">≤4°C</span></td><td>3 хоног</td></tr>
-        <tr><td>Мөөг (хатаасан)</td><td>Мөөгтэй шөл</td><td><span class="badge b-dry">Хуурай</span></td><td>6 сар</td></tr>
-        <tr><td>Хулуу</td><td>Хулууны зутан</td><td><span class="badge b-cold">≤4°C</span></td><td>—</td></tr>
-        <tr><td>Нарийн ногоо (хөлдөөсөн)</td><td>Хуурсан ногоо · Нарийн ногооны шөл</td><td><span class="badge b-freeze">−18°C</span></td><td>FIFO</td></tr>
-        <tr><td>Халуун ногоо (чили)</td><td>Халуун ногоотой шөл</td><td><span class="badge b-cold">≤4°C</span></td><td>—</td></tr>
-        <tr><td>Далайн байцаа (хатаасан)</td><td>Далайн байцаатай шөл</td><td><span class="badge b-dry">Хуурай</span></td><td>—</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="inv-section">
-    <div class="inv-head" style="background:rgba(217,199,163,.25);color:#7a5a10;border:1px solid var(--line);border-bottom:none">🌾 ГУРИЛ, БУДАА, ТАРИА</div>
-    <table class="inv-table">
-      <thead><tr><th>Бүтээгдэхүүн</th><th>Хэрэглэх хоол</th><th>Хадгалалт</th><th>Тэмдэглэл</th></tr></thead>
-      <tbody>
-        <tr><td>Гурил (буудайн)</td><td>Хуушуур · Мантуу</td><td><span class="badge b-dry">Хуурай</span></td><td>3 сар</td></tr>
-        <tr><td>Будаа (цагаан)</td><td>Амталсан будаа</td><td><span class="badge b-dry">Хуурай</span></td><td>12 сар</td></tr>
-        <tr><td>Гоймон (зузаан)</td><td>Цуйван · Сийртэй гоймон</td><td><span class="badge b-dry">Хуурай</span></td><td>—</td></tr>
-        <tr><td>Нарийн гоймон</td><td>Гоймонгийн салад</td><td><span class="badge b-dry">Хуурай</span></td><td>—</td></tr>
-        <tr><td>Талх</td><td>Өглөөний цай</td><td><span class="badge b-dry">Хуурай</span></td><td>2 хоног</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="inv-section">
-    <div class="inv-head" style="background:rgba(91,63,138,.1);color:#5b3f8a;border:1px solid var(--line);border-bottom:none">🫙 СОУС, АМТЛАГЧ, ТОС</div>
-    <table class="inv-table">
-      <thead><tr><th>Бүтээгдэхүүн</th><th>Хэрэглэх хоол</th><th>Хадгалалт</th><th>Тэмдэглэл</th></tr></thead>
-      <tbody>
-        <tr><td>Терияки соус</td><td>Терияки тахиа</td><td><span class="badge b-cold">≤4°C нээсний дараа</span></td><td>—</td></tr>
-        <tr><td>Соёгийн соус</td><td>Мах · Амталсан будаа</td><td><span class="badge b-dry">Хуурай</span></td><td>—</td></tr>
-        <tr><td>Томат паст / соус</td><td>Соусанд жигнэсэн мах</td><td><span class="badge b-cold">≤4°C нээсний дараа</span></td><td>—</td></tr>
-        <tr><td>Майонез</td><td>Нийслэл · Пүнтүүзтэй салад</td><td><span class="badge b-cold">≤4°C</span></td><td>—</td></tr>
-        <tr><td>Ургамлын тос</td><td>Шарсан төмс · Хуурсан ногоо</td><td><span class="badge b-dry">Хуурай</span></td><td>—</td></tr>
-        <tr><td>Цөцгийн тос</td><td>Төмсний нухаш · Мантуу</td><td><span class="badge b-cold">≤4°C</span></td><td>—</td></tr>
-        <tr><td>Давс · Чинжүү · Зира</td><td>Бүх хоол</td><td><span class="badge b-dry">Хуурай</span></td><td>—</td></tr>
-        <tr><td>Сахар</td><td>Амталсан өргөст хэмх · Цай</td><td><span class="badge b-dry">Хуурай</span></td><td>—</td></tr>
-        <tr><td>Цуу</td><td>Амталсан өргөст хэмх · Луувангийн салад</td><td><span class="badge b-dry">Хуурай</span></td><td>—</td></tr>
-        <tr><td>Цай · Кофе</td><td>Өглөөний цай · Үнэгүй ундаа</td><td><span class="badge b-dry">Хуурай</span></td><td>—</td></tr>
-        <tr><td>Кунжут</td><td>Терияки тахиа</td><td><span class="badge b-dry">Хуурай</span></td><td>—</td></tr>
-        <tr><td>Мод шорон</td><td>Мини шорлог</td><td><span class="badge b-dry">Хуурай</span></td><td>—</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- ═══ HACCP ═══ -->
-  <div class="sec-divider" style="margin-top:56px"><span id="haccp">🌡️ HACCP — Эрүүл ахуйн стандарт</span></div>
-  <p style="font-size:13px;color:var(--muted);margin-bottom:24px">NOMAAD Catering-ийн бүх хоол дараах олон улсын HACCP стандартыг дагаж мөрдөнө.</p>
-
-  <div class="haccp-grid">
-    <div class="haccp-card"><div class="haccp-temp">≤4°C</div><div class="haccp-label">Хүлээн авах температур</div></div>
-    <div class="haccp-card"><div class="haccp-temp">≥75°C</div><div class="haccp-label">Дотоод температур — жигнэх</div></div>
-    <div class="haccp-card"><div class="haccp-temp">≤90 мин</div><div class="haccp-label">Blast chill: 75→4°C</div></div>
-    <div class="haccp-card"><div class="haccp-temp">−18°C</div><div class="haccp-label">Гүн хөлдөөгч</div></div>
-    <div class="haccp-card"><div class="haccp-temp">30 хон</div><div class="haccp-label">Хөлдөөсөн хадгалах хугацаа</div></div>
-    <div class="haccp-card"><div class="haccp-temp">≥75°C</div><div class="haccp-label">Дахин халаах (re-heat)</div></div>
-    <div class="haccp-card"><div class="haccp-temp">65–70°C</div><div class="haccp-label">Халуун хадгалалт (hot hold)</div></div>
-    <div class="haccp-card"><div class="haccp-temp">≤2 цаг</div><div class="haccp-label">Hot hold дээд хугацаа</div></div>
-    <div class="haccp-card"><div class="haccp-temp">2 кг</div><div class="haccp-label">Нэг вакуум уутны норм</div></div>
-    <div class="haccp-card"><div class="haccp-temp">FIFO</div><div class="haccp-label">Нөөцийн дарааллын зарчим</div></div>
-    <div class="haccp-card"><div class="haccp-temp">24 цаг</div><div class="haccp-label">Гэсгээх хугацаа (0–4°C)</div></div>
-    <div class="haccp-card"><div class="haccp-temp">95%</div><div class="haccp-label">Вакуум уутны нягтрал</div></div>
-  </div>
-
-  <div class="inv-section">
-    <div class="inv-head" style="background:rgba(200,116,63,.1);color:#8a4a1a;border:1px solid var(--line);border-bottom:none">🔴 ХООЛ БҮРИЙН КРИТИК ЦЭГ (CCP)</div>
-    <table class="inv-table">
-      <thead><tr><th>Хоол / Үйл ажиллагаа</th><th>CCP алхам</th><th>Хязгаар</th><th>Хянах арга</th></tr></thead>
-      <tbody>
-        <tr><td>Бүх мах</td><td>Хүлээн авах</td><td>≤4°C</td><td>Термометр</td></tr>
-        <tr><td>Бүх жигнэсэн мах</td><td>Дотоод температур</td><td>≥75°C</td><td>Нэвт термометр</td></tr>
-        <tr><td>Blast chill</td><td>Хөргөлтийн хурд</td><td>75→4°C / ≤90 мин</td><td>Хугацааны бүртгэл</td></tr>
-        <tr><td>Гүн хөлдөөгч</td><td>Хадгалалт</td><td>≤−18°C</td><td>Өдөр бүрийн бүртгэл</td></tr>
-        <tr><td>Re-heat</td><td>Дахин халаах</td><td>≥75°C</td><td>Нэвт термометр</td></tr>
-        <tr><td>Hot hold</td><td>Үйлчилгээ</td><td>65–70°C · ≤2ц</td><td>Тасралтгүй хяналт</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="haccp-note">
-    <strong>⚠️ Тайлбар:</strong> Blast chill — 75°C-аас 4°C хүртэл 90 минутаас бага хугацаанд хүргэх. Уут = 30×40 см / 2 кг хэмжээ. 🔴 Улаан алхам = эрүүл ахуйн критик цэг.<br>
-    HACCP температур — олон улсын баталгаатай стандарт. Yield болон идэх коэф. нь NOMAAD-н дотоод туршлага дээр үндэслэсэн.
-  </div>
-
-  <footer style="margin-top:48px">
-    <div class="contact-bar"><span>📞 99xxxxxx</span><span>🕐 09:00–19:00</span><span>🌐 nomaadcatering.mn</span></div>
-    <p style="margin-top:6px">© 2026 NOMAAD Catering · Чимун ХХК</p>
+  <footer>
+    <p>© 2026 NOMAAD Catering · Чимун ХХК · nomaadcatering.mn</p>
   </footer>
 
 </main>
 
 <script>
-// Nav tab scroll highlight
-const sections = ['menu','kitchen','prep','raw','haccp'];
-const tabs = document.querySelectorAll('.nav-tab');
-window.addEventListener('scroll', () => {
-  let cur = sections[0];
-  sections.forEach(id => {
-    const el = document.getElementById(id);
-    if (el && el.getBoundingClientRect().top <= 100) cur = id;
-  });
-  tabs.forEach(t => {
-    t.classList.toggle('active', t.getAttribute('href') === '#' + cur);
-  });
-});
+function submitOrder(e) {
+  e.preventDefault();
+  const org   = document.getElementById('of-org').value;
+  const name  = document.getElementById('of-name').value;
+  const phone = document.getElementById('of-phone').value;
+  const date  = document.getElementById('of-date').value;
+  const pax   = document.getElementById('of-pax').value;
+  const svc   = document.getElementById('of-svc').value;
+  const note  = document.getElementById('of-note').value;
+
+  // WhatsApp руу мессеж илгээх
+  const msg = encodeURIComponent(
+    `🍽️ *NOMAAD Catering захиалга*\n\n` +
+    `🏢 Байгууллага: ${org}\n` +
+    `👤 Нэр: ${name}\n` +
+    `📞 Утас: ${phone}\n` +
+    `📅 Огноо: ${date}\n` +
+    `👥 Хүн: ${pax}\n` +
+    `🍴 Үйлчилгээ: ${svc}\n` +
+    (note ? `📝 Тэмдэглэл: ${note}` : '')
+  );
+
+  // Утасны дугаараа оруулна (99xxxxxx → 97699xxxxxx)
+  const WA_NUMBER = '97699000000';
+  window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`, '_blank');
+
+  document.getElementById('order-form').style.display = 'none';
+  document.getElementById('order-success').style.display = 'block';
+}
 </script>
 </body>
 </html>

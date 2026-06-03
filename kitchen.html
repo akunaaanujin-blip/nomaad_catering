@@ -206,9 +206,60 @@ footer b{color:var(--ink)}
   .field input{width:100%}
   .field{flex:1}
 }
+/* ── Lock screen ── */
+#lock-screen{position:fixed;inset:0;background:linear-gradient(135deg,#152E22,#1F4A38,#2E6049);z-index:9999;display:flex;align-items:center;justify-content:center}
+.lock-box{background:#fff;border-radius:20px;padding:40px 36px;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.lock-logo{font-size:42px;margin-bottom:12px}
+.lock-title{font-family:'Lora',Georgia,serif;font-size:22px;font-weight:700;color:#20271F;margin-bottom:6px}
+.lock-sub{font-size:13px;color:#8A8276;margin-bottom:24px;line-height:1.5}
+.lock-input{width:100%;font-family:inherit;font-size:18px;font-weight:700;letter-spacing:4px;text-align:center;border:2px solid #E2E6DF;border-radius:12px;padding:12px;outline:none;transition:border-color .2s;margin-bottom:12px}
+.lock-input:focus{border-color:#1F4A38}
+.lock-btn{width:100%;font-family:inherit;font-size:14px;font-weight:700;background:#1F4A38;color:#fff;border:none;border-radius:12px;padding:13px;cursor:pointer;transition:opacity .15s}
+.lock-btn:hover{opacity:.88}
+.lock-err{font-size:13px;color:#BB4A36;margin-top:10px;display:none}
 </style>
 </head>
 <body>
+
+<!-- Нууц үг -->
+<div id="lock-screen">
+  <div class="lock-box">
+    <div class="lock-logo">🔐</div>
+    <div class="lock-title">NOMAAD Catering</div>
+    <div class="lock-sub">Энэ хуудас зөвхөн <strong>тогооч болон удирдагч</strong> нарт зориулагдсан.<br>Нууц үгээ оруулна уу.</div>
+    <input class="lock-input" id="lock-input" type="password" placeholder="••••" maxlength="10"
+      onkeydown="if(event.key==='Enter')checkPass()">
+    <button class="lock-btn" onclick="checkPass()">Нэвтрэх →</button>
+    <div class="lock-err" id="lock-err">⚠️ Нууц үг буруу байна</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Нууц үгийг энд тохируулна
+  const PASS = 'nomaad2026';
+  const KEY  = 'nomaad_kitchen_auth';
+
+  function checkPass(){
+    const val = document.getElementById('lock-input').value;
+    if(val === PASS){
+      sessionStorage.setItem(KEY,'ok');
+      document.getElementById('lock-screen').style.display='none';
+    } else {
+      document.getElementById('lock-err').style.display='block';
+      document.getElementById('lock-input').value='';
+      document.getElementById('lock-input').focus();
+    }
+  }
+  window.checkPass = checkPass;
+
+  // Аль хэдийн нэвтэрсэн бол шууд нэвтрэх
+  if(sessionStorage.getItem(KEY)==='ok'){
+    document.getElementById('lock-screen').style.display='none';
+  }
+})();
+</script>
+
 <div class="nomad-band"></div>
 <header class="topbar">
   <div class="wrap">
