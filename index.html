@@ -231,31 +231,39 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
     <h3>📋 Захиалга өгөх</h3>
     <p class="sub">Доорх маягтыг бөглөн илгээгээрэй. Бид тантай 24 цагийн дотор холбогдоно.</p>
 
-    <form id="order-form" onsubmit="submitOrder(event)">
+    <form id="order-form"
+          action="https://formspree.io/akunaa.anujin@gmail.com"
+          method="POST"
+          onsubmit="handleSubmit(event)">
+      <!-- Formspree шаардлагатай hidden field -->
+      <input type="hidden" name="_subject" value="🍽️ NOMAAD Catering — Шинэ захиалга">
+      <input type="hidden" name="_language" value="mn">
+      <input type="text" name="_gotcha" style="display:none">
+
       <div class="order-grid">
         <div class="order-field">
           <label>Байгууллагын нэр</label>
-          <input type="text" id="of-org" placeholder="Төрийн банк ХК" required>
+          <input type="text" name="Байгууллага" id="of-org" placeholder="Төрийн банк ХК" required>
         </div>
         <div class="order-field">
           <label>Холбоо барих нэр</label>
-          <input type="text" id="of-name" placeholder="Овог Нэр" required>
+          <input type="text" name="Нэр" id="of-name" placeholder="Овог Нэр" required>
         </div>
         <div class="order-field">
           <label>Утасны дугаар</label>
-          <input type="tel" id="of-phone" placeholder="99112233" required>
+          <input type="tel" name="Утас" id="of-phone" placeholder="99112233" required>
         </div>
         <div class="order-field">
           <label>Арга хэмжээний огноо</label>
-          <input type="date" id="of-date" required>
+          <input type="date" name="Арга хэмжээний огноо" id="of-date" required>
         </div>
         <div class="order-field">
           <label>Хүний тоо</label>
-          <input type="number" id="of-pax" placeholder="50" min="1" required>
+          <input type="number" name="Хүний тоо" id="of-pax" placeholder="50" min="1" required>
         </div>
         <div class="order-field">
           <label>Үйлчилгээний төрөл</label>
-          <select id="of-svc">
+          <select name="Үйлчилгээ" id="of-svc">
             <option value="">— Сонгоно уу —</option>
             <option>Порц хоол (₮38,000/хүн)</option>
             <option>Буфет (₮54,000/хүн)</option>
@@ -266,10 +274,10 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         </div>
         <div class="order-field full">
           <label>Нэмэлт мэдээлэл / Тусгай хүсэлт</label>
-          <textarea id="of-note" rows="3" placeholder="Арга хэмжээний газар, нэмэлт хүсэлт..."></textarea>
+          <textarea name="Тэмдэглэл" id="of-note" rows="3" placeholder="Арга хэмжээний газар, нэмэлт хүсэлт..."></textarea>
         </div>
       </div>
-      <button type="submit" class="btn-order">✉️ Захиалга илгээх</button>
+      <button type="submit" class="btn-order" id="submit-btn">✉️ Захиалга илгээх</button>
     </form>
     <div class="order-success" id="order-success">
       ✅ Захиалга амжилттай илгээгдлээ! Бид 24 цагийн дотор тантай холбогдоно.
@@ -304,61 +312,34 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
 </main>
 
 <script>
-// ← Apps Script deploy хийсний дараа URL-г энд тавина
-const SHEETS_URL = 'YOUR_APPS_SCRIPT_URL';
-
-// WhatsApp дугаар (97699xxxxxx хэлбэрт)
-const WA_NUMBER = '97699000000';
-
-function submitOrder(e) {
+async function handleSubmit(e) {
   e.preventDefault();
-  const org   = document.getElementById('of-org').value.trim();
-  const name  = document.getElementById('of-name').value.trim();
-  const phone = document.getElementById('of-phone').value.trim();
-  const date  = document.getElementById('of-date').value;
-  const pax   = document.getElementById('of-pax').value;
-  const svc   = document.getElementById('of-svc').value;
-  const note  = document.getElementById('of-note').value.trim();
+  const btn  = document.getElementById('submit-btn');
+  const form = document.getElementById('order-form');
 
-  const btn = document.querySelector('.btn-order');
-  btn.disabled = true;
+  btn.disabled    = true;
   btn.textContent = '⏳ Илгээж байна...';
 
-  const payload = {
-    type: 'order',
-    байгууллага: org,
-    нэр: name,
-    утас: phone,
-    арга_хэмжээний_огноо: date,
-    хүн: pax,
-    үйлчилгээ: svc,
-    тэмдэглэл: note,
-  };
+  try {
+    const res = await fetch(form.action, {
+      method:  'POST',
+      body:    new FormData(form),
+      headers: { 'Accept': 'application/json' }
+    });
 
-  // Google Sheets-д хадгалах
-  const savePromise = SHEETS_URL !== 'YOUR_APPS_SCRIPT_URL'
-    ? fetch(SHEETS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }).catch(() => {})
-    : Promise.resolve();
-
-  savePromise.finally(() => {
-    // WhatsApp мессеж
-    const msg = encodeURIComponent(
-      `🍽️ *NOMAAD Catering захиалга*\n\n` +
-      `🏢 Байгууллага: ${org}\n` +
-      `👤 Нэр: ${name}\n` +
-      `📞 Утас: ${phone}\n` +
-      `📅 Арга хэмжээ: ${date}\n` +
-      `👥 Хүн: ${pax}\n` +
-      `🍴 Үйлчилгээ: ${svc}\n` +
-      (note ? `📝 Тэмдэглэл: ${note}` : '')
-    );
-    window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`, '_blank');
-
-    document.getElementById('order-form').style.display = 'none';
-    document.getElementById('order-success').style.display = 'block';
-    btn.disabled = false;
+    if (res.ok) {
+      form.style.display = 'none';
+      document.getElementById('order-success').style.display = 'block';
+    } else {
+      const data = await res.json();
+      alert('Алдаа гарлаа: ' + (data.error || res.status));
+    }
+  } catch {
+    alert('Интернэт холболт шалгана уу.');
+  } finally {
+    btn.disabled    = false;
     btn.textContent = '✉️ Захиалга илгээх';
-  });
+  }
 }
 </script>
 </body>
