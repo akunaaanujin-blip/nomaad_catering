@@ -67,13 +67,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .svc-row select{margin-top:0}
 
 /* ── АРГА ХЭМЖЭЭНИЙ ТӨРӨЛ ── */
-.event-box{margin-top:4px}
-.event-box .ev-label{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-.event-chips{display:flex;flex-wrap:wrap;gap:7px}
-.ev-chip{font-family:inherit;font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:8px;border:1.5px solid var(--line);background:var(--bg);color:var(--muted);cursor:pointer;transition:all .15s}
-.ev-chip:hover{border-color:var(--accent);color:var(--accent)}
-.ev-chip.ev-sel{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
-.ev-chip .ev-ico{display:none}
 
 /* ── MENU SECTIONS — always open ── */
 .msec{margin-top:16px}
@@ -275,22 +268,21 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         </div>
 
         <!-- ── АРГА ХЭМЖЭЭНИЙ ТӨРӨЛ ── -->
-        <div class="order-field full">
-          <div class="event-box">
-            <div class="ev-label">🎯 Арга хэмжээний төрөл <span style="font-size:11px;font-weight:500;color:var(--muted)">(заавал биш)</span></div>
-            <div class="event-chips">
-              <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🏢</span>Байгууллагын корпорат арга хэмжээ</button>
-              <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🏛️</span>Албан хурал</button>
-              <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🎉</span>Найр · баяр</button>
-              <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🏆</span>Team-building</button>
-              <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🥂</span>Хүлээн авалт</button>
-              <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🎂</span>Ойн баяр</button>
-              <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🌿</span>Гадаа арга хэмжээ</button>
-              <button type="button" class="ev-chip" onclick="toggleEvent(this)"><span class="ev-ico">🎓</span>Сургалт · семинар</button>
-            </div>
-          </div>
+        <div class="order-field">
+          <label>Арга хэмжээний төрөл <span style="font-weight:400;color:var(--muted)">(заавал биш)</span></label>
+          <select id="of-event" name="Arga_hemjeenii_turul" onchange="document.getElementById('of-event-hidden').value=this.value">
+            <option value="">— Сонгоно уу —</option>
+            <option>Байгууллагын корпорат арга хэмжээ</option>
+            <option>Албан хурал</option>
+            <option>Найр · баяр</option>
+            <option>Team-building</option>
+            <option>Хүлээн авалт</option>
+            <option>Ойн баяр</option>
+            <option>Гадаа арга хэмжээ</option>
+            <option>Сургалт · семинар</option>
+            <option>Nomaad camp</option>
+          </select>
         </div>
-        <input type="hidden" name="Arga_hemjeenii_turul" id="of-event">
 
         <!-- Үйлчилгээнүүд -->
         <div class="order-field full" id="svc-rows-wrap">
@@ -502,16 +494,6 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
 
 <script>
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
-
-// ── Арга хэмжээний төрөл ──
-function toggleEvent(btn) {
-  btn.classList.toggle('ev-sel');
-  var sel = [];
-  document.querySelectorAll('.ev-chip.ev-sel').forEach(function(b) {
-    sel.push(b.textContent.trim());
-  });
-  document.getElementById('of-event').value = sel.join(', ');
-}
 
 // ── Нэмэлт сонголт ──
 var nemeltuQty = {};
