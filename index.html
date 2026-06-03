@@ -317,7 +317,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         </div>
         <div class="order-field">
           <label>Огноо</label>
-          <input type="date" name="Arga_hemjeenii_ognoo" id="of-date">
+          <input type="date" name="Arga_hemjeenii_ognoo" id="of-date" placeholder="Огноо сонгоно уу">
         </div>
         <div class="order-field">
           <label>Хүний тоо</label>
@@ -438,6 +438,28 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
           <p class="sel-hint">* Буфетэд мах 3 + салад 2 + хачир 2 + шөл 1 = нийт 8 хоол</p>
         </div>
 
+        <!-- ── ХОНЬ БООДОГ тоо ── -->
+        <div class="order-field full dish-select" id="boodog-select">
+          <div class="sel-group">
+            <div class="sel-group-head">
+              <div class="sel-group-title">🐑 Хэдэн хонь боодог захиалах вэ?</div>
+              <span class="sel-badge green" style="background:#efe7d2;color:#7a6224" id="boodog-total"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+              <div style="display:flex;align-items:center;gap:10px">
+                <button type="button" onclick="changeBootdog(-1)" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700">−</button>
+                <span id="boodog-count" style="font-family:'Lora',serif;font-size:28px;font-weight:700;min-width:32px;text-align:center;color:var(--accent)">1</span>
+                <button type="button" onclick="changeBootdog(1)" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700">+</button>
+                <span style="font-size:13px;color:var(--muted)">ширхэг</span>
+              </div>
+              <div style="font-size:12.5px;color:var(--muted);line-height:1.6">
+                Нэг хонь → <strong>8–12 хүн</strong> · ₮900,000<br>
+                <span id="boodog-price" style="color:var(--accent);font-weight:700"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Сонгосон хоол (hidden) -->
         <input type="hidden" name="Songoson_hool" id="of-dishes">
 
@@ -480,23 +502,44 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
 <script>
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
 
+var boodog_n = 1;
+
 // ── Үйлчилгээ сонгоход харагдах хэсэг ──
 function onSvcChange() {
-  var val   = document.getElementById('of-svc').value;
-  var porEl = document.getElementById('por-select');
-  var bufEl = document.getElementById('buf-select');
-  var isPor = val==='por'||val==='por_boodog';
-  var isBuf = val==='buf'||val==='buf_boodog';
+  var val      = document.getElementById('of-svc').value;
+  var porEl    = document.getElementById('por-select');
+  var bufEl    = document.getElementById('buf-select');
+  var boodogEl = document.getElementById('boodog-select');
+  var isPor    = val==='por'||val==='por_boodog';
+  var isBuf    = val==='buf'||val==='buf_boodog';
+  var isBoodog = val==='boodog'||val==='buf_boodog'||val==='por_boodog';
 
-  // Порц — зөвхөн порц сонгосон үед харагдана
   porEl.classList.toggle('show', isPor);
   porEl.classList.remove('dimmed');
-
-  // Буфет — зөвхөн буфет сонгосон үед харагдана
   bufEl.classList.toggle('show', isBuf);
   bufEl.classList.remove('dimmed');
+  boodogEl.classList.toggle('show', isBoodog);
 
+  updateBoodog();
   updateDishesField();
+}
+
+// ── Хонь боодогийн тоо ──
+function changeBootdog(delta) {
+  boodog_n = Math.max(1, boodog_n + delta);
+  updateBoodog();
+  updateDishesField();
+}
+
+function updateBoodog() {
+  var el = document.getElementById('boodog-count');
+  var pr = document.getElementById('boodog-price');
+  var tt = document.getElementById('boodog-total');
+  if (!el) return;
+  el.textContent = boodog_n;
+  var total = boodog_n * 900000;
+  if (pr) pr.textContent = 'Нийт: ₮' + total.toLocaleString('mn-MN');
+  if (tt) tt.textContent = boodog_n + ' × ₮900,000';
 }
 
 // ── Accordion меню ──
@@ -614,6 +657,12 @@ function updateDishesField() {
       parts.push(btn.textContent.trim());
     });
   });
+
+  // Хонь боодог
+  var val = document.getElementById('of-svc').value;
+  if (val==='boodog'||val==='buf_boodog'||val==='por_boodog') {
+    parts.push('Хонь боодог × ' + boodog_n + ' ширхэг');
+  }
 
   document.getElementById('of-dishes').value = parts.join(' | ');
 }
