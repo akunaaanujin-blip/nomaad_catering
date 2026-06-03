@@ -1054,13 +1054,39 @@ function loadOrders() {
   }
   document.getElementById('orders-container').innerHTML = '<div class="orders-loading">⏳ Захиалгуудыг уншиж байна...</div>';
 
-  fetch(SHEETS_URL + '?action=orders')
-    .then(r => r.json())
+  fetch(SHEETS_URL + '?action=orders', {
+    method: 'GET',
+    credentials: 'omit',
+    redirect: 'follow'
+  })
+    .then(r => {
+      if (!r.ok) throw new Error(r.status);
+      return r.json();
+    })
     .then(data => renderOrders(data.orders || []))
-    .catch(() => {
-      document.getElementById('orders-container').innerHTML =
-        '<div class="orders-empty">❌ Уншиж чадсангүй. Интернэт болон URL шалгана уу.</div>';
+    .catch(err => {
+      // JSONP fallback — Apps Script redirect CORS issue
+      loadOrdersJSONP();
     });
+}
+
+function loadOrdersJSONP() {
+  // JSONP — Apps Script CORS redirect-г тойрох
+  const cb = 'cb_' + Date.now();
+  window[cb] = function(data) {
+    delete window[cb];
+    document.getElementById('jsonp-script')?.remove();
+    renderOrders(data.orders || []);
+  };
+  const s = document.createElement('script');
+  s.id  = 'jsonp-script';
+  s.src = SHEETS_URL + '?action=orders&callback=' + cb;
+  s.onerror = () => {
+    delete window[cb];
+    document.getElementById('orders-container').innerHTML =
+      '<div class="orders-empty">❌ Apps Script URL буруу эсвэл deploy хийгдээгүй байна.</div>';
+  };
+  document.body.appendChild(s);
 }
 
 function renderOrders(orders) {
