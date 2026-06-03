@@ -1051,11 +1051,23 @@ async function handleSubmit(e) {
     }).catch(() => {});
 
     // 2. Web3Forms → имэйл илгээх
+    var eventVal = document.getElementById('of-event').value;
+    var isNomaadCamp = eventVal === 'Nomaad camp' || !eventVal;
     const fd = new FormData(form);
+    fd.append('Zahialgiin_tuluw', 'Шинэ захиалга — баталгаажаагүй');
     const totalEl = document.getElementById('price-total');
-    if (totalEl && totalEl.textContent.trim()) {
-      fd.append('Niit_dun', totalEl.textContent.trim());
-      fd.append('Urьdchilga_50', '50%: ' + document.getElementById('payment-amount').textContent);
+    var totalRaw = totalEl ? totalEl.textContent.replace('Нийт дүн','').trim() : '';
+    if (isNomaadCamp) {
+      fd.append('Niit_dun', 'Nomaad camp — үнэ тусад нь тооцно');
+    } else if (totalRaw) {
+      fd.append('Niit_dun', totalRaw);
+      var _m = totalRaw.match(/[\d,]+/);
+      if (_m) {
+        var _half = Math.round(parseInt(_m[0].replace(/,/g,'')) / 2);
+        fd.append('Urьdchilga_50', '₮' + _half.toLocaleString() + ' (нийт дүнгийн 50%)');
+      }
+    } else {
+      fd.append('Niit_dun', 'Тооцоогүй (хүний тоо оруулаагүй)');
     }
     const res = await fetch(form.action, {
       method:  'POST',
@@ -1066,9 +1078,6 @@ async function handleSubmit(e) {
     form.style.display = 'none';
     document.getElementById('order-sub').style.display = 'none';
     document.getElementById('order-success').style.display = 'block';
-
-    var eventVal = document.getElementById('of-event').value;
-    var isNomaadCamp = eventVal === 'Nomaad camp' || !eventVal;
     showOrderSummary(isNomaadCamp);
     if (!isNomaadCamp) {
       var payBox = document.getElementById('payment-box');
@@ -1152,16 +1161,42 @@ function showOrderSummary(isNomaadCamp) {
   if (hasBoodog) dishParts.push('Хонь боодог × ' + boodog_n + ' ширхэг');
 
   var totalText = '';
+  var halfText = '';
   if (!isNomaadCamp) {
     var totalEl = document.getElementById('price-total');
     if (totalEl) {
-      var m = totalEl.textContent.match(/₮[\d,]+/);
-      if (m) totalText = m[0];
+      var m = totalEl.textContent.match(/[\d,]+/);
+      if (m) {
+        var tot = parseInt(m[0].replace(/,/g,''));
+        totalText = '₮' + tot.toLocaleString();
+        halfText  = '₮' + Math.round(tot/2).toLocaleString();
+      }
     }
+  }
+
+  var statusBlock = '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FFF8E1;border:1.5px solid #F9A825;border-radius:10px;margin-bottom:10px">' +
+    '<span style="font-size:18px">⏳</span>' +
+    '<div><div style="font-size:13px;font-weight:700;color:#7a5800">Захиалга хүлээгдэж байна</div>' +
+    '<div style="font-size:11.5px;color:#a07000;margin-top:2px">Бид 24 цагийн дотор баталгаажуулж, тантай холбогдоно</div></div>' +
+    '</div>';
+
+  var priceBlock = '';
+  if (!isNomaadCamp && totalText) {
+    priceBlock = '<div style="border-top:1px solid var(--line);margin-top:8px;padding-top:10px;display:flex;flex-direction:column;gap:6px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:10px">' +
+        '<span style="font-size:13px;font-weight:700;color:var(--accent)">Нийт дүн</span>' +
+        '<span style="font-size:17px;font-weight:800;color:var(--accent)">' + totalText + '</span>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--amber-soft);border:1.5px solid var(--amber);border-radius:10px">' +
+        '<span style="font-size:13px;font-weight:700;color:var(--amber)">Урьдчилгаа 50%</span>' +
+        '<span style="font-size:15px;font-weight:800;color:var(--amber)">' + halfText + '</span>' +
+      '</div>' +
+    '</div>';
   }
 
   var html = '<div style="background:var(--surface);border:1.5px solid var(--line);border-radius:var(--radius);padding:20px;margin-top:4px">' +
     '<div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">📋 Захиалгын дэлгэрэнгүй</div>' +
+    statusBlock +
     '<div style="display:flex;flex-direction:column;gap:6px">' +
     sumRow('Байгууллага', org) +
     sumRow('Холбоо барих', name + (phone ? ' · ' + phone : '')) +
@@ -1173,8 +1208,9 @@ function showOrderSummary(isNomaadCamp) {
     (dishParts.length ? sumRow('Сонгосон хоол', dishParts.join(' · ')) : '') +
     (nemeltu ? sumRow('Нэмэлт', nemeltu) : '') +
     (note ? sumRow('Тусгай хүсэлт', note) : '') +
-    (totalText ? sumRow('Нийт дүн', totalText) : '') +
-    '</div></div>';
+    '</div>' +
+    priceBlock +
+    '</div>';
 
   var sumDiv = document.getElementById('order-summary');
   if (sumDiv) { sumDiv.innerHTML = html; sumDiv.style.display = 'block'; }
