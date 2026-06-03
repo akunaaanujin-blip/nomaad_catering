@@ -195,98 +195,6 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
     </div>
   </section>
 
-  <!-- Порц -->
-  <section class="msec por">
-    <div class="msec-header">
-      <h3>🍱 Порц хоол</h3>
-      <span class="price-pill">₮38,000 / хүн</span>
-    </div>
-    <div class="msec-body">
-      <div class="dish-list">
-        <div class="dish-item">Соусанд жигнэсэн хонины мах</div>
-        <div class="dish-item">Хорхог</div>
-        <div class="dish-item">Мини шорлог /гахай, тахиа/</div>
-        <div class="dish-item">Гахайн цорой</div>
-        <div class="dish-item">Гахайн амталсан мах</div>
-        <div class="dish-item">Терияки соустай тахиа</div>
-        <div class="dish-item">Шаржигнуур тахиа</div>
-        <div class="dish-item">Цуйван</div>
-        <div class="dish-item">Хуушуур</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Буфет -->
-  <section class="msec buf">
-    <div class="msec-header">
-      <h3>🍴 Буфет</h3>
-      <span class="price-pill">₮54,000 / хүн</span>
-    </div>
-    <div class="msec-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px">
-        <div>
-          <div class="subhead">🥩 Мах — 3 төрөл</div>
-          <div class="dish-list" style="grid-template-columns:1fr">
-            <div class="dish-item">Соусанд жигнэсэн хонины мах</div>
-            <div class="dish-item">Хорхог</div>
-            <div class="dish-item">Мини шорлог</div>
-            <div class="dish-item">Гахайн цорой</div>
-            <div class="dish-item">Гахайн амталсан мах</div>
-            <div class="dish-item">Терияки соустай тахиа</div>
-            <div class="dish-item">Шаржигнуур тахиа</div>
-            <div class="dish-item">Цуйван</div>
-            <div class="dish-item">Хуушуур</div>
-          </div>
-          <div class="subhead">🍚 Хачир — 2 төрөл</div>
-          <div class="dish-list" style="grid-template-columns:1fr">
-            <div class="dish-item">Амталсан будаа</div>
-            <div class="dish-item">Шарсан төмс</div>
-            <div class="dish-item">Төмсний нухаш</div>
-            <div class="dish-item">Хуурсан ногоо</div>
-            <div class="dish-item">Мантуу</div>
-            <div class="dish-item">Сийртэй гоймон</div>
-            <div class="dish-item">Амталсан өргөст хэмх</div>
-          </div>
-        </div>
-        <div>
-          <div class="subhead">🥗 Салад — 2 төрөл</div>
-          <div class="dish-list" style="grid-template-columns:1fr">
-            <div class="dish-item">Шинэ ногооны салад</div>
-            <div class="dish-item">Нийслэл салад</div>
-            <div class="dish-item">Пүнтүүзтэй салад</div>
-            <div class="dish-item">Байцааны салад</div>
-            <div class="dish-item">Луувангийн салад</div>
-            <div class="dish-item">Гоймонгийн салад</div>
-          </div>
-          <div class="subhead">🍜 Шөл — 1 төрөл</div>
-          <div class="dish-list" style="grid-template-columns:1fr">
-            <div class="dish-item">Брокли зутан шөл</div>
-            <div class="dish-item">Мөөгтэй зутан шөл</div>
-            <div class="dish-item">Нарийн ногооны шөл</div>
-            <div class="dish-item">Бантан</div>
-            <div class="dish-item">Далайн байцаатай шөл</div>
-            <div class="dish-item">Халуун ногоотой шөл</div>
-            <div class="dish-item">Ясны шөл</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Хонь боодог -->
-  <section class="msec">
-    <div class="boodog">
-      <div class="b-ico">🐑</div>
-      <div class="b-main">
-        <h3>Хонь боодог</h3>
-        <p>Бүтэн хонийг уламжлалт аргаар, улаасан чулуугаар боодон болгож, ширээгээр ёслол төгөлдөр гаргана. Тусгай арга хэмжээ болон хүндэт зочны хүлээн авалтад тохиромжтой. Урьдчилан захиална уу.</p>
-      </div>
-      <div class="b-price">
-        <div class="v">₮900,000</div>
-        <div class="u">бүтэн хонь · 8–12 хүнд</div>
-      </div>
-    </div>
-  </section>
 
   <!-- ═══ ЗАХИАЛГА ӨГӨХ ═══ -->
   <div class="order-box" id="order">
@@ -341,22 +249,23 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
           <div class="sel-group">
             <div class="sel-group-head">
               <div class="sel-group-title">🍱 Порц хоол — хамгийн ихдээ 3 сонгоно</div>
-              <span class="sel-badge green" id="por-badge">0 / 3</span>
+              <span class="sel-badge green" id="por-badge">0 / 2</span>
             </div>
             <div class="dish-chips">
-              <button type="button" class="dish-chip" data-g="por" data-max="3" onclick="toggleDish(this)">Соусанд жигнэсэн хонины мах</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="3" onclick="toggleDish(this)">Хорхог</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="3" onclick="toggleDish(this)">Мини шорлог /гахай, тахиа/</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="3" onclick="toggleDish(this)">Гахайн цорой</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="3" onclick="toggleDish(this)">Гахайн амталсан мах</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="3" onclick="toggleDish(this)">Терияки соустай тахиа</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="3" onclick="toggleDish(this)">Шаржигнуур тахиа</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="3" onclick="toggleDish(this)">Цуйван</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="3" onclick="toggleDish(this)">Хуушуур</button>
+              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Соусанд жигнэсэн хонины мах</button>
+              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Хорхог</button>
+              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Мини шорлог /гахай, тахиа/</button>
+              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Гахайн цорой</button>
+              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Гахайн амталсан мах</button>
+              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Терияки соустай тахиа</button>
+              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Шаржигнуур тахиа</button>
+              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Цуйван</button>
+              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Хуушуур</button>
             </div>
             <!-- Сонгосон хоол + тоо хэмжээ -->
             <div class="qty-list" id="por-qty"></div>
-            <p class="sel-hint">* Тус бүрд хэдэн порц захиалахыг оруулна уу</p>
+            <div id="por-qty-warn" style="display:none;font-size:12px;color:var(--amber);font-weight:600;margin-top:6px">⚠️ 2 хоолны нийт порц нь хүний тооноос хэтрэхгүй</div>
+            <p class="sel-hint">* 2 хоолны порцын нийт = хүний тоо</p>
           </div>
         </div>
 
@@ -371,7 +280,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
               <span class="sel-badge amber" id="buf-mah-badge">0 / 3</span>
             </div>
             <div class="dish-chips">
-              <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Соусанд жигнэсэн хонины мах</button>
+              <button type="button" class="dish-chip" data-g="buf-mah" data-max="2" onclick="toggleDish(this)">Соусанд жигнэсэн хонины мах</button>
               <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Хорхог</button>
               <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Мини шорлог /гахай, тахиа/</button>
               <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Гахайн цорой</button>
@@ -474,6 +383,19 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
       ✅ Захиалга амжилттай илгээгдлээ! Бид 24 цагийн дотор тантай холбогдоно.
     </div>
     <p class="order-note">Захиалга илгээсний дараа бид тантай холбогдоно.</p>
+  </div>
+
+  <!-- Хонь боодог -->
+  <div class="boodog" style="margin-top:20px">
+    <div class="b-ico">🐑</div>
+    <div class="b-main">
+      <h3>Хонь боодог</h3>
+      <p>Бүтэн хонийг уламжлалт аргаар, улаасан чулуугаар боодон болгож, ширээгээр ёслол төгөлдөр гаргана. Тусгай арга хэмжээ болон хүндэт зочны хүлээн авалтад тохиромжтой. Урьдчилан захиална уу.</p>
+    </div>
+    <div class="b-price">
+      <div class="v">₮900,000</div>
+      <div class="u">бүтэн хонь · 8–12 хүнд</div>
+    </div>
   </div>
 
   <!-- ═══ ХОЛБОО ═══ -->
@@ -616,24 +538,45 @@ function renderQty() {
   container.innerHTML = html;
 }
 
-// ── Тоог хязгаарлах ──
+// ── 2 хоолны нийт порц ≤ хүний тоо ──
 function clampQty(inp) {
   var maxPax = parseInt(document.getElementById('of-pax').value) || 0;
   var v = parseInt(inp.value) || 0;
-  if (maxPax > 0 && v > maxPax) {
-    inp.value = maxPax;
-    inp.style.borderColor = 'var(--amber)';
-    inp.title = 'Хүний тооноос (' + maxPax + ') хэтрэхгүй';
-  } else {
-    inp.style.borderColor = '';
-    inp.title = '';
-  }
+  if (v < 1) { inp.value = 1; }
+  checkTotalQty();
   updateDishesField();
 }
 
-// Хүний тоо өөрчлөгдөхөд qty бүрийг шалгах
+function checkTotalQty() {
+  var maxPax = parseInt(document.getElementById('of-pax').value) || 0;
+  var inputs = document.querySelectorAll('#por-qty input[type=number]');
+  var total = 0;
+  inputs.forEach(function(i) { total += parseInt(i.value) || 0; });
+  var warn = document.getElementById('por-qty-warn');
+  if (maxPax > 0 && total > maxPax) {
+    // Хамгийн сүүлчийн оролтыг тааруулна
+    inputs.forEach(function(i) {
+      var v = parseInt(i.value) || 0;
+      if (total > maxPax) {
+        var excess = total - maxPax;
+        var newV = Math.max(1, v - excess);
+        total -= (v - newV);
+        i.value = newV;
+        i.style.borderColor = 'var(--amber)';
+      } else {
+        i.style.borderColor = '';
+      }
+    });
+    if (warn) warn.style.display = 'block';
+  } else {
+    inputs.forEach(function(i) { i.style.borderColor = ''; });
+    if (warn) warn.style.display = 'none';
+  }
+}
+
+// Хүний тоо өөрчлөгдөхөд шалгах
 document.getElementById('of-pax').addEventListener('input', function() {
-  document.querySelectorAll('#por-qty input[type=number]').forEach(clampQty);
+  checkTotalQty();
   renderQty();
 });
 
