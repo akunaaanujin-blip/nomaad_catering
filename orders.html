@@ -204,8 +204,7 @@ function renderSection(key, orders) {
         ci('Хүний тоо',  o['Хүний тоо']) +
         ci('Арга хэмжээ', o['Арга хэмжээ']) +
         ci('Газар',       o['Газар']) +
-        ci('Эхлэх',       o['Эхлэх огноо']) +
-        ci('Дуусах',      o['Дуусах өдөр']) +
+        ciRange('Хамрах хугацаа', o['Эхлэх огноо'], o['Дуусах өдөр']) +
         ci('И-мэйл',     o['И-мэйл']) +
       '</div>' +
       (o['Үйлчилгээ'] ? '<div class="card-svc">'+esc(o['Үйлчилгээ'])+'</div>' : '') +
@@ -216,6 +215,11 @@ function renderSection(key, orders) {
         (o['Урьдчилгаа 50%'] ? '<span class="price-tag half">50%: '+esc(String(o['Урьдчилгаа 50%']))+'</span>' : '') +
       '</div>' +
       (date ? '<div class="card-date">📅 Захиалсан: '+date+'</div>' : '') +
+      (!isPaid ?
+        '<button onclick="markPaid(this,\''+esc(o['_sheet']||'')+'\','+o['_row']+')" ' +
+        'style="margin-top:10px;width:100%;font-family:inherit;font-size:13px;font-weight:700;' +
+        'background:#1F4A38;color:#fff;border:none;border-radius:9px;padding:10px;cursor:pointer">'+
+        '✅ Төлбөр баталгаажуулах</button>' : '') +
     '</div>';
   }).join('');
 }
@@ -227,8 +231,34 @@ function ci(label, val) {
   if (!val) return '';
   return '<div class="cg-item"><div class="cl">'+label+'</div><div class="cv">'+esc(String(val))+'</div></div>';
 }
+function ciRange(label, from, to) {
+  if (!from && !to) return '';
+  var val = (from||'—') + (to ? ' → ' + to : '');
+  return '<div class="cg-item"><div class="cl">'+label+'</div><div class="cv">'+esc(val)+'</div></div>';
+}
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function markPaid(btn, sheetName, rowNum) {
+  btn.disabled = true;
+  btn.textContent = '⏳ Хадгалж байна...';
+  try {
+    await fetch(SHEETS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ type: 'update_payment', sheet: sheetName, row: rowNum })
+    });
+    btn.closest('.order-card').classList.replace('new-order','paid-order');
+    btn.closest('.order-card').querySelector('.status-badge').className = 'status-badge paid';
+    btn.closest('.order-card').querySelector('.status-badge').textContent = '✅ Төлбөр төлсөн';
+    btn.remove();
+    loadOrders();
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '✅ Төлбөр баталгаажуулах';
+    alert('Алдаа гарлаа. Дахин оролдоно уу.');
+  }
 }
 
 checkAccess();
