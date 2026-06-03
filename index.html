@@ -494,6 +494,35 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
     <div class="order-success" id="order-success">
       ✅ Захиалга амжилттай илгээгдлээ! Бид 24 цагийн дотор тантай холбогдоно.
     </div>
+
+    <!-- Төлбөрийн мэдээлэл -->
+    <div id="payment-box" style="display:none;margin-top:16px;background:var(--surface);border:1.5px solid var(--accent);border-radius:var(--radius);padding:24px">
+      <div style="font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">💳 Урьдчилгаа төлбөр шилжүүлэх</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;font-size:14px;padding:10px 14px;background:var(--bg);border-radius:10px">
+          <span style="color:var(--muted);font-weight:600">Банк</span>
+          <span style="font-weight:700">Голомт банк</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;padding:10px 14px;background:var(--bg);border-radius:10px">
+          <span style="color:var(--muted);font-weight:600">Дансны дугаар</span>
+          <span style="font-weight:700;letter-spacing:.5px">MN400015001105172457</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;padding:10px 14px;background:var(--bg);border-radius:10px">
+          <span style="color:var(--muted);font-weight:600">Эзний нэр</span>
+          <span style="font-weight:700">Нинжбадам Анужин</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;padding:10px 14px;background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:10px">
+          <span style="color:var(--accent);font-weight:700">Шилжүүлэх дүн (50%)</span>
+          <span style="font-weight:800;color:var(--accent);font-size:16px" id="payment-amount">—</span>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.7">
+        ✅ Захиалга баталгаажихад нийт дүнгийн <strong>50% урьдчилгаа</strong> шилжүүлнэ.<br>
+        Үлдэгдэл 50%-ийг арга хэмжээний өдөр төлнө.<br>
+        Гүйлгээний утга: <strong id="payment-ref">NOMAAD захиалга</strong>
+      </div>
+    </div>
+
     <p class="order-note">Захиалга илгээсний дараа бид тантай холбогдоно.</p>
   </div>
 
@@ -981,14 +1010,27 @@ async function handleSubmit(e) {
       headers: { 'Accept': 'application/json' }
     });
 
-    if (res.ok) {
-      form.style.display = 'none';
-      document.getElementById('order-success').style.display = 'block';
-    } else {
-      form.style.display = 'none';
-      document.getElementById('order-success').style.display = 'block';
+    form.style.display = 'none';
+    document.getElementById('order-success').style.display = 'block';
+
+    var eventVal = document.getElementById('of-event').value;
+    var isNomaadCamp = eventVal === 'Nomaad camp' || !eventVal;
+    if (!isNomaadCamp) {
+      var payBox = document.getElementById('payment-box');
+      payBox.style.display = 'block';
+      // Нийт дүнгийн 50% тооцох
+      var totalEl = document.getElementById('price-total');
+      var totalText = totalEl ? totalEl.textContent : '';
+      var match = totalText.match(/[\d,]+/);
+      if (match) {
+        var total = parseInt(match[0].replace(/,/g,''));
+        var half = Math.round(total / 2);
+        document.getElementById('payment-amount').textContent = '₮' + half.toLocaleString();
+      }
+      var name = document.getElementById('of-name').value.trim();
+      document.getElementById('payment-ref').textContent = 'NOMAAD ' + (name || 'захиалга');
     }
-  } catch {
+  } catch(err) {
     form.style.display = 'none';
     document.getElementById('order-success').style.display = 'block';
   } finally {
