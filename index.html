@@ -1039,9 +1039,15 @@ async function handleSubmit(e) {
     }).catch(() => {});
 
     // 2. Web3Forms → имэйл илгээх
+    const fd = new FormData(form);
+    const totalEl = document.getElementById('price-total');
+    if (totalEl && totalEl.textContent.trim()) {
+      fd.append('Niit_dun', totalEl.textContent.trim());
+      fd.append('Urьdchilga_50', '50%: ' + document.getElementById('payment-amount').textContent);
+    }
     const res = await fetch(form.action, {
       method:  'POST',
-      body:    new FormData(form),
+      body:    fd,
       headers: { 'Accept': 'application/json' }
     });
 
