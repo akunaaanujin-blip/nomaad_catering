@@ -1046,42 +1046,59 @@ function hideOrders() {
   document.getElementById('orders-panel').style.display = 'none';
 }
 
+// Google Sheet "Захиалга" — Publish to web CSV URL
+var CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTgmE0uJku8GxYhIua11kx0_h-LeRXF-MCGvGeAh6qCTsAo1x6wcdBvNey6Jn-6F8_hVIFmLIGqmEsx/pub?gid=635195893&single=true&output=csv';
+
 function loadOrders() {
   var el = document.getElementById('orders-container');
   el.innerHTML = '<div class="orders-loading">⏳ Уншиж байна...</div>';
 
-  // Өмнөх script-г цэвэрлэх
-  var old = document.getElementById('_ords');
-  if (old) old.remove();
+  fetch(CSV_URL)
+    .then(function(r) { return r.text(); })
+    .then(function(csv) {
+      var orders = parseCSV(csv);
+      renderOrders(orders);
+    })
+    .catch(function() {
+      el.innerHTML = '<div class="orders-empty">❌ Уншиж чадсангүй. Интернэт шалгана уу.</div>';
+    });
+}
 
-  // JSONP callback нэр
-  var cbName = '_ordcb' + Date.now();
+function parseCSV(csv) {
+  var lines = csv.trim().split('\n');
+  if (lines.length < 2) return [];
+  // Эхний мөр — header, 2-р мөрөөс захиалгууд
+  var orders = [];
+  for (var i = lines.length - 1; i >= 1; i--) {  // Шинэ дээр харуулна
+    var cols = splitCSVLine(lines[i]);
+    if (!cols[1] && !cols[2]) continue; // Хоосон мөр алгасна
+    orders.push({
+      ognoo:       cols[0] || '',
+      baiguullaga: cols[1] || '',
+      ner:         cols[2] || '',
+      utas:        cols[3] || '',
+      arga_ognoo:  cols[4] || '',
+      hun:         cols[5] || '',
+      uilchilgee:  cols[6] || '',
+      temdegleg:   cols[7] || '',
+      status:      cols[8] || 'New',
+      tailbar:     cols[9] || ''
+    });
+  }
+  return orders;
+}
 
-  // Timeout — 8 секундэд хариу ирэхгүй бол алдаа
-  var timer = setTimeout(function() {
-    delete window[cbName];
-    var s = document.getElementById('_ords');
-    if (s) s.remove();
-    el.innerHTML = '<div class="orders-empty">❌ Холболт удааширлаа. Дахин оролдоно уу.</div>';
-  }, 8000);
-
-  window[cbName] = function(data) {
-    clearTimeout(timer);
-    delete window[cbName];
-    var s = document.getElementById('_ords');
-    if (s) s.remove();
-    renderOrders((data && data.orders) ? data.orders : []);
-  };
-
-  var s = document.createElement('script');
-  s.id = '_ords';
-  s.src = SHEETS_URL + '?action=orders&callback=' + cbName;
-  s.onerror = function() {
-    clearTimeout(timer);
-    delete window[cbName];
-    el.innerHTML = '<div class="orders-empty">❌ Apps Script холбогдсонгүй.</div>';
-  };
-  document.head.appendChild(s);
+function splitCSVLine(line) {
+  // Таслалт болон хашилт зөв задлах
+  var result = [], cur = '', inQ = false;
+  for (var i = 0; i < line.length; i++) {
+    var c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+    else { cur += c; }
+  }
+  result.push(cur.trim());
+  return result;
 }
 
 function renderOrders(orders) {
