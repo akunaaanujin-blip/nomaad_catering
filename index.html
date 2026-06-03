@@ -495,12 +495,12 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
       <button type="submit" class="btn-order" id="submit-btn">✉️ Захиалга илгээх</button>
     </form>
     <div class="order-success" id="order-success">
-      ✅ Захиалга амжилттай илгээгдлээ! Бид 24 цагийн дотор тантай холбогдоно.
+      ✅ Захиалга амжилттай илгээгдлээ!
     </div>
     <div id="order-summary" style="display:none"></div>
 
     <!-- Төлбөрийн мэдээлэл -->
-    <div id="payment-box" style="display:none;margin-top:16px;background:var(--surface);border:1.5px solid var(--accent);border-radius:var(--radius);padding:24px">
+    <div id="payment-box" style="display:none;margin-top:20px;background:var(--surface);border:1.5px solid var(--accent);border-radius:var(--radius);padding:24px">
       <div style="font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">💳 Урьдчилгаа төлбөр шилжүүлэх</div>
       <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px">
         <div style="display:flex;justify-content:space-between;font-size:14px;padding:10px 14px;background:var(--bg);border-radius:10px">
@@ -520,10 +520,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
           <span style="font-weight:800;color:var(--accent);font-size:16px" id="payment-amount">—</span>
         </div>
       </div>
-      <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px">
-        ✅ Захиалга баталгаажихад нийт дүнгийн <strong>50% урьдчилгаа</strong> шилжүүлнэ.<br>
-        Үлдэгдэл 50%-ийг арга хэмжээний өдөр төлнө.<br>
-        Гүйлгээний утга: <strong id="payment-ref">NOMAAD захиалга</strong>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">
+        Гүйлгээний утга: <strong id="payment-ref">NOMAAD захиалга</strong> · Үлдэгдэл 50%-ийг арга хэмжээний өдөр төлнө.
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--ink);background:var(--bg);border-radius:10px;padding:10px 14px;margin-bottom:14px;line-height:1.6">
+        💡 Төлбөр шилжүүлсэн бол доорх товчийг дарж мэдэгдэнэ үү
       </div>
       <button type="button" id="payment-confirm-btn" onclick="confirmPayment()"
         style="width:100%;font-family:inherit;font-size:14px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:13px;cursor:pointer;transition:opacity .15s">
@@ -533,8 +534,6 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         Баярлалаа! Төлбөрийн мэдэгдэл илгээгдлээ.
       </div>
     </div>
-
-    <p class="order-note">Захиалга илгээсний дараа бид тантай холбогдоно.</p>
   </div>
 
   <!-- ═══ ХОЛБОО ═══ -->
