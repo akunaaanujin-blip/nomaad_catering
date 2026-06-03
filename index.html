@@ -232,13 +232,13 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
     <p class="sub">Доорх маягтыг бөглөн илгээгээрэй. Бид тантай 24 цагийн дотор холбогдоно.</p>
 
     <form id="order-form"
-          action="https://formspree.io/akunaa.anujin@gmail.com"
+          action="https://api.web3forms.com/submit"
           method="POST"
           onsubmit="handleSubmit(event)">
-      <!-- Formspree шаардлагатай hidden field -->
-      <input type="hidden" name="_subject" value="🍽️ NOMAAD Catering — Шинэ захиалга">
-      <input type="hidden" name="_language" value="mn">
-      <input type="text" name="_gotcha" style="display:none">
+      <input type="hidden" name="access_key" value="e2c4a089-97e4-4630-a616-a6eae9fc13ea">
+      <input type="hidden" name="subject" value="🍽️ NOMAAD Catering — Шинэ захиалга">
+      <input type="hidden" name="from_name" value="NOMAAD Catering Website">
+      <input type="checkbox" name="botcheck" style="display:none">
 
       <div class="order-grid">
         <div class="order-field">
