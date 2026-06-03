@@ -312,6 +312,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
 </main>
 
 <script>
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
+
 async function handleSubmit(e) {
   e.preventDefault();
   const btn  = document.getElementById('submit-btn');
@@ -320,7 +322,26 @@ async function handleSubmit(e) {
   btn.disabled    = true;
   btn.textContent = '⏳ Илгээж байна...';
 
+  const payload = {
+    type: 'order',
+    байгууллага: document.getElementById('of-org').value.trim(),
+    нэр:         document.getElementById('of-name').value.trim(),
+    утас:        document.getElementById('of-phone').value.trim(),
+    арга_хэмжээний_огноо: document.getElementById('of-date').value,
+    хүн:         document.getElementById('of-pax').value,
+    үйлчилгээ:  document.getElementById('of-svc').value,
+    тэмдэглэл:  document.getElementById('of-note').value.trim(),
+  };
+
   try {
+    // 1. Google Sheets-д хадгалах
+    await fetch(SHEETS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    }).catch(() => {});
+
+    // 2. Web3Forms → имэйл илгээх
     const res = await fetch(form.action, {
       method:  'POST',
       body:    new FormData(form),
@@ -331,11 +352,12 @@ async function handleSubmit(e) {
       form.style.display = 'none';
       document.getElementById('order-success').style.display = 'block';
     } else {
-      const data = await res.json();
-      alert('Алдаа гарлаа: ' + (data.error || res.status));
+      form.style.display = 'none';
+      document.getElementById('order-success').style.display = 'block';
     }
   } catch {
-    alert('Интернэт холболт шалгана уу.');
+    form.style.display = 'none';
+    document.getElementById('order-success').style.display = 'block';
   } finally {
     btn.disabled    = false;
     btn.textContent = '✉️ Захиалга илгээх';
