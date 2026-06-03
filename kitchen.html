@@ -306,9 +306,9 @@ footer b{color:var(--ink)}
 <div id="orders-panel" style="display:none;background:var(--bg)">
   <div class="order-section">
     <div class="orders-toolbar">
+      <button onclick="hideOrders()" style="font-family:inherit;font-size:14px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:9px 18px;cursor:pointer;display:flex;align-items:center;gap:6px">← Буцах</button>
       <h2>📋 Ирсэн захиалгууд</h2>
       <button class="btn-refresh" onclick="loadOrders()">🔄 Шинэчлэх</button>
-      <button onclick="hideOrders()" style="font-family:inherit;font-size:12px;font-weight:600;background:none;border:1.5px solid var(--line);border-radius:8px;padding:7px 14px;cursor:pointer;color:var(--muted)">✕ Хаах</button>
     </div>
     <div id="orders-url-notice" class="url-notice" style="display:none">
       ⚠️ <strong>Apps Script URL тохируулаагүй байна.</strong> kitchen.html болон index.html-д <code>SHEETS_URL</code>-г тавиад дахин deploy хийнэ үү.
@@ -319,7 +319,7 @@ footer b{color:var(--ink)}
   </div>
 </div>
 
-<div class="panel">
+<div class="panel" id="kitchen-controls">
   <div class="wrap controls">
     <div class="field"><label>Нийт хүн</label><input id="ppl" type="number" min="0" value="100"></div>
     <div class="field"><label>Ширээний хүн</label><input id="tbl" type="number" min="1" step="0.5" value="8.5"></div>
@@ -398,7 +398,7 @@ footer b{color:var(--ink)}
   </div>
 </div>
 
-<main class="wrap">
+<main class="wrap" id="kitchen-main">
   <div class="summary" id="summary"></div>
   <div class="section-title">Үндсэн мах — 10 хоол</div>
   <div class="grid" id="grid"></div>
@@ -1039,11 +1039,15 @@ function setStatus(type, msg) {
 // ── Ирсэн захиалга ──────────────────────────────────────
 function showOrders() {
   document.getElementById('orders-panel').style.display = 'block';
-  document.getElementById('orders-panel').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('kitchen-controls').style.display = 'none';
+  document.getElementById('kitchen-main').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'instant' });
   loadOrders();
 }
 function hideOrders() {
   document.getElementById('orders-panel').style.display = 'none';
+  document.getElementById('kitchen-controls').style.display = 'block';
+  document.getElementById('kitchen-main').style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
