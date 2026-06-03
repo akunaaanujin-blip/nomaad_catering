@@ -79,6 +79,19 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .boodog .b-price .v{font-family:'Lora',Georgia,serif;font-size:34px;font-weight:700;letter-spacing:-1px}
 .boodog .b-price .u{font-size:12px;color:var(--sand);font-weight:600}
 
+/* ── DISH SELECTOR ── */
+.dish-select{display:none;margin-top:4px}
+.dish-select.show{display:block}
+.dish-select-label{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.dish-select-label span{font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:2px 9px;border-radius:999px}
+.dish-chips{display:flex;flex-wrap:wrap;gap:8px}
+.dish-chip{font-family:inherit;font-size:13px;font-weight:500;padding:8px 14px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;transition:all .15s;text-align:left}
+.dish-chip:hover{border-color:var(--accent);color:var(--accent)}
+.dish-chip.selected{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.dish-chip.amber.selected{background:var(--amber);border-color:var(--amber)}
+.select-hint{font-size:12px;color:var(--muted);margin-top:8px;font-style:italic}
+.select-divider{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:14px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
+
 /* ── ORDER SECTION ── */
 .order-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px;margin-top:40px}
 .order-box h3{font-family:'Lora',Georgia,serif;font-size:22px;font-weight:700;margin-bottom:6px}
@@ -263,15 +276,60 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         </div>
         <div class="order-field">
           <label>Үйлчилгээний төрөл</label>
-          <select name="Uilchilgee" id="of-svc">
+          <select name="Uilchilgee" id="of-svc" onchange="onSvcChange()">
             <option value="">— Сонгоно уу —</option>
-            <option>Порц хоол (₮38,000/хүн)</option>
-            <option>Буфет (₮54,000/хүн)</option>
-            <option>Хонь боодог (₮900,000)</option>
-            <option>Буфет + Хонь боодог</option>
-            <option>Порц + Хонь боодог</option>
+            <option value="por">Порц хоол (₮38,000/хүн)</option>
+            <option value="buf">Буфет (₮54,000/хүн)</option>
+            <option value="boodog">Хонь боодог (₮900,000)</option>
+            <option value="buf_boodog">Буфет + Хонь боодог</option>
+            <option value="por_boodog">Порц + Хонь боодог</option>
           </select>
         </div>
+
+        <!-- Порц хоолны сонголт -->
+        <div class="order-field full dish-select" id="por-select">
+          <div class="dish-select-label">
+            🍱 Порц хоол сонгоно уу <span id="por-count">0 сонгосон</span>
+          </div>
+          <div class="dish-chips" id="por-chips">
+            <button type="button" class="dish-chip" data-group="por" onclick="toggleChip(this)">Соусанд жигнэсэн хонины мах</button>
+            <button type="button" class="dish-chip" data-group="por" onclick="toggleChip(this)">Гахайн цорой</button>
+            <button type="button" class="dish-chip" data-group="por" onclick="toggleChip(this)">Жеюүг — гахайн амталсан мах</button>
+            <button type="button" class="dish-chip" data-group="por" onclick="toggleChip(this)">Терияки соустай тахиа</button>
+            <button type="button" class="dish-chip" data-group="por" onclick="toggleChip(this)">Шаржигнуур тахиа</button>
+            <button type="button" class="dish-chip" data-group="por" onclick="toggleChip(this)">Мини шорлог</button>
+            <button type="button" class="dish-chip" data-group="por" onclick="toggleChip(this)">Цуйван</button>
+            <button type="button" class="dish-chip" data-group="por" onclick="toggleChip(this)">Хуушуур (4 ш)</button>
+          </div>
+          <p class="select-hint">* Нэг буюу хэд хэдэн хоол сонгож болно</p>
+        </div>
+
+        <!-- Буфетийн сонголт -->
+        <div class="order-field full dish-select" id="buf-select">
+          <div class="dish-select-label">
+            🥩 Гол мах — 3 төрлийг сонгоно <span id="buf-count">0/3</span>
+          </div>
+          <div class="dish-chips" id="buf-chips">
+            <button type="button" class="dish-chip amber" data-group="buf" onclick="toggleChip(this)">Соусанд жигнэсэн хонины мах</button>
+            <button type="button" class="dish-chip amber" data-group="buf" onclick="toggleChip(this)">Хонь шарсан хавирга</button>
+            <button type="button" class="dish-chip amber" data-group="buf" onclick="toggleChip(this)">Гахайн цорой</button>
+            <button type="button" class="dish-chip amber" data-group="buf" onclick="toggleChip(this)">Терияки соустай тахиа</button>
+            <button type="button" class="dish-chip amber" data-group="buf" onclick="toggleChip(this)">Шаржигнуур тахиа</button>
+            <button type="button" class="dish-chip amber" data-group="buf" onclick="toggleChip(this)">Мини шорлог</button>
+          </div>
+          <div class="select-divider">🥗 Дагалдах — оруулсан үнэнд (заавал биш)</div>
+          <div class="dish-chips">
+            <button type="button" class="dish-chip" data-group="side" onclick="toggleChip(this)">Улирлын салад</button>
+            <button type="button" class="dish-chip" data-group="side" onclick="toggleChip(this)">Халуун шөл</button>
+            <button type="button" class="dish-chip" data-group="side" onclick="toggleChip(this)">Хачир</button>
+            <button type="button" class="dish-chip" data-group="side" onclick="toggleChip(this)">Цагаан будаа</button>
+          </div>
+          <p class="select-hint">* Буфетэд дагалдах хачир, салад, шөл оруулсан байна</p>
+        </div>
+
+        <!-- Сонгосон хоол (hidden) -->
+        <input type="hidden" name="Songoson_hool" id="of-dishes">
+
         <div class="order-field full">
           <label>Нэмэлт мэдээлэл / Тусгай хүсэлт</label>
           <textarea name="Temdegleg" id="of-note" rows="3" placeholder="Арга хэмжээний газар, нэмэлт хүсэлт..."></textarea>
@@ -313,6 +371,61 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
 
 <script>
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
+
+// ── Үйлчилгээ сонгоход харагдах хоолны жагсаалт ──
+function onSvcChange() {
+  var val = document.getElementById('of-svc').value;
+  var porEl  = document.getElementById('por-select');
+  var bufEl  = document.getElementById('buf-select');
+
+  // Бүгдийг нуух
+  porEl.classList.remove('show');
+  bufEl.classList.remove('show');
+
+  if (val === 'por' || val === 'por_boodog') {
+    porEl.classList.add('show');
+  }
+  if (val === 'buf' || val === 'buf_boodog') {
+    bufEl.classList.add('show');
+  }
+
+  updateDishesField();
+}
+
+// ── Chip товч дарахад ──
+function toggleChip(btn) {
+  var group = btn.dataset.group;
+
+  if (group === 'buf') {
+    // Буфетэд хамгийн ихдээ 3 сонголт
+    var selected = document.querySelectorAll('.dish-chip.selected[data-group="buf"]');
+    if (!btn.classList.contains('selected') && selected.length >= 3) {
+      // 3-аас дээш сонгохыг зөвшөөрөхгүй — эхний сонголтыг болиулна
+      selected[0].classList.remove('selected');
+    }
+  }
+
+  btn.classList.toggle('selected');
+
+  // Тоолуур шинэчлэх
+  var porSel  = document.querySelectorAll('.dish-chip.selected[data-group="por"]').length;
+  var bufSel  = document.querySelectorAll('.dish-chip.selected[data-group="buf"]').length;
+  var cntPor  = document.getElementById('por-count');
+  var cntBuf  = document.getElementById('buf-count');
+  if (cntPor) cntPor.textContent = porSel + ' сонгосон';
+  if (cntBuf) cntBuf.textContent = bufSel + '/3';
+
+  updateDishesField();
+}
+
+// ── Сонгосон хоолуудыг hidden field-д хадгалах ──
+function updateDishesField() {
+  var chips = document.querySelectorAll('.dish-chip.selected');
+  var names = [];
+  chips.forEach(function(c) { names.push(c.textContent.trim()); });
+  document.getElementById('of-dishes').value = names.join(', ');
+}
+
 
 async function handleSubmit(e) {
   e.preventDefault();
