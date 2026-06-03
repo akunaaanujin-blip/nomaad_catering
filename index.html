@@ -428,15 +428,16 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
           <div class="nemeltu-box">
             <div class="n-title">🍕 Нэмэлт сонголт <span style="font-size:11px;font-weight:500;color:#a07040">(заавал биш)</span></div>
             <div class="nemeltu-chips">
-              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Жимсний платер</button>
-              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Cup cake &amp; Egg tart</button>
-              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Мини пицца</button>
-              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Мини бургер</button>
-              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Cheese ball</button>
-              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Өглөөний цай</button>
-              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Халуун цай <span class="free">Үнэгүй</span></button>
-              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Кофе <span class="free">Үнэгүй</span></button>
+              <button type="button" class="n-chip" data-name="Жимсний платер" onclick="toggleNemeltu(this)">Жимсний платер</button>
+              <button type="button" class="n-chip" data-name="Cup cake &amp; Egg tart" onclick="toggleNemeltu(this)">Cup cake &amp; Egg tart</button>
+              <button type="button" class="n-chip" data-name="Мини пицца" onclick="toggleNemeltu(this)">Мини пицца</button>
+              <button type="button" class="n-chip" data-name="Мини бургер" onclick="toggleNemeltu(this)">Мини бургер</button>
+              <button type="button" class="n-chip" data-name="Cheese ball" onclick="toggleNemeltu(this)">Cheese ball</button>
+              <button type="button" class="n-chip" data-name="Өглөөний цай" onclick="toggleNemeltu(this)">Өглөөний цай</button>
+              <button type="button" class="n-chip" data-name="Халуун цай" onclick="toggleNemeltu(this)">Халуун цай <span class="free">Үнэгүй</span></button>
+              <button type="button" class="n-chip" data-name="Кофе" onclick="toggleNemeltu(this)">Кофе <span class="free">Үнэгүй</span></button>
             </div>
+            <div id="nemeltu-qty-list"></div>
           </div>
         </div>
         <input type="hidden" name="Nemeltu" id="of-nemeltu">
@@ -509,13 +510,62 @@ function toggleEvent(btn) {
 }
 
 // ── Нэмэлт сонголт ──
+var nemeltuQty = {};
+
 function toggleNemeltu(btn) {
+  var name = btn.dataset.name;
   btn.classList.toggle('sel-n');
-  var sel = [];
-  document.querySelectorAll('.n-chip.sel-n').forEach(function(b) {
-    sel.push(b.textContent.replace('Үнэгүй','').trim());
+  if (btn.classList.contains('sel-n')) {
+    if (!nemeltuQty[name]) nemeltuQty[name] = 1;
+  } else {
+    delete nemeltuQty[name];
+  }
+  renderNemeltuQty();
+  updateNemeltuField();
+}
+
+function changeNemeltuQty(name, delta) {
+  if (nemeltuQty[name] !== undefined) {
+    nemeltuQty[name] = Math.max(1, nemeltuQty[name] + delta);
+    var el = document.getElementById('nqty_' + name.replace(/[^a-zA-Z0-9]/g,'_'));
+    if (el) el.textContent = nemeltuQty[name];
+    updateNemeltuField();
+  }
+}
+
+function renderNemeltuQty() {
+  var container = document.getElementById('nemeltu-qty-list');
+  if (!container) return;
+  var keys = Object.keys(nemeltuQty);
+  if (!keys.length) { container.innerHTML = ''; return; }
+  var freeItems = ['Халуун цай','Кофе'];
+  var html = '<div style="border-top:1px solid #ecd9c5;margin-top:12px;padding-top:12px;display:flex;flex-direction:column;gap:8px">';
+  keys.forEach(function(name) {
+    var safeId = 'nqty_' + name.replace(/[^a-zA-Z0-9]/g,'_');
+    var isFree = freeItems.indexOf(name) >= 0;
+    var escapedName = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    html += '<div class="qty-row">' +
+      '<span class="qty-name">' + name +
+        (isFree ? ' <span style="font-size:10px;background:var(--accent-soft);color:var(--accent);border-radius:4px;padding:1px 6px;font-weight:700;margin-left:4px">Үнэгүй</span>' : '') +
+      '</span>' +
+      '<span class="qty-unit">ширхэг</span>' +
+      '<div style="display:flex;align-items:center;gap:6px">' +
+        '<button type="button" onclick="changeNemeltuQty(\'' + escapedName + '\',-1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:16px;cursor:pointer;font-weight:700">−</button>' +
+        '<span id="' + safeId + '" style="font-weight:700;font-size:15px;min-width:24px;text-align:center">' + nemeltuQty[name] + '</span>' +
+        '<button type="button" onclick="changeNemeltuQty(\'' + escapedName + '\',1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:16px;cursor:pointer;font-weight:700">+</button>' +
+      '</div>' +
+    '</div>';
   });
-  document.getElementById('of-nemeltu').value = sel.join(', ');
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function updateNemeltuField() {
+  var parts = [];
+  Object.keys(nemeltuQty).forEach(function(name) {
+    parts.push(name + ' × ' + nemeltuQty[name] + ' ширхэг');
+  });
+  document.getElementById('of-nemeltu').value = parts.join(', ');
 }
 
 var boodog_n = 1;
