@@ -57,12 +57,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .tier.ugl .t-badge{background:#dceaf5;color:#1f516e}
 
 
-/* ── ҮЙЛЧИЛГЭЭНИЙ ТОО ── */
-.svc-count-chips{display:flex;gap:8px;margin-top:8px}
-.svc-cnt{font-family:inherit;font-size:16px;font-weight:700;width:44px;height:44px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--muted);cursor:pointer;transition:all .15s}
-.svc-cnt:hover{border-color:var(--accent);color:var(--accent)}
-.svc-cnt.active{background:var(--accent);border-color:var(--accent);color:#fff}
-.svc-row{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+/* ── ҮЙЛЧИЛГЭЭНИЙ МӨРҮҮД ── */
+.svc-row{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.btn-add-svc{font-family:inherit;font-size:13px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:1.5px dashed var(--accent);border-radius:10px;padding:10px;cursor:pointer;width:100%;margin-top:4px;transition:all .15s}
+.btn-add-svc:hover{background:var(--accent);color:#fff}
+.btn-svc-remove{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);color:var(--muted);font-size:15px;cursor:pointer;line-height:1;flex-shrink:0;transition:all .15s}
+.btn-svc-remove:hover{border-color:#d44;color:#d44;background:#fff}
 .svc-row-label{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
 .svc-row select{margin-top:0}
 
@@ -272,164 +272,152 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
           <label>Хүний тоо</label>
           <input type="number" name="Hunii_too" id="of-pax" value="0" min="0" required>
         </div>
-        <!-- Үйлчилгээний тоо -->
-        <div class="order-field">
-          <label>Үйлчилгээний тоо</label>
-          <div class="svc-count-chips">
-            <button type="button" class="svc-cnt active" data-n="1" onclick="setSvcCount(this)">1</button>
-            <button type="button" class="svc-cnt" data-n="2" onclick="setSvcCount(this)">2</button>
-            <button type="button" class="svc-cnt" data-n="3" onclick="setSvcCount(this)">3</button>
-          </div>
-        </div>
-
-        <!-- Үйлчилгээний төрлүүд — динамик -->
+        <!-- Үйлчилгээнүүд -->
         <div class="order-field full" id="svc-rows-wrap">
           <div id="svc-rows"></div>
-        </div>
 
-        <!-- ── ПОРЦ хоолны сонголт ── -->
-        <div class="order-field full dish-select" id="por-select">
-          <div class="dim-label">⛔ Буфет сонгосон тул порц идэвхгүй байна</div>
-          <div class="sel-group">
-            <div class="sel-group-head">
-              <div class="sel-group-title">🍱 Порц хоол — хамгийн ихдээ 3 сонгоно</div>
-              <span class="sel-badge green" id="por-badge">0 / 2</span>
-            </div>
-            <div class="dish-chips">
-              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Соусанд жигнэсэн хонины мах</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Хорхог</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Мини шорлог /гахай, тахиа/</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Гахайн цорой</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Гахайн амталсан мах</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Терияки соустай тахиа</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Шаржигнуур тахиа</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Цуйван</button>
-              <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Хуушуур</button>
-            </div>
-            <!-- Сонгосон хоол + тоо хэмжээ -->
-            <div class="qty-list" id="por-qty"></div>
-            <div id="por-qty-warn" style="display:none;font-size:12px;color:var(--amber);font-weight:600;margin-top:6px">⚠️ 2 хоолны нийт порц нь хүний тооноос хэтрэхгүй</div>
-            <p class="sel-hint">* 2 хоолны порцын нийт = хүний тоо</p>
-          </div>
-        </div>
-
-        <!-- ── БУФЕТ сонголт ── -->
-        <div class="order-field full dish-select" id="buf-select">
-          <div class="dim-label">⛔ Порц сонгосон тул буфет идэвхгүй байна</div>
-
-          <!-- МАХ -->
-          <div class="sel-group">
-            <div class="sel-group-head">
-              <div class="sel-group-title">🥩 Мах — 3 төрөл сонгоно</div>
-              <span class="sel-badge amber" id="buf-mah-badge">0 / 3</span>
-            </div>
-            <div class="dish-chips">
-              <button type="button" class="dish-chip" data-g="buf-mah" data-max="2" onclick="toggleDish(this)">Соусанд жигнэсэн хонины мах</button>
-              <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Хорхог</button>
-              <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Мини шорлог /гахай, тахиа/</button>
-              <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Гахайн цорой</button>
-              <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Гахайн амталсан мах</button>
-              <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Терияки соустай тахиа</button>
-              <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Шаржигнуур тахиа</button>
-              <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Цуйван</button>
-              <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Хуушуур</button>
-            </div>
-          </div>
-
-          <!-- САЛАД -->
-          <div class="sel-divider"></div>
-          <div class="sel-group">
-            <div class="sel-group-head">
-              <div class="sel-group-title">🥗 Салад — 2 төрөл сонгоно</div>
-              <span class="sel-badge green" id="buf-sal-badge">0 / 2</span>
-            </div>
-            <div class="dish-chips">
-              <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Шинэ ногооны салад</button>
-              <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Нийслэл салад</button>
-              <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Пүнтүүзтэй салад</button>
-              <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Байцааны салад</button>
-              <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Луувангийн салад</button>
-              <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Гоймонгийн салад</button>
-            </div>
-          </div>
-
-          <!-- ХАЧИР -->
-          <div class="sel-divider"></div>
-          <div class="sel-group">
-            <div class="sel-group-head">
-              <div class="sel-group-title">🍚 Хачир — 2 төрөл сонгоно</div>
-              <span class="sel-badge amber" id="buf-hac-badge">0 / 2</span>
-            </div>
-            <div class="dish-chips">
-              <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Амталсан будаа</button>
-              <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Шарсан төмс</button>
-              <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Төмсний нухаш</button>
-              <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Хуурсан ногоо</button>
-              <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Мантуу</button>
-              <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Сийртэй гоймон</button>
-              <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Амталсан өргөст хэмх</button>
-            </div>
-          </div>
-
-          <!-- ШӨЛ -->
-          <div class="sel-divider"></div>
-          <div class="sel-group">
-            <div class="sel-group-head">
-              <div class="sel-group-title">🍜 Шөл — 1 төрөл сонгоно</div>
-              <span class="sel-badge green" id="buf-shol-badge">0 / 1</span>
-            </div>
-            <div class="dish-chips">
-              <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Брокли зутан шөл</button>
-              <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Мөөгтэй зутан шөл</button>
-              <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Нарийн ногооны шөл</button>
-              <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Бантан</button>
-              <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Далайн байцаатай шөл</button>
-              <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Халуун ногоотой шөл</button>
-              <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Ясны шөл</button>
-            </div>
-          </div>
-          <p class="sel-hint">* Буфетэд мах 3 + салад 2 + хачир 2 + шөл 1 = нийт 8 хоол</p>
-        </div>
-
-        <!-- ── ХОНЬ БООДОГ тоо ── -->
-        <div class="order-field full dish-select" id="boodog-select">
-          <div class="sel-group">
-            <div class="sel-group-head">
-              <div class="sel-group-title">🐑 Хэдэн хонь боодог захиалах вэ?</div>
-              <span class="sel-badge green" style="background:#efe7d2;color:#7a6224" id="boodog-total"></span>
-            </div>
-            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-              <div style="display:flex;align-items:center;gap:10px">
-                <button type="button" onclick="changeBootdog(-1)" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700">−</button>
-                <span id="boodog-count" style="font-family:'Lora',serif;font-size:28px;font-weight:700;min-width:32px;text-align:center;color:var(--accent)">1</span>
-                <button type="button" onclick="changeBootdog(1)" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700">+</button>
-                <span style="font-size:13px;color:var(--muted)">ширхэг</span>
-              </div>
-              <div style="font-size:12.5px;color:var(--muted);line-height:1.6">
-                Нэг хонь → <strong>8–12 хүн</strong> · ₮900,000<br>
-                <span id="boodog-price" style="color:var(--accent);font-weight:700"></span>
+          <!-- Хоолны сонголтын хэсгүүд — JS дотроос row-н ард байрлуулна -->
+          <div class="dish-select" id="por-select" style="margin-top:10px">
+            <div class="msec-body">
+              <div class="dim-label">⛔ Буфет сонгосон тул порц идэвхгүй байна</div>
+              <div class="sel-group">
+                <div class="sel-group-head">
+                  <div class="sel-group-title">🍱 Порц хоол — хамгийн ихдээ 2 сонгоно</div>
+                  <span class="sel-badge green" id="por-badge">0 / 2</span>
+                </div>
+                <div class="dish-chips">
+                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Соусанд жигнэсэн хонины мах</button>
+                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Хорхог</button>
+                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Мини шорлог /гахай, тахиа/</button>
+                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Гахайн цорой</button>
+                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Гахайн амталсан мах</button>
+                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Терияки соустай тахиа</button>
+                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Шаржигнуур тахиа</button>
+                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Цуйван</button>
+                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Хуушуур</button>
+                </div>
+                <div class="qty-list" id="por-qty"></div>
+                <div id="por-qty-warn" style="display:none;font-size:12px;color:var(--amber);font-weight:600;margin-top:6px">⚠️ 2 хоолны нийт порц нь хүний тооноос хэтрэхгүй</div>
+                <p class="sel-hint">* 2 хоолны порцын нийт = хүний тоо</p>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- ── ӨГЛӨӨНИЙ ЦАЙ сонголт ── -->
-        <div class="order-field full dish-select" id="uguluun-select">
-          <div class="sel-group">
-            <div class="sel-group-head">
-              <div class="sel-group-title">☕ Өглөөний цайны зооглолт — 1 сонгоно</div>
-              <span class="sel-badge green" id="uguluun-badge">0 / 1</span>
+          <div class="dish-select" id="buf-select" style="margin-top:10px">
+            <div class="msec-body">
+              <div class="dim-label">⛔ Порц сонгосон тул буфет идэвхгүй байна</div>
+              <div class="sel-group">
+                <div class="sel-group-head">
+                  <div class="sel-group-title">🥩 Мах — 3 төрөл сонгоно</div>
+                  <span class="sel-badge amber" id="buf-mah-badge">0 / 3</span>
+                </div>
+                <div class="dish-chips">
+                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="2" onclick="toggleDish(this)">Соусанд жигнэсэн хонины мах</button>
+                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Хорхог</button>
+                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Мини шорлог /гахай, тахиа/</button>
+                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Гахайн цорой</button>
+                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Гахайн амталсан мах</button>
+                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Терияки соустай тахиа</button>
+                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Шаржигнуур тахиа</button>
+                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Цуйван</button>
+                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Хуушуур</button>
+                </div>
+              </div>
+              <div class="sel-divider"></div>
+              <div class="sel-group">
+                <div class="sel-group-head">
+                  <div class="sel-group-title">🥗 Салад — 2 төрөл сонгоно</div>
+                  <span class="sel-badge green" id="buf-sal-badge">0 / 2</span>
+                </div>
+                <div class="dish-chips">
+                  <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Шинэ ногооны салад</button>
+                  <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Нийслэл салад</button>
+                  <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Пүнтүүзтэй салад</button>
+                  <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Байцааны салад</button>
+                  <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Луувангийн салад</button>
+                  <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Гоймонгийн салад</button>
+                </div>
+              </div>
+              <div class="sel-divider"></div>
+              <div class="sel-group">
+                <div class="sel-group-head">
+                  <div class="sel-group-title">🍚 Хачир — 2 төрөл сонгоно</div>
+                  <span class="sel-badge amber" id="buf-hac-badge">0 / 2</span>
+                </div>
+                <div class="dish-chips">
+                  <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Амталсан будаа</button>
+                  <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Шарсан төмс</button>
+                  <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Төмсний нухаш</button>
+                  <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Хуурсан ногоо</button>
+                  <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Мантуу</button>
+                  <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Сийртэй гоймон</button>
+                  <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Амталсан өргөст хэмх</button>
+                </div>
+              </div>
+              <div class="sel-divider"></div>
+              <div class="sel-group">
+                <div class="sel-group-head">
+                  <div class="sel-group-title">🍜 Шөл — 1 төрөл сонгоно</div>
+                  <span class="sel-badge green" id="buf-shol-badge">0 / 1</span>
+                </div>
+                <div class="dish-chips">
+                  <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Брокли зутан шөл</button>
+                  <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Мөөгтэй зутан шөл</button>
+                  <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Нарийн ногооны шөл</button>
+                  <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Бантан</button>
+                  <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Далайн байцаатай шөл</button>
+                  <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Халуун ногоотой шөл</button>
+                  <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Ясны шөл</button>
+                </div>
+              </div>
+              <p class="sel-hint">* Буфетэд мах 3 + салад 2 + хачир 2 + шөл 1 = нийт 8 хоол</p>
             </div>
-            <div class="dish-chips">
-              <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Брокли зутан</button>
-              <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Хулууны зутан</button>
-              <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Мөөгтэй шөл</button>
-              <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Нарийн ногооны шөл</button>
-              <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Бантан</button>
-              <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Өндөг · талх · өргөст хэмх</button>
-            </div>
-            <p class="sel-hint" id="uguluun-qty-note">* Нийт хүний тоогоор бэлдэгдэнэ</p>
           </div>
+
+          <div class="dish-select" id="boodog-select" style="margin-top:10px">
+            <div class="msec-body">
+              <div class="sel-group">
+                <div class="sel-group-head">
+                  <div class="sel-group-title">🐑 Хэдэн хонь боодог захиалах вэ?</div>
+                  <span class="sel-badge green" style="background:#efe7d2;color:#7a6224" id="boodog-total"></span>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <button type="button" onclick="changeBootdog(-1)" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700">−</button>
+                    <span id="boodog-count" style="font-family:'Lora',serif;font-size:28px;font-weight:700;min-width:32px;text-align:center;color:var(--accent)">1</span>
+                    <button type="button" onclick="changeBootdog(1)" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700">+</button>
+                    <span style="font-size:13px;color:var(--muted)">ширхэг</span>
+                  </div>
+                  <div style="font-size:12.5px;color:var(--muted);line-height:1.6">
+                    Нэг хонь → <strong>8–12 хүн</strong> · ₮900,000<br>
+                    <span id="boodog-price" style="color:var(--accent);font-weight:700"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dish-select" id="uguluun-select" style="margin-top:10px">
+            <div class="msec-body">
+              <div class="sel-group">
+                <div class="sel-group-head">
+                  <div class="sel-group-title">☕ Өглөөний цайны зооглолт — 1 сонгоно</div>
+                  <span class="sel-badge green" id="uguluun-badge">0 / 1</span>
+                </div>
+                <div class="dish-chips">
+                  <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Брокли зутан</button>
+                  <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Хулууны зутан</button>
+                  <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Мөөгтэй шөл</button>
+                  <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Нарийн ногооны шөл</button>
+                  <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Бантан</button>
+                  <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Өндөг · талх · өргөст хэмх</button>
+                </div>
+                <p class="sel-hint" id="uguluun-qty-note">* Нийт хүний тоогоор бэлдэгдэнэ</p>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="btn-add-svc" onclick="addSvcRow()">＋ Үйлчилгээ нэмэх</button>
         </div>
 
         <!-- Сонгосон хоол (hidden) -->
@@ -541,80 +529,133 @@ var SVC_OPTIONS = [
   {v:'boodog',  l:'Хонь боодог (₮900,000)'},
   {v:'uguluun', l:'Өглөөний цай (₮12,000/хүн)'},
 ];
-var ORDINALS = ['1-р', '2-р', '3-р'];
 
-// ── Үйлчилгээний тоо ──
-function setSvcCount(btn) {
-  document.querySelectorAll('.svc-cnt').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
-  svcCount = parseInt(btn.dataset.n);
-  renderSvcRows();
-  updateDishesField();
+var PANEL_TYPES = ['por','buf','boodog','uguluun'];
+
+function buildSvcRowHTML(i) {
+  var removeBtn = svcCount > 1
+    ? '<button type="button" class="btn-svc-remove" onclick="removeSvcRow('+i+')">×</button>'
+    : '';
+  var colStyle = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px';
+  return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+    '<div class="svc-row-label">'+(i+1)+'-р үйлчилгээ</div>'+removeBtn+
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">' +
+      '<div><div style="'+colStyle+'">Үйлчилгээний төрөл</div>' +
+      '<select id="svc-sel-'+i+'" onchange="refreshPanels()">' +
+      SVC_OPTIONS.map(function(o){return '<option value="'+o.v+'">'+o.l+'</option>';}).join('')+
+      '</select></div>' +
+      '<div><div style="'+colStyle+'">Огноо</div><input type="date" id="svc-date-'+i+'" style="margin-top:0"></div>' +
+      '<div><div style="'+colStyle+'">Цаг</div><input type="time" id="svc-time-'+i+'" style="margin-top:0"></div>' +
+    '</div>';
 }
 
 function renderSvcRows() {
-  var container = document.getElementById('svc-rows');
-  if (!container) return;
+  var svcRows = document.getElementById('svc-rows');
+  var wrap    = document.getElementById('svc-rows-wrap');
+  var addBtn  = wrap ? wrap.querySelector('.btn-add-svc') : null;
+  if (!svcRows) return;
+
+  // Food panels-ийг svc-rows-аас wrap руу буцааж зөөнө
+  PANEL_TYPES.forEach(function(type) {
+    var p = document.getElementById(type+'-select');
+    if (p && p.parentNode === svcRows) wrap.insertBefore(p, addBtn);
+  });
+
   // Хуучин утгуудыг хадгалах
-  var oldVals = [], oldDates = [], oldTimes = [];
-  for (var j = 0; j < 3; j++) {
-    var os = document.getElementById('svc-sel-' + j);
-    var od = document.getElementById('svc-date-' + j);
-    var ot = document.getElementById('svc-time-' + j);
-    oldVals[j]  = os ? os.value : '';
-    oldDates[j] = od ? od.value : '';
-    oldTimes[j] = ot ? ot.value : '';
+  var oldVals=[], oldDates=[], oldTimes=[];
+  for (var j=0; j<svcCount+5; j++) {
+    var os=document.getElementById('svc-sel-'+j);
+    if (!os) break;
+    oldVals.push(os.value);
+    var od=document.getElementById('svc-date-'+j);
+    var ot=document.getElementById('svc-time-'+j);
+    oldDates.push(od?od.value:'');
+    oldTimes.push(ot?ot.value:'');
   }
-  var html = '';
-  for (var i = 0; i < svcCount; i++) {
-    html += '<div class="svc-row">' +
-      '<div class="svc-row-label">' + ORDINALS[i] + ' үйлчилгээ</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:4px">' +
-        '<div><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Үйлчилгээний төрөл</div>' +
-        '<select id="svc-sel-' + i + '" onchange="refreshPanels()">' +
-        SVC_OPTIONS.map(function(o){ return '<option value="'+o.v+'">'+o.l+'</option>'; }).join('') +
-        '</select></div>' +
-        '<div><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Огноо</div>' +
-        '<input type="date" id="svc-date-' + i + '" style="margin-top:0"></div>' +
-        '<div><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Цаг</div>' +
-        '<input type="time" id="svc-time-' + i + '" style="margin-top:0"></div>' +
-      '</div>' +
-    '</div>';
+
+  svcRows.innerHTML = '';
+  for (var i=0; i<svcCount; i++) {
+    var div=document.createElement('div');
+    div.className='svc-row';
+    div.id='svc-row-'+i;
+    div.innerHTML=buildSvcRowHTML(i);
+    svcRows.appendChild(div);
   }
-  container.innerHTML = html;
-  // Хуучин утгуудыг сэргээх
-  for (var k = 0; k < svcCount; k++) {
-    var s = document.getElementById('svc-sel-' + k);
-    var d = document.getElementById('svc-date-' + k);
-    var t = document.getElementById('svc-time-' + k);
-    if (s && oldVals[k])  s.value = oldVals[k];
-    if (d && oldDates[k]) d.value = oldDates[k];
-    if (t && oldTimes[k]) t.value = oldTimes[k];
+
+  // Утгуудыг сэргээх
+  for (var k=0; k<svcCount; k++) {
+    var s=document.getElementById('svc-sel-'+k);
+    var d=document.getElementById('svc-date-'+k);
+    var t=document.getElementById('svc-time-'+k);
+    if (s && oldVals[k])  s.value=oldVals[k];
+    if (d && oldDates[k]) d.value=oldDates[k];
+    if (t && oldTimes[k]) t.value=oldTimes[k];
   }
   refreshPanels();
 }
 
-function refreshPanels() {
-  var vals = [];
-  for (var i = 0; i < svcCount; i++) {
-    var s = document.getElementById('svc-sel-' + i);
-    if (s) vals.push(s.value);
+function addSvcRow() {
+  svcCount++;
+  renderSvcRows();
+}
+
+function removeSvcRow(idx) {
+  if (svcCount <= 1) return;
+  var vals=[], dates=[], times=[];
+  for (var j=0; j<svcCount; j++) {
+    if (j===idx) continue;
+    var s=document.getElementById('svc-sel-'+j);
+    var d=document.getElementById('svc-date-'+j);
+    var t=document.getElementById('svc-time-'+j);
+    vals.push(s?s.value:'');
+    dates.push(d?d.value:'');
+    times.push(t?t.value:'');
   }
-  var has = function(v){ return vals.indexOf(v) >= 0; };
-  var porEl    = document.getElementById('por-select');
-  var bufEl    = document.getElementById('buf-select');
-  var boodogEl = document.getElementById('boodog-select');
-  var ugEl     = document.getElementById('uguluun-select');
-  if (porEl)    porEl.classList.toggle('show', has('por'));
-  if (bufEl)    bufEl.classList.toggle('show', has('buf'));
-  if (boodogEl) boodogEl.classList.toggle('show', has('boodog'));
-  if (ugEl)     ugEl.classList.toggle('show', has('uguluun'));
-  updateBoodog();
+  svcCount--;
+  renderSvcRows();
+  for (var k=0; k<svcCount; k++) {
+    var sel=document.getElementById('svc-sel-'+k);
+    var dat=document.getElementById('svc-date-'+k);
+    var tim=document.getElementById('svc-time-'+k);
+    if (sel) sel.value=vals[k]||'';
+    if (dat) dat.value=dates[k]||'';
+    if (tim) tim.value=times[k]||'';
+  }
+  refreshPanels();
   updateDishesField();
 }
 
-// Legacy
-function onSvcChange() { refreshPanels(); }
+function refreshPanels() {
+  var vals=[];
+  for (var i=0; i<svcCount; i++) {
+    var s=document.getElementById('svc-sel-'+i);
+    vals.push(s?s.value:'');
+  }
+  var svcRows=document.getElementById('svc-rows');
+  var wrap=document.getElementById('svc-rows-wrap');
+  var addBtn=wrap?wrap.querySelector('.btn-add-svc'):null;
+
+  PANEL_TYPES.forEach(function(type) {
+    var panel=document.getElementById(type+'-select');
+    if (!panel) return;
+    var rowIdx=vals.indexOf(type);
+    if (rowIdx>=0) {
+      panel.classList.add('show');
+      var targetRow=document.getElementById('svc-row-'+rowIdx);
+      if (targetRow) {
+        var next=targetRow.nextSibling;
+        if (next!==panel) svcRows.insertBefore(panel, next);
+      }
+    } else {
+      panel.classList.remove('show');
+      if (panel.parentNode!==wrap) wrap.insertBefore(panel, addBtn);
+    }
+  });
+
+  updateBoodog();
+  updateDishesField();
+}
 
 // ── Хонь боодогийн тоо ──
 function changeBootdog(delta) {
