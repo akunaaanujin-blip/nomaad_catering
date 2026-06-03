@@ -188,10 +188,14 @@ function renderSection(key, orders) {
     return;
   }
 
+  var defaultSheet = key === 'nomaad' ? 'Nomaad camp' : 'Бусад захиалга';
   var sorted = pending.concat(paid);
-  listEl.innerHTML = sorted.map(function(o) {
-    var isPaid  = o['Төлбөр төлсөн'] === true;
-    var date    = o['Огноо'] ? new Date(o['Огноо']).toLocaleString('mn-MN') : '';
+  listEl.innerHTML = sorted.map(function(o, idx) {
+    var pVal   = o['Төлбөр төлсөн'];
+    var isPaid = pVal === true || pVal === 'TRUE' || pVal === 'true';
+    var rowNum = o['_row'] || 0;
+    var shNm   = o['_sheet'] || defaultSheet;
+    var date   = o['Огноо'] ? new Date(o['Огноо']).toLocaleString('mn-MN') : '';
     return '<div class="order-card '+(isPaid?'paid-order':'new-order')+'">' +
       '<div class="card-top">' +
         '<div>' +
@@ -216,7 +220,7 @@ function renderSection(key, orders) {
       '</div>' +
       (date ? '<div class="card-date">📅 Захиалсан: '+date+'</div>' : '') +
       (!isPaid ?
-        '<button onclick="markPaid(this,\''+esc(o['_sheet']||'')+'\','+o['_row']+')" ' +
+        '<button class="btn-pay" data-sheet="'+shNm+'" data-row="'+rowNum+'" onclick="markPaid(this)" ' +
         'style="margin-top:10px;width:100%;font-family:inherit;font-size:13px;font-weight:700;' +
         'background:#1F4A38;color:#fff;border:none;border-radius:9px;padding:10px;cursor:pointer">'+
         '✅ Төлбөр баталгаажуулах</button>' : '') +
@@ -240,7 +244,9 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-async function markPaid(btn, sheetName, rowNum) {
+async function markPaid(btn) {
+  var sheetName = btn.getAttribute('data-sheet');
+  var rowNum    = parseInt(btn.getAttribute('data-row')) || 0;
   btn.disabled = true;
   btn.textContent = '⏳ Хадгалж байна...';
   try {
