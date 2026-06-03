@@ -253,8 +253,14 @@ footer b{color:var(--ink)}
   }
   window.checkPass = checkPass;
 
+  // URL hash-аар шууд нэвтрэх (#nomaad2026)
+  if(location.hash === '#' + PASS){
+    sessionStorage.setItem(KEY,'ok');
+    history.replaceState(null,'',location.pathname); // hash-г нуух
+    document.getElementById('lock-screen').style.display='none';
+  }
   // Аль хэдийн нэвтэрсэн бол шууд нэвтрэх
-  if(sessionStorage.getItem(KEY)==='ok'){
+  else if(sessionStorage.getItem(KEY)==='ok'){
     document.getElementById('lock-screen').style.display='none';
   }
 })();
