@@ -68,7 +68,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .subhead:first-child{margin-top:0}
 .dishes{display:none}
 
-/* ── BOODOG ── */
+/* ── BOODOG & INFO CARDS ── */
 .boodog{background:linear-gradient(135deg,#1F4A38,#2E6049);color:#fff;border-radius:var(--radius);padding:26px 24px;display:flex;gap:22px;align-items:center;flex-wrap:wrap;box-shadow:var(--shadow);margin-top:14px}
 .boodog .b-ico{font-size:46px;line-height:1}
 .boodog .b-main{flex:1;min-width:240px}
@@ -77,6 +77,25 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .boodog .b-price{text-align:right}
 .boodog .b-price .v{font-family:'Lora',Georgia,serif;font-size:34px;font-weight:700;letter-spacing:-1px}
 .boodog .b-price .u{font-size:12px;color:var(--sand);font-weight:600}
+
+/* Өглөөний цай карт */
+.uguluun-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;margin-top:14px;display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.uguluun-card .u-ico{font-size:40px;line-height:1;flex-shrink:0}
+.uguluun-card .u-main{flex:1;min-width:200px}
+.uguluun-card h3{font-family:'Lora',Georgia,serif;font-size:20px;font-weight:700;margin-bottom:4px;color:var(--ink)}
+.uguluun-card .u-sub{font-size:13px;color:var(--muted);margin-bottom:12px}
+.uguluun-list{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 12px}
+.uguluun-list span{font-size:12.5px;color:var(--ink);padding:3px 0;border-bottom:1px dotted var(--line);display:flex;align-items:center;gap:5px}
+.uguluun-list span::before{content:'·';color:var(--amber);font-weight:700}
+
+/* Нэмэлт санал хэсэг */
+.nemeltu-box{background:var(--amber-soft);border:1px solid #ecd9c5;border-radius:var(--radius);padding:18px 20px;margin-top:6px}
+.nemeltu-box .n-title{font-size:13px;font-weight:700;color:#7a4f23;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.nemeltu-chips{display:flex;flex-wrap:wrap;gap:7px}
+.n-chip{font-family:inherit;font-size:12.5px;font-weight:500;padding:6px 12px;border-radius:8px;border:1.5px solid #e0c9a8;background:#fff;color:#7a4f23;cursor:pointer;transition:all .15s}
+.n-chip:hover{border-color:var(--amber)}
+.n-chip.sel-n{background:var(--amber);border-color:var(--amber);color:#fff;font-weight:600}
+.n-chip .free{font-size:10px;background:var(--accent-soft);color:var(--accent);border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:700}
 
 /* ── DISH SELECTOR ── */
 .dish-select{display:none !important;margin-top:4px}
@@ -372,6 +391,24 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         <!-- Сонгосон хоол (hidden) -->
         <input type="hidden" name="Songoson_hool" id="of-dishes">
 
+        <!-- Нэмэлт санал -->
+        <div class="order-field full">
+          <div class="nemeltu-box">
+            <div class="n-title">🍕 Нэмэлт сонголт <span style="font-size:11px;font-weight:500;color:#a07040">(заавал биш)</span></div>
+            <div class="nemeltu-chips">
+              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Жимсний платер</button>
+              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Cup cake &amp; Egg tart</button>
+              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Мини пицца</button>
+              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Мини бургер</button>
+              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Cheese ball</button>
+              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Өглөөний цай</button>
+              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Халуун цай <span class="free">Үнэгүй</span></button>
+              <button type="button" class="n-chip" onclick="toggleNemeltu(this)">Кофе <span class="free">Үнэгүй</span></button>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" name="Nemeltu" id="of-nemeltu">
+
         <div class="order-field full">
           <label>Нэмэлт мэдээлэл / Тусгай хүсэлт</label>
           <textarea name="Temdegleg" id="of-note" rows="3" placeholder="Арга хэмжээний газар, нэмэлт хүсэлт..."></textarea>
@@ -395,6 +432,23 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
     <div class="b-price">
       <div class="v">₮900,000</div>
       <div class="u">бүтэн хонь · 8–12 хүнд</div>
+    </div>
+  </div>
+
+  <!-- Өглөөний цай -->
+  <div class="uguluun-card">
+    <div class="u-ico">☕</div>
+    <div class="u-main">
+      <h3>Өглөөний цай</h3>
+      <div class="u-sub">Байгууллагын өглөөний цай, хурал дагалдах хөнгөн зооглолт</div>
+      <div class="uguluun-list">
+        <span>Брокли зутан</span>
+        <span>Хулууны зутан</span>
+        <span>Мөөгтэй шөл</span>
+        <span>Нарийн ногооны шөл</span>
+        <span>Бантан</span>
+        <span>Өндөг · талх · өргөст хэмх</span>
+      </div>
     </div>
   </div>
 
@@ -423,6 +477,16 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
 
 <script>
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
+
+// ── Нэмэлт сонголт ──
+function toggleNemeltu(btn) {
+  btn.classList.toggle('sel-n');
+  var sel = [];
+  document.querySelectorAll('.n-chip.sel-n').forEach(function(b) {
+    sel.push(b.textContent.replace('Үнэгүй','').trim());
+  });
+  document.getElementById('of-nemeltu').value = sel.join(', ');
+}
 
 var boodog_n = 1;
 
