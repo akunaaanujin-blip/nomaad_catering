@@ -1063,17 +1063,33 @@ async function handleSubmit(e) {
   var _startTime = (document.getElementById('svc-time-0') || {}).value || '';
   var _startStr  = _startDate + (_startTime ? ' ' + _startTime : '');
   var _endDate   = document.getElementById('of-end-date').value || '';
+  var eventVal   = document.getElementById('of-event').value;
+  var isNomaadCamp = eventVal === 'Nomaad camp' || !eventVal;
+  var _totalEl   = document.getElementById('price-total');
+  var totalRaw   = _totalEl ? _totalEl.textContent.replace('Нийт дүн','').trim() : '';
+  var _totalNum  = 0;
+  var _halfStr   = '';
+  if (totalRaw) {
+    var _tm = totalRaw.match(/[\d,]+/);
+    if (_tm) { _totalNum = parseInt(_tm[0].replace(/,/g,'')); _halfStr = '₮' + Math.round(_totalNum/2).toLocaleString(); }
+  }
 
   const payload = {
-    type: 'order',
-    байгууллага:    document.getElementById('of-org').value.trim(),
-    нэр:            document.getElementById('of-name').value.trim(),
-    утас:           document.getElementById('of-phone').value.trim(),
-    хүн:            document.getElementById('of-pax').value,
-    эхлэх_огноо:   _startStr,
-    дуусах_өдөр:   _endDate,
-    үйлчилгээ:     document.getElementById('of-dishes').value,
-    тэмдэглэл:     document.getElementById('of-note').value.trim(),
+    type:          'order',
+    байгууллага:   document.getElementById('of-org').value.trim(),
+    нэр:           document.getElementById('of-name').value.trim(),
+    утас:          document.getElementById('of-phone').value.trim(),
+    email:         document.getElementById('of-email').value.trim(),
+    хүн:           document.getElementById('of-pax').value,
+    арга_хэмжээ:  eventVal,
+    газар:         document.getElementById('of-location').value.trim(),
+    эхлэх_огноо:  _startStr,
+    дуусах_өдөр:  _endDate,
+    үйлчилгээ:    document.getElementById('of-dishes').value,
+    нэмэлт:       document.getElementById('of-nemeltu').value,
+    тэмдэглэл:    document.getElementById('of-note').value.trim(),
+    нийт_дүн:     isNomaadCamp ? '' : (totalRaw || ''),
+    урьдчилгаа:   isNomaadCamp ? '' : _halfStr,
   };
 
   try {
@@ -1085,23 +1101,15 @@ async function handleSubmit(e) {
     }).catch(() => {});
 
     // 2. Web3Forms → имэйл илгээх
-    var eventVal = document.getElementById('of-event').value;
-    var isNomaadCamp = eventVal === 'Nomaad camp' || !eventVal;
     const fd = new FormData(form);
     fd.append('Zahialgiin_tuluw', 'Шинэ захиалга — баталгаажаагүй');
     if (_startStr) fd.append('Ehleh_ognoo_tsag', _startStr);
     if (_endDate)  fd.append('Duusah_ognoo', _endDate);
-    const totalEl = document.getElementById('price-total');
-    var totalRaw = totalEl ? totalEl.textContent.replace('Нийт дүн','').trim() : '';
     if (isNomaadCamp) {
       fd.append('Niit_dun', 'Nomaad camp — үнэ тусад нь тооцно');
     } else if (totalRaw) {
       fd.append('Niit_dun', totalRaw);
-      var _m = totalRaw.match(/[\d,]+/);
-      if (_m) {
-        var _half = Math.round(parseInt(_m[0].replace(/,/g,'')) / 2);
-        fd.append('Urьdchilga_50', '₮' + _half.toLocaleString() + ' (нийт дүнгийн 50%)');
-      }
+      if (_halfStr) fd.append('Urьdchilga_50', _halfStr + ' (нийт дүнгийн 50%)');
     } else {
       fd.append('Niit_dun', 'Тооцоогүй (хүний тоо оруулаагүй)');
     }
