@@ -39,7 +39,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .hero p{font-size:15px;color:var(--muted);max-width:620px;margin:0 auto;line-height:1.6}
 
 /* ── PRICE TIERS ── */
-.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0 6px}
+.tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:28px 0 6px}
 .tier{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 20px;display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden}
 .tier::before{content:"";position:absolute;top:0;left:0;right:0;height:4px}
 .tier.por::before{background:var(--accent)}
@@ -53,6 +53,34 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .tier.por .t-badge{background:var(--accent-soft);color:#27543f}
 .tier.buf .t-badge{background:var(--amber-soft);color:#8a5a12}
 .tier.shr .t-badge{background:#efe7d2;color:#7a6224}
+.tier.ugl::before{background:#2c6a8f}
+.tier.ugl .t-badge{background:#dceaf5;color:#1f516e}
+
+/* ── ЦАГ / ДАВТАМЖ ── */
+.schedule-box{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-top:4px}
+.schedule-box .sb-head{background:linear-gradient(135deg,#1F4A38,#2E6049);padding:12px 16px;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.schedule-box .sb-body{padding:16px}
+.sb-row{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.sb-row:last-child{margin-bottom:0}
+.sb-label{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.time-chips{display:flex;gap:8px;flex-wrap:wrap}
+.time-chip{font-family:inherit;font-size:13px;font-weight:500;padding:8px 16px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
+.time-chip:hover{border-color:var(--accent);color:var(--accent)}
+.time-chip.tc-sel{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.time-chip .tc-icon{font-size:16px}
+.freq-options{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.freq-card{background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .15s;text-align:center}
+.freq-card:hover{border-color:var(--accent)}
+.freq-card.fc-sel{border-color:var(--accent);background:var(--accent-soft)}
+.freq-card .fc-icon{font-size:22px;margin-bottom:4px}
+.freq-card .fc-title{font-size:13px;font-weight:700;color:var(--ink)}
+.freq-card .fc-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.freq-card.fc-sel .fc-title{color:var(--accent)}
+.freq-input-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;background:var(--bg);border:1.5px solid var(--line);border-radius:10px}
+.freq-input-row label{font-size:13px;font-weight:600;color:var(--ink);flex:1}
+.freq-input-row input{width:70px;font-family:inherit;font-size:15px;font-weight:700;text-align:center;border:1.5px solid var(--line);border-radius:8px;padding:6px 8px;outline:none;transition:border-color .15s}
+.freq-input-row input:focus{border-color:var(--accent)}
+.freq-input-row span{font-size:12px;color:var(--muted)}
 
 /* ── MENU SECTIONS — always open ── */
 .msec{margin-top:16px}
@@ -165,7 +193,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-height:1.7}
 
 @media(max-width:760px){
-  .tiers{grid-template-columns:1fr}
+  .tiers{grid-template-columns:repeat(2,1fr)}
   .dishes{grid-template-columns:1fr}
   .boodog .b-price{text-align:left;width:100%}
   .hero h2{font-size:28px}
@@ -212,25 +240,13 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
       <div class="t-desc">Уламжлалт аргаар бэлдсэн бүтэн хонь — ширээгээр, ёслол төгөлдөр.</div>
       <span class="t-badge">8–12 хүнд</span>
     </div>
-  </section>
-
-
-  <!-- Өглөөний цай -->
-  <div class="uguluun-card">
-    <div class="u-ico">☕</div>
-    <div class="u-main">
-      <h3>Өглөөний цай</h3>
-      <div class="u-sub">Байгууллагын өглөөний цай, хурал дагалдах хөнгөн зооглолт</div>
-      <div class="uguluun-list">
-        <span>Брокли зутан</span>
-        <span>Хулууны зутан</span>
-        <span>Мөөгтэй шөл</span>
-        <span>Нарийн ногооны шөл</span>
-        <span>Бантан</span>
-        <span>Өндөг · талх · өргөст хэмх</span>
-      </div>
+    <div class="tier ugl">
+      <div class="t-name">Өглөөний цай</div>
+      <div class="t-price" style="font-size:22px">Тохиролцоно</div>
+      <div class="t-desc">Зутан, шөл, хөнгөн зооглолт — өглөөний хурал, уулзалтад тохиромжтой.</div>
+      <span class="t-badge">Байгууллагад</span>
     </div>
-  </div>
+  </section>
 
   <!-- ═══ ЗАХИАЛГА ӨГӨХ ═══ -->
   <div class="order-box" id="order">
@@ -428,6 +444,57 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         <!-- Сонгосон хоол (hidden) -->
         <input type="hidden" name="Songoson_hool" id="of-dishes">
 
+        <!-- ── ЦАГ & ДАВТАМЖ ── -->
+        <div class="order-field full">
+          <div class="schedule-box">
+            <div class="sb-head">🕐 Үйлчилгээний цаг & давтамж <span style="font-size:11px;opacity:.75;font-weight:500">(заавал биш)</span></div>
+            <div class="sb-body">
+              <!-- Өдрийн цаг -->
+              <div class="sb-row">
+                <div class="sb-label">Хоолны цаг</div>
+                <div class="time-chips">
+                  <button type="button" class="time-chip" onclick="toggleTime(this)" data-val="Өглөө">
+                    <span class="tc-icon">🌅</span> Өглөө
+                  </button>
+                  <button type="button" class="time-chip" onclick="toggleTime(this)" data-val="Өдөр">
+                    <span class="tc-icon">☀️</span> Өдөр
+                  </button>
+                  <button type="button" class="time-chip" onclick="toggleTime(this)" data-val="Орой">
+                    <span class="tc-icon">🌆</span> Орой
+                  </button>
+                </div>
+              </div>
+              <!-- Давтамж -->
+              <div class="sb-row">
+                <div class="sb-label">Давтамж</div>
+                <div class="freq-options">
+                  <div class="freq-card" onclick="selectFreq(this,'once')">
+                    <div class="fc-icon">1️⃣</div>
+                    <div class="fc-title">Нэг удаа</div>
+                    <div class="fc-sub">Тусгай арга хэмжээ</div>
+                  </div>
+                  <div class="freq-card" onclick="selectFreq(this,'weekly')">
+                    <div class="fc-icon">📅</div>
+                    <div class="fc-title">7 хоногт</div>
+                    <div class="fc-sub">Долоо хоног бүр</div>
+                  </div>
+                  <div class="freq-card" onclick="selectFreq(this,'monthly')">
+                    <div class="fc-icon">🗓️</div>
+                    <div class="fc-title">Сард</div>
+                    <div class="fc-sub">Сар бүр</div>
+                  </div>
+                </div>
+                <div class="freq-input-row" id="freq-count-row" style="display:none">
+                  <label id="freq-count-label">7 хоногт хэдэн удаа?</label>
+                  <input type="number" id="freq-count" min="1" max="31" value="1" oninput="updateSchedule()">
+                  <span id="freq-count-unit">удаа</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" name="Tsag_davtamj" id="of-schedule">
+
         <!-- Нэмэлт санал -->
         <div class="order-field full">
           <div class="nemeltu-box">
@@ -484,6 +551,40 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
 
 <script>
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
+
+// ── Цаг & Давтамж ──
+var selFreq = '';
+function toggleTime(btn) {
+  btn.classList.toggle('tc-sel');
+  updateSchedule();
+}
+function selectFreq(card, type) {
+  document.querySelectorAll('.freq-card').forEach(function(c){ c.classList.remove('fc-sel'); });
+  card.classList.add('fc-sel');
+  selFreq = type;
+  var row = document.getElementById('freq-count-row');
+  var lbl = document.getElementById('freq-count-label');
+  if (type === 'weekly') {
+    row.style.display = 'flex';
+    lbl.textContent = '7 хоногт хэдэн удаа?';
+  } else if (type === 'monthly') {
+    row.style.display = 'flex';
+    lbl.textContent = 'Сард хэдэн удаа?';
+  } else {
+    row.style.display = 'none';
+  }
+  updateSchedule();
+}
+function updateSchedule() {
+  var times = [];
+  document.querySelectorAll('.time-chip.tc-sel').forEach(function(b){ times.push(b.dataset.val); });
+  var freq = '';
+  if (selFreq === 'once') freq = 'Нэг удаа';
+  else if (selFreq === 'weekly') freq = '7 хоногт ' + (document.getElementById('freq-count').value||1) + ' удаа';
+  else if (selFreq === 'monthly') freq = 'Сард ' + (document.getElementById('freq-count').value||1) + ' удаа';
+  var val = (times.length ? times.join(', ') : '') + (freq ? (times.length ? ' · ' : '') + freq : '');
+  document.getElementById('of-schedule').value = val;
+}
 
 // ── Нэмэлт сонголт ──
 function toggleNemeltu(btn) {
