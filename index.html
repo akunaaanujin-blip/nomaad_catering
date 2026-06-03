@@ -3,458 +3,279 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NOMAAD Catering · Чимун ХХК</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&family=Lora:wght@500;600;700&display=swap" rel="stylesheet">
+<title>NOMAAD Catering · Меню ба үнэ</title>
+<meta name="description" content="NOMAAD Catering — Чимун ХХК. Порц хоол, буфет, хонь боодог. Байгууллагын арга хэмжээ, эвентийн кейтеринг.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:wght@500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg:    #F5F0E6;
-  --bg2:   #ffffff;
-  --bg3:   #EEE9DF;
-  --border:#E2DDD4;
-  --accent:#1F4A38;
-  --accent2:#C8743F;
-  --accent3:#8a6a20;
-  --text:  #20271F;
-  --text2: #8A8276;
-  --red:   #BB4A36;
-  --green: #1F4A38;
-  --teal:  #2E6049;
-  --blue:  #2c6a8f;
-  --purple:#5b3f8a;
-  --yellow:#8a6a20;
-  --sand:  #D9C7A3;
+:root{
+  --bg:#F5F0E6; --surface:#ffffff; --ink:#20271F; --muted:#8A8276;
+  --line:#E2E6DF; --accent:#1F4A38; --accent-soft:#E3EDE7;
+  --amber:#C8743F; --amber-soft:#F5E2D5; --sand:#D9C7A3;
+  --blue:#2c6a8f; --blue-soft:#dceaf5;
+  --shadow:0 1px 2px rgba(32,39,31,.06),0 8px 24px rgba(32,39,31,.07);
+  --radius:16px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;min-height:100vh;font-size:14px}
-a{color:var(--accent);text-decoration:none}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;padding-bottom:60px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 18px}
 
-/* ── NOMAD BAND ── */
-.nomad-band{height:4px;background:linear-gradient(90deg,#1F4A38 25%,#D9C7A3 25%,#D9C7A3 50%,#C8743F 50%,#C8743F 75%,#2E6049 75%)}
+/* ── BAND ── */
+.nomad-band{height:6px;background:linear-gradient(90deg,#1F4A38 0%,#1F4A38 25%,#6B8E6F 25%,#6B8E6F 50%,#D9C7A3 50%,#D9C7A3 75%,#C8743F 75%,#C8743F 100%)}
 
-/* ── HEADER ── */
-.header{
-  background:linear-gradient(135deg,#152E22 0%,#1F4A38 55%,#2E6049 100%);
-  border-bottom:1px solid rgba(0,0,0,.12);
-  padding:18px 24px 0;
-  position:sticky;top:0;z-index:200;
-}
-.header-top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-.logo{display:flex;align-items:center;gap:10px}
-.logo-icon{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.15);display:grid;place-items:center;font-size:17px;flex-shrink:0}
-.logo-name{font-family:'Lora',Georgia,serif;font-size:20px;font-weight:700;letter-spacing:-.3px;color:#fff}
-.logo-name span{color:#D9C7A3}
-.ver{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:2px 8px;font-size:11px;font-family:'DM Mono',monospace;color:rgba(255,255,255,.7)}
-.header-sub{font-size:12px;color:rgba(255,255,255,.65);margin-left:44px;margin-bottom:14px}
+/* ── TOPBAR ── */
+.topbar{background:linear-gradient(135deg,#163528 0%,#1F4A38 55%,#2E6049 100%);color:#fff;padding:26px 0 0}
+.topbar-row{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:0 0 22px}
+.brand .logo{display:inline-flex;align-items:center;gap:11px}
+.brand h1{font-family:'Lora',Georgia,serif;font-size:22px;font-weight:700;letter-spacing:-.2px}
+.brand p{font-size:13px;opacity:.85;font-weight:500;margin-top:2px}
+.dot-ico{width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:19px}
+.tag-pill{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:rgba(255,255,255,.16);padding:5px 11px;border-radius:999px}
 
-/* ── TABS ── */
-.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tab{padding:9px 18px;border-radius:8px 8px 0 0;font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;border-bottom:none;color:rgba(255,255,255,.6);transition:all .18s;white-space:nowrap;user-select:none}
-.tab:hover{color:#fff;background:rgba(255,255,255,.1)}
-.tab.active{background:var(--bg);border-color:rgba(0,0,0,.08);color:var(--accent);border-bottom:2px solid var(--bg);margin-bottom:-1px}
+/* ── NAV TABS (header доор) ── */
+.nav-tabs{display:flex;gap:0;overflow-x:auto;scrollbar-width:none;border-top:1px solid rgba(255,255,255,.1)}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{padding:10px 18px;font-size:13px;font-weight:600;color:rgba(255,255,255,.6);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .18s;text-decoration:none}
+.nav-tab:hover{color:#fff;background:rgba(255,255,255,.07)}
+.nav-tab.active{color:#fff;border-bottom-color:#D9C7A3}
 
-/* ── MAIN ── */
-.main{padding:28px 24px;max-width:1240px;margin:0 auto}
-.section{display:none}
-.section.active{display:block}
-
-/* ── CONTROLS ── */
-.ctrl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:24px}
-.ctrl-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(32,39,31,.06)}
-.ctrl-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
-.ctrl-val{font-size:26px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent)}
-.ctrl-unit{font-size:12px;color:var(--text2);margin-top:3px}
-input[type=number],select{
-  width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;
-  color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:8px 12px;margin-top:8px;
-  outline:none;transition:border-color .2s;
-}
-input[type=number]:focus,select:focus{border-color:var(--accent)}
-
-/* ── BTN GROUP ── */
-.btn-group{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.btn-apt{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;
-  border:1.5px solid var(--border);background:var(--bg3);color:var(--text2);transition:all .15s}
-.btn-apt:hover{border-color:var(--accent);color:var(--accent)}
-.btn-apt.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
-
-/* ── RESULTS TABLE ── */
-.res-section{margin-bottom:28px}
-.res-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px 14px;border-radius:8px;font-weight:600;font-size:13px}
-.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-table{width:100%;border-collapse:collapse;background:var(--bg2);border-radius:10px;overflow:hidden;border:1px solid var(--border);box-shadow:0 1px 3px rgba(32,39,31,.06)}
-th{background:var(--bg3);padding:10px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);text-align:left}
-th:not(:first-child){text-align:right}
-td{padding:10px 14px;font-size:13px;border-top:1px solid var(--border)}
-td:not(:first-child){text-align:right;font-family:'DM Mono',monospace;font-size:12px}
-tr:hover td{background:rgba(31,74,56,.03)}
-.food-name{font-weight:500}
-.ftag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;margin-left:6px;vertical-align:middle}
-.ccp{background:rgba(224,82,82,.15);color:var(--red);border:1px solid rgba(224,82,82,.3)}
-.vhi{color:var(--accent);font-weight:600}
-
-/* ── COST BOX ── */
-.cost-box{margin-bottom:24px}
-.cost-box>details>summary{
-  cursor:pointer;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;
-  font-weight:600;font-size:13px;color:var(--accent2);list-style:none;display:flex;justify-content:space-between
-}
-.cost-box>details>summary::-webkit-details-marker{display:none}
-.cost-box>details[open]>summary{border-radius:10px 10px 0 0}
-.cost-inner{padding:16px;background:var(--bg2);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px}
-.cost-inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:16px}
-.ci-group{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:13px}
-.ci-label{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-.cost-result{background:var(--bg3);border:1px solid var(--accent);border-radius:10px;padding:18px;text-align:center}
-.cost-total{font-size:34px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent)}
-.cost-per{font-size:13px;color:var(--text2);margin-top:4px}
-
-/* ── MENU TAB ── */
-.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
-.menu-cat{margin-bottom:0}
-.cat-head{padding:10px 16px;border-radius:8px 8px 0 0;font-size:13px;font-weight:700;letter-spacing:.4px;display:flex;align-items:center;gap:8px}
-.cat-items{background:var(--bg2);border:1px solid var(--border);border-radius:0 0 8px 8px;overflow:hidden}
-.cat-item{display:flex;align-items:center;padding:10px 16px;border-top:1px solid var(--border);font-size:13px;gap:10px}
-.cat-item:first-child{border-top:none}
-.item-num{color:var(--text2);font-family:'DM Mono',monospace;font-size:11px;width:22px;flex-shrink:0}
-.price-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;margin-left:auto}
+/* ── HERO ── */
+.hero{padding:34px 0 8px;text-align:center}
+.hero .eyebrow{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--amber)}
+.hero h2{font-family:'Lora',Georgia,serif;font-size:34px;font-weight:700;letter-spacing:-.5px;margin:9px 0 8px}
+.hero p{font-size:15px;color:var(--muted);max-width:620px;margin:0 auto;line-height:1.6}
 
 /* ── PRICE TIERS ── */
-.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
-.tier{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden}
-.tier::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
-.tier.t1::before{background:var(--accent)}
-.tier.t2::before{background:var(--accent2)}
-.tier.t3::before{background:var(--accent3)}
-.tier-name{font-family:'Lora',Georgia,serif;font-size:17px;font-weight:700;margin-bottom:6px}
-.tier-price{font-family:'DM Mono',monospace;font-size:30px;font-weight:700;color:var(--accent);letter-spacing:-1px}
-.tier.t2 .tier-price{color:var(--accent2)}
-.tier.t3 .tier-price{color:var(--accent3)}
-.tier-unit{font-size:13px;color:var(--text2)}
-.tier-desc{font-size:12px;color:var(--text2);margin-top:8px;line-height:1.6}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0 6px}
+.tier{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 20px;display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden}
+.tier::before{content:"";position:absolute;top:0;left:0;right:0;height:4px}
+.tier.por::before{background:var(--accent)}
+.tier.buf::before{background:var(--amber)}
+.tier.shr::before{background:var(--sand)}
+.tier .t-name{font-family:'Lora',Georgia,serif;font-size:20px;font-weight:700;letter-spacing:-.3px}
+.tier .t-price{font-family:'Lora',Georgia,serif;font-size:34px;font-weight:700;letter-spacing:-1px;margin:6px 0 2px}
+.tier .t-price small{font-size:14px;font-weight:600;color:var(--muted)}
+.tier .t-desc{font-size:13px;color:var(--muted);line-height:1.55}
+.tier .t-badge{align-self:flex-start;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:4px 10px;border-radius:999px;margin-top:10px}
+.tier.por .t-badge{background:var(--accent-soft);color:#27543f}
+.tier.buf .t-badge{background:var(--amber-soft);color:#8a5a12}
+.tier.shr .t-badge{background:#efe7d2;color:#7a6224}
 
-/* ── STORAGE TABS ── */
-.storage-section{margin-bottom:28px}
-.storage-head{padding:12px 18px;border-radius:10px 10px 0 0;font-size:13px;font-weight:700;display:flex;align-items:center;gap:10px}
-.storage-table{width:100%;border-collapse:collapse;background:var(--bg2);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow:hidden}
-.storage-table th{background:var(--bg3);padding:9px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text2);text-align:left}
-.storage-table td{padding:10px 14px;font-size:13px;border-top:1px solid var(--border)}
-.storage-table tr:hover td{background:rgba(31,74,56,.03)}
-.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+/* ── MENU SECTIONS ── */
+.msec{margin-top:34px}
+.msec-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:2px solid var(--line);padding-bottom:10px;margin-bottom:16px;flex-wrap:wrap}
+.msec-head h3{font-family:'Lora',Georgia,serif;font-size:23px;font-weight:700;letter-spacing:-.4px;display:flex;align-items:center;gap:10px}
+.msec-head .price-pill{font-size:14px;font-weight:800;color:#fff;background:var(--accent);padding:6px 14px;border-radius:999px;white-space:nowrap}
+.msec.buf .msec-head .price-pill{background:var(--amber)}
+.msec-head .lead{font-size:13.5px;color:var(--muted);flex-basis:100%;margin-top:2px;line-height:1.55}
+.dishes{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 22px}
+.dish{display:flex;gap:12px;align-items:baseline;padding:11px 4px;border-bottom:1px dotted var(--line)}
+.dish .d-main{flex:1}
+.dish .d-name{font-size:15.5px;font-weight:700;letter-spacing:-.1px}
+.dish .d-meat{font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:2px 8px;border-radius:999px;margin-left:7px;white-space:nowrap}
+.dish .d-desc{font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.5}
+.subhead{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin:18px 4px 8px}
+
+/* ── BOODOG ── */
+.boodog{background:linear-gradient(135deg,#1F4A38,#2E6049);color:#fff;border-radius:var(--radius);padding:26px 24px;display:flex;gap:22px;align-items:center;flex-wrap:wrap;box-shadow:var(--shadow);margin-top:14px}
+.boodog .b-ico{font-size:46px;line-height:1}
+.boodog .b-main{flex:1;min-width:240px}
+.boodog h3{font-family:'Lora',Georgia,serif;font-size:24px;font-weight:700;margin-bottom:5px}
+.boodog p{font-size:13.5px;color:rgba(255,255,255,.85);line-height:1.6}
+.boodog .b-price{text-align:right}
+.boodog .b-price .v{font-family:'Lora',Georgia,serif;font-size:34px;font-weight:700;letter-spacing:-1px}
+.boodog .b-price .u{font-size:12px;color:var(--sand);font-weight:600}
+
+/* ── NOTE ── */
+.note{background:var(--amber-soft);border:1px solid #ecd9c5;border-radius:12px;padding:14px 18px;margin-top:26px;font-size:13px;color:#7a4f23;line-height:1.6}
+.note b{color:#5e3c19}
+
+/* ── SECTION DIVIDER ── */
+.sec-divider{display:flex;align-items:center;gap:14px;margin:52px 0 6px}
+.sec-divider::before,.sec-divider::after{content:'';flex:1;height:1.5px;background:var(--line)}
+.sec-divider span{font-family:'Lora',Georgia,serif;font-size:20px;font-weight:700;white-space:nowrap;color:var(--ink)}
+
+/* ── STORAGE SECTIONS (kitchen(1).html загвар) ── */
+.inv-section{margin-bottom:28px}
+.inv-head{padding:12px 18px;border-radius:12px 12px 0 0;font-size:13px;font-weight:700;display:flex;align-items:center;gap:10px}
+.inv-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-top:none;border-radius:0 0 12px 12px;overflow:hidden;box-shadow:var(--shadow)}
+.inv-table th{background:#EDEAE3;padding:10px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);text-align:left}
+.inv-table td{padding:10px 14px;font-size:13px;border-top:1px solid var(--line)}
+.inv-table tr:hover td{background:#FAFAF7}
+.badge{display:inline-block;padding:2px 9px;border-radius:5px;font-size:11px;font-weight:600}
 .b-cold{background:#dceaf5;color:#1f516e;border:1px solid #b8d4e8}
 .b-freeze{background:#dde8f5;color:#1a4a7a;border:1px solid #b4cce8}
 .b-dry{background:#f5ead5;color:#7a5a10;border:1px solid #e0cc96}
-.b-prep{background:#E3EDE7;color:#1F4A38;border:1px solid #b8d4c4}
+.b-prep{background:var(--accent-soft);color:#1F4A38;border:1px solid #b8d4c4}
 
-/* ── SAVE BOX ── */
-.save-box{background:var(--bg2);border:1px solid #b8d4e8;border-radius:12px;overflow:hidden;margin-top:28px;box-shadow:0 1px 3px rgba(32,39,31,.06)}
-.save-head{background:#dceaf5;padding:12px 16px;font-size:13px;font-weight:700;color:#1f516e}
-.save-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;padding:16px}
-.sf{display:flex;flex-direction:column;gap:5px}
-.sf label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px}
-.sf input,.sf select{margin-top:0}
-.save-actions{padding:0 16px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.btn-save{font-family:inherit;font-size:13px;font-weight:700;background:#2c6a8f;color:#fff;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:opacity .15s}
-.btn-save:hover{opacity:.85}
-.btn-save:disabled{opacity:.4;cursor:not-allowed}
-.save-status{font-size:13px;font-weight:600;padding:7px 12px;border-radius:8px;display:none}
-.save-status.ok{background:#E3EDE7;color:#1F4A38;display:block}
-.save-status.err{background:#f8e2dd;color:#9a3522;display:block}
-.save-status.loading{background:#dceaf5;color:#1f516e;display:block}
+/* ── HACCP CARDS ── */
+.haccp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:24px}
+.haccp-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.haccp-temp{font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent)}
+.haccp-label{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.4}
 
-/* ── HACCP ── */
-.haccp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}
-.haccp-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;box-shadow:0 1px 3px rgba(32,39,31,.06)}
-.haccp-temp{font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:#1F4A38}
-.haccp-label{font-size:11px;color:var(--text2);margin-top:5px}
-
-/* ── NOTE ── */
-.note{background:rgba(200,116,63,.06);border:1px solid rgba(200,116,63,.22);border-radius:8px;padding:12px 16px;font-size:12px;color:var(--text2);line-height:1.7;margin-top:20px}
-.note strong{color:var(--accent2)}
+.haccp-note{background:var(--amber-soft);border:1px solid #ecd9c5;border-radius:10px;padding:13px 16px;font-size:12.5px;color:#7a4f23;line-height:1.7}
+.haccp-note strong{color:#5e3c19}
 
 /* ── FOOTER ── */
-.footer{text-align:center;padding:24px;font-size:12px;color:var(--text2);border-top:1px solid var(--border);margin-top:40px}
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:34px;line-height:1.7}
+footer b{color:var(--ink)}
+.contact-bar{display:inline-flex;gap:18px;flex-wrap:wrap;justify-content:center;align-items:center;background:var(--accent-soft);border:1px solid var(--line);border-radius:999px;padding:10px 22px;margin:12px auto 6px;color:#27543f;font-weight:600;font-size:13px}
 
-/* ── RESPONSIVE ── */
-@media(max-width:700px){
-  .main{padding:16px}
+@media(max-width:760px){
   .tiers{grid-template-columns:1fr}
-  .menu-grid{grid-template-columns:1fr}
-  .tabs{padding:0 4px}
+  .dishes{grid-template-columns:1fr}
+  .boodog .b-price{text-align:left;width:100%}
+  .hero h2{font-size:28px}
+  .haccp-grid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
 </head>
 <body>
 
 <div class="nomad-band"></div>
-<div class="header">
-  <div class="header-top">
-    <div class="logo">
-      <div class="logo-icon">🍽️</div>
-      <div class="logo-name">NOMAAD <span>Catering</span></div>
+<header class="topbar">
+  <div class="wrap">
+    <div class="topbar-row">
+      <div class="brand">
+        <div class="logo"><span class="dot-ico">🍽️</span><div><h1>NOMAAD Catering</h1><p>Чимун ХХК · Эвент ба байгууллагын кейтеринг</p></div></div>
+      </div>
+      <span class="tag-pill">Меню 2026</span>
     </div>
-    <div class="ver">v2.0</div>
+    <nav class="nav-tabs">
+      <a class="nav-tab active" href="#menu">🍽️ Меню</a>
+      <a class="nav-tab" href="#kitchen">🧪 Технологи карт</a>
+      <a class="nav-tab" href="#prep">❄️ Боловсруулсан нөөц</a>
+      <a class="nav-tab" href="#raw">🥬 Боловсруулаагүй нөөц</a>
+      <a class="nav-tab" href="#haccp">🌡️ HACCP</a>
+    </nav>
   </div>
-  <div class="header-sub">Чимун ХХК · Эвент ба байгууллагын кейтеринг · gүн хөлдөөгчтэй систем</div>
-  <div class="tabs">
-    <div class="tab active"  onclick="showTab('menu',this)">🍽️ Меню</div>
-    <div class="tab"         onclick="showTab('calc',this)">📊 Технологи карт</div>
-    <div class="tab"         onclick="showTab('prep',this)">❄️ Боловсруулсан нөөц</div>
-    <div class="tab"         onclick="showTab('raw',this)">🥬 Боловсруулаагүй нөөц</div>
-    <div class="tab"         onclick="showTab('haccp',this)">🌡️ HACCP</div>
-  </div>
-</div>
+</header>
 
-<!-- ═══════════════════ ТАБ: МЕНЮ ═══════════════════ -->
-<div class="main section active" id="tab-menu">
+<main class="wrap">
 
-  <div class="tiers">
-    <div class="tier t1">
-      <div class="tier-name">Порц хоол</div>
-      <div class="tier-price">₮38,000 <span style="font-size:14px;font-weight:500;color:var(--text2)">/хүн</span></div>
-      <div class="tier-desc">Нэг хүний бэлэн таваг — гол мах + будаа/хачир. Захиалгын дагуу хослуулна.</div>
+  <!-- ═══ МЕНЮ ═══ -->
+  <div id="menu"></div>
+  <section class="hero">
+    <div class="eyebrow">Меню 2026</div>
+    <h2>Байгальд тааруулсан тансаг хоол</h2>
+    <p>Гүн хөлдөөгчтэй технологиор бэлдсэн, шинэлэг амттай хоолыг арга хэмжээний газарт тань халуунаар хүргэнэ.</p>
+  </section>
+
+  <section class="tiers">
+    <div class="tier por">
+      <div class="t-name">Порц хоол</div>
+      <div class="t-price">₮38,000 <small>/ хүн</small></div>
+      <div class="t-desc">Нэг хүний бэлэн таваг — гол мах, будаа/хачираар тэнцвэртэй бүрдсэн.</div>
+      <span class="t-badge">Албан хурал · уулзалт</span>
     </div>
-    <div class="tier t2">
-      <div class="tier-name">Буфет</div>
-      <div class="tier-price">₮54,000 <span style="font-size:14px;font-weight:500;color:var(--text2)">/хүн</span></div>
-      <div class="tier-desc">3 төрлийн мах сонгоно · Салад, шөл, хачираас дурын хослол.</div>
+    <div class="tier buf">
+      <div class="t-name">Буфет</div>
+      <div class="t-price">₮54,000 <small>/ хүн</small></div>
+      <div class="t-desc">Өөрөө авах олон төрлийн мах, салад, шөл, хачирын баялаг ширээ.</div>
+      <span class="t-badge">Том найр · team-building</span>
     </div>
-    <div class="tier t3">
-      <div class="tier-name">Хонь боодог</div>
-      <div class="tier-price">₮900,000 <span style="font-size:14px;font-weight:500;color:var(--text2)">/бүтэн</span></div>
-      <div class="tier-desc">8–12 хүн · Уламжлалт аргаар · Урьдчилан захиалах шаардлагатай.</div>
+    <div class="tier shr">
+      <div class="t-name">Хонь боодог</div>
+      <div class="t-price">₮900,000 <small>/ бүтэн</small></div>
+      <div class="t-desc">Уламжлалт аргаар бэлдсэн бүтэн хонь — ширээгээр, ёслол төгөлдөр.</div>
+      <span class="t-badge">8–12 хүнд</span>
     </div>
-  </div>
+  </section>
 
-  <div class="menu-grid">
+  <section class="msec por">
+    <div class="msec-head">
+      <h3>🍱 Порц хоол</h3>
+      <span class="price-pill">₮38,000 / хүн</span>
+      <div class="lead">Гол мах + будаа/хачир. Доорх сонголтоос нэгийг сонгоно. Захиалгаар хослуулж болно.</div>
+    </div>
+    <div class="dishes">
+      <div class="dish"><div class="d-main"><span class="d-name">Соусанд жигнэсэн хонины мах<span class="d-meat">Хонь</span></span><div class="d-desc">Зөөлөн жигнэсэн хонь, гэрийн соустай.</div></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Гахайн цорой<span class="d-meat">Гахай</span></span><div class="d-desc">Шаржигнуулсан, гадаргуу нь карамелжсан.</div></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Жеюүг — гахайн амталсан мах<span class="d-meat">Гахай</span></span><div class="d-desc">Халуун ногоотой маринадад дэвтээсэн.</div></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Терияки соустай тахиа<span class="d-meat">Тахиа</span></span><div class="d-desc">Кунжуттай, гялгар терияки соустай.</div></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Шаржигнуур тахиа<span class="d-meat">Тахиа</span></span><div class="d-desc">Шинээр шарсан, шаржигнуур гадаргуутай.</div></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Мини шорлог<span class="d-meat">Гахай · Тахиа</span></span><div class="d-desc">Шорон дээр шарсан холимог мах.</div></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Цуйван<span class="d-meat">Холимог</span></span><div class="d-desc">Гар гоймон, мах ногоотой — шинээр.</div></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Хуушуур (4 ш)<span class="d-meat">Холимог</span></span><div class="d-desc">Гүн шарсан, алтан бор шаржигнуур.</div></div></div>
+    </div>
+  </section>
 
-    <div class="menu-cat">
-      <div class="cat-head" style="background:rgba(200,116,63,.15);color:#e08050">🥩 МАХНЫ СОНГОЛТ — Буфет / Порц</div>
-      <div class="cat-items">
-        <div class="cat-item"><span class="item-num">01</span>Соусанд жигнэсэн хонины мах</div>
-        <div class="cat-item"><span class="item-num">02</span>Хорхог</div>
-        <div class="cat-item"><span class="item-num">03</span>Мини шорлог /гахай, тахиа/</div>
-        <div class="cat-item"><span class="item-num">04</span>Гахайн цорой</div>
-        <div class="cat-item"><span class="item-num">05</span>Гахайн амталсан мах</div>
-        <div class="cat-item"><span class="item-num">06</span>Терияки соустай тахиа</div>
-        <div class="cat-item"><span class="item-num">07</span>Шаржигнуур тахиа</div>
-        <div class="cat-item"><span class="item-num">08</span>Цуйван</div>
-        <div class="cat-item"><span class="item-num">09</span>Хуушуур</div>
+  <section class="msec buf">
+    <div class="msec-head">
+      <h3>🍴 Буфет</h3>
+      <span class="price-pill">₮54,000 / хүн</span>
+      <div class="lead">Олон төрлийн мах, дагалдах салад, шөл, хачираар бүрдсэн өөрөө авах ширээ.</div>
+    </div>
+    <div class="subhead">Гол мах</div>
+    <div class="dishes">
+      <div class="dish"><div class="d-main"><span class="d-name">Соусанд жигнэсэн хонины мах<span class="d-meat">Хонь</span></span></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Хонь шарсан хавирга<span class="d-meat">Хонь</span></span></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Гахайн цорой<span class="d-meat">Гахай</span></span></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Терияки соустай тахиа<span class="d-meat">Тахиа</span></span></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Шаржигнуур тахиа<span class="d-meat">Тахиа</span></span></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Мини шорлог<span class="d-meat">Гахай · Тахиа</span></span></div></div>
+    </div>
+    <div class="subhead">Дагалдах</div>
+    <div class="dishes">
+      <div class="dish"><div class="d-main"><span class="d-name">Улирлын салад</span><div class="d-desc">2 төрлийн шинэ салад.</div></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Халуун шөл</span><div class="d-desc">Өдрийн шинэ шөл.</div></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Хачир — төмс, ногоо</span><div class="d-desc">Жигнэсэн улирлын ногоо.</div></div></div>
+      <div class="dish"><div class="d-main"><span class="d-name">Цагаан будаа</span><div class="d-desc">Уурын будаа.</div></div></div>
+    </div>
+  </section>
+
+  <section class="msec">
+    <div class="boodog">
+      <div class="b-ico">🐑</div>
+      <div class="b-main">
+        <h3>Хонь боодог</h3>
+        <p>Бүтэн хонийг уламжлалт аргаар, улаасан чулуугаар боодон болгож, ширээгээр ёслол төгөлдөр гаргана. Урьдчилан захиална.</p>
+      </div>
+      <div class="b-price">
+        <div class="v">₮900,000</div>
+        <div class="u">бүтэн хонь · 8–12 хүнд</div>
       </div>
     </div>
-
-    <div class="menu-cat">
-      <div class="cat-head" style="background:rgba(6,214,160,.12);color:#06d6a0">🥗 САЛАД</div>
-      <div class="cat-items">
-        <div class="cat-item"><span class="item-num">01</span>Шинэ ногооны салад</div>
-        <div class="cat-item"><span class="item-num">02</span>Нийслэл салад</div>
-        <div class="cat-item"><span class="item-num">03</span>Пүнтүүзтэй салад</div>
-        <div class="cat-item"><span class="item-num">04</span>Байцааны салад</div>
-        <div class="cat-item"><span class="item-num">05</span>Луувангийн салад</div>
-        <div class="cat-item"><span class="item-num">06</span>Гоймонгийн салад</div>
-      </div>
-    </div>
-
-    <div class="menu-cat">
-      <div class="cat-head" style="background:rgba(255,209,102,.12);color:#ffd166">🍚 ХАЧИР</div>
-      <div class="cat-items">
-        <div class="cat-item"><span class="item-num">01</span>Амталсан будаа</div>
-        <div class="cat-item"><span class="item-num">02</span>Шарсан төмс</div>
-        <div class="cat-item"><span class="item-num">03</span>Төмсний нухаш</div>
-        <div class="cat-item"><span class="item-num">04</span>Хуурсан ногоо</div>
-        <div class="cat-item"><span class="item-num">05</span>Мантуу</div>
-        <div class="cat-item"><span class="item-num">06</span>Сийртэй гоймон</div>
-        <div class="cat-item"><span class="item-num">07</span>Амталсан өргөст хэмх</div>
-      </div>
-    </div>
-
-    <div class="menu-cat">
-      <div class="cat-head" style="background:rgba(78,205,196,.12);color:#4ecdc4">🍜 ШӨЛ</div>
-      <div class="cat-items">
-        <div class="cat-item"><span class="item-num">01</span>Брокли зутан шөл</div>
-        <div class="cat-item"><span class="item-num">02</span>Мөөгтэй зутан шөл</div>
-        <div class="cat-item"><span class="item-num">03</span>Нарийн ногооны шөл</div>
-        <div class="cat-item"><span class="item-num">04</span>Бантан</div>
-        <div class="cat-item"><span class="item-num">05</span>Далайн байцаатай шөл</div>
-        <div class="cat-item"><span class="item-num">06</span>Халуун ногоотой шөл</div>
-        <div class="cat-item"><span class="item-num">07</span>Ясны шөл</div>
-      </div>
-    </div>
-
-    <div class="menu-cat">
-      <div class="cat-head" style="background:rgba(162,155,254,.12);color:#a29bfe">☕ ӨГЛӨӨНИЙ ЦАЙ</div>
-      <div class="cat-items">
-        <div class="cat-item"><span class="item-num">01</span>Брокли зутан</div>
-        <div class="cat-item"><span class="item-num">02</span>Хулууны зутан</div>
-        <div class="cat-item"><span class="item-num">03</span>Мөөгтэй шөл</div>
-        <div class="cat-item"><span class="item-num">04</span>Нарийн ногооны шөл</div>
-        <div class="cat-item"><span class="item-num">05</span>Бантан</div>
-        <div class="cat-item"><span class="item-num">06</span>Өндөг · талх · өргөст хэмх</div>
-      </div>
-    </div>
-
-    <div class="menu-cat">
-      <div class="cat-head" style="background:rgba(253,121,168,.12);color:#fd79a8">🍱 ПОРЦ ХООЛ</div>
-      <div class="cat-items">
-        <div class="cat-item"><span class="item-num">01</span>Соусанд жигнэсэн хонины мах</div>
-        <div class="cat-item"><span class="item-num">02</span>Хорхог</div>
-        <div class="cat-item"><span class="item-num">03</span>Мини шорлог /гахай, тахиа/</div>
-        <div class="cat-item"><span class="item-num">04</span>Гахайн цорой</div>
-        <div class="cat-item"><span class="item-num">05</span>Гахайн амталсан мах</div>
-        <div class="cat-item"><span class="item-num">06</span>Терияки соустай тахиа</div>
-        <div class="cat-item"><span class="item-num">07</span>Шаржигнуур тахиа</div>
-        <div class="cat-item"><span class="item-num">08</span>Цуйван</div>
-        <div class="cat-item"><span class="item-num">09</span>Хуушуур</div>
-      </div>
-    </div>
-
-    <div class="menu-cat">
-      <div class="cat-head" style="background:rgba(253,203,110,.12);color:#fdcb6e">🍕 НЭМЭЛТ / SNACK</div>
-      <div class="cat-items">
-        <div class="cat-item"><span class="item-num">01</span>Жимсний платер <span class="price-tag" style="background:rgba(253,203,110,.15);color:#fdcb6e;border:1px solid rgba(253,203,110,.3)">+төлбөр</span></div>
-        <div class="cat-item"><span class="item-num">02</span>Cup cake & Egg tart <span class="price-tag" style="background:rgba(253,203,110,.15);color:#fdcb6e;border:1px solid rgba(253,203,110,.3)">+төлбөр</span></div>
-        <div class="cat-item"><span class="item-num">03</span>Мини пицца <span class="price-tag" style="background:rgba(253,203,110,.15);color:#fdcb6e;border:1px solid rgba(253,203,110,.3)">+төлбөр</span></div>
-        <div class="cat-item"><span class="item-num">04</span>Мини бургер <span class="price-tag" style="background:rgba(253,203,110,.15);color:#fdcb6e;border:1px solid rgba(253,203,110,.3)">+төлбөр</span></div>
-        <div class="cat-item"><span class="item-num">05</span>Cheese ball <span class="price-tag" style="background:rgba(253,203,110,.15);color:#fdcb6e;border:1px solid rgba(253,203,110,.3)">+төлбөр</span></div>
-        <div class="cat-item"><span class="item-num">—</span>Халуун цай <span class="price-tag" style="background:rgba(46,158,107,.12);color:var(--accent);border:1px solid rgba(46,158,107,.3)">Үнэгүй</span></div>
-        <div class="cat-item"><span class="item-num">—</span>Кофе <span class="price-tag" style="background:rgba(46,158,107,.12);color:var(--accent);border:1px solid rgba(46,158,107,.3)">Үнэгүй</span></div>
-      </div>
-    </div>
-
-    <div class="menu-cat">
-      <div class="cat-head" style="background:rgba(91,156,246,.12);color:#5b9cf6">🐑 УЛАМЖЛАЛТ ШЭЙР</div>
-      <div class="cat-items">
-        <div class="cat-item"><span class="item-num">01</span>Хонь боодог <span class="price-tag" style="background:rgba(217,199,163,.12);color:#D9C7A3;border:1px solid rgba(217,199,163,.3)">8–12 хүн · ₮900,000</span></div>
-        <div class="cat-item"><span class="item-num">02</span>Хорхог <span class="price-tag" style="background:rgba(91,156,246,.12);color:#5b9cf6;border:1px solid rgba(91,156,246,.3)">Ширээгээр</span></div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ═══════════════════ ТАБ: ТЕХНОЛОГИ КАРТ ═══════════════════ -->
-<div class="main section" id="tab-calc">
-
-  <div class="ctrl-grid">
-    <div class="ctrl-card">
-      <div class="ctrl-label">Нийт хүн</div>
-      <input type="number" id="ppl" value="50" min="1" oninput="calc()">
-      <div class="ctrl-unit" id="lbl-ppl">50 хүн</div>
-    </div>
-    <div class="ctrl-card">
-      <div class="ctrl-label">Идэх хандлага</div>
-      <div class="btn-group">
-        <div class="btn-apt active" data-a="1.0">Албан хурал</div>
-        <div class="btn-apt" data-a="1.1">Team-building</div>
-        <div class="btn-apt" data-a="1.2">Гадаа+энгийн</div>
-        <div class="btn-apt" data-a="1.3">Гадаа+пиво</div>
-        <div class="btn-apt" data-a="1.5">Том найр</div>
-        <div class="btn-apt" data-a="1.65">BBQ үдэш</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Зардлын тооцоо -->
-  <div class="cost-box">
-    <details>
-      <summary>💰 Зардлын тооцоо — мах ₮/кг болон дагалдах ₮/хүн оруулах <span>▼</span></summary>
-      <div class="cost-inner">
-        <div class="cost-inputs">
-          <div class="ci-group"><div class="ci-label">Хонь зөөлөн ₮/кг</div><input type="number" id="p_lamb" value="18000" oninput="calcCost()"></div>
-          <div class="ci-group"><div class="ci-label">Хонь ястай ₮/кг</div><input type="number" id="p_lamb_b" value="12000" oninput="calcCost()"></div>
-          <div class="ci-group"><div class="ci-label">Гахай ₮/кг</div><input type="number" id="p_pork" value="14000" oninput="calcCost()"></div>
-          <div class="ci-group"><div class="ci-label">Тахиа ₮/кг</div><input type="number" id="p_chk" value="9000" oninput="calcCost()"></div>
-          <div class="ci-group"><div class="ci-label">Холимог ₮/кг</div><input type="number" id="p_mix" value="11000" oninput="calcCost()"></div>
-          <div class="ci-group"><div class="ci-label">Дагалдах ₮/хүн</div><input type="number" id="p_side" value="3500" oninput="calcCost()"></div>
-        </div>
-        <div class="cost-result">
-          <div class="cost-total" id="cost-total">₮ —</div>
-          <div class="cost-per" id="cost-per">Нийт зардал (нэг хүний норм)</div>
-        </div>
-      </div>
-    </details>
-  </div>
-
-  <!-- Үндсэн мах хүснэгт -->
-  <div class="res-section">
-    <div class="res-head" style="background:rgba(200,116,63,.1);color:#e08050">
-      <div class="dot" style="background:#e08050"></div>Үндсэн мах — 9 хоол
-    </div>
-    <table>
-      <thead><tr><th>Хоол</th><th>Нэг хүн (г)</th><th>Нийт нетто (кг)</th><th>Yield %</th><th>Бруттo (кг)</th></tr></thead>
-      <tbody id="mah-tbody"></tbody>
-    </table>
-  </div>
-
-  <!-- Дагалдах хүснэгт -->
-  <div class="res-section">
-    <div class="res-head" style="background:rgba(46,158,107,.1);color:var(--accent)">
-      <div class="dot" style="background:var(--accent)"></div>Дагалдах хоол — буфет норм
-    </div>
-    <table>
-      <thead><tr><th>Хоол</th><th>Нэг хүн (г)</th><th>Нийт (кг)</th><th>Ангилал</th></tr></thead>
-      <tbody id="side-tbody"></tbody>
-    </table>
-  </div>
-
-  <!-- Google Sheets хадгалах -->
-  <div class="save-box">
-    <div class="save-head">📤 Тооцоог Google Sheets-д хадгалах</div>
-    <div class="save-fields">
-      <div class="sf"><label>Захиалагч</label><input id="sv-client" type="text" placeholder="Төрийн банк"></div>
-      <div class="sf"><label>Огноо</label><input id="sv-date" type="date"></div>
-      <div class="sf"><label>Арга хэмжээ</label>
-        <select id="sv-type">
-          <option>Албан хурал</option><option>Team-building</option>
-          <option>Гадаа найр</option><option>BBQ үдэш</option>
-          <option>Хүлээн авалт</option><option>Бусад</option>
-        </select>
-      </div>
-      <div class="sf"><label>Үйлчилгээ</label>
-        <select id="sv-svc">
-          <option>Буфет</option><option>Порц</option>
-          <option>Буфет + Боодог</option><option>Порц + Боодог</option><option>Холимог</option>
-        </select>
-      </div>
-      <div class="sf"><label>Тэмдэглэл</label><input id="sv-note" type="text" placeholder="Нэмэлт мэдээлэл"></div>
-    </div>
-    <div class="save-actions">
-      <button class="btn-save" id="btn-save" onclick="saveToSheets()">📤 Google Sheets-д хадгалах</button>
-      <div class="save-status" id="save-status"></div>
-    </div>
-  </div>
+  </section>
 
   <div class="note">
-    <strong>🔴 CCP</strong> = Эрүүл ахуйн критик цэг. Yield: Хонь 70% · Хонь ястай 60–65% · Гахай 72–74% · Тахиа 75–78%.<br>
-    ⚠️ Тоонууд нь NOMAAD Catering порц стандарт <strong>v1.0</strong> эхлэх тоо — бодит өгөгдлөөр тохируулна.
-  </div>
-</div>
-
-<!-- ═══════════════════ ТАБ: БОЛОВСРУУЛСАН НӨӨЦ ═══════════════════ -->
-<div class="main section" id="tab-prep">
-  <div style="margin-bottom:20px;font-size:13px;color:var(--text2)">
-    Урьдчилан бэлдэж <strong style="color:#55efc4">гүн хөлдөөгчид (−18°C)</strong> хадгалах боловсруулсан бэлдэцүүд.
+    <b>Захиалгын нөхцөл:</b> Үнэ нь нэг хүний (порц/буфет) болон нэгж (боодог) дүн. Тээвэр, үйлчлэгч, тоног төхөөрөмж зэргийг арга хэмжээний хэмжээнээс хамааруулан тооцно.
   </div>
 
-  <div class="storage-section">
-    <div class="storage-head" style="background:rgba(85,239,196,.1);color:#55efc4">❄️ МАХ — БОЛОВСРУУЛСАН БЭЛДЭЦ</div>
-    <table class="storage-table">
+  <!-- ═══ ТЕХНОЛОГИ КАРТ линк ═══ -->
+  <div id="kitchen" style="margin-top:52px;text-align:center">
+    <a href="kitchen.html" style="display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;padding:14px 28px;border-radius:12px;text-decoration:none;box-shadow:var(--shadow)">
+      🧪 Технологи карт &amp; нөөц тооцоолол →
+    </a>
+    <p style="font-size:12.5px;color:var(--muted);margin-top:10px">Хүний тоо, идэх хандлагаар махны хэрэгцээ, зардлыг тооцоолно</p>
+  </div>
+
+  <!-- ═══ БОЛОВСРУУЛСАН НӨӨЦ ═══ -->
+  <div class="sec-divider" style="margin-top:60px"><span id="prep">❄️ Боловсруулсан нөөц</span></div>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:24px">Урьдчилан бэлдэж гүн хөлдөөгчид (−18°C) хадгалах боловсруулсан бэлдэцүүд.</p>
+
+  <div class="inv-section">
+    <div class="inv-head" style="background:rgba(31,74,56,.1);color:#1F4A38;border:1px solid var(--line);border-bottom:none">🥩 МАХ — БОЛОВСРУУЛСАН БЭЛДЭЦ</div>
+    <table class="inv-table">
       <thead><tr><th>Бэлдэц</th><th>Гарах хоол</th><th>Боловсруулалт</th><th>Хадгалалт</th><th>Хугацаа</th></tr></thead>
       <tbody>
         <tr><td>Хонины мах — маринадласан</td><td>Соусанд жигнэсэн хонины мах</td><td>Маринад + вакуум уут</td><td><span class="badge b-freeze">−18°C</span></td><td>30 хоног</td></tr>
         <tr><td>Хорхогийн мах — хэрчсэн</td><td>Хорхог</td><td>Хэрчих + давсалах</td><td><span class="badge b-freeze">−18°C</span></td><td>30 хоног</td></tr>
         <tr><td>Шорлогийн мах — шиш дээр ороосон</td><td>Мини шорлог</td><td>Зүсэх + шиш дээр ороох</td><td><span class="badge b-freeze">−18°C</span></td><td>14 хоног</td></tr>
         <tr><td>Гахайн цорой — маринадласан</td><td>Гахайн цорой</td><td>Маринад + вакуум</td><td><span class="badge b-freeze">−18°C</span></td><td>21 хоног</td></tr>
-        <tr><td>Гахайн амталсан мах — бэлэн</td><td>Гахайн амталсан мах</td><td>Жигнэсэн + blast chill + хөлдөөсөн</td><td><span class="badge b-freeze">−18°C</span></td><td>30 хоног</td></tr>
+        <tr><td>Гахайн амталсан мах — бэлэн</td><td>Жеюүг</td><td>Жигнэсэн + blast chill + хөлдөөсөн</td><td><span class="badge b-freeze">−18°C</span></td><td>30 хоног</td></tr>
         <tr><td>Терияки тахиа — маринадласан</td><td>Терияки соустай тахиа</td><td>Маринад + вакуум</td><td><span class="badge b-freeze">−18°C</span></td><td>14 хоног</td></tr>
         <tr><td>Шаржигнуур тахиа — бэлэн</td><td>Шаржигнуур тахиа</td><td>Жигнэсэн + blast chill + хөлдөөсөн</td><td><span class="badge b-freeze">−18°C</span></td><td>30 хоног</td></tr>
       </tbody>
     </table>
   </div>
 
-  <div class="storage-section">
-    <div class="storage-head" style="background:rgba(85,239,196,.1);color:#55efc4">🥟 ГУРИЛАН ХООЛ — БЭЛДЭЦ</div>
-    <table class="storage-table">
+  <div class="inv-section">
+    <div class="inv-head" style="background:rgba(31,74,56,.1);color:#1F4A38;border:1px solid var(--line);border-bottom:none">🥟 ГУРИЛАН ХООЛ — БЭЛДЭЦ</div>
+    <table class="inv-table">
       <thead><tr><th>Бэлдэц</th><th>Гарах хоол</th><th>Боловсруулалт</th><th>Хадгалалт</th><th>Хугацаа</th></tr></thead>
       <tbody>
         <tr><td>Хуушуур — хэлбэршүүлсэн</td><td>Хуушуур</td><td>Зуурах + дүүргэх + хэлбэршүүлэх</td><td><span class="badge b-freeze">−18°C</span></td><td>30 хоног</td></tr>
@@ -464,13 +285,13 @@ tr:hover td{background:rgba(31,74,56,.03)}
     </table>
   </div>
 
-  <div class="storage-section">
-    <div class="storage-head" style="background:rgba(85,239,196,.1);color:#55efc4">🍜 ШӨЛ, ЗУТАН — БЭЛДЭЦ</div>
-    <table class="storage-table">
+  <div class="inv-section">
+    <div class="inv-head" style="background:rgba(31,74,56,.1);color:#1F4A38;border:1px solid var(--line);border-bottom:none">🍜 ШӨЛ, ЗУТАН — БЭЛДЭЦ</div>
+    <table class="inv-table">
       <thead><tr><th>Бэлдэц</th><th>Гарах хоол</th><th>Боловсруулалт</th><th>Хадгалалт</th><th>Хугацаа</th></tr></thead>
       <tbody>
         <tr><td>Ясны бульон — чанасан</td><td>Ясны шөл · Бантан · Цуйван</td><td>Чанах ≥75°C → blast chill → хөлдөөх</td><td><span class="badge b-freeze">−18°C</span></td><td>30 хоног</td></tr>
-        <tr><td>Брокли зутан — бэлэн</td><td>Брокли зутан шөл · Өглөөний цай</td><td>Чанах → блендер → хөлдөөх</td><td><span class="badge b-freeze">−18°C</span></td><td>14 хоног</td></tr>
+        <tr><td>Брокли зутан — бэлэн</td><td>Брокли зутан · Өглөөний цай</td><td>Чанах → блендер → хөлдөөх</td><td><span class="badge b-freeze">−18°C</span></td><td>14 хоног</td></tr>
         <tr><td>Хулууны зутан — бэлэн</td><td>Хулууны зутан</td><td>Чанах → блендер → хөлдөөх</td><td><span class="badge b-freeze">−18°C</span></td><td>14 хоног</td></tr>
         <tr><td>Мөөгтэй шөл — бэлэн</td><td>Мөөгтэй шөл</td><td>Чанах → хөлдөөх</td><td><span class="badge b-freeze">−18°C</span></td><td>14 хоног</td></tr>
         <tr><td>Нарийн ногооны шөл — бэлэн</td><td>Нарийн ногооны шөл</td><td>Чанах → хөлдөөх</td><td><span class="badge b-freeze">−18°C</span></td><td>14 хоног</td></tr>
@@ -478,9 +299,9 @@ tr:hover td{background:rgba(31,74,56,.03)}
     </table>
   </div>
 
-  <div class="storage-section">
-    <div class="storage-head" style="background:rgba(85,239,196,.1);color:#55efc4">🥗 САЛАД, ХАЧИР — БЭЛДЭЦ</div>
-    <table class="storage-table">
+  <div class="inv-section">
+    <div class="inv-head" style="background:rgba(31,74,56,.1);color:#1F4A38;border:1px solid var(--line);border-bottom:none">🥗 САЛАД, ХАЧИР — БЭЛДЭЦ</div>
+    <table class="inv-table">
       <thead><tr><th>Бэлдэц</th><th>Гарах хоол</th><th>Боловсруулалт</th><th>Хадгалалт</th><th>Хугацаа</th></tr></thead>
       <tbody>
         <tr><td>Нийслэл салад — хэрчсэн (майонезгүй)</td><td>Нийслэл салад</td><td>Чанах + хэрчих</td><td><span class="badge b-cold">≤4°C</span></td><td>2 хоног</td></tr>
@@ -492,27 +313,19 @@ tr:hover td{background:rgba(31,74,56,.03)}
     </table>
   </div>
 
-  <div class="note">
-    <strong>Blast chill заавал:</strong> 75°C → 4°C, ≤90 минутад · Уут = 30×40см / 2 кг · Re-heat ≥75°C · Hot hold 65–70°C<br>
-    🔴 Критик цэг: жигнэх (≥75°C), blast chill, хадгалалтын температур тогтмол шалгах
-  </div>
-</div>
+  <!-- ═══ БОЛОВСРУУЛААГҮЙ НӨӨЦ ═══ -->
+  <div class="sec-divider" style="margin-top:56px"><span id="raw">🥬 Боловсруулаагүй нөөц</span></div>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:24px">Менюний бүх хоолд шаардлагатай түүхий орцуудыг ангилан харуулав.</p>
 
-<!-- ═══════════════════ ТАБ: БОЛОВСРУУЛААГҮЙ НӨӨЦ ═══════════════════ -->
-<div class="main section" id="tab-raw">
-  <div style="margin-bottom:20px;font-size:13px;color:var(--text2)">
-    Менюний бүх хоолд шаардлагатай <strong style="color:#74b9ff">боловсруулаагүй түүхий орцуудыг</strong> ангилан харуулав.
-  </div>
-
-  <div class="storage-section">
-    <div class="storage-head" style="background:rgba(200,116,63,.12);color:#e08050">🥩 МАХ, АМЬТНЫ ГАРАЛТАЙ БҮТЭЭГДЭХҮҮН</div>
-    <table class="storage-table">
+  <div class="inv-section">
+    <div class="inv-head" style="background:rgba(200,116,63,.12);color:#8a4a1a;border:1px solid var(--line);border-bottom:none">🥩 МАХ, АМЬТНЫ ГАРАЛТАЙ БҮТЭЭГДЭХҮҮН</div>
+    <table class="inv-table">
       <thead><tr><th>Бүтээгдэхүүн</th><th>Хэрэглэх хоол</th><th>Хадгалалт</th><th>Тэмдэглэл</th></tr></thead>
       <tbody>
-        <tr><td>Хонины мах (зөөлөн, ясгүй)</td><td>Соусанд жигнэсэн, Хорхог</td><td><span class="badge b-freeze">−18°C</span></td><td>FIFO · 30 хоног</td></tr>
+        <tr><td>Хонины мах (зөөлөн, ясгүй)</td><td>Соусанд жигнэсэн · Хорхог</td><td><span class="badge b-freeze">−18°C</span></td><td>FIFO · 30 хоног</td></tr>
         <tr><td>Хонины мах (ястай, бортго)</td><td>Хорхог · Ясны шөл</td><td><span class="badge b-freeze">−18°C</span></td><td>FIFO · 30 хоног</td></tr>
         <tr><td>Гахайн мах (цорой)</td><td>Гахайн цорой · Мини шорлог</td><td><span class="badge b-freeze">−18°C</span></td><td>FIFO · 21 хоног</td></tr>
-        <tr><td>Гахайн мах (амталсан хэсэг)</td><td>Гахайн амталсан мах</td><td><span class="badge b-freeze">−18°C</span></td><td>FIFO · 30 хоног</td></tr>
+        <tr><td>Гахайн мах (амталсан хэсэг)</td><td>Жеюүг</td><td><span class="badge b-freeze">−18°C</span></td><td>FIFO · 30 хоног</td></tr>
         <tr><td>Тахианы мах (гуя / цээж)</td><td>Шорлог · Терияки · Шаржигнуур</td><td><span class="badge b-freeze">−18°C</span></td><td>FIFO · 30 хоног</td></tr>
         <tr><td>Хонины / үхрийн фарш</td><td>Хуушуур · Цуйван</td><td><span class="badge b-freeze">−18°C</span></td><td>24ц доторхи ашиглах</td></tr>
         <tr><td>Өндөг</td><td>Бантан · Өглөөний цай</td><td><span class="badge b-cold">≤4°C</span></td><td>7 хоног</td></tr>
@@ -520,9 +333,9 @@ tr:hover td{background:rgba(31,74,56,.03)}
     </table>
   </div>
 
-  <div class="storage-section">
-    <div class="storage-head" style="background:rgba(6,214,160,.1);color:#06d6a0">🥬 ШИНЭ НОГОО</div>
-    <table class="storage-table">
+  <div class="inv-section">
+    <div class="inv-head" style="background:rgba(107,142,111,.15);color:#2E6049;border:1px solid var(--line);border-bottom:none">🥬 ШИНЭ НОГОО</div>
+    <table class="inv-table">
       <thead><tr><th>Бүтээгдэхүүн</th><th>Хэрэглэх хоол</th><th>Хадгалалт</th><th>Тэмдэглэл</th></tr></thead>
       <tbody>
         <tr><td>Төмс</td><td>Шарсан төмс · Төмсний нухаш</td><td><span class="badge b-dry">Хуурай · харанхуй</span></td><td>2–4 долоо хоног</td></tr>
@@ -544,9 +357,9 @@ tr:hover td{background:rgba(31,74,56,.03)}
     </table>
   </div>
 
-  <div class="storage-section">
-    <div class="storage-head" style="background:rgba(255,209,102,.1);color:#ffd166">🌾 ГУРИЛ, БУДАА, ТАРИА</div>
-    <table class="storage-table">
+  <div class="inv-section">
+    <div class="inv-head" style="background:rgba(217,199,163,.25);color:#7a5a10;border:1px solid var(--line);border-bottom:none">🌾 ГУРИЛ, БУДАА, ТАРИА</div>
+    <table class="inv-table">
       <thead><tr><th>Бүтээгдэхүүн</th><th>Хэрэглэх хоол</th><th>Хадгалалт</th><th>Тэмдэглэл</th></tr></thead>
       <tbody>
         <tr><td>Гурил (буудайн)</td><td>Хуушуур · Мантуу</td><td><span class="badge b-dry">Хуурай</span></td><td>3 сар</td></tr>
@@ -558,9 +371,9 @@ tr:hover td{background:rgba(31,74,56,.03)}
     </table>
   </div>
 
-  <div class="storage-section">
-    <div class="storage-head" style="background:rgba(162,155,254,.1);color:#a29bfe">🫙 СОУС, АМТЛАГЧ, ТОС</div>
-    <table class="storage-table">
+  <div class="inv-section">
+    <div class="inv-head" style="background:rgba(91,63,138,.1);color:#5b3f8a;border:1px solid var(--line);border-bottom:none">🫙 СОУС, АМТЛАГЧ, ТОС</div>
+    <table class="inv-table">
       <thead><tr><th>Бүтээгдэхүүн</th><th>Хэрэглэх хоол</th><th>Хадгалалт</th><th>Тэмдэглэл</th></tr></thead>
       <tbody>
         <tr><td>Терияки соус</td><td>Терияки тахиа</td><td><span class="badge b-cold">≤4°C нээсний дараа</span></td><td>—</td></tr>
@@ -578,15 +391,16 @@ tr:hover td{background:rgba(31,74,56,.03)}
       </tbody>
     </table>
   </div>
-</div>
 
-<!-- ═══════════════════ ТАБ: HACCP ═══════════════════ -->
-<div class="main section" id="tab-haccp">
+  <!-- ═══ HACCP ═══ -->
+  <div class="sec-divider" style="margin-top:56px"><span id="haccp">🌡️ HACCP — Эрүүл ахуйн стандарт</span></div>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:24px">NOMAAD Catering-ийн бүх хоол дараах олон улсын HACCP стандартыг дагаж мөрдөнө.</p>
+
   <div class="haccp-grid">
     <div class="haccp-card"><div class="haccp-temp">≤4°C</div><div class="haccp-label">Хүлээн авах температур</div></div>
     <div class="haccp-card"><div class="haccp-temp">≥75°C</div><div class="haccp-label">Дотоод температур — жигнэх</div></div>
     <div class="haccp-card"><div class="haccp-temp">≤90 мин</div><div class="haccp-label">Blast chill: 75→4°C</div></div>
-    <div class="haccp-card"><div class="haccp-temp">−18°C</div><div class="haccp-label">Гүн хөлдөөгчийн температур</div></div>
+    <div class="haccp-card"><div class="haccp-temp">−18°C</div><div class="haccp-label">Гүн хөлдөөгч</div></div>
     <div class="haccp-card"><div class="haccp-temp">30 хон</div><div class="haccp-label">Хөлдөөсөн хадгалах хугацаа</div></div>
     <div class="haccp-card"><div class="haccp-temp">≥75°C</div><div class="haccp-label">Дахин халаах (re-heat)</div></div>
     <div class="haccp-card"><div class="haccp-temp">65–70°C</div><div class="haccp-label">Халуун хадгалалт (hot hold)</div></div>
@@ -597,193 +411,47 @@ tr:hover td{background:rgba(31,74,56,.03)}
     <div class="haccp-card"><div class="haccp-temp">95%</div><div class="haccp-label">Вакуум уутны нягтрал</div></div>
   </div>
 
-  <div class="storage-section">
-    <div class="storage-head" style="background:rgba(255,209,102,.1);color:#ffd166">🌡️ ХООЛ БҮРИЙН КРИТИК ЦЭГ (CCP)</div>
-    <table class="storage-table">
-      <thead><tr><th>Хоол</th><th>CCP алхам</th><th>Хязгаар</th><th>Хянах арга</th></tr></thead>
+  <div class="inv-section">
+    <div class="inv-head" style="background:rgba(200,116,63,.1);color:#8a4a1a;border:1px solid var(--line);border-bottom:none">🔴 ХООЛ БҮРИЙН КРИТИК ЦЭГ (CCP)</div>
+    <table class="inv-table">
+      <thead><tr><th>Хоол / Үйл ажиллагаа</th><th>CCP алхам</th><th>Хязгаар</th><th>Хянах арга</th></tr></thead>
       <tbody>
         <tr><td>Бүх мах</td><td>Хүлээн авах</td><td>≤4°C</td><td>Термометр</td></tr>
         <tr><td>Бүх жигнэсэн мах</td><td>Дотоод температур</td><td>≥75°C</td><td>Нэвт термометр</td></tr>
         <tr><td>Blast chill</td><td>Хөргөлтийн хурд</td><td>75→4°C / ≤90 мин</td><td>Хугацааны бүртгэл</td></tr>
-        <tr><td>Хөлдөөгч</td><td>Хадгалалт</td><td>−18°C ≤</td><td>Өдөр бүрийн бүртгэл</td></tr>
+        <tr><td>Гүн хөлдөөгч</td><td>Хадгалалт</td><td>≤−18°C</td><td>Өдөр бүрийн бүртгэл</td></tr>
         <tr><td>Re-heat</td><td>Дахин халаах</td><td>≥75°C</td><td>Нэвт термометр</td></tr>
         <tr><td>Hot hold</td><td>Үйлчилгээ</td><td>65–70°C · ≤2ц</td><td>Тасралтгүй хяналт</td></tr>
       </tbody>
     </table>
   </div>
 
-  <div class="note">
-    <strong>⚠️</strong> NOMAAD Catering порц стандарт <strong>v1.0</strong> — HACCP температур олон улсын баталгаатай.
-    Yield болон идэх коэф. нь industry + дотоод туршлага дээр үндэслэсэн бөгөөд бодит өгөгдлөөр v1.1-д шинэчлэгдэнэ.
+  <div class="haccp-note">
+    <strong>⚠️ Тайлбар:</strong> Blast chill — 75°C-аас 4°C хүртэл 90 минутаас бага хугацаанд хүргэх. Уут = 30×40 см / 2 кг хэмжээ. 🔴 Улаан алхам = эрүүл ахуйн критик цэг.<br>
+    HACCP температур — олон улсын баталгаатай стандарт. Yield болон идэх коэф. нь NOMAAD-н дотоод туршлага дээр үндэслэсэн.
   </div>
-</div>
 
-<div class="footer">
-  📞 <a href="tel:88028216">88028216</a> &nbsp;·&nbsp; 🕐 09:00–19:00 &nbsp;·&nbsp; 🌐 nomaadcatering.mn<br>
-  © 2026 NOMAAD Catering · Чимун ХХК
-</div>
+  <footer style="margin-top:48px">
+    <div class="contact-bar"><span>📞 99xxxxxx</span><span>🕐 09:00–19:00</span><span>🌐 nomaadcatering.mn</span></div>
+    <p style="margin-top:6px">© 2026 NOMAAD Catering · Чимун ХХК</p>
+  </footer>
+
+</main>
 
 <script>
-// ── Tab navigation ──
-function showTab(id, el) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-' + id).classList.add('active');
-  el.classList.add('active');
-}
-
-// ── Data ──
-let foodCoef = 1.0;
-
-const MAH = [
-  {name:'Соусанд жигнэсэн хонины мах', g:180, yield:0.70, type:'lamb',   ccp:true},
-  {name:'Хорхог',                        g:200, yield:0.65, type:'lamb_b', ccp:true},
-  {name:'Мини шорлог /гахай, тахиа/',   g:150, yield:0.75, type:'mix',    ccp:true},
-  {name:'Гахайн цорой',                  g:160, yield:0.72, type:'pork',   ccp:true},
-  {name:'Гахайн амталсан мах',           g:150, yield:0.70, type:'pork',   ccp:true},
-  {name:'Терияки соустай тахиа',         g:140, yield:0.78, type:'chk',    ccp:true},
-  {name:'Шаржигнуур тахиа',             g:150, yield:0.75, type:'chk',    ccp:true},
-  {name:'Цуйван',                         g:300, yield:1.00, type:'mix',    ccp:false},
-  {name:'Хуушуур',                        g:200, yield:1.00, type:'mix',    ccp:false},
-];
-
-const SIDES = [
-  {name:'Амталсан будаа',       g:80,  cat:'Хачир'},
-  {name:'Шарсан төмс',          g:100, cat:'Хачир'},
-  {name:'Төмсний нухаш',        g:80,  cat:'Хачир'},
-  {name:'Хуурсан ногоо',        g:70,  cat:'Хачир'},
-  {name:'Мантуу',                g:60,  cat:'Хачир'},
-  {name:'Сийртэй гоймон',       g:80,  cat:'Хачир'},
-  {name:'Амталсан өргөст хэмх', g:50,  cat:'Хачир'},
-  {name:'Шинэ ногооны салад',   g:80,  cat:'Салад'},
-  {name:'Нийслэл салад',        g:90,  cat:'Салад'},
-  {name:'Пүнтүүзтэй салад',     g:80,  cat:'Салад'},
-  {name:'Байцааны салад',       g:70,  cat:'Салад'},
-  {name:'Луувангийн салад',     g:70,  cat:'Салад'},
-  {name:'Гоймонгийн салад',     g:80,  cat:'Салад'},
-  {name:'Брокли зутан шөл',     g:200, cat:'Шөл'},
-  {name:'Мөөгтэй зутан шөл',   g:200, cat:'Шөл'},
-  {name:'Нарийн ногооны шөл',   g:200, cat:'Шөл'},
-  {name:'Бантан',                g:250, cat:'Шөл'},
-  {name:'Далайн байцаатай шөл', g:200, cat:'Шөл'},
-  {name:'Халуун ногоотой шөл',  g:200, cat:'Шөл'},
-  {name:'Ясны шөл',             g:250, cat:'Шөл'},
-];
-
-const CAT_COLOR = {Хачир:'rgba(255,209,102,.15);color:#ffd166', Салад:'rgba(6,214,160,.12);color:#06d6a0', Шөл:'rgba(78,205,196,.12);color:#4ecdc4'};
-
-function fmt(n){return n.toFixed(1)}
-
-function calc(){
-  const pax = parseInt(document.getElementById('ppl').value)||50;
-  document.getElementById('lbl-ppl').textContent = pax + ' хүн';
-
-  let mahHtml='';
-  MAH.forEach(d=>{
-    const net = d.g*foodCoef*pax/1000;
-    const gross = net/d.yield;
-    mahHtml+=`<tr>
-      <td class="food-name">${d.name}${d.ccp?'<span class="ftag ccp">CCP</span>':''}</td>
-      <td>${Math.round(d.g*foodCoef)} г</td>
-      <td class="vhi">${fmt(net)} кг</td>
-      <td>${Math.round(d.yield*100)}%</td>
-      <td>${fmt(gross)} кг</td>
-    </tr>`;
+// Nav tab scroll highlight
+const sections = ['menu','kitchen','prep','raw','haccp'];
+const tabs = document.querySelectorAll('.nav-tab');
+window.addEventListener('scroll', () => {
+  let cur = sections[0];
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.getBoundingClientRect().top <= 100) cur = id;
   });
-  document.getElementById('mah-tbody').innerHTML = mahHtml;
-
-  let sideHtml='';
-  SIDES.forEach(d=>{
-    const net = d.g*foodCoef*pax/1000;
-    const cs = CAT_COLOR[d.cat]||'';
-    sideHtml+=`<tr>
-      <td class="food-name">${d.name}</td>
-      <td>${Math.round(d.g*foodCoef)} г</td>
-      <td class="vhi">${fmt(net)} кг</td>
-      <td><span class="ftag" style="background:${cs.split(';')[0]};${cs.split(';')[1]};border:1px solid rgba(255,255,255,.1)">${d.cat}</span></td>
-    </tr>`;
-  });
-  document.getElementById('side-tbody').innerHTML = sideHtml;
-  calcCost();
-}
-
-function calcCost(){
-  const pax = parseInt(document.getElementById('ppl').value)||50;
-  const prices = {
-    lamb:  +document.getElementById('p_lamb').value||0,
-    lamb_b:+document.getElementById('p_lamb_b').value||0,
-    pork:  +document.getElementById('p_pork').value||0,
-    chk:   +document.getElementById('p_chk').value||0,
-    mix:   +document.getElementById('p_mix').value||0,
-  };
-  const pSide = +document.getElementById('p_side').value||0;
-  let total=0;
-  MAH.forEach(d=>{
-    const gross = d.g*foodCoef*pax/1000/d.yield;
-    total += gross*(prices[d.type]||0);
-  });
-  total += pSide*pax;
-  document.getElementById('cost-total').textContent='₮ '+Math.round(total).toLocaleString('mn-MN');
-  document.getElementById('cost-per').textContent=`Нийт зардал — нэг хүнд ₮ ${Math.round(total/pax).toLocaleString('mn-MN')}`;
-}
-
-document.querySelectorAll('.btn-apt').forEach(b=>{
-  b.addEventListener('click',function(){
-    document.querySelectorAll('.btn-apt').forEach(x=>x.classList.remove('active'));
-    this.classList.add('active');
-    foodCoef=parseFloat(this.dataset.a)||1;
-    calc();
+  tabs.forEach(t => {
+    t.classList.toggle('active', t.getAttribute('href') === '#' + cur);
   });
 });
-
-// ── Google Sheets ──
-const SHEETS_URL='YOUR_APPS_SCRIPT_URL';
-document.getElementById('sv-date').value=new Date().toISOString().split('T')[0];
-
-function saveToSheets(){
-  const client=document.getElementById('sv-client').value.trim();
-  if(!client){alert('Захиалагчийн нэрийг оруулна уу!');return;}
-  if(SHEETS_URL==='YOUR_APPS_SCRIPT_URL'){setStatus('err','⚠️ Apps Script URL тохируулна уу.');return;}
-  const pax=document.getElementById('ppl').value;
-  const prices={
-    lamb:+document.getElementById('p_lamb').value||0,
-    lamb_b:+document.getElementById('p_lamb_b').value||0,
-    pork:+document.getElementById('p_pork').value||0,
-    chk:+document.getElementById('p_chk').value||0,
-    mix:+document.getElementById('p_mix').value||0,
-  };
-  const pSide=+document.getElementById('p_side').value||0;
-  let meatCost=0;
-  MAH.forEach(d=>{meatCost+=d.g*foodCoef*(+pax)/1000/d.yield*(prices[d.type]||0);});
-  const sideCost=pSide*(+pax), total=meatCost+sideCost;
-  const aptBtn=document.querySelector('.btn-apt.active');
-  const row={
-    огноо:document.getElementById('sv-date').value,
-    захиалагч:client,
-    арга_хэмжээ:document.getElementById('sv-type').value,
-    үйлчилгээ:document.getElementById('sv-svc').value,
-    хүн:pax,
-    идэх_хандлага:aptBtn?aptBtn.textContent:'',
-    мах_өртөг:Math.round(meatCost),
-    дагалдах_өртөг:Math.round(sideCost),
-    нийт_өртөг:Math.round(total),
-    нэг_хүний_өртөг:Math.round(total/(+pax)||0),
-    тэмдэглэл:document.getElementById('sv-note').value.trim()
-  };
-  const btn=document.getElementById('btn-save');
-  btn.disabled=true; setStatus('loading','⏳ Хадгалж байна...');
-  fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(row)})
-    .then(r=>r.json())
-    .then(res=>{
-      if(res.status==='ok') setStatus('ok',`✅ "${client}" — ${pax} хүний тооцоо хадгалагдлаа!`);
-      else setStatus('err','❌ '+( res.error||'Алдаа'));
-    })
-    .catch(()=>setStatus('err','❌ Холболт амжилтгүй.'))
-    .finally(()=>{btn.disabled=false});
-}
-function setStatus(t,m){const el=document.getElementById('save-status');el.className='save-status '+t;el.textContent=m;}
-
-calc();
 </script>
 </body>
 </html>
