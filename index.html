@@ -1061,8 +1061,8 @@ async function handleSubmit(e) {
       var payBox = document.getElementById('payment-box');
       payBox.style.display = 'block';
       // Нийт дүнгийн 50% тооцох
-      var totalEl = document.getElementById('price-total');
-      var totalText = totalEl ? totalEl.textContent : '';
+      var totalEl2 = document.getElementById('price-total');
+      var totalText = totalEl2 ? totalEl2.textContent : '';
       var match = totalText.match(/[\d,]+/);
       if (match) {
         var total = parseInt(match[0].replace(/,/g,''));
