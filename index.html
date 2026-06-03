@@ -284,6 +284,10 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
           <label>Арга хэмжээний газар</label>
           <input type="text" name="Gazar" id="of-location" placeholder="Хаяг, байршил...">
         </div>
+        <div class="order-field">
+          <label>Арга хэмжээ дуусах өдөр</label>
+          <input type="date" name="Duusah_undur" id="of-end-date">
+        </div>
 
         <!-- ── АРГА ХЭМЖЭЭНИЙ ТӨРӨЛ ── -->
         <div class="order-field">
@@ -1032,14 +1036,21 @@ async function handleSubmit(e) {
   btn.disabled    = true;
   btn.textContent = '⏳ Илгээж байна...';
 
+  var _startDate = (document.getElementById('svc-date-0') || {}).value || '';
+  var _startTime = (document.getElementById('svc-time-0') || {}).value || '';
+  var _startStr  = _startDate + (_startTime ? ' ' + _startTime : '');
+  var _endDate   = document.getElementById('of-end-date').value || '';
+
   const payload = {
     type: 'order',
-    байгууллага: document.getElementById('of-org').value.trim(),
-    нэр:         document.getElementById('of-name').value.trim(),
-    утас:        document.getElementById('of-phone').value.trim(),
-    хүн:         document.getElementById('of-pax').value,
-    үйлчилгээ:  document.getElementById('of-dishes').value,
-    тэмдэглэл:  document.getElementById('of-note').value.trim(),
+    байгууллага:    document.getElementById('of-org').value.trim(),
+    нэр:            document.getElementById('of-name').value.trim(),
+    утас:           document.getElementById('of-phone').value.trim(),
+    хүн:            document.getElementById('of-pax').value,
+    эхлэх_огноо:   _startStr,
+    дуусах_өдөр:   _endDate,
+    үйлчилгээ:     document.getElementById('of-dishes').value,
+    тэмдэглэл:     document.getElementById('of-note').value.trim(),
   };
 
   try {
@@ -1055,6 +1066,8 @@ async function handleSubmit(e) {
     var isNomaadCamp = eventVal === 'Nomaad camp' || !eventVal;
     const fd = new FormData(form);
     fd.append('Zahialgiin_tuluw', 'Шинэ захиалга — баталгаажаагүй');
+    if (_startStr) fd.append('Ehleh_ognoo_tsag', _startStr);
+    if (_endDate)  fd.append('Duusah_ognoo', _endDate);
     const totalEl = document.getElementById('price-total');
     var totalRaw = totalEl ? totalEl.textContent.replace('Нийт дүн','').trim() : '';
     if (isNomaadCamp) {
