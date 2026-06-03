@@ -181,11 +181,19 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 /* ── FOOTER ── */
 footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-height:1.7}
 
+/* ── ҮНИЙН ТООЦОО ── */
+.price-box{background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;display:none}
+.price-box .pb-title{font-size:11.5px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.price-line{display:flex;justify-content:space-between;font-size:13px;color:var(--ink);padding:5px 0;border-bottom:1px dotted rgba(31,74,56,.2)}
+.price-line span:last-child{font-weight:700}
+.price-total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:800;color:var(--accent);padding-top:10px;margin-top:2px}
+
 @media(max-width:760px){
   .tiers{grid-template-columns:repeat(2,1fr)}
   .dishes{grid-template-columns:1fr}
   .boodog .b-price{text-align:left;width:100%}
   .hero h2{font-size:28px}
+  .svc-row [style*="grid-template-columns:1fr 1fr 1fr"]{display:flex;flex-direction:column;gap:10px}
 }
 </style>
 </head>
@@ -265,8 +273,16 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
           <input type="tel" name="Utas" id="of-phone" placeholder="Утасны дугаар" required>
         </div>
         <div class="order-field">
+          <label>И-мэйл <span style="font-weight:400;color:var(--muted)">(заавал биш)</span></label>
+          <input type="email" name="Email" id="of-email" placeholder="example@mail.com">
+        </div>
+        <div class="order-field">
           <label>Хүний тоо</label>
           <input type="number" name="Hunii_too" id="of-pax" value="0" min="0" required>
+        </div>
+        <div class="order-field">
+          <label>Арга хэмжээний газар</label>
+          <input type="text" name="Gazar" id="of-location" placeholder="Хаяг, байршил...">
         </div>
 
         <!-- ── АРГА ХЭМЖЭЭНИЙ ТӨРӨЛ ── -->
@@ -458,10 +474,19 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         <input type="hidden" name="Nemeltu" id="of-nemeltu">
 
         <div class="order-field full">
-          <label>Нэмэлт мэдээлэл / Тусгай хүсэлт</label>
-          <textarea name="Temdegleg" id="of-note" rows="3" placeholder="Арга хэмжээний газар, нэмэлт хүсэлт..."></textarea>
+          <label>Тусгай хүсэлт <span style="font-weight:400;color:var(--muted)">(заавал биш)</span></label>
+          <textarea name="Temdegleg" id="of-note" rows="3" placeholder="Нэмэлт хүсэлт, тайлбар..."></textarea>
         </div>
       </div>
+
+      <!-- Үнийн тооцоо -->
+      <div class="price-box" id="price-box">
+        <div class="pb-title">Нийт төлбөрийн тооцоо</div>
+        <div id="price-lines"></div>
+        <div id="price-total"></div>
+        <div style="font-size:11px;color:var(--accent);margin-top:8px;opacity:.7">* Тээвэр, үйлчлэгч тусдаа тооцно</div>
+      </div>
+
       <button type="submit" class="btn-order" id="submit-btn">✉️ Захиалга илгээх</button>
     </form>
     <div class="order-success" id="order-success">
@@ -553,6 +578,33 @@ function updateNemeltuField() {
     parts.push(name + ' × ' + nemeltuQty[name] + ' ширхэг');
   });
   document.getElementById('of-nemeltu').value = parts.join(', ');
+}
+
+function calcPrice() {
+  var pax = parseInt(document.getElementById('of-pax').value) || 0;
+  var PRICES = {por: 38000, buf: 54000, boodog: 900000, uguluun: 12000};
+  var LABELS = {por: 'Порц хоол', buf: 'Буфет', boodog: 'Хонь боодог', uguluun: 'Өглөөний цай'};
+  var lines = [], total = 0;
+  for (var i = 0; i < svcCount; i++) {
+    var s = document.getElementById('svc-sel-' + i);
+    if (!s || !s.value) continue;
+    var d = document.getElementById('svc-date-' + i);
+    var dateStr = d && d.value ? ' · ' + d.value : '';
+    var qty = (s.value === 'boodog') ? boodog_n : pax;
+    if (qty <= 0) continue;
+    var amt = PRICES[s.value] * qty;
+    var qtyLabel = (s.value === 'boodog') ? qty + ' ширхэг' : qty + ' хүн';
+    lines.push({label: LABELS[s.value] + dateStr + ' × ' + qtyLabel, amt: amt});
+    total += amt;
+  }
+  var box = document.getElementById('price-box');
+  if (!lines.length) { if (box) box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  document.getElementById('price-lines').innerHTML = lines.map(function(l) {
+    return '<div class="price-line"><span>' + l.label + '</span><span>₮' + l.amt.toLocaleString() + '</span></div>';
+  }).join('');
+  document.getElementById('price-total').innerHTML =
+    '<div class="price-total-row"><span>Нийт дүн</span><span>₮' + total.toLocaleString() + '</span></div>';
 }
 
 var boodog_n = 1;
@@ -691,6 +743,7 @@ function refreshPanels() {
 
   updateBoodog();
   updateDishesField();
+  calcPrice();
 }
 
 // ── Хонь боодогийн тоо ──
@@ -709,6 +762,7 @@ function updateBoodog() {
   var total = boodog_n * 900000;
   if (pr) pr.textContent = 'Нийт: ₮' + total.toLocaleString('mn-MN');
   if (tt) tt.textContent = boodog_n + ' × ₮900,000';
+  calcPrice();
 }
 
 // ── Accordion меню ──
@@ -825,6 +879,7 @@ function checkTotalQty() {
 document.getElementById('of-pax').addEventListener('input', function() {
   checkTotalQty();
   renderQty();
+  calcPrice();
 });
 
 // ── Сонгосон хоолуудыг hidden field-д хадгалах ──
