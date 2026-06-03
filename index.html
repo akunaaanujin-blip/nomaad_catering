@@ -54,21 +54,18 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .tier.buf .t-badge{background:var(--amber-soft);color:#8a5a12}
 .tier.shr .t-badge{background:#efe7d2;color:#7a6224}
 
-/* ── MENU SECTIONS — compact accordion ── */
-.msec{margin-top:20px}
-.msec-header{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px;cursor:pointer;box-shadow:0 1px 3px rgba(32,39,31,.05);transition:box-shadow .15s;user-select:none}
-.msec-header:hover{box-shadow:0 3px 10px rgba(32,39,31,.09)}
-.msec-header h3{font-family:'Lora',Georgia,serif;font-size:17px;font-weight:700;flex:1}
-.msec-header .price-pill{font-size:13px;font-weight:800;color:#fff;background:var(--accent);padding:5px 13px;border-radius:999px;white-space:nowrap}
+/* ── MENU SECTIONS — always open ── */
+.msec{margin-top:16px}
+.msec-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.msec-header h3{font-family:'Lora',Georgia,serif;font-size:16px;font-weight:700;flex:1;color:var(--ink)}
+.msec-header .price-pill{font-size:12px;font-weight:800;color:#fff;background:var(--accent);padding:4px 12px;border-radius:999px;white-space:nowrap}
 .msec.buf .msec-header .price-pill{background:var(--amber)}
-.msec-chev{font-size:12px;color:var(--muted);transition:transform .2s}
-.msec-body{display:none;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-top:none;border-radius:0 0 12px 12px}
-.msec-body.open{display:block}
-.dish-list{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 12px}
-.dish-item{font-size:13px;padding:5px 4px;border-bottom:1px dotted var(--line);color:var(--ink);display:flex;align-items:center;gap:6px}
-.dish-item::before{content:'·';color:var(--accent);font-weight:700}
-.subhead{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin:14px 0 8px}
-/* буу хуучин dishes класс */
+.msec-body{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.dish-list{display:grid;grid-template-columns:repeat(3,1fr);gap:3px 10px}
+.dish-item{font-size:12.5px;padding:4px 4px;color:var(--ink);display:flex;align-items:center;gap:5px;border-bottom:1px dotted var(--line)}
+.dish-item::before{content:'·';color:var(--accent);font-weight:700;flex-shrink:0}
+.subhead{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin:12px 0 6px}
+.subhead:first-child{margin-top:0}
 .dishes{display:none}
 
 /* ── BOODOG ── */
@@ -198,12 +195,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
     </div>
   </section>
 
-  <!-- Порц — compact accordion -->
+  <!-- Порц -->
   <section class="msec por">
-    <div class="msec-header" onclick="toggleMsec(this)">
+    <div class="msec-header">
       <h3>🍱 Порц хоол</h3>
       <span class="price-pill">₮38,000 / хүн</span>
-      <span class="msec-chev">▼</span>
     </div>
     <div class="msec-body">
       <div class="dish-list">
@@ -220,54 +216,59 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
     </div>
   </section>
 
-  <!-- Буфет — compact accordion -->
+  <!-- Буфет -->
   <section class="msec buf">
-    <div class="msec-header" onclick="toggleMsec(this)">
+    <div class="msec-header">
       <h3>🍴 Буфет</h3>
       <span class="price-pill">₮54,000 / хүн</span>
-      <span class="msec-chev">▼</span>
     </div>
     <div class="msec-body">
-      <div class="subhead">🥩 Мах — 3 төрөл</div>
-      <div class="dish-list">
-        <div class="dish-item">Соусанд жигнэсэн хонины мах</div>
-        <div class="dish-item">Хорхог</div>
-        <div class="dish-item">Мини шорлог</div>
-        <div class="dish-item">Гахайн цорой</div>
-        <div class="dish-item">Гахайн амталсан мах</div>
-        <div class="dish-item">Терияки соустай тахиа</div>
-        <div class="dish-item">Шаржигнуур тахиа</div>
-        <div class="dish-item">Цуйван</div>
-        <div class="dish-item">Хуушуур</div>
-      </div>
-      <div class="subhead">🥗 Салад — 2 төрөл</div>
-      <div class="dish-list">
-        <div class="dish-item">Шинэ ногооны салад</div>
-        <div class="dish-item">Нийслэл салад</div>
-        <div class="dish-item">Пүнтүүзтэй салад</div>
-        <div class="dish-item">Байцааны салад</div>
-        <div class="dish-item">Луувангийн салад</div>
-        <div class="dish-item">Гоймонгийн салад</div>
-      </div>
-      <div class="subhead">🍚 Хачир — 2 төрөл</div>
-      <div class="dish-list">
-        <div class="dish-item">Амталсан будаа</div>
-        <div class="dish-item">Шарсан төмс</div>
-        <div class="dish-item">Төмсний нухаш</div>
-        <div class="dish-item">Хуурсан ногоо</div>
-        <div class="dish-item">Мантуу</div>
-        <div class="dish-item">Сийртэй гоймон</div>
-        <div class="dish-item">Амталсан өргөст хэмх</div>
-      </div>
-      <div class="subhead">🍜 Шөл — 1 төрөл</div>
-      <div class="dish-list">
-        <div class="dish-item">Брокли зутан шөл</div>
-        <div class="dish-item">Мөөгтэй зутан шөл</div>
-        <div class="dish-item">Нарийн ногооны шөл</div>
-        <div class="dish-item">Бантан</div>
-        <div class="dish-item">Далайн байцаатай шөл</div>
-        <div class="dish-item">Халуун ногоотой шөл</div>
-        <div class="dish-item">Ясны шөл</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px">
+        <div>
+          <div class="subhead">🥩 Мах — 3 төрөл</div>
+          <div class="dish-list" style="grid-template-columns:1fr">
+            <div class="dish-item">Соусанд жигнэсэн хонины мах</div>
+            <div class="dish-item">Хорхог</div>
+            <div class="dish-item">Мини шорлог</div>
+            <div class="dish-item">Гахайн цорой</div>
+            <div class="dish-item">Гахайн амталсан мах</div>
+            <div class="dish-item">Терияки соустай тахиа</div>
+            <div class="dish-item">Шаржигнуур тахиа</div>
+            <div class="dish-item">Цуйван</div>
+            <div class="dish-item">Хуушуур</div>
+          </div>
+          <div class="subhead">🍚 Хачир — 2 төрөл</div>
+          <div class="dish-list" style="grid-template-columns:1fr">
+            <div class="dish-item">Амталсан будаа</div>
+            <div class="dish-item">Шарсан төмс</div>
+            <div class="dish-item">Төмсний нухаш</div>
+            <div class="dish-item">Хуурсан ногоо</div>
+            <div class="dish-item">Мантуу</div>
+            <div class="dish-item">Сийртэй гоймон</div>
+            <div class="dish-item">Амталсан өргөст хэмх</div>
+          </div>
+        </div>
+        <div>
+          <div class="subhead">🥗 Салад — 2 төрөл</div>
+          <div class="dish-list" style="grid-template-columns:1fr">
+            <div class="dish-item">Шинэ ногооны салад</div>
+            <div class="dish-item">Нийслэл салад</div>
+            <div class="dish-item">Пүнтүүзтэй салад</div>
+            <div class="dish-item">Байцааны салад</div>
+            <div class="dish-item">Луувангийн салад</div>
+            <div class="dish-item">Гоймонгийн салад</div>
+          </div>
+          <div class="subhead">🍜 Шөл — 1 төрөл</div>
+          <div class="dish-list" style="grid-template-columns:1fr">
+            <div class="dish-item">Брокли зутан шөл</div>
+            <div class="dish-item">Мөөгтэй зутан шөл</div>
+            <div class="dish-item">Нарийн ногооны шөл</div>
+            <div class="dish-item">Бантан</div>
+            <div class="dish-item">Далайн байцаатай шөл</div>
+            <div class="dish-item">Халуун ногоотой шөл</div>
+            <div class="dish-item">Ясны шөл</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -316,11 +317,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         </div>
         <div class="order-field">
           <label>Огноо</label>
-          <input type="text" name="Arga_hemjeenii_ognoo" id="of-date" placeholder="жж/сс/өө эсвэл ойролцоо хугацаа">
+          <input type="date" name="Arga_hemjeenii_ognoo" id="of-date">
         </div>
         <div class="order-field">
           <label>Хүний тоо</label>
-          <input type="number" name="Hunii_too" id="of-pax" placeholder="50" min="1" required>
+          <input type="number" name="Hunii_too" id="of-pax" value="0" min="0" required>
         </div>
         <div class="order-field">
           <label>Үйлчилгээний төрөл</label>
@@ -455,6 +456,10 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
 
   <!-- ═══ ХОЛБОО ═══ -->
   <div class="contact-strip">
+    <div class="cs-item">
+      <div class="ci-icon">📞</div>
+      <div><div class="ci-label">Утас</div><div class="ci-val"><a href="tel:88028216">88028216</a></div></div>
+    </div>
     <div class="cs-item">
       <div class="ci-icon">🌐</div>
       <div><div class="ci-label">Вэбсайт</div><div class="ci-val">nomaadcatering.mn</div></div>
