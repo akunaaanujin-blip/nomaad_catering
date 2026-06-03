@@ -162,6 +162,39 @@ body{font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;backgroun
 .save-status.err{background:#f8e2dd;color:#9a3522;display:block}
 .save-status.loading{background:#dceaf5;color:#1a4f6e;display:block}
 
+/* ── Агуулах хэсгүүд ── */
+.inv-section{margin:40px 0 0}
+.inv-head{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:14px 14px 0 0;border:1px solid var(--line);border-bottom:none}
+.inv-head.raw-head{background:linear-gradient(135deg,#f0edf8,#e9e2f3)}
+.inv-head.cook-head{background:linear-gradient(135deg,#e4ede8,#d2e6da)}
+.inv-head .ih-icon{font-size:22px}
+.inv-head h3{font-family:'Lora',Georgia,serif;font-size:17px;font-weight:700;flex:1}
+.inv-head .ih-sub{font-size:12px;color:var(--muted)}
+.inv-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:0 0 14px 14px;overflow:hidden;box-shadow:var(--shadow)}
+.inv-table th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.inv-table th:not(:first-child){text-align:right}
+.inv-table td{padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.inv-table td:not(:first-child){text-align:right}
+.inv-table tr:last-child td{border-bottom:none}
+.inv-table tr:hover td{background:#f7f9f6}
+.inv-table .td-name{font-weight:600;color:var(--ink)}
+.inv-table .td-unit{color:var(--muted);font-size:12px}
+.inv-table .td-need{font-family:'Lora',Georgia,serif;font-size:15px;font-weight:700;color:var(--accent)}
+.inv-table .td-need.cook-col{color:#2c6a48}
+.inv-table input.inv-inp{font-family:inherit;font-size:14px;font-weight:700;width:90px;border:1.5px solid var(--line);border-radius:8px;padding:5px 8px;text-align:right;color:var(--ink);background:#fafbf9;transition:border-color .15s}
+.inv-table input.inv-inp:focus{outline:none;border-color:var(--accent)}
+.inv-table .td-status{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:6px;white-space:nowrap}
+.td-status.ok{background:#dcefe4;color:#1d5235}
+.td-status.low{background:var(--red-soft);color:#9a3522}
+.td-status.idle{background:#eef0ea;color:#69736c}
+.inv-table .td-cat{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.td-cat.raw{background:#e9e2f3;color:#5b3f8a}
+.td-cat.sauce{background:var(--amber-soft);color:#7a3a10}
+.td-cat.dry{background:#e8eff5;color:#1f516e}
+.td-cat.veg{background:#dcefe4;color:#1d5235}
+.td-cat.cook{background:#dcefe4;color:#2c6a48}
+.td-cat.semi{background:var(--amber-soft);color:#7a3a10}
+
 footer{text-align:center;color:var(--muted);font-size:12px;margin-top:34px;line-height:1.7}
 footer b{color:var(--ink)}
 .contact-bar{display:inline-flex;gap:18px;flex-wrap:wrap;justify-content:center;align-items:center;background:var(--accent-soft);border:1px solid var(--line);border-radius:999px;padding:9px 20px;margin:10px auto 4px;color:#27543f;font-weight:600;font-size:12.5px}
@@ -272,6 +305,55 @@ footer b{color:var(--ink)}
 
   <div class="section-title">Дагалдах хоол — буфет (нэг хүний норм)</div>
   <div class="grid" id="side-grid"></div>
+
+  <!-- ── Боловсруулаагүй нөөц ── -->
+  <div class="inv-section">
+    <div class="inv-head raw-head">
+      <span class="ih-icon">🧊</span>
+      <div>
+        <h3>Боловсруулаагүй нөөц — Түүхий орц</h3>
+        <div class="ih-sub">Хоол бүрийн бүх орц · Одоогийн нөөц оруулахад хүрэлцэх эсэхийг шалгана</div>
+      </div>
+    </div>
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th>Орц / Түүхий эд</th>
+          <th>Ангилал</th>
+          <th>Ашиглах хоол</th>
+          <th>Хэрэгцээ</th>
+          <th>Нэгж</th>
+          <th>Одоогийн нөөц</th>
+          <th>Байдал</th>
+        </tr>
+      </thead>
+      <tbody id="raw-inv-body"></tbody>
+    </table>
+  </div>
+
+  <!-- ── Боловсруулсан нөөц ── -->
+  <div class="inv-section" style="margin-bottom:0">
+    <div class="inv-head cook-head">
+      <span class="ih-icon">❄️</span>
+      <div>
+        <h3>Боловсруулсан нөөц — Бэлдэц (гүн хөлдөөгч)</h3>
+        <div class="ih-sub">Blast chill → вакум → −18°C хөлдөөсөн бэлэн бэлдэц · Уут = 2 кг</div>
+      </div>
+    </div>
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th>Хоол / Бэлдэц</th>
+          <th>Төрөл</th>
+          <th>Хэрэгцээт уут</th>
+          <th>кг</th>
+          <th>Одоогийн нөөц (уут)</th>
+          <th>Байдал</th>
+        </tr>
+      </thead>
+      <tbody id="cook-inv-body"></tbody>
+    </table>
+  </div>
 
   <footer>
     <p><b>Эрүүл ахуйн ерөнхий хязгаар:</b> Хүлээн авах ≤4°C · Дотоод темп. ≥75°C · Blast chill 75→4°C ≤90 мин · Хадгалалт −18°C / 30 хоног / FIFO · Re-heat ≥75°C · Hot hold 65–70°C</p>
@@ -605,6 +687,8 @@ function render(){
     });
   });
   renderCostSummary();
+  renderRawInv();
+  renderCookInv();
 }
 
 $('#ppl').addEventListener('input',render);
@@ -641,6 +725,135 @@ document.querySelectorAll('input[data-price]').forEach(inp=>{
   });
 });
 render();
+
+// ── Агуулахын нөөц ──
+const RAW_STORE = JSON.parse(localStorage.getItem('nomaad_raw_stock') || '{}');
+const COOK_STORE = JSON.parse(localStorage.getItem('nomaad_cook_stock') || '{}');
+
+// Боловсруулаагүй нөөц — түүхий орц
+const RAW_INV = [
+  // ── Мах ──
+  { key:'r_lamb',     name:'Хонины зөөлөн мах',       cat:'raw',   catL:'Мах',    dishes:'Соусанд жигнэсэн · Хорхог',     unit:'кг', needFn: p=>rawMeat(p,'Хонь',   130,true) },
+  { key:'r_lambrib',  name:'Хонины ястай хавирга',     cat:'raw',   catL:'Мах',    dishes:'Хонь шарсан хавирга · Хорхог',  unit:'кг', needFn: p=>rawMeat(p,'Хонь-ястай',180,true) },
+  { key:'r_pork',     name:'Гахайн мах (зөөлөн)',      cat:'raw',   catL:'Мах',    dishes:'Жеюүг · Мини шорлог',           unit:'кг', needFn: p=>rawMeat(p,'Гахай',   120,true) },
+  { key:'r_porkbelly',name:'Гахайн цорой',             cat:'raw',   catL:'Мах',    dishes:'Гахайн цорой',                  unit:'кг', needFn: p=>rawMeat(p,'Гахай-цорой',120,true) },
+  { key:'r_chicken',  name:'Тахианы ясгүй гуя/цээж',  cat:'raw',   catL:'Мах',    dishes:'Терияки тахиа · Шаржигнуур',   unit:'кг', needFn: p=>rawMeat(p,'Тахиа',   115,true) },
+  // ── Хачир / Будаа ──
+  { key:'r_rice',     name:'Будаа',                    cat:'dry',   catL:'Хуурай', dishes:'Порцын гол хачир',              unit:'кг', needFn: p=>+(p*0.150*1.08).toFixed(1) },
+  { key:'r_flour',    name:'Гурил (хуушуур, цуйван)',  cat:'dry',   catL:'Хуурай', dishes:'Хуушуур · Цуйван',              unit:'кг', needFn: p=>+(p*0.100*1.10).toFixed(1) },
+  { key:'r_noodle',   name:'Гар гоймон (цуйван)',      cat:'dry',   catL:'Хуурай', dishes:'Цуйван',                        unit:'кг', needFn: p=>+(p*0.120*1.08).toFixed(1) },
+  // ── Соус / Маринад ──
+  { key:'r_soy',      name:'Соёгийн соус',             cat:'sauce', catL:'Соус',   dishes:'Терияки · Жеюүг · Соустай хонь',unit:'л', needFn: p=>+(p*0.030).toFixed(1) },
+  { key:'r_teriyaki', name:'Терияки соус (бэлэн)',     cat:'sauce', catL:'Соус',   dishes:'Терияки тахиа',                 unit:'л', needFn: p=>+(p*0.050).toFixed(1) },
+  { key:'r_garlic',   name:'Сармис',                   cat:'veg',   catL:'Ногоо',  dishes:'Жеюүг · Соустай хонь · Шорлог',unit:'кг', needFn: p=>+(p*0.010).toFixed(1) },
+  { key:'r_ginger',   name:'Гаа',                      cat:'veg',   catL:'Ногоо',  dishes:'Жеюүг · Терияки',              unit:'кг', needFn: p=>+(p*0.006).toFixed(2) },
+  { key:'r_sesame',   name:'Кунжут',                   cat:'dry',   catL:'Хуурай', dishes:'Терияки тахиа',                 unit:'кг', needFn: p=>+(p*0.005).toFixed(2) },
+  { key:'r_chili',    name:'Халуун ногоо (чинжүү)',    cat:'veg',   catL:'Ногоо',  dishes:'Жеюүг · Маринад',              unit:'кг', needFn: p=>+(p*0.008).toFixed(2) },
+  { key:'r_skewer',   name:'Мод шорон',                cat:'dry',   catL:'Хуурай', dishes:'Мини шорлог',                   unit:'ш',  needFn: p=>Math.ceil(p*3*1.1) },
+  { key:'r_stone',    name:'Хорхогийн чулуу',          cat:'dry',   catL:'Хэрэгсэл',dishes:'Хорхог',                      unit:'кг', needFn: p=>Math.ceil(p/8.5+1)*3 },
+  // ── Хачир ──
+  { key:'r_salad',    name:'Салад орц (нийлмэл)',      cat:'veg',   catL:'Ногоо',  dishes:'Буфет дагалдах',               unit:'кг', needFn: p=>+(p*0.060*1.15).toFixed(1) },
+  { key:'r_garnish',  name:'Хачир дагалдах',           cat:'veg',   catL:'Ногоо',  dishes:'Буфет дагалдах',               unit:'кг', needFn: p=>+(p*0.065*3*1.20).toFixed(1) },
+];
+
+// Боловсруулсан нөөц — бэлдэц (гүн хөлдөөгч)
+const COOK_INV = [
+  { key:'c_lamb_sauce', name:'Соусанд жигнэсэн хонины мах', type:'cook', typeL:'Болгож хөлдөөсөн', dishIdx:0 },
+  { key:'c_lamb_rib',   name:'Хонь шарсан хавирга',          type:'cook', typeL:'Болгож хөлдөөсөн', dishIdx:2 },
+  { key:'c_pork_belly', name:'Гахайн цорой (бэлдсэн)',       type:'cook', typeL:'Болгож хөлдөөсөн', dishIdx:3 },
+  { key:'c_jeyug',      name:'Жеюүг — гахайн амталсан',      type:'cook', typeL:'Болгож хөлдөөсөн', dishIdx:4 },
+  { key:'c_teriyaki',   name:'Терияки тахиа (маринадтай)',   type:'semi', typeL:'Түүхий хөлдөөсөн',  dishIdx:5 },
+  { key:'c_crispy',     name:'Шаржигнуур тахиа (маринадтай)',type:'semi', typeL:'Түүхий хөлдөөсөн',  dishIdx:6 },
+  { key:'c_shorlog',    name:'Мини шорлог (шоронтой)',       type:'semi', typeL:'Түүхий хөлдөөсөн',  dishIdx:7 },
+  { key:'c_huushuur',   name:'Хуушуур (хөлдөөсөн)',          type:'semi', typeL:'Түүхий хөлдөөсөн',  dishIdx:9 },
+];
+
+// мах кг тооцоолох туслах
+function rawMeat(p, yk, bufG, isBuf){
+  const gf = gFactor();
+  const buf = isBuf ? BUF_BUFFER : POR_BUFFER;
+  const ck = COOK_YIELD[yk] || 0.75;
+  return +(p * appetite * gf * bufG / 1000 / ck * (1+buf)).toFixed(1);
+}
+
+function invStatus(have, need, unit){
+  if(have === undefined || have === '' || need === null) return `<span class="td-status idle">— оруулна уу</span>`;
+  const diff = (+have) - need;
+  if(diff >= 0) return `<span class="td-status ok">✓ +${fmt(diff)} ${unit}</span>`;
+  return `<span class="td-status low">⚠ ${fmt(Math.abs(diff))} дутна</span>`;
+}
+
+function renderRawInv(){
+  const p = ppl();
+  document.getElementById('raw-inv-body').innerHTML = RAW_INV.map(item => {
+    const need = item.needFn(p);
+    const have = RAW_STORE[item.key];
+    return `<tr>
+      <td class="td-name">${item.name}</td>
+      <td><span class="td-cat ${item.cat}">${item.catL}</span></td>
+      <td style="font-size:12px;color:var(--muted);max-width:180px">${item.dishes}</td>
+      <td class="td-need">${fmt(need)}</td>
+      <td class="td-unit">${item.unit}</td>
+      <td><input class="inv-inp" type="number" min="0" step="0.1" data-rkey="${item.key}" value="${have??''}" placeholder="0"></td>
+      <td id="rs_${item.key}">${invStatus(have, need, item.unit)}</td>
+    </tr>`;
+  }).join('');
+
+  document.querySelectorAll('input[data-rkey]').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const k = e.target.dataset.rkey, v = e.target.value;
+      if(v==='') delete RAW_STORE[k]; else RAW_STORE[k] = v;
+      localStorage.setItem('nomaad_raw_stock', JSON.stringify(RAW_STORE));
+      const item = RAW_INV.find(x=>x.key===k);
+      const need = item ? item.needFn(ppl()) : null;
+      const el = document.getElementById('rs_'+k);
+      if(el) el.innerHTML = invStatus(v===''?undefined:v, need, item?.unit||'кг');
+    });
+  });
+}
+
+function renderCookInv(){
+  const p = ppl();
+  document.getElementById('cook-inv-body').innerHTML = COOK_INV.map(item => {
+    const d = DISHES[item.dishIdx];
+    let needKg = null, needBags = null;
+    if(d){
+      needKg = d.pieces
+        ? +(Math.round(p*d.pieces*appetite*gFactor())*d.pieceG/1000*(1+POR_BUFFER)).toFixed(1)
+        : +(rawBuffet(d) ?? rawPortion(d) ?? 0).toFixed(1);
+      needBags = Math.ceil(needKg / 2);
+    }
+    const have = COOK_STORE[item.key];
+    const typeClass = item.type === 'cook' ? 'cook' : 'semi';
+    return `<tr>
+      <td class="td-name">${item.name}</td>
+      <td><span class="td-cat ${typeClass}">${item.typeL}</span></td>
+      <td class="td-need cook-col">${needBags ?? '—'}</td>
+      <td class="td-unit">${needKg ? fmt(needKg)+' кг' : '—'}</td>
+      <td><input class="inv-inp" type="number" min="0" step="1" data-ckey="${item.key}" value="${have??''}" placeholder="0"></td>
+      <td id="cs_${item.key}">${invStatus(have, needBags, 'уут')}</td>
+    </tr>`;
+  }).join('');
+
+  document.querySelectorAll('input[data-ckey]').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const k = e.target.dataset.ckey, v = e.target.value;
+      if(v==='') delete COOK_STORE[k]; else COOK_STORE[k] = v;
+      localStorage.setItem('nomaad_cook_stock', JSON.stringify(COOK_STORE));
+      const item = COOK_INV.find(x=>x.key===k);
+      const d = item ? DISHES[item.dishIdx] : null;
+      let needBags = null;
+      if(d){
+        const nk = d.pieces
+          ? +(Math.round(ppl()*d.pieces*appetite*gFactor())*d.pieceG/1000*(1+POR_BUFFER)).toFixed(1)
+          : +(rawBuffet(d) ?? rawPortion(d) ?? 0).toFixed(1);
+        needBags = Math.ceil(nk/2);
+      }
+      const el = document.getElementById('cs_'+k);
+      if(el) el.innerHTML = invStatus(v===''?undefined:v, needBags, 'уут');
+    });
+  });
+}
 
 // ── Google Sheets хадгалах ──
 // Доорх URL-г Apps Script deploy хийсний дараа солино
