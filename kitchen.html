@@ -191,6 +191,20 @@ body{font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;backgroun
 .td-cat.raw{background:#e9e2f3;color:#5b3f8a}
 .td-cat.sauce{background:var(--amber-soft);color:#7a3a10}
 .td-cat.dry{background:#e8eff5;color:#1f516e}
+/* Боловсруулалт */
+.proc-btn{font-family:inherit;font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px;border:1.5px solid #2c6a48;color:#2c6a48;background:none;cursor:pointer;white-space:nowrap}
+.proc-btn:hover{background:#e3ede7}
+.proc-expand-row td{background:#f0f7f3;padding:12px 16px;border-top:none}
+.proc-box{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.proc-products{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+.proc-product{background:#fff;border:1.5px solid #b2d4bf;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:#1d5235}
+.proc-product span{color:#2c6a48;font-size:13px;font-weight:700}
+.proc-input-group{display:flex;align-items:center;gap:6px}
+.proc-inp{font-family:inherit;font-size:13px;font-weight:700;width:80px;border:1.5px solid #2c6a48;border-radius:8px;padding:5px 8px;text-align:right;color:var(--ink)}
+.proc-confirm{font-family:inherit;font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;border:none;background:#1F4A38;color:#fff;cursor:pointer}
+.proc-confirm:hover{background:#163528}
+.proc-log{margin-top:8px;font-size:11.5px;color:#2c6a48;display:flex;gap:6px;flex-wrap:wrap}
+.proc-log-item{background:#e3ede7;border-radius:5px;padding:2px 8px}
 .td-cat.veg{background:#dcefe4;color:#1d5235}
 .td-cat.cook{background:#dcefe4;color:#2c6a48}
 .td-cat.semi{background:var(--amber-soft);color:#7a3a10}
@@ -798,14 +812,14 @@ const RAW_INV = [
 
 // Боловсруулсан нөөц — бэлдэц (гүн хөлдөөгч)
 const COOK_INV = [
-  { key:'c_lamb_sauce', name:'Соусанд жигнэсэн хонины мах', type:'cook', typeL:'Болгож хөлдөөсөн', dishIdx:0 },
-  { key:'c_lamb_rib',   name:'Хонь шарсан хавирга',          type:'cook', typeL:'Болгож хөлдөөсөн', dishIdx:2 },
-  { key:'c_pork_belly', name:'Гахайн цорой (бэлдсэн)',       type:'cook', typeL:'Болгож хөлдөөсөн', dishIdx:3 },
-  { key:'c_jeyug',      name:'Жеюүг — гахайн амталсан',      type:'cook', typeL:'Болгож хөлдөөсөн', dishIdx:4 },
-  { key:'c_teriyaki',   name:'Терияки тахиа (маринадтай)',   type:'semi', typeL:'Түүхий хөлдөөсөн',  dishIdx:5 },
-  { key:'c_crispy',     name:'Шаржигнуур тахиа (маринадтай)',type:'semi', typeL:'Түүхий хөлдөөсөн',  dishIdx:6 },
-  { key:'c_shorlog',    name:'Мини шорлог (шоронтой)',       type:'semi', typeL:'Түүхий хөлдөөсөн',  dishIdx:7 },
-  { key:'c_huushuur',   name:'Хуушуур (хөлдөөсөн)',          type:'semi', typeL:'Түүхий хөлдөөсөн',  dishIdx:9 },
+  { key:'c_lamb_sauce', name:'Соусанд жигнэсэн хонины мах', type:'cook', typeL:'Болгож хөлдөөсөн', dishIdx:0, rawKey:'r_lamb' },
+  { key:'c_lamb_rib',   name:'Хонь шарсан хавирга',          type:'cook', typeL:'Болгож хөлдөөсөн', dishIdx:2, rawKey:'r_lambrib' },
+  { key:'c_pork_belly', name:'Гахайн цорой (бэлдсэн)',       type:'cook', typeL:'Болгож хөлдөөсөн', dishIdx:3, rawKey:'r_porkbelly' },
+  { key:'c_jeyug',      name:'Жеюүг — гахайн амталсан',      type:'cook', typeL:'Болгож хөлдөөсөн', dishIdx:4, rawKey:'r_pork' },
+  { key:'c_teriyaki',   name:'Терияки тахиа (маринадтай)',   type:'semi', typeL:'Түүхий хөлдөөсөн',  dishIdx:5, rawKey:'r_chicken' },
+  { key:'c_crispy',     name:'Шаржигнуур тахиа (маринадтай)',type:'semi', typeL:'Түүхий хөлдөөсөн',  dishIdx:6, rawKey:'r_chicken' },
+  { key:'c_shorlog',    name:'Мини шорлог (шоронтой)',       type:'semi', typeL:'Түүхий хөлдөөсөн',  dishIdx:7, rawKey:'r_pork' },
+  { key:'c_huushuur',   name:'Хуушуур (хөлдөөсөн)',          type:'semi', typeL:'Түүхий хөлдөөсөн',  dishIdx:9, rawKey:'r_flour' },
 ];
 
 // мах кг тооцоолох туслах
@@ -823,11 +837,97 @@ function invStatus(have, need, unit){
   return `<span class="td-status low">⚠ ${fmt(Math.abs(diff))} дутна</span>`;
 }
 
+// боловсруулалтын лог
+var PROC_LOG = JSON.parse(localStorage.getItem('nomaad_proc_log') || '[]');
+
+// орц → боловсруулсан бүтээгдэхүүний тооцоо
+function calcProcOutput(cookItem, rawKg) {
+  const d = DISHES[cookItem.dishIdx];
+  if (!d) return { bags: 0, cookedKg: 0 };
+  const cy = COOK_YIELD[d.yieldKey] || 0.75;
+  const cookedKg = rawKg * cy;
+  return { bags: Math.floor(cookedKg / BAG_KG), cookedKg: +cookedKg.toFixed(1) };
+}
+
+function procLinked(rawKey) {
+  return COOK_INV.filter(c => c.rawKey === rawKey);
+}
+
+function openProcess(rawKey) {
+  const existing = document.getElementById('proc-expand-' + rawKey);
+  if (existing) { existing.remove(); return; }
+  const item = RAW_INV.find(x => x.key === rawKey);
+  const linked = procLinked(rawKey);
+  if (!item || !linked.length) return;
+  const have = parseFloat(RAW_STORE[rawKey]) || 0;
+  const productsHtml = linked.map(c => {
+    const out = calcProcOutput(c, have);
+    return `<div class="proc-product">${c.name}: <span>${out.bags} уут</span> (${out.cookedKg}кг)</div>`;
+  }).join('');
+  const recentLogs = PROC_LOG.filter(l => l.rawKey === rawKey).slice(-3).reverse()
+    .map(l => `<span class="proc-log-item">📦 ${l.date} — ${l.kg}кг → ${l.bags} уут</span>`).join('');
+  const row = document.createElement('tr');
+  row.id = 'proc-expand-' + rawKey;
+  row.className = 'proc-expand-row';
+  row.innerHTML = `<td colspan="8">
+    <div class="proc-box">
+      <div style="font-size:12px;color:var(--muted);white-space:nowrap">Одоогийн нөөц <b>${have} ${item.unit}</b>-аас:</div>
+      <div class="proc-products">${productsHtml}</div>
+      <div class="proc-input-group">
+        <input class="proc-inp" id="proc-inp-${rawKey}" type="number" min="0.1" step="0.1" max="${have}" value="${have}" placeholder="${have}">
+        <span style="font-size:12px;color:var(--muted)">${item.unit}</span>
+        <button class="proc-confirm" onclick="confirmProcess('${rawKey}')">✓ Болгох</button>
+      </div>
+    </div>
+    ${recentLogs ? `<div class="proc-log">Сүүлийн: ${recentLogs}</div>` : ''}
+  </td>`;
+  const baseRow = document.querySelector(`input[data-rkey="${rawKey}"]`)?.closest('tr');
+  if (baseRow) baseRow.after(row);
+}
+
+function confirmProcess(rawKey) {
+  const inp = document.getElementById('proc-inp-' + rawKey);
+  if (!inp) return;
+  const kg = parseFloat(inp.value);
+  if (!kg || kg <= 0) return;
+  const item = RAW_INV.find(x => x.key === rawKey);
+  const linked = procLinked(rawKey);
+  const have = parseFloat(RAW_STORE[rawKey]) || 0;
+  if (kg > have) { alert(`Нөөц хүрэлцэхгүй байна. Одоогийн нөөц: ${have} ${item?.unit||'кг'}`); return; }
+  // Raw хас
+  const newRaw = +(have - kg).toFixed(2);
+  RAW_STORE[rawKey] = newRaw;
+  localStorage.setItem('nomaad_raw_stock', JSON.stringify(RAW_STORE));
+  // Cook нэм — орц нэг болон холбоотой бол тэнцүү хуваана
+  const perItem = kg / linked.length;
+  let totalBags = 0;
+  linked.forEach(c => {
+    const out = calcProcOutput(c, perItem);
+    const prev = parseInt(COOK_STORE[c.key]) || 0;
+    COOK_STORE[c.key] = prev + out.bags;
+    totalBags += out.bags;
+  });
+  localStorage.setItem('nomaad_cook_stock', JSON.stringify(COOK_STORE));
+  // Лог
+  const date = new Date().toLocaleDateString('mn-MN', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  PROC_LOG.push({ rawKey, kg, bags: totalBags, date });
+  if (PROC_LOG.length > 50) PROC_LOG.splice(0, PROC_LOG.length - 50);
+  localStorage.setItem('nomaad_proc_log', JSON.stringify(PROC_LOG));
+  // Дахин render
+  document.getElementById('proc-expand-' + rawKey)?.remove();
+  renderRawInv();
+  renderCookInv();
+  // Тоон харуулах
+  alert(`✓ ${kg}кг боловсруулав → ${totalBags} уут нэмэгдлээ`);
+}
+
 function renderRawInv(){
   const p = ppl();
   document.getElementById('raw-inv-body').innerHTML = RAW_INV.map(item => {
     const need = item.needFn(p);
     const have = RAW_STORE[item.key];
+    const linked = procLinked(item.key);
+    const procBtn = linked.length ? `<button class="proc-btn" onclick="openProcess('${item.key}')">⚙ Боловсруул</button>` : '';
     return `<tr>
       <td class="td-name">${item.name}</td>
       <td><span class="td-cat ${item.cat}">${item.catL}</span></td>
@@ -836,6 +936,7 @@ function renderRawInv(){
       <td class="td-unit">${item.unit}</td>
       <td><input class="inv-inp" type="number" min="0" step="0.1" data-rkey="${item.key}" value="${have??''}" placeholder="0"></td>
       <td id="rs_${item.key}">${invStatus(have, need, item.unit)}</td>
+      <td>${procBtn}</td>
     </tr>`;
   }).join('');
 
@@ -1202,7 +1303,7 @@ function renderInvPanel(type) {
     if (!el || el.innerHTML.trim()) return;
     el.innerHTML = '<div class="inv-section">' +
       '<div class="inv-head raw-head"><span class="ih-icon">🧊</span><div><h3>Боловсруулаагүй нөөц — Түүхий орц</h3><div class="ih-sub">Хоол бүрийн бүх орц · Одоогийн нөөц оруулахад хүрэлцэх эсэхийг шалгана</div></div></div>' +
-      '<table class="inv-table"><thead><tr><th>Орц / Түүхий эд</th><th>Ангилал</th><th>Ашиглах хоол</th><th>Хэрэгцээ</th><th>Нэгж</th><th>Одоогийн нөөц</th><th>Байдал</th></tr></thead><tbody id="raw-inv-body"></tbody></table>' +
+      '<table class="inv-table"><thead><tr><th>Орц / Түүхий эд</th><th>Ангилал</th><th>Ашиглах хоол</th><th>Хэрэгцээ</th><th>Нэгж</th><th>Одоогийн нөөц</th><th>Байдал</th><th></th></tr></thead><tbody id="raw-inv-body"></tbody></table>' +
       '<div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end"><span id="raw-save-msg" style="font-size:12px;color:var(--muted)"></span><button id="btn-save-raw" onclick="saveRawStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 20px;cursor:pointer">💾 Нөөц хадгалах</button></div>' +
       '</div>';
     if (typeof renderRawInv === 'function') renderRawInv();
