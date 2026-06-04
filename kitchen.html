@@ -1023,6 +1023,8 @@ function loadOrders() {
     ['nomaad','busad'].forEach(function(k){
       document.getElementById('klist-'+k).innerHTML = '<div class="orders-empty">❌ Ачааллахад алдаа гарлаа</div>';
     });
+    var dc = document.getElementById('dashboard-content');
+    if (dc && dc.innerHTML.indexOf('⏳') >= 0) dc.innerHTML = '<div class="orders-empty">❌ Өгөгдөл ачааллахад алдаа гарлаа. 🔄 Шинэчлэх дарна уу.</div>';
   };
   sc.src = K_URL + '?callback=__kOrders';
   document.head.appendChild(sc);
@@ -1099,7 +1101,8 @@ function showDashboard() {
   document.getElementById('kitchen-controls').style.display = 'none';
   document.getElementById('kitchen-main').style.display = 'none';
   window.scrollTo({top:0,behavior:'instant'});
-  loadOrders();
+  renderDashboard(); // Одоогийн мэдээллээр шууд харуулна
+  loadOrders();      // Sheets-с шинэчлэнэ
 }
 function hideDashboard() {
   document.getElementById('dashboard-panel').style.display = 'none';
