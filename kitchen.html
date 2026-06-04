@@ -355,10 +355,12 @@ footer b{color:var(--ink)}
       <button class="dash-tab active" id="dtab-compare" onclick="dSwitchTab('compare')" style="font-family:inherit;font-size:13px;font-weight:700;padding:10px 20px;border:none;border-bottom:3px solid var(--accent);background:none;cursor:pointer;color:var(--accent);margin-bottom:-2px">📊 Харьцуулалт</button>
       <button class="dash-tab" id="dtab-raw" onclick="dSwitchTab('raw')" style="font-family:inherit;font-size:13px;font-weight:700;padding:10px 20px;border:none;border-bottom:3px solid transparent;background:none;cursor:pointer;color:var(--muted);margin-bottom:-2px">🧊 Боловсруулаагүй</button>
       <button class="dash-tab" id="dtab-cook" onclick="dSwitchTab('cook')" style="font-family:inherit;font-size:13px;font-weight:700;padding:10px 20px;border:none;border-bottom:3px solid transparent;background:none;cursor:pointer;color:var(--muted);margin-bottom:-2px">❄️ Боловсруулсан</button>
+      <button class="dash-tab" id="dtab-staff" onclick="dSwitchTab('staff')" style="font-family:inherit;font-size:13px;font-weight:700;padding:10px 20px;border:none;border-bottom:3px solid transparent;background:none;cursor:pointer;color:var(--muted);margin-bottom:-2px">👨‍🍳 Ажилчдын хоол</button>
     </div>
     <div id="dpanel-compare"><div id="dashboard-content"><div class="orders-loading">⏳ Уншиж байна...</div></div></div>
     <div id="dpanel-raw" style="display:none"></div>
     <div id="dpanel-cook" style="display:none"></div>
+    <div id="dpanel-staff" style="display:none"></div>
   </div>
 </div>
 
@@ -2209,15 +2211,142 @@ function renderDashboard() {
 
 function dStat(l,v,s){return '<div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;flex:1;min-width:100px"><div style="font-family:\'Lora\',serif;font-size:24px;font-weight:700;'+s+'">'+v+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+l+'</div></div>';}
 
+// ── Ажилчдын хоолны нөөц ──────────────────────────────────
+var STAFF_STORE = JSON.parse(localStorage.getItem('nomaad_staff_stock') || '{}');
+var staffCount = parseInt(localStorage.getItem('nomaad_staff_count') || '8');
+
+const STAFF_INV = [
+  // ── Үндсэн хоол ──
+  { key:'sf_rice',    name:'Цагаан будаа',          cat:'Үндсэн', unit:'кг', perP:0.15 },
+  { key:'sf_flour',   name:'Гурил (цуйван/хуушуур)',cat:'Үндсэн', unit:'кг', perP:0.10 },
+  { key:'sf_noodle',  name:'Гоймон',                 cat:'Үндсэн', unit:'кг', perP:0.08 },
+  { key:'sf_bread',   name:'Талх',                   cat:'Үндсэн', unit:'ш',  perP:1.5  },
+  // ── Мах / Уураг ──
+  { key:'sf_meat',    name:'Холимог мах (хонь/гахай/тахиа)', cat:'Мах', unit:'кг', perP:0.15 },
+  { key:'sf_egg',     name:'Өндөг',                  cat:'Мах',    unit:'ш',  perP:2    },
+  { key:'sf_sausage', name:'Зайдас / хиам',           cat:'Мах',    unit:'кг', perP:0.05 },
+  // ── Ногоо ──
+  { key:'sf_potato',  name:'Төмс',                   cat:'Ногоо',  unit:'кг', perP:0.12 },
+  { key:'sf_carrot',  name:'Манжин',                 cat:'Ногоо',  unit:'кг', perP:0.05 },
+  { key:'sf_onion',   name:'Сонгино',                cat:'Ногоо',  unit:'кг', perP:0.04 },
+  { key:'sf_cabbage', name:'Байцаа',                 cat:'Ногоо',  unit:'кг', perP:0.06 },
+  { key:'sf_cucumber',name:'Өргөст хэмх',            cat:'Ногоо',  unit:'кг', perP:0.05 },
+  // ── Сүүн бүтээгдэхүүн ──
+  { key:'sf_milk',    name:'Сүү',                    cat:'Сүү',    unit:'л',  perP:0.15 },
+  { key:'sf_butter',  name:'Цөцгийн тос',            cat:'Сүү',    unit:'кг', perP:0.02 },
+  // ── Амтлагч / Бусад ──
+  { key:'sf_oil',     name:'Ургамлын тос',           cat:'Бусад',  unit:'л',  perP:0.02 },
+  { key:'sf_salt',    name:'Давс',                   cat:'Бусад',  unit:'кг', perP:0.005},
+  { key:'sf_tea',     name:'Цай (уут)',               cat:'Бусад',  unit:'уут',perP:2    },
+  { key:'sf_coffee',  name:'Кофе',                   cat:'Бусад',  unit:'г',  perP:5    },
+  { key:'sf_sugar',   name:'Чихэр',                  cat:'Бусад',  unit:'кг', perP:0.01 },
+];
+
+function renderStaffInv() {
+  var el = document.getElementById('dpanel-staff');
+  if (!el) return;
+
+  var catColors = {
+    'Үндсэн':'#e8eff5','Мах':'#fdecea','Ногоо':'#e3ede7','Сүү':'#fff8e7','Бусад':'#f0f0ea'
+  };
+  var catText = {
+    'Үндсэн':'#1f516e','Мах':'#9a3522','Ногоо':'#1d5235','Сүү':'#7a5010','Бусад':'#555'
+  };
+
+  var rows = STAFF_INV.map(function(item) {
+    var need = +(item.perP * staffCount).toFixed(2);
+    var have = parseFloat(STAFF_STORE[item.key]);
+    var statusHtml;
+    if (isNaN(have) || have === '') {
+      statusHtml = '<span class="td-status idle">— оруулна уу</span>';
+    } else if (have >= need) {
+      statusHtml = '<span class="td-status ok">✓ +' + (have-need).toFixed(2) + ' ' + item.unit + '</span>';
+    } else {
+      statusHtml = '<span class="td-status low">⚠ ' + (need-have).toFixed(2) + ' ' + item.unit + ' дутна</span>';
+    }
+    var bg = catColors[item.cat] || '#f5f5f0';
+    var tc = catText[item.cat] || '#555';
+    return '<tr>' +
+      '<td class="td-name">' + item.name + '</td>' +
+      '<td><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:'+bg+';color:'+tc+'">' + item.cat + '</span></td>' +
+      '<td class="td-need" style="font-family:\'Lora\',serif">' + need + '</td>' +
+      '<td class="td-unit">' + item.unit + '</td>' +
+      '<td><input class="inv-inp" type="number" min="0" step="0.1" data-sfkey="' + item.key + '" value="' + (isNaN(have)?'':have) + '" placeholder="0"></td>' +
+      '<td id="sfs_' + item.key + '">' + statusHtml + '</td>' +
+      '</tr>';
+  }).join('');
+
+  el.innerHTML = '<div class="inv-section">' +
+    '<div class="inv-head" style="background:linear-gradient(135deg,#2c1a5e,#4a2d8f)">' +
+      '<span class="ih-icon">👨‍🍳</span>' +
+      '<div><h3 style="color:#fff">Ажилчдын хоолны нөөц</h3>' +
+      '<div class="ih-sub" style="color:rgba(255,255,255,.75)">Өдрийн хоол · Нэг ажилчинд шаардлагатай орцын тооцоо</div></div>' +
+    '</div>' +
+    '<div style="display:flex;align-items:center;gap:16px;padding:14px 0;flex-wrap:wrap">' +
+      '<label style="font-size:13px;font-weight:700;color:var(--muted)">👤 Ажилчдын тоо:</label>' +
+      '<input id="staff-count-inp" type="number" min="1" max="100" value="' + staffCount + '" ' +
+        'style="font-family:inherit;font-size:18px;font-weight:700;width:80px;border:1.5px solid var(--line);border-radius:10px;padding:6px 10px;text-align:center" ' +
+        'oninput="staffCount=Math.max(1,+this.value)||1;localStorage.setItem(\'nomaad_staff_count\',staffCount);document.getElementById(\'dpanel-staff\').innerHTML=\'\';renderStaffInv();">' +
+      '<span style="font-size:13px;color:var(--muted)">хүн · өдөрт</span>' +
+    '</div>' +
+    '<table class="inv-table"><thead><tr>' +
+      '<th>Орц / Бүтээгдэхүүн</th><th>Ангилал</th>' +
+      '<th>' + staffCount + ' хүний хэрэгцээ</th>' +
+      '<th>Нэгж</th><th>Одоогийн нөөц</th><th>Байдал</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>' +
+    '<div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end">' +
+      '<span id="staff-save-msg" style="font-size:12px;color:var(--muted)"></span>' +
+      '<button onclick="resetStaffStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:#f5f0e6;color:var(--muted);border:1.5px solid var(--line);border-radius:9px;padding:9px 16px;cursor:pointer">🔄 Шинэ өдөр</button>' +
+      '<button id="btn-save-staff" onclick="saveStaffStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:#4a2d8f;color:#fff;border:none;border-radius:9px;padding:9px 20px;cursor:pointer">💾 Хадгалах</button>' +
+    '</div>' +
+    '</div>';
+
+  document.querySelectorAll('input[data-sfkey]').forEach(function(inp) {
+    inp.addEventListener('input', function(e) {
+      var k = e.target.dataset.sfkey, v = e.target.value;
+      if (v === '') delete STAFF_STORE[k]; else STAFF_STORE[k] = parseFloat(v);
+      localStorage.setItem('nomaad_staff_stock', JSON.stringify(STAFF_STORE));
+      var item = STAFF_INV.find(function(x){ return x.key===k; });
+      var need = item ? +(item.perP * staffCount).toFixed(2) : null;
+      var have = parseFloat(v);
+      var el2 = document.getElementById('sfs_'+k);
+      if (!el2) return;
+      if (v==='' || isNaN(have)) {
+        el2.innerHTML = '<span class="td-status idle">— оруулна уу</span>';
+      } else if (have >= need) {
+        el2.innerHTML = '<span class="td-status ok">✓ +' + (have-need).toFixed(2) + ' ' + item.unit + '</span>';
+      } else {
+        el2.innerHTML = '<span class="td-status low">⚠ ' + (need-have).toFixed(2) + ' ' + item.unit + ' дутна</span>';
+      }
+    });
+  });
+}
+
+function resetStaffStock() {
+  if (!confirm('Шинэ өдрийн бэлтгэл: бүх нөөцийн утгыг хасах уу?')) return;
+  STAFF_STORE = {};
+  localStorage.setItem('nomaad_staff_stock', '{}');
+  document.getElementById('dpanel-staff').innerHTML = '';
+  renderStaffInv();
+}
+
+function saveStaffStock() {
+  localStorage.setItem('nomaad_staff_stock', JSON.stringify(STAFF_STORE));
+  var msg = document.getElementById('staff-save-msg');
+  if (msg) { msg.textContent = '✅ Хадгалагдлаа'; setTimeout(function(){ msg.textContent=''; }, 2500); }
+}
+
 function dSwitchTab(t) {
-  ['compare','raw','cook'].forEach(function(k){
+  ['compare','raw','cook','staff'].forEach(function(k){
     var isA = k===t;
-    document.getElementById('dtab-'+k).style.borderBottomColor = isA?'var(--accent)':'transparent';
-    document.getElementById('dtab-'+k).style.color = isA?'var(--accent)':'var(--muted)';
-    document.getElementById('dpanel-'+k).style.display = isA?'block':'none';
+    var btn = document.getElementById('dtab-'+k);
+    var pan = document.getElementById('dpanel-'+k);
+    if (btn) { btn.style.borderBottomColor = isA?'var(--accent)':'transparent'; btn.style.color = isA?'var(--accent)':'var(--muted)'; }
+    if (pan) pan.style.display = isA?'block':'none';
   });
   if (t==='raw') renderInvPanel('raw');
   if (t==='cook') renderInvPanel('cook');
+  if (t==='staff') renderStaffInv();
 }
 
 function renderInvPanel(type) {
