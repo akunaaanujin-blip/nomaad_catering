@@ -2356,7 +2356,7 @@ function renderInvPanel(type) {
     el.innerHTML = '<div class="inv-section">' +
       '<div class="inv-head raw-head"><span class="ih-icon">🧊</span><div><h3>Боловсруулаагүй нөөц — Түүхий орц</h3><div class="ih-sub">Хоол бүрийн бүх орц · Одоогийн нөөц оруулахад хүрэлцэх эсэхийг шалгана</div></div></div>' +
       '<table class="inv-table"><thead><tr><th>Орц / Түүхий эд</th><th>Ангилал</th><th>Ашиглах хоол</th><th>Хэрэгцээ</th><th>Нэгж</th><th>Одоогийн нөөц</th><th>Байдал</th><th></th></tr></thead><tbody id="raw-inv-body"></tbody></table>' +
-      '<div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end"><span id="raw-save-msg" style="font-size:12px;color:var(--muted)"></span><button id="btn-save-raw" onclick="saveRawStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 20px;cursor:pointer">💾 Нөөц хадгалах</button></div>' +
+      '<div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end;flex-wrap:wrap"><span id="raw-save-msg" style="font-size:12px;color:var(--muted)"></span><button id="btn-fetch-raw" onclick="fetchRawFromSheets()" style="font-family:inherit;font-size:13px;font-weight:700;background:#e3ede7;color:#1F4A38;border:1.5px solid #b2d4bf;border-radius:9px;padding:9px 18px;cursor:pointer">📥 Sheets-аас татах</button><button id="btn-save-raw" onclick="saveRawStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 20px;cursor:pointer">💾 Нөөц хадгалах</button></div>' +
       '</div>';
     if (typeof renderRawInv === 'function') renderRawInv();
   }
@@ -2387,6 +2387,92 @@ function saveStock(items, sheetName, btnId, msgId) {
     if(btn){btn.disabled=false;btn.textContent=btnId==='btn-save-raw'?'💾 Нөөц хадгалах':'💾 Бэлдэц хадгалах';}
     if(msg){msg.textContent='❌ Алдаа';}
   });
+}
+
+// ── Google Sheets → Боловсруулаагүй нөөц татах ──────────────
+var RAW_SHEETS_GID = '1696013893';
+var RAW_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1gUt92TXoxWS5popXmM7g_gvJhU3LT2twTs3wp-l1Xss/gviz/tq?tqx=out:json&gid=' + RAW_SHEETS_GID;
+
+// Spreadsheet бараа нэр → RAW_INV key холболт (хэсэгчилсэн нэр тохирох)
+var RAW_SHEET_MAP = [
+  { keys:['хонь ястай','ястай хонь','хавирга'],    inv:'r_lambrib' },
+  { keys:['хонь мах','хонь машин','хонины машин','хонины зөөлөн'], inv:'r_lamb' },
+  { keys:['адуу','гүү'],                            inv:'r_lamb' },
+  { keys:['тахиа','chicken'],                       inv:'r_chicken' },
+  { keys:['гахай цорой','гахайн цорой','цорой'],    inv:'r_porkbelly' },
+  { keys:['гахай','свинина','pork'],                inv:'r_pork' },
+  { keys:['гурил','flour'],                         inv:'r_flour' },
+  { keys:['гоймон','noodle'],                       inv:'r_noodle' },
+  { keys:['будаа','рис','rice'],                    inv:'r_rice' },
+  { keys:['сармис','сон пипо','часнок','garlic'],   inv:'r_garlic' },
+  { keys:['гаа','имбирь','ginger'],                 inv:'r_ginger' },
+  { keys:['кунжут','sesame','кунж'],                inv:'r_sesame' },
+  { keys:['халуун ногоо','чиншүү','чили','перец','chili'], inv:'r_chili' },
+  { keys:['соёгийн соус','соугийн','soy sauce'],    inv:'r_soy' },
+  { keys:['терияки','teriyaki'],                    inv:'r_teriyaki' },
+  { keys:['шорон','шишка','skewer'],                inv:'r_skewer' },
+  { keys:['салад','навч','салатны'],                inv:'r_salad' },
+  { keys:['лууван','манжин','carrot','дагалдах'],   inv:'r_garnish' },
+];
+
+function matchSheetItem(name) {
+  var n = (name||'').toLowerCase().trim();
+  for (var i=0; i<RAW_SHEET_MAP.length; i++) {
+    var entry = RAW_SHEET_MAP[i];
+    for (var j=0; j<entry.keys.length; j++) {
+      if (n.indexOf(entry.keys[j]) !== -1) return entry.inv;
+    }
+  }
+  return null;
+}
+
+function fetchRawFromSheets() {
+  var btn = document.getElementById('btn-fetch-raw');
+  var msg = document.getElementById('raw-save-msg');
+  if (btn) { btn.disabled=true; btn.textContent='⏳ Татаж байна...'; }
+  if (msg) msg.textContent = '';
+
+  fetch(RAW_SHEETS_URL)
+    .then(function(r){ return r.text(); })
+    .then(function(text){
+      var m = text.match(/setResponse\(([\s\S]*)\)/);
+      if (!m) throw new Error('Хариу буруу');
+      var data = JSON.parse(m[1]);
+      var rows = data.table.rows;
+      var totals = {};
+
+      rows.forEach(function(row){
+        if (!row.c) return;
+        var nameCell = row.c[4], qtyCell = row.c[6];
+        if (!nameCell || !nameCell.v) return;
+        var name = String(nameCell.v).trim();
+        var qty = qtyCell && qtyCell.v ? parseFloat(qtyCell.v) : 0;
+        if (!qty || qty <= 0) return;
+        var key = matchSheetItem(name);
+        if (!key) return;
+        totals[key] = (totals[key]||0) + qty;
+      });
+
+      var matched = Object.keys(totals).length;
+      if (matched === 0) throw new Error('Тохирох орц олдсонгүй');
+
+      // RAW_STORE шинэчлэх
+      Object.keys(totals).forEach(function(k){
+        RAW_STORE[k] = +totals[k].toFixed(2);
+      });
+      localStorage.setItem('nomaad_raw_stock', JSON.stringify(RAW_STORE));
+
+      // Re-render
+      document.getElementById('dpanel-raw').innerHTML = '';
+      renderInvPanel('raw');
+
+      if (btn) { btn.disabled=false; btn.textContent='📥 Sheets-аас татах'; }
+      if (msg) { msg.textContent = '✅ ' + matched + ' орц татагдлаа'; setTimeout(function(){ msg.textContent=''; },4000); }
+    })
+    .catch(function(e){
+      if (btn) { btn.disabled=false; btn.textContent='📥 Sheets-аас татах'; }
+      if (msg) msg.textContent = '❌ Алдаа: ' + e.message;
+    });
 }
 
 function saveRawStock() {
