@@ -351,57 +351,6 @@ footer b{color:var(--ink)}
   </div>
 </div>
 
-<div class="costbox">
-  <details>
-    <summary>💰 Зардлын тооцоо — мах ₮/кг ба дагалдах ₮/хүн оруулах<span class="chev">▼</span></summary>
-    <div class="cost-inputs">
-      <div class="ci"><label>Хонь зөөлөн ₮/кг</label><input type="number" min="0" step="100" data-price="Хонь" placeholder="₮/кг"></div>
-      <div class="ci"><label>Хонь ястай ₮/кг</label><input type="number" min="0" step="100" data-price="Хонь-ястай" placeholder="₮/кг"></div>
-      <div class="ci"><label>Гахай ₮/кг</label><input type="number" min="0" step="100" data-price="Гахай" placeholder="₮/кг"></div>
-      <div class="ci"><label>Тахиа ₮/кг</label><input type="number" min="0" step="100" data-price="Тахиа" placeholder="₮/кг"></div>
-      <div class="ci"><label>Холимог ₮/кг</label><input type="number" min="0" step="100" data-price="Холимог" placeholder="₮/кг"></div>
-      <div class="ci"><label>Дагалдах ₮/хүн</label><input type="number" min="0" step="100" data-price="_sides" placeholder="₮/хүн"></div>
-    </div>
-  </details>
-</div>
-<div class="cost-summary" id="cost-summary"></div>
-
-<!-- Google Sheets хадгалах -->
-<div class="savebox">
-  <div class="savebox-inner">
-    <div class="savebox-head">📊 Тооцоог Google Drive-д хадгалах</div>
-    <div class="savebox-fields">
-      <div class="sf"><label>Захиалагч нэр</label><input id="sv-client" type="text" placeholder="Төрийн банк"></div>
-      <div class="sf"><label>Арга хэмжээний огноо</label><input id="sv-date" type="date"></div>
-      <div class="sf"><label>Арга хэмжээний төрөл</label>
-        <select id="sv-type">
-          <option>Албан хурал</option>
-          <option>Team-building</option>
-          <option>Гадаа найр</option>
-          <option>BBQ үдэш</option>
-          <option>Хүлээн авалт</option>
-          <option>Бусад</option>
-        </select>
-      </div>
-      <div class="sf"><label>Үйлчилгээний төрөл</label>
-        <select id="sv-svc">
-          <option>Буфет</option>
-          <option>Порц</option>
-          <option>Буфет + Боодог</option>
-          <option>Порц + Боодог</option>
-          <option>Холимог</option>
-        </select>
-      </div>
-      <div class="sf"><label>Тэмдэглэл</label><input id="sv-note" type="text" placeholder="Нэмэлт мэдээлэл"></div>
-    </div>
-    <div class="save-actions">
-      <button class="btn-save" id="btn-save" onclick="saveToSheets()">
-        <span>📤</span> Google Sheets-д хадгалах
-      </button>
-      <div class="save-status" id="save-status"></div>
-    </div>
-  </div>
-</div>
 
 <main class="wrap" id="kitchen-main">
   <div class="summary" id="summary"></div>
