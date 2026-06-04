@@ -372,10 +372,36 @@ footer b{color:var(--ink)}
   </div>
 </div>
 
-<div id="kitchen-controls"></div>
+<div class="panel" id="kitchen-controls">
+  <div class="wrap controls">
+    <div class="field"><label>Нийт хүн</label><input id="ppl" type="number" min="0" value="100"></div>
+    <div class="field"><label>Ширээний хүн</label><input id="tbl" type="number" min="1" step="0.5" value="8.5"></div>
+    <div class="field"><label>Эр / Эм (заавал биш)</label>
+      <div class="gender"><input id="men" type="number" min="0" placeholder="Эр"><input id="women" type="number" min="0" placeholder="Эм"></div>
+    </div>
+    <div class="field"><label>Идэх хандлага</label>
+      <div class="apt" id="apt">
+        <button class="apt-btn active" data-a="1">Албан хурал</button>
+        <button class="apt-btn" data-a="1.15">Team-building</button>
+        <button class="apt-btn" data-a="1.3">Гадаа+энгийн</button>
+        <button class="apt-btn" data-a="1.45">Гадаа+пиво</button>
+        <button class="apt-btn" data-a="1.5">Том найр</button>
+        <button class="apt-btn" data-a="1.65">BBQ үдэш</button>
+      </div>
+    </div>
+    <div class="filters" id="filters">
+      <button class="chip active" data-f="all">Бүгд</button>
+      <button class="chip" data-f="буфет">Буфет</button>
+      <button class="chip" data-f="порц">Порц</button>
+      <button class="chip" data-f="шэйр">Шэйр</button>
+      <button class="chip" data-f="freeze">Хөлдөөдөг</button>
+    </div>
+  </div>
+</div>
+
 
 <main class="wrap" id="kitchen-main">
-  <div id="summary"></div>
+  <div class="summary" id="summary"></div>
   <div class="section-title">Үндсэн мах — 10 хоол</div>
   <div class="grid" id="grid"></div>
 
