@@ -1005,10 +1005,32 @@ function kRenderSection(key, orders) {
         kRow('💰 Нийт дүн',  o['Нийт дүн']) +
       '</div>' +
       (date ? '<div class="oc-date" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">📅 Захиалсан: '+date+'</div>' : '') +
+      (!isPaid ? '<button onclick="kMarkPaid(this,\''+((o['_sheet']||'').replace(/'/g,"\\'"))+'\','+( o['_row']||0)+')" style="margin-top:10px;width:100%;font-family:inherit;font-size:13px;font-weight:700;background:#1F4A38;color:#fff;border:none;border-radius:9px;padding:10px;cursor:pointer">✅ Төлбөр баталгаажуулах</button>' : '') +
     '</div>';
   });
   html += '</div>';
   listEl.innerHTML = html;
+}
+
+function kMarkPaid(btn, sheetName, rowNum) {
+  btn.disabled = true;
+  btn.textContent = '⏳ Хадгалж байна...';
+  fetch(K_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ type: 'update_payment', sheet: sheetName, row: rowNum })
+  }).then(function() {
+    var card = btn.closest('.order-card');
+    card.style.borderColor = '#6B8E6F';
+    card.style.background  = '#f7fdf9';
+    card.querySelector('.oc-status').className = 'oc-status status-done';
+    card.querySelector('.oc-status').textContent = '✅ Төлсөн';
+    btn.remove();
+    loadOrders();
+  }).catch(function() {
+    btn.disabled = false;
+    btn.textContent = '✅ Төлбөр баталгаажуулах';
+  });
 }
 function kStat(l,v,s){return '<div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 16px;flex:1;min-width:100px"><div style="font-family:\'Lora\',serif;font-size:22px;font-weight:700;'+s+'">'+v+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+l+'</div></div>';}
 function kRow(l,v){if(!v)return '';return '<div class="oc-row"><span class="oc-label">'+l+'</span><span class="oc-val">'+String(v)+'</span></div>';}
