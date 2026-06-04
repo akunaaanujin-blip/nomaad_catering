@@ -263,12 +263,18 @@ footer b{color:var(--ink)}
   const PASS = 'nomaad2026';
   const KEY  = 'nomaad_kitchen_auth';
 
+  function unlock(){
+    sessionStorage.setItem(KEY,'ok');
+    document.getElementById('lock-screen').style.display='none';
+    // Нэвтэрсний дараа шууд захиалга харуулна
+    if(typeof showOrders === 'function') showOrders();
+    else document.addEventListener('DOMContentLoaded', function(){ showOrders(); });
+  }
+
   function checkPass(){
     const val = document.getElementById('lock-input').value;
-    if(val === PASS){
-      sessionStorage.setItem(KEY,'ok');
-      document.getElementById('lock-screen').style.display='none';
-    } else {
+    if(val === PASS){ unlock(); }
+    else {
       document.getElementById('lock-err').style.display='block';
       document.getElementById('lock-input').value='';
       document.getElementById('lock-input').focus();
@@ -278,13 +284,12 @@ footer b{color:var(--ink)}
 
   // URL hash-аар шууд нэвтрэх (#nomaad2026)
   if(location.hash === '#' + PASS){
-    sessionStorage.setItem(KEY,'ok');
-    history.replaceState(null,'',location.pathname); // hash-г нуух
-    document.getElementById('lock-screen').style.display='none';
+    history.replaceState(null,'',location.pathname);
+    document.addEventListener('DOMContentLoaded', function(){ unlock(); });
   }
   // Аль хэдийн нэвтэрсэн бол шууд нэвтрэх
   else if(sessionStorage.getItem(KEY)==='ok'){
-    document.getElementById('lock-screen').style.display='none';
+    document.addEventListener('DOMContentLoaded', function(){ unlock(); });
   }
 })();
 </script>
