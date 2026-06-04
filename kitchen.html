@@ -929,18 +929,15 @@ function showOrders() {
   document.getElementById('kitchen-controls').style.display = 'none';
   document.getElementById('kitchen-main').style.display = 'none';
   window.scrollTo({ top: 0, behavior: 'instant' });
-  // Тогооч эрхэд буцах товч болон ирсэн захиалга товч нуугдана
-  var backBtn = document.getElementById('btn-back-menu');
-  var ordBtn  = document.getElementById('btn-show-orders');
-  if (backBtn) backBtn.style.display = isCook() ? 'none' : '';
-  if (ordBtn)  ordBtn.style.display  = isCook() ? 'none' : '';
   loadOrders();
 }
 function hideOrders() {
-  if (isCook()) return; // Тогооч меню рүү буцаж чадахгүй
   document.getElementById('orders-panel').style.display = 'none';
-  document.getElementById('kitchen-controls').style.display = 'block';
-  document.getElementById('kitchen-main').style.display = 'block';
+  // Тогооч эрхэд меню харагдахгүй — удирдагчид л харагдана
+  if (!isCook()) {
+    document.getElementById('kitchen-controls').style.display = 'block';
+    document.getElementById('kitchen-main').style.display = 'block';
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
