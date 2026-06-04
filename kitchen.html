@@ -966,8 +966,9 @@ async function loadOrders() {
     kRenderSection('nomaad', data.nomaad || []);
     kRenderSection('busad',  data.busad  || []);
   } catch(e) {
+    var msg = e && e.message ? e.message : 'тодорхойгүй';
     ['nomaad','busad'].forEach(function(k){
-      document.getElementById('klist-'+k).innerHTML = '<div class="orders-empty">❌ Уншиж чадсангүй.</div>';
+      document.getElementById('klist-'+k).innerHTML = '<div class="orders-empty">❌ Алдаа: ' + msg + '</div>';
     });
   }
 }
