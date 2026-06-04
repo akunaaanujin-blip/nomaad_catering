@@ -2428,21 +2428,15 @@ function matchSheetItem(name) {
 }
 
 function fetchRawFromSheets() {
-  var fetchBtn = document.getElementById('btn-fetch-raw');
   var fetchMsg = document.getElementById('raw-save-msg');
-  if (fetchBtn) { fetchBtn.disabled=true; fetchBtn.textContent='⏳ Татаж байна...'; }
-  if (fetchMsg) fetchMsg.textContent = '';
+  if (fetchMsg) fetchMsg.textContent = '⏳ Нөөц татаж байна...';
 
-  // CORS-аас зайлсхийхийн тулд script tag injection (JSONP-тай адил)
-  var oldScript = document.getElementById('_gviz_raw_script');
-  if (oldScript) oldScript.remove();
-
-  window._gvizRawCallback = function(data) {
-    var fetchMsg2 = document.getElementById('raw-save-msg');
-    try {
-      var rows = data.table.rows;
+  fetch('/api/sheets?gid=' + RAW_SHEETS_GID)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var rows = data.table ? data.table.rows : [];
       var totals = {};
-      rows.forEach(function(row){
+      rows.forEach(function(row) {
         if (!row.c) return;
         var nameCell = row.c[4], qtyCell = row.c[6];
         if (!nameCell || !nameCell.v) return;
@@ -2451,49 +2445,26 @@ function fetchRawFromSheets() {
         if (!qty || qty <= 0) return;
         var invKey = matchSheetItem(itemName);
         if (!invKey) return;
-        totals[invKey] = (totals[invKey]||0) + qty;
+        totals[invKey] = (totals[invKey] || 0) + qty;
       });
 
       var matched = Object.keys(totals).length;
-      if (matched === 0) {
-        if (fetchMsg2) fetchMsg2.textContent = '';
-        return;
-      }
-
-      // RAW_STORE шинэчлэж input утгуудыг шууд дүүргэнэ
-      Object.keys(totals).forEach(function(invKey){
+      Object.keys(totals).forEach(function(invKey) {
         var val = +totals[invKey].toFixed(2);
         RAW_STORE[invKey] = val;
         var inp = document.querySelector('input[data-rkey="' + invKey + '"]');
-        if (inp) {
-          inp.value = val;
-          inp.dispatchEvent(new Event('input'));
-        }
+        if (inp) { inp.value = val; inp.dispatchEvent(new Event('input')); }
       });
-      localStorage.setItem('nomaad_raw_stock', JSON.stringify(RAW_STORE));
+      if (matched > 0) localStorage.setItem('nomaad_raw_stock', JSON.stringify(RAW_STORE));
 
-      if (fetchMsg2) { fetchMsg2.textContent = '✅ ' + matched + ' орц татагдлаа'; setTimeout(function(){ fetchMsg2.textContent=''; }, 4000); }
-    } catch(err) {
-      if (fetchMsg2) fetchMsg2.textContent = '';
-    }
-  };
-
-  // google.visualization.Query.setResponse → манай callback руу дамжуулах
-  if (!window.google) window.google = {};
-  if (!window.google.visualization) window.google.visualization = {};
-  if (!window.google.visualization.Query) window.google.visualization.Query = {};
-  window.google.visualization.Query.setResponse = function(data) {
-    window._gvizRawCallback(data);
-  };
-
-  var tag = document.createElement('script');
-  tag.id = '_gviz_raw_script';
-  tag.onerror = function() {
-    if (fetchBtn) { fetchBtn.disabled=false; fetchBtn.textContent='📥 Sheets-аас татах'; }
-    if (fetchMsg) fetchMsg.textContent = '❌ Sheets-т хандах боломжгүй';
-  };
-  tag.src = RAW_SHEETS_URL;
-  document.head.appendChild(tag);
+      if (fetchMsg) {
+        fetchMsg.textContent = matched > 0 ? '✅ ' + matched + ' орц татагдлаа' : '';
+        if (matched > 0) setTimeout(function() { fetchMsg.textContent = ''; }, 4000);
+      }
+    })
+    .catch(function() {
+      if (fetchMsg) fetchMsg.textContent = '';
+    });
 }
 
 function saveRawStock() {

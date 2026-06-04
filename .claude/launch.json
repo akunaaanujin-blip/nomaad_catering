@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "chimun-cook",
-      "runtimeExecutable": "/usr/local/bin/python3",
-      "runtimeArgs": ["-m", "http.server", "3456"],
-      "port": 3456
+      "name": "nomaad-preview",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["server.py"],
+      "port": 7788
     }
   ]
 }
