@@ -386,8 +386,6 @@ footer b{color:var(--ink)}
   <div class="section-title">Үндсэн мах — 10 хоол</div>
   <div class="grid" id="grid"></div>
 
-  <div class="section-title">Дагалдах хоол — буфет (нэг хүний норм)</div>
-  <div class="grid" id="side-grid"></div>
 
 
   <footer>
@@ -618,53 +616,16 @@ function techHtml(d){
     const pp=t[2]?`<span class="pp">${esc(t[2])}</span>`:'';
     return `<div class="step${ccp}"><div class="no">${i+1}</div><div class="sc"><div class="sg">${esc(t[0])}</div><div class="ac">${esc(t[1])}</div>${pp}</div></div>`;
   }).join('');
-  return `<details class="tech"><summary>Дэлгэрэнгүй технологи (${d.tech.length} алхам)<span class="chev">▼</span></summary><div class="steps">${steps}</div></details>`;
+  return `<div class="steps">${steps}</div>`;
 }
 
 function render(){
-  let frozenCount=0;
-  DISHES.forEach(d=>{ if(d.freeze!=='none') frozenCount++; });
-  const potCount=potsN();
-  const horhogKg=potCount*DISHES[1].kgPerPot;
-  const gf=gFactor();
-  const aptTxt=`${appetite>1?` ×${appetite}`:''}${gf!==1?` · эр/эм ×${gf.toFixed(2)}`:''}`;
-  $('#summary').innerHTML=`
-    <div class="stat"><div class="k">Нийт хүн</div><div class="v">${fmt(ppl())}<small>${aptTxt}</small></div></div>
-    <div class="stat"><div class="k">Ширээ (шэйр)</div><div class="v">${Math.ceil(ppl()/tbl())} <small>+1 нөөц</small></div></div>
-    <div class="stat"><div class="k">Хорхог</div><div class="v">${potCount} <small>тогоо · ${fmt(horhogKg)}кг</small></div></div>
-    <div class="stat"><div class="k">Хөлдөөдөг хоол</div><div class="v">${frozenCount} <small>/ ${DISHES.length}</small></div></div>`;
-
-  $('#grid').innerHTML=DISHES.filter(dishVisible).map((d)=>{
-    const idx=DISHES.indexOf(d);
-    const key='d'+idx;
+  $('#grid').innerHTML=DISHES.map(d=>{
     const fz=FZ[d.freeze];
     const svcBadges=d.services.map(s=>`<span class="b ${SVC[s]}">${s.toUpperCase()}</span>`).join('');
     const fzBadge=`<span class="b ${fz.c}">${fz.t}</span>`;
     const orc=d.orc.map(o=>`<span class="it">${esc(o[0])}${o[1]?' <b>'+esc(o[1])+'</b>':''}</span>`).join('');
-
-    let needHtml='', primaryNeed=null, primaryLabel='';
-    if(d.share){
-      const p=potsN(), kg=p*d.kgPerPot; primaryNeed=kg; primaryLabel='хонь';
-      needHtml=`<div class="need one"><div class="n"><div class="lbl">Шэйр — ширээгээр</div><div class="num">${p} <small>тогоо</small></div><div class="sub">${fmt(kg)} кг ястай хонь (+1 нөөц)</div></div></div>`;
-    } else if(d.pieces){
-      const total=Math.round(ppl()*d.pieces*appetite*gFactor()); const kg=total*d.pieceG/1000*(1+POR_BUFFER); primaryNeed=kg; primaryLabel='хуушуур';
-      needHtml=`<div class="need one"><div class="n"><div class="lbl">Порц — түүхий</div><div class="num">${fmt(total)} <small>ширхэг</small></div><div class="sub">≈ ${fmt(kg)} кг түүхий</div><span class="bag">${bags(kg)} уут (2кг)</span></div></div>`;
-    } else {
-      const rb=rawBuffet(d), rp=rawPortion(d);
-      const cells=[];
-      const showBuf=(activeFilter==='all'||activeFilter==='freeze'||activeFilter==='буфет');
-      const showPor=(activeFilter==='all'||activeFilter==='freeze'||activeFilter==='порц');
-      if(d.services.includes('буфет')&&rb!==null&&showBuf){cells.push(`<div class="n"><div class="lbl">Буфет</div><div class="num">${fmt(rb)} <small>кг</small></div><div class="sub">түүхий, +20% · нэг хүнд ~${Math.round(d.bufG*appetite)}г (${d.bufG}г × ${appetite})</div><span class="bag">${bags(rb)} уут (2кг)</span></div>`); primaryNeed=rb; primaryLabel='буфет';}
-      if(d.services.includes('порц')&&rp!==null&&showPor){cells.push(`<div class="n"><div class="lbl">Порц 100%</div><div class="num">${fmt(rp)} <small>кг</small></div><div class="sub">түүхий, +8% · нэг хүнд ~${Math.round(d.porG*appetite)}г (${d.porG}г × ${appetite})</div><span class="bag">${bags(rp)} уут (2кг)</span></div>`); if(primaryNeed===null){primaryNeed=rp;primaryLabel='порц';}}
-      needHtml=`<div class="need ${cells.length<2?'one':''}">${cells.join('')}</div>`;
-    }
-
     const proc=d.proc.map((s,j)=>`${j>0?'<span class="arrow">→</span>':''}${esc(s)}`).join(' ');
-
-    const uprice=+PRICES[PRICE_KEY[d.yieldKey]||'Холимог']||0;
-    const dcost=meatKg(d)*uprice;
-    const costTxt=uprice>0?`Мах: ₮${fmt0(dcost)} · ₮${fmt0(ppl()>0?dcost/ppl():0)}/хүн`:'↑ Махны ₮/кг оруулаарай';
-
     return `<div class="card">
       <div class="card-h">
         <div class="name">${esc(d.name)}<span class="protein">${esc(d.protein)}</span></div>
@@ -672,56 +633,11 @@ function render(){
       </div>
       <div class="card-b">
         <div class="block"><div class="blk-t">Орц (нэг порц)</div><div class="orc">${orc}</div></div>
-        <div class="block"><div class="blk-t">Тооцоолсон хэрэгцээ — ${fmt(ppl())} хүн${aptTxt}</div>${needHtml}</div>
         <div class="block"><div class="blk-t">Товч урсгал</div><div class="proc">${proc}</div></div>
-        <div class="block">${techHtml(d)}</div>
-      </div>
-      <div class="stock">
-        <div class="stock-row">
-          <label>Одоогийн нөөц (${primaryLabel||'кг'})</label>
-          <input type="number" min="0" step="0.5" data-key="${key}" value="${STORE[key]??''}" placeholder="кг">
-        </div>
-        ${statusHtml(key,primaryNeed)}
-      </div>
-      <div class="costrow">
-        <label class="menu-tog"><input type="checkbox" data-menu="${key}" ${MENU[key]?'checked':''}> Цэсэнд оруулах</label>
-        <span class="cost-val">${costTxt}</span>
+        <div class="block"><div class="blk-t">Технологийн алхмууд</div>${techHtml(d)}</div>
       </div>
     </div>`;
   }).join('');
-
-  $('#side-grid').innerHTML=SIDES.map(s=>{
-    const total=ppl()*s.perp*appetite*gFactor()/1000*(1+s.buffer);
-    const unit=s.unit==='мл'?'литр':'кг';
-    return `<div class="card"><div class="card-h"><div class="name">${esc(s.name)}</div><div class="badges"><span class="b buf">БУФЕТ ${esc(s.mult)}</span></div></div>
-      <div class="card-b"><div class="block"><div class="blk-t">Норм</div><div class="orc"><span class="it">Нэг хүнд <b>${s.perp} ${s.unit}</b></span><span class="it">Буфер <b>+${Math.round(s.buffer*100)}%</b></span></div></div>
-      <div class="block"><div class="blk-t">Нийт — ${fmt(ppl())} хүн${aptTxt}</div><div class="need one"><div class="n"><div class="lbl">Хэрэгцээ</div><div class="num">${fmt(total)} <small>${unit}</small></div></div></div></div></div></div>`;
-  }).join('');
-
-  document.querySelectorAll('input[data-key]').forEach(inp=>{
-    inp.addEventListener('input',e=>{
-      const k=e.target.dataset.key, v=e.target.value;
-      if(v==='') delete STORE[k]; else STORE[k]=v;
-      localStorage.setItem('mevent_stock',JSON.stringify(STORE));
-      const card=e.target.closest('.card');
-      const idx=+k.slice(1); const d=DISHES[idx];
-      let need=null;
-      if(d.share) need=potsN()*d.kgPerPot;
-      else if(d.pieces) need=Math.round(ppl()*d.pieces*appetite*gFactor())*d.pieceG/1000*(1+POR_BUFFER);
-      else need=rawBuffet(d)??rawPortion(d);
-      card.querySelector('.status').outerHTML=statusHtml(k,need);
-    });
-  });
-
-  document.querySelectorAll('input[data-menu]').forEach(cb=>{
-    cb.addEventListener('change',e=>{
-      const k=e.target.dataset.menu;
-      if(e.target.checked) MENU[k]=1; else delete MENU[k];
-      localStorage.setItem('nomaad_menu',JSON.stringify(MENU));
-      renderCostSummary();
-    });
-  });
-  renderCostSummary();
   renderRawInv();
   renderCookInv();
 }
