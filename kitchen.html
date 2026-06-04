@@ -259,21 +259,23 @@ footer b{color:var(--ink)}
 
 <script>
 (function(){
-  // Нууц үгийг энд тохируулна
-  const PASS = 'nomaad2026';
-  const KEY  = 'nomaad_kitchen_auth';
+  var PASS_COOK    = 'nomaad2026';
+  var PASS_MANAGER = 'manager2026';
+  var KEY          = 'nomaad_kitchen_auth';
+  var ROLE_KEY     = 'nomaad_kitchen_role';
 
-  function unlock(){
-    sessionStorage.setItem(KEY,'ok');
+  function unlock(role){
+    sessionStorage.setItem(KEY, 'ok');
+    sessionStorage.setItem(ROLE_KEY, role || 'cook');
     document.getElementById('lock-screen').style.display='none';
-    // Нэвтэрсний дараа шууд захиалга харуулна
     if(typeof showOrders === 'function') showOrders();
     else document.addEventListener('DOMContentLoaded', function(){ showOrders(); });
   }
 
   function checkPass(){
-    const val = document.getElementById('lock-input').value;
-    if(val === PASS){ unlock(); }
+    var val = document.getElementById('lock-input').value;
+    if(val === PASS_MANAGER)     { unlock('manager'); }
+    else if(val === PASS_COOK)   { unlock('cook'); }
     else {
       document.getElementById('lock-err').style.display='block';
       document.getElementById('lock-input').value='';
@@ -282,14 +284,14 @@ footer b{color:var(--ink)}
   }
   window.checkPass = checkPass;
 
-  // URL hash-аар шууд нэвтрэх (#nomaad2026)
-  if(location.hash === '#' + PASS){
+  if(location.hash === '#' + PASS_MANAGER){
     history.replaceState(null,'',location.pathname);
-    document.addEventListener('DOMContentLoaded', function(){ unlock(); });
-  }
-  // Аль хэдийн нэвтэрсэн бол шууд нэвтрэх
-  else if(sessionStorage.getItem(KEY)==='ok'){
-    document.addEventListener('DOMContentLoaded', function(){ unlock(); });
+    document.addEventListener('DOMContentLoaded', function(){ unlock('manager'); });
+  } else if(location.hash === '#' + PASS_COOK){
+    history.replaceState(null,'',location.pathname);
+    document.addEventListener('DOMContentLoaded', function(){ unlock('cook'); });
+  } else if(sessionStorage.getItem(KEY)==='ok'){
+    document.addEventListener('DOMContentLoaded', function(){ unlock(sessionStorage.getItem(ROLE_KEY)||'cook'); });
   }
 })();
 </script>
@@ -1005,7 +1007,7 @@ function kRenderSection(key, orders) {
         kRow('💰 Нийт дүн',  o['Нийт дүн']) +
       '</div>' +
       (date ? '<div class="oc-date" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">📅 Захиалсан: '+date+'</div>' : '') +
-      (!isPaid ? '<button onclick="kMarkPaid(this,\''+((o['_sheet']||'').replace(/'/g,"\\'"))+'\','+( o['_row']||0)+')" style="margin-top:10px;width:100%;font-family:inherit;font-size:13px;font-weight:700;background:#1F4A38;color:#fff;border:none;border-radius:9px;padding:10px;cursor:pointer">✅ Төлбөр баталгаажуулах</button>' : '') +
+      (!isPaid && key !== 'nomaad' && sessionStorage.getItem('nomaad_kitchen_role') === 'manager' ? '<button onclick="kMarkPaid(this,\''+((o['_sheet']||'').replace(/'/g,"\\'"))+'\','+( o['_row']||0)+')" style="margin-top:10px;width:100%;font-family:inherit;font-size:13px;font-weight:700;background:#1F4A38;color:#fff;border:none;border-radius:9px;padding:10px;cursor:pointer">✅ Төлбөр баталгаажуулах</button>' : '') +
     '</div>';
   });
   html += '</div>';
