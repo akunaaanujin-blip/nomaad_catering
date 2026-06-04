@@ -315,12 +315,15 @@ footer b{color:var(--ink)}
       <h2>📋 Ирсэн захиалгууд</h2>
       <button class="btn-refresh" onclick="loadOrders()">🔄 Шинэчлэх</button>
     </div>
-    <div id="orders-url-notice" class="url-notice" style="display:none">
-      ⚠️ <strong>Apps Script URL тохируулаагүй байна.</strong> kitchen.html болон index.html-д <code>SHEETS_URL</code>-г тавиад дахин deploy хийнэ үү.
+    <!-- Tabs -->
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:18px">
+      <button id="ktab-nomaad" onclick="kSwitchTab('nomaad')" style="font-family:inherit;font-size:13px;font-weight:700;padding:10px 22px;border:none;border-bottom:3px solid var(--accent);background:none;cursor:pointer;color:var(--accent);margin-bottom:-2px">⛺ Nomaad camp</button>
+      <button id="ktab-busad"  onclick="kSwitchTab('busad')"  style="font-family:inherit;font-size:13px;font-weight:700;padding:10px 22px;border:none;border-bottom:3px solid transparent;background:none;cursor:pointer;color:var(--muted);margin-bottom:-2px">🍴 Бусад захиалга</button>
     </div>
-    <div id="orders-container">
-      <div class="orders-loading">⏳ Уншиж байна...</div>
-    </div>
+    <div id="kstats-nomaad" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap"></div>
+    <div id="kstats-busad"  style="display:none;gap:12px;margin-bottom:16px;flex-wrap:wrap"></div>
+    <div id="klist-nomaad"><div class="orders-loading">⏳ Уншиж байна...</div></div>
+    <div id="klist-busad"  style="display:none"><div class="orders-loading">⏳ Уншиж байна...</div></div>
   </div>
 </div>
 
@@ -1005,95 +1008,97 @@ function hideOrders() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Google Sheet "Захиалга" — Publish to web CSV URL
-var CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTgmE0uJku8GxYhIua11kx0_h-LeRXF-MCGvGeAh6qCTsAo1x6wcdBvNey6Jn-6F8_hVIFmLIGqmEsx/pub?gid=635195893&single=true&output=csv';
-
-function loadOrders() {
-  var el = document.getElementById('orders-container');
-  el.innerHTML = '<div class="orders-loading">⏳ Уншиж байна...</div>';
-
-  fetch(CSV_URL)
-    .then(function(r) { return r.text(); })
-    .then(function(csv) {
-      var orders = parseCSV(csv);
-      renderOrders(orders);
-    })
-    .catch(function() {
-      el.innerHTML = '<div class="orders-empty">❌ Уншиж чадсангүй. Интернэт шалгана уу.</div>';
-    });
+var kActiveTab = 'nomaad';
+function kSwitchTab(t) {
+  kActiveTab = t;
+  ['nomaad','busad'].forEach(function(k) {
+    var isActive = k === t;
+    document.getElementById('ktab-'+k).style.borderBottomColor = isActive ? 'var(--accent)' : 'transparent';
+    document.getElementById('ktab-'+k).style.color = isActive ? 'var(--accent)' : 'var(--muted)';
+    document.getElementById('kstats-'+k).style.display = isActive ? 'flex' : 'none';
+    document.getElementById('klist-'+k).style.display  = isActive ? 'block' : 'none';
+  });
 }
 
-function parseCSV(csv) {
-  var lines = csv.trim().split('\n');
-  if (lines.length < 2) return [];
-  // Эхний мөр — header, 2-р мөрөөс захиалгууд
-  var orders = [];
-  for (var i = lines.length - 1; i >= 1; i--) {  // Шинэ дээр харуулна
-    var cols = splitCSVLine(lines[i]);
-    if (!cols[1] && !cols[2]) continue; // Хоосон мөр алгасна
-    orders.push({
-      ognoo:       cols[0] || '',
-      baiguullaga: cols[1] || '',
-      ner:         cols[2] || '',
-      utas:        cols[3] || '',
-      arga_ognoo:  cols[4] || '',
-      hun:         cols[5] || '',
-      uilchilgee:  cols[6] || '',
-      temdegleg:   cols[7] || '',
-      status:      cols[8] || 'New',
-      tailbar:     cols[9] || ''
+function kJsonpFetch(url) {
+  return new Promise(function(resolve, reject) {
+    var cb = '__kcb_' + Date.now();
+    var sc = document.createElement('script');
+    var tm = setTimeout(function(){ cleanup(); reject(new Error('Timeout')); }, 10000);
+    function cleanup(){ delete window[cb]; if(sc.parentNode) sc.parentNode.removeChild(sc); clearTimeout(tm); }
+    window[cb] = function(d){ cleanup(); resolve(d); };
+    sc.onerror = function(){ cleanup(); reject(new Error('Failed')); };
+    sc.src = url + '?callback=' + cb;
+    document.head.appendChild(sc);
+  });
+}
+
+async function loadOrders() {
+  ['nomaad','busad'].forEach(function(k){
+    document.getElementById('klist-'+k).innerHTML = '<div class="orders-loading">⏳ Уншиж байна...</div>';
+  });
+  try {
+    var data = await kJsonpFetch(SHEETS_URL);
+    kRenderSection('nomaad', data.nomaad || []);
+    kRenderSection('busad',  data.busad  || []);
+  } catch(e) {
+    ['nomaad','busad'].forEach(function(k){
+      document.getElementById('klist-'+k).innerHTML = '<div class="orders-empty">❌ Уншиж чадсангүй.</div>';
     });
   }
-  return orders;
 }
 
-function splitCSVLine(line) {
-  // Таслалт болон хашилт зөв задлах
-  var result = [], cur = '', inQ = false;
-  for (var i = 0; i < line.length; i++) {
-    var c = line[i];
-    if (c === '"') { inQ = !inQ; }
-    else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
-    else { cur += c; }
-  }
-  result.push(cur.trim());
-  return result;
-}
+function kRenderSection(key, orders) {
+  var statsEl = document.getElementById('kstats-'+key);
+  var listEl  = document.getElementById('klist-'+key);
+  var paid    = orders.filter(function(o){ return o['Төлбөр төлсөн'] === true || o['Төлбөр төлсөн'] === 'TRUE'; });
+  var pending = orders.filter(function(o){ return o['Төлбөр төлсөн'] !== true && o['Төлбөр төлсөн'] !== 'TRUE'; });
 
-function renderOrders(orders) {
-  const el = document.getElementById('orders-container');
+  statsEl.innerHTML =
+    kStat('Нийт', orders.length, '') +
+    kStat('Хүлээгдэж байна', pending.length, 'color:var(--amber)') +
+    kStat('Төлбөр төлсөн', paid.length, 'color:#27543f');
+
   if (!orders.length) {
-    el.innerHTML = '<div class="orders-empty">📭 Одоогоор захиалга байхгүй байна.</div>';
+    listEl.innerHTML = '<div class="orders-empty">📭 Одоогоор захиалга байхгүй.</div>';
     return;
   }
 
-  var statusClass = { 'New': 'status-new', 'Шинэ': 'status-new', 'Хийгдэж байна': 'status-progress', 'Дууссан': 'status-done' };
-
+  var sorted = pending.concat(paid);
   var html = '<div class="order-cards">';
-  for (var i = 0; i < orders.length; i++) {
-    var o = orders[i];
-    var sc = statusClass[o.status] || statusClass[o.statус] || 'status-new';
-    var st = o.status === 'New' ? 'Шинэ' : (o.status || 'Шинэ');
-    html += '<div class="order-card">' +
+  sorted.forEach(function(o) {
+    var isPaid = o['Төлбөр төлсөн'] === true || o['Төлбөр төлсөн'] === 'TRUE';
+    var date   = o['Огноо'] ? new Date(o['Огноо']).toLocaleString('mn-MN') : '';
+    var range  = (o['Эхлэх огноо']||'') + (o['Дуусах өдөр'] ? ' → '+o['Дуусах өдөр'] : '');
+    html += '<div class="order-card" style="border-color:'+(isPaid?'#6B8E6F':'var(--amber)')+';background:'+(isPaid?'#f7fdf9':'#fffcf9')+'">' +
       '<div class="oc-head">' +
-        '<div>' +
-          '<div class="oc-org">' + (o.baiguullaga || '—') + '</div>' +
-          '<div class="oc-date">Бүртгэсэн: ' + (o.ognoo || '—') + '</div>' +
-        '</div>' +
-        '<span class="oc-status ' + sc + '">' + st + '</span>' +
+        '<div><div class="oc-org">'+(o['Байгууллага']||'—')+'</div>' +
+        '<div class="oc-date">'+(o['Нэр']||'')+(o['Утас']?' · '+o['Утас']:'')+'</div></div>' +
+        '<span class="oc-status '+(isPaid?'status-done':'status-new')+'">'+(isPaid?'✅ Төлсөн':'⏳ Хүлээгдэж байна')+'</span>' +
       '</div>' +
       '<div class="oc-body">' +
-        '<div class="oc-row"><span class="oc-label">👤 Нэр</span><span class="oc-val">' + (o.ner || '—') + '</span></div>' +
-        '<div class="oc-row"><span class="oc-label">📞 Утас</span><span class="oc-val">' + (o.utas || '—') + '</span></div>' +
-        '<div class="oc-row"><span class="oc-label">📅 Огноо</span><span class="oc-val">' + (o.arga_ognoo || '—') + '</span></div>' +
-        '<div class="oc-row"><span class="oc-label">👥 Хүн</span><span class="oc-val">' + (o.hun || '—') + '</span></div>' +
-        '<div class="oc-row"><span class="oc-label">🍴 Үйлчилгээ</span><span class="oc-val">' + (o.uilchilgee || '—') + '</span></div>' +
-        (o.temdegleg ? '<div class="oc-row"><span class="oc-label">📝 Тэмдэглэл</span><span class="oc-val">' + o.temdegleg + '</span></div>' : '') +
+        kRow('👥 Хүн',       o['Хүний тоо']) +
+        kRow('📅 Хугацаа',   range) +
+        kRow('📍 Газар',     o['Газар']) +
+        kRow('🍴 Үйлчилгээ', o['Үйлчилгээ']) +
+        kRow('💬 Тэмдэглэл', o['Тэмдэглэл']) +
+        kRow('💰 Нийт дүн',  o['Нийт дүн']) +
       '</div>' +
+      (date ? '<div class="oc-date" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">📅 Захиалсан: '+date+'</div>' : '') +
     '</div>';
-  }
+  });
   html += '</div>';
-  el.innerHTML = html;
+  listEl.innerHTML = html;
+}
+
+function kStat(label, val, style) {
+  return '<div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 16px;flex:1;min-width:100px">'+
+    '<div style="font-family:\'Lora\',serif;font-size:22px;font-weight:700;'+style+'">'+val+'</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+label+'</div></div>';
+}
+function kRow(label, val) {
+  if (!val) return '';
+  return '<div class="oc-row"><span class="oc-label">'+label+'</span><span class="oc-val">'+String(val)+'</span></div>';
 }
 </script>
 </body>
