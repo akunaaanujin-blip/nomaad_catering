@@ -948,33 +948,27 @@ function kSwitchTab(t) {
   });
 }
 
-function kJsonpFetch(url) {
-  return new Promise(function(resolve, reject) {
-    var cb = '__kcb_' + Date.now();
-    var sc = document.createElement('script');
-    var tm = setTimeout(function(){ cleanup(); reject(new Error('Timeout')); }, 10000);
-    function cleanup(){ delete window[cb]; if(sc.parentNode) sc.parentNode.removeChild(sc); clearTimeout(tm); }
-    window[cb] = function(d){ cleanup(); resolve(d); };
-    sc.onerror = function(){ cleanup(); reject(new Error('Failed')); };
-    sc.src = url + '?callback=' + cb;
-    document.head.appendChild(sc);
-  });
-}
+// Global callback — Promise/async ашиглахгүй
+window.__kOrders = function(data) {
+  kRenderSection('nomaad', (data && data.nomaad) || []);
+  kRenderSection('busad',  (data && data.busad)  || []);
+};
 
-async function loadOrders() {
+function loadOrders() {
   ['nomaad','busad'].forEach(function(k){
     document.getElementById('klist-'+k).innerHTML = '<div class="orders-loading">⏳ Уншиж байна...</div>';
   });
-  try {
-    var data = await kJsonpFetch(K_URL);
-    kRenderSection('nomaad', data.nomaad || []);
-    kRenderSection('busad',  data.busad  || []);
-  } catch(e) {
-    var msg = e && e.message ? e.message : 'тодорхойгүй';
+  var old = document.getElementById('k-sc');
+  if (old) old.parentNode.removeChild(old);
+  var sc = document.createElement('script');
+  sc.id  = 'k-sc';
+  sc.onerror = function() {
     ['nomaad','busad'].forEach(function(k){
-      document.getElementById('klist-'+k).innerHTML = '<div class="orders-empty">❌ Алдаа: ' + msg + '</div>';
+      document.getElementById('klist-'+k).innerHTML = '<div class="orders-empty">❌ Ачааллахад алдаа гарлаа</div>';
     });
-  }
+  };
+  sc.src = K_URL + '?callback=__kOrders';
+  document.head.appendChild(sc);
 }
 
 function kRenderSection(key, orders) {
