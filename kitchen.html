@@ -2427,52 +2427,70 @@ function matchSheetItem(name) {
 }
 
 function fetchRawFromSheets() {
-  var btn = document.getElementById('btn-fetch-raw');
-  var msg = document.getElementById('raw-save-msg');
-  if (btn) { btn.disabled=true; btn.textContent='⏳ Татаж байна...'; }
-  if (msg) msg.textContent = '';
+  var fetchBtn = document.getElementById('btn-fetch-raw');
+  var fetchMsg = document.getElementById('raw-save-msg');
+  if (fetchBtn) { fetchBtn.disabled=true; fetchBtn.textContent='⏳ Татаж байна...'; }
+  if (fetchMsg) fetchMsg.textContent = '';
 
-  fetch(RAW_SHEETS_URL)
-    .then(function(r){ return r.text(); })
-    .then(function(text){
-      var m = text.match(/setResponse\(([\s\S]*)\)/);
-      if (!m) throw new Error('Хариу буруу');
-      var data = JSON.parse(m[1]);
+  // CORS-аас зайлсхийхийн тулд script tag injection (JSONP-тай адил)
+  var oldScript = document.getElementById('_gviz_raw_script');
+  if (oldScript) oldScript.remove();
+
+  window._gvizRawCallback = function(data) {
+    try {
       var rows = data.table.rows;
       var totals = {};
-
       rows.forEach(function(row){
         if (!row.c) return;
         var nameCell = row.c[4], qtyCell = row.c[6];
         if (!nameCell || !nameCell.v) return;
-        var name = String(nameCell.v).trim();
+        var itemName = String(nameCell.v).trim();
         var qty = qtyCell && qtyCell.v ? parseFloat(qtyCell.v) : 0;
         if (!qty || qty <= 0) return;
-        var key = matchSheetItem(name);
-        if (!key) return;
-        totals[key] = (totals[key]||0) + qty;
+        var invKey = matchSheetItem(itemName);
+        if (!invKey) return;
+        totals[invKey] = (totals[invKey]||0) + qty;
       });
 
       var matched = Object.keys(totals).length;
-      if (matched === 0) throw new Error('Тохирох орц олдсонгүй');
+      if (matched === 0) {
+        if (fetchBtn) { fetchBtn.disabled=false; fetchBtn.textContent='📥 Sheets-аас татах'; }
+        if (fetchMsg) fetchMsg.textContent = '⚠ Тохирох орц олдсонгүй';
+        return;
+      }
 
-      // RAW_STORE шинэчлэх
-      Object.keys(totals).forEach(function(k){
-        RAW_STORE[k] = +totals[k].toFixed(2);
+      Object.keys(totals).forEach(function(invKey){
+        RAW_STORE[invKey] = +totals[invKey].toFixed(2);
       });
       localStorage.setItem('nomaad_raw_stock', JSON.stringify(RAW_STORE));
 
-      // Re-render
       document.getElementById('dpanel-raw').innerHTML = '';
       renderInvPanel('raw');
 
-      if (btn) { btn.disabled=false; btn.textContent='📥 Sheets-аас татах'; }
-      if (msg) { msg.textContent = '✅ ' + matched + ' орц татагдлаа'; setTimeout(function(){ msg.textContent=''; },4000); }
-    })
-    .catch(function(e){
-      if (btn) { btn.disabled=false; btn.textContent='📥 Sheets-аас татах'; }
-      if (msg) msg.textContent = '❌ Алдаа: ' + e.message;
-    });
+      if (fetchBtn) { fetchBtn.disabled=false; fetchBtn.textContent='📥 Sheets-аас татах'; }
+      if (fetchMsg) { fetchMsg.textContent = '✅ ' + matched + ' орц татагдлаа'; setTimeout(function(){ fetchMsg.textContent=''; },4000); }
+    } catch(err) {
+      if (fetchBtn) { fetchBtn.disabled=false; fetchBtn.textContent='📥 Sheets-аас татах'; }
+      if (fetchMsg) fetchMsg.textContent = '❌ Алдаа: ' + err.message;
+    }
+  };
+
+  // google.visualization.Query.setResponse → манай callback руу дамжуулах
+  if (!window.google) window.google = {};
+  if (!window.google.visualization) window.google.visualization = {};
+  if (!window.google.visualization.Query) window.google.visualization.Query = {};
+  window.google.visualization.Query.setResponse = function(data) {
+    window._gvizRawCallback(data);
+  };
+
+  var tag = document.createElement('script');
+  tag.id = '_gviz_raw_script';
+  tag.onerror = function() {
+    if (fetchBtn) { fetchBtn.disabled=false; fetchBtn.textContent='📥 Sheets-аас татах'; }
+    if (fetchMsg) fetchMsg.textContent = '❌ Sheets-т хандах боломжгүй';
+  };
+  tag.src = RAW_SHEETS_URL;
+  document.head.appendChild(tag);
 }
 
 function saveRawStock() {
