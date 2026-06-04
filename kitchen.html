@@ -2356,9 +2356,10 @@ function renderInvPanel(type) {
     el.innerHTML = '<div class="inv-section">' +
       '<div class="inv-head raw-head"><span class="ih-icon">🧊</span><div><h3>Боловсруулаагүй нөөц — Түүхий орц</h3><div class="ih-sub">Хоол бүрийн бүх орц · Одоогийн нөөц оруулахад хүрэлцэх эсэхийг шалгана</div></div></div>' +
       '<table class="inv-table"><thead><tr><th>Орц / Түүхий эд</th><th>Ангилал</th><th>Ашиглах хоол</th><th>Хэрэгцээ</th><th>Нэгж</th><th>Одоогийн нөөц</th><th>Байдал</th><th></th></tr></thead><tbody id="raw-inv-body"></tbody></table>' +
-      '<div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end;flex-wrap:wrap"><span id="raw-save-msg" style="font-size:12px;color:var(--muted)"></span><button id="btn-fetch-raw" onclick="fetchRawFromSheets()" style="font-family:inherit;font-size:13px;font-weight:700;background:#e3ede7;color:#1F4A38;border:1.5px solid #b2d4bf;border-radius:9px;padding:9px 18px;cursor:pointer">📥 Sheets-аас татах</button><button id="btn-save-raw" onclick="saveRawStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 20px;cursor:pointer">💾 Нөөц хадгалах</button></div>' +
+      '<div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end;flex-wrap:wrap"><span id="raw-save-msg" style="font-size:12px;color:var(--muted)">⏳ Sheets-аас нөөц татаж байна...</span><button id="btn-save-raw" onclick="saveRawStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 20px;cursor:pointer">💾 Нөөц хадгалах</button></div>' +
       '</div>';
     if (typeof renderRawInv === 'function') renderRawInv();
+    fetchRawFromSheets();
   }
   if (type==='cook') {
     var el = document.getElementById('dpanel-cook');
@@ -2437,6 +2438,7 @@ function fetchRawFromSheets() {
   if (oldScript) oldScript.remove();
 
   window._gvizRawCallback = function(data) {
+    var fetchMsg2 = document.getElementById('raw-save-msg');
     try {
       var rows = data.table.rows;
       var totals = {};
@@ -2454,24 +2456,25 @@ function fetchRawFromSheets() {
 
       var matched = Object.keys(totals).length;
       if (matched === 0) {
-        if (fetchBtn) { fetchBtn.disabled=false; fetchBtn.textContent='📥 Sheets-аас татах'; }
-        if (fetchMsg) fetchMsg.textContent = '⚠ Тохирох орц олдсонгүй';
+        if (fetchMsg2) fetchMsg2.textContent = '';
         return;
       }
 
+      // RAW_STORE шинэчлэж input утгуудыг шууд дүүргэнэ
       Object.keys(totals).forEach(function(invKey){
-        RAW_STORE[invKey] = +totals[invKey].toFixed(2);
+        var val = +totals[invKey].toFixed(2);
+        RAW_STORE[invKey] = val;
+        var inp = document.querySelector('input[data-rkey="' + invKey + '"]');
+        if (inp) {
+          inp.value = val;
+          inp.dispatchEvent(new Event('input'));
+        }
       });
       localStorage.setItem('nomaad_raw_stock', JSON.stringify(RAW_STORE));
 
-      document.getElementById('dpanel-raw').innerHTML = '';
-      renderInvPanel('raw');
-
-      if (fetchBtn) { fetchBtn.disabled=false; fetchBtn.textContent='📥 Sheets-аас татах'; }
-      if (fetchMsg) { fetchMsg.textContent = '✅ ' + matched + ' орц татагдлаа'; setTimeout(function(){ fetchMsg.textContent=''; },4000); }
+      if (fetchMsg2) { fetchMsg2.textContent = '✅ ' + matched + ' орц татагдлаа'; setTimeout(function(){ fetchMsg2.textContent=''; }, 4000); }
     } catch(err) {
-      if (fetchBtn) { fetchBtn.disabled=false; fetchBtn.textContent='📥 Sheets-аас татах'; }
-      if (fetchMsg) fetchMsg.textContent = '❌ Алдаа: ' + err.message;
+      if (fetchMsg2) fetchMsg2.textContent = '';
     }
   };
 
