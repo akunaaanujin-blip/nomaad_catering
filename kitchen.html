@@ -914,7 +914,7 @@ function renderCookInv(){
 
 // ── Google Sheets хадгалах ──
 // Доорх URL-г Apps Script deploy хийсний дараа солино
-const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
+var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
 
 
 // ── Ирсэн захиалга ──────────────────────────────────────
@@ -932,15 +932,19 @@ function hideOrders() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-var kActiveTab = 'nomaad';
+</script>
+
+<script>
+/* ── Ирсэн захиалга — тусдаа блок ── */
+var K_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
+
 function kSwitchTab(t) {
-  kActiveTab = t;
   ['nomaad','busad'].forEach(function(k) {
-    var isActive = k === t;
-    document.getElementById('ktab-'+k).style.borderBottomColor = isActive ? 'var(--accent)' : 'transparent';
-    document.getElementById('ktab-'+k).style.color = isActive ? 'var(--accent)' : 'var(--muted)';
-    document.getElementById('kstats-'+k).style.display = isActive ? 'flex' : 'none';
-    document.getElementById('klist-'+k).style.display  = isActive ? 'block' : 'none';
+    var a = k === t;
+    document.getElementById('ktab-'+k).style.borderBottomColor = a ? 'var(--accent)' : 'transparent';
+    document.getElementById('ktab-'+k).style.color = a ? 'var(--accent)' : 'var(--muted)';
+    document.getElementById('kstats-'+k).style.display = a ? 'flex' : 'none';
+    document.getElementById('klist-'+k).style.display  = a ? 'block' : 'none';
   });
 }
 
@@ -962,7 +966,7 @@ async function loadOrders() {
     document.getElementById('klist-'+k).innerHTML = '<div class="orders-loading">⏳ Уншиж байна...</div>';
   });
   try {
-    var data = await kJsonpFetch(SHEETS_URL);
+    var data = await kJsonpFetch(K_URL);
     kRenderSection('nomaad', data.nomaad || []);
     kRenderSection('busad',  data.busad  || []);
   } catch(e) {
@@ -978,17 +982,14 @@ function kRenderSection(key, orders) {
   var listEl  = document.getElementById('klist-'+key);
   var paid    = orders.filter(function(o){ return o['Төлбөр төлсөн'] === true || o['Төлбөр төлсөн'] === 'TRUE'; });
   var pending = orders.filter(function(o){ return o['Төлбөр төлсөн'] !== true && o['Төлбөр төлсөн'] !== 'TRUE'; });
-
   statsEl.innerHTML =
     kStat('Нийт', orders.length, '') +
     kStat('Хүлээгдэж байна', pending.length, 'color:var(--amber)') +
     kStat('Төлбөр төлсөн', paid.length, 'color:#27543f');
-
   if (!orders.length) {
     listEl.innerHTML = '<div class="orders-empty">📭 Одоогоор захиалга байхгүй.</div>';
     return;
   }
-
   var sorted = pending.concat(paid);
   var html = '<div class="order-cards">';
   sorted.forEach(function(o) {
@@ -1015,16 +1016,8 @@ function kRenderSection(key, orders) {
   html += '</div>';
   listEl.innerHTML = html;
 }
-
-function kStat(label, val, style) {
-  return '<div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 16px;flex:1;min-width:100px">'+
-    '<div style="font-family:\'Lora\',serif;font-size:22px;font-weight:700;'+style+'">'+val+'</div>'+
-    '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+label+'</div></div>';
-}
-function kRow(label, val) {
-  if (!val) return '';
-  return '<div class="oc-row"><span class="oc-label">'+label+'</span><span class="oc-val">'+String(val)+'</span></div>';
-}
+function kStat(l,v,s){return '<div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 16px;flex:1;min-width:100px"><div style="font-family:\'Lora\',serif;font-size:22px;font-weight:700;'+s+'">'+v+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+l+'</div></div>';}
+function kRow(l,v){if(!v)return '';return '<div class="oc-row"><span class="oc-label">'+l+'</span><span class="oc-val">'+String(v)+'</span></div>';}
 </script>
 </body>
 </html>
