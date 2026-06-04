@@ -268,16 +268,6 @@ footer b{color:var(--ink)}
     sessionStorage.setItem(KEY, 'ok');
     sessionStorage.setItem(ROLE_KEY, role || 'cook');
     document.getElementById('lock-screen').style.display='none';
-    // Удирдагч л захиалга харна, тогооч хоолны технологи харна
-    if(role === 'manager'){
-      if(typeof showOrders === 'function') showOrders();
-      else document.addEventListener('DOMContentLoaded', function(){ showOrders(); });
-    }
-    // Тогооч: захиалга товч нуугдана
-    document.addEventListener('DOMContentLoaded', function(){
-      var ordBtn = document.getElementById('btn-show-orders');
-      if(ordBtn) ordBtn.style.display = (role === 'manager') ? '' : 'none';
-    });
   }
 
   function checkPass(){
@@ -933,7 +923,6 @@ function isCook() {
   return sessionStorage.getItem('nomaad_kitchen_role') !== 'manager';
 }
 function showOrders() {
-  if (isCook()) return; // Тогооч захиалга харах боломжгүй
   document.getElementById('orders-panel').style.display = 'block';
   document.getElementById('kitchen-controls').style.display = 'none';
   document.getElementById('kitchen-main').style.display = 'none';
