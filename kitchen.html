@@ -268,13 +268,14 @@ footer b{color:var(--ink)}
     sessionStorage.setItem(KEY, 'ok');
     sessionStorage.setItem(ROLE_KEY, role || 'cook');
     document.getElementById('lock-screen').style.display='none';
-    // Технологи хэсгийг default харуулна, захиалга хаана
+    // Хоолны технологи хэсгийг default харуулна
+    var panels = ['orders-panel','dashboard-panel'];
+    panels.forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
     var kc = document.getElementById('kitchen-controls');
     var km = document.getElementById('kitchen-main');
-    var op = document.getElementById('orders-panel');
     if(kc) kc.style.display = 'block';
     if(km) km.style.display = 'block';
-    if(op) op.style.display = 'none';
+    setTimeout(function(){ if(typeof setNav==='function') setNav('tech'); }, 50);
   }
 
   function checkPass(){
