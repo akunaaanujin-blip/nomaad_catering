@@ -323,7 +323,15 @@ footer b{color:var(--ink)}
       <h2>📊 Нөөцийн самбар</h2>
       <button onclick="refreshDashboard()" class="btn-refresh">🔄 Шинэчлэх</button>
     </div>
-    <div id="dashboard-content"><div class="orders-loading">⏳ Уншиж байна...</div></div>
+    <!-- Dashboard tabs -->
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:20px">
+      <button class="dash-tab active" id="dtab-compare" onclick="dSwitchTab('compare')" style="font-family:inherit;font-size:13px;font-weight:700;padding:10px 20px;border:none;border-bottom:3px solid var(--accent);background:none;cursor:pointer;color:var(--accent);margin-bottom:-2px">📊 Харьцуулалт</button>
+      <button class="dash-tab" id="dtab-raw" onclick="dSwitchTab('raw')" style="font-family:inherit;font-size:13px;font-weight:700;padding:10px 20px;border:none;border-bottom:3px solid transparent;background:none;cursor:pointer;color:var(--muted);margin-bottom:-2px">🧊 Боловсруулаагүй</button>
+      <button class="dash-tab" id="dtab-cook" onclick="dSwitchTab('cook')" style="font-family:inherit;font-size:13px;font-weight:700;padding:10px 20px;border:none;border-bottom:3px solid transparent;background:none;cursor:pointer;color:var(--muted);margin-bottom:-2px">❄️ Боловсруулсан</button>
+    </div>
+    <div id="dpanel-compare"><div id="dashboard-content"><div class="orders-loading">⏳ Уншиж байна...</div></div></div>
+    <div id="dpanel-raw" style="display:none"></div>
+    <div id="dpanel-cook" style="display:none"></div>
   </div>
 </div>
 
@@ -383,62 +391,6 @@ footer b{color:var(--ink)}
   <div class="section-title">Дагалдах хоол — буфет (нэг хүний норм)</div>
   <div class="grid" id="side-grid"></div>
 
-  <!-- ── Боловсруулаагүй нөөц ── -->
-  <div class="inv-section">
-    <div class="inv-head raw-head">
-      <span class="ih-icon">🧊</span>
-      <div>
-        <h3>Боловсруулаагүй нөөц — Түүхий орц</h3>
-        <div class="ih-sub">Хоол бүрийн бүх орц · Одоогийн нөөц оруулахад хүрэлцэх эсэхийг шалгана</div>
-      </div>
-    </div>
-    <table class="inv-table">
-      <thead>
-        <tr>
-          <th>Орц / Түүхий эд</th>
-          <th>Ангилал</th>
-          <th>Ашиглах хоол</th>
-          <th>Хэрэгцээ</th>
-          <th>Нэгж</th>
-          <th>Одоогийн нөөц</th>
-          <th>Байдал</th>
-        </tr>
-      </thead>
-      <tbody id="raw-inv-body"></tbody>
-    </table>
-    <div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end">
-      <span id="raw-save-msg" style="font-size:12px;color:var(--muted)"></span>
-      <button id="btn-save-raw" onclick="saveRawStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 20px;cursor:pointer">💾 Нөөц хадгалах</button>
-    </div>
-  </div>
-
-  <!-- ── Боловсруулсан нөөц ── -->
-  <div class="inv-section" style="margin-bottom:0">
-    <div class="inv-head cook-head">
-      <span class="ih-icon">❄️</span>
-      <div>
-        <h3>Боловсруулсан нөөц — Бэлдэц (гүн хөлдөөгч)</h3>
-        <div class="ih-sub">Blast chill → вакум → −18°C хөлдөөсөн бэлэн бэлдэц · Уут = 2 кг</div>
-      </div>
-    </div>
-    <table class="inv-table">
-      <thead>
-        <tr>
-          <th>Хоол / Бэлдэц</th>
-          <th>Төрөл</th>
-          <th>Хэрэгцээт уут</th>
-          <th>кг</th>
-          <th>Одоогийн нөөц (уут)</th>
-          <th>Байдал</th>
-        </tr>
-      </thead>
-      <tbody id="cook-inv-body"></tbody>
-    </table>
-    <div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end">
-      <span id="cook-save-msg" style="font-size:12px;color:var(--muted)"></span>
-      <button id="btn-save-cook" onclick="saveCookStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:#2E6049;color:#fff;border:none;border-radius:9px;padding:9px 20px;cursor:pointer">💾 Бэлдэц хадгалах</button>
-    </div>
-  </div>
 
   <footer>
     <p><b>Эрүүл ахуйн ерөнхий хязгаар:</b> Хүлээн авах ≤4°C · Дотоод темп. ≥75°C · Blast chill 75→4°C ≤90 мин · Хадгалалт −18°C / 30 хоног / FIFO · Re-heat ≥75°C · Hot hold 65–70°C</p>
@@ -1221,6 +1173,40 @@ function renderDashboard() {
 }
 
 function dStat(l,v,s){return '<div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;flex:1;min-width:100px"><div style="font-family:\'Lora\',serif;font-size:24px;font-weight:700;'+s+'">'+v+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+l+'</div></div>';}
+
+function dSwitchTab(t) {
+  ['compare','raw','cook'].forEach(function(k){
+    var isA = k===t;
+    document.getElementById('dtab-'+k).style.borderBottomColor = isA?'var(--accent)':'transparent';
+    document.getElementById('dtab-'+k).style.color = isA?'var(--accent)':'var(--muted)';
+    document.getElementById('dpanel-'+k).style.display = isA?'block':'none';
+  });
+  if (t==='raw') renderInvPanel('raw');
+  if (t==='cook') renderInvPanel('cook');
+}
+
+function renderInvPanel(type) {
+  if (type==='raw') {
+    var el = document.getElementById('dpanel-raw');
+    if (!el || el.innerHTML.trim()) return;
+    el.innerHTML = '<div class="inv-section">' +
+      '<div class="inv-head raw-head"><span class="ih-icon">🧊</span><div><h3>Боловсруулаагүй нөөц — Түүхий орц</h3><div class="ih-sub">Хоол бүрийн бүх орц · Одоогийн нөөц оруулахад хүрэлцэх эсэхийг шалгана</div></div></div>' +
+      '<table class="inv-table"><thead><tr><th>Орц / Түүхий эд</th><th>Ангилал</th><th>Ашиглах хоол</th><th>Хэрэгцээ</th><th>Нэгж</th><th>Одоогийн нөөц</th><th>Байдал</th></tr></thead><tbody id="raw-inv-body"></tbody></table>' +
+      '<div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end"><span id="raw-save-msg" style="font-size:12px;color:var(--muted)"></span><button id="btn-save-raw" onclick="saveRawStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 20px;cursor:pointer">💾 Нөөц хадгалах</button></div>' +
+      '</div>';
+    if (typeof renderRawInv === 'function') renderRawInv();
+  }
+  if (type==='cook') {
+    var el = document.getElementById('dpanel-cook');
+    if (!el || el.innerHTML.trim()) return;
+    el.innerHTML = '<div class="inv-section" style="margin-bottom:0">' +
+      '<div class="inv-head cook-head"><span class="ih-icon">❄️</span><div><h3>Боловсруулсан нөөц — Бэлдэц (гүн хөлдөөгч)</h3><div class="ih-sub">Blast chill → вакум → −18°C хөлдөөсөн бэлэн бэлдэц · Уут = 2 кг</div></div></div>' +
+      '<table class="inv-table"><thead><tr><th>Хоол / Бэлдэц</th><th>Төрөл</th><th>Хэрэгцээт уут</th><th>кг</th><th>Одоогийн нөөц (уут)</th><th>Байдал</th></tr></thead><tbody id="cook-inv-body"></tbody></table>' +
+      '<div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end"><span id="cook-save-msg" style="font-size:12px;color:var(--muted)"></span><button id="btn-save-cook" onclick="saveCookStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:#2E6049;color:#fff;border:none;border-radius:9px;padding:9px 20px;cursor:pointer">💾 Бэлдэц хадгалах</button></div>' +
+      '</div>';
+    if (typeof renderCookInv === 'function') renderCookInv();
+  }
+}
 
 // ── Нөөц хадгалах (Google Sheets) ───────────────────────
 function saveStock(items, sheetName, btnId, msgId) {
