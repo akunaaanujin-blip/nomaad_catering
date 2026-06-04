@@ -962,7 +962,25 @@ function kSwitchTab(t) {
 window.__kOrders = function(data) {
   kRenderSection('nomaad', (data && data.nomaad) || []);
   kRenderSection('busad',  (data && data.busad)  || []);
+  // Нөөцийн мэдээлэл шинэчлэх
+  if (data && data.stock) kApplyStock(data.stock);
 };
+
+function kApplyStock(stock) {
+  // RAW_INV input талбаруудыг Sheets-ийн утгаар дүүргэнэ
+  if (typeof RAW_INV === 'undefined' || typeof RAW_STORE === 'undefined') return;
+  var changed = false;
+  RAW_INV.forEach(function(item) {
+    if (stock[item.name] !== undefined && stock[item.name] !== '') {
+      RAW_STORE[item.key] = String(stock[item.name]);
+      changed = true;
+    }
+  });
+  if (changed) {
+    localStorage.setItem('nomaad_raw_stock', JSON.stringify(RAW_STORE));
+    if (typeof renderRawInv === 'function') renderRawInv();
+  }
+}
 
 function loadOrders() {
   ['nomaad','busad'].forEach(function(k){
