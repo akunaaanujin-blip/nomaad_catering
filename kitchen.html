@@ -960,10 +960,14 @@ function kSwitchTab(t) {
 
 // Global callback — Promise/async ашиглахгүй
 window.__kOrders = function(data) {
-  kRenderSection('nomaad', (data && data.nomaad) || []);
-  kRenderSection('busad',  (data && data.busad)  || []);
-  // Нөөцийн мэдээлэл шинэчлэх
-  if (data && data.stock) kApplyStock(data.stock);
+  kRenderSection('nomaad', (data && data['Nomaad camp'])      || []);
+  kRenderSection('busad',  (data && data['Бусад захиалга'])   || []);
+  // Нөөц sheet → {нэр: тоо} хэлбэрт хөрвүүлэх
+  if (data && data['Нөөц']) {
+    var stock = {};
+    data['Нөөц'].forEach(function(r){ if(r['Нэр']) stock[r['Нэр']] = r['Тоо хэмжээ']||0; });
+    kApplyStock(stock);
+  }
 };
 
 function kApplyStock(stock) {

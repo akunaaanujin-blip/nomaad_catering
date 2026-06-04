@@ -161,8 +161,8 @@ async function loadOrders() {
       document.getElementById('last-refresh').textContent = 'Алдаа';
       return;
     }
-    renderSection('nomaad', data.nomaad || []);
-    renderSection('busad',  data.busad  || []);
+    renderSection('nomaad', data['Nomaad camp']    || []);
+    renderSection('busad',  data['Бусад захиалга'] || []);
     document.getElementById('last-refresh').textContent =
       'Сүүлд шинэчлэгдсэн: ' + new Date().toLocaleString('mn-MN');
   } catch(e) {
