@@ -275,7 +275,7 @@ footer b{color:var(--ink)}
     var km = document.getElementById('kitchen-main');
     if(kc) kc.style.display = 'block';
     if(km) km.style.display = 'block';
-    setTimeout(function(){ if(typeof setNav==='function') setNav('tech'); }, 50);
+    setTimeout(function(){ if(typeof showOrders==='function') showOrders(); }, 50);
   }
 
   function checkPass(){
@@ -310,9 +310,9 @@ footer b{color:var(--ink)}
     </div>
     <!-- Гол навигаци -->
     <nav style="display:flex;gap:4px;background:rgba(255,255,255,.1);border-radius:12px;padding:4px">
-      <button id="nav-tech" onclick="showTech()" style="font-family:inherit;font-size:12px;font-weight:700;padding:7px 14px;border-radius:9px;border:none;cursor:pointer;background:rgba(255,255,255,.2);color:#fff;white-space:nowrap">🍱 Хоолны технологи</button>
+      <button id="nav-orders" onclick="showOrders()" style="font-family:inherit;font-size:12px;font-weight:700;padding:7px 14px;border-radius:9px;border:none;cursor:pointer;background:none;color:rgba(255,255,255,.7);white-space:nowrap">📋 Ирсэн захиалга</button>
       <button id="nav-dash" onclick="showDashboard()" style="font-family:inherit;font-size:12px;font-weight:700;padding:7px 14px;border-radius:9px;border:none;cursor:pointer;background:none;color:rgba(255,255,255,.7);white-space:nowrap">📊 Нөөцийн самбар</button>
-      <button id="btn-show-orders" id="nav-orders" onclick="showOrders()" style="font-family:inherit;font-size:12px;font-weight:700;padding:7px 14px;border-radius:9px;border:none;cursor:pointer;background:none;color:rgba(255,255,255,.7);white-space:nowrap">📋 Ирсэн захиалга</button>
+      <button id="nav-tech" onclick="showTech()" style="font-family:inherit;font-size:12px;font-weight:700;padding:7px 14px;border-radius:9px;border:none;cursor:pointer;background:rgba(255,255,255,.2);color:#fff;white-space:nowrap">🍱 Хоолны технологи</button>
     </nav>
     <button onclick="sessionStorage.clear();location.reload();" style="font-family:inherit;font-size:12px;font-weight:700;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.3);padding:7px 14px;border-radius:999px;color:#fff;cursor:pointer;white-space:nowrap">🔒 Гарах</button>
   </div>
