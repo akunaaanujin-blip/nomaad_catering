@@ -2260,9 +2260,95 @@ const STAFF_INV = [
   { key:'sf_sugar',   name:'Чихэр',                  cat:'Бусад',  unit:'кг', perP:0.01 },
 ];
 
+// Ажилчдын хоолны sheet mapping (gid=1408366760)
+var STAFF_GID = '1408366760';
+var STAFF_SHEET_MAP = [
+  { keys:['хонины мах','хонь ястай','хонь мах'], inv:'sf_meat' },
+  { keys:['тахианы','тахиа'],                    inv:'sf_meat' },
+  { keys:['адуу мах','адуу'],                     inv:'sf_meat' },
+  { keys:['гахай'],                               inv:'sf_meat' },
+  { keys:['өндөг'],                               inv:'sf_egg'  },
+  { keys:['зайдас','хиам'],                       inv:'sf_sausage' },
+  { keys:['төмс'],                                inv:'sf_potato' },
+  { keys:['сонгино'],                             inv:'sf_onion'  },
+  { keys:['лууван','манжин'],                     inv:'sf_carrot' },
+  { keys:['байцаа'],                              inv:'sf_cabbage' },
+  { keys:['өргөст хэмх','огурц'],                inv:'sf_cucumber' },
+  { keys:['сүү'],                                 inv:'sf_milk'   },
+  { keys:['цөцгийн тос','butter'],                inv:'sf_butter' },
+  { keys:['ургамлын тос','тос','oil'],            inv:'sf_oil'    },
+  { keys:['давс'],                                inv:'sf_salt'   },
+  { keys:['цай','tea'],                           inv:'sf_tea'    },
+  { keys:['кофе','coffee'],                       inv:'sf_coffee' },
+  { keys:['чихэр','сахар'],                       inv:'sf_sugar'  },
+  { keys:['будаа','rice'],                        inv:'sf_rice'   },
+  { keys:['гурил','flour'],                       inv:'sf_flour'  },
+  { keys:['гоймон','noodle'],                     inv:'sf_noodle' },
+  { keys:['талх','bread'],                        inv:'sf_bread'  },
+];
+
+function matchStaffItem(name) {
+  var n = (name||'').toLowerCase().trim();
+  for (var i=0; i<STAFF_SHEET_MAP.length; i++) {
+    var e = STAFF_SHEET_MAP[i];
+    for (var j=0; j<e.keys.length; j++) {
+      if (n.indexOf(e.keys[j]) !== -1) return e.inv;
+    }
+  }
+  return null;
+}
+
+function fetchStaffFromSheets() {
+  var staffUrl = 'https://docs.google.com/spreadsheets/d/1gUt92TXoxWS5popXmM7g_gvJhU3LT2twTs3wp-l1Xss/gviz/tq?tqx=out:json&gid=' + STAFF_GID;
+  var oldTag = document.getElementById('_gviz_staff_tag');
+  if (oldTag) oldTag.remove();
+
+  window.google = window.google || {};
+  window.google.visualization = window.google.visualization || {};
+  window.google.visualization.Query = window.google.visualization.Query || {};
+  window.google.visualization.Query.setResponse = function(resp) {
+    var rows = (resp.table || {}).rows || [];
+    var totals = {};
+    rows.forEach(function(row) {
+      if (!row.c || row.c.length < 4) return;
+      var nc = row.c[1], qc = row.c[3]; // Материал(1), Худалдаж авсан(3)
+      if (!nc || !nc.v) return;
+      var name = String(nc.v).trim();
+      var qty = qc && qc.v ? parseFloat(qc.v) : 0;
+      if (qty <= 0) return;
+      var k = matchStaffItem(name);
+      if (!k) return;
+      totals[k] = (totals[k]||0) + qty;
+    });
+
+    var matched = 0;
+    Object.keys(totals).forEach(function(k) {
+      STAFF_STORE[k] = totals[k];
+      var inp = document.querySelector('input[data-sfkey="'+k+'"]');
+      if (inp) { inp.value = totals[k]; inp.dispatchEvent(new Event('input')); }
+      matched++;
+    });
+    if (matched > 0) localStorage.setItem('nomaad_staff_stock', JSON.stringify(STAFF_STORE));
+    var msg = document.getElementById('staff-save-msg');
+    if (msg) {
+      msg.textContent = matched > 0 ? '✅ ' + matched + ' бараа татагдлаа' : '';
+      if (matched > 0) setTimeout(function(){ if(msg) msg.textContent=''; }, 4000);
+    }
+  };
+
+  var tag = document.createElement('script');
+  tag.id = '_gviz_staff_tag';
+  tag.onerror = function() { var msg=document.getElementById('staff-save-msg'); if(msg) msg.textContent=''; };
+  tag.src = staffUrl;
+  document.head.appendChild(tag);
+}
+
 function renderStaffInv() {
   var el = document.getElementById('dpanel-staff');
   if (!el) return;
+
+  // Sheets-аас автоматаар татна
+  setTimeout(function() { fetchStaffFromSheets(); }, 300);
 
   var catColors = {
     'Үндсэн':'#e8eff5','Мах':'#fdecea','Ногоо':'#e3ede7','Сүү':'#fff8e7','Бусад':'#f0f0ea'
