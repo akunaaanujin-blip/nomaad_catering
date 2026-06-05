@@ -1706,15 +1706,17 @@ document.querySelectorAll('input[data-price]').forEach(inp=>{
 render();
 
 // ── Агуулахын нөөц ──
-// Sheets-аас татсан сүүлийн өгөгдөл (2026-06-04)
+// Sheets-аас татсан сүүлийн өгөгдөл — NOMAAD Нөөцийн бүртгэл (2026-06-04)
 var SHEETS_DEFAULTS = {
   r_lambrib: 28.01,  // Хонь ястай (13.4 + 14.61 кг)
-  r_lamb:    41.0,   // Хонь мах + машин + Хонины машин
+  r_lamb:    41.0,   // Хонь мах(25) + машин(6) + Хонины машин(10)
   r_flour:   20.0,   // Гурил × 2
   r_garlic:   2.0,   // Сон пипо
-  r_garnish: 13.0,   // Лууван (6) + Но. Олу (7)
+  r_garnish: 13.0,   // Лууван(6) + Но. Олу(7)
   r_salad:    1.5,   // Салат навч
-  r_stone:   12.0,   // цул (хорхогийн чулуу)
+  r_stone:   12.0,   // цул
+  r_noodle:   1.0,   // Гоймон
+  r_chili:    1.0,   // Чиншүү
 };
 // localStorage-д хадгалагдаагүй бол Sheets утгыг анхдагч болгоно
 var _savedRaw = localStorage.getItem('nomaad_raw_stock');
@@ -2370,7 +2372,7 @@ function renderInvPanel(type) {
       '<div class="inv-head raw-head"><span class="ih-icon">🧊</span><div><h3>Боловсруулаагүй нөөц — Түүхий орц</h3><div class="ih-sub">Хоол бүрийн бүх орц · Одоогийн нөөц оруулахад хүрэлцэх эсэхийг шалгана</div></div></div>' +
       '<table class="inv-table"><thead><tr><th>Орц / Түүхий эд</th><th>Ангилал</th><th>Ашиглах хоол</th><th>Хэрэгцээ</th><th>Нэгж</th><th>Одоогийн нөөц</th><th>Байдал</th><th></th></tr></thead><tbody id="raw-inv-body"></tbody></table>' +
       '<div style="margin-top:12px;background:#f0f7f3;border:1.5px solid #b2d4bf;border-radius:10px;padding:12px 16px">' +
-      '<div style="font-size:12px;font-weight:700;color:#1F4A38;margin-bottom:6px">📋 Google Sheets загвар — <a href="https://docs.google.com/spreadsheets/d/1gUt92TXoxWS5popXmM7g_gvJhU3LT2twTs3wp-l1Xss/edit?gid=1696013893" target="_blank" style="color:#1F4A38">Sheets нээх ↗</a></div>' +
+      '<div style="font-size:12px;font-weight:700;color:#1F4A38;margin-bottom:6px">📋 Google Sheets — <a href="https://docs.google.com/spreadsheets/d/1KZorjBWlvZ81ldPhfapI160gIBvFeM7wphGa_nYMhzs/edit" target="_blank" style="color:#1F4A38">NOMAAD Нөөцийн бүртгэл нээх ↗</a></div>' +
       '<table style="font-size:11.5px;border-collapse:collapse;width:100%"><thead><tr style="background:#1F4A38;color:#fff"><th style="padding:4px 10px;text-align:left">A: Огноо</th><th style="padding:4px 10px;text-align:left">B: Бараа нэр</th><th style="padding:4px 10px;text-align:left">C: Нэгж</th><th style="padding:4px 10px;text-align:right">D: Тоо</th></tr></thead><tbody>' +
       RAW_INV.map(function(item,i){return '<tr style="background:'+(i%2?'#f7fbf8':'#fff')+'"><td style="padding:3px 10px;color:#888">2026-06-04</td><td style="padding:3px 10px;font-weight:600">' + item.name + '</td><td style="padding:3px 10px;color:#888">' + item.unit + '</td><td style="padding:3px 10px;text-align:right;color:#1F4A38;font-weight:700">' + (RAW_STORE[item.key]||'') + '</td></tr>';}).join('') +
       '</tbody></table>' +
@@ -2411,8 +2413,10 @@ function saveStock(items, sheetName, btnId, msgId) {
 }
 
 // ── Google Sheets → Боловсруулаагүй нөөц татах ──────────────
-var RAW_SHEETS_GID = '1696013893';
-var RAW_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1gUt92TXoxWS5popXmM7g_gvJhU3LT2twTs3wp-l1Xss/gviz/tq?tqx=out:json&gid=' + RAW_SHEETS_GID;
+// Шинэ цэвэр нөөцийн sheet (Огноо | Материал/Бараа | Нэгж | Тоо | Үнэ | Дүн)
+var RAW_SHEET_ID  = '1KZorjBWlvZ81ldPhfapI160gIBvFeM7wphGa_nYMhzs';
+var RAW_SHEETS_GID = '0';
+var RAW_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/' + RAW_SHEET_ID + '/gviz/tq?tqx=out:json&gid=' + RAW_SHEETS_GID;
 
 // Spreadsheet бараа нэр → RAW_INV key холболт (хэсэгчилсэн нэр тохирох)
 // Sheet дэх бараа → RAW_INV key (урт/тодорхой keyword эхэнд байна)
@@ -2495,49 +2499,55 @@ function fetchRawFromSheets() {
   var fetchMsg = document.getElementById('raw-save-msg');
   if (fetchMsg) fetchMsg.textContent = '⏳ Татаж байна...';
 
-  var done = false;
+  // Хуучин script tag-г цэвэрлэнэ
+  var old = document.getElementById('_gviz_inv_tag');
+  if (old) old.remove();
 
-  // Proxy байвал ашиглана (server.py), timeout 4 секунд
-  var timer = setTimeout(function() {
-    if (!done) { done = true; applySheetData(SHEETS_DEFAULTS, fetchMsg, true); }
-  }, 4000);
-
-  fetch('/api/sheets?gid=' + RAW_SHEETS_GID)
-    .then(function(r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
-    .then(function(data) {
-      if (done) return;
-      done = true; clearTimeout(timer);
-
-      var rows = data.table ? data.table.rows : [];
-      var cols = data.table ? data.table.cols : [];
+  // google.visualization.Query.setResponse-г override хийнэ
+  window.google = window.google || {};
+  window.google.visualization = window.google.visualization || {};
+  window.google.visualization.Query = window.google.visualization.Query || {};
+  window.google.visualization.Query.setResponse = function(resp) {
+    var fetchMsg2 = document.getElementById('raw-save-msg');
+    try {
+      var rows = (resp.table || {}).rows || [];
       var totals = {};
-
-      // Баганын индекс: шинэ загвар B=нэр(1),D=тоо(3) эсвэл хуучин E=нэр(4),G=тоо(6)
-      var nameIdx = 1, qtyIdx = 3;
-      if (cols.length > 4 && cols[4] && (cols[4].label || '').toLowerCase().indexOf('материал') !== -1) {
-        nameIdx = 4; qtyIdx = 6;
-      }
-
+      // B(1)=Материал/Бараа, D(3)=Тоо
       rows.forEach(function(row) {
-        if (!row.c || row.c.length <= Math.max(nameIdx, qtyIdx)) return;
-        var nc = row.c[nameIdx], qc = row.c[qtyIdx];
+        if (!row.c || row.c.length < 4) return;
+        var nc = row.c[1], qc = row.c[3];
         if (!nc || !nc.v) return;
         var qty = qc && qc.v ? parseFloat(qc.v) : 0;
         if (qty <= 0) return;
         var k = resolveKey(String(nc.v));
         if (k) totals[k] = (totals[k] || 0) + qty;
       });
+      applySheetData(totals, fetchMsg2, false);
+    } catch(e) {
+      applySheetData(SHEETS_DEFAULTS, fetchMsg2, true);
+    }
+  };
 
-      applySheetData(totals, fetchMsg, false);
-    })
-    .catch(function() {
-      if (done) return;
-      done = true; clearTimeout(timer);
-      applySheetData(SHEETS_DEFAULTS, fetchMsg, true);
-    });
+  // 5 секундын дотор хариу ирэхгүй бол fallback
+  var fallbackTimer = setTimeout(function() {
+    var fetchMsg2 = document.getElementById('raw-save-msg');
+    applySheetData(SHEETS_DEFAULTS, fetchMsg2, true);
+  }, 5000);
+  var origHandler = window.google.visualization.Query.setResponse;
+  window.google.visualization.Query.setResponse = function(resp) {
+    clearTimeout(fallbackTimer);
+    origHandler(resp);
+  };
+
+  var tag = document.createElement('script');
+  tag.id = '_gviz_inv_tag';
+  tag.onerror = function() {
+    clearTimeout(fallbackTimer);
+    var fetchMsg2 = document.getElementById('raw-save-msg');
+    applySheetData(SHEETS_DEFAULTS, fetchMsg2, true);
+  };
+  tag.src = RAW_SHEETS_URL;
+  document.head.appendChild(tag);
 }
 
 function applySheetData(totals, fetchMsg, isDefault) {

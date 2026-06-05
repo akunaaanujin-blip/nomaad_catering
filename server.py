@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import http.server, urllib.request, urllib.parse, json, os
 
-SHEET_ID = '1gUt92TXoxWS5popXmM7g_gvJhU3LT2twTs3wp-l1Xss'
+SHEET_ID = '1KZorjBWlvZ81ldPhfapI160gIBvFeM7wphGa_nYMhzs'  # NOMAAD Нөөцийн бүртгэл
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
