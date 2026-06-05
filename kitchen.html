@@ -264,6 +264,12 @@ footer b{color:var(--ink)}
 .orders-empty{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px}
 .orders-loading{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px}
 .url-notice{background:var(--amber-soft);border:1px solid #ecd9c5;border-radius:12px;padding:14px 18px;font-size:13px;color:#7a4f23;line-height:1.6;margin-bottom:20px}
+.oa-section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+@media print{
+  body > *:not(#order-analysis-overlay){display:none!important}
+  #order-analysis-overlay{position:static!important;overflow:visible!important}
+  .no-print{display:none!important}
+}
 </style>
 </head>
 <body>
@@ -2076,6 +2082,7 @@ function kRenderSection(key, orders) {
       '</div>' +
       (date ? '<div class="oc-date" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">📅 Захиалсан: '+date+'</div>' : '') +
       (!isPaid && key !== 'nomaad' && sessionStorage.getItem('nomaad_kitchen_role') === 'manager' ? '<button onclick="kMarkPaid(this,\''+((o['_sheet']||'').replace(/'/g,"\\'"))+'\','+( o['_row']||0)+')" style="margin-top:10px;width:100%;font-family:inherit;font-size:13px;font-weight:700;background:#1F4A38;color:#fff;border:none;border-radius:9px;padding:10px;cursor:pointer">✅ Төлбөр баталгаажуулах</button>' : '') +
+      '<button onclick=\'showOrderAnalysis(' + JSON.stringify({ppl: o['Хүний тоо']||0, service: (o['Үйлчилгээ']||'').split('(')[0].trim(), serviceText: o['Үйлчилгээ']||'', org: o['Байгууллага']||o['Нэр']||'', date: o['Эхлэх огноо']||''}).replace(/\'/g,"&#39;") + ')\' style="margin-top:8px;width:100%;font-family:inherit;font-size:13px;font-weight:700;background:var(--surface);color:var(--accent);border:1px solid var(--accent);border-radius:9px;padding:9px;cursor:pointer">📊 Шинжилгэх</button>' +
     '</div>';
   });
   html += '</div>';
@@ -2817,6 +2824,238 @@ function saveRawStock() {
     if(item) items.push([item.name, parseFloat(inp.value)||0, item.unit, new Date().toISOString()]);
   });
   saveStock(items,'Нөөц','btn-save-raw','raw-save-msg');
+}
+
+// ── Захиалгын шинжилгээ ──────────────────────────────────────────────────────
+function analyzeOrder(orderData) {
+  var pplCount = parseInt(orderData.ppl) || 0;
+  var svcText  = orderData.serviceText || '';
+  var svcType  = orderData.service || '';
+
+  // Determine service type from text
+  var isBuf = /буфет/i.test(svcType) || /буфет/i.test(svcText);
+  var isPor = /порц/i.test(svcType) || /порц/i.test(svcText);
+  var isShare = /хорхог/i.test(svcText);
+
+  // Find matching dishes from serviceText
+  var matchedDishes = [];
+  DISHES.forEach(function(d) {
+    if (!d.yieldKey) return; // skip sides
+    var nameInText = svcText.indexOf(d.name) >= 0;
+    if (nameInText) {
+      matchedDishes.push(d);
+    }
+  });
+
+  // If no specific dish found, use dishes by service type
+  if (!matchedDishes.length) {
+    DISHES.forEach(function(d) {
+      if (!d.yieldKey) return;
+      if (isBuf && d.services && d.services.indexOf('буфет') >= 0) matchedDishes.push(d);
+      else if (isPor && d.services && d.services.indexOf('порц') >= 0) matchedDishes.push(d);
+      else if (isShare && d.services && d.services.indexOf('шэйр') >= 0) matchedDishes.push(d);
+    });
+  }
+  if (!matchedDishes.length && DISHES.length) {
+    matchedDishes = DISHES.filter(function(d){ return d.yieldKey; }).slice(0,1);
+  }
+
+  // Calculate needed raw kg per dish
+  var dishResults = [];
+  var ingMap = {}; // key -> {name, unit, needed, dishNames}
+
+  matchedDishes.forEach(function(d) {
+    var rawKg = 0;
+    var svcLabel = '';
+    if (d.share && d.kgPerPot) {
+      rawKg = Math.ceil(pplCount / 8.5) * d.kgPerPot;
+      svcLabel = 'шэйр';
+    } else if (isBuf && d.bufG) {
+      var ck = COOK_YIELD[d.yieldKey] || 0.75;
+      rawKg = pplCount * d.bufG / 1000 / ck * (1 + BUF_BUFFER);
+      svcLabel = 'буфет';
+    } else if (isPor && d.porG) {
+      var ck = COOK_YIELD[d.yieldKey] || 0.75;
+      rawKg = pplCount * d.porG / 1000 / ck * (1 + POR_BUFFER);
+      svcLabel = 'порц';
+    } else if (d.bufG) {
+      var ck = COOK_YIELD[d.yieldKey] || 0.75;
+      rawKg = pplCount * d.bufG / 1000 / ck * (1 + BUF_BUFFER);
+      svcLabel = 'буфет';
+    } else if (d.porG) {
+      var ck = COOK_YIELD[d.yieldKey] || 0.75;
+      rawKg = pplCount * d.porG / 1000 / ck * (1 + POR_BUFFER);
+      svcLabel = 'порц';
+    }
+
+    // Find matching RAW_INV key via protein
+    var rawKey = null;
+    var rawUnit = 'кг';
+    var rawName = d.name + ' (орц)';
+    if (d.protein === 'Хонь' && !d.share) {
+      rawKey = 'r_lamb'; rawName = 'Хонины зөөлөн мах'; rawUnit = 'кг';
+    } else if (d.protein === 'Хонь' && d.share) {
+      rawKey = 'r_lambrib'; rawName = 'Хонины ястай хавирга'; rawUnit = 'кг';
+    } else if (d.protein === 'Хонь-ястай' || d.yieldKey === 'Хонь-ястай') {
+      rawKey = 'r_lambrib'; rawName = 'Хонины ястай хавирга'; rawUnit = 'кг';
+    } else if (d.protein === 'Гахай' && d.yieldKey === 'Гахай-цорой') {
+      rawKey = 'r_porkbelly'; rawName = 'Гахайн цорой'; rawUnit = 'кг';
+    } else if (d.protein === 'Гахай') {
+      rawKey = 'r_pork'; rawName = 'Гахайн мах (зөөлөн)'; rawUnit = 'кг';
+    } else if (d.protein === 'Тахиа') {
+      rawKey = 'r_chicken'; rawName = 'Тахианы ясгүй гуя/цээж'; rawUnit = 'кг';
+    } else if (d.protein === 'Холимог') {
+      rawKey = 'r_pork'; rawName = 'Гахайн мах (зөөлөн)'; rawUnit = 'кг';
+    }
+
+    dishResults.push({
+      dish: d,
+      rawKg: +rawKg.toFixed(2),
+      rawKey: rawKey,
+      rawName: rawName,
+      rawUnit: rawUnit,
+      svcLabel: svcLabel
+    });
+
+    if (rawKey) {
+      if (!ingMap[rawKey]) ingMap[rawKey] = { name: rawName, unit: rawUnit, needed: 0 };
+      ingMap[rawKey].needed = +(ingMap[rawKey].needed + rawKg).toFixed(2);
+    }
+  });
+
+  // Build ingredient comparison rows
+  var ingredients = [];
+  Object.keys(ingMap).forEach(function(k) {
+    var have = +(parseFloat(RAW_STORE[k]) || 0).toFixed(2);
+    var needed = ingMap[k].needed;
+    var status = have >= needed ? 'ok' : 'low';
+    ingredients.push({
+      key: k,
+      name: ingMap[k].name,
+      needed: needed,
+      have: have,
+      unit: ingMap[k].unit,
+      status: status
+    });
+  });
+
+  // Shopping list (deficit items)
+  var shopping = ingredients.filter(function(i){ return i.status === 'low'; }).map(function(i){
+    return { name: i.name, buy: +(i.needed - i.have).toFixed(2), unit: i.unit };
+  });
+
+  // Prep tasks from tech cards
+  var prepTasks = matchedDishes.map(function(d) {
+    var steps = (d.tech || []).map(function(t){
+      return { step: t[0], desc: t[1], ccp: t[2]||'', isCCP: !!t[3] };
+    });
+    return { name: d.name, steps: steps };
+  });
+
+  return {
+    dishes: dishResults,
+    ingredients: ingredients,
+    shopping: shopping,
+    prepTasks: prepTasks
+  };
+}
+
+function showOrderAnalysis(orderData) {
+  var existing = document.getElementById('order-analysis-overlay');
+  if (existing) existing.remove();
+
+  var analysis = analyzeOrder(orderData);
+
+  // Build ingredients table
+  var ingRows = analysis.ingredients.map(function(i){
+    var statusHtml = i.status === 'ok'
+      ? '<span style="color:#27543f;font-weight:700">✓ Хангалттай</span>'
+      : '<span style="color:#c0392b;font-weight:700">⚠ Дутмаг</span>';
+    return '<tr>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--line)">' + i.name + '</td>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--line);text-align:right">' + i.needed + ' ' + i.unit + '</td>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--line);text-align:right">' + i.have + ' ' + i.unit + '</td>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--line);text-align:center">' + statusHtml + '</td>' +
+      '</tr>';
+  }).join('');
+
+  if (!ingRows) ingRows = '<tr><td colspan="4" style="padding:10px;color:var(--muted);text-align:center">Мах/орц тодорхойлогдоогүй</td></tr>';
+
+  // Shopping list
+  var shopHtml = '';
+  if (analysis.shopping.length) {
+    shopHtml = '<div class="oa-section">' +
+      '<h3 style="margin:0 0 12px;font-size:15px;color:#c0392b">🛒 Худалдан авах жагсаалт</h3>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      '<thead><tr style="background:#fff0f0">' +
+      '<th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e0b0b0">Бараа</th>' +
+      '<th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e0b0b0">Авах хэмжээ</th>' +
+      '</tr></thead><tbody>' +
+      analysis.shopping.map(function(s){
+        return '<tr><td style="padding:8px 10px;border-bottom:1px solid #fddde6">' + s.name + '</td>' +
+          '<td style="padding:8px 10px;text-align:right;border-bottom:1px solid #fddde6;font-weight:700;color:#c0392b">' + s.buy + ' ' + s.unit + '</td></tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  } else {
+    shopHtml = '<div class="oa-section" style="background:#f0fff4">' +
+      '<p style="margin:0;color:#27543f;font-weight:700">✅ Нөөц хангалттай — худалдаа хийх шаардлагагүй</p></div>';
+  }
+
+  // Prep tasks
+  var prepHtml = analysis.prepTasks.map(function(pt){
+    var stepsHtml = pt.steps.map(function(s, idx){
+      var ccpBadge = s.isCCP
+        ? '<span style="background:#c0392b;color:#fff;font-size:10px;padding:1px 5px;border-radius:4px;margin-left:6px">CCP</span>'
+        : '';
+      var ccpStyle = s.isCCP ? 'background:#fff5f5;border-left:3px solid #c0392b;' : 'border-left:3px solid var(--line);';
+      return '<div style="' + ccpStyle + 'padding:6px 10px;margin-bottom:4px;border-radius:0 6px 6px 0;font-size:12px">' +
+        '<strong>' + (idx+1) + '. ' + s.step + '</strong>' + ccpBadge +
+        (s.desc ? '<br><span style="color:var(--muted)">' + s.desc + '</span>' : '') +
+        (s.ccp ? '<br><span style="color:#c0392b;font-size:11px">📌 ' + s.ccp + '</span>' : '') +
+        '</div>';
+    }).join('');
+    return '<div style="margin-bottom:16px"><h4 style="margin:0 0 8px;font-size:13px;color:var(--accent)">' + pt.name + '</h4>' + stepsHtml + '</div>';
+  }).join('');
+
+  var html =
+    '<div id="order-analysis-overlay" style="position:fixed;inset:0;z-index:9999;background:#fff;overflow-y:auto;font-family:inherit">' +
+      '<div style="max-width:800px;margin:0 auto;padding:20px 16px 40px" id="oa-printable">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px">' +
+          '<div>' +
+            '<h2 style="margin:0;font-family:\'Lora\',serif;font-size:20px">📊 Захиалгын шинжилгээ</h2>' +
+            '<div style="color:var(--muted);font-size:13px;margin-top:4px">' +
+              (orderData.org||'') + ' · ' + (orderData.date||'') +
+              ' · <strong>' + (orderData.ppl||0) + ' хүн</strong>' +
+              ' · ' + (orderData.service||'') +
+            '</div>' +
+          '</div>' +
+          '<div class="no-print" style="display:flex;gap:8px">' +
+            '<button onclick="window.print()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 18px;cursor:pointer">🖨 Хэвлэх</button>' +
+            '<button onclick="document.getElementById(\'order-analysis-overlay\').remove()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 18px;cursor:pointer">✕ Хаах</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="oa-section">' +
+          '<h3 style="margin:0 0 12px;font-size:15px;color:var(--ink)">🥩 Хэрэгтэй орц</h3>' +
+          '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+          '<thead><tr style="background:var(--surface)">' +
+            '<th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--line)">Орц</th>' +
+            '<th style="padding:8px 10px;text-align:right;border-bottom:2px solid var(--line)">Хэрэгтэй</th>' +
+            '<th style="padding:8px 10px;text-align:right;border-bottom:2px solid var(--line)">Нөөцөнд</th>' +
+            '<th style="padding:8px 10px;text-align:center;border-bottom:2px solid var(--line)">Байдал</th>' +
+          '</tr></thead><tbody>' + ingRows + '</tbody></table>' +
+        '</div>' +
+
+        shopHtml +
+
+        '<div class="oa-section">' +
+          '<h3 style="margin:0 0 12px;font-size:15px;color:var(--ink)">👨‍🍳 Хийх ажлын жагсаалт</h3>' +
+          (prepHtml || '<p style="color:var(--muted);font-size:13px">Техник карт олдсонгүй.</p>') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
 }
 
 function saveCookStock() {
