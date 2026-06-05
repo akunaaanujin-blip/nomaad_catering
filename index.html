@@ -310,148 +310,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         <div class="order-field full" id="svc-rows-wrap">
           <div id="svc-rows"></div>
 
-          <!-- Хоолны сонголтын хэсгүүд — JS дотроос row-н ард байрлуулна -->
-          <div class="dish-select" id="por-select" style="margin-top:10px">
-            <div class="msec-body">
-              <div class="dim-label">⛔ Буфет сонгосон тул порц идэвхгүй байна</div>
-              <div class="sel-group">
-                <div class="sel-group-head">
-                  <div class="sel-group-title">🍱 Порц хоол — хамгийн ихдээ 2 сонгоно</div>
-                  <span class="sel-badge green" id="por-badge">0 / 2</span>
-                </div>
-                <div class="dish-chips">
-                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Соусанд жигнэсэн хонины мах</button>
-                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Хорхог</button>
-                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Мини шорлог /гахай, тахиа/</button>
-                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Гахайн цорой</button>
-                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Гахайн амталсан мах</button>
-                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Терияки соустай тахиа</button>
-                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Шаржигнуур тахиа</button>
-                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Цуйван</button>
-                  <button type="button" class="dish-chip" data-g="por" data-max="2" onclick="toggleDish(this)">Хуушуур</button>
-                </div>
-                <div class="qty-list" id="por-qty"></div>
-                <div id="por-qty-warn" style="display:none;font-size:12px;color:var(--amber);font-weight:600;margin-top:6px">⚠️ 2 хоолны нийт порц нь хүний тооноос хэтрэхгүй</div>
-                <p class="sel-hint">* 2 хоолны порцын нийт = хүний тоо</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="dish-select" id="buf-select" style="margin-top:10px">
-            <div class="msec-body">
-              <div class="dim-label">⛔ Порц сонгосон тул буфет идэвхгүй байна</div>
-              <div class="sel-group">
-                <div class="sel-group-head">
-                  <div class="sel-group-title">🥩 Мах — 3 төрөл сонгоно</div>
-                  <span class="sel-badge amber" id="buf-mah-badge">0 / 3</span>
-                </div>
-                <div class="dish-chips">
-                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="2" onclick="toggleDish(this)">Соусанд жигнэсэн хонины мах</button>
-                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Хорхог</button>
-                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Мини шорлог /гахай, тахиа/</button>
-                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Гахайн цорой</button>
-                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Гахайн амталсан мах</button>
-                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Терияки соустай тахиа</button>
-                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Шаржигнуур тахиа</button>
-                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Цуйван</button>
-                  <button type="button" class="dish-chip" data-g="buf-mah" data-max="3" onclick="toggleDish(this)">Хуушуур</button>
-                </div>
-              </div>
-              <div class="sel-divider"></div>
-              <div class="sel-group">
-                <div class="sel-group-head">
-                  <div class="sel-group-title">🥗 Салад — 2 төрөл сонгоно</div>
-                  <span class="sel-badge green" id="buf-sal-badge">0 / 2</span>
-                </div>
-                <div class="dish-chips">
-                  <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Шинэ ногооны салад</button>
-                  <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Нийслэл салад</button>
-                  <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Пүнтүүзтэй салад</button>
-                  <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Байцааны салад</button>
-                  <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Луувангийн салад</button>
-                  <button type="button" class="dish-chip" data-g="buf-sal" data-max="2" onclick="toggleDish(this)">Гоймонгийн салад</button>
-                </div>
-              </div>
-              <div class="sel-divider"></div>
-              <div class="sel-group">
-                <div class="sel-group-head">
-                  <div class="sel-group-title">🍚 Хачир — 2 төрөл сонгоно</div>
-                  <span class="sel-badge amber" id="buf-hac-badge">0 / 2</span>
-                </div>
-                <div class="dish-chips">
-                  <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Амталсан будаа</button>
-                  <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Шарсан төмс</button>
-                  <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Төмсний нухаш</button>
-                  <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Хуурсан ногоо</button>
-                  <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Мантуу</button>
-                  <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Сийртэй гоймон</button>
-                  <button type="button" class="dish-chip" data-g="buf-hac" data-max="2" onclick="toggleDish(this)">Амталсан өргөст хэмх</button>
-                </div>
-              </div>
-              <div class="sel-divider"></div>
-              <div class="sel-group">
-                <div class="sel-group-head">
-                  <div class="sel-group-title">🍜 Шөл — 1 төрөл сонгоно</div>
-                  <span class="sel-badge green" id="buf-shol-badge">0 / 1</span>
-                </div>
-                <div class="dish-chips">
-                  <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Брокли зутан шөл</button>
-                  <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Мөөгтэй зутан шөл</button>
-                  <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Нарийн ногооны шөл</button>
-                  <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Бантан</button>
-                  <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Далайн байцаатай шөл</button>
-                  <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Халуун ногоотой шөл</button>
-                  <button type="button" class="dish-chip" data-g="buf-shol" data-max="1" onclick="toggleDish(this)">Ясны шөл</button>
-                </div>
-              </div>
-              <p class="sel-hint">* Буфетэд мах 3 + салад 2 + хачир 2 + шөл 1 = нийт 8 хоол</p>
-            </div>
-          </div>
-
-          <div class="dish-select" id="boodog-select" style="margin-top:10px">
-            <div class="msec-body">
-              <div class="sel-group">
-                <div class="sel-group-head">
-                  <div class="sel-group-title">🐑 Хэдэн хонь боодог захиалах вэ?</div>
-                  <span class="sel-badge green" style="background:#efe7d2;color:#7a6224" id="boodog-total"></span>
-                </div>
-                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-                  <div style="display:flex;align-items:center;gap:10px">
-                    <button type="button" onclick="changeBootdog(-1)" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700">−</button>
-                    <span id="boodog-count" style="font-family:'Lora',serif;font-size:28px;font-weight:700;min-width:32px;text-align:center;color:var(--accent)">1</span>
-                    <button type="button" onclick="changeBootdog(1)" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700">+</button>
-                    <span style="font-size:13px;color:var(--muted)">ширхэг</span>
-                  </div>
-                  <div style="font-size:12.5px;color:var(--muted);line-height:1.6">
-                    Нэг хонь → <strong>8–12 хүн</strong> · ₮900,000<br>
-                    <span id="boodog-price" style="color:var(--accent);font-weight:700"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="dish-select" id="uguluun-select" style="margin-top:10px">
-            <div class="msec-body">
-              <div class="sel-group">
-                <div class="sel-group-head">
-                  <div class="sel-group-title">☕ Өглөөний цайны зооглолт — 1 сонгоно</div>
-                  <span class="sel-badge green" id="uguluun-badge">0 / 1</span>
-                </div>
-                <div class="dish-chips">
-                  <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Брокли зутан</button>
-                  <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Хулууны зутан</button>
-                  <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Мөөгтэй шөл</button>
-                  <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Нарийн ногооны шөл</button>
-                  <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Бантан</button>
-                  <button type="button" class="dish-chip" data-g="uguluun" data-max="1" onclick="toggleDish(this)">Өндөг · талх · өргөст хэмх</button>
-                </div>
-                <p class="sel-hint" id="uguluun-qty-note">* Нийт хүний тоогоор бэлдэгдэнэ</p>
-              </div>
-            </div>
-          </div>
-
-          <button type="button" class="btn-add-svc" onclick="addSvcRow()">＋ Үйлчилгээ нэмэх</button>
+            <button type="button" class="btn-add-svc" onclick="addSvcRow()">＋ Үйлчилгээ нэмэх</button>
         </div>
 
         <!-- Сонгосон хоол (hidden) -->
@@ -631,7 +490,7 @@ function calcPrice() {
     if (!s || !s.value) continue;
     var d = document.getElementById('svc-date-' + i);
     var dateStr = d && d.value ? ' · ' + d.value : '';
-    var qty = (s.value === 'boodog') ? boodog_n : pax;
+    var qty = (s.value === 'boodog') ? (boodog_n[i] || 1) : pax;
     if (qty <= 0) continue;
     var amt = PRICES[s.value] * qty;
     var qtyLabel = (s.value === 'boodog') ? qty + ' ширхэг' : qty + ' хүн';
@@ -650,9 +509,139 @@ function calcPrice() {
     '<div class="price-total-row"><span>Нийт дүн</span><span>₮' + total.toLocaleString() + '</span></div>';
 }
 
-var boodog_n = 1;
+var boodog_n = [1,1,1,1,1];
 var svcCount = 1;
 var ORDINALS = ['1-р','2-р','3-р','4-р','5-р'];
+
+var POR_CHIPS = ['Соусанд жигнэсэн хонины мах','Хорхог','Мини шорлог /гахай, тахиа/','Гахайн цорой','Гахайн амталсан мах','Терияки соустай тахиа','Шаржигнуур тахиа','Цуйван','Хуушуур'];
+var BUF_MAH = ['Соусанд жигнэсэн хонины мах','Хорхог','Мини шорлог /гахай, тахиа/','Гахайн цорой','Гахайн амталсан мах','Терияки соустай тахиа','Шаржигнуур тахиа','Цуйван','Хуушуур'];
+var BUF_SAL = ['Шинэ ногооны салад','Нийслэл салад','Пүнтүүзтэй салад','Байцааны салад','Луувангийн салад','Гоймонгийн салад'];
+var BUF_HAC = ['Амталсан будаа','Шарсан төмс','Төмсний нухаш','Хуурсан ногоо','Мантуу','Сийртэй гоймон','Амталсан өргөст хэмх'];
+var BUF_SHOL = ['Брокли зутан шөл','Мөөгтэй зутан шөл','Нарийн ногооны шөл','Бантан','Далайн байцаатай шөл','Халуун ногоотой шөл','Ясны шөл'];
+var UGULUUN_CHIPS = ['Брокли зутан','Хулууны зутан','Мөөгтэй шөл','Нарийн ногооны шөл','Бантан','Өндөг · талх · өргөст хэмх'];
+
+function chipHTML(items, g, max, ri) {
+  return items.map(function(item) {
+    return '<button type="button" class="dish-chip" data-g="'+g+'" data-max="'+max+'" data-row="'+ri+'" onclick="toggleDish(this)">'+item+'</button>';
+  }).join('');
+}
+
+function bufGroup(title, g, max, color, chips, ri) {
+  return '<div class="sel-group">' +
+    '<div class="sel-group-head">' +
+      '<div class="sel-group-title">'+title+'</div>' +
+      '<span class="sel-badge '+color+'" id="'+g+'-badge-'+ri+'">0 / '+max+'</span>' +
+    '</div>' +
+    '<div class="dish-chips">' + chipHTML(chips, g, max, ri) + '</div>' +
+  '</div>';
+}
+
+function buildFoodPanelHTML(type, ri) {
+  if (type === 'por') {
+    return '<div class="msec-body">' +
+      '<div class="sel-group">' +
+        '<div class="sel-group-head">' +
+          '<div class="sel-group-title">🍱 Порц хоол — хамгийн ихдээ 2 сонгоно</div>' +
+          '<span class="sel-badge green" id="por-badge-'+ri+'">0 / 2</span>' +
+        '</div>' +
+        '<div class="dish-chips">' + chipHTML(POR_CHIPS, 'por', 2, ri) + '</div>' +
+        '<div class="qty-list" id="por-qty-'+ri+'"></div>' +
+        '<div id="por-qty-warn-'+ri+'" style="display:none;font-size:12px;color:var(--amber);font-weight:600;margin-top:6px">⚠️ 2 хоолны нийт порц нь хүний тооноос хэтрэхгүй</div>' +
+        '<p class="sel-hint">* 2 хоолны порцын нийт = хүний тоо</p>' +
+      '</div>' +
+    '</div>';
+  }
+  if (type === 'buf') {
+    return '<div class="msec-body">' +
+      bufGroup('🥩 Мах — 3 төрөл сонгоно','buf-mah',3,'amber',BUF_MAH,ri) +
+      '<div class="sel-divider"></div>' +
+      bufGroup('🥗 Салад — 2 төрөл сонгоно','buf-sal',2,'green',BUF_SAL,ri) +
+      '<div class="sel-divider"></div>' +
+      bufGroup('🍚 Хачир — 2 төрөл сонгоно','buf-hac',2,'amber',BUF_HAC,ri) +
+      '<div class="sel-divider"></div>' +
+      bufGroup('🍜 Шөл — 1 төрөл сонгоно','buf-shol',1,'blue',BUF_SHOL,ri) +
+      '<p class="sel-hint">* Буфетэд мах 3 + салад 2 + хачир 2 + шөл 1 = нийт 8 хоол</p>' +
+    '</div>';
+  }
+  if (type === 'boodog') {
+    return '<div class="msec-body">' +
+      '<div class="sel-group">' +
+        '<div class="sel-group-head">' +
+          '<div class="sel-group-title">🐑 Хэдэн хонь боодог захиалах вэ?</div>' +
+          '<span class="sel-badge green" style="background:#efe7d2;color:#7a6224" id="boodog-total-'+ri+'"></span>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">' +
+          '<div style="display:flex;align-items:center;gap:10px">' +
+            '<button type="button" onclick="changeBootdog(-1,'+ri+')" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700">−</button>' +
+            '<span id="boodog-count-'+ri+'" style="font-family:\'Lora\',serif;font-size:28px;font-weight:700;min-width:32px;text-align:center;color:var(--accent)">1</span>' +
+            '<button type="button" onclick="changeBootdog(1,'+ri+')" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700">+</button>' +
+            '<span style="font-size:13px;color:var(--muted)">ширхэг</span>' +
+          '</div>' +
+          '<div style="font-size:12.5px;color:var(--muted);line-height:1.6">' +
+            'Нэг хонь → <strong>8–12 хүн</strong> · ₮900,000<br>' +
+            '<span id="boodog-price-'+ri+'" style="color:var(--accent);font-weight:700"></span>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  if (type === 'uguluun') {
+    return '<div class="msec-body">' +
+      '<div class="sel-group">' +
+        '<div class="sel-group-head">' +
+          '<div class="sel-group-title">🍵 Өглөөний цай — 1 сонгоно</div>' +
+          '<span class="sel-badge green" id="uguluun-badge-'+ri+'">0 / 1</span>' +
+        '</div>' +
+        '<div class="dish-chips">' + chipHTML(UGULUUN_CHIPS, 'uguluun', 1, ri) + '</div>' +
+        '<p class="sel-hint">* Нийт хүний тоогоор бэлдэгдэнэ</p>' +
+      '</div>' +
+    '</div>';
+  }
+  return '';
+}
+
+function saveFoodState(i) {
+  var state = { chips: {}, qtys: {}, boodog: (boodog_n[i] || 1) };
+  var panel = document.getElementById('food-panel-' + i);
+  if (!panel) return state;
+  state.type = panel.dataset.currentType || '';
+  panel.querySelectorAll('.dish-chip').forEach(function(btn) {
+    var g = btn.dataset.g;
+    var cls = GROUP_COLORS[g] || 'sel-green';
+    if (btn.classList.contains(cls)) {
+      if (!state.chips[g]) state.chips[g] = [];
+      state.chips[g].push(btn.textContent.trim());
+    }
+  });
+  panel.querySelectorAll('input[type=number]').forEach(function(inp) {
+    state.qtys[inp.id] = inp.value;
+  });
+  return state;
+}
+
+function restoreFoodState(i, state) {
+  if (!state || !state.type) return;
+  var panel = document.getElementById('food-panel-' + i);
+  if (!panel || panel.dataset.currentType !== state.type) return;
+  Object.keys(state.chips).forEach(function(g) {
+    var cls = GROUP_COLORS[g] || 'sel-green';
+    var names = state.chips[g];
+    panel.querySelectorAll('.dish-chip[data-g="'+g+'"]').forEach(function(btn) {
+      if (names.indexOf(btn.textContent.trim()) >= 0) btn.classList.add(cls);
+    });
+    var now = panel.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).length;
+    var firstChip = panel.querySelector('.dish-chip[data-g="'+g+'"]');
+    var max = firstChip ? parseInt(firstChip.dataset.max) || 99 : 99;
+    var badge = document.getElementById(g + '-badge-' + i);
+    if (badge) badge.textContent = now + ' / ' + max;
+    if (g === 'por') renderQty(i);
+  });
+  Object.keys(state.qtys).forEach(function(oldId) {
+    var el = document.getElementById(oldId);
+    if (el) el.value = state.qtys[oldId];
+  });
+  if (state.boodog) boodog_n[i] = state.boodog;
+}
 
 function buildTimeOptions() {
   var opts = '<option value="">— Цаг —</option>';
@@ -672,8 +661,6 @@ var SVC_OPTIONS = [
   {v:'boodog',  l:'Хонь боодог (₮900,000)'},
   {v:'uguluun', l:'Өглөөний цай (₮12,000/хүн)'},
 ];
-
-var PANEL_TYPES = ['por','buf','boodog','uguluun'];
 
 function buildSvcRowHTML(i) {
   var removeBtn = svcCount > 1
@@ -695,47 +682,59 @@ function buildSvcRowHTML(i) {
 
 function renderSvcRows() {
   var svcRows = document.getElementById('svc-rows');
-  var wrap    = document.getElementById('svc-rows-wrap');
-  var addBtn  = wrap ? wrap.querySelector('.btn-add-svc') : null;
   if (!svcRows) return;
 
-  // Food panels-ийг svc-rows-аас wrap руу буцааж зөөнө
-  PANEL_TYPES.forEach(function(type) {
-    var p = document.getElementById(type+'-select');
-    if (p && p.parentNode === svcRows) wrap.insertBefore(p, addBtn);
-  });
+  // Save food states before rebuild
+  var foodStates = [];
+  for (var j = 0; j < svcCount + 5; j++) {
+    var fp = document.getElementById('food-panel-' + j);
+    if (!fp) break;
+    foodStates.push(saveFoodState(j));
+  }
 
-  // Хуучин утгуудыг хадгалах
-  var oldVals=[], oldDates=[], oldTimes=[];
-  for (var j=0; j<svcCount+5; j++) {
-    var os=document.getElementById('svc-sel-'+j);
+  // Save select values, dates, times
+  var oldVals = [], oldDates = [], oldTimes = [];
+  for (var j2 = 0; j2 < svcCount + 5; j2++) {
+    var os = document.getElementById('svc-sel-' + j2);
     if (!os) break;
     oldVals.push(os.value);
-    var od=document.getElementById('svc-date-'+j);
-    var ot=document.getElementById('svc-time-'+j);
-    oldDates.push(od?od.value:'');
-    oldTimes.push(ot?ot.value:'');
+    var od = document.getElementById('svc-date-' + j2);
+    var ot = document.getElementById('svc-time-' + j2);
+    oldDates.push(od ? od.value : '');
+    oldTimes.push(ot ? ot.value : '');
   }
 
   svcRows.innerHTML = '';
-  for (var i=0; i<svcCount; i++) {
-    var div=document.createElement('div');
-    div.className='svc-row';
-    div.id='svc-row-'+i;
-    div.innerHTML=buildSvcRowHTML(i);
+  for (var i = 0; i < svcCount; i++) {
+    var div = document.createElement('div');
+    div.className = 'svc-row';
+    div.id = 'svc-row-' + i;
+    div.innerHTML = buildSvcRowHTML(i);
     svcRows.appendChild(div);
+    var fpNew = document.createElement('div');
+    fpNew.id = 'food-panel-' + i;
+    fpNew.className = 'dish-select';
+    fpNew.style.marginTop = '10px';
+    svcRows.appendChild(fpNew);
   }
 
-  // Утгуудыг сэргээх
-  for (var k=0; k<svcCount; k++) {
-    var s=document.getElementById('svc-sel-'+k);
-    var d=document.getElementById('svc-date-'+k);
-    var t=document.getElementById('svc-time-'+k);
-    if (s && oldVals[k])  s.value=oldVals[k];
-    if (d && oldDates[k]) d.value=oldDates[k];
-    if (t && oldTimes[k]) t.value=oldTimes[k];
+  // Restore select values, dates, times
+  for (var k = 0; k < svcCount; k++) {
+    var s = document.getElementById('svc-sel-' + k);
+    var d = document.getElementById('svc-date-' + k);
+    var t = document.getElementById('svc-time-' + k);
+    if (s && oldVals[k]) s.value = oldVals[k];
+    if (d && oldDates[k]) d.value = oldDates[k];
+    if (t && oldTimes[k]) t.value = oldTimes[k];
   }
+
+  // Populate panels with HTML based on selected types
   refreshPanels();
+
+  // Restore food states (chips, qtys, boodog)
+  for (var m = 0; m < svcCount; m++) {
+    if (foodStates[m]) restoreFoodState(m, foodStates[m]);
+  }
 }
 
 function addSvcRow() {
@@ -745,86 +744,76 @@ function addSvcRow() {
 
 function removeSvcRow(idx) {
   if (svcCount <= 1) return;
-  var vals=[], dates=[], times=[];
-  for (var j=0; j<svcCount; j++) {
-    if (j===idx) continue;
-    var s=document.getElementById('svc-sel-'+j);
-    var d=document.getElementById('svc-date-'+j);
-    var t=document.getElementById('svc-time-'+j);
-    vals.push(s?s.value:'');
-    dates.push(d?d.value:'');
-    times.push(t?t.value:'');
+  var vals = [], dates = [], times = [], states = [];
+  for (var j = 0; j < svcCount; j++) {
+    if (j === idx) continue;
+    var s = document.getElementById('svc-sel-' + j);
+    var d = document.getElementById('svc-date-' + j);
+    var t = document.getElementById('svc-time-' + j);
+    vals.push(s ? s.value : '');
+    dates.push(d ? d.value : '');
+    times.push(t ? t.value : '');
+    states.push(saveFoodState(j));
+    var newIdx = vals.length - 1;
+    boodog_n[newIdx] = boodog_n[j] || 1;
   }
   svcCount--;
   renderSvcRows();
-  for (var k=0; k<svcCount; k++) {
-    var sel=document.getElementById('svc-sel-'+k);
-    var dat=document.getElementById('svc-date-'+k);
-    var tim=document.getElementById('svc-time-'+k);
-    if (sel) sel.value=vals[k]||'';
-    if (dat) dat.value=dates[k]||'';
-    if (tim) tim.value=times[k]||'';
+  for (var k = 0; k < svcCount; k++) {
+    var sel = document.getElementById('svc-sel-' + k);
+    var dat = document.getElementById('svc-date-' + k);
+    var tim = document.getElementById('svc-time-' + k);
+    if (sel) sel.value = vals[k] || '';
+    if (dat) dat.value = dates[k] || '';
+    if (tim) tim.value = times[k] || '';
   }
   refreshPanels();
+  for (var m = 0; m < svcCount; m++) {
+    if (states[m]) restoreFoodState(m, states[m]);
+  }
   updateDishesField();
 }
 
 function refreshPanels() {
-  var vals=[];
-  for (var i=0; i<svcCount; i++) {
-    var s=document.getElementById('svc-sel-'+i);
-    vals.push(s?s.value:'');
-  }
-
-  var svcRows=document.getElementById('svc-rows');
-  var wrap=document.getElementById('svc-rows-wrap');
-  var addBtn=wrap?wrap.querySelector('.btn-add-svc'):null;
-
-  // Бүх панелийг wrap руу буцааж нуух
-  PANEL_TYPES.forEach(function(type) {
-    var panel=document.getElementById(type+'-select');
-    if (!panel) return;
-    panel.classList.remove('show');
-    if (panel.parentNode!==wrap) wrap.insertBefore(panel, addBtn);
-  });
-
-  // Ижил төрлийг давхар сонгосон ч панелийг зөвхөн нэг удаа (эхний эгнээний дор) харуулна
-  var shown={};
-  for (var i=0; i<svcCount; i++) {
-    var type=vals[i];
-    if (!type || shown[type]) continue;
-    shown[type]=true;
-    var panel=document.getElementById(type+'-select');
+  for (var i = 0; i < svcCount; i++) {
+    var s = document.getElementById('svc-sel-' + i);
+    var type = s ? s.value : '';
+    var panel = document.getElementById('food-panel-' + i);
     if (!panel) continue;
-    var row=document.getElementById('svc-row-'+i);
-    if (!row) continue;
-    panel.classList.add('show');
-    var next=row.nextSibling;
-    if (next!==panel) svcRows.insertBefore(panel, next);
+    if (!type) {
+      panel.classList.remove('show');
+      panel.innerHTML = '';
+      panel.dataset.currentType = '';
+    } else {
+      panel.classList.add('show');
+      if (panel.dataset.currentType !== type) {
+        panel.dataset.currentType = type;
+        panel.innerHTML = buildFoodPanelHTML(type, i);
+        if (type === 'boodog') updateBoodogRow(i);
+      }
+    }
   }
-
-  updateBoodog();
   updateDishesField();
   calcPrice();
 }
 
-// ── Хонь боодогийн тоо ──
-function changeBootdog(delta) {
-  boodog_n = Math.max(1, boodog_n + delta);
-  updateBoodog();
-  updateDishesField();
-}
-
-function updateBoodog() {
-  var el = document.getElementById('boodog-count');
-  var pr = document.getElementById('boodog-price');
-  var tt = document.getElementById('boodog-total');
-  if (!el) return;
-  el.textContent = boodog_n;
-  var total = boodog_n * 900000;
+// ── Хонь боодогийн тоо (per-row) ──
+function updateBoodogRow(ri) {
+  var n = boodog_n[ri] || 1;
+  var el = document.getElementById('boodog-count-' + ri);
+  var pr = document.getElementById('boodog-price-' + ri);
+  var tt = document.getElementById('boodog-total-' + ri);
+  if (el) el.textContent = n;
+  var total = n * 900000;
   if (pr) pr.textContent = 'Нийт: ₮' + total.toLocaleString('mn-MN');
-  if (tt) tt.textContent = boodog_n + ' × ₮900,000';
+  if (tt) tt.textContent = n + ' × ₮900,000';
   calcPrice();
+}
+
+function changeBootdog(delta, ri) {
+  boodog_n[ri] = Math.max(1, (boodog_n[ri] || 1) + delta);
+  updateBoodogRow(ri);
+  updateDishesField();
 }
 
 // ── Accordion меню ──
@@ -841,167 +830,142 @@ var GROUP_COLORS = {
   'por':'sel-green','buf-mah':'sel-amber','buf-sal':'sel-green',
   'buf-hac':'sel-amber','buf-shol':'sel-blue','uguluun':'sel-green'
 };
-var GROUP_BADGE = {
-  'por':'por-badge','buf-mah':'buf-mah-badge','buf-sal':'buf-sal-badge',
-  'buf-hac':'buf-hac-badge','buf-shol':'buf-shol-badge','uguluun':'uguluun-badge'
-};
 
 function toggleDish(btn) {
   var g   = btn.dataset.g;
+  var ri  = btn.dataset.row !== undefined ? parseInt(btn.dataset.row) : -1;
   var max = parseInt(btn.dataset.max) || 99;
   var cls = GROUP_COLORS[g] || 'sel-green';
-  var sel = document.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls);
+  var container = ri >= 0 ? document.getElementById('food-panel-' + ri) : document;
+  var sel = (container || document).querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls);
 
   if (btn.classList.contains(cls)) {
-    // Болиулах
     btn.classList.remove(cls);
   } else {
-    if (sel.length >= max) {
-      // Хязгаарт хүрсэн — анхны сонголтыг болиулна
-      sel[0].classList.remove(cls);
-    }
+    if (sel.length >= max) sel[0].classList.remove(cls);
     btn.classList.add(cls);
   }
 
-  // Badge шинэчлэх
-  var badgeId = GROUP_BADGE[g];
-  if (badgeId) {
-    var now = document.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).length;
-    var badge = document.getElementById(badgeId);
-    if (badge) {
-      badge.textContent = now + ' / ' + max;
-      badge.className = 'sel-badge ' + (now>=max ? 'done' : (g.indexOf('mah')>=0||g.indexOf('hac')>=0 ? 'amber' : 'green'));
-    }
+  var now = (container || document).querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).length;
+  var badge = document.getElementById(g + '-badge-' + ri);
+  if (badge) {
+    badge.textContent = now + ' / ' + max;
+    badge.className = 'sel-badge ' + (now >= max ? 'done' : (g.indexOf('mah') >= 0 || g.indexOf('hac') >= 0 ? 'amber' : g.indexOf('shol') >= 0 ? 'blue' : 'green'));
   }
-
-  // Порц тоо хэмжээ харуулах
-  if (g === 'por') renderQty();
-
+  if (g === 'por') renderQty(ri);
   updateDishesField();
 }
 
 // ── Порц сонгосон хоолын тоо оруулах хэсэг ──
-function renderQty() {
-  var container = document.getElementById('por-qty');
-  var selected  = document.querySelectorAll('.dish-chip[data-g="por"].sel-green');
-  var maxPax    = parseInt(document.getElementById('of-pax').value) || 9999;
+function renderQty(ri) {
+  var container = document.getElementById('por-qty-' + ri);
+  if (!container) return;
+  var panel = document.getElementById('food-panel-' + ri);
+  var selected = panel ? panel.querySelectorAll('.dish-chip[data-g="por"].sel-green') : [];
+  var maxPax = parseInt(document.getElementById('of-pax').value) || 9999;
   var html = '';
   selected.forEach(function(btn) {
-    var name   = btn.textContent.trim();
-    var safeId = 'qty_' + name.replace(/[^a-zA-Z0-9]/g,'_').substring(0,20);
+    var name = btn.textContent.trim();
+    var safeId = 'qty_' + ri + '_' + name.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
     var existing = document.getElementById(safeId);
     var val = existing ? existing.value : '';
     html += '<div class="qty-row">' +
-      '<span class="qty-name">'+name+'</span>' +
+      '<span class="qty-name">' + name + '</span>' +
       '<span class="qty-unit">порц:</span>' +
-      '<input type="number" id="'+safeId+'" min="1" max="'+maxPax+'" placeholder="тоо" value="'+val+'"' +
-      ' oninput="clampQty(this);updateDishesField()">' +
-    '</div>';
+      '<input type="number" id="' + safeId + '" data-row="' + ri + '" min="1" max="' + maxPax + '" placeholder="тоо" value="' + val + '" oninput="clampQty(this)">' +
+      '</div>';
   });
   container.innerHTML = html;
 }
 
 // ── 2 хоолны нийт порц ≤ хүний тоо ──
 function clampQty(inp) {
-  var maxPax = parseInt(document.getElementById('of-pax').value) || 0;
+  var ri = parseInt(inp.dataset.row);
   var v = parseInt(inp.value) || 0;
-  if (v < 1) { inp.value = 1; }
-  checkTotalQty();
+  if (v < 1) inp.value = 1;
+  checkTotalQty(ri);
   updateDishesField();
 }
 
-function checkTotalQty() {
+function checkTotalQty(ri) {
   var maxPax = parseInt(document.getElementById('of-pax').value) || 0;
-  var inputs = document.querySelectorAll('#por-qty input[type=number]');
+  var qtyContainer = document.getElementById('por-qty-' + ri);
+  if (!qtyContainer) return;
+  var inputs = qtyContainer.querySelectorAll('input[type=number]');
   var total = 0;
-  inputs.forEach(function(i) { total += parseInt(i.value) || 0; });
-  var warn = document.getElementById('por-qty-warn');
+  inputs.forEach(function(inp) { total += parseInt(inp.value) || 0; });
+  var warn = document.getElementById('por-qty-warn-' + ri);
   if (maxPax > 0 && total > maxPax) {
-    // Хамгийн сүүлчийн оролтыг тааруулна
-    inputs.forEach(function(i) {
-      var v = parseInt(i.value) || 0;
+    inputs.forEach(function(inp) {
+      var v = parseInt(inp.value) || 0;
       if (total > maxPax) {
         var excess = total - maxPax;
         var newV = Math.max(1, v - excess);
         total -= (v - newV);
-        i.value = newV;
-        i.style.borderColor = 'var(--amber)';
+        inp.value = newV;
+        inp.style.borderColor = 'var(--amber)';
       } else {
-        i.style.borderColor = '';
+        inp.style.borderColor = '';
       }
     });
     if (warn) warn.style.display = 'block';
   } else {
-    inputs.forEach(function(i) { i.style.borderColor = ''; });
+    inputs.forEach(function(inp) { inp.style.borderColor = ''; });
     if (warn) warn.style.display = 'none';
   }
 }
 
 // Хүний тоо өөрчлөгдөхөд шалгах
 document.getElementById('of-pax').addEventListener('input', function() {
-  checkTotalQty();
-  renderQty();
+  for (var i = 0; i < svcCount; i++) {
+    var s = document.getElementById('svc-sel-' + i);
+    if (s && s.value === 'por') {
+      checkTotalQty(i);
+      renderQty(i);
+    }
+  }
   calcPrice();
 });
 
 // ── Сонгосон хоолуудыг hidden field-д хадгалах ──
 function updateDishesField() {
   var parts = [];
-
-  // Порц
-  document.querySelectorAll('.dish-chip[data-g="por"].sel-green').forEach(function(btn) {
-    var name = btn.textContent.trim();
-    var safeId = 'qty_' + name.replace(/[^a-zA-Z0-9]/g,'_').substring(0,20);
-    var qtyEl = document.getElementById(safeId);
-    var qty = qtyEl && qtyEl.value ? qtyEl.value + ' порц' : '';
-    parts.push(name + (qty ? ' ('+qty+')' : ''));
-  });
-
-  // Буфет
-  ['buf-mah','buf-sal','buf-hac','buf-shol'].forEach(function(g) {
-    var cls = GROUP_COLORS[g];
-    document.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).forEach(function(btn) {
-      parts.push(btn.textContent.trim());
-    });
-  });
-
-  // Хонь боодог
-  var hasBoodog = false;
-  for (var _i = 0; _i < svcCount; _i++) {
-    var _s = document.getElementById('svc-sel-' + _i);
-    if (_s && _s.value === 'boodog') { hasBoodog = true; break; }
-  }
-  if (hasBoodog) parts.push('Хонь боодог × ' + boodog_n + ' ширхэг');
-
-  // Үйлчилгээний мөрийн утгуудыг нэмэх (огноо, цагтай)
   var svcParts = [];
-  for (var _j = 0; _j < svcCount; _j++) {
-    var _sv = document.getElementById('svc-sel-' + _j);
-    if (_sv && _sv.value) {
-      var opt = SVC_OPTIONS.filter(function(o){ return o.v === _sv.value; })[0];
-      if (opt && opt.v) {
-        var _d = document.getElementById('svc-date-' + _j);
-        var _t = document.getElementById('svc-time-' + _j);
-        var dtStr = (_d && _d.value ? ' · ' + _d.value : '') + (_t && _t.value ? ' ' + _t.value : '');
-        svcParts.push(ORDINALS[_j] + ' ' + opt.l + dtStr);
-      }
+  for (var i = 0; i < svcCount; i++) {
+    var sv = document.getElementById('svc-sel-' + i);
+    if (!sv || !sv.value) continue;
+    var opt = SVC_OPTIONS.filter(function(o) { return o.v === sv.value; })[0];
+    if (!opt || !opt.v) continue;
+    var d = document.getElementById('svc-date-' + i);
+    var t = document.getElementById('svc-time-' + i);
+    var dtStr = (d && d.value ? ' · ' + d.value : '') + (t && t.value ? ' ' + t.value : '');
+    svcParts.push(ORDINALS[i] + ' ' + opt.l + dtStr);
+    var fp = document.getElementById('food-panel-' + i);
+    var type = sv.value;
+    if (type === 'por' && fp) {
+      fp.querySelectorAll('.dish-chip[data-g="por"].sel-green').forEach(function(btn) {
+        var name = btn.textContent.trim();
+        var safeId = 'qty_' + i + '_' + name.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
+        var qtyEl = document.getElementById(safeId);
+        parts.push(name + (qtyEl && qtyEl.value ? ' (' + qtyEl.value + ' порц)' : ''));
+      });
+    } else if (type === 'buf' && fp) {
+      ['buf-mah','buf-sal','buf-hac','buf-shol'].forEach(function(g) {
+        var cls = GROUP_COLORS[g];
+        fp.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).forEach(function(btn) {
+          parts.push(btn.textContent.trim());
+        });
+      });
+    } else if (type === 'boodog') {
+      parts.push('Хонь боодог × ' + (boodog_n[i] || 1) + ' ширхэг');
+    } else if (type === 'uguluun' && fp) {
+      var pax = document.getElementById('of-pax').value || '';
+      fp.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(b) {
+        parts.push('Өглөөний цай: ' + b.textContent.trim() + (pax ? ' × ' + pax + ' хүн' : ''));
+      });
     }
   }
   if (svcParts.length) parts.unshift(svcParts.join(' | '));
-
-  // Өглөөний цай
-  var hasUg = false;
-  for (var _k = 0; _k < svcCount; _k++) {
-    var _su = document.getElementById('svc-sel-' + _k);
-    if (_su && _su.value === 'uguluun') { hasUg = true; break; }
-  }
-  if (hasUg) {
-    var pax = document.getElementById('of-pax').value || '';
-    document.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(b) {
-      parts.push('Өглөөний цай: ' + b.textContent.trim() + (pax ? ' × ' + pax + ' хүн' : ''));
-    });
-  }
-
   document.getElementById('of-dishes').value = parts.join(' | ');
 }
 
@@ -1189,27 +1153,33 @@ function showOrderSummary(isNomaadCamp) {
   }
 
   var dishParts = [];
-  document.querySelectorAll('.dish-chip[data-g="por"].sel-green').forEach(function(btn) {
-    var nm = btn.textContent.trim();
-    var safeId = 'qty_' + nm.replace(/[^a-zA-Z0-9]/g,'_').substring(0,20);
-    var qtyEl = document.getElementById(safeId);
-    dishParts.push(nm + (qtyEl && qtyEl.value ? ' (' + qtyEl.value + ' порц)' : ''));
-  });
-  ['buf-mah','buf-sal','buf-hac','buf-shol'].forEach(function(g) {
-    var cls = GROUP_COLORS[g];
-    document.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).forEach(function(btn) {
-      dishParts.push(btn.textContent.trim());
-    });
-  });
-  document.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(btn) {
-    dishParts.push('Өглөөний цай: ' + btn.textContent.trim());
-  });
-  var hasBoodog = false;
-  for (var _i = 0; _i < svcCount; _i++) {
-    var _s = document.getElementById('svc-sel-' + _i);
-    if (_s && _s.value === 'boodog') { hasBoodog = true; break; }
+  for (var di = 0; di < svcCount; di++) {
+    var dsv = document.getElementById('svc-sel-' + di);
+    if (!dsv || !dsv.value) continue;
+    var fp = document.getElementById('food-panel-' + di);
+    var dtype = dsv.value;
+    if (dtype === 'por' && fp) {
+      fp.querySelectorAll('.dish-chip[data-g="por"].sel-green').forEach(function(btn) {
+        var nm = btn.textContent.trim();
+        var safeId = 'qty_' + di + '_' + nm.replace(/[^a-zA-Z0-9]/g,'_').substring(0,20);
+        var qtyEl = document.getElementById(safeId);
+        dishParts.push(nm + (qtyEl && qtyEl.value ? ' (' + qtyEl.value + ' порц)' : ''));
+      });
+    } else if (dtype === 'buf' && fp) {
+      ['buf-mah','buf-sal','buf-hac','buf-shol'].forEach(function(g) {
+        var cls = GROUP_COLORS[g];
+        fp.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).forEach(function(btn) {
+          dishParts.push(btn.textContent.trim());
+        });
+      });
+    } else if (dtype === 'boodog') {
+      dishParts.push('Хонь боодог × ' + (boodog_n[di] || 1) + ' ширхэг');
+    } else if (dtype === 'uguluun' && fp) {
+      fp.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(btn) {
+        dishParts.push('Өглөөний цай: ' + btn.textContent.trim());
+      });
+    }
   }
-  if (hasBoodog) dishParts.push('Хонь боодог × ' + boodog_n + ' ширхэг');
 
   var totalText = '';
   var halfText = '';
