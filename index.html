@@ -1088,7 +1088,7 @@ async function handleSubmit(e) {
 
     // 2. Web3Forms → имэйл илгээх
     const fd = new FormData(form);
-    fd.append('Zahialgiin_tuluw', 'Шинэ захиалга — баталгаажаагүй');
+    fd.append('Zahialgiin_tuluw', isNomaadCamp ? 'Баталгаажсан — Nomaad camp (урьдчилгаа төлөгдсөн)' : 'Шинэ захиалга — баталгаажаагүй');
     if (_startStr) fd.append('Ehleh_ognoo_tsag', _startStr);
     if (_endDate)  fd.append('Duusah_ognoo', _endDate);
     if (isNomaadCamp) {
@@ -1209,11 +1209,17 @@ function showOrderSummary(isNomaadCamp) {
     }
   }
 
-  var statusBlock = '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FFF8E1;border:1.5px solid #F9A825;border-radius:10px;margin-bottom:10px">' +
-    '<span style="font-size:18px">⏳</span>' +
-    '<div><div style="font-size:13px;font-weight:700;color:#7a5800">Захиалга хүлээгдэж байна</div>' +
-    '<div style="font-size:11.5px;color:#a07000;margin-top:2px">Бид 24 цагийн дотор баталгаажуулж, тантай холбогдоно</div></div>' +
-    '</div>';
+  var statusBlock = isNomaadCamp
+    ? '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#e8f5e9;border:1.5px solid #43a047;border-radius:10px;margin-bottom:10px">' +
+        '<span style="font-size:18px">✅</span>' +
+        '<div><div style="font-size:13px;font-weight:700;color:#2e7d32">Захиалга баталгаажсан</div>' +
+        '<div style="font-size:11.5px;color:#388e3c;margin-top:2px">Nomaad camp — урьдчилгаа төлбөр бүрэн төлөгдсөн</div></div>' +
+      '</div>'
+    : '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FFF8E1;border:1.5px solid #F9A825;border-radius:10px;margin-bottom:10px">' +
+        '<span style="font-size:18px">⏳</span>' +
+        '<div><div style="font-size:13px;font-weight:700;color:#7a5800">Захиалга хүлээгдэж байна</div>' +
+        '<div style="font-size:11.5px;color:#a07000;margin-top:2px">Бид 24 цагийн дотор баталгаажуулж, тантай холбогдоно</div></div>' +
+      '</div>';
 
   var priceBlock = '';
   if (!isNomaadCamp && totalText) {
