@@ -2472,17 +2472,12 @@ function renderUtilityInv() {
 }
 
 function fetchUtilityFromSheets() {
+  // Нэгдсэн fetch-ийг дуудна (RAW + UTILITY хоёулангийг нэг дор татна)
+  fetchAllFromSheets();
+}
+
+function _doFetchUtility(rows) {
   var msg = document.getElementById('utility-save-msg');
-  var oldTag = document.getElementById('_gviz_util_tag');
-  if (oldTag) oldTag.remove();
-
-  window._gvizUtilHandler = window.google && window.google.visualization && window.google.visualization.Query && window.google.visualization.Query.setResponse;
-
-  window.google = window.google || {};
-  window.google.visualization = window.google.visualization || {};
-  window.google.visualization.Query = window.google.visualization.Query || {};
-  window.google.visualization.Query.setResponse = function(resp) {
-    var rows = (resp.table || {}).rows || [];
     var matched = 0;
     rows.forEach(function(row) {
       if (!row.c || row.c.length < 5) return;
@@ -2501,12 +2496,80 @@ function fetchUtilityFromSheets() {
       localStorage.setItem('nomaad_utility_stock', JSON.stringify(UTILITY_STORE));
       if (msg) { msg.textContent='✅ '+matched+' бараа татагдлаа'; setTimeout(function(){if(msg)msg.textContent='';},4000); }
     }
-    // Raw handler-ийг сэргээнэ
-    if (window._gvizUtilHandler) window.google.visualization.Query.setResponse = window._gvizUtilHandler;
+}
+
+// ── Нэгдсэн fetch: RAW + UTILITY хоёуланг нэг дор татна ──
+var _fetchAllDone = false;
+var _fetchAllTimer = null;
+
+function fetchAllFromSheets() {
+  _fetchAllDone = false;
+  var old = document.getElementById('_gviz_all_tag');
+  if (old) old.remove();
+
+  window.google = window.google || {};
+  window.google.visualization = window.google.visualization || {};
+  window.google.visualization.Query = window.google.visualization.Query || {};
+  window.google.visualization.Query.setResponse = function(resp) {
+    if (_fetchAllDone) return;
+    _fetchAllDone = true;
+    if (_fetchAllTimer) { clearTimeout(_fetchAllTimer); _fetchAllTimer = null; }
+
+    var rows = (resp.table || {}).rows || [];
+    var rawTotals = {}, utilTotals = {};
+
+    rows.forEach(function(row) {
+      if (!row.c || row.c.length < 5) return;
+      var nc = row.c[2], qc = row.c[4];
+      if (!nc || !nc.v) return;
+      var name = String(nc.v).trim();
+      var qty = qc && qc.v ? parseFloat(qc.v) : 0;
+      if (qty <= 0) return;
+      // RAW
+      var rk = resolveKey(name);
+      if (rk) { rawTotals[rk] = (rawTotals[rk]||0) + qty; return; }
+      // UTILITY
+      var uk = matchUtilityItem(name);
+      if (uk) { utilTotals[uk] = (utilTotals[uk]||0) + qty; }
+    });
+
+    // RAW_STORE шинэчлэх
+    var rawMatched = applyTotals(rawTotals);
+    var rawMsg = document.getElementById('raw-save-msg');
+    if (rawMsg && rawMatched > 0) {
+      rawMsg.textContent = '✅ ' + rawMatched + ' орц татагдлаа';
+      setTimeout(function(){ if(rawMsg) rawMsg.textContent=''; }, 4000);
+    }
+
+    // UTILITY_STORE шинэчлэх
+    var utilMatched = 0;
+    Object.keys(utilTotals).forEach(function(k) {
+      UTILITY_STORE[k] = utilTotals[k];
+      var inp = document.querySelector('input[data-ukey="'+k+'"]');
+      if (inp) { inp.value = utilTotals[k]; inp.dispatchEvent(new Event('input')); }
+      utilMatched++;
+    });
+    if (utilMatched > 0) localStorage.setItem('nomaad_utility_stock', JSON.stringify(UTILITY_STORE));
+    var utilMsg = document.getElementById('utility-save-msg');
+    if (utilMsg && utilMatched > 0) {
+      utilMsg.textContent = '✅ ' + utilMatched + ' бараа татагдлаа';
+      setTimeout(function(){ if(utilMsg) utilMsg.textContent=''; }, 4000);
+    }
   };
 
+  // Fallback: 5 секундын дотор хариу ирэхгүй бол defaults
+  _fetchAllTimer = setTimeout(function() {
+    if (!_fetchAllDone) {
+      _fetchAllDone = true;
+      applySheetData(SHEETS_DEFAULTS, document.getElementById('raw-save-msg'), true);
+    }
+  }, 5000);
+
   var tag = document.createElement('script');
-  tag.id = '_gviz_util_tag';
+  tag.id = '_gviz_all_tag';
+  tag.onerror = function() {
+    if (!_fetchAllDone) { _fetchAllDone = true; applySheetData(SHEETS_DEFAULTS, document.getElementById('raw-save-msg'), true); }
+  };
   tag.src = RAW_SHEETS_URL;
   document.head.appendChild(tag);
 }
@@ -2664,6 +2727,8 @@ function applyTotals(totals) {
 function fetchRawFromSheets() {
   var fetchMsg = document.getElementById('raw-save-msg');
   if (fetchMsg) fetchMsg.textContent = '⏳ Татаж байна...';
+  fetchAllFromSheets(); return; // Нэгдсэн fetch ашиглана
+  // --- доорх хуучин код ажиллахгүй ---
 
   // Хуучин script tag-г цэвэрлэнэ
   var old = document.getElementById('_gviz_inv_tag');
