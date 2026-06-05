@@ -369,7 +369,6 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
               </div>
             </div>
 
-            <div id="drink-qty-list"></div>
           </div>
         </div>
         <input type="hidden" name="Uuh_zuils" id="of-drinks">
@@ -536,59 +535,22 @@ function updateNemeltuField() {
 }
 
 // ── Уух зүйлсийн сонголт ──
-var drinkQty = {};
+var selectedDrinks = [];
 
 function toggleDrink(btn) {
   var name = btn.dataset.name;
   btn.classList.toggle('sel-n');
   if (btn.classList.contains('sel-n')) {
-    if (!drinkQty[name]) drinkQty[name] = 1;
+    if (selectedDrinks.indexOf(name) < 0) selectedDrinks.push(name);
   } else {
-    delete drinkQty[name];
+    selectedDrinks = selectedDrinks.filter(function(n) { return n !== name; });
   }
-  renderDrinkQty();
   updateDrinkField();
 }
 
-function changeDrinkQty(name, delta) {
-  if (drinkQty[name] !== undefined) {
-    drinkQty[name] = Math.max(1, drinkQty[name] + delta);
-    var el = document.getElementById('dqty_' + name.replace(/[^a-zA-Z0-9]/g,'_'));
-    if (el) el.textContent = drinkQty[name];
-    updateDrinkField();
-  }
-}
-
-function renderDrinkQty() {
-  var container = document.getElementById('drink-qty-list');
-  if (!container) return;
-  var keys = Object.keys(drinkQty);
-  if (!keys.length) { container.innerHTML = ''; return; }
-  var html = '<div style="border-top:1px solid #ecd9c5;margin-top:12px;padding-top:12px;display:flex;flex-direction:column;gap:8px">';
-  keys.forEach(function(name) {
-    var safeId = 'dqty_' + name.replace(/[^a-zA-Z0-9]/g,'_');
-    var esc = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    html += '<div class="qty-row">' +
-      '<span class="qty-name">' + name + '</span>' +
-      '<span class="qty-unit">ширхэг</span>' +
-      '<div style="display:flex;align-items:center;gap:6px">' +
-        '<button type="button" onclick="changeDrinkQty(\'' + esc + '\',-1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:16px;cursor:pointer;font-weight:700">−</button>' +
-        '<span id="' + safeId + '" style="font-weight:700;font-size:15px;min-width:24px;text-align:center">' + drinkQty[name] + '</span>' +
-        '<button type="button" onclick="changeDrinkQty(\'' + esc + '\',1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:16px;cursor:pointer;font-weight:700">+</button>' +
-      '</div>' +
-    '</div>';
-  });
-  html += '</div>';
-  container.innerHTML = html;
-}
-
 function updateDrinkField() {
-  var parts = [];
-  Object.keys(drinkQty).forEach(function(name) {
-    parts.push(name + ' × ' + drinkQty[name] + ' ширхэг');
-  });
   var el = document.getElementById('of-drinks');
-  if (el) el.value = parts.join(', ');
+  if (el) el.value = selectedDrinks.join(', ');
 }
 
 function updateDrinksVisibility() {
@@ -606,11 +568,8 @@ function updateDrinksVisibility() {
   if (nomaadSec)  nomaadSec.style.display  = isNC ? 'block' : 'none';
   if (regularSec) regularSec.style.display = isNC ? 'none'  : 'block';
   // Арга хэмжээний төрөл өөрчлөгдөхөд сонгосон ундааг цэвэрлэх
-  drinkQty = {};
-  var allChips = box.querySelectorAll('.n-chip');
-  allChips.forEach(function(c) { c.classList.remove('sel-n'); });
-  var qtyList = document.getElementById('drink-qty-list');
-  if (qtyList) qtyList.innerHTML = '';
+  selectedDrinks = [];
+  box.querySelectorAll('.n-chip').forEach(function(c) { c.classList.remove('sel-n'); });
   updateDrinkField();
 }
 
