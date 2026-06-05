@@ -356,11 +356,13 @@ footer b{color:var(--ink)}
       <button class="dash-tab" id="dtab-raw" onclick="dSwitchTab('raw')" style="font-family:inherit;font-size:13px;font-weight:700;padding:10px 20px;border:none;border-bottom:3px solid transparent;background:none;cursor:pointer;color:var(--muted);margin-bottom:-2px">🧊 Боловсруулаагүй</button>
       <button class="dash-tab" id="dtab-cook" onclick="dSwitchTab('cook')" style="font-family:inherit;font-size:13px;font-weight:700;padding:10px 20px;border:none;border-bottom:3px solid transparent;background:none;cursor:pointer;color:var(--muted);margin-bottom:-2px">❄️ Боловсруулсан</button>
       <button class="dash-tab" id="dtab-staff" onclick="dSwitchTab('staff')" style="font-family:inherit;font-size:13px;font-weight:700;padding:10px 20px;border:none;border-bottom:3px solid transparent;background:none;cursor:pointer;color:var(--muted);margin-bottom:-2px">👨‍🍳 Ажилчдын хоол</button>
+      <button class="dash-tab" id="dtab-utility" onclick="dSwitchTab('utility')" style="font-family:inherit;font-size:13px;font-weight:700;padding:10px 20px;border:none;border-bottom:3px solid transparent;background:none;cursor:pointer;color:var(--muted);margin-bottom:-2px">🏠 Ахуйн нөөц</button>
     </div>
     <div id="dpanel-compare"><div id="dashboard-content"><div class="orders-loading">⏳ Уншиж байна...</div></div></div>
     <div id="dpanel-raw" style="display:none"></div>
     <div id="dpanel-cook" style="display:none"></div>
     <div id="dpanel-staff" style="display:none"></div>
+    <div id="dpanel-utility" style="display:none"></div>
   </div>
 </div>
 
@@ -2351,8 +2353,171 @@ function saveStaffStock() {
   if (msg) { msg.textContent = '✅ Хадгалагдлаа'; setTimeout(function(){ msg.textContent=''; }, 2500); }
 }
 
+// ── Ахуйн нөөц ──────────────────────────────────────────────
+var UTILITY_STORE = JSON.parse(localStorage.getItem('nomaad_utility_stock') || '{}');
+
+const UTILITY_INV = [
+  // ── Сав суулга ──
+  { key:'u_bowl',      name:'Бор сав',          cat:'Сав суулга', unit:'ш' },
+  { key:'u_spoon',     name:'Халбага',           cat:'Сав суулга', unit:'ш' },
+  { key:'u_fork',      name:'Сэрээ',             cat:'Сав суулга', unit:'ш' },
+  { key:'u_plate',     name:'Таваг (жижиг)',     cat:'Сав суулга', unit:'ш' },
+  { key:'u_plate_big', name:'Таваг (том)',       cat:'Сав суулга', unit:'ш' },
+  { key:'u_cup',       name:'Аяга',              cat:'Сав суулга', unit:'ш' },
+  { key:'u_pot',       name:'Тогоо',             cat:'Сав суулга', unit:'ш' },
+  { key:'u_pan',       name:'Хайруул',           cat:'Сав суулга', unit:'ш' },
+  // ── Дугтуй / Уут ──
+  { key:'u_bag_vac',   name:'Вакум уут',         cat:'Дугтуй',    unit:'ш' },
+  { key:'u_bag_zip',   name:'Zip уут',           cat:'Дугтуй',    unit:'ш' },
+  { key:'u_wrap',      name:'Хальс (stretch)',   cat:'Дугтуй',    unit:'ш' },
+  { key:'u_foil',      name:'Фольг',             cat:'Дугтуй',    unit:'м' },
+  // ── Цэвэрлэгээ ──
+  { key:'u_glove',     name:'Бээлий',            cat:'Цэвэрлэгээ',unit:'х' },
+  { key:'u_apron',     name:'Фартук',            cat:'Цэвэрлэгээ',unit:'ш' },
+  { key:'u_soap',      name:'Гар угаалтуур',     cat:'Цэвэрлэгээ',unit:'ш' },
+  { key:'u_sanitizer', name:'Гар ариутгагч',     cat:'Цэвэрлэгээ',unit:'ш' },
+  { key:'u_towel',     name:'Цаасан алчуур',     cat:'Цэвэрлэгээ',unit:'р' },
+  { key:'u_sponge',    name:'Аяга угаах хөвөн', cat:'Цэвэрлэгээ',unit:'ш' },
+  // ── Шатах / Хий ──
+  { key:'u_gas',       name:'Хий (баллон)',      cat:'Шатах',     unit:'ш' },
+  { key:'u_charcoal',  name:'Нүүрс',             cat:'Шатах',     unit:'кг' },
+];
+
+// Sheet-ийн ахуйн барааны mapping
+var UTILITY_SHEET_MAP = [
+  { keys:['бор сав','сав'],                    inv:'u_bowl' },
+  { keys:['халбага'],                          inv:'u_spoon' },
+  { keys:['сэрээ'],                            inv:'u_fork' },
+  { keys:['таваг том'],                        inv:'u_plate_big' },
+  { keys:['таваг'],                            inv:'u_plate' },
+  { keys:['аяга'],                             inv:'u_cup' },
+  { keys:['тогоо'],                            inv:'u_pot' },
+  { keys:['хайруул'],                          inv:'u_pan' },
+  { keys:['вакум уут','вакум'],                inv:'u_bag_vac' },
+  { keys:['zip уут','зип'],                    inv:'u_bag_zip' },
+  { keys:['хальс','stretch'],                  inv:'u_wrap' },
+  { keys:['фольг'],                            inv:'u_foil' },
+  { keys:['бээлий','бэлий'],                   inv:'u_glove' },
+  { keys:['фартук'],                           inv:'u_apron' },
+  { keys:['гар угаалтуур','soap'],             inv:'u_soap' },
+  { keys:['ариутгагч','sanitizer'],            inv:'u_sanitizer' },
+  { keys:['цаасан алчуур','алчуур'],           inv:'u_towel' },
+  { keys:['хөвөн'],                            inv:'u_sponge' },
+  { keys:['хий','баллон','gas'],               inv:'u_gas' },
+  { keys:['нүүрс','charcoal'],                 inv:'u_charcoal' },
+];
+
+function matchUtilityItem(name) {
+  var n = (name||'').toLowerCase().trim();
+  for (var i=0; i<UTILITY_SHEET_MAP.length; i++) {
+    var e = UTILITY_SHEET_MAP[i];
+    for (var j=0; j<e.keys.length; j++) {
+      if (n.indexOf(e.keys[j]) !== -1) return e.inv;
+    }
+  }
+  return null;
+}
+
+function renderUtilityInv() {
+  var el = document.getElementById('dpanel-utility');
+  if (!el) return;
+
+  // Sheets-аас татна
+  fetchUtilityFromSheets();
+
+  var catColors = { 'Сав суулга':'#e8eff5', 'Дугтуй':'#fff8e7', 'Цэвэрлэгээ':'#fdecea', 'Шатах':'#f0ede8' };
+  var catText   = { 'Сав суулга':'#1f516e', 'Дугтуй':'#7a5010', 'Цэвэрлэгээ':'#9a3522', 'Шатах':'#5a4020' };
+
+  var rows = UTILITY_INV.map(function(item) {
+    var have = parseFloat(UTILITY_STORE[item.key]);
+    var statusHtml = isNaN(have)
+      ? '<span class="td-status idle">— оруулна уу</span>'
+      : (have > 0 ? '<span class="td-status ok">✓ '+have+' '+item.unit+'</span>' : '<span class="td-status low">⚠ Дууссан</span>');
+    var bg = catColors[item.cat]||'#f5f5f0', tc = catText[item.cat]||'#555';
+    return '<tr><td class="td-name">'+item.name+'</td>' +
+      '<td><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:'+bg+';color:'+tc+'">'+item.cat+'</span></td>' +
+      '<td class="td-unit">'+item.unit+'</td>' +
+      '<td><input class="inv-inp" type="number" min="0" step="1" data-ukey="'+item.key+'" value="'+(isNaN(have)?'':have)+'" placeholder="0"></td>' +
+      '<td id="us_'+item.key+'">'+statusHtml+'</td></tr>';
+  }).join('');
+
+  el.innerHTML = '<div class="inv-section">' +
+    '<div class="inv-head" style="background:linear-gradient(135deg,#4a3010,#8a5520)">' +
+      '<span class="ih-icon">🏠</span>' +
+      '<div><h3 style="color:#fff">Ахуйн нөөц</h3>' +
+      '<div class="ih-sub" style="color:rgba(255,255,255,.75)">Сав суулга · Дугтуй · Цэвэрлэгээ · Шатах материал</div></div>' +
+    '</div>' +
+    '<table class="inv-table"><thead><tr><th>Нэр</th><th>Төрөл</th><th>Нэгж</th><th>Одоогийн нөөц</th><th>Байдал</th></tr></thead>' +
+    '<tbody id="utility-inv-body">'+rows+'</tbody></table>' +
+    '<div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end">' +
+      '<span id="utility-save-msg" style="font-size:12px;color:var(--accent);font-weight:600"></span>' +
+      '<button onclick="saveUtilityStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:#8a5520;color:#fff;border:none;border-radius:9px;padding:9px 20px;cursor:pointer">💾 Хадгалах</button>' +
+    '</div></div>';
+
+  document.querySelectorAll('input[data-ukey]').forEach(function(inp) {
+    inp.addEventListener('input', function(e) {
+      var k=e.target.dataset.ukey, v=e.target.value;
+      if(v==='') delete UTILITY_STORE[k]; else UTILITY_STORE[k]=parseFloat(v);
+      localStorage.setItem('nomaad_utility_stock', JSON.stringify(UTILITY_STORE));
+      var have=parseFloat(v);
+      var el2=document.getElementById('us_'+k);
+      if(!el2) return;
+      var item=UTILITY_INV.find(function(x){return x.key===k;});
+      if(v===''||isNaN(have)) el2.innerHTML='<span class="td-status idle">— оруулна уу</span>';
+      else if(have>0) el2.innerHTML='<span class="td-status ok">✓ '+have+' '+(item?item.unit:'')+'</span>';
+      else el2.innerHTML='<span class="td-status low">⚠ Дууссан</span>';
+    });
+  });
+}
+
+function fetchUtilityFromSheets() {
+  var msg = document.getElementById('utility-save-msg');
+  var oldTag = document.getElementById('_gviz_util_tag');
+  if (oldTag) oldTag.remove();
+
+  window._gvizUtilHandler = window.google && window.google.visualization && window.google.visualization.Query && window.google.visualization.Query.setResponse;
+
+  window.google = window.google || {};
+  window.google.visualization = window.google.visualization || {};
+  window.google.visualization.Query = window.google.visualization.Query || {};
+  window.google.visualization.Query.setResponse = function(resp) {
+    var rows = (resp.table || {}).rows || [];
+    var matched = 0;
+    rows.forEach(function(row) {
+      if (!row.c || row.c.length < 4) return;
+      var nc = row.c[1], qc = row.c[3];
+      if (!nc || !nc.v) return;
+      var qty = qc && qc.v ? parseFloat(qc.v) : 0;
+      if (qty <= 0) return;
+      var k = matchUtilityItem(String(nc.v));
+      if (!k) return;
+      UTILITY_STORE[k] = qty;
+      var inp = document.querySelector('input[data-ukey="'+k+'"]');
+      if (inp) { inp.value = qty; inp.dispatchEvent(new Event('input')); }
+      matched++;
+    });
+    if (matched > 0) {
+      localStorage.setItem('nomaad_utility_stock', JSON.stringify(UTILITY_STORE));
+      if (msg) { msg.textContent='✅ '+matched+' бараа татагдлаа'; setTimeout(function(){if(msg)msg.textContent='';},4000); }
+    }
+    // Raw handler-ийг сэргээнэ
+    if (window._gvizUtilHandler) window.google.visualization.Query.setResponse = window._gvizUtilHandler;
+  };
+
+  var tag = document.createElement('script');
+  tag.id = '_gviz_util_tag';
+  tag.src = RAW_SHEETS_URL;
+  document.head.appendChild(tag);
+}
+
+function saveUtilityStock() {
+  localStorage.setItem('nomaad_utility_stock', JSON.stringify(UTILITY_STORE));
+  var msg = document.getElementById('utility-save-msg');
+  if(msg){msg.textContent='✅ Хадгалагдлаа';setTimeout(function(){msg.textContent='';},3000);}
+}
+
 function dSwitchTab(t) {
-  ['compare','raw','cook','staff'].forEach(function(k){
+  ['compare','raw','cook','staff','utility'].forEach(function(k){
     var isA = k===t;
     var btn = document.getElementById('dtab-'+k);
     var pan = document.getElementById('dpanel-'+k);
@@ -2362,6 +2527,7 @@ function dSwitchTab(t) {
   if (t==='raw') renderInvPanel('raw');
   if (t==='cook') renderInvPanel('cook');
   if (t==='staff') renderStaffInv();
+  if (t==='utility') renderUtilityInv();
 }
 
 function renderInvPanel(type) {
