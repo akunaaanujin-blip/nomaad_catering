@@ -779,22 +779,26 @@ function refreshPanels() {
   var wrap=document.getElementById('svc-rows-wrap');
   var addBtn=wrap?wrap.querySelector('.btn-add-svc'):null;
 
+  // Бүх панелийг wrap руу буцааж нуух
   PANEL_TYPES.forEach(function(type) {
     var panel=document.getElementById(type+'-select');
     if (!panel) return;
-    var rowIdx=vals.lastIndexOf(type);
-    if (rowIdx>=0) {
-      panel.classList.add('show');
-      var targetRow=document.getElementById('svc-row-'+rowIdx);
-      if (targetRow) {
-        var next=targetRow.nextSibling;
-        if (next!==panel) svcRows.insertBefore(panel, next);
-      }
-    } else {
-      panel.classList.remove('show');
-      if (panel.parentNode!==wrap) wrap.insertBefore(panel, addBtn);
-    }
+    panel.classList.remove('show');
+    if (panel.parentNode!==wrap) wrap.insertBefore(panel, addBtn);
   });
+
+  // Сонгогдсон төрлийн панелийг тухайн эгнээний дор байрлуулж харуулах
+  for (var i=0; i<svcCount; i++) {
+    var type=vals[i];
+    if (!type) continue;
+    var panel=document.getElementById(type+'-select');
+    if (!panel) continue;
+    var row=document.getElementById('svc-row-'+i);
+    if (!row) continue;
+    panel.classList.add('show');
+    var next=row.nextSibling;
+    if (next!==panel) svcRows.insertBefore(panel, next);
+  }
 
   updateBoodog();
   updateDishesField();
