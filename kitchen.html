@@ -2519,15 +2519,22 @@ function fetchRawSheetDirect() {
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var rows = (data.table || {}).rows || [];
-      var items = [];
+      var map = {}, order = [];
       rows.forEach(function(row) {
         if (!row.c || row.c.length < 4) return;
         var name = row.c[1] && row.c[1].v ? String(row.c[1].v).trim() : '';
         var unit = row.c[2] && row.c[2].v ? String(row.c[2].v).trim() : '';
-        var qty  = row.c[3] && row.c[3].v ? parseFloat(row.c[3].v) : null;
-        if (!name) return;
-        items.push({ name: name, unit: unit, qty: qty });
+        var qty  = row.c[3] && row.c[3].v ? parseFloat(row.c[3].v) : 0;
+        if (!name || qty <= 0) return;
+        var key = name.toLowerCase();
+        if (map[key]) {
+          map[key].qty += qty;
+        } else {
+          map[key] = { name: name, unit: unit, qty: qty };
+          order.push(key);
+        }
       });
+      var items = order.map(function(k){ return map[k]; });
       var tbody = document.getElementById('raw-sheet-body');
       if (!tbody) return;
       tbody.innerHTML = items.map(function(item, i) {
