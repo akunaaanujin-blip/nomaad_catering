@@ -58,12 +58,20 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 
 
 /* ── ҮЙЛЧИЛГЭЭНИЙ МӨРҮҮД ── */
-.svc-row{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.svc-block{margin-bottom:18px;border-radius:14px;border:2px solid var(--line);overflow:hidden}
+.svc-block .svc-row{border:none;border-radius:0;margin-bottom:0;border-left:5px solid var(--line)}
+.svc-block .dish-select.show{border-top:1px solid var(--line);border-left:5px solid var(--line);margin-top:0;border-radius:0 0 12px 12px}
+.svc-block[data-idx="0"]{border-color:#c8962a}.svc-block[data-idx="0"] .svc-row{border-left-color:#c8962a}.svc-block[data-idx="0"] .svc-row-label{color:#c8962a}.svc-block[data-idx="0"] .dish-select.show{border-color:#c8962a;border-top-color:#f0e0c0}
+.svc-block[data-idx="1"]{border-color:#2a9d8f}.svc-block[data-idx="1"] .svc-row{border-left-color:#2a9d8f}.svc-block[data-idx="1"] .svc-row-label{color:#2a9d8f}.svc-block[data-idx="1"] .dish-select.show{border-color:#2a9d8f;border-top-color:#c8ece9}
+.svc-block[data-idx="2"]{border-color:#4a90d9}.svc-block[data-idx="2"] .svc-row{border-left-color:#4a90d9}.svc-block[data-idx="2"] .svc-row-label{color:#4a90d9}.svc-block[data-idx="2"] .dish-select.show{border-color:#4a90d9;border-top-color:#cce0f5}
+.svc-block[data-idx="3"]{border-color:#8b5cf6}.svc-block[data-idx="3"] .svc-row{border-left-color:#8b5cf6}.svc-block[data-idx="3"] .svc-row-label{color:#8b5cf6}.svc-block[data-idx="3"] .dish-select.show{border-color:#8b5cf6;border-top-color:#e0d5fd}
+.svc-block[data-idx="4"]{border-color:#e11d48}.svc-block[data-idx="4"] .svc-row{border-left-color:#e11d48}.svc-block[data-idx="4"] .svc-row-label{color:#e11d48}.svc-block[data-idx="4"] .dish-select.show{border-color:#e11d48;border-top-color:#fcd5de}
+.svc-row{background:var(--surface);padding:14px 16px}
 .btn-add-svc{font-family:inherit;font-size:13px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:1.5px dashed var(--accent);border-radius:10px;padding:10px;cursor:pointer;width:100%;margin-top:4px;transition:all .15s}
 .btn-add-svc:hover{background:var(--accent);color:#fff}
 .btn-svc-remove{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);color:var(--muted);font-size:15px;cursor:pointer;line-height:1;flex-shrink:0;transition:all .15s}
 .btn-svc-remove:hover{border-color:#d44;color:#d44;background:#fff}
-.svc-row-label{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.svc-row-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
 .svc-row select{margin-top:0}
 
 /* ── АРГА ХЭМЖЭЭНИЙ ТӨРӨЛ ── */
@@ -706,16 +714,23 @@ function renderSvcRows() {
 
   svcRows.innerHTML = '';
   for (var i = 0; i < svcCount; i++) {
+    var block = document.createElement('div');
+    block.className = 'svc-block';
+    block.id = 'svc-block-' + i;
+    block.setAttribute('data-idx', String(i % 5));
+
     var div = document.createElement('div');
     div.className = 'svc-row';
     div.id = 'svc-row-' + i;
     div.innerHTML = buildSvcRowHTML(i);
-    svcRows.appendChild(div);
+    block.appendChild(div);
+
     var fpNew = document.createElement('div');
     fpNew.id = 'food-panel-' + i;
     fpNew.className = 'dish-select';
-    fpNew.style.marginTop = '10px';
-    svcRows.appendChild(fpNew);
+    block.appendChild(fpNew);
+
+    svcRows.appendChild(block);
   }
 
   // Restore select values, dates, times
