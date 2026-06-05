@@ -4,7 +4,7 @@
     {
       "name": "nomaad-preview",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["server.py"],
+      "runtimeArgs": ["/Users/anujinninj/Desktop/NOMAAD CATERING/server.py"],
       "port": 7788
     }
   ]

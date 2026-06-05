@@ -1711,7 +1711,13 @@ document.querySelectorAll('input[data-price]').forEach(inp=>{
     render();
   });
 });
-render();
+// RAW_INV/RAW_STORE нь доор const-оор зарлагддаг тул эхний render-ийг
+// синхрон код гүйцэт ажилласны дараа дуудна (TDZ алдаанаас сэргийлнэ).
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', render);
+} else {
+  setTimeout(render, 0);
+}
 
 // ── Агуулахын нөөц ──
 // Sheets-аас татсан сүүлийн үлдэгдэл нөөц (2026-06-04)
