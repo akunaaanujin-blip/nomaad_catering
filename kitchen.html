@@ -2082,7 +2082,7 @@ function kRenderSection(key, orders) {
       '</div>' +
       (date ? '<div class="oc-date" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">📅 Захиалсан: '+date+'</div>' : '') +
       (!isPaid && key !== 'nomaad' && sessionStorage.getItem('nomaad_kitchen_role') === 'manager' ? '<button onclick="kMarkPaid(this,\''+((o['_sheet']||'').replace(/'/g,"\\'"))+'\','+( o['_row']||0)+')" style="margin-top:10px;width:100%;font-family:inherit;font-size:13px;font-weight:700;background:#1F4A38;color:#fff;border:none;border-radius:9px;padding:10px;cursor:pointer">✅ Төлбөр баталгаажуулах</button>' : '') +
-      '<button onclick=\'showOrderAnalysis(' + JSON.stringify({ppl: o['Хүний тоо']||0, service: (o['Үйлчилгээ']||'').split('(')[0].trim(), serviceText: o['Үйлчилгээ']||'', org: o['Байгууллага']||o['Нэр']||'', date: o['Эхлэх огноо']||''}).replace(/\'/g,"&#39;") + ')\' style="margin-top:8px;width:100%;font-family:inherit;font-size:13px;font-weight:700;background:var(--surface);color:var(--accent);border:1px solid var(--accent);border-radius:9px;padding:9px;cursor:pointer">📊 Шинжилгэх</button>' +
+      '<button onclick="showOrderAnalysis(' + (window._kOrderCache = window._kOrderCache||[], window._kOrderCache.push({ppl: o['Хүний тоо']||0, service: (o['Үйлчилгээ']||'').split('(')[0].trim(), serviceText: o['Үйлчилгээ']||'', org: o['Байгууллага']||o['Нэр']||'', date: o['Эхлэх огноо']||''})-1) + ')" style="margin-top:8px;width:100%;font-family:inherit;font-size:13px;font-weight:700;background:var(--surface);color:var(--accent);border:1px solid var(--accent);border-radius:9px;padding:9px;cursor:pointer">📊 Шинжилгэх</button>' +
     '</div>';
   });
   html += '</div>';
@@ -2960,7 +2960,9 @@ function analyzeOrder(orderData) {
   };
 }
 
-function showOrderAnalysis(orderData) {
+function showOrderAnalysis(idxOrData) {
+  var orderData = (typeof idxOrData === 'number') ? (window._kOrderCache||[])[idxOrData] : idxOrData;
+  if (!orderData) return;
   var existing = document.getElementById('order-analysis-overlay');
   if (existing) existing.remove();
 
