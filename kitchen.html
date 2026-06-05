@@ -1708,17 +1708,18 @@ document.querySelectorAll('input[data-price]').forEach(inp=>{
 render();
 
 // ── Агуулахын нөөц ──
-// Sheets-аас татсан сүүлийн өгөгдөл — NOMAAD Нөөцийн бүртгэл (2026-06-04)
+// Sheets-аас татсан сүүлийн өгөгдөл (2026-06-04, шинэ бүтэц)
 var SHEETS_DEFAULTS = {
-  r_lambrib: 28.01,  // Хонь ястай (13.4 + 14.61 кг)
+  r_lambrib: 28.0,   // Хонь ястай (13 + 15 кг)
   r_lamb:    41.0,   // Хонь мах(25) + машин(6) + Хонины машин(10)
   r_flour:   20.0,   // Гурил × 2
-  r_garlic:   2.0,   // Сон пипо
-  r_garnish: 13.0,   // Лууван(6) + Но. Олу(7)
-  r_salad:    1.5,   // Салат навч
-  r_stone:   12.0,   // цул
+  r_garlic:   1.0,   // Сармис
+  r_garnish: 13.0,   // Ногоон огурцы(7) + Лууван(6)
+  r_salad:    4.0,   // Пүнтүүз(2) + Салат навч(2)
+  r_stone:   12.0,   // Тахиа гуя цул
   r_noodle:   1.0,   // Гоймон
-  r_chili:    1.0,   // Чиншүү
+  r_chili:    1.0,   // Чинжүү
+  r_chicken: 12.0,   // Тахиа гуя цул
 };
 // localStorage-д хадгалагдаагүй бол Sheets утгыг анхдагч болгоно
 var _savedRaw = localStorage.getItem('nomaad_raw_stock');
@@ -2484,8 +2485,8 @@ function fetchUtilityFromSheets() {
     var rows = (resp.table || {}).rows || [];
     var matched = 0;
     rows.forEach(function(row) {
-      if (!row.c || row.c.length < 4) return;
-      var nc = row.c[1], qc = row.c[3];
+      if (!row.c || row.c.length < 5) return;
+      var nc = row.c[2], qc = row.c[4];
       if (!nc || !nc.v) return;
       var qty = qc && qc.v ? parseFloat(qc.v) : 0;
       if (qty <= 0) return;
@@ -2582,33 +2583,35 @@ function saveStock(items, sheetName, btnId, msgId) {
 var RAW_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1gUt92TXoxWS5popXmM7g_gvJhU3LT2twTs3wp-l1Xss/gviz/tq?tqx=out:json&gid=1696013893';
 
 // Spreadsheet бараа нэр → RAW_INV key холболт (хэсэгчилсэн нэр тохирох)
-// Sheet дэх бараа → RAW_INV key (урт/тодорхой keyword эхэнд байна)
+// Sheet дэх бараа → RAW_INV key
 var RAW_SHEET_MAP = [
   // Хонины мах
-  { keys:['хонь ястай','ястай хонь','хонины ястай'],       inv:'r_lambrib' },
-  { keys:['хонь мах','хонь машин','хонины машин'],         inv:'r_lamb'    },
-  // Тахиа, гахай
-  { keys:['тахиа','chicken'],                              inv:'r_chicken' },
-  { keys:['гахайн цорой','гахай цорой','цорой'],           inv:'r_porkbelly'},
-  { keys:['гахай','pork'],                                 inv:'r_pork'    },
+  { keys:['хонь ястай','ястай хонь'],          inv:'r_lambrib'  },
+  { keys:['хонь мах','хонь машин','хонины машин'], inv:'r_lamb' },
+  // Тахиа
+  { keys:['тахиа','chicken'],                  inv:'r_chicken'  },
+  { keys:['тахиа гуя цул','тахиа гуя'],        inv:'r_chicken'  },
+  // Гахай
+  { keys:['гахайн цорой','цорой'],             inv:'r_porkbelly'},
+  { keys:['гахай','pork'],                     inv:'r_pork'     },
   // Гурил, хачир
-  { keys:['гурил','flour'],                                inv:'r_flour'   },
-  { keys:['гой мон','гоймон','noodle'],                    inv:'r_noodle'  },
-  { keys:['будаа','рис','rice'],                           inv:'r_rice'    },
-  // Ногоо
-  { keys:['но. олу','но олу','ногоон лук'],                inv:'r_garnish' },
-  { keys:['лууван','carrot'],                              inv:'r_garnish' },
-  { keys:['салат навч','салад навч','навч'],               inv:'r_salad'   },
+  { keys:['гурил','flour'],                    inv:'r_flour'    },
+  { keys:['гоймон','goy mon','noodle'],         inv:'r_noodle'   },
+  { keys:['будаа','rice'],                      inv:'r_rice'     },
+  // Ногоо / Дагалдах
+  { keys:['ногоон огурцы','но. олу','огурцы'],  inv:'r_garnish'  },
+  { keys:['лууван','carrot'],                   inv:'r_garnish'  },
+  { keys:['пүнтүүз','салат навч','навч'],        inv:'r_salad'    },
   // Амтлагч
-  { keys:['сон пипо','сармис','часнок','garlic'],          inv:'r_garlic'  },
-  { keys:['гаа','имбирь','ginger'],                        inv:'r_ginger'  },
-  { keys:['кунжут','sesame'],                              inv:'r_sesame'  },
-  { keys:['чиншүү','халуун ногоо','чили','chili'],         inv:'r_chili'   },
-  { keys:['соёгийн соус','soy sauce'],                     inv:'r_soy'     },
-  { keys:['терияки','teriyaki'],                           inv:'r_teriyaki'},
+  { keys:['сармис','сон пипо','garlic'],         inv:'r_garlic'   },
+  { keys:['гаа','ginger'],                       inv:'r_ginger'   },
+  { keys:['кунжут','sesame'],                    inv:'r_sesame'   },
+  { keys:['чинжүү','чиншүү','chili'],            inv:'r_chili'    },
+  { keys:['соёгийн соус','soy sauce'],           inv:'r_soy'      },
+  { keys:['терияки','teriyaki'],                 inv:'r_teriyaki' },
   // Хэрэгсэл
-  { keys:['шорон','skewer'],                               inv:'r_skewer'  },
-  { keys:['цул','хорхогийн чулуу','чулуу'],               inv:'r_stone'   },
+  { keys:['шорон','skewer'],                     inv:'r_skewer'   },
+  { keys:['тахиа гуя цул','хорхогийн чулуу','цул чулуу'], inv:'r_stone' },
 ];
 
 function matchSheetItem(name) {
@@ -2675,10 +2678,10 @@ function fetchRawFromSheets() {
     try {
       var rows = (resp.table || {}).rows || [];
       var totals = {};
-      // B(1)=Материал/Бараа, D(3)=Тоо
+      // C(2)=Материал/Бараа, E(4)=Тоо
       rows.forEach(function(row) {
-        if (!row.c || row.c.length < 4) return;
-        var nc = row.c[1], qc = row.c[3];
+        if (!row.c || row.c.length < 5) return;
+        var nc = row.c[2], qc = row.c[4];
         if (!nc || !nc.v) return;
         var qty = qc && qc.v ? parseFloat(qc.v) : 0;
         if (qty <= 0) return;
