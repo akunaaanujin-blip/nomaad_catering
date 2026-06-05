@@ -2514,6 +2514,40 @@ function _doFetchUtility(rows) {
 var _fetchAllDone = false;
 var _fetchAllTimer = null;
 
+function fetchRawSheetDirect() {
+  fetch('/api/sheets?gid=1696013893')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var rows = (data.table || {}).rows || [];
+      var items = [];
+      rows.forEach(function(row) {
+        if (!row.c || row.c.length < 4) return;
+        var name = row.c[1] && row.c[1].v ? String(row.c[1].v).trim() : '';
+        var unit = row.c[2] && row.c[2].v ? String(row.c[2].v).trim() : '';
+        var qty  = row.c[3] && row.c[3].v ? parseFloat(row.c[3].v) : null;
+        if (!name) return;
+        items.push({ name: name, unit: unit, qty: qty });
+      });
+      var tbody = document.getElementById('raw-sheet-body');
+      if (!tbody) return;
+      tbody.innerHTML = items.map(function(item, i) {
+        var bg = i % 2 ? '#f7fbf8' : '#fff';
+        var qtyHtml = item.qty !== null ? '<b style="color:var(--accent)">' + item.qty + '</b>' : '<span style="color:#ccc">—</span>';
+        return '<tr style="background:' + bg + '">' +
+          '<td class="td-name">' + item.name + '</td>' +
+          '<td style="text-align:right;padding:8px 14px">' + qtyHtml + '</td>' +
+          '<td class="td-unit">' + item.unit + '</td>' +
+          '</tr>';
+      }).join('');
+      var msg = document.getElementById('raw-save-msg');
+      if (msg) { msg.textContent = '✅ ' + items.length + ' мөр татагдлаа'; setTimeout(function(){ if(msg) msg.textContent=''; }, 4000); }
+    })
+    .catch(function() {
+      var msg = document.getElementById('raw-save-msg');
+      if (msg) msg.textContent = '❌ Татах боломжгүй';
+    });
+}
+
 function fetchAllFromSheets() {
   function parseRows(rows, rawTotals, utilTotals) {
     rows.forEach(function(row) {
@@ -2587,19 +2621,14 @@ function renderInvPanel(type) {
     var el = document.getElementById('dpanel-raw');
     if (!el || el.innerHTML.trim()) return;
     el.innerHTML = '<div class="inv-section">' +
-      '<div class="inv-head raw-head"><span class="ih-icon">🧊</span><div><h3>Боловсруулаагүй нөөц — Түүхий орц</h3><div class="ih-sub">Хоол бүрийн бүх орц · Одоогийн нөөц оруулахад хүрэлцэх эсэхийг шалгана</div></div></div>' +
-      '<table class="inv-table"><thead><tr><th>Орц / Түүхий эд</th><th>Ангилал</th><th>Ашиглах хоол</th><th>Хэрэгцээ</th><th>Нэгж</th><th>Одоогийн нөөц</th><th>Байдал</th><th></th></tr></thead><tbody id="raw-inv-body"></tbody></table>' +
-      '<div style="margin-top:12px;background:#f0f7f3;border:1.5px solid #b2d4bf;border-radius:10px;padding:12px 16px">' +
-      '<div style="font-size:12px;font-weight:700;color:#1F4A38;margin-bottom:6px">📋 Google Sheets — <a href="https://docs.google.com/spreadsheets/d/1gUt92TXoxWS5popXmM7g_gvJhU3LT2twTs3wp-l1Xss/edit?gid=1696013893" target="_blank" style="color:#1F4A38">Нөөцийн бүртгэл нээх ↗</a></div>' +
-      '<table style="font-size:11.5px;border-collapse:collapse;width:100%"><thead><tr style="background:#1F4A38;color:#fff"><th style="padding:4px 10px;text-align:left">A: Огноо</th><th style="padding:4px 10px;text-align:left">B: Бараа нэр</th><th style="padding:4px 10px;text-align:left">C: Нэгж</th><th style="padding:4px 10px;text-align:right">D: Тоо</th></tr></thead><tbody>' +
-      RAW_INV.map(function(item,i){return '<tr style="background:'+(i%2?'#f7fbf8':'#fff')+'"><td style="padding:3px 10px;color:#888">2026-06-04</td><td style="padding:3px 10px;font-weight:600">' + item.name + '</td><td style="padding:3px 10px;color:#888">' + item.unit + '</td><td style="padding:3px 10px;text-align:right;color:#1F4A38;font-weight:700">' + (RAW_STORE[item.key]||'') + '</td></tr>';}).join('') +
-      '</tbody></table>' +
-      '<div style="margin-top:6px;font-size:11px;color:#2c6a48">💡 Нэр яг дээрх загвараар бичнэ үү. Шинэ худалдан авалт = шинэ мөр нэмнэ.</div>' +
-      '</div>' +
-      '<div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end;flex-wrap:wrap"><span id="raw-save-msg" style="font-size:12px;color:var(--accent);font-weight:600"></span><button onclick="fetchRawFromSheets()" style="font-family:inherit;font-size:13px;font-weight:700;background:#e3ede7;color:#1F4A38;border:1.5px solid #b2d4bf;border-radius:9px;padding:9px 16px;cursor:pointer">🔄 Sheets шинэчлэх</button><button id="btn-save-raw" onclick="saveRawStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 20px;cursor:pointer">💾 Нөөц хадгалах</button></div>' +
-      '</div>';
-    if (typeof renderRawInv === 'function') renderRawInv();
-    fetchRawFromSheets();
+      '<div class="inv-head raw-head"><span class="ih-icon">🧊</span><div><h3>Боловсруулаагүй нөөц</h3><div class="ih-sub">Sheets-аас авсан бараа материалын жагсаалт</div></div></div>' +
+      '<table class="inv-table"><thead><tr><th>Материал</th><th style="text-align:right">Үлдэгдэл тоо</th><th>Нэгж</th></tr></thead>' +
+      '<tbody id="raw-sheet-body"><tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">⏳ Татаж байна...</td></tr></tbody></table>' +
+      '<div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end">' +
+        '<span id="raw-save-msg" style="font-size:12px;color:var(--accent);font-weight:600"></span>' +
+        '<button onclick="fetchRawSheetDirect()" style="font-family:inherit;font-size:13px;font-weight:700;background:#e3ede7;color:#1F4A38;border:1.5px solid #b2d4bf;border-radius:9px;padding:9px 16px;cursor:pointer">🔄 Шинэчлэх</button>' +
+      '</div></div>';
+    fetchRawSheetDirect();
   }
   if (type==='cook') {
     var el = document.getElementById('dpanel-cook');
