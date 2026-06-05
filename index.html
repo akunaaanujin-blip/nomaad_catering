@@ -1076,6 +1076,7 @@ async function handleSubmit(e) {
     тэмдэглэл:    document.getElementById('of-note').value.trim(),
     нийт_дүн:     isNomaadCamp ? '' : (totalRaw || ''),
     урьдчилгаа:   isNomaadCamp ? '' : _halfStr,
+    төлөв:        isNomaadCamp ? 'Баталгаажсан' : 'Шинэ захиалга',
   };
 
   try {
