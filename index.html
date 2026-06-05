@@ -782,7 +782,7 @@ function refreshPanels() {
   PANEL_TYPES.forEach(function(type) {
     var panel=document.getElementById(type+'-select');
     if (!panel) return;
-    var rowIdx=vals.indexOf(type);
+    var rowIdx=vals.lastIndexOf(type);
     if (rowIdx>=0) {
       panel.classList.add('show');
       var targetRow=document.getElementById('svc-row-'+rowIdx);
