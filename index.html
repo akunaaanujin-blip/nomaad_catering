@@ -337,28 +337,42 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         <!-- Сонгосон хоол (hidden) -->
         <input type="hidden" name="Songoson_hool" id="of-dishes">
 
-        <!-- Ундааны сонголт — Nomaad camp-д харагдахгүй -->
+        <!-- Уух зүйлсийн сонголт -->
         <div class="order-field full" id="drinks-box" style="display:none">
           <div class="nemeltu-box">
-            <div class="n-title">🥤 Ундааны сонголт <span style="font-size:11px;font-weight:500;color:#a07040">(заавал биш)</span></div>
-            <div style="font-size:11px;font-weight:700;color:#a07040;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">☕ Халуун ундаа</div>
-            <div class="nemeltu-chips">
-              <button type="button" class="n-chip" data-name="Халуун цай" onclick="toggleDrink(this)">☕ Халуун цай</button>
-              <button type="button" class="n-chip" data-name="Кофе" onclick="toggleDrink(this)">☕ Кофе</button>
-              <button type="button" class="n-chip" data-name="Какао" onclick="toggleDrink(this)">🍫 Какао</button>
+            <div class="n-title">🥤 Уух зүйлс <span style="font-size:11px;font-weight:500;color:#a07040">(заавал биш)</span></div>
+
+            <!-- Nomaad camp: зөвхөн үнэгүй халуун ундаа -->
+            <div id="drinks-nomaad-section" style="display:none">
+              <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">☕ Халуун ундаа — үнэгүй</div>
+              <div class="nemeltu-chips">
+                <button type="button" class="n-chip" data-name="Халуун цай (үнэгүй)" onclick="toggleDrink(this)">☕ Халуун цай <span class="free">Үнэгүй</span></button>
+                <button type="button" class="n-chip" data-name="Кофе (үнэгүй)" onclick="toggleDrink(this)">☕ Кофе <span class="free">Үнэгүй</span></button>
+              </div>
             </div>
-            <div style="font-size:11px;font-weight:700;color:#a07040;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px">🥤 Хүйтэн ундаа</div>
-            <div class="nemeltu-chips">
-              <button type="button" class="n-chip" data-name="Жимсний жүүс" onclick="toggleDrink(this)">🧃 Жимсний жүүс</button>
-              <button type="button" class="n-chip" data-name="Кока-кола" onclick="toggleDrink(this)">🥤 Кока-кола</button>
-              <button type="button" class="n-chip" data-name="Спрайт" onclick="toggleDrink(this)">🫧 Спрайт</button>
-              <button type="button" class="n-chip" data-name="Эрдэс ус" onclick="toggleDrink(this)">💧 Эрдэс ус</button>
-              <button type="button" class="n-chip" data-name="Цэвэр ус" onclick="toggleDrink(this)">💧 Цэвэр ус</button>
+
+            <!-- Бусад захиалагч: бүтэн жагсаалт -->
+            <div id="drinks-regular-section" style="display:none">
+              <div style="font-size:11px;font-weight:700;color:#a07040;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">☕ Халуун ундаа</div>
+              <div class="nemeltu-chips">
+                <button type="button" class="n-chip" data-name="Халуун цай" onclick="toggleDrink(this)">☕ Халуун цай</button>
+                <button type="button" class="n-chip" data-name="Кофе" onclick="toggleDrink(this)">☕ Кофе</button>
+                <button type="button" class="n-chip" data-name="Какао" onclick="toggleDrink(this)">🍫 Какао</button>
+              </div>
+              <div style="font-size:11px;font-weight:700;color:#a07040;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px">🥤 Хүйтэн ундаа</div>
+              <div class="nemeltu-chips">
+                <button type="button" class="n-chip" data-name="Жимсний жүүс" onclick="toggleDrink(this)">🧃 Жимсний жүүс</button>
+                <button type="button" class="n-chip" data-name="Кока-кола" onclick="toggleDrink(this)">🥤 Кока-кола</button>
+                <button type="button" class="n-chip" data-name="Спрайт" onclick="toggleDrink(this)">🫧 Спрайт</button>
+                <button type="button" class="n-chip" data-name="Эрдэс ус" onclick="toggleDrink(this)">💧 Эрдэс ус</button>
+                <button type="button" class="n-chip" data-name="Цэвэр ус" onclick="toggleDrink(this)">💧 Цэвэр ус</button>
+              </div>
             </div>
+
             <div id="drink-qty-list"></div>
           </div>
         </div>
-        <input type="hidden" name="Undaa" id="of-drinks">
+        <input type="hidden" name="Uuh_zuils" id="of-drinks">
 
         <!-- Нэмэлт санал -->
         <div class="order-field full">
@@ -521,7 +535,7 @@ function updateNemeltuField() {
   document.getElementById('of-nemeltu').value = parts.join(', ');
 }
 
-// ── Ундааны сонголт ──
+// ── Уух зүйлсийн сонголт ──
 var drinkQty = {};
 
 function toggleDrink(btn) {
@@ -580,7 +594,24 @@ function updateDrinkField() {
 function updateDrinksVisibility() {
   var evnt = document.getElementById('of-event').value;
   var box = document.getElementById('drinks-box');
-  if (box) box.style.display = (evnt && evnt !== 'Nomaad camp') ? 'block' : 'none';
+  var nomaadSec = document.getElementById('drinks-nomaad-section');
+  var regularSec = document.getElementById('drinks-regular-section');
+  if (!box) return;
+  if (!evnt) {
+    box.style.display = 'none';
+    return;
+  }
+  box.style.display = 'block';
+  var isNC = evnt === 'Nomaad camp';
+  if (nomaadSec)  nomaadSec.style.display  = isNC ? 'block' : 'none';
+  if (regularSec) regularSec.style.display = isNC ? 'none'  : 'block';
+  // Арга хэмжээний төрөл өөрчлөгдөхөд сонгосон ундааг цэвэрлэх
+  drinkQty = {};
+  var allChips = box.querySelectorAll('.n-chip');
+  allChips.forEach(function(c) { c.classList.remove('sel-n'); });
+  var qtyList = document.getElementById('drink-qty-list');
+  if (qtyList) qtyList.innerHTML = '';
+  updateDrinkField();
 }
 
 function updateDateRange() {
@@ -1142,7 +1173,7 @@ async function confirmPayment() {
     if (startDate) fd.append('Ehleh_ognoo',      startDate + (startTime ? ' ' + startTime : ''));
     if (endDate)  fd.append('Duusah_ognoo',       endDate);
     if (dishes)   fd.append('Uychilgee',          dishes);
-    if (drinks)   fd.append('Undaa',              drinks);
+    if (drinks)   fd.append('Uuh_zuils',           drinks);
     if (nemeltu)  fd.append('Nemeltu',            nemeltu);
     if (note)     fd.append('Temdegleg',          note);
     fd.append('Shiljuulsen_dun',    amount);
@@ -1215,7 +1246,7 @@ async function handleSubmit(e) {
     эхлэх_огноо:  _startStr,
     дуусах_өдөр:  _endDate,
     үйлчилгээ:    document.getElementById('of-dishes').value,
-    ундаа:        document.getElementById('of-drinks').value,
+    уух_зүйлс:   document.getElementById('of-drinks').value,
     нэмэлт:       document.getElementById('of-nemeltu').value,
     тэмдэглэл:    document.getElementById('of-note').value.trim(),
     нийт_дүн:     isNomaadCamp ? '' : (totalRaw || ''),
@@ -1408,7 +1439,7 @@ function showOrderSummary(isNomaadCamp) {
     (evnt ? sumRow('Арга хэмжээ', evnt) : '') +
     (dateRange ? sumRow('Хамрах хугацаа', dateRange) : '') +
     svcLines +
-    (drinks  ? sumRow('Ундаа', drinks) : '') +
+    (drinks  ? sumRow('Уух зүйлс', drinks) : '') +
     (nemeltu ? sumRow('Нэмэлт хоол', nemeltu) : '') +
     (note ? sumRow('Тусгай хүсэлт', note) : '') +
     '</div>' +
