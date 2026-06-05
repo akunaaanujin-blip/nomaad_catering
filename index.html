@@ -222,8 +222,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
 
   <section class="hero">
     <div class="eyebrow">Кейтеринг үйлчилгээ</div>
-    <h2>Байгальд тааруулсан тансаг хоол</h2>
-    <p>Гүн хөлдөөгчтэй технологиор бэлдсэн, шинэлэг амттай хоолыг арга хэмжээний газарт тань халуунаар хүргэнэ. Порц, буфет, уламжлалт хонь боодгоос сонгоно уу.</p>
+    <h2>Арга хэмжээнд зориулсан мэргэжлийн хоол</h2>
+    <p>Байгууллагын хурлаас эхлээд гадаа арга хэмжээ хүртэл — дулаан хоолыг цагт нь, мэргэжлийн түвшинд хүргэнэ. Порц, буфет, хонь боодог болон өглөөний цайнаас сонгоно уу.</p>
   </section>
 
   <!-- Үнийн карт -->
@@ -231,25 +231,25 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
     <div class="tier por">
       <div class="t-name">Порц хоол</div>
       <div class="t-price">₮38,000 <small>/ хүн</small></div>
-      <div class="t-desc">Нэг хүний бэлэн таваг — гол мах, будаа/хачираар тэнцвэртэй бүрдсэн.</div>
+      <div class="t-desc">Нэг хүнд тохирсон бэлэн таваг — гол мах, будаа эсвэл хачиртай.</div>
       <a href="#order" class="t-badge" style="text-decoration:none;display:inline-block;margin-top:auto;cursor:pointer">Захиалах →</a>
     </div>
     <div class="tier buf">
       <div class="t-name">Буфет</div>
       <div class="t-price">₮54,000 <small>/ хүн</small></div>
-      <div class="t-desc">Өөрөө авах олон төрлийн мах, салад, шөл, хачирын баялаг ширээ.</div>
+      <div class="t-desc">Олон төрлийн мах, салад, хачир, шөлтэй дэлгэмэл ширээ — хүн бүр өөрөө авна.</div>
       <a href="#order" class="t-badge" style="text-decoration:none;display:inline-block;margin-top:auto;cursor:pointer">Захиалах →</a>
     </div>
     <div class="tier shr">
       <div class="t-name">Хонь боодог</div>
       <div class="t-price">₮900,000 <small>/ бүтэн</small></div>
-      <div class="t-desc">Уламжлалт аргаар бэлдсэн бүтэн хонь — ширээгээр, ёслол төгөлдөр.</div>
+      <div class="t-desc">Уламжлалт аргаар чулуун дотор шарсан бүтэн хонь — 8–12 хүнд хүрнэ.</div>
       <a href="#order" class="t-badge" style="text-decoration:none;display:inline-block;margin-top:auto;cursor:pointer">Захиалах →</a>
     </div>
     <div class="tier ugl">
       <div class="t-name">Өглөөний цай</div>
       <div class="t-price">₮12,000 <small>/ хүн</small></div>
-      <div class="t-desc">Зутан, шөл, хөнгөн зооглолт — өглөөний хурал, уулзалтад тохиромжтой.</div>
+      <div class="t-desc">Зутан, шөл болон хөнгөн зооглолт — өглөөний хурал, сургалтад тохиромжтой.</div>
       <a href="#order" class="t-badge" style="text-decoration:none;display:inline-block;margin-top:auto;cursor:pointer">Захиалах →</a>
     </div>
   </section>
@@ -257,7 +257,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
   <!-- ═══ ЗАХИАЛГА ӨГӨХ ═══ -->
   <div class="order-box" id="order">
     <h3>📋 Захиалга өгөх</h3>
-    <p class="sub" id="order-sub">Доорх маягтыг бөглөн илгээгээрэй. Бид тантай 24 цагийн дотор холбогдоно.</p>
+    <p class="sub" id="order-sub">Доорх маягтыг бөглөн илгээгээрэй. Бид тантай ажлын 24 цагийн дотор холбогдоно.</p>
 
     <form id="order-form"
           action="https://api.web3forms.com/submit"
@@ -337,21 +337,39 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         <!-- Сонгосон хоол (hidden) -->
         <input type="hidden" name="Songoson_hool" id="of-dishes">
 
+        <!-- Ундааны сонголт — Nomaad camp-д харагдахгүй -->
+        <div class="order-field full" id="drinks-box" style="display:none">
+          <div class="nemeltu-box">
+            <div class="n-title">🥤 Ундааны сонголт <span style="font-size:11px;font-weight:500;color:#a07040">(заавал биш)</span></div>
+            <div style="font-size:11px;font-weight:700;color:#a07040;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">☕ Халуун ундаа</div>
+            <div class="nemeltu-chips">
+              <button type="button" class="n-chip" data-name="Халуун цай" onclick="toggleDrink(this)">☕ Халуун цай</button>
+              <button type="button" class="n-chip" data-name="Кофе" onclick="toggleDrink(this)">☕ Кофе</button>
+              <button type="button" class="n-chip" data-name="Какао" onclick="toggleDrink(this)">🍫 Какао</button>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:#a07040;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px">🥤 Хүйтэн ундаа</div>
+            <div class="nemeltu-chips">
+              <button type="button" class="n-chip" data-name="Жимсний жүүс" onclick="toggleDrink(this)">🧃 Жимсний жүүс</button>
+              <button type="button" class="n-chip" data-name="Кока-кола" onclick="toggleDrink(this)">🥤 Кока-кола</button>
+              <button type="button" class="n-chip" data-name="Спрайт" onclick="toggleDrink(this)">🫧 Спрайт</button>
+              <button type="button" class="n-chip" data-name="Эрдэс ус" onclick="toggleDrink(this)">💧 Эрдэс ус</button>
+              <button type="button" class="n-chip" data-name="Цэвэр ус" onclick="toggleDrink(this)">💧 Цэвэр ус</button>
+            </div>
+            <div id="drink-qty-list"></div>
+          </div>
+        </div>
+        <input type="hidden" name="Undaa" id="of-drinks">
+
         <!-- Нэмэлт санал -->
         <div class="order-field full">
           <div class="nemeltu-box">
-            <div class="n-title">🍕 Нэмэлт сонголт <span style="font-size:11px;font-weight:500;color:#a07040">(заавал биш)</span></div>
+            <div class="n-title">🍕 Нэмэлт хоол <span style="font-size:11px;font-weight:500;color:#a07040">(заавал биш)</span></div>
             <div class="nemeltu-chips">
               <button type="button" class="n-chip" data-name="Жимсний платер" onclick="toggleNemeltu(this)">Жимсний платер <span class="n-price">~₮8,000</span></button>
               <button type="button" class="n-chip" data-name="Cup cake &amp; Egg tart" onclick="toggleNemeltu(this)">Cup cake & Egg tart <span class="n-price">~₮6,000</span></button>
               <button type="button" class="n-chip" data-name="Мини пицца" onclick="toggleNemeltu(this)">Мини пицца <span class="n-price">~₮7,000</span></button>
               <button type="button" class="n-chip" data-name="Мини бургер" onclick="toggleNemeltu(this)">Мини бургер <span class="n-price">~₮7,500</span></button>
               <button type="button" class="n-chip" data-name="Cheese ball" onclick="toggleNemeltu(this)">Cheese ball <span class="n-price">~₮5,000</span></button>
-            </div>
-            <div style="font-size:11px;font-weight:700;color:#a07040;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 6px">Уух зүйл — үнэгүй</div>
-            <div class="nemeltu-chips">
-              <button type="button" class="n-chip" data-name="Халуун цай" onclick="toggleNemeltu(this)">☕ Халуун цай <span class="free">Үнэгүй</span></button>
-              <button type="button" class="n-chip" data-name="Кофе" onclick="toggleNemeltu(this)">☕ Кофе <span class="free">Үнэгүй</span></button>
             </div>
             <div id="nemeltu-qty-list"></div>
           </div>
@@ -435,7 +453,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
   </div>
 
   <footer>
-    <p style="font-size:11px;color:var(--muted);margin-bottom:6px;line-height:1.6">Үнэ нь нэг хүний (порц/буфет) болон нэгж (боодог) дүн. Тээвэр, үйлчлэгч, тоног төхөөрөмжийг хэмжээнээс хамааруулан тооцно.</p>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:6px;line-height:1.6">Заасан үнэ нь нэг хүний (порц/буфет) болон нэгж (боодог) дүн юм. Тээвэр, үйлчлэгч, тоног төхөөрөмжийн зардлыг арга хэмжээний хэмжээ, байршлаас хамааруулан тусдаа тооцно.</p>
     <p>© 2026 NOMAAD Catering · Чимун ХХК · nomaadcatering.mn</p>
   </footer>
 
@@ -503,6 +521,68 @@ function updateNemeltuField() {
   document.getElementById('of-nemeltu').value = parts.join(', ');
 }
 
+// ── Ундааны сонголт ──
+var drinkQty = {};
+
+function toggleDrink(btn) {
+  var name = btn.dataset.name;
+  btn.classList.toggle('sel-n');
+  if (btn.classList.contains('sel-n')) {
+    if (!drinkQty[name]) drinkQty[name] = 1;
+  } else {
+    delete drinkQty[name];
+  }
+  renderDrinkQty();
+  updateDrinkField();
+}
+
+function changeDrinkQty(name, delta) {
+  if (drinkQty[name] !== undefined) {
+    drinkQty[name] = Math.max(1, drinkQty[name] + delta);
+    var el = document.getElementById('dqty_' + name.replace(/[^a-zA-Z0-9]/g,'_'));
+    if (el) el.textContent = drinkQty[name];
+    updateDrinkField();
+  }
+}
+
+function renderDrinkQty() {
+  var container = document.getElementById('drink-qty-list');
+  if (!container) return;
+  var keys = Object.keys(drinkQty);
+  if (!keys.length) { container.innerHTML = ''; return; }
+  var html = '<div style="border-top:1px solid #ecd9c5;margin-top:12px;padding-top:12px;display:flex;flex-direction:column;gap:8px">';
+  keys.forEach(function(name) {
+    var safeId = 'dqty_' + name.replace(/[^a-zA-Z0-9]/g,'_');
+    var esc = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    html += '<div class="qty-row">' +
+      '<span class="qty-name">' + name + '</span>' +
+      '<span class="qty-unit">ширхэг</span>' +
+      '<div style="display:flex;align-items:center;gap:6px">' +
+        '<button type="button" onclick="changeDrinkQty(\'' + esc + '\',-1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:16px;cursor:pointer;font-weight:700">−</button>' +
+        '<span id="' + safeId + '" style="font-weight:700;font-size:15px;min-width:24px;text-align:center">' + drinkQty[name] + '</span>' +
+        '<button type="button" onclick="changeDrinkQty(\'' + esc + '\',1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:16px;cursor:pointer;font-weight:700">+</button>' +
+      '</div>' +
+    '</div>';
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function updateDrinkField() {
+  var parts = [];
+  Object.keys(drinkQty).forEach(function(name) {
+    parts.push(name + ' × ' + drinkQty[name] + ' ширхэг');
+  });
+  var el = document.getElementById('of-drinks');
+  if (el) el.value = parts.join(', ');
+}
+
+function updateDrinksVisibility() {
+  var evnt = document.getElementById('of-event').value;
+  var box = document.getElementById('drinks-box');
+  if (box) box.style.display = (evnt && evnt !== 'Nomaad camp') ? 'block' : 'none';
+}
+
 function updateDateRange() {
   var s = document.getElementById('of-start-date').value;
   var e = document.getElementById('of-end-date').value;
@@ -524,6 +604,7 @@ function updateDateRange() {
 }
 
 function calcPrice() {
+  updateDrinksVisibility();
   var pax = parseInt(document.getElementById('of-pax').value) || 0;
   var PRICES = {por: 38000, buf: 54000, boodog: 900000, uguluun: 12000};
   var LABELS = {por: 'Порц хоол', buf: 'Буфет', boodog: 'Хонь боодог', uguluun: 'Өглөөний цай'};
@@ -1036,6 +1117,7 @@ async function confirmPayment() {
   var evnt    = document.getElementById('of-event').value;
   var endDate = document.getElementById('of-end-date').value;
   var dishes  = document.getElementById('of-dishes').value;
+  var drinks  = document.getElementById('of-drinks').value;
   var nemeltu = document.getElementById('of-nemeltu').value;
   var note    = document.getElementById('of-note').value.trim();
   var startDate = document.getElementById('of-start-date').value ||
@@ -1060,6 +1142,7 @@ async function confirmPayment() {
     if (startDate) fd.append('Ehleh_ognoo',      startDate + (startTime ? ' ' + startTime : ''));
     if (endDate)  fd.append('Duusah_ognoo',       endDate);
     if (dishes)   fd.append('Uychilgee',          dishes);
+    if (drinks)   fd.append('Undaa',              drinks);
     if (nemeltu)  fd.append('Nemeltu',            nemeltu);
     if (note)     fd.append('Temdegleg',          note);
     fd.append('Shiljuulsen_dun',    amount);
@@ -1132,6 +1215,7 @@ async function handleSubmit(e) {
     эхлэх_огноо:  _startStr,
     дуусах_өдөр:  _endDate,
     үйлчилгээ:    document.getElementById('of-dishes').value,
+    ундаа:        document.getElementById('of-drinks').value,
     нэмэлт:       document.getElementById('of-nemeltu').value,
     тэмдэглэл:    document.getElementById('of-note').value.trim(),
     нийт_дүн:     isNomaadCamp ? '' : (totalRaw || ''),
@@ -1152,6 +1236,8 @@ async function handleSubmit(e) {
     fd.append('Zahialgiin_tuluw', isNomaadCamp ? 'Баталгаажсан — Nomaad camp (урьдчилгаа төлөгдсөн)' : 'Шинэ захиалга — баталгаажаагүй');
     if (_startStr) fd.append('Ehleh_ognoo_tsag', _startStr);
     if (_endDate)  fd.append('Duusah_ognoo', _endDate);
+    var _drinks = document.getElementById('of-drinks').value;
+    if (_drinks) fd.append('Undaa', _drinks);
     if (isNomaadCamp) {
       fd.append('Niit_dun', 'Nomaad camp — үнэ тусад нь тооцно');
     } else if (totalRaw) {
@@ -1205,6 +1291,7 @@ function showOrderSummary(isNomaadCamp) {
   var evnt   = document.getElementById('of-event').value;
   var note   = document.getElementById('of-note').value.trim();
   var nemeltu = document.getElementById('of-nemeltu').value;
+  var drinks  = document.getElementById('of-drinks').value;
 
   function fmtDate(d) {
     if (!d) return '';
@@ -1321,7 +1408,8 @@ function showOrderSummary(isNomaadCamp) {
     (evnt ? sumRow('Арга хэмжээ', evnt) : '') +
     (dateRange ? sumRow('Хамрах хугацаа', dateRange) : '') +
     svcLines +
-    (nemeltu ? sumRow('Нэмэлт', nemeltu) : '') +
+    (drinks  ? sumRow('Ундаа', drinks) : '') +
+    (nemeltu ? sumRow('Нэмэлт хоол', nemeltu) : '') +
     (note ? sumRow('Тусгай хүсэлт', note) : '') +
     '</div>' +
     priceBlock +
