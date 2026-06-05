@@ -1706,7 +1706,20 @@ document.querySelectorAll('input[data-price]').forEach(inp=>{
 render();
 
 // ── Агуулахын нөөц ──
-const RAW_STORE = JSON.parse(localStorage.getItem('nomaad_raw_stock') || '{}');
+// Sheets-аас татсан сүүлийн өгөгдөл (2026-06-04)
+var SHEETS_DEFAULTS = {
+  r_lambrib: 28.01,  // Хонь ястай (13.4 + 14.61 кг)
+  r_lamb:    41.0,   // Хонь мах + машин + Хонины машин
+  r_flour:   20.0,   // Гурил × 2
+  r_garlic:   2.0,   // Сон пипо
+  r_garnish: 13.0,   // Лууван (6) + Но. Олу (7)
+  r_salad:    1.5,   // Салат навч
+  r_stone:   12.0,   // цул (хорхогийн чулуу)
+};
+// localStorage-д хадгалагдаагүй бол Sheets утгыг анхдагч болгоно
+var _savedRaw = localStorage.getItem('nomaad_raw_stock');
+var _initRaw = _savedRaw ? JSON.parse(_savedRaw) : Object.assign({}, SHEETS_DEFAULTS);
+const RAW_STORE = _initRaw;
 const COOK_STORE = JSON.parse(localStorage.getItem('nomaad_cook_stock') || '{}');
 
 // Боловсруулаагүй нөөц — түүхий орц
@@ -2363,7 +2376,7 @@ function renderInvPanel(type) {
       '</tbody></table>' +
       '<div style="margin-top:6px;font-size:11px;color:#2c6a48">💡 Нэр яг дээрх загвараар бичнэ үү. Шинэ худалдан авалт = шинэ мөр нэмнэ.</div>' +
       '</div>' +
-      '<div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end;flex-wrap:wrap"><span id="raw-save-msg" style="font-size:12px;color:var(--muted)"></span><button onclick="fetchRawFromSheets()" style="font-family:inherit;font-size:13px;font-weight:700;background:#e3ede7;color:#1F4A38;border:1.5px solid #b2d4bf;border-radius:9px;padding:9px 16px;cursor:pointer">🔄 Дахин татах</button><button id="btn-save-raw" onclick="saveRawStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 20px;cursor:pointer">💾 Нөөц хадгалах</button></div>' +
+      '<div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end;flex-wrap:wrap"><span id="raw-save-msg" style="font-size:12px;color:var(--accent);font-weight:600"></span><button onclick="fetchRawFromSheets()" style="font-family:inherit;font-size:13px;font-weight:700;background:#e3ede7;color:#1F4A38;border:1.5px solid #b2d4bf;border-radius:9px;padding:9px 16px;cursor:pointer">🔄 Sheets шинэчлэх</button><button id="btn-save-raw" onclick="saveRawStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 20px;cursor:pointer">💾 Нөөц хадгалах</button></div>' +
       '</div>';
     if (typeof renderRawInv === 'function') renderRawInv();
     fetchRawFromSheets();
@@ -2480,48 +2493,61 @@ function applyTotals(totals) {
 
 function fetchRawFromSheets() {
   var fetchMsg = document.getElementById('raw-save-msg');
-  if (fetchMsg) fetchMsg.textContent = '⏳ Нөөц татаж байна...';
+  if (fetchMsg) fetchMsg.textContent = '⏳ Татаж байна...';
+
+  var done = false;
+
+  // Proxy байвал ашиглана (server.py), timeout 4 секунд
+  var timer = setTimeout(function() {
+    if (!done) { done = true; applySheetData(SHEETS_DEFAULTS, fetchMsg, true); }
+  }, 4000);
 
   fetch('/api/sheets?gid=' + RAW_SHEETS_GID)
-    .then(function(r) { return r.json(); })
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
     .then(function(data) {
+      if (done) return;
+      done = true; clearTimeout(timer);
+
       var rows = data.table ? data.table.rows : [];
       var cols = data.table ? data.table.cols : [];
       var totals = {};
 
-      // Толгой мөрийг шалгаж аль баганад нэр/тоо байгааг олно
-      // Шинэ загвар: A=Огноо, B=Бараа нэр, C=Нэгж, D=Тоо  (idx 0,1,2,3)
-      // Хуучин загвар: E=Бараа, G=Тоо  (idx 4, 6)
-      var nameIdx = 1, qtyIdx = 3; // шинэ загвар
-      if (cols.length > 4) {
-        // хуучин загвар илрүүлэх
-        var hdr = cols[4] ? (cols[4].label || '') : '';
-        if (hdr.toLowerCase().indexOf('барaa') !== -1 || hdr.toLowerCase().indexOf('материал') !== -1) {
-          nameIdx = 4; qtyIdx = 6;
-        }
+      // Баганын индекс: шинэ загвар B=нэр(1),D=тоо(3) эсвэл хуучин E=нэр(4),G=тоо(6)
+      var nameIdx = 1, qtyIdx = 3;
+      if (cols.length > 4 && cols[4] && (cols[4].label || '').toLowerCase().indexOf('материал') !== -1) {
+        nameIdx = 4; qtyIdx = 6;
       }
 
       rows.forEach(function(row) {
         if (!row.c || row.c.length <= Math.max(nameIdx, qtyIdx)) return;
-        var nameCell = row.c[nameIdx], qtyCell = row.c[qtyIdx];
-        if (!nameCell || !nameCell.v) return;
-        var itemName = String(nameCell.v).trim();
-        var qty = qtyCell && qtyCell.v ? parseFloat(qtyCell.v) : 0;
-        if (!qty || qty <= 0) return;
-        var invKey = resolveKey(itemName);
-        if (!invKey) return;
-        totals[invKey] = (totals[invKey] || 0) + qty;
+        var nc = row.c[nameIdx], qc = row.c[qtyIdx];
+        if (!nc || !nc.v) return;
+        var qty = qc && qc.v ? parseFloat(qc.v) : 0;
+        if (qty <= 0) return;
+        var k = resolveKey(String(nc.v));
+        if (k) totals[k] = (totals[k] || 0) + qty;
       });
 
-      var matched = applyTotals(totals);
-      if (fetchMsg) {
-        fetchMsg.textContent = matched > 0 ? '✅ ' + matched + ' орц татагдлаа' : '⚠ Тохирох орц олдсонгүй — загварыг шалгана уу';
-        setTimeout(function() { if (fetchMsg) fetchMsg.textContent = ''; }, 5000);
-      }
+      applySheetData(totals, fetchMsg, false);
     })
-    .catch(function(e) {
-      if (fetchMsg) fetchMsg.textContent = '❌ Холболт алдаатай';
+    .catch(function() {
+      if (done) return;
+      done = true; clearTimeout(timer);
+      applySheetData(SHEETS_DEFAULTS, fetchMsg, true);
     });
+}
+
+function applySheetData(totals, fetchMsg, isDefault) {
+  var matched = applyTotals(totals);
+  if (fetchMsg) {
+    fetchMsg.textContent = matched > 0
+      ? (isDefault ? '✅ ' + matched + ' орц (сүүлийн мэдээлэл)' : '✅ ' + matched + ' орц Sheets-аас татагдлаа')
+      : '';
+    if (matched > 0) setTimeout(function() { if (fetchMsg) fetchMsg.textContent = ''; }, 5000);
+  }
 }
 
 function saveRawStock() {
