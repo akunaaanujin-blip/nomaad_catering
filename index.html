@@ -125,7 +125,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 /* ── DISH SELECTOR ── */
 .dish-select{display:none !important;margin-top:4px}
 .dish-select.show{display:block !important}
-.dish-select.show{display:block !important}
 .sel-group{margin-bottom:16px}
 .sel-group-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .sel-group-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
@@ -133,6 +132,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .sel-badge.green{background:var(--accent-soft);color:var(--accent)}
 .sel-badge.amber{background:var(--amber-soft);color:#8a4a10}
 .sel-badge.done{background:#e3ede7;color:#1F4A38}
+.sel-badge.blue{background:#dceaf5;color:#1f516e}
 .dish-chips{display:flex;flex-wrap:wrap;gap:7px}
 .dish-chip{font-family:inherit;font-size:13px;font-weight:500;padding:7px 13px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;transition:all .15s;text-align:left;display:flex;align-items:center;gap:6px}
 .dish-chip:hover{border-color:var(--accent);color:var(--accent)}
@@ -201,7 +201,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
   .dishes{grid-template-columns:1fr}
   .boodog .b-price{text-align:left;width:100%}
   .hero h2{font-size:28px}
-  .svc-row [style*="grid-template-columns:1fr 1fr 1fr"]{display:flex;flex-direction:column;gap:10px}
+  .svc-row .svc-grid{display:flex;flex-direction:column;gap:10px}
+  .uguluun-list{grid-template-columns:repeat(2,1fr)}
 }
 </style>
 </head>
@@ -220,7 +221,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
 <main class="wrap">
 
   <section class="hero">
-    <div class="eyebrow">Меню 2026</div>
+    <div class="eyebrow">Кейтеринг үйлчилгээ</div>
     <h2>Байгальд тааруулсан тансаг хоол</h2>
     <p>Гүн хөлдөөгчтэй технологиор бэлдсэн, шинэлэг амттай хоолыг арга хэмжээний газарт тань халуунаар хүргэнэ. Порц, буфет, уламжлалт хонь боодгоос сонгоно уу.</p>
   </section>
@@ -231,25 +232,25 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
       <div class="t-name">Порц хоол</div>
       <div class="t-price">₮38,000 <small>/ хүн</small></div>
       <div class="t-desc">Нэг хүний бэлэн таваг — гол мах, будаа/хачираар тэнцвэртэй бүрдсэн.</div>
-      
+      <a href="#order" class="t-badge" style="text-decoration:none;display:inline-block;margin-top:auto;cursor:pointer">Захиалах →</a>
     </div>
     <div class="tier buf">
       <div class="t-name">Буфет</div>
       <div class="t-price">₮54,000 <small>/ хүн</small></div>
       <div class="t-desc">Өөрөө авах олон төрлийн мах, салад, шөл, хачирын баялаг ширээ.</div>
-      
+      <a href="#order" class="t-badge" style="text-decoration:none;display:inline-block;margin-top:auto;cursor:pointer">Захиалах →</a>
     </div>
     <div class="tier shr">
       <div class="t-name">Хонь боодог</div>
       <div class="t-price">₮900,000 <small>/ бүтэн</small></div>
       <div class="t-desc">Уламжлалт аргаар бэлдсэн бүтэн хонь — ширээгээр, ёслол төгөлдөр.</div>
-      
+      <a href="#order" class="t-badge" style="text-decoration:none;display:inline-block;margin-top:auto;cursor:pointer">Захиалах →</a>
     </div>
     <div class="tier ugl">
       <div class="t-name">Өглөөний цай</div>
       <div class="t-price">₮12,000 <small>/ хүн</small></div>
       <div class="t-desc">Зутан, шөл, хөнгөн зооглолт — өглөөний хурал, уулзалтад тохиромжтой.</div>
-      
+      <a href="#order" class="t-badge" style="text-decoration:none;display:inline-block;margin-top:auto;cursor:pointer">Захиалах →</a>
     </div>
   </section>
 
@@ -286,7 +287,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         </div>
         <div class="order-field">
           <label>Хүний тоо</label>
-          <input type="number" name="Hunii_too" id="of-pax" value="0" min="0" required>
+          <input type="number" name="Hunii_too" id="of-pax" min="1" placeholder="0" required>
         </div>
         <div class="order-field">
           <label>Арга хэмжээний газар</label>
@@ -310,7 +311,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
 
         <!-- ── АРГА ХЭМЖЭЭНИЙ ТӨРӨЛ ── -->
         <div class="order-field">
-          <label>Арга хэмжээний төрөл</label>
+          <label>Арга хэмжээний төрөл <span style="color:#e11d48">*</span></label>
           <select id="of-event" name="Arga_hemjeenii_turul" onchange="calcPrice()">
             <option value="">— Сонгоно уу —</option>
             <option>Nomaad camp</option>
@@ -322,11 +323,12 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
             <option>Гадаа арга хэмжээ</option>
             <option>Сургалт · семинар</option>
           </select>
-          <p style="font-size:12px;color:var(--muted);margin-top:6px">⛺ Хэрэв та <strong>Nomaad Camp</strong>-н захиалагч бол заавал <strong>Nomaad camp</strong> төрлийг сонгоно уу.</p>
+          <div style="margin-top:8px;padding:8px 12px;background:#e8f4f0;border-radius:8px;border-left:3px solid var(--accent);font-size:12px;color:var(--accent)">⛺ <strong>Nomaad Camp</strong> захиалагч бол дээрх жагсаалтаас <strong>Nomaad camp</strong> сонгоно уу.</div>
         </div>
 
         <!-- Үйлчилгээнүүд -->
         <div class="order-field full" id="svc-rows-wrap">
+          <label>Үйлчилгээ <span style="color:#e11d48">*</span></label>
           <div id="svc-rows"></div>
 
             <button type="button" class="btn-add-svc" onclick="addSvcRow()">＋ Үйлчилгээ нэмэх</button>
@@ -364,7 +366,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
 
       <!-- Үнийн тооцоо -->
       <div class="price-box" id="price-box">
-        <div class="pb-title">Нийт төлбөрийн тооцоо</div>
+        <div class="pb-title">💰 Нийт төлбөрийн тооцоо</div>
         <div id="price-lines"></div>
         <div id="price-total"></div>
         <div style="font-size:11px;color:var(--accent);margin-top:8px;opacity:.7">* Тээвэр, үйлчлэгч тусдаа тооцно</div>
@@ -373,7 +375,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
       <button type="submit" class="btn-order" id="submit-btn">✉️ Захиалга илгээх</button>
     </form>
     <div class="order-success" id="order-success">
-      ✅ Захиалга амжилттай илгээгдлээ!
+      <div style="font-size:24px;margin-bottom:8px">✅</div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px">Захиалга амжилттай илгээгдлээ!</div>
+      <div style="font-size:13px;font-weight:400;opacity:.8">Бид 24 цагийн дотор тантай холбогдоно.</div>
     </div>
     <div id="order-summary" style="display:none"></div>
 
@@ -422,7 +426,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
     </div>
     <div class="cs-item">
       <div class="ci-icon">🌐</div>
-      <div><div class="ci-label">Вэбсайт</div><div class="ci-val">nomaadcatering.mn</div></div>
+      <div><div class="ci-label">Вэбсайт</div><div class="ci-val"><a href="https://nomaadcatering.mn" target="_blank" style="color:var(--ink);text-decoration:none">nomaadcatering.mn</a></div></div>
     </div>
     <div class="cs-item">
       <div class="ci-icon">📍</div>
@@ -709,7 +713,7 @@ function buildSvcRowHTML(i) {
   return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
     '<div class="svc-row-label">'+(i+1)+'-р үйлчилгээ</div>'+removeBtn+
     '</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">' +
+    '<div class="svc-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">' +
       '<div><div style="'+colStyle+'">Үйлчилгээний төрөл</div>' +
       '<select id="svc-sel-'+i+'" onchange="refreshPanels()">' +
       SVC_OPTIONS.map(function(o){return '<option value="'+o.v+'">'+o.l+'</option>';}).join('')+
@@ -1034,7 +1038,8 @@ async function confirmPayment() {
   var dishes  = document.getElementById('of-dishes').value;
   var nemeltu = document.getElementById('of-nemeltu').value;
   var note    = document.getElementById('of-note').value.trim();
-  var startDate = (document.getElementById('svc-date-0') || {}).value || '';
+  var startDate = document.getElementById('of-start-date').value ||
+                  (document.getElementById('svc-date-0') || {}).value || '';
   var startTime = (document.getElementById('svc-time-0') || {}).value || '';
   var totalEl   = document.getElementById('price-total');
   var totalText = totalEl ? (totalEl.textContent.match(/₮[\d,]+/) || [''])[0] : '';
@@ -1070,6 +1075,29 @@ async function confirmPayment() {
 
 async function handleSubmit(e) {
   e.preventDefault();
+
+  // Validate: at least one service selected
+  var hasService = false;
+  for (var _vi = 0; _vi < svcCount; _vi++) {
+    var _vs = document.getElementById('svc-sel-' + _vi);
+    if (_vs && _vs.value) { hasService = true; break; }
+  }
+  if (!hasService) {
+    alert('Үйлчилгээний төрлийг сонгоно уу.');
+    return;
+  }
+  // Validate: pax > 0 for non-boodog services
+  var hasPaxService = false;
+  for (var _pi = 0; _pi < svcCount; _pi++) {
+    var _ps = document.getElementById('svc-sel-' + _pi);
+    if (_ps && _ps.value && _ps.value !== 'boodog') { hasPaxService = true; break; }
+  }
+  var paxVal = parseInt(document.getElementById('of-pax').value) || 0;
+  if (hasPaxService && paxVal < 1) {
+    alert('Хүний тоог оруулна уу.');
+    return;
+  }
+
   const btn  = document.getElementById('submit-btn');
   const form = document.getElementById('order-form');
 
@@ -1305,6 +1333,8 @@ function showOrderSummary(isNomaadCamp) {
 
 // Хуудас ачаалахад 1 мөр харуулах
 renderSvcRows();
+// Reset pax to empty on load
+document.getElementById('of-pax').value = '';
 </script>
 </body>
 </html>
