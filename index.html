@@ -1158,42 +1158,41 @@ function showOrderSummary(isNomaadCamp) {
     var s = document.getElementById('svc-sel-' + i);
     var d = document.getElementById('svc-date-' + i);
     var t = document.getElementById('svc-time-' + i);
-    if (s && s.value) {
-      var opt = SVC_OPTIONS.filter(function(o){ return o.v === s.value; })[0];
-      if (opt && opt.v) {
-        var dt = (d && d.value ? d.value : '') + (t && t.value ? ' ' + t.value : '');
-        svcLines += sumRow(ORDINALS[i] + ' үйлчилгээ', opt.l + (dt ? ' · ' + dt : ''));
-      }
-    }
-  }
+    if (!s || !s.value) continue;
+    var opt = SVC_OPTIONS.filter(function(o){ return o.v === s.value; })[0];
+    if (!opt || !opt.v) continue;
+    var dt = (d && d.value ? d.value : '') + (t && t.value ? ' ' + t.value : '');
+    svcLines += sumRow(ORDINALS[i] + ' үйлчилгээ', opt.l + (dt ? ' · ' + dt : ''));
 
-  var dishParts = [];
-  for (var di = 0; di < svcCount; di++) {
-    var dsv = document.getElementById('svc-sel-' + di);
-    if (!dsv || !dsv.value) continue;
-    var fp = document.getElementById('food-panel-' + di);
-    var dtype = dsv.value;
-    if (dtype === 'por' && fp) {
-      fp.querySelectorAll('.dish-chip[data-g="por"].sel-green').forEach(function(btn) {
-        var nm = btn.textContent.trim();
-        var safeId = 'qty_' + di + '_' + nm.replace(/[^a-zA-Z0-9]/g,'_').substring(0,20);
-        var qtyEl = document.getElementById(safeId);
-        dishParts.push(nm + (qtyEl && qtyEl.value ? ' (' + qtyEl.value + ' порц)' : ''));
-      });
-    } else if (dtype === 'buf' && fp) {
-      ['buf-mah','buf-sal','buf-hac','buf-shol'].forEach(function(g) {
-        var cls = GROUP_COLORS[g];
-        fp.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).forEach(function(btn) {
-          dishParts.push(btn.textContent.trim());
+    // Тухайн үйлчилгээний сонгосон хоолыг шууд доор нь харуулах
+    (function(ri, dtype) {
+      var fp = document.getElementById('food-panel-' + ri);
+      var dishBits = [];
+      if (dtype === 'por' && fp) {
+        fp.querySelectorAll('.dish-chip[data-g="por"].sel-green').forEach(function(btn) {
+          var nm = btn.textContent.trim();
+          var safeId = 'qty_' + ri + '_' + nm.replace(/[^a-zA-Z0-9]/g,'_').substring(0,20);
+          var qtyEl = document.getElementById(safeId);
+          dishBits.push(nm + (qtyEl && qtyEl.value ? ' (' + qtyEl.value + ' порц)' : ''));
         });
-      });
-    } else if (dtype === 'boodog') {
-      dishParts.push('Хонь боодог × ' + (boodog_n[di] || 1) + ' ширхэг');
-    } else if (dtype === 'uguluun' && fp) {
-      fp.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(btn) {
-        dishParts.push('Өглөөний цай: ' + btn.textContent.trim());
-      });
-    }
+      } else if (dtype === 'buf' && fp) {
+        ['buf-mah','buf-sal','buf-hac','buf-shol'].forEach(function(g) {
+          var cls = GROUP_COLORS[g];
+          fp.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).forEach(function(btn) {
+            dishBits.push(btn.textContent.trim());
+          });
+        });
+      } else if (dtype === 'boodog') {
+        dishBits.push('Хонь боодог × ' + (boodog_n[ri] || 1) + ' ширхэг');
+      } else if (dtype === 'uguluun' && fp) {
+        fp.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(btn) {
+          dishBits.push(btn.textContent.trim());
+        });
+      }
+      if (dishBits.length) {
+        svcLines += '<div style="padding:5px 12px 8px 20px;font-size:12px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-top:none;border-radius:0 0 8px 8px;margin-top:-2px;line-height:1.7">🍽 ' + dishBits.join('&nbsp;·&nbsp;') + '</div>';
+      }
+    })(i, s.value);
   }
 
   var totalText = '';
@@ -1241,7 +1240,6 @@ function showOrderSummary(isNomaadCamp) {
     (loc ? sumRow('Газар', loc) : '') +
     (evnt ? sumRow('Арга хэмжээ', evnt) : '') +
     svcLines +
-    (dishParts.length ? sumRow('Сонгосон хоол', dishParts.join(' · ')) : '') +
     (nemeltu ? sumRow('Нэмэлт', nemeltu) : '') +
     (note ? sumRow('Тусгай хүсэлт', note) : '') +
     '</div>' +
