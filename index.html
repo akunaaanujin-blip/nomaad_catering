@@ -292,9 +292,20 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
           <label>Арга хэмжээний газар</label>
           <input type="text" name="Gazar" id="of-location" placeholder="Хаяг, байршил...">
         </div>
-        <div class="order-field">
-          <label>Арга хэмжээ дуусах өдөр <span style="font-weight:400;color:var(--muted)">(хамрах хугацаа)</span></label>
-          <input type="date" name="Duusah_undur" id="of-end-date">
+        <div class="order-field full">
+          <label>Хамрах хугацаа</label>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div style="flex:1;min-width:130px">
+              <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">Эхлэх өдөр</div>
+              <input type="date" id="of-start-date" name="Ehleh_undur" style="margin-top:0" oninput="updateDateRange()">
+            </div>
+            <div style="font-size:15px;color:var(--muted);font-weight:700;padding-top:18px">→</div>
+            <div style="flex:1;min-width:130px">
+              <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">Дуусах өдөр</div>
+              <input type="date" id="of-end-date" name="Duusah_undur" style="margin-top:0" oninput="updateDateRange()">
+            </div>
+          </div>
+          <div id="date-range-preview" style="margin-top:8px;font-size:13px;font-weight:600;color:var(--accent);display:none"></div>
         </div>
 
         <!-- ── АРГА ХЭМЖЭЭНИЙ ТӨРӨЛ ── -->
@@ -486,6 +497,26 @@ function updateNemeltuField() {
     parts.push(name + ' × ' + nemeltuQty[name] + ' ширхэг');
   });
   document.getElementById('of-nemeltu').value = parts.join(', ');
+}
+
+function updateDateRange() {
+  var s = document.getElementById('of-start-date').value;
+  var e = document.getElementById('of-end-date').value;
+  var prev = document.getElementById('date-range-preview');
+  if (!prev) return;
+  if (!s && !e) { prev.style.display = 'none'; return; }
+  function fmt(d) {
+    if (!d) return '';
+    var p = d.split('-');
+    return p[1].replace(/^0/,'') + '-р сарын ' + p[2].replace(/^0/,'');
+  }
+  var txt = '';
+  if (s && e && s !== e) txt = '📅 ' + fmt(s) + '-наас ' + fmt(e) + ' хүртэл';
+  else if (s && !e)      txt = '📅 ' + fmt(s) + '-ноос эхлэх';
+  else if (!s && e)      txt = '📅 ' + fmt(e) + '-нд дуусах';
+  else                   txt = '📅 ' + fmt(s);
+  prev.textContent = txt;
+  prev.style.display = 'block';
 }
 
 function calcPrice() {
@@ -1045,7 +1076,8 @@ async function handleSubmit(e) {
   btn.disabled    = true;
   btn.textContent = '⏳ Илгээж байна...';
 
-  var _startDate = (document.getElementById('svc-date-0') || {}).value || '';
+  var _startDate = document.getElementById('of-start-date').value ||
+                   (document.getElementById('svc-date-0') || {}).value || '';
   var _startTime = (document.getElementById('svc-time-0') || {}).value || '';
   var _startStr  = _startDate + (_startTime ? ' ' + _startTime : '');
   var _endDate   = document.getElementById('of-end-date').value || '';
@@ -1145,6 +1177,19 @@ function showOrderSummary(isNomaadCamp) {
   var evnt   = document.getElementById('of-event').value;
   var note   = document.getElementById('of-note').value.trim();
   var nemeltu = document.getElementById('of-nemeltu').value;
+
+  function fmtDate(d) {
+    if (!d) return '';
+    var p = d.split('-');
+    return p[1].replace(/^0/,'') + '-р сарын ' + p[2].replace(/^0/,'');
+  }
+  var sd = document.getElementById('of-start-date').value;
+  var ed = document.getElementById('of-end-date').value;
+  var dateRange = '';
+  if (sd && ed && sd !== ed) dateRange = fmtDate(sd) + '-наас ' + fmtDate(ed) + ' хүртэл';
+  else if (sd && !ed)        dateRange = fmtDate(sd) + '-ноос эхлэх';
+  else if (!sd && ed)        dateRange = fmtDate(ed) + '-нд дуусах';
+  else if (sd)               dateRange = fmtDate(sd);
 
   function sumRow(label, val) {
     if (!val) return '';
@@ -1246,6 +1291,7 @@ function showOrderSummary(isNomaadCamp) {
     sumRow('Хүний тоо', pax ? pax + ' хүн' : '') +
     (loc ? sumRow('Газар', loc) : '') +
     (evnt ? sumRow('Арга хэмжээ', evnt) : '') +
+    (dateRange ? sumRow('Хамрах хугацаа', dateRange) : '') +
     svcLines +
     (nemeltu ? sumRow('Нэмэлт', nemeltu) : '') +
     (note ? sumRow('Тусгай хүсэлт', note) : '') +
