@@ -2297,139 +2297,95 @@ function matchStaffItem(name) {
 }
 
 function fetchStaffFromSheets() {
-  var staffUrl = 'https://docs.google.com/spreadsheets/d/1gUt92TXoxWS5popXmM7g_gvJhU3LT2twTs3wp-l1Xss/gviz/tq?tqx=out:json&gid=' + STAFF_GID;
-  var oldTag = document.getElementById('_gviz_staff_tag');
-  if (oldTag) oldTag.remove();
-
-  window.google = window.google || {};
-  window.google.visualization = window.google.visualization || {};
-  window.google.visualization.Query = window.google.visualization.Query || {};
-  window.google.visualization.Query.setResponse = function(resp) {
-    var rows = (resp.table || {}).rows || [];
-    var totals = {};
-    rows.forEach(function(row) {
-      if (!row.c || row.c.length < 4) return;
-      var nc = row.c[1], qc = row.c[3]; // Материал(1), Худалдаж авсан(3)
-      if (!nc || !nc.v) return;
-      var name = String(nc.v).trim();
-      var qty = qc && qc.v ? parseFloat(qc.v) : 0;
-      if (qty <= 0) return;
-      var k = matchStaffItem(name);
-      if (!k) return;
-      totals[k] = (totals[k]||0) + qty;
-    });
-
-    var matched = 0;
-    Object.keys(totals).forEach(function(k) {
-      STAFF_STORE[k] = totals[k];
-      var inp = document.querySelector('input[data-sfkey="'+k+'"]');
-      if (inp) { inp.value = totals[k]; inp.dispatchEvent(new Event('input')); }
-      matched++;
-    });
-    if (matched > 0) localStorage.setItem('nomaad_staff_stock', JSON.stringify(STAFF_STORE));
-    var msg = document.getElementById('staff-save-msg');
-    if (msg) {
-      msg.textContent = matched > 0 ? '✅ ' + matched + ' бараа татагдлаа' : '';
-      if (matched > 0) setTimeout(function(){ if(msg) msg.textContent=''; }, 4000);
-    }
-  };
-
-  var tag = document.createElement('script');
-  tag.id = '_gviz_staff_tag';
-  tag.onerror = function() { var msg=document.getElementById('staff-save-msg'); if(msg) msg.textContent=''; };
-  tag.src = staffUrl;
-  document.head.appendChild(tag);
+  fetch('/api/sheets?gid=' + STAFF_GID)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var rows = (data.table || {}).rows || [];
+      var totals = {};
+      rows.forEach(function(row) {
+        if (!row.c || row.c.length < 4) return;
+        var nc = row.c[1], qc = row.c[3];
+        if (!nc || !nc.v) return;
+        var name = String(nc.v).trim();
+        var qty = qc && qc.v ? parseFloat(qc.v) : 0;
+        if (qty <= 0) return;
+        var k = matchStaffItem(name);
+        if (k) totals[k] = (totals[k]||0) + qty;
+      });
+      var matched = Object.keys(totals).length;
+      Object.keys(totals).forEach(function(k) { STAFF_STORE[k] = totals[k]; });
+      if (matched > 0) {
+        localStorage.setItem('nomaad_staff_stock', JSON.stringify(STAFF_STORE));
+        _updateStaffTable();
+        var msg = document.getElementById('staff-save-msg');
+        if (msg) { msg.textContent = '✅ ' + matched + ' бараа татагдлаа'; setTimeout(function(){ if(msg) msg.textContent=''; }, 4000); }
+      }
+    })
+    .catch(function() {});
 }
 
 function renderStaffInv() {
   var el = document.getElementById('dpanel-staff');
   if (!el) return;
 
-  // Sheets-аас автоматаар татна
-  setTimeout(function() { fetchStaffFromSheets(); }, 300);
+  var catColors = {'Мах':'#fdecea','Ногоо':'#e3ede7','Бусад':'#f0f0ea'};
+  var catText   = {'Мах':'#9a3522','Ногоо':'#1d5235','Бусад':'#555'};
 
-  var catColors = {
-    'Үндсэн':'#e8eff5','Мах':'#fdecea','Ногоо':'#e3ede7','Сүү':'#fff8e7','Бусад':'#f0f0ea'
-  };
-  var catText = {
-    'Үндсэн':'#1f516e','Мах':'#9a3522','Ногоо':'#1d5235','Сүү':'#7a5010','Бусад':'#555'
-  };
+  // Sheets-аас татсан өгөгдлийг харуулна
+  var staffItems = [];
+  Object.keys(STAFF_STORE).forEach(function(k) {
+    var item = STAFF_INV.find(function(x){ return x.key===k; });
+    if (item) staffItems.push({ key:k, name:item.name, cat:item.cat, unit:item.unit, have:STAFF_STORE[k] });
+  });
 
-  var rows = STAFF_INV.map(function(item) {
-    var need = +(item.perP * staffCount).toFixed(2);
-    var have = parseFloat(STAFF_STORE[item.key]);
-    var statusHtml;
-    if (isNaN(have) || have === '') {
-      statusHtml = '<span class="td-status idle">— оруулна уу</span>';
-    } else if (have >= need) {
-      statusHtml = '<span class="td-status ok">✓ +' + (have-need).toFixed(2) + ' ' + item.unit + '</span>';
-    } else {
-      statusHtml = '<span class="td-status low">⚠ ' + (need-have).toFixed(2) + ' ' + item.unit + ' дутна</span>';
-    }
-    var bg = catColors[item.cat] || '#f5f5f0';
-    var tc = catText[item.cat] || '#555';
+  var rows = staffItems.map(function(item) {
+    var bg = catColors[item.cat]||'#f5f5f0', tc = catText[item.cat]||'#555';
     return '<tr>' +
-      '<td class="td-name">' + item.name + '</td>' +
-      '<td><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:'+bg+';color:'+tc+'">' + item.cat + '</span></td>' +
-      '<td class="td-need" style="font-family:\'Lora\',serif">' + need + '</td>' +
-      '<td class="td-unit">' + item.unit + '</td>' +
-      '<td><input class="inv-inp" type="number" min="0" step="0.1" data-sfkey="' + item.key + '" value="' + (isNaN(have)?'':have) + '" placeholder="0"></td>' +
-      '<td id="sfs_' + item.key + '">' + statusHtml + '</td>' +
+      '<td class="td-name">'+item.name+'</td>' +
+      '<td><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:'+bg+';color:'+tc+'">'+item.cat+'</span></td>' +
+      '<td class="td-need" style="font-family:\'Lora\',serif">'+item.have+'</td>' +
+      '<td class="td-unit">'+item.unit+'</td>' +
+      '<td><span class="td-status ok">✓</span></td>' +
       '</tr>';
-  }).join('');
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">⏳ Sheets-аас татаж байна...</td></tr>';
 
   el.innerHTML = '<div class="inv-section">' +
     '<div class="inv-head" style="background:linear-gradient(135deg,#2c1a5e,#4a2d8f)">' +
       '<span class="ih-icon">👨‍🍳</span>' +
       '<div><h3 style="color:#fff">Ажилчдын хоолны нөөц</h3>' +
-      '<div class="ih-sub" style="color:rgba(255,255,255,.75)">Өдрийн хоол · Нэг ажилчинд шаардлагатай орцын тооцоо</div></div>' +
-    '</div>' +
-    '<div style="display:flex;align-items:center;gap:16px;padding:14px 0;flex-wrap:wrap">' +
-      '<label style="font-size:13px;font-weight:700;color:var(--muted)">👤 Ажилчдын тоо:</label>' +
-      '<input id="staff-count-inp" type="number" min="1" max="100" value="' + staffCount + '" ' +
-        'style="font-family:inherit;font-size:18px;font-weight:700;width:80px;border:1.5px solid var(--line);border-radius:10px;padding:6px 10px;text-align:center" ' +
-        'oninput="staffCount=Math.max(1,+this.value)||1;localStorage.setItem(\'nomaad_staff_count\',staffCount);document.getElementById(\'dpanel-staff\').innerHTML=\'\';renderStaffInv();">' +
-      '<span style="font-size:13px;color:var(--muted)">хүн · өдөрт</span>' +
+      '<div class="ih-sub" style="color:rgba(255,255,255,.75)">Sheets-аас авсан нөөцийн мэдээлэл</div></div>' +
     '</div>' +
     '<table class="inv-table"><thead><tr>' +
-      '<th>Орц / Бүтээгдэхүүн</th><th>Ангилал</th>' +
-      '<th>' + staffCount + ' хүний хэрэгцээ</th>' +
-      '<th>Нэгж</th><th>Одоогийн нөөц</th><th>Байдал</th>' +
-    '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<th>Материал</th><th>Ангилал</th><th>Тоо</th><th>Нэгж</th><th>Байдал</th>' +
+    '</tr></thead><tbody id="staff-inv-body">'+rows+'</tbody></table>' +
     '<div style="margin-top:10px;display:flex;align-items:center;gap:12px;justify-content:flex-end">' +
-      '<span id="staff-save-msg" style="font-size:12px;color:var(--muted)"></span>' +
-      '<button onclick="resetStaffStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:#f5f0e6;color:var(--muted);border:1.5px solid var(--line);border-radius:9px;padding:9px 16px;cursor:pointer">🔄 Шинэ өдөр</button>' +
-      '<button id="btn-save-staff" onclick="saveStaffStock()" style="font-family:inherit;font-size:13px;font-weight:700;background:#4a2d8f;color:#fff;border:none;border-radius:9px;padding:9px 20px;cursor:pointer">💾 Хадгалах</button>' +
-    '</div>' +
-    '</div>';
+      '<span id="staff-save-msg" style="font-size:12px;color:var(--accent);font-weight:600"></span>' +
+      '<button onclick="document.getElementById(\'dpanel-staff\').innerHTML=\'\';renderStaffInv();" style="font-family:inherit;font-size:13px;font-weight:700;background:#e3ede7;color:#1F4A38;border:1.5px solid #b2d4bf;border-radius:9px;padding:9px 16px;cursor:pointer">🔄 Шинэчлэх</button>' +
+    '</div></div>';
 
-  document.querySelectorAll('input[data-sfkey]').forEach(function(inp) {
-    inp.addEventListener('input', function(e) {
-      var k = e.target.dataset.sfkey, v = e.target.value;
-      if (v === '') delete STAFF_STORE[k]; else STAFF_STORE[k] = parseFloat(v);
-      localStorage.setItem('nomaad_staff_stock', JSON.stringify(STAFF_STORE));
-      var item = STAFF_INV.find(function(x){ return x.key===k; });
-      var need = item ? +(item.perP * staffCount).toFixed(2) : null;
-      var have = parseFloat(v);
-      var el2 = document.getElementById('sfs_'+k);
-      if (!el2) return;
-      if (v==='' || isNaN(have)) {
-        el2.innerHTML = '<span class="td-status idle">— оруулна уу</span>';
-      } else if (have >= need) {
-        el2.innerHTML = '<span class="td-status ok">✓ +' + (have-need).toFixed(2) + ' ' + item.unit + '</span>';
-      } else {
-        el2.innerHTML = '<span class="td-status low">⚠ ' + (need-have).toFixed(2) + ' ' + item.unit + ' дутна</span>';
-      }
-    });
-  });
+  // Sheets-аас татна
+  setTimeout(function() { fetchStaffFromSheets(); }, 200);
 }
 
-function resetStaffStock() {
-  if (!confirm('Шинэ өдрийн бэлтгэл: бүх нөөцийн утгыг хасах уу?')) return;
-  STAFF_STORE = {};
-  localStorage.setItem('nomaad_staff_stock', '{}');
-  document.getElementById('dpanel-staff').innerHTML = '';
-  renderStaffInv();
+function _updateStaffTable() {
+  var tbody = document.getElementById('staff-inv-body');
+  if (!tbody) return;
+  var catColors = {'Мах':'#fdecea','Ногоо':'#e3ede7','Бусад':'#f0f0ea'};
+  var catText   = {'Мах':'#9a3522','Ногоо':'#1d5235','Бусад':'#555'};
+  var staffItems = [];
+  Object.keys(STAFF_STORE).forEach(function(k) {
+    var item = STAFF_INV.find(function(x){ return x.key===k; });
+    if (item) staffItems.push({ key:k, name:item.name, cat:item.cat, unit:item.unit, have:STAFF_STORE[k] });
+  });
+  if (!staffItems.length) return;
+  tbody.innerHTML = staffItems.map(function(item) {
+    var bg = catColors[item.cat]||'#f5f5f0', tc = catText[item.cat]||'#555';
+    return '<tr><td class="td-name">'+item.name+'</td>' +
+      '<td><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:'+bg+';color:'+tc+'">'+item.cat+'</span></td>' +
+      '<td class="td-need" style="font-family:\'Lora\',serif">'+item.have+'</td>' +
+      '<td class="td-unit">'+item.unit+'</td>' +
+      '<td><span class="td-status ok">✓</span></td></tr>';
+  }).join('');
 }
 
 function saveStaffStock() {
@@ -2587,45 +2543,28 @@ var _fetchAllDone = false;
 var _fetchAllTimer = null;
 
 function fetchAllFromSheets() {
-  _fetchAllDone = false;
-  var old = document.getElementById('_gviz_all_tag');
-  if (old) old.remove();
-
-  window.google = window.google || {};
-  window.google.visualization = window.google.visualization || {};
-  window.google.visualization.Query = window.google.visualization.Query || {};
-  window.google.visualization.Query.setResponse = function(resp) {
-    if (_fetchAllDone) return;
-    _fetchAllDone = true;
-    if (_fetchAllTimer) { clearTimeout(_fetchAllTimer); _fetchAllTimer = null; }
-
-    var rows = (resp.table || {}).rows || [];
-    var rawTotals = {}, utilTotals = {};
-
+  function parseRows(rows, rawTotals, utilTotals) {
     rows.forEach(function(row) {
-      if (!row.c || row.c.length < 5) return;
+      if (!row.c || row.c.length < 4) return;
       var nc = row.c[1], qc = row.c[3];
       if (!nc || !nc.v) return;
       var name = String(nc.v).trim();
       var qty = qc && qc.v ? parseFloat(qc.v) : 0;
       if (qty <= 0) return;
-      // RAW
       var rk = resolveKey(name);
       if (rk) { rawTotals[rk] = (rawTotals[rk]||0) + qty; return; }
-      // UTILITY
       var uk = matchUtilityItem(name);
       if (uk) { utilTotals[uk] = (utilTotals[uk]||0) + qty; }
     });
+  }
 
-    // RAW_STORE шинэчлэх
+  function applyResults(rawTotals, utilTotals) {
     var rawMatched = applyTotals(rawTotals);
     var rawMsg = document.getElementById('raw-save-msg');
-    if (rawMsg && rawMatched > 0) {
-      rawMsg.textContent = '✅ ' + rawMatched + ' орц татагдлаа';
-      setTimeout(function(){ if(rawMsg) rawMsg.textContent=''; }, 4000);
+    if (rawMsg) {
+      rawMsg.textContent = rawMatched > 0 ? '✅ ' + rawMatched + ' орц татагдлаа' : '';
+      if (rawMatched > 0) setTimeout(function(){ if(rawMsg) rawMsg.textContent=''; }, 4000);
     }
-
-    // UTILITY_STORE шинэчлэх
     var utilMatched = 0;
     Object.keys(utilTotals).forEach(function(k) {
       UTILITY_STORE[k] = utilTotals[k];
@@ -2634,28 +2573,21 @@ function fetchAllFromSheets() {
       utilMatched++;
     });
     if (utilMatched > 0) localStorage.setItem('nomaad_utility_stock', JSON.stringify(UTILITY_STORE));
-    var utilMsg = document.getElementById('utility-save-msg');
-    if (utilMsg && utilMatched > 0) {
-      utilMsg.textContent = '✅ ' + utilMatched + ' бараа татагдлаа';
-      setTimeout(function(){ if(utilMsg) utilMsg.textContent=''; }, 4000);
-    }
-  };
+  }
 
-  // Fallback: 5 секундын дотор хариу ирэхгүй бол defaults
-  _fetchAllTimer = setTimeout(function() {
-    if (!_fetchAllDone) {
-      _fetchAllDone = true;
+  var rawTotals = {}, utilTotals = {};
+  // Proxy ашиглан татна
+  fetch('/api/sheets?gid=1696013893')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var rows = (data.table || {}).rows || [];
+      parseRows(rows, rawTotals, utilTotals);
+      applyResults(rawTotals, utilTotals);
+    })
+    .catch(function() {
+      // Proxy байхгүй бол defaults
       applySheetData(SHEETS_DEFAULTS, document.getElementById('raw-save-msg'), true);
-    }
-  }, 5000);
-
-  var tag = document.createElement('script');
-  tag.id = '_gviz_all_tag';
-  tag.onerror = function() {
-    if (!_fetchAllDone) { _fetchAllDone = true; applySheetData(SHEETS_DEFAULTS, document.getElementById('raw-save-msg'), true); }
-  };
-  tag.src = RAW_SHEETS_URL;
-  document.head.appendChild(tag);
+    });
 }
 
 function saveUtilityStock() {
