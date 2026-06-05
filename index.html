@@ -775,6 +775,21 @@ function refreshPanels() {
     var s=document.getElementById('svc-sel-'+i);
     vals.push(s?s.value:'');
   }
+
+  // Ижил үйлчилгээ давхцаж байвал сүүлийн сонголтыг '' болгож анхааруулна
+  for (var i=svcCount-1; i>=1; i--) {
+    if (!vals[i]) continue;
+    for (var j=0; j<i; j++) {
+      if (vals[j]===vals[i]) {
+        var dupSel=document.getElementById('svc-sel-'+i);
+        if (dupSel) dupSel.value='';
+        vals[i]='';
+        showToast('Ижил үйлчилгээг давхар сонгох боломжгүй. Өөр төрөл сонгоно уу.');
+        break;
+      }
+    }
+  }
+
   var svcRows=document.getElementById('svc-rows');
   var wrap=document.getElementById('svc-rows-wrap');
   var addBtn=wrap?wrap.querySelector('.btn-add-svc'):null;
@@ -803,6 +818,20 @@ function refreshPanels() {
   updateBoodog();
   updateDishesField();
   calcPrice();
+}
+
+function showToast(msg) {
+  var t=document.getElementById('toast-msg');
+  if (!t) {
+    t=document.createElement('div');
+    t.id='toast-msg';
+    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;z-index:9999;max-width:320px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.3)';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg;
+  t.style.opacity='1';
+  clearTimeout(t._tid);
+  t._tid=setTimeout(function(){t.style.opacity='0';},3000);
 }
 
 // ── Хонь боодогийн тоо ──
