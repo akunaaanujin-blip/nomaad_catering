@@ -291,6 +291,7 @@ footer b{color:var(--ink)}
 (function(){
   var PASS_COOK    = 'togoo';
   var PASS_MANAGER = 'admin';
+  var PASS_PIN     = '1122';
   var KEY          = 'nomaad_kitchen_auth';
   var ROLE_KEY     = 'nomaad_kitchen_role';
 
@@ -311,7 +312,7 @@ footer b{color:var(--ink)}
   function checkPass(){
     var val = document.getElementById('lock-input').value;
     if(val === PASS_MANAGER)     { unlock('manager'); }
-    else if(val === PASS_COOK)   { unlock('cook'); }
+    else if(val === PASS_COOK || val === PASS_PIN) { unlock('cook'); }
     else {
       document.getElementById('lock-err').style.display='block';
       document.getElementById('lock-input').value='';
