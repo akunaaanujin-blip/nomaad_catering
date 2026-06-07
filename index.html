@@ -374,7 +374,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         <input type="hidden" name="Uuh_zuils" id="of-drinks">
 
         <!-- Нэмэлт санал -->
-        <div class="order-field full">
+        <div class="order-field full" id="nemeltu-box-wrap">
           <div class="nemeltu-box">
             <div class="n-title">🍕 Нэмэлт хоол <span style="font-size:11px;font-weight:500;color:#a07040">(заавал биш)</span></div>
             <div class="nemeltu-chips">
@@ -558,15 +558,18 @@ function updateDrinksVisibility() {
   var box = document.getElementById('drinks-box');
   var nomaadSec = document.getElementById('drinks-nomaad-section');
   var regularSec = document.getElementById('drinks-regular-section');
+  var nemeltuWrap = document.getElementById('nemeltu-box-wrap');
   if (!box) return;
   if (!evnt) {
     box.style.display = 'none';
+    if (nemeltuWrap) nemeltuWrap.style.display = 'block';
     return;
   }
-  box.style.display = 'block';
   var isNC = evnt === 'Nomaad camp';
+  box.style.display = 'block';
   if (nomaadSec)  nomaadSec.style.display  = isNC ? 'block' : 'none';
   if (regularSec) regularSec.style.display = isNC ? 'none'  : 'block';
+  if (nemeltuWrap) nemeltuWrap.style.display = isNC ? 'none' : 'block';
   // Арга хэмжээний төрөл өөрчлөгдөхөд сонгосон ундааг цэвэрлэх
   selectedDrinks = [];
   box.querySelectorAll('.n-chip').forEach(function(c) { c.classList.remove('sel-n'); });
