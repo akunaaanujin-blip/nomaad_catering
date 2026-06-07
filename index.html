@@ -553,27 +553,32 @@ function updateDrinkField() {
   if (el) el.value = selectedDrinks.join(', ');
 }
 
+var _lastEventType = null;
+
 function updateDrinksVisibility() {
   var evnt = document.getElementById('of-event').value;
   var box = document.getElementById('drinks-box');
   var nomaadSec = document.getElementById('drinks-nomaad-section');
   var regularSec = document.getElementById('drinks-regular-section');
   var nemeltuWrap = document.getElementById('nemeltu-box-wrap');
+
   if (!box) return;
-  if (!evnt) {
-    box.style.display = 'none';
-    if (nemeltuWrap) nemeltuWrap.style.display = 'block';
-    return;
-  }
+
   var isNC = evnt === 'Nomaad camp';
-  box.style.display = 'block';
-  if (nomaadSec)  nomaadSec.style.display  = isNC ? 'block' : 'none';
-  if (regularSec) regularSec.style.display = isNC ? 'none'  : 'block';
+
+  // Нуух/харуулах
+  box.style.display = evnt ? 'block' : 'none';
+  if (nomaadSec)   nomaadSec.style.display  = (evnt && isNC)  ? 'block' : 'none';
+  if (regularSec)  regularSec.style.display = (evnt && !isNC) ? 'block' : 'none';
   if (nemeltuWrap) nemeltuWrap.style.display = isNC ? 'none' : 'block';
-  // Арга хэмжээний төрөл өөрчлөгдөхөд сонгосон ундааг цэвэрлэх
-  selectedDrinks = [];
-  box.querySelectorAll('.n-chip').forEach(function(c) { c.classList.remove('sel-n'); });
-  updateDrinkField();
+
+  // Зөвхөн арга хэмжээний төрөл СОЛИГДОХОД ундааг цэвэрлэх
+  if (evnt !== _lastEventType) {
+    _lastEventType = evnt;
+    selectedDrinks = [];
+    box.querySelectorAll('.n-chip').forEach(function(c) { c.classList.remove('sel-n'); });
+    updateDrinkField();
+  }
 }
 
 function updateDateRange() {
