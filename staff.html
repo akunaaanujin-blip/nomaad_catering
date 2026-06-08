@@ -1701,10 +1701,7 @@ function toggleAssign(key, btn) {
     localStorage.setItem('assign_'+key, '1');
     logActivity('Бэлтгэгч рүү илгээв: ' + key);
   }
-  if (btn) {
-    btn.classList.toggle('assigned', !assigned);
-    btn.textContent = assigned ? '→' : '✓';
-  }
+  renderTasks();
 }
 
 // Нэг хоолны бүх бэлтгэлийн ажлыг нэг дор Бэлтгэгч рүү илгээх/буцаах
@@ -1904,11 +1901,14 @@ function renderTasks() {
               var amt = pt.a ? ' <span style="color:var(--amber);font-weight:700;font-size:11px">· '+esc(pax ? calcPlanned(pt.a, pax) : pt.a)+'</span>'+
                 (pax ? '<span style="color:var(--muted);font-weight:500;font-size:10px">'+esc(calcBreakdown(pt.a, pax))+'</span>' : '') : '';
               html += '<div class="tsk-ing-row">' +
-                '<span class="tsk-ing-name" style="'+(pdone?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(pt.name)+amt+
+                // Зүүн талд: тогооч өөрөө хийж дуусгасан бол чеклэнэ
+                '<div class="tsk-dish-check'+(pdone?' checked':'')+'" style="width:22px;height:22px;min-width:22px;font-size:11px;flex-shrink:0;cursor:pointer" onclick="toggleDish(\''+pkey+'\')"></div>' +
+                '<span class="tsk-ing-name" style="flex:1;'+(pdone?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(pt.name)+amt+
                   (assigned ? '<span class="assign-badge">→ Бэлтгэгч</span>' : '') +
                 '</span>' +
+                // Баруун талд: бэлтгэгч рүү илгээх товч
                 '<button class="btn-assign'+(assigned?' assigned':'')+'" onclick="toggleAssign(\''+pkey+'\',this)">'+
-                  (assigned ? '✓' : '→') +
+                  (assigned ? '✓ Илгээсэн' : '→ Бэлтгэгч') +
                 '</button>' +
               '</div>';
             });
