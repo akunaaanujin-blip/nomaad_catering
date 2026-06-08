@@ -1,0 +1,1932 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NOMAAD Catering · Ажилтан</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F5F0E6;
+  --surface:#fff;
+  --ink:#20271F;
+  --muted:#8A8276;
+  --line:#E2E6DF;
+  --accent:#1F4A38;
+  --accent-soft:#E3EDE7;
+  --amber:#C8743F;
+  --amber-soft:#F5E2D5;
+  --red:#BB4A36;
+  --red-soft:#f8e2dd;
+  --blue:#2c6a8f;
+  --blue-soft:#e1eef5;
+  --radius:14px;
+  --shadow:0 2px 8px rgba(32,39,31,.08),0 1px 2px rgba(32,39,31,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  line-height:1.5;
+  font-size:15px;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── LAYOUT ── */
+#app{
+  max-width:480px;
+  margin:0 auto;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  overflow:hidden;
+  background:var(--bg);
+  box-shadow:0 0 40px rgba(0,0,0,.12);
+}
+
+/* ── LOCK SCREEN ── */
+#lock{
+  position:absolute;
+  inset:0;
+  background:linear-gradient(160deg,#0d2218 0%,#163528 40%,#1F4A38 70%,#2E6049 100%);
+  z-index:1000;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  padding:48px 24px 32px;
+  overflow-y:auto;
+  transition:opacity .35s ease;
+}
+#lock.hidden{opacity:0;pointer-events:none}
+.lock-logo{text-align:center;margin-bottom:36px}
+.lock-logo .brand-mark{
+  width:64px;height:64px;
+  background:rgba(255,255,255,.12);
+  border-radius:20px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:30px;margin:0 auto 14px;
+  border:1px solid rgba(255,255,255,.2);
+}
+.lock-logo h1{
+  font-size:22px;font-weight:800;color:#fff;
+  letter-spacing:-.3px;
+}
+.lock-logo p{font-size:13px;color:rgba(255,255,255,.6);margin-top:4px}
+
+.lock-title{
+  font-size:13px;font-weight:600;
+  text-transform:uppercase;letter-spacing:1.2px;
+  color:rgba(255,255,255,.55);margin-bottom:16px;
+}
+
+.role-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  width:100%;
+  max-width:360px;
+  margin-bottom:28px;
+}
+.role-card{
+  background:rgba(255,255,255,.08);
+  border:1.5px solid rgba(255,255,255,.15);
+  border-radius:var(--radius);
+  padding:18px 14px;
+  text-align:center;
+  cursor:pointer;
+  transition:all .2s ease;
+  -webkit-user-select:none;user-select:none;
+}
+.role-card:active{transform:scale(.96)}
+.role-card.selected{
+  background:rgba(255,255,255,.18);
+  border-color:rgba(255,255,255,.5);
+  box-shadow:0 0 0 3px rgba(255,255,255,.15);
+}
+.role-card .role-emoji{font-size:32px;display:block;margin-bottom:8px}
+.role-card .role-name{font-size:13px;font-weight:600;color:#fff}
+
+/* PIN section */
+#pin-section{
+  width:100%;max-width:360px;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  gap:16px;
+}
+#pin-section.visible{display:flex}
+
+.pin-dots{
+  display:flex;gap:14px;margin-bottom:4px;
+}
+.pin-dot{
+  width:14px;height:14px;
+  border-radius:50%;
+  background:rgba(255,255,255,.2);
+  border:2px solid rgba(255,255,255,.4);
+  transition:all .15s ease;
+}
+.pin-dot.filled{
+  background:#fff;
+  border-color:#fff;
+}
+
+.pin-numpad{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  width:100%;
+}
+.pin-btn{
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:12px;
+  color:#fff;
+  font-size:22px;
+  font-weight:600;
+  font-family:'Inter',sans-serif;
+  height:58px;
+  cursor:pointer;
+  transition:all .15s ease;
+  display:flex;align-items:center;justify-content:center;
+}
+.pin-btn:active{
+  background:rgba(255,255,255,.25);
+  transform:scale(.94);
+}
+.pin-btn.del{font-size:18px}
+.pin-btn.empty{background:transparent;border:none;cursor:default}
+
+.btn-login{
+  width:100%;
+  background:#fff;
+  color:var(--accent);
+  border:none;
+  border-radius:12px;
+  height:52px;
+  font-size:16px;
+  font-weight:700;
+  font-family:'Inter',sans-serif;
+  cursor:pointer;
+  transition:all .2s ease;
+}
+.btn-login:active{transform:scale(.97)}
+.btn-login:disabled{opacity:.45;cursor:default}
+
+#pin-error{
+  color:#ff8a7a;
+  font-size:13px;
+  font-weight:500;
+  text-align:center;
+  min-height:20px;
+  animation:shake .35s ease;
+}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-6px)}
+  40%{transform:translateX(6px)}
+  60%{transform:translateX(-4px)}
+  80%{transform:translateX(4px)}
+}
+
+/* ── HEADER ── */
+#header{
+  background:linear-gradient(135deg,#163528 0%,#1F4A38 60%,#2E6049 100%);
+  padding:14px 18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-shrink:0;
+  min-height:60px;
+}
+.header-brand{
+  display:flex;align-items:center;gap:10px;
+}
+.header-brand .hmark{
+  width:36px;height:36px;
+  background:rgba(255,255,255,.15);
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;
+  border:1px solid rgba(255,255,255,.2);
+}
+.header-brand span{
+  font-size:15px;font-weight:700;color:#fff;
+  letter-spacing:-.2px;
+}
+.header-brand small{
+  display:block;
+  font-size:11px;color:rgba(255,255,255,.6);
+  font-weight:400;margin-top:1px;
+}
+.header-right{
+  display:flex;align-items:center;gap:10px;
+}
+#role-badge{
+  font-size:13px;font-weight:600;color:#fff;
+  background:rgba(255,255,255,.15);
+  border-radius:20px;
+  padding:5px 12px;
+  white-space:nowrap;
+}
+.btn-logout{
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.25);
+  color:#fff;
+  border-radius:8px;
+  padding:6px 12px;
+  font-size:12px;
+  font-weight:600;
+  font-family:'Inter',sans-serif;
+  cursor:pointer;
+  transition:all .15s ease;
+}
+.btn-logout:active{background:rgba(255,255,255,.22)}
+
+/* ── CONTENT AREA ── */
+#content{
+  flex:1;
+  overflow:hidden;
+  position:relative;
+}
+.tab-panel{
+  position:absolute;
+  inset:0;
+  overflow-y:auto;
+  padding:0 0 16px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .22s ease;
+  -webkit-overflow-scrolling:touch;
+}
+.tab-panel.active{
+  opacity:1;
+  pointer-events:auto;
+}
+
+/* ── BOTTOM NAV ── */
+#nav{
+  background:var(--surface);
+  border-top:1px solid var(--line);
+  display:flex;
+  flex-shrink:0;
+  padding-bottom:env(safe-area-inset-bottom, 0px);
+}
+.nav-item{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:8px 4px 6px;
+  cursor:pointer;
+  border:none;
+  background:none;
+  font-family:'Inter',sans-serif;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:500;
+  gap:3px;
+  border-top:2.5px solid transparent;
+  transition:all .18s ease;
+  min-height:54px;
+  -webkit-user-select:none;user-select:none;
+}
+.nav-item .nav-icon{font-size:20px;line-height:1}
+.nav-item.active{
+  color:var(--accent);
+  font-weight:700;
+  border-top-color:var(--accent);
+}
+.nav-item.hidden{display:none}
+
+/* ── COMMON COMPONENTS ── */
+.section-header{
+  padding:20px 18px 10px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.section-title{
+  font-size:18px;font-weight:700;letter-spacing:-.3px;
+}
+.section-sub{font-size:13px;color:var(--muted)}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  margin:0 14px 10px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.card-body{padding:14px 16px}
+
+.badge{
+  display:inline-flex;align-items:center;
+  padding:3px 10px;
+  border-radius:20px;
+  font-size:11px;font-weight:700;
+  white-space:nowrap;
+}
+.badge-amber{background:var(--amber-soft);color:#8a4a1a}
+.badge-blue{background:var(--blue-soft);color:#1a4d6a}
+.badge-green{background:var(--accent-soft);color:#1a4228}
+.badge-red{background:var(--red-soft);color:#8a2a1a}
+.badge-gray{background:#ebebeb;color:#666}
+
+/* Loading */
+.loading-wrap{
+  padding:48px 24px;
+  text-align:center;
+}
+.spinner{
+  width:36px;height:36px;
+  border:3px solid var(--line);
+  border-top-color:var(--accent);
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+  margin:0 auto 14px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-wrap p{font-size:14px;color:var(--muted)}
+
+.error-wrap{
+  padding:32px 24px;
+  text-align:center;
+}
+.error-ico{font-size:36px;margin-bottom:10px}
+.error-wrap p{font-size:14px;color:var(--muted);margin-bottom:16px}
+.btn-retry{
+  background:var(--accent);color:#fff;
+  border:none;border-radius:10px;
+  padding:10px 22px;font-size:14px;font-weight:600;
+  font-family:'Inter',sans-serif;cursor:pointer;
+}
+
+.btn-refresh{
+  background:var(--accent-soft);
+  color:var(--accent);
+  border:none;border-radius:8px;
+  padding:6px 14px;font-size:13px;font-weight:600;
+  font-family:'Inter',sans-serif;cursor:pointer;
+  white-space:nowrap;
+}
+.btn-refresh:active{opacity:.7}
+
+.divider{
+  height:1px;background:var(--line);
+  margin:0 16px;
+}
+
+/* ── TAB 1: ORDERS ── */
+.orders-date-group{
+  padding:16px 18px 6px;
+  font-size:12px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;
+  color:var(--muted);
+}
+
+.order-card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  margin:0 14px 10px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.order-card.past{opacity:.55}
+.order-card-head{
+  padding:14px 16px;
+  cursor:pointer;
+  -webkit-user-select:none;user-select:none;
+}
+.order-card-head:active{background:#f9f9f6}
+.order-top{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px;gap:8px;
+}
+.order-company{
+  font-size:15px;font-weight:700;
+  flex:1;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.order-meta{
+  display:flex;gap:16px;flex-wrap:wrap;
+  font-size:13px;color:var(--muted);
+}
+.order-meta span{display:flex;align-items:center;gap:4px}
+
+.order-detail{
+  border-top:1px solid var(--line);
+  padding:14px 16px;
+  display:none;
+  background:#fbfaf8;
+}
+.order-detail.open{display:block}
+
+.detail-row{
+  display:flex;gap:8px;margin-bottom:8px;
+  font-size:13px;
+}
+.detail-label{color:var(--muted);min-width:72px;font-weight:500}
+.detail-val{color:var(--ink);flex:1}
+
+.dish-list{
+  background:var(--accent-soft);
+  border-radius:10px;
+  padding:10px 14px;
+  margin:10px 0;
+  font-size:13px;
+  line-height:1.7;
+  color:#1a3a28;
+}
+
+.status-btns{
+  display:flex;gap:8px;margin-top:12px;
+}
+.btn-status{
+  flex:1;border:none;border-radius:10px;
+  padding:10px 8px;font-size:12px;font-weight:700;
+  font-family:'Inter',sans-serif;cursor:pointer;
+  transition:all .15s ease;
+}
+.btn-status:active{transform:scale(.96)}
+.btn-status.preparing{
+  background:var(--blue-soft);color:var(--blue);
+}
+.btn-status.done{
+  background:var(--accent-soft);color:var(--accent);
+}
+.btn-status.active-status{
+  opacity:.5;cursor:default;
+}
+
+/* ── TAB 2: TASKS ── */
+.progress-bar-wrap{
+  margin:14px 14px 0;
+  background:var(--surface);
+  border-radius:var(--radius);
+  border:1px solid var(--line);
+  padding:14px 16px;
+  box-shadow:var(--shadow);
+}
+.progress-label{
+  display:flex;justify-content:space-between;
+  font-size:13px;margin-bottom:8px;
+}
+.progress-label strong{color:var(--accent)}
+.progress-track{
+  height:8px;background:var(--line);border-radius:4px;overflow:hidden;
+}
+.progress-fill{
+  height:100%;background:var(--accent);
+  border-radius:4px;transition:width .4s ease;
+}
+
+.task-group{
+  margin:14px 14px 0;
+}
+.task-group-title{
+  font-size:12px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.8px;
+  color:var(--muted);margin-bottom:8px;padding-left:2px;
+}
+.task-item{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:12px;
+  margin-bottom:8px;
+  box-shadow:var(--shadow);
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;
+  cursor:pointer;
+  transition:all .15s ease;
+  -webkit-user-select:none;user-select:none;
+}
+.task-item:active{background:#f5f5f0}
+.task-item.done{opacity:.5}
+.task-check{
+  width:24px;height:24px;min-width:24px;
+  border-radius:50%;border:2px solid var(--line);
+  background:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;transition:all .2s ease;
+}
+.task-item.done .task-check{
+  background:var(--accent);border-color:var(--accent);
+}
+.task-check::after{
+  content:'';display:none;
+  width:6px;height:10px;
+  border:2px solid #fff;border-top:none;border-left:none;
+  transform:rotate(45deg) translateY(-1px);
+}
+.task-item.done .task-check::after{display:block}
+.task-text{flex:1;min-width:0}
+.task-name{font-size:14px;font-weight:500}
+.task-ref{font-size:12px;color:var(--muted);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* ── TAB 3: RECIPES ── */
+.search-bar{
+  padding:14px 14px 8px;
+  position:sticky;top:0;background:var(--bg);z-index:10;
+}
+.search-input{
+  width:100%;
+  background:var(--surface);
+  border:1.5px solid var(--line);
+  border-radius:12px;
+  padding:11px 16px 11px 40px;
+  font-size:15px;
+  font-family:'Inter',sans-serif;
+  color:var(--ink);
+  outline:none;
+  transition:border-color .2s;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238A8276' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:14px center;
+}
+.search-input:focus{border-color:var(--accent)}
+
+.recipe-category{
+  padding:14px 18px 8px;
+  font-size:12px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;
+  color:var(--muted);
+}
+.recipe-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  padding:0 14px 10px;
+}
+.recipe-card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px 13px;
+  cursor:pointer;
+  box-shadow:var(--shadow);
+  transition:all .18s ease;
+  -webkit-user-select:none;user-select:none;
+}
+.recipe-card:active{transform:scale(.97);box-shadow:none}
+.recipe-card .rc-cat{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;
+  color:var(--muted);margin-bottom:6px;
+}
+.recipe-card .rc-name{
+  font-size:13px;font-weight:700;line-height:1.4;margin-bottom:6px;
+  color:var(--ink);
+}
+.recipe-card .rc-info{
+  font-size:11px;color:var(--muted);
+  display:flex;flex-direction:column;gap:2px;
+}
+
+/* Recipe Modal */
+.modal-overlay{
+  position:absolute;
+  inset:0;
+  background:rgba(15,25,20,.65);
+  z-index:500;
+  display:flex;
+  align-items:flex-end;
+  opacity:0;pointer-events:none;
+  transition:opacity .25s ease;
+}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal-sheet{
+  background:var(--surface);
+  border-radius:20px 20px 0 0;
+  width:100%;
+  max-height:85vh;
+  overflow-y:auto;
+  transform:translateY(40px);
+  transition:transform .25s ease;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.modal-overlay.open .modal-sheet{transform:translateY(0)}
+.modal-handle{
+  width:40px;height:4px;background:#ddd;
+  border-radius:2px;margin:12px auto 16px;
+}
+.modal-head{padding:0 18px 16px;border-bottom:1px solid var(--line)}
+.modal-head h2{font-size:18px;font-weight:700;letter-spacing:-.3px;margin-bottom:6px}
+.modal-body{padding:16px 18px}
+.modal-close{
+  position:absolute;top:16px;right:18px;
+  width:32px;height:32px;
+  background:var(--line);border-radius:50%;
+  border:none;font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+
+.recipe-section-title{
+  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+  color:var(--muted);margin:16px 0 8px;
+}
+.ingredient-list{
+  list-style:none;
+  padding:0;
+}
+.ingredient-list li{
+  display:flex;justify-content:space-between;
+  padding:7px 0;
+  border-bottom:1px solid var(--line);
+  font-size:14px;
+}
+.ingredient-list li:last-child{border-bottom:none}
+.ing-name{color:var(--ink)}
+.ing-amount{color:var(--muted);font-weight:600}
+.method-text{
+  font-size:14px;line-height:1.7;
+  color:var(--ink);
+  background:var(--accent-soft);
+  border-radius:10px;
+  padding:12px 14px;
+}
+
+/* ── TAB 4: INGREDIENTS ── */
+.ing-section-title{
+  padding:18px 18px 10px;
+  font-size:16px;font-weight:700;
+}
+.ing-section-sub{
+  font-size:12px;color:var(--muted);font-weight:500;
+  padding:0 18px 10px;
+}
+.ing-table{
+  margin:0 14px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  overflow:hidden;
+  box-shadow:var(--shadow);
+}
+.ing-table-row{
+  display:flex;align-items:center;
+  padding:11px 16px;
+  border-bottom:1px solid var(--line);
+  font-size:14px;
+  gap:8px;
+}
+.ing-table-row:last-child{border-bottom:none}
+.ing-table-row.header{
+  background:#f5f5f0;
+  font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.6px;
+  color:var(--muted);padding:9px 16px;
+}
+.ing-name-col{flex:1;font-weight:500}
+.ing-amt-col{font-weight:700;color:var(--accent);min-width:60px;text-align:right}
+.ing-unit-col{color:var(--muted);min-width:40px;text-align:right;font-size:12px}
+
+.stock-empty{
+  padding:24px 18px;text-align:center;
+  font-size:14px;color:var(--muted);
+}
+
+/* ── TAB 5: PERFORMANCE ── */
+.perf-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  padding:14px 14px 0;
+}
+.perf-card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:16px 14px;
+  box-shadow:var(--shadow);
+  text-align:center;
+}
+.perf-card .pc-val{
+  font-size:32px;font-weight:800;
+  color:var(--ink);letter-spacing:-1px;
+}
+.perf-card .pc-label{
+  font-size:12px;color:var(--muted);
+  font-weight:500;margin-top:4px;
+}
+.perf-card.accent{
+  background:var(--accent);border-color:transparent;
+}
+.perf-card.accent .pc-val{color:#fff}
+.perf-card.accent .pc-label{color:rgba(255,255,255,.7)}
+
+.chart-section{
+  margin:16px 14px 0;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:16px;
+  box-shadow:var(--shadow);
+}
+.chart-title{font-size:14px;font-weight:700;margin-bottom:14px}
+.chart-row{
+  display:flex;align-items:center;gap:12px;
+  margin-bottom:10px;font-size:13px;
+}
+.chart-label{width:90px;color:var(--muted);font-size:12px;font-weight:500}
+.chart-bar-track{
+  flex:1;height:12px;background:var(--line);
+  border-radius:6px;overflow:hidden;
+}
+.chart-bar-fill{
+  height:100%;border-radius:6px;
+  transition:width .5s ease;
+}
+.chart-bar-fill.green{background:var(--accent)}
+.chart-bar-fill.blue{background:var(--blue)}
+.chart-bar-fill.gray{background:#ccc}
+.chart-pct{font-size:12px;font-weight:700;color:var(--muted);min-width:34px;text-align:right}
+
+.activity-section{
+  margin:14px 14px 0;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.activity-head{
+  padding:14px 16px 12px;
+  border-bottom:1px solid var(--line);
+  font-size:14px;font-weight:700;
+}
+.activity-item{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:10px 16px;
+  border-bottom:1px solid var(--line);
+  font-size:13px;
+}
+.activity-item:last-child{border-bottom:none}
+.activity-dot{
+  width:8px;height:8px;min-width:8px;
+  border-radius:50%;background:var(--accent);
+  margin-top:5px;
+}
+.activity-text{flex:1;line-height:1.4}
+.activity-time{font-size:11px;color:var(--muted);margin-top:2px}
+.activity-empty{
+  padding:20px 16px;font-size:13px;color:var(--muted);text-align:center;
+}
+
+.btn-full{
+  display:block;
+  width:calc(100% - 28px);
+  margin:14px auto 0;
+  background:var(--accent);color:#fff;
+  border:none;border-radius:12px;
+  padding:14px;font-size:15px;font-weight:700;
+  font-family:'Inter',sans-serif;cursor:pointer;
+  transition:opacity .15s;
+}
+.btn-full:active{opacity:.85}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── LOCK SCREEN ── -->
+  <div id="lock">
+    <div class="lock-logo">
+      <div class="brand-mark">🍽</div>
+      <h1>NOMAAD Catering</h1>
+      <p>Гал тогооны ажилтан систем</p>
+    </div>
+    <div class="lock-title">Үүрэг сонгоно уу</div>
+    <div class="role-grid">
+      <div class="role-card" data-role="Захирал" data-pin="9999" onclick="selectRole(this)">
+        <span class="role-emoji">👔</span>
+        <div class="role-name">Захирал</div>
+      </div>
+      <div class="role-card" data-role="Тогооч" data-pin="1122" onclick="selectRole(this)">
+        <span class="role-emoji">👨‍🍳</span>
+        <div class="role-name">Тогооч</div>
+      </div>
+      <div class="role-card" data-role="Бэлтгэгч" data-pin="2233" onclick="selectRole(this)">
+        <span class="role-emoji">🥘</span>
+        <div class="role-name">Бэлтгэгч</div>
+      </div>
+      <div class="role-card" data-role="Угаагч" data-pin="3344" onclick="selectRole(this)">
+        <span class="role-emoji">🫧</span>
+        <div class="role-name">Угаагч</div>
+      </div>
+    </div>
+
+    <div id="pin-section">
+      <div class="pin-dots">
+        <div class="pin-dot" id="d0"></div>
+        <div class="pin-dot" id="d1"></div>
+        <div class="pin-dot" id="d2"></div>
+        <div class="pin-dot" id="d3"></div>
+      </div>
+      <div class="pin-numpad">
+        <button class="pin-btn" onclick="pinKey('1')">1</button>
+        <button class="pin-btn" onclick="pinKey('2')">2</button>
+        <button class="pin-btn" onclick="pinKey('3')">3</button>
+        <button class="pin-btn" onclick="pinKey('4')">4</button>
+        <button class="pin-btn" onclick="pinKey('5')">5</button>
+        <button class="pin-btn" onclick="pinKey('6')">6</button>
+        <button class="pin-btn" onclick="pinKey('7')">7</button>
+        <button class="pin-btn" onclick="pinKey('8')">8</button>
+        <button class="pin-btn" onclick="pinKey('9')">9</button>
+        <button class="pin-btn empty"></button>
+        <button class="pin-btn" onclick="pinKey('0')">0</button>
+        <button class="pin-btn del" onclick="pinDel()">⌫</button>
+      </div>
+      <button class="btn-login" id="btn-login" onclick="doLogin()" disabled>Нэвтрэх</button>
+      <div id="pin-error"></div>
+    </div>
+  </div>
+
+  <!-- ── HEADER ── -->
+  <div id="header" style="display:none">
+    <div class="header-brand">
+      <div class="hmark">🍽</div>
+      <div>
+        <span>NOMAAD</span>
+        <small>Catering</small>
+      </div>
+    </div>
+    <div class="header-right">
+      <div id="role-badge">— </div>
+      <button class="btn-logout" onclick="doLogout()">Гарах</button>
+    </div>
+  </div>
+
+  <!-- ── CONTENT ── -->
+  <div id="content" style="display:none">
+
+    <!-- Tab 1: Orders -->
+    <div id="tab-orders" class="tab-panel active">
+      <div class="section-header">
+        <div>
+          <div class="section-title">📋 Захиалга</div>
+          <div class="section-sub" id="orders-date-label">Өнөөдрийн захиалга</div>
+        </div>
+        <button class="btn-refresh" onclick="loadOrders()">Шинэчлэх</button>
+      </div>
+      <div id="orders-body">
+        <div class="loading-wrap">
+          <div class="spinner"></div>
+          <p>Уншиж байна...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Tasks -->
+    <div id="tab-tasks" class="tab-panel">
+      <div class="section-header">
+        <div>
+          <div class="section-title">✅ Даалгавар</div>
+          <div class="section-sub" id="tasks-subtitle">Өнөөдрийн даалгаврууд</div>
+        </div>
+        <button class="btn-refresh" onclick="renderTasks()">Шинэчлэх</button>
+      </div>
+      <div id="tasks-progress-wrap"></div>
+      <div id="tasks-body">
+        <div class="loading-wrap">
+          <div class="spinner"></div>
+          <p>Захиалга уншиж байна...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Recipes -->
+    <div id="tab-recipes" class="tab-panel">
+      <div style="padding:14px 14px 4px">
+        <div class="section-title" style="padding:0 4px 10px">📖 Технологийн карт</div>
+        <div class="search-bar" style="padding:0 0 8px">
+          <input type="search" class="search-input" id="recipe-search" placeholder="Хоол хайх..." oninput="filterRecipes(this.value)">
+        </div>
+      </div>
+      <div id="recipes-body"></div>
+    </div>
+
+    <!-- Tab 4: Ingredients -->
+    <div id="tab-ingredients" class="tab-panel">
+      <div class="section-header">
+        <div class="section-title">🥦 Хүнсний хэрэгцээ</div>
+      </div>
+
+      <div class="ing-section-title">А. Захиалгын хүнсний хэрэгцээ</div>
+      <div class="ing-section-sub">Идэвхтэй захиалга дээр үндэслэсэн тооцоо</div>
+      <div id="ing-calc-body">
+        <div class="ing-table">
+          <div class="ing-table-row header">
+            <span class="ing-name-col">Хүнс</span>
+            <span class="ing-amt-col">Хэмжээ</span>
+            <span class="ing-unit-col">Нэгж</span>
+          </div>
+          <div style="padding:20px;text-align:center;font-size:13px;color:var(--muted)">
+            Захиалга ачааллаж байна...
+          </div>
+        </div>
+      </div>
+
+      <div class="ing-section-title" style="margin-top:16px">Б. Нөөцийн мэдээлэл</div>
+      <div style="padding:0 18px 10px;display:flex;align-items:center;justify-content:space-between">
+        <span class="section-sub">Google Sheets-ээс</span>
+        <button class="btn-refresh" onclick="loadStock()">Шинэчлэх</button>
+      </div>
+      <div id="stock-body">
+        <div class="loading-wrap" style="padding:24px">
+          <div class="spinner"></div>
+          <p>Уншиж байна...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 5: Performance -->
+    <div id="tab-perf" class="tab-panel">
+      <div class="section-header">
+        <div>
+          <div class="section-title">📊 Гүйцэтгэл</div>
+          <div class="section-sub" id="perf-date"></div>
+        </div>
+        <button class="btn-refresh" onclick="renderPerf()">Шинэчлэх</button>
+      </div>
+      <div id="perf-body"></div>
+    </div>
+
+  </div>
+
+  <!-- ── BOTTOM NAV ── -->
+  <nav id="nav" style="display:none">
+    <button class="nav-item active" data-tab="orders" id="nav-orders" onclick="switchTab('orders')">
+      <span class="nav-icon">📋</span>Захиалга
+    </button>
+    <button class="nav-item" data-tab="tasks" id="nav-tasks" onclick="switchTab('tasks')">
+      <span class="nav-icon">✅</span>Даалгавар
+    </button>
+    <button class="nav-item" data-tab="recipes" id="nav-recipes" onclick="switchTab('recipes')">
+      <span class="nav-icon">📖</span>Технологи
+    </button>
+    <button class="nav-item" data-tab="ingredients" id="nav-ingredients" onclick="switchTab('ingredients')">
+      <span class="nav-icon">🥦</span>Хүнс
+    </button>
+    <button class="nav-item" data-tab="perf" id="nav-perf" onclick="switchTab('perf')">
+      <span class="nav-icon">📊</span>Гүйцэтгэл
+    </button>
+  </nav>
+
+  <!-- Recipe Modal -->
+  <div class="modal-overlay" id="recipe-modal" onclick="closeRecipeModal(event)">
+    <div class="modal-sheet" id="recipe-modal-sheet">
+      <div class="modal-handle"></div>
+      <div style="position:relative">
+        <button class="modal-close" onclick="closeRecipeModal()">✕</button>
+        <div class="modal-head" id="recipe-modal-head"></div>
+        <div class="modal-body" id="recipe-modal-body"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+/* ─────────────────────────────────
+   STATE
+───────────────────────────────── */
+var currentRole = null;
+var currentPin = '';
+var selectedRoleCard = null;
+var ordersData = [];
+var activeTab = 'orders';
+
+var ROLES = {
+  'Захирал': {pin:'9999', emoji:'👔', tabs:['orders','tasks','recipes','ingredients','perf']},
+  'Тогооч':  {pin:'1122', emoji:'👨‍🍳', tabs:['orders','tasks','recipes','ingredients']},
+  'Бэлтгэгч':{pin:'2233', emoji:'🥘', tabs:['tasks','recipes','ingredients']},
+  'Угаагч':  {pin:'3344', emoji:'🫧', tabs:['tasks']}
+};
+
+/* ─────────────────────────────────
+   LOCK SCREEN
+───────────────────────────────── */
+function selectRole(el) {
+  if (selectedRoleCard) selectedRoleCard.classList.remove('selected');
+  selectedRoleCard = el;
+  el.classList.add('selected');
+  currentRole = el.dataset.role;
+  currentPin = '';
+  updateDots();
+  document.getElementById('pin-section').classList.add('visible');
+  document.getElementById('btn-login').disabled = true;
+  document.getElementById('pin-error').textContent = '';
+}
+
+function pinKey(k) {
+  if (currentPin.length >= 4) return;
+  currentPin += k;
+  updateDots();
+  if (currentPin.length === 4) {
+    document.getElementById('btn-login').disabled = false;
+    doLogin();
+  }
+}
+
+function pinDel() {
+  if (currentPin.length === 0) return;
+  currentPin = currentPin.slice(0,-1);
+  updateDots();
+  document.getElementById('btn-login').disabled = (currentPin.length < 4);
+}
+
+function updateDots() {
+  for (var i = 0; i < 4; i++) {
+    document.getElementById('d'+i).classList.toggle('filled', i < currentPin.length);
+  }
+}
+
+function doLogin() {
+  if (!currentRole) return;
+  var expected = ROLES[currentRole].pin;
+  if (currentPin === expected) {
+    sessionStorage.setItem('staff_role', currentRole);
+    enterApp(currentRole);
+  } else {
+    var err = document.getElementById('pin-error');
+    err.textContent = 'Буруу PIN. Дахин оролдоно уу.';
+    currentPin = '';
+    updateDots();
+    document.getElementById('btn-login').disabled = true;
+    // re-trigger animation
+    err.style.animation = 'none';
+    err.offsetHeight;
+    err.style.animation = '';
+  }
+}
+
+function enterApp(role) {
+  var lock = document.getElementById('lock');
+  lock.classList.add('hidden');
+  setTimeout(function(){ lock.style.display='none'; }, 350);
+
+  document.getElementById('header').style.display = 'flex';
+  document.getElementById('content').style.display = 'block';
+  document.getElementById('nav').style.display = 'flex';
+
+  var info = ROLES[role];
+  document.getElementById('role-badge').textContent = info.emoji + ' ' + role;
+
+  // Show/hide nav tabs
+  var allTabs = ['orders','tasks','recipes','ingredients','perf'];
+  allTabs.forEach(function(t) {
+    var btn = document.getElementById('nav-'+t);
+    if (info.tabs.indexOf(t) >= 0) {
+      btn.classList.remove('hidden');
+    } else {
+      btn.classList.add('hidden');
+    }
+  });
+
+  // Switch to first allowed tab
+  switchTab(info.tabs[0]);
+  buildRecipes();
+  loadOrders();
+}
+
+function doLogout() {
+  sessionStorage.removeItem('staff_role');
+  location.reload();
+}
+
+/* ─────────────────────────────────
+   TAB SWITCHING
+───────────────────────────────── */
+function switchTab(name) {
+  activeTab = name;
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
+  var panel = document.getElementById('tab-'+name);
+  if (panel) panel.classList.add('active');
+  var navBtn = document.getElementById('nav-'+name);
+  if (navBtn) navBtn.classList.add('active');
+
+  if (name === 'tasks') renderTasks();
+  if (name === 'ingredients') { renderIngCalc(); loadStock(); }
+  if (name === 'perf') renderPerf();
+}
+
+/* ─────────────────────────────────
+   DATE HELPERS
+───────────────────────────────── */
+function parseOrderDate(raw) {
+  if (!raw) return {date:'', time:''};
+  var m = raw.match(/(\d{4}-\d{2}-\d{2})[T ]?(\d{2}:\d{2})?/);
+  if (m) return {date: m[1], time: m[2]||''};
+  var d = new Date(raw);
+  if (!isNaN(d.getTime())) {
+    var ub = new Date(d.getTime() + 8*3600000);
+    return {date: ub.toISOString().substring(0,10), time: ub.toISOString().substring(11,16)};
+  }
+  return {date:'', time:''};
+}
+
+function todayStr() {
+  var now = new Date();
+  var ub = new Date(now.getTime() + 8*3600000);
+  return ub.toISOString().substring(0,10);
+}
+
+function formatDateMN(dateStr) {
+  if (!dateStr) return '';
+  var parts = dateStr.split('-');
+  if (parts.length < 3) return dateStr;
+  return parts[0]+'.'+(+parts[1])+'.'+(+parts[2]);
+}
+
+/* ─────────────────────────────────
+   ORDERS (Tab 1)
+───────────────────────────────── */
+var ordersLoaded = false;
+
+function loadOrders() {
+  ordersLoaded = false;
+  var body = document.getElementById('orders-body');
+  body.innerHTML = '<div class="loading-wrap"><div class="spinner"></div><p>Захиалга уншиж байна...</p></div>';
+
+  var cbName = 'ordersCallback_' + Date.now();
+  var script = document.createElement('script');
+  var done = false;
+  var timeout = setTimeout(function(){
+    if (!done) {
+      done = true;
+      delete window[cbName];
+      showOrdersError('Хугацаа дууссан. Дахин оролдоно уу.');
+    }
+  }, 12000);
+
+  window[cbName] = function(data) {
+    if (done) return;
+    done = true;
+    clearTimeout(timeout);
+    delete window[cbName];
+    if (data && data.orders) {
+      ordersData = data.orders;
+    } else if (Array.isArray(data)) {
+      ordersData = data;
+    } else {
+      ordersData = [];
+    }
+    ordersLoaded = true;
+    renderOrders();
+    renderTasks();
+    renderIngCalc();
+  };
+
+  script.src = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec?action=orders&callback=' + cbName;
+  script.onerror = function() {
+    if (done) return;
+    done = true;
+    clearTimeout(timeout);
+    delete window[cbName];
+    showOrdersError('Холболт алдаа. Дахин оролдоно уу.');
+  };
+  document.head.appendChild(script);
+}
+
+function showOrdersError(msg) {
+  document.getElementById('orders-body').innerHTML =
+    '<div class="error-wrap"><div class="error-ico">⚠️</div><p>' + msg + '</p>' +
+    '<button class="btn-retry" onclick="loadOrders()">Дахин оролдох</button></div>';
+}
+
+function getOrderStatus(id) {
+  return localStorage.getItem('order_status_'+id) || 'Шинэ';
+}
+function setOrderStatus(id, status) {
+  localStorage.setItem('order_status_'+id, status);
+}
+
+function renderOrders() {
+  var body = document.getElementById('orders-body');
+  if (!ordersData || ordersData.length === 0) {
+    body.innerHTML = '<div class="error-wrap"><div class="error-ico">📭</div><p>Захиалга байхгүй байна.</p></div>';
+    return;
+  }
+  var today = todayStr();
+  var todayOrders = [], upcomingOrders = [], pastOrders = [];
+  ordersData.forEach(function(o, idx) {
+    o._idx = idx;
+    var parsed = parseOrderDate(o['арга_хэмжээний_огноо'] || o['огноо'] || o['date'] || '');
+    o._parsedDate = parsed.date;
+    o._parsedTime = parsed.time;
+    if (parsed.date === today) todayOrders.push(o);
+    else if (parsed.date > today) upcomingOrders.push(o);
+    else pastOrders.push(o);
+  });
+
+  var html = '';
+
+  function renderGroup(label, list, isPast) {
+    if (list.length === 0) return '';
+    var s = '<div class="orders-date-group">' + label + '</div>';
+    list.forEach(function(o) {
+      s += renderOrderCard(o, isPast);
+    });
+    return s;
+  }
+
+  html += renderGroup('🗓 Өнөөдөр — ' + formatDateMN(today), todayOrders, false);
+  html += renderGroup('📅 Ирэх', upcomingOrders, false);
+  html += renderGroup('📁 Өнгөрсөн', pastOrders, true);
+
+  body.innerHTML = html || '<div class="error-wrap"><div class="error-ico">📭</div><p>Захиалга байхгүй.</p></div>';
+}
+
+function renderOrderCard(o, isPast) {
+  var id = o['id'] || o['ID'] || o['захиалгын_дугаар'] || o._idx;
+  var company = o['байгууллагын_нэр'] || o['компани'] || o['company'] || 'Нэргүй';
+  var pax = o['хүн'] || o['хүн_тоо'] || o['pax'] || '—';
+  var service = o['үйлчилгээ'] || o['service'] || '—';
+  var phone = o['утас'] || o['phone'] || '—';
+  var note = o['тэмдэглэл'] || o['note'] || '';
+  var dishes = o['хоол'] || o['dishes'] || o['хоолны_жагсаалт'] || '';
+  var status = getOrderStatus(id);
+  var dateStr = o._parsedDate ? formatDateMN(o._parsedDate) : '—';
+  var timeStr = o._parsedTime || '';
+
+  var badgeClass = status === 'Шинэ' ? 'badge-amber' :
+                   status === 'Бэлтгэж байна' ? 'badge-blue' :
+                   status === 'Дууссан' ? 'badge-green' : 'badge-gray';
+
+  var cardId = 'ocard_'+id;
+  var detailId = 'odetail_'+id;
+
+  return '<div class="order-card'+(isPast?' past':'')+'" id="'+cardId+'">' +
+    '<div class="order-card-head" onclick="toggleOrderDetail(\''+detailId+'\')">' +
+      '<div class="order-top">' +
+        '<div class="order-company">'+esc(company)+'</div>' +
+        '<span class="badge '+badgeClass+'" id="badge_'+id+'">'+esc(status)+'</span>' +
+      '</div>' +
+      '<div class="order-meta">' +
+        '<span>👤 '+pax+' хүн</span>' +
+        '<span>📅 '+dateStr+(timeStr?' '+timeStr:'')+'</span>' +
+        '<span>🍽 '+esc(service)+'</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="order-detail" id="'+detailId+'">' +
+      '<div class="detail-row"><span class="detail-label">📞 Утас</span><span class="detail-val">'+esc(phone)+'</span></div>' +
+      (note ? '<div class="detail-row"><span class="detail-label">📝 Тэмдэглэл</span><span class="detail-val">'+esc(note)+'</span></div>' : '') +
+      (dishes ? '<div class="dish-list">🍽 <strong>Хоол:</strong><br>'+esc(dishes).replace(/,/g,'<br>')+'</div>' : '') +
+      '<div class="status-btns">' +
+        '<button class="btn-status preparing'+(status==='Бэлтгэж байна'?' active-status':'')+'" onclick="updateStatus(\''+id+'\',\'Бэлтгэж байна\')">🔵 Бэлтгэж байна</button>' +
+        '<button class="btn-status done'+(status==='Дууссан'?' active-status':'')+'" onclick="updateStatus(\''+id+'\',\'Дууссан\')">✅ Дууссан</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function toggleOrderDetail(detailId) {
+  var el = document.getElementById(detailId);
+  if (el) el.classList.toggle('open');
+}
+
+function updateStatus(id, status) {
+  setOrderStatus(id, status);
+  // update badge
+  var badge = document.getElementById('badge_'+id);
+  if (badge) {
+    badge.textContent = status;
+    badge.className = 'badge ' + (status==='Шинэ'?'badge-amber':status==='Бэлтгэж байна'?'badge-blue':'badge-green');
+  }
+  // update buttons
+  var detail = document.querySelector('#ocard_'+(id)+' .order-detail');
+  if (detail) {
+    var btns = detail.querySelectorAll('.btn-status');
+    btns.forEach(function(btn){
+      btn.classList.remove('active-status');
+      if ((btn.classList.contains('preparing') && status==='Бэлтгэж байна') ||
+          (btn.classList.contains('done') && status==='Дууссан')) {
+        btn.classList.add('active-status');
+      }
+    });
+  }
+  // log activity
+  logActivity(status + ': ' + id);
+  if (activeTab === 'perf') renderPerf();
+}
+
+function logActivity(text) {
+  var key = 'activity_log';
+  var log = JSON.parse(localStorage.getItem(key) || '[]');
+  log.unshift({text: text, time: new Date().toLocaleTimeString('mn')});
+  if (log.length > 30) log = log.slice(0,30);
+  localStorage.setItem(key, JSON.stringify(log));
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ─────────────────────────────────
+   TASKS (Tab 2)
+───────────────────────────────── */
+var TASK_DEFS = {
+  'Тогооч': function(order, dishes) {
+    var tasks = [];
+    var dishList = dishes ? dishes.split(/[,،\n]+/) : [];
+    dishList.forEach(function(d) {
+      var dn = d.trim();
+      if (!dn) return;
+      tasks.push({key:'cook_'+dn, name:'🍳 '+dn+' хийх', role:'Тогооч'});
+    });
+    tasks.push({key:'serve_prep', name:'🍽 Хоол хүргэх бэлтгэл', role:'Тогооч'});
+    tasks.push({key:'taste', name:'🧂 Амт тохируулах', role:'Тогооч'});
+    return tasks;
+  },
+  'Бэлтгэгч': function(order, dishes) {
+    return [
+      {key:'veg', name:'🥬 Ногоо угааж таслах', role:'Бэлтгэгч'},
+      {key:'meat', name:'🥩 Мах бэлтгэх', role:'Бэлтгэгч'},
+      {key:'sauce', name:'🫙 Соус бэлтгэх', role:'Бэлтгэгч'},
+      {key:'dishprep', name:'🔪 Орцны бэлтгэл', role:'Бэлтгэгч'}
+    ];
+  },
+  'Угаагч': function(order) {
+    return [
+      {key:'wash', name:'🫧 Аяга таваг угаах', role:'Угаагч'},
+      {key:'clean', name:'🧹 Гал тогоо цэвэрлэх', role:'Угаагч'},
+      {key:'trash', name:'♻️ Хог гаргах', role:'Угаагч'}
+    ];
+  }
+};
+
+function getTaskKey(orderId, taskKey) {
+  return 'task_'+orderId+'_'+taskKey;
+}
+function isTaskDone(orderId, taskKey) {
+  return localStorage.getItem(getTaskKey(orderId,taskKey)) === '1';
+}
+function toggleTask(orderId, taskKey, el) {
+  var done = isTaskDone(orderId, taskKey);
+  if (done) {
+    localStorage.removeItem(getTaskKey(orderId,taskKey));
+  } else {
+    localStorage.setItem(getTaskKey(orderId,taskKey), '1');
+    logActivity('Даалгавар: ' + taskKey);
+  }
+  renderTasks();
+}
+
+function renderTasks() {
+  if (!currentRole) return;
+  var body = document.getElementById('tasks-body');
+  var progressWrap = document.getElementById('tasks-progress-wrap');
+
+  if (!ordersLoaded) {
+    body.innerHTML = '<div class="loading-wrap"><div class="spinner"></div><p>Захиалга уншиж байна...</p></div>';
+    progressWrap.innerHTML = '';
+    return;
+  }
+
+  var today = todayStr();
+  var relevantOrders = ordersData.filter(function(o) {
+    return o._parsedDate === today || !o._parsedDate;
+  });
+
+  if (relevantOrders.length === 0) {
+    relevantOrders = ordersData.slice(0, 5);
+  }
+
+  var taskDef = TASK_DEFS[currentRole];
+  if (!taskDef) {
+    body.innerHTML = '<div class="error-wrap"><div class="error-ico">📋</div><p>Энэ үүрэгт даалгавар байхгүй.</p></div>';
+    progressWrap.innerHTML = '';
+    return;
+  }
+
+  var allTasks = [];
+  var html = '';
+
+  relevantOrders.forEach(function(o) {
+    var id = o['id'] || o['ID'] || o['захиалгын_дугаар'] || o._idx;
+    var company = o['байгууллагын_нэр'] || o['компани'] || o['company'] || 'Нэргүй';
+    var dishes = o['хоол'] || o['dishes'] || o['хоолны_жагсаалт'] || '';
+    var tasks = taskDef(o, dishes);
+
+    html += '<div class="task-group">';
+    html += '<div class="task-group-title">🏢 '+esc(company)+'</div>';
+    tasks.forEach(function(t) {
+      allTasks.push({orderId:id, taskKey:t.key});
+      var done = isTaskDone(id, t.key);
+      html += '<div class="task-item'+(done?' done':'')+'" onclick="toggleTask(\''+id+'\',\''+t.key+'\',this)">' +
+        '<div class="task-check"></div>' +
+        '<div class="task-text">' +
+          '<div class="task-name">'+esc(t.name)+'</div>' +
+          '<div class="task-ref">'+esc(company)+' · '+formatDateMN(o._parsedDate||today)+'</div>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+  });
+
+  var total = allTasks.length;
+  var doneCount = allTasks.filter(function(t){ return isTaskDone(t.orderId,t.taskKey); }).length;
+  var pct = total > 0 ? Math.round(doneCount/total*100) : 0;
+
+  progressWrap.innerHTML = '<div class="progress-bar-wrap">' +
+    '<div class="progress-label">' +
+      '<span>Явц</span>' +
+      '<strong>'+doneCount+' / '+total+' даалгавар дууссан</strong>' +
+    '</div>' +
+    '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>' +
+  '</div>';
+
+  document.getElementById('tasks-subtitle').textContent = doneCount+'/'+total+' — '+pct+'% гүйцэтгэсэн';
+  body.innerHTML = html || '<div class="error-wrap"><div class="error-ico">📋</div><p>Даалгавар байхгүй.</p></div>';
+}
+
+/* ─────────────────────────────────
+   RECIPE DATA
+───────────────────────────────── */
+var RECIPES = [
+  // Порц/Буфет мах
+  {cat:'🥩 Буфет мах', name:'Соусанд жигнэсэн хонины мах',
+   portion:'180г/хүн', time:'2 цаг',
+   ingredients:[
+     {n:'Хонины мах',a:'180г/хүн'},{n:'Сонгино',a:'30г/хүн'},{n:'Улаан лоолийн паст',a:'20г/хүн'},
+     {n:'Тосон мах',a:'15г/хүн'},{n:'Давс, перец',a:'амтлалт'}
+   ],
+   method:'Махыг тоглоомоор нарийн зүсэж, тосонд шарна. Сонгино нэмж шарсны дараа лоолийн паст хийж, усанд 2 цаг дэвтээнэ.'
+  },
+  {cat:'🥩 Буфет мах', name:'Хорхог',
+   portion:'200г/хүн', time:'1.5 цаг',
+   ingredients:[
+     {n:'Хонины мах',a:'200г/хүн'},{n:'Төмс',a:'100г/хүн'},{n:'Давс',a:'амтлалт'},{n:'Перец',a:'амтлалт'}
+   ],
+   method:'Халуун чулуу болон махыг давхарлан хийж, битүүмжлэн 1.5 цаг болгоно.'
+  },
+  {cat:'🥩 Буфет мах', name:'Мини шорлог',
+   portion:'150г/хүн (±6ш)', time:'45 мин',
+   ingredients:[
+     {n:'Гахайн мах',a:'75г/хүн'},{n:'Тахианы мах',a:'75г/хүн'},{n:'Давс, перец',a:'амтлалт'},{n:'Сармис',a:'5г/хүн'}
+   ],
+   method:'Мах болон тахиаг сэлгэж шатаамал шишт хийж, нүүрсний дээр 45 минут шарна.'
+  },
+  {cat:'🥩 Буфет мах', name:'Гахайн цорой',
+   portion:'180г/хүн', time:'1 цаг',
+   ingredients:[
+     {n:'Гахайн мах (цорой)',a:'180г/хүн'},{n:'Хатаасан жимс',a:'20г/хүн'},{n:'Соус',a:'30мл/хүн'}
+   ],
+   method:'Цорой махыг хатаасан жимс, соустай хамт шовгорт 1 цаг жигнэнэ.'
+  },
+  {cat:'🥩 Буфет мах', name:'Гахайн амталсан мах',
+   portion:'170г/хүн', time:'50 мин',
+   ingredients:[
+     {n:'Гахайн мах',a:'170г/хүн'},{n:'Соя соус',a:'20мл/хүн'},{n:'Мёд',a:'10г/хүн'},{n:'Сармис',a:'5г/хүн'}
+   ],
+   method:'Махыг соя+мёд+сармис сүлжмэлд 2 цаг мандааж, тосонд шарсаны дараа 50 минут жигнэнэ.'
+  },
+  {cat:'🥩 Буфет мах', name:'Терияки соустай тахиа',
+   portion:'160г/хүн', time:'40 мин',
+   ingredients:[
+     {n:'Тахианы мах',a:'160г/хүн'},{n:'Терияки соус',a:'25мл/хүн'},{n:'Цөцгий',a:'10мл/хүн'}
+   ],
+   method:'Тахиаг терияки соус+цөцгийд 1 цаг мандааж, халуун тавган дотор 40 минут болгоно.'
+  },
+  {cat:'🥩 Буфет мах', name:'Шаржигнуур тахиа',
+   portion:'150г/хүн', time:'35 мин',
+   ingredients:[
+     {n:'Тахианы мах',a:'150г/хүн'},{n:'Гурил',a:'30г/хүн'},{n:'Давс, перец',a:'амтлалт'},{n:'Тос',a:'50мл'}
+   ],
+   method:'Тахиаг гурилаар мэрэлдэж, халуун тосонд 35 минут алтан шар болтол шарна.'
+  },
+  {cat:'🥩 Буфет мах', name:'Цуйван',
+   portion:'200г/хүн', time:'30 мин',
+   ingredients:[
+     {n:'Зуурсан гурил',a:'80г/хүн'},{n:'Мах',a:'80г/хүн'},{n:'Сонгино',a:'20г/хүн'},
+     {n:'Ногоо',a:'30г/хүн'},{n:'Соя соус',a:'10мл/хүн'}
+   ],
+   method:'Гурилаас нимгэн хуудас дэлдэж зүсэж, шарсан мах+ногоотой хольж хуурна.'
+  },
+  {cat:'🥩 Буфет мах', name:'Хуушуур',
+   portion:'3ш/хүн (~150г)', time:'20 мин',
+   ingredients:[
+     {n:'Зуурсан гурил',a:'60г/хүн'},{n:'Мах',a:'60г/хүн'},{n:'Сонгино',a:'20г/хүн'},
+     {n:'Давс',a:'амтлалт'},{n:'Тос (шарах)',a:'50мл'}
+   ],
+   method:'Мах+сонгиноны шавранг гурилан хуудасны дотор ороож, халуун тосонд алтан болтол шарна.'
+  },
+  // Салад
+  {cat:'🥗 Буфет салад', name:'Шинэ ногооны салад',
+   portion:'80г/хүн', time:'10 мин',
+   ingredients:[{n:'Шинэ ногоо',a:'80г/хүн'},{n:'Олива тос',a:'5мл/хүн'},{n:'Давс, чихэр',a:'амтлалт'}],
+   method:'Ногоог угааж нарийн зүсэж, тос+давс+чихрийн холимогоор амтална.'
+  },
+  {cat:'🥗 Буфет салад', name:'Нийслэл салад',
+   portion:'100г/хүн', time:'15 мин',
+   ingredients:[{n:'Махан хиам',a:'30г/хүн'},{n:'Өндөг',a:'0.5ш/хүн'},{n:'Майонез',a:'20г/хүн'},{n:'Ногоо',a:'50г/хүн'}],
+   method:'Бүх орцыг жижиг зүсэж майонезаар хольно.'
+  },
+  {cat:'🥗 Буфет салад', name:'Пүнтүүзтэй салад',
+   portion:'90г/хүн', time:'10 мин',
+   ingredients:[{n:'Пүнтүүз',a:'40г/хүн'},{n:'Ногоо',a:'40г/хүн'},{n:'Майонез',a:'15г/хүн'}],
+   method:'Пүнтүүз болон ногоог жижиглэж майонезаар хольно.'
+  },
+  {cat:'🥗 Буфет салад', name:'Байцааны салад',
+   portion:'80г/хүн', time:'10 мин',
+   ingredients:[{n:'Байцаа',a:'80г/хүн'},{n:'Цуу',a:'5мл/хүн'},{n:'Давс, чихэр',a:'амтлалт'}],
+   method:'Байцааг нимгэн зүсэж цуу+давс+чихрийн соусаар хольно.'
+  },
+  {cat:'🥗 Буфет салад', name:'Луувангийн салад',
+   portion:'80г/хүн', time:'10 мин',
+   ingredients:[{n:'Луувангийн',a:'80г/хүн'},{n:'Тос',a:'5мл/хүн'},{n:'Сармис',a:'3г/хүн'}],
+   method:'Луувангийн өргнөх зүсэж сармис+тосоор хольно.'
+  },
+  {cat:'🥗 Буфет салад', name:'Гоймонгийн салад',
+   portion:'100г/хүн', time:'15 мин',
+   ingredients:[{n:'Гоймон',a:'60г/хүн'},{n:'Тос',a:'5мл/хүн'},{n:'Соя соус',a:'10мл/хүн'},{n:'Ногоо',a:'30г/хүн'}],
+   method:'Гоймоныг буцалгаж, хүйтэн усанд дэвтээж тос+соягаар амтална.'
+  },
+  // Хачир
+  {cat:'🍚 Буфет хачир', name:'Амталсан будаа',
+   portion:'120г/хүн', time:'25 мин',
+   ingredients:[{n:'Будаа',a:'80г/хүн'},{n:'Сонгино',a:'15г/хүн'},{n:'Соя соус',a:'10мл/хүн'},{n:'Тос',a:'5мл/хүн'}],
+   method:'Будааг буцалгаж хатааж, хуурсан сонгино+соя соустай хольно.'
+  },
+  {cat:'🍚 Буфет хачир', name:'Шарсан төмс',
+   portion:'150г/хүн', time:'20 мин',
+   ingredients:[{n:'Төмс',a:'150г/хүн'},{n:'Тос',a:'15мл/хүн'},{n:'Давс',a:'амтлалт'}],
+   method:'Төмсийг зүсэж халуун тосонд алтан болтол шарна.'
+  },
+  {cat:'🍚 Буфет хачир', name:'Төмсний нухаш',
+   portion:'130г/хүн', time:'20 мин',
+   ingredients:[{n:'Төмс',a:'120г/хүн'},{n:'Цөцгийн тос',a:'15г/хүн'},{n:'Сүү',a:'20мл/хүн'},{n:'Давс',a:'амтлалт'}],
+   method:'Төмсийг буцалгаж, цөцгийн тос+сүүтэй хамт нухна.'
+  },
+  {cat:'🍚 Буфет хачир', name:'Хуурсан ногоо',
+   portion:'100г/хүн', time:'15 мин',
+   ingredients:[{n:'Холимог ногоо',a:'100г/хүн'},{n:'Тос',a:'10мл/хүн'},{n:'Давс, перец',a:'амтлалт'}],
+   method:'Ногоог тосонд хурдан хуурч давс+перецаар амтална.'
+  },
+  {cat:'🍚 Буфет хачир', name:'Мантуу',
+   portion:'2ш/хүн (~80г)', time:'20 мин',
+   ingredients:[{n:'Гурил',a:'50г/хүн'},{n:'Мөөгний хөөс',a:'2г/хүн'},{n:'Ус',a:'20мл/хүн'}],
+   method:'Гурилаас нухаш бэлтгэж, хөөлгөн уурт 20 минут жигнэнэ.'
+  },
+  {cat:'🍚 Буфет хачир', name:'Сийртэй гоймон',
+   portion:'120г/хүн', time:'15 мин',
+   ingredients:[{n:'Гоймон',a:'80г/хүн'},{n:'Сийр',a:'30г/хүн'},{n:'Соя соус',a:'10мл/хүн'}],
+   method:'Гоймоныг буцалгаж хатааж, хуурсан сийртэй+соятай хольно.'
+  },
+  {cat:'🍚 Буфет хачир', name:'Амталсан өргөст хэмх',
+   portion:'80г/хүн', time:'10 мин',
+   ingredients:[{n:'Өргөст хэмх',a:'80г/хүн'},{n:'Цуу',a:'5мл/хүн'},{n:'Давс, чихэр',a:'амтлалт'},{n:'Сармис',a:'3г/хүн'}],
+   method:'Өргөст хэмхийг зүсэж цуу+давс+чихэр+сармисаар хольно.'
+  },
+  // Шөл
+  {cat:'🍲 Буфет шөл', name:'Брокли зутан шөл',
+   portion:'200мл/хүн', time:'20 мин',
+   ingredients:[{n:'Брокли',a:'60г/хүн'},{n:'Цөцгий',a:'30мл/хүн'},{n:'Шөл',a:'150мл/хүн'},{n:'Давс',a:'амтлалт'}],
+   method:'Броклийг буцалгаж, блендерт нунтаглаж цөцгий+шөлтэй хольно.'
+  },
+  {cat:'🍲 Буфет шөл', name:'Мөөгтэй зутан шөл',
+   portion:'200мл/хүн', time:'25 мин',
+   ingredients:[{n:'Мөөг',a:'50г/хүн'},{n:'Цөцгий',a:'30мл/хүн'},{n:'Шөл',a:'150мл/хүн'},{n:'Сонгино',a:'20г/хүн'}],
+   method:'Сонгино+мөөгийг хуурж, шөлтэй хольж блендерт нунтаглана.'
+  },
+  {cat:'🍲 Буфет шөл', name:'Нарийн ногооны шөл',
+   portion:'200мл/хүн', time:'20 мин',
+   ingredients:[{n:'Холимог ногоо',a:'60г/хүн'},{n:'Шөл',a:'160мл/хүн'},{n:'Давс, перец',a:'амтлалт'}],
+   method:'Ногоог шөлд буцалгаж амтална.'
+  },
+  {cat:'🍲 Буфет шөл', name:'Бантан',
+   portion:'200мл/хүн', time:'40 мин',
+   ingredients:[{n:'Гурил',a:'30г/хүн'},{n:'Шөл',a:'180мл/хүн'},{n:'Өндөг',a:'0.3ш/хүн'},{n:'Ногоо',a:'20г/хүн'}],
+   method:'Гурилаас нарийн зурмаг бэлтгэж, буцаж байгаа шөлд хийж 40 минут болгоно.'
+  },
+  {cat:'🍲 Буфет шөл', name:'Далайн байцаатай шөл',
+   portion:'200мл/хүн', time:'20 мин',
+   ingredients:[{n:'Далайн байцаа',a:'30г/хүн'},{n:'Шөл',a:'170мл/хүн'},{n:'Давс',a:'амтлалт'}],
+   method:'Байцааг угааж шөлд буцалгаж амтална.'
+  },
+  {cat:'🍲 Буфет шөл', name:'Халуун ногоотой шөл',
+   portion:'200мл/хүн', time:'20 мин',
+   ingredients:[{n:'Халуун ногоо',a:'5г/хүн'},{n:'Мах',a:'40г/хүн'},{n:'Шөл',a:'160мл/хүн'},{n:'Ногоо',a:'30г/хүн'}],
+   method:'Мах болон ногоог шөлд буцалгаж халуун ногоогоор амтална.'
+  },
+  {cat:'🍲 Буфет шөл', name:'Ясны шөл',
+   portion:'200мл/хүн', time:'3 цаг',
+   ingredients:[{n:'Яс',a:'100г/хүн'},{n:'Ус',a:'200мл/хүн'},{n:'Давс',a:'амтлалт'},{n:'Хар перец',a:'амтлалт'}],
+   method:'Ясыг угааж хүйтэн усанд хийж 3 цаг мандуулна. Хөөсийг нь авч байна.'
+  }
+];
+
+/* ─────────────────────────────────
+   RECIPES (Tab 3)
+───────────────────────────────── */
+function buildRecipes() {
+  filterRecipes('');
+}
+
+function filterRecipes(q) {
+  q = q.toLowerCase().trim();
+  var body = document.getElementById('recipes-body');
+  var cats = {};
+  RECIPES.forEach(function(r) {
+    if (q && r.name.toLowerCase().indexOf(q) < 0 && r.cat.toLowerCase().indexOf(q) < 0) return;
+    if (!cats[r.cat]) cats[r.cat] = [];
+    cats[r.cat].push(r);
+  });
+
+  var html = '';
+  Object.keys(cats).forEach(function(cat) {
+    html += '<div class="recipe-category">'+esc(cat)+'</div>';
+    html += '<div class="recipe-grid">';
+    cats[cat].forEach(function(r, i) {
+      var idx = RECIPES.indexOf(r);
+      html += '<div class="recipe-card" onclick="openRecipeModal('+idx+')">' +
+        '<div class="rc-cat">'+esc(cat)+'</div>' +
+        '<div class="rc-name">'+esc(r.name)+'</div>' +
+        '<div class="rc-info">' +
+          '<span>👤 '+esc(r.portion)+'</span>' +
+          '<span>⏱ '+esc(r.time)+'</span>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+  });
+
+  if (!html) html = '<div class="error-wrap"><div class="error-ico">🔍</div><p>Олдсонгүй.</p></div>';
+  body.innerHTML = html;
+}
+
+function openRecipeModal(idx) {
+  var r = RECIPES[idx];
+  if (!r) return;
+  var head = document.getElementById('recipe-modal-head');
+  var mbody = document.getElementById('recipe-modal-body');
+
+  head.innerHTML = '<h2>'+esc(r.name)+'</h2>' +
+    '<span class="badge badge-green">'+esc(r.cat)+'</span> ' +
+    '<span class="badge badge-blue" style="margin-left:4px">👤 '+esc(r.portion)+'</span> ' +
+    '<span class="badge badge-amber" style="margin-left:4px">⏱ '+esc(r.time)+'</span>';
+
+  var ingHtml = '<div class="recipe-section-title">Орц</div><ul class="ingredient-list">';
+  r.ingredients.forEach(function(ing) {
+    ingHtml += '<li><span class="ing-name">'+esc(ing.n)+'</span><span class="ing-amount">'+esc(ing.a)+'</span></li>';
+  });
+  ingHtml += '</ul>';
+
+  mbody.innerHTML = ingHtml +
+    '<div class="recipe-section-title" style="margin-top:16px">Аргачлал</div>' +
+    '<div class="method-text">'+esc(r.method)+'</div>';
+
+  document.getElementById('recipe-modal').classList.add('open');
+}
+
+function closeRecipeModal(e) {
+  if (e && e.target !== document.getElementById('recipe-modal')) return;
+  document.getElementById('recipe-modal').classList.remove('open');
+}
+
+/* ─────────────────────────────────
+   INGREDIENT NEEDS (Tab 4)
+───────────────────────────────── */
+// Ingredient mapping from dish name keywords to nutrients
+var ING_MAP = [
+  {match:'хонины мах',   keys:['хонины мах'],    grams:180},
+  {match:'хорхог',        keys:['хонины мах'],    grams:200},
+  {match:'гахайн цорой',  keys:['гахайн мах'],    grams:180},
+  {match:'гахайн амталсан',keys:['гахайн мах'],   grams:170},
+  {match:'шорлог',        keys:['гахайн мах','тахианы мах'], grams_each:75},
+  {match:'терияки',       keys:['тахианы мах'],   grams:160},
+  {match:'шаржигнуур',    keys:['тахианы мах'],   grams:150},
+  {match:'цуйван',        keys:['гурил','мах нийт'], grams_map:{'гурил':80,'мах нийт':80}},
+  {match:'хуушуур',       keys:['гурил','мах нийт'], grams_map:{'гурил':60,'мах нийт':60}},
+  {match:'шарсан төмс',   keys:['төмс'],          grams:150},
+  {match:'нухаш',         keys:['төмс'],           grams:120},
+  {match:'ногоо',         keys:['ногоо нийт'],    grams:100},
+  {match:'брокли',        keys:['ногоо нийт'],    grams:60},
+  {match:'бантан',        keys:['гурил'],         grams:30},
+  {match:'гоймон',        keys:['гурил'],         grams:80},
+  {match:'мантуу',        keys:['гурил'],         grams:50},
+];
+
+var ING_UNITS = {
+  'хонины мах':'кг', 'гахайн мах':'кг', 'тахианы мах':'кг',
+  'гурил':'кг', 'төмс':'кг', 'ногоо нийт':'кг', 'мах нийт':'кг',
+  'өндөг':'ш'
+};
+
+function renderIngCalc() {
+  var body = document.getElementById('ing-calc-body');
+  if (!ordersLoaded || ordersData.length === 0) {
+    body.innerHTML = '<div class="ing-table"><div style="padding:20px;text-align:center;font-size:13px;color:var(--muted)">Захиалга байхгүй байна.</div></div>';
+    return;
+  }
+
+  var totals = {};
+  var today = todayStr();
+
+  ordersData.forEach(function(o) {
+    if (o._parsedDate && o._parsedDate < today) return; // skip past
+    var pax = parseInt(o['хүн'] || o['хүн_тоо'] || o['pax'] || 0) || 0;
+    if (pax <= 0) return;
+    var dishes = (o['хоол'] || o['dishes'] || o['үйлчилгээ'] || '').toLowerCase();
+
+    ING_MAP.forEach(function(im) {
+      if (dishes.indexOf(im.match) < 0) return;
+      if (im.grams_map) {
+        Object.keys(im.grams_map).forEach(function(k) {
+          totals[k] = (totals[k]||0) + pax * im.grams_map[k];
+        });
+      } else if (im.grams_each) {
+        im.keys.forEach(function(k) {
+          totals[k] = (totals[k]||0) + pax * im.grams_each;
+        });
+      } else {
+        im.keys.forEach(function(k) {
+          totals[k] = (totals[k]||0) + pax * im.grams;
+        });
+      }
+    });
+  });
+
+  var KG_KEYS = ['хонины мах','гахайн мах','тахианы мах','мах нийт','гурил','төмс','ногоо нийт'];
+  var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Хүнс</span><span class="ing-amt-col">Хэмжээ</span><span class="ing-unit-col">Нэгж</span></div>';
+  var hasAny = false;
+
+  KG_KEYS.forEach(function(k) {
+    var grams = totals[k] || 0;
+    if (grams <= 0) return;
+    hasAny = true;
+    var unit = ING_UNITS[k] || 'кг';
+    var display = unit === 'кг' ? (grams/1000).toFixed(1) : grams;
+    html += '<div class="ing-table-row"><span class="ing-name-col">'+esc(k)+'</span><span class="ing-amt-col">'+display+'</span><span class="ing-unit-col">'+unit+'</span></div>';
+  });
+
+  if (!hasAny) {
+    html += '<div style="padding:20px;text-align:center;font-size:13px;color:var(--muted)">Тооцоолол хийх мэдээлэл хангалтгүй байна.</div>';
+  }
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+/* Stock from Sheets */
+var stockLoaded = false;
+function loadStock() {
+  stockLoaded = false;
+  var body = document.getElementById('stock-body');
+  body.innerHTML = '<div class="loading-wrap" style="padding:24px"><div class="spinner"></div><p>Уншиж байна...</p></div>';
+
+  var url = 'https://docs.google.com/spreadsheets/d/1gUt92TXoxWS5popXmM7g_gvJhU3LT2twTs3wp-l1Xss/gviz/tq?tqx=out:json&gid=1696013893';
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.timeout = 10000;
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var raw = xhr.responseText;
+        var json = raw.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, '');
+        var data = JSON.parse(json);
+        renderStock(data);
+      } catch(e) {
+        showStockError('Өгөгдөл задлах алдаа.');
+      }
+    } else {
+      showStockError('Серверийн алдаа: '+xhr.status);
+    }
+  };
+  xhr.onerror = function(){ showStockError('Холболт алдаа.'); };
+  xhr.ontimeout = function(){ showStockError('Хугацаа дууссан.'); };
+  xhr.send();
+}
+
+function showStockError(msg) {
+  document.getElementById('stock-body').innerHTML =
+    '<div class="error-wrap" style="padding:20px 18px"><div class="error-ico">⚠️</div><p>'+esc(msg)+'</p>' +
+    '<button class="btn-retry" onclick="loadStock()">Дахин оролдох</button></div>';
+}
+
+function renderStock(data) {
+  var body = document.getElementById('stock-body');
+  var rows = data && data.table && data.table.rows;
+  if (!rows || rows.length === 0) {
+    body.innerHTML = '<div class="stock-empty">Нөөцийн мэдээлэл байхгүй.</div>';
+    return;
+  }
+  var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Нэр</span><span class="ing-amt-col">Тоо</span><span class="ing-unit-col">Нэгж</span></div>';
+  rows.forEach(function(row) {
+    var cells = row.c || [];
+    var name = cells[0] && cells[0].v ? cells[0].v : '';
+    var qty  = cells[1] && cells[1].v != null ? cells[1].v : '';
+    var unit = cells[2] && cells[2].v ? cells[2].v : '';
+    if (!name) return;
+    html += '<div class="ing-table-row">' +
+      '<span class="ing-name-col">'+esc(String(name))+'</span>' +
+      '<span class="ing-amt-col">'+esc(String(qty))+'</span>' +
+      '<span class="ing-unit-col">'+esc(String(unit))+'</span>' +
+    '</div>';
+  });
+  html += '</div>';
+  body.innerHTML = html;
+  stockLoaded = true;
+}
+
+/* ─────────────────────────────────
+   PERFORMANCE (Tab 5)
+───────────────────────────────── */
+function renderPerf() {
+  var body = document.getElementById('perf-body');
+  var today = todayStr();
+  document.getElementById('perf-date').textContent = formatDateMN(today);
+
+  var todayOrders = ordersData.filter(function(o){ return o._parsedDate === today; });
+  var total = todayOrders.length;
+  var done = 0, prep = 0, newO = 0, totalPax = 0;
+
+  todayOrders.forEach(function(o) {
+    var id = o['id'] || o['ID'] || o['захиалгын_дугаар'] || o._idx;
+    var status = getOrderStatus(id);
+    if (status === 'Дууссан') done++;
+    else if (status === 'Бэлтгэж байна') prep++;
+    else newO++;
+    totalPax += parseInt(o['хүн'] || o['хүн_тоо'] || o['pax'] || 0) || 0;
+  });
+
+  var donePct  = total > 0 ? Math.round(done/total*100) : 0;
+  var prepPct  = total > 0 ? Math.round(prep/total*100) : 0;
+  var newPct   = total > 0 ? Math.round(newO/total*100) : 0;
+
+  // Activity log
+  var log = JSON.parse(localStorage.getItem('activity_log') || '[]');
+  var actHtml = '';
+  if (log.length === 0) {
+    actHtml = '<div class="activity-empty">Идэвхжилт байхгүй.</div>';
+  } else {
+    log.slice(0,10).forEach(function(item) {
+      actHtml += '<div class="activity-item">' +
+        '<div class="activity-dot"></div>' +
+        '<div class="activity-text">' +
+          '<div>'+esc(item.text)+'</div>' +
+          '<div class="activity-time">'+esc(item.time)+'</div>' +
+        '</div>' +
+      '</div>';
+    });
+  }
+
+  body.innerHTML =
+    '<div class="perf-grid">' +
+      '<div class="perf-card accent"><div class="pc-val">'+total+'</div><div class="pc-label">Нийт захиалга</div></div>' +
+      '<div class="perf-card"><div class="pc-val" style="color:var(--accent)">'+done+'</div><div class="pc-label">Дууссан</div></div>' +
+      '<div class="perf-card"><div class="pc-val" style="color:var(--blue)">'+prep+'</div><div class="pc-label">Бэлтгэж байна</div></div>' +
+      '<div class="perf-card"><div class="pc-val">'+totalPax+'</div><div class="pc-label">Нийт хүн тоо</div></div>' +
+    '</div>' +
+    '<div class="chart-section">' +
+      '<div class="chart-title">Захиалгын явц</div>' +
+      '<div class="chart-row">' +
+        '<div class="chart-label">✅ Дууссан</div>' +
+        '<div class="chart-bar-track"><div class="chart-bar-fill green" style="width:'+donePct+'%"></div></div>' +
+        '<div class="chart-pct">'+donePct+'%</div>' +
+      '</div>' +
+      '<div class="chart-row">' +
+        '<div class="chart-label">🔵 Бэлтгэж байна</div>' +
+        '<div class="chart-bar-track"><div class="chart-bar-fill blue" style="width:'+prepPct+'%"></div></div>' +
+        '<div class="chart-pct">'+prepPct+'%</div>' +
+      '</div>' +
+      '<div class="chart-row">' +
+        '<div class="chart-label">🆕 Шинэ</div>' +
+        '<div class="chart-bar-track"><div class="chart-bar-fill gray" style="width:'+newPct+'%"></div></div>' +
+        '<div class="chart-pct">'+newPct+'%</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="activity-section">' +
+      '<div class="activity-head">📝 Сүүлийн үйлдлүүд</div>' +
+      actHtml +
+    '</div>' +
+    '<button class="btn-full" onclick="renderPerf();renderTasks();loadOrders()">🔄 Бүгдийг шинэчлэх</button>';
+}
+
+/* ─────────────────────────────────
+   INIT — Check existing session
+───────────────────────────────── */
+(function init() {
+  var savedRole = sessionStorage.getItem('staff_role');
+  if (savedRole && ROLES[savedRole]) {
+    currentRole = savedRole;
+    enterApp(savedRole);
+  }
+})();
+</script>
+</body>
+</html>
