@@ -1267,13 +1267,21 @@ function getRowFoods(i, type) {
 
 // Мэйлд цэгцтэй харагдах захиалгын хураангуй (байгууллага, хүн, үйлчилгээ, цаг, хоол)
 function buildOrderSummary() {
-  var org   = document.getElementById('of-org').value.trim();
-  var pax   = document.getElementById('of-pax').value;
-  var event = document.getElementById('of-event').value;
+  var org     = document.getElementById('of-org').value.trim();
+  var contact = document.getElementById('of-name').value.trim();
+  var phone   = document.getElementById('of-phone').value.trim();
+  var email   = document.getElementById('of-email').value.trim();
+  var pax     = document.getElementById('of-pax').value;
+  var event   = document.getElementById('of-event').value;
+  var loc     = document.getElementById('of-location').value.trim();
   var lines = [];
   lines.push('🏢 Байгууллага: ' + (org || '—'));
+  if (contact) lines.push('🧑 Хариуцагч: ' + contact);
+  if (phone)   lines.push('📞 Холбоо барих утас: ' + phone);
+  if (email)   lines.push('✉️ И-мэйл: ' + email);
   lines.push('👤 Нийт хүний тоо: ' + (pax || '—'));
   if (event) lines.push('🎪 Арга хэмжээ: ' + event);
+  if (loc)   lines.push('📍 Арга хэмжээний газар: ' + loc);
   lines.push('');
   lines.push('🍽 ҮЙЛЧИЛГЭЭ:');
   for (var i = 0; i < svcCount; i++) {
