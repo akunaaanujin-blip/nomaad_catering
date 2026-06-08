@@ -3205,23 +3205,6 @@ function renderPerf() {
   var prepPct  = total > 0 ? Math.round(prep/total*100) : 0;
   var newPct   = total > 0 ? Math.round(newO/total*100) : 0;
 
-  // Activity log
-  var log = JSON.parse(localStorage.getItem('activity_log') || '[]');
-  var actHtml = '';
-  if (log.length === 0) {
-    actHtml = '<div class="activity-empty">Идэвхжилт байхгүй.</div>';
-  } else {
-    log.slice(0,10).forEach(function(item) {
-      actHtml += '<div class="activity-item">' +
-        '<div class="activity-dot"></div>' +
-        '<div class="activity-text">' +
-          '<div>'+esc(item.text)+'</div>' +
-          '<div class="activity-time">'+esc(item.time)+'</div>' +
-        '</div>' +
-      '</div>';
-    });
-  }
-
   body.innerHTML =
     '<div class="perf-grid">' +
       '<div class="perf-card accent"><div class="pc-val">'+total+'</div><div class="pc-label">Нийт захиалга</div></div>' +
@@ -3248,11 +3231,6 @@ function renderPerf() {
       '</div>' +
     '</div>' +
     buildFoodReports() +
-    buildConsumptionDetail() +
-    '<div class="activity-section">' +
-      '<div class="activity-head">📝 Сүүлийн үйлдлүүд</div>' +
-      actHtml +
-    '</div>' +
     '<button class="btn-full" onclick="renderPerf();renderTasks();loadOrders()">🔄 Бүгдийг шинэчлэх</button>';
 }
 
