@@ -2564,7 +2564,7 @@ function renderStock(data) {
     var qtyNum = parseFloat(qty);
     var qtyDisplay = isNaN(qtyNum) ? (qty||'—') : qtyNum;
     var priceDisplay = isNaN(price) ? '—' : price.toLocaleString('mn-MN')+'₮';
-    var low = !isNaN(qtyNum) && qtyNum < 2;
+    var low = !isNaN(qtyNum) && qtyNum <= 0;
     html += '<div class="ing-table-row"' + (low ? ' style="background:#fff5f3"' : '') + '>' +
       '<span class="ing-name-col">' + (low ? '⚠️ ' : '') + esc(String(name))+'</span>' +
       '<span class="ing-amt-col" style="' + (low ? 'color:var(--red)' : '') + '">'+esc(String(qtyDisplay))+'</span>' +
