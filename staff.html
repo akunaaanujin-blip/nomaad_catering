@@ -523,6 +523,10 @@ body{
   white-space:nowrap;transition:all .15s;flex-shrink:0;}
 .btn-assign:active{background:var(--amber);color:#fff;}
 .btn-assign.assigned{background:var(--amber);color:#fff;border-color:var(--amber);}
+.btn-done{font-family:inherit;font-size:11px;font-weight:700;border:1.5px solid var(--accent);
+  background:#fff;color:var(--accent);border-radius:8px;padding:4px 9px;cursor:pointer;
+  white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.btn-done.done{background:var(--accent);color:#fff;}
 .assign-badge{display:inline-block;font-size:10px;font-weight:700;background:var(--amber-soft);
   color:var(--amber);border-radius:6px;padding:2px 7px;margin-left:6px;}
 
@@ -1912,12 +1916,13 @@ function renderTasks() {
               var amt = pt.a ? ' <span style="color:var(--amber);font-weight:700;font-size:11px">· '+esc(pax ? calcPlanned(pt.a, pax) : pt.a)+'</span>'+
                 (pax ? '<span style="color:var(--muted);font-weight:500;font-size:10px">'+esc(calcBreakdown(pt.a, pax))+'</span>' : '') : '';
               html += '<div class="tsk-ing-row">' +
-                // Зүүн талд: тогооч өөрөө хийж дуусгасан бол чеклэнэ
-                '<div class="tsk-dish-check'+(pdone?' checked':'')+'" style="width:22px;height:22px;min-width:22px;font-size:11px;flex-shrink:0;cursor:pointer" onclick="toggleDish(\''+pkey+'\')"></div>' +
                 '<span class="tsk-ing-name" style="flex:1;'+(pdone?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(pt.name)+amt+
                   (assigned ? '<span class="assign-badge">→ Бэлтгэгч</span>' : '') +
                 '</span>' +
-                // Баруун талд: бэлтгэгч рүү илгээх товч
+                // Баруун талд 2 товч: тогооч өөрөө хийсэн / бэлтгэгч рүү илгээх
+                '<button class="btn-done'+(pdone?' done':'')+'" onclick="toggleDish(\''+pkey+'\')">'+
+                  (pdone ? '✓ Хийсэн' : 'Хийсэн') +
+                '</button>' +
                 '<button class="btn-assign'+(assigned?' assigned':'')+'" onclick="toggleAssign(\''+pkey+'\',this)">'+
                   (assigned ? '✓ Илгээсэн' : '→ Бэлтгэгч') +
                 '</button>' +
