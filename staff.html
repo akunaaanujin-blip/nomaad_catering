@@ -821,6 +821,173 @@ body{
   transition:opacity .15s;
 }
 .btn-full:active{opacity:.85}
+
+/* ══════════════════════════════════
+   RESPONSIVE — Desktop ≥ 768px
+══════════════════════════════════ */
+@media(min-width:768px){
+
+  html,body{height:100%;overflow:hidden;}
+
+  /* App container: wider, side-by-side layout */
+  #app{
+    max-width:100%;
+    width:100%;
+    height:100vh;
+    flex-direction:row;
+    box-shadow:none;
+    border-radius:0;
+  }
+
+  /* Lock screen: centered card */
+  #lock{
+    flex-direction:row;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+  }
+  #lock-inner{
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:24px;
+    padding:48px 52px;
+    max-width:480px;
+    width:100%;
+    backdrop-filter:blur(12px);
+  }
+  .lock-logo{margin-bottom:32px;}
+  .lock-logo .brand-mark{width:72px;height:72px;font-size:36px;}
+  .lock-logo h1{font-size:26px;}
+  .role-grid{grid-template-columns:repeat(4,1fr);}
+
+  /* Sidebar nav — left column */
+  #nav{
+    flex-direction:column;
+    width:200px;
+    min-width:200px;
+    border-top:none;
+    border-right:1px solid var(--line);
+    padding:16px 10px;
+    gap:4px;
+    overflow-y:auto;
+    order:-1; /* before content */
+    background:var(--surface);
+  }
+  .nav-item{
+    flex-direction:row;
+    justify-content:flex-start;
+    gap:10px;
+    padding:11px 14px;
+    border-radius:12px;
+    font-size:14px;
+    border-bottom:none !important;
+  }
+  .nav-item.active{
+    background:var(--accent-soft);
+    color:var(--accent);
+  }
+  .nav-item.active::after{display:none;}
+  .nav-icon{font-size:18px;min-width:24px;text-align:center;}
+
+  /* Header: full-width, above content+nav */
+  #header{
+    position:relative;
+    order:-2;
+    width:100%;
+    padding:12px 24px;
+  }
+
+  /* Main layout: nav | content */
+  #app{flex-wrap:wrap;}
+  #header{flex:0 0 100%;}
+  #nav{flex:0 0 200px;height:calc(100vh - 60px);}
+  #content{flex:1;height:calc(100vh - 60px);min-width:0;}
+
+  /* Tab panels: more padding, wider layout */
+  .tab-panel{padding:0 0 24px;}
+  .section-header{padding:20px 24px 8px;}
+
+  /* Cards: 2-column grid on desktop */
+  .order-list{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:14px;
+    padding:14px 24px;
+  }
+  .order-card{margin:0;}
+
+  .task-group,.tsk-order-block{margin:14px 24px 0;}
+
+  /* Staff summary: 3 col → still ok, just bigger */
+  .staff-summary{padding:20px 24px 0;gap:14px;}
+  .ssum-val{font-size:36px;}
+
+  /* Staff cards: 2-col */
+  #staff-body .staff-card{margin:0;}
+  #staff-body > .staff-section-title{padding:20px 24px 10px;}
+  .staff-cards-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:14px;
+    padding:0 24px;
+  }
+
+  /* Salary table: full width */
+  .salary-table{margin:0 24px 14px;}
+  .btn-add-staff{width:calc(100% - 48px);margin:0 24px 14px;}
+
+  /* Ingredients */
+  .ing-section-title{padding:20px 24px 4px;}
+  .ing-section-sub{padding:0 24px 10px;}
+  #ing-calc-body,#stock-body{padding:0 24px;}
+
+  /* Recipe grid: 3 col */
+  .recipe-grid{grid-template-columns:repeat(3,1fr);}
+  .search-bar{padding:16px 24px 8px;}
+  .recipe-category{padding:16px 24px 6px;}
+
+  /* Performance */
+  .perf-grid{padding:20px 24px 0;grid-template-columns:repeat(4,1fr);}
+
+  /* Progress bar */
+  .progress-bar-wrap{margin:14px 24px 0;}
+
+  /* Task ing panel: wider */
+  .tsk-ing-panel{padding:0 24px 12px 60px;}
+
+  /* Section headers */
+  #tab-orders .section-header,
+  #tab-tasks .section-header,
+  #tab-perf .section-header,
+  #tab-staff .section-header,
+  #tab-ingredients .section-header,
+  #tab-recipes .section-header{padding:20px 24px 8px;}
+
+  /* Drinks/nemeltu boxes */
+  #drinks-box > .nemeltu-box,
+  #nemeltu-box-wrap > .nemeltu-box,
+  #staff-meal-list,
+  #stock-body > .ing-table{margin:0;}
+
+  /* Section-wide padding wrapper for ingredient tab */
+  #tab-ingredients .ing-section-title,
+  #tab-ingredients .ing-section-sub{padding-left:24px;padding-right:24px;}
+  #tab-ingredients > div{padding-left:0;padding-right:0;}
+
+  /* Nav brand separator */
+  #nav::before{
+    content:'';display:block;
+    height:1px;background:var(--line);
+    margin:0 4px 12px;
+  }
+}
+
+/* Medium desktop: 3-col order cards */
+@media(min-width:1200px){
+  #nav{width:220px;min-width:220px;}
+  .order-list{grid-template-columns:repeat(3,1fr);}
+  .staff-cards-grid{grid-template-columns:repeat(3,1fr);}
+}
 </style>
 </head>
 <body>
@@ -829,6 +996,7 @@ body{
 
   <!-- ── LOCK SCREEN ── -->
   <div id="lock">
+   <div id="lock-inner">
     <div class="lock-logo">
       <div class="brand-mark">🍽</div>
       <h1>NOMAAD Catering</h1>
@@ -878,6 +1046,7 @@ body{
       <button class="btn-login" id="btn-login" onclick="doLogin()" disabled>Нэвтрэх</button>
       <div id="pin-error"></div>
     </div>
+   </div><!-- /lock-inner -->
   </div>
 
   <!-- ── HEADER ── -->
@@ -1304,9 +1473,9 @@ function renderOrders() {
   function renderGroup(label, list, isPast) {
     if (list.length === 0) return '';
     var s = '<div class="orders-date-group">' + label + '</div>';
-    list.forEach(function(o) {
-      s += renderOrderCard(o, isPast);
-    });
+    s += '<div class="order-list">';
+    list.forEach(function(o) { s += renderOrderCard(o, isPast); });
+    s += '</div>';
     return s;
   }
 
@@ -2290,6 +2459,7 @@ function renderStaffTab() {
 
   // Ирц
   html += '<div class="staff-section-title">📅 Өнөөдрийн ирц</div>';
+  html += '<div class="staff-cards-grid">';
   list.forEach(function(s) {
     var att = getAttendance(today, s.id);
     var statusTxt = att.absent ? 'Ирээгүй' : att.inTime ? 'Ирсэн' : 'Тэмдэглэгдээгүй';
@@ -2332,6 +2502,8 @@ function renderStaffTab() {
       '</div>' +
     '</div>';
   });
+
+  html += '</div>'; // end staff-cards-grid
 
   // Даалгаврын гүйцэтгэл
   html += '<div class="staff-section-title">✅ Даалгаврын гүйцэтгэл</div>';
