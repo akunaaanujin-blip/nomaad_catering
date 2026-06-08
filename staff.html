@@ -671,6 +671,58 @@ body{
   font-size:14px;color:var(--muted);
 }
 
+/* ── TAB 6: STAFF ── */
+.staff-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px 14px 0;}
+.ssum-card{background:var(--surface);border-radius:12px;border:1px solid var(--line);padding:14px 12px;text-align:center;box-shadow:var(--shadow);}
+.ssum-val{font-family:'Lora',serif;font-size:28px;font-weight:700;color:var(--accent);}
+.ssum-lbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
+.ssum-card.present .ssum-val{color:#2a9d8f;}
+.ssum-card.absent  .ssum-val{color:var(--red);}
+
+.staff-section-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.7px;padding:18px 14px 8px;}
+.staff-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  margin:0 14px 10px;box-shadow:var(--shadow);overflow:hidden;}
+.sc-head{display:flex;align-items:center;gap:12px;padding:14px;}
+.sc-avatar{width:44px;height:44px;min-width:44px;border-radius:50%;
+  background:var(--accent-soft);display:flex;align-items:center;
+  justify-content:center;font-size:20px;}
+.sc-info{flex:1;}
+.sc-name{font-size:15px;font-weight:700;color:var(--ink);}
+.sc-role{font-size:12px;color:var(--muted);margin-top:1px;}
+.sc-status{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;}
+.sc-status.present{background:#e8f5e9;color:#2e7d32;}
+.sc-status.absent{background:#fdecea;color:#c62828;}
+.sc-status.off{background:var(--line);color:var(--muted);}
+.sc-body{padding:0 14px 14px;display:flex;flex-direction:column;gap:8px;}
+.sc-row{display:flex;align-items:center;gap:8px;}
+.sc-row-label{font-size:12px;color:var(--muted);min-width:80px;}
+.sc-row-val{font-size:13px;font-weight:600;flex:1;}
+.sc-input{font-family:inherit;font-size:13px;font-weight:600;border:1.5px solid var(--line);
+  border-radius:8px;padding:6px 10px;background:var(--bg);color:var(--ink);flex:1;}
+.sc-input:focus{outline:none;border-color:var(--accent);}
+.sc-btn-row{display:flex;gap:8px;margin-top:4px;}
+.btn-sc-checkin{font-family:inherit;font-size:12px;font-weight:700;padding:8px 12px;border-radius:9px;
+  border:1.5px solid #2a9d8f;background:#e8f5f4;color:#2a9d8f;cursor:pointer;flex:1;}
+.btn-sc-checkin.active{background:#2a9d8f;color:#fff;}
+.btn-sc-checkout{font-family:inherit;font-size:12px;font-weight:700;padding:8px 12px;border-radius:9px;
+  border:1.5px solid var(--amber);background:var(--amber-soft);color:var(--amber);cursor:pointer;flex:1;}
+.btn-sc-checkout.active{background:var(--amber);color:#fff;}
+.sc-perf-bar{height:6px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:4px;}
+.sc-perf-fill{height:100%;background:var(--accent);border-radius:4px;}
+.btn-add-staff{font-family:inherit;font-size:13px;font-weight:700;background:var(--accent-soft);
+  color:var(--accent);border:1.5px dashed var(--accent);border-radius:12px;padding:13px;
+  cursor:pointer;width:calc(100% - 28px);margin:0 14px 14px;display:block;}
+.salary-table{margin:0 14px 14px;background:var(--surface);border-radius:12px;
+  border:1px solid var(--line);overflow:hidden;}
+.salary-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);}
+.salary-row:last-child{border-bottom:none;}
+.salary-name{flex:1;font-size:13px;font-weight:600;}
+.salary-role{font-size:11px;color:var(--muted);min-width:60px;}
+.salary-input{font-family:inherit;font-size:13px;font-weight:700;border:1.5px solid var(--line);
+  border-radius:8px;padding:5px 8px;width:100px;text-align:right;background:var(--bg);}
+.salary-input:focus{outline:none;border-color:var(--accent);}
+
 /* ── TAB 5: PERFORMANCE ── */
 .perf-grid{
   display:grid;
@@ -959,6 +1011,18 @@ body{
       <div id="perf-body"></div>
     </div>
 
+    <!-- Tab 6: Ажилтан (Захирал only) -->
+    <div id="tab-staff" class="tab-panel">
+      <div class="section-header">
+        <div>
+          <div class="section-title">👥 Ажилтан</div>
+          <div class="section-sub" id="staff-date"></div>
+        </div>
+        <button class="btn-refresh" onclick="renderStaffTab()">🔄</button>
+      </div>
+      <div id="staff-body"></div>
+    </div>
+
   </div>
 
   <!-- ── BOTTOM NAV ── -->
@@ -977,6 +1041,9 @@ body{
     </button>
     <button class="nav-item" data-tab="perf" id="nav-perf" onclick="switchTab('perf')">
       <span class="nav-icon">📊</span>Гүйцэтгэл
+    </button>
+    <button class="nav-item" data-tab="staff" id="nav-staff" onclick="switchTab('staff')">
+      <span class="nav-icon">👥</span>Ажилтан
     </button>
   </nav>
 
@@ -1007,7 +1074,7 @@ var ordersData = [];
 var activeTab = 'orders';
 
 var ROLES = {
-  'Захирал': {pin:'9999', emoji:'👔', tabs:['orders','tasks','recipes','ingredients','perf']},
+  'Захирал': {pin:'9999', emoji:'👔', tabs:['orders','tasks','recipes','ingredients','perf','staff']},
   'Тогооч':  {pin:'1122', emoji:'👨‍🍳', tabs:['orders','tasks','recipes','ingredients']},
   'Бэлтгэгч':{pin:'2233', emoji:'🥘', tabs:['tasks','recipes','ingredients']},
   'Угаагч':  {pin:'3344', emoji:'🫧', tabs:['tasks']}
@@ -1120,6 +1187,7 @@ function switchTab(name) {
   if (name === 'tasks') renderTasks();
   if (name === 'ingredients') { renderIngCalc(); loadStock(); }
   if (name === 'perf') renderPerf();
+  if (name === 'staff') renderStaffTab();
 }
 
 /* ─────────────────────────────────
@@ -2101,6 +2169,260 @@ function renderStock(data) {
 /* ─────────────────────────────────
    PERFORMANCE (Tab 5)
 ───────────────────────────────── */
+/* ─────────────────────────────────
+   STAFF TAB (Tab 6 — Захирал)
+───────────────────────────────── */
+var ROLE_EMOJI = {'Тогооч':'👨‍🍳','Бэлтгэгч':'🥘','Угаагч':'🫧','Захирал':'👔','Бусад':'👤'};
+
+function getStaffList() {
+  try {
+    var d = localStorage.getItem('nomaad_staff');
+    return d ? JSON.parse(d) : getDefaultStaff();
+  } catch(e) { return getDefaultStaff(); }
+}
+function getDefaultStaff() {
+  return [
+    {id:'s1',name:'',role:'Тогооч',phone:'',salary:0,active:true,note:''},
+    {id:'s2',name:'',role:'Бэлтгэгч',phone:'',salary:0,active:true,note:''},
+    {id:'s3',name:'',role:'Угаагч',phone:'',salary:0,active:true,note:''}
+  ];
+}
+function saveStaffList(list) { localStorage.setItem('nomaad_staff', JSON.stringify(list)); }
+
+function getAttendance(date, staffId) {
+  try { return JSON.parse(localStorage.getItem('att_'+date+'_'+staffId)||'{}'); } catch(e){ return {}; }
+}
+function saveAttendance(date, staffId, data) {
+  localStorage.setItem('att_'+date+'_'+staffId, JSON.stringify(data));
+}
+
+function checkIn(staffId) {
+  var today = todayStr();
+  var att = getAttendance(today, staffId);
+  if (!att.inTime) {
+    att.inTime = new Date().toLocaleTimeString('mn-MN',{hour:'2-digit',minute:'2-digit'});
+    saveAttendance(today, staffId, att);
+  }
+  renderStaffTab();
+}
+function checkOut(staffId) {
+  var today = todayStr();
+  var att = getAttendance(today, staffId);
+  att.outTime = new Date().toLocaleTimeString('mn-MN',{hour:'2-digit',minute:'2-digit'});
+  saveAttendance(today, staffId, att);
+  renderStaffTab();
+}
+function markAbsent(staffId) {
+  var today = todayStr();
+  var att = getAttendance(today, staffId);
+  att.absent = !att.absent;
+  if (att.absent) { att.inTime = ''; att.outTime = ''; }
+  saveAttendance(today, staffId, att);
+  renderStaffTab();
+}
+
+function updateStaffField(id, field, val) {
+  var list = getStaffList();
+  var s = list.find(function(x){ return x.id === id; });
+  if (!s) return;
+  if (field === 'salary') s[field] = parseFloat(val)||0;
+  else s[field] = val;
+  saveStaffList(list);
+}
+function addStaff() {
+  var list = getStaffList();
+  var newId = 's' + Date.now();
+  list.push({id:newId,name:'',role:'Тогооч',phone:'',salary:0,active:true,note:''});
+  saveStaffList(list);
+  renderStaffTab();
+  setTimeout(function(){ document.getElementById('sname_'+newId)&&document.getElementById('sname_'+newId).focus(); }, 100);
+}
+function removeStaff(id) {
+  if (!confirm('Ажилтныг устгах уу?')) return;
+  var list = getStaffList().filter(function(s){ return s.id !== id; });
+  saveStaffList(list);
+  renderStaffTab();
+}
+function toggleStaffActive(id) {
+  var list = getStaffList();
+  var s = list.find(function(x){ return x.id === id; });
+  if (s) s.active = !s.active;
+  saveStaffList(list);
+  renderStaffTab();
+}
+
+function getStaffTaskCount(role) {
+  var total = 0, done = 0;
+  for (var k in localStorage) {
+    if (!k.startsWith('dish_done_') && !k.startsWith('task_')) continue;
+    // Count all task keys — simplified: count by role mapping
+    total++;
+    if (localStorage.getItem(k) === '1') done++;
+  }
+  return {total: total, done: done};
+}
+
+function renderStaffTab() {
+  var today = todayStr();
+  var el = document.getElementById('staff-date');
+  if (el) el.textContent = formatDateMN(today);
+
+  var body = document.getElementById('staff-body');
+  if (!body) return;
+
+  var list = getStaffList().filter(function(s){ return s.active; });
+  var allList = getStaffList();
+
+  // Summary
+  var present = 0, absent = 0;
+  list.forEach(function(s){
+    var att = getAttendance(today, s.id);
+    if (att.absent) absent++;
+    else if (att.inTime) present++;
+  });
+  var notMarked = list.length - present - absent;
+
+  var html = '<div class="staff-summary">' +
+    '<div class="ssum-card"><div class="ssum-val">'+list.length+'</div><div class="ssum-lbl">Нийт</div></div>' +
+    '<div class="ssum-card present"><div class="ssum-val">'+present+'</div><div class="ssum-lbl">Ирсэн</div></div>' +
+    '<div class="ssum-card absent"><div class="ssum-val">'+absent+'</div><div class="ssum-lbl">Ирээгүй</div></div>' +
+  '</div>';
+
+  // Ирц
+  html += '<div class="staff-section-title">📅 Өнөөдрийн ирц</div>';
+  list.forEach(function(s) {
+    var att = getAttendance(today, s.id);
+    var statusTxt = att.absent ? 'Ирээгүй' : att.inTime ? 'Ирсэн' : 'Тэмдэглэгдээгүй';
+    var statusCls = att.absent ? 'absent' : att.inTime ? 'present' : 'off';
+    var emoji = ROLE_EMOJI[s.role] || '👤';
+    html += '<div class="staff-card">' +
+      '<div class="sc-head">' +
+        '<div class="sc-avatar">'+emoji+'</div>' +
+        '<div class="sc-info">' +
+          '<div class="sc-name">'+(s.name||'Нэр оруулаагүй')+'</div>' +
+          '<div class="sc-role">'+esc(s.role)+(s.phone?' · 📞 '+esc(s.phone):'')+'</div>' +
+        '</div>' +
+        '<span class="sc-status '+statusCls+'">'+statusTxt+'</span>' +
+      '</div>' +
+      '<div class="sc-body">' +
+        '<div class="sc-row">' +
+          '<span class="sc-row-label">⏰ Ирсэн цаг</span>' +
+          '<span class="sc-row-val">'+(att.inTime||'—')+'</span>' +
+          '<input type="time" class="sc-input" style="max-width:100px" value="'+(att.inTime||'')+'"' +
+          ' onchange="var a=getAttendance(\''+today+'\',\''+s.id+'\');a.inTime=this.value;saveAttendance(\''+today+'\',\''+s.id+'\',a)">' +
+        '</div>' +
+        '<div class="sc-row">' +
+          '<span class="sc-row-label">🔚 Гарсан цаг</span>' +
+          '<span class="sc-row-val">'+(att.outTime||'—')+'</span>' +
+          '<input type="time" class="sc-input" style="max-width:100px" value="'+(att.outTime||'')+'"' +
+          ' onchange="var a=getAttendance(\''+today+'\',\''+s.id+'\');a.outTime=this.value;saveAttendance(\''+today+'\',\''+s.id+'\',a)">' +
+        '</div>' +
+        (att.inTime && att.outTime ? '<div class="sc-row"><span class="sc-row-label">⏱ Цагийн тоо</span><span class="sc-row-val" style="color:var(--accent);font-weight:700">'+calcHours(att.inTime,att.outTime)+'</span></div>' : '') +
+        '<div class="sc-btn-row">' +
+          '<button class="btn-sc-checkin'+(att.inTime&&!att.absent?' active':'')+'" onclick="checkIn(\''+s.id+'\')">✓ Ирсэн</button>' +
+          '<button class="btn-sc-checkout'+(att.outTime?' active':'')+'" onclick="checkOut(\''+s.id+'\')">⬅ Явсан</button>' +
+          '<button class="btn-sc-checkin" style="background:'+(att.absent?'#fdecea':'');+'border-color:var(--red);color:var(--red)" onclick="markAbsent(\''+s.id+'\')">✗ Ирээгүй</button>' +
+        '</div>' +
+        '<div class="sc-row">' +
+          '<span class="sc-row-label">📝 Тэмдэглэл</span>' +
+          '<input class="sc-input" type="text" placeholder="өнөөдрийн тэмдэглэл..." ' +
+          'value="'+(att.note||'')+'"' +
+          ' onchange="var a=getAttendance(\''+today+'\',\''+s.id+'\');a.note=this.value;saveAttendance(\''+today+'\',\''+s.id+'\',a)">' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  });
+
+  // Даалгаврын гүйцэтгэл
+  html += '<div class="staff-section-title">✅ Даалгаврын гүйцэтгэл</div>';
+  var roleStats = {};
+  for (var key in localStorage) {
+    if (key.startsWith('dish_done_')) {
+      var val = localStorage.getItem(key);
+      if (!roleStats['Тогооч']) roleStats['Тогооч'] = {total:0,done:0};
+      roleStats['Тогооч'].total++;
+      if (val === '1') roleStats['Тогооч'].done++;
+    }
+    if (key.startsWith('assign_') && localStorage.getItem(key) === '1') {
+      var dkey2 = key.replace('assign_','');
+      if (!roleStats['Бэлтгэгч']) roleStats['Бэлтгэгч'] = {total:0,done:0};
+      roleStats['Бэлтгэгч'].total++;
+      if (localStorage.getItem('dish_done_'+dkey2) === '1') roleStats['Бэлтгэгч'].done++;
+    }
+  }
+  html += '<div style="padding:0 14px 14px;display:flex;flex-direction:column;gap:10px">';
+  ['Тогооч','Бэлтгэгч','Угаагч'].forEach(function(role) {
+    var st = roleStats[role] || {total:0,done:0};
+    var pct = st.total > 0 ? Math.round(st.done/st.total*100) : 0;
+    html += '<div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px">' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
+        '<span style="font-size:13px;font-weight:700">' + (ROLE_EMOJI[role]||'') + ' ' + role + '</span>' +
+        '<span style="font-size:13px;color:var(--accent);font-weight:700">'+st.done+'/'+st.total+' ('+pct+'%)</span>' +
+      '</div>' +
+      '<div class="sc-perf-bar"><div class="sc-perf-fill" style="width:'+pct+'%"></div></div>' +
+    '</div>';
+  });
+  html += '</div>';
+
+  // Ажилтны жагсаалт + цалин
+  html += '<div class="staff-section-title">👥 Ажилтны жагсаалт</div>';
+  html += '<div class="salary-table">';
+  allList.forEach(function(s) {
+    var emoji = ROLE_EMOJI[s.role]||'👤';
+    html += '<div class="salary-row">' +
+      '<div style="flex:1;min-width:0">' +
+        '<input class="sc-input" id="sname_'+s.id+'" type="text" placeholder="Нэр" value="'+esc(s.name)+'"' +
+        ' onchange="updateStaffField(\''+s.id+'\',\'name\',this.value)" style="width:100%;margin-bottom:4px">' +
+        '<div style="display:flex;gap:6px">' +
+          '<select class="sc-input" style="flex:1;font-size:12px;padding:4px 6px" onchange="updateStaffField(\''+s.id+'\',\'role\',this.value)">' +
+          ['Тогооч','Бэлтгэгч','Угаагч','Захирал','Бусад'].map(function(r){
+            return '<option'+(r===s.role?' selected':'')+'>'+r+'</option>';
+          }).join('') +
+          '</select>' +
+          '<input class="sc-input" type="tel" placeholder="Утас" value="'+esc(s.phone||'')+'"' +
+          ' onchange="updateStaffField(\''+s.id+'\',\'phone\',this.value)" style="flex:1;font-size:12px;padding:4px 8px">' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;margin-left:8px">' +
+        '<div style="display:flex;align-items:center;gap:4px">' +
+          '<span style="font-size:11px;color:var(--muted)">₮</span>' +
+          '<input class="salary-input" type="number" placeholder="Цалин" value="'+(s.salary||'')+'"' +
+          ' onchange="updateStaffField(\''+s.id+'\',\'salary\',this.value)">' +
+        '</div>' +
+        '<div style="display:flex;gap:4px">' +
+          '<button onclick="toggleStaffActive(\''+s.id+'\')" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);background:'+(s.active?'var(--accent-soft)':'#fff')+';color:'+(s.active?'var(--accent)':'var(--muted)')+';cursor:pointer">'+(s.active?'Идэвхтэй':'Идэвхгүй')+'</button>' +
+          '<button onclick="removeStaff(\''+s.id+'\')" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--red);cursor:pointer">✕</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  });
+  html += '</div>';
+
+  // Нэмэх товч
+  html += '<button class="btn-add-staff" onclick="addStaff()">＋ Ажилтан нэмэх</button>';
+
+  // Цалингийн дүнгийн тооцоо
+  var totalSalary = allList.reduce(function(s,a){ return s + (a.active ? (a.salary||0) : 0); }, 0);
+  if (totalSalary > 0) {
+    html += '<div style="margin:0 14px 20px;padding:14px;background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:12px;display:flex;justify-content:space-between;align-items:center">' +
+      '<span style="font-size:13px;font-weight:700;color:var(--accent)">💰 Нийт цалингийн сан</span>' +
+      '<span style="font-size:17px;font-weight:800;color:var(--accent)">₮'+totalSalary.toLocaleString()+'</span>' +
+    '</div>';
+  }
+
+  body.innerHTML = html;
+}
+
+function calcHours(inTime, outTime) {
+  if (!inTime || !outTime) return '—';
+  try {
+    var i = inTime.split(':'), o = outTime.split(':');
+    var mins = (parseInt(o[0])*60+parseInt(o[1])) - (parseInt(i[0])*60+parseInt(i[1]));
+    if (mins <= 0) return '—';
+    return Math.floor(mins/60) + 'ц ' + (mins%60) + 'м';
+  } catch(e){ return '—'; }
+}
+
 function renderPerf() {
   var body = document.getElementById('perf-body');
   var today = todayStr();
