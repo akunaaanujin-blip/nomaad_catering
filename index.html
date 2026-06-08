@@ -1333,6 +1333,31 @@ function buildOrderSummary() {
       lines.push('   • (хоол сонгоогүй)');
     }
   }
+
+  // ── Нэмэлт мэдээлэл ──
+  var drinks  = document.getElementById('of-drinks').value.trim();
+  var nemeltu = document.getElementById('of-nemeltu').value.trim();
+  var note    = document.getElementById('of-note').value.trim();
+  var sd      = document.getElementById('of-start-date').value;
+  var ed      = document.getElementById('of-end-date').value;
+  if (sd || ed) {
+    var range = (sd && ed && sd !== ed) ? (sd + ' → ' + ed) : (sd || ed);
+    lines.push('');
+    lines.push('📅 Хамрах хугацаа: ' + range);
+  }
+  if (drinks)  lines.push('🥤 Уух зүйлс: ' + drinks);
+  if (nemeltu) lines.push('➕ Нэмэлт: ' + nemeltu);
+  if (note)    lines.push('📝 Тусгай хүсэлт: ' + note);
+
+  // ── Төлбөр (Nomaad camp биш үед) ──
+  var isCamp = (event === 'Nomaad camp' || !event);
+  var totalEl = document.getElementById('price-total');
+  var totalRaw = totalEl ? totalEl.textContent.replace('Нийт дүн','').trim() : '';
+  if (!isCamp && totalRaw) {
+    lines.push('');
+    lines.push('💰 Нийт дүн: ' + totalRaw);
+  }
+
   return lines.join('\n');
 }
 
