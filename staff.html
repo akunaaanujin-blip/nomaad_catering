@@ -1259,6 +1259,7 @@ var currentPin = '';
 var selectedRoleCard = null;
 var ordersData = [];
 var activeTab = 'orders';
+var openPanels = {};   // ямар орцны самбар нээлттэй байгааг render хооронд хадгална
 
 var ROLES = {
   'Захирал': {pin:'9999', emoji:'👔', tabs:['orders','tasks','recipes','ingredients','perf','staff']},
@@ -1729,7 +1730,16 @@ function toggleDish(key) {
 }
 function toggleIngPanel(id) {
   var el = document.getElementById(id);
-  if (el) el.classList.toggle('open');
+  if (el) {
+    var nowOpen = el.classList.toggle('open');
+    openPanels[id] = nowOpen;
+  }
+}
+
+// Хоол дуусгахад орцны самбарыг нээж, бодит зарцуулалт оруулахыг сануулна
+function markDishDone(dkey, panelId) {
+  if (!isDishDone(dkey)) openPanels[panelId] = true;  // дуусгаж байгаа бол самбар нээлттэй үлдэнэ
+  toggleDish(dkey);
 }
 
 // Угаагчийн тогтмол даалгаварууд
@@ -1843,13 +1853,13 @@ function renderTasks() {
 
         html += '<div class="tsk-dish-item">';
         html += '<div class="tsk-dish-head" onclick="toggleIngPanel(\''+panelId+'\')">' +
-          '<div class="tsk-dish-check'+(done?' checked':'')+'" onclick="event.stopPropagation();toggleDish(\''+dkey+'\')"></div>' +
+          '<div class="tsk-dish-check'+(done?' checked':'')+'" onclick="event.stopPropagation();markDishDone(\''+dkey+'\',\''+panelId+'\')"></div>' +
           '<div class="tsk-dish-name'+(done?' done':'')+'">🍳 '+esc(dishName)+'</div>' +
           '<div class="tsk-dish-expand">▾</div>' +
         '</div>';
 
-        // Ingredient panel
-        html += '<div class="tsk-ing-panel" id="'+panelId+'">';
+        // Ingredient panel (нээлттэй төлвийг хадгална)
+        html += '<div class="tsk-ing-panel'+(openPanels[panelId]?' open':'')+'" id="'+panelId+'">';
         if (recipe && recipe.ingredients && pax > 0) {
           html += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;justify-content:space-between">' +
             '<span>Орц</span><span>Тооцоо · Бодит</span></div>';
@@ -2893,6 +2903,52 @@ function calcHours(inTime, outTime) {
   } catch(e){ return '—'; }
 }
 
+// Захиралын гүйцэтгэлд: захиалга → хоол → орц бүрийн Тооцоо vs Бодит зарцуулалт
+function buildConsumptionDetail() {
+  var today = todayStr();
+  var orders = ordersData.filter(function(o){ return !o._parsedDate || o._parsedDate >= today; });
+  if (!orders.length) orders = ordersData.slice(0, 3);
+  var blocks = '';
+  orders.forEach(function(o) {
+    var id = o['id'] || o._idx;
+    var company = o['байгууллага'] || 'Нэргүй';
+    var pax = parseInt(o['хүн']) || 0;
+    var dishes = parseDishes(o['үйлчилгээ'] || '');
+    if (!dishes.length || pax <= 0) return;
+    var dishHtml = '';
+    dishes.forEach(function(dishName) {
+      var recipe = findRecipe(dishName);
+      if (!recipe || !recipe.ingredients) return;
+      var dkey = id+'_'+dishName.replace(/\s/g,'_');
+      var done = isDishDone(dkey);
+      var rows = '';
+      recipe.ingredients.forEach(function(ing) {
+        var planned = calcPlanned(ing.a, pax);
+        var ikey = dkey+'_'+ing.n.replace(/\s/g,'_');
+        var actual = getActual(ikey);
+        rows += '<div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:3px 0">' +
+          '<span style="flex:1;color:var(--ink)">'+esc(ing.n)+'</span>' +
+          '<span style="min-width:80px;text-align:right;color:var(--muted)">'+esc(planned)+'</span>' +
+          '<span style="min-width:80px;text-align:right;font-weight:700;color:'+(actual?'var(--accent)':'var(--red)')+'">'+(actual?esc(actual):'—')+'</span>' +
+        '</div>';
+      });
+      dishHtml += '<div style="margin-top:8px">' +
+        '<div style="font-weight:600;font-size:13px;margin-bottom:2px">🍳 '+esc(dishName)+(done?' <span style="color:var(--accent);font-size:11px">✅ дууссан</span>':'')+'</div>' +
+        rows + '</div>';
+    });
+    if (!dishHtml) return;
+    blocks += '<div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow)">' +
+      '<div style="font-weight:700;font-size:14px;margin-bottom:4px">🏢 '+esc(company)+' · '+pax+' хүн</div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--line);padding-bottom:4px">' +
+        '<span style="flex:1">Орц</span><span style="min-width:80px;text-align:right">Тооцоо</span><span style="min-width:80px;text-align:right">Бодит</span></div>' +
+      dishHtml + '</div>';
+  });
+  if (!blocks) return '';
+  return '<div style="margin-top:18px">' +
+    '<div class="chart-title" style="margin-bottom:10px">📦 Орц зарцуулалт — Тооцоо vs Бодит</div>' +
+    blocks + '</div>';
+}
+
 function renderPerf() {
   var body = document.getElementById('perf-body');
   var today = todayStr();
@@ -2957,6 +3013,7 @@ function renderPerf() {
         '<div class="chart-pct">'+newPct+'%</div>' +
       '</div>' +
     '</div>' +
+    buildConsumptionDetail() +
     '<div class="activity-section">' +
       '<div class="activity-head">📝 Сүүлийн үйлдлүүд</div>' +
       actHtml +
