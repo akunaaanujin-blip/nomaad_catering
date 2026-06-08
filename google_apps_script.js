@@ -33,9 +33,11 @@ function doGet(e) {
         // col 5 (r[4]): огноо+цаг — Date object эсвэл string аль ч байж болно
         let dt = '';
         if (r[4]) {
-          dt = r[4] instanceof Date
-            ? Utilities.formatDate(r[4], 'Asia/Ulaanbaatar', 'yyyy-MM-dd HH:mm')
-            : String(r[4]);
+          try {
+            dt = Utilities.formatDate(r[4], 'Asia/Ulaanbaatar', 'yyyy-MM-dd HH:mm');
+          } catch(e) {
+            dt = String(r[4]);
+          }
         }
         return {
           id:                   i + 1,

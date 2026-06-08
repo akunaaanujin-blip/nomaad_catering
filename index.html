@@ -589,10 +589,25 @@ function _parseOrders(orders) {
   return (orders || [])
     .filter(function(o){ return o.арга_хэмжээний_огноо; })
     .map(function(o){
-      var parts = (o.арга_хэмжээний_огноо || '').split(' ');
+      var raw = o.арга_хэмжээний_огноо || '';
+      var date = '', time = '';
+      // "2026-06-10 14:00" хэлбэр
+      var m = raw.match(/(\d{4}-\d{2}-\d{2})[T ]?(\d{2}:\d{2})?/);
+      if (m) {
+        date = m[1];
+        time = m[2] || '';
+      } else {
+        // "Sat Jun 06 2026 13:00:00 GMT+0800..." хэлбэр
+        var d = new Date(raw);
+        if (!isNaN(d.getTime())) {
+          var ub = new Date(d.getTime() + 8 * 3600000);
+          date = ub.toISOString().substring(0, 10);
+          time = ub.toISOString().substring(11, 16);
+        }
+      }
       return {
-        date:     parts[0] || '',
-        time:     parts[1] || '',
+        date:     date,
+        time:     time,
         isNomaad: (o.арга_хэмжээ || '').indexOf('Nomaad') >= 0
       };
     })
