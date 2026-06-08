@@ -469,70 +469,39 @@ body{
 
 /* ── TAB 2: TASKS ── */
 .progress-bar-wrap{
-  margin:14px 14px 0;
-  background:var(--surface);
-  border-radius:var(--radius);
-  border:1px solid var(--line);
-  padding:14px 16px;
-  box-shadow:var(--shadow);
+  margin:14px 14px 0;background:var(--surface);
+  border-radius:var(--radius);border:1px solid var(--line);
+  padding:14px 16px;box-shadow:var(--shadow);
 }
-.progress-label{
-  display:flex;justify-content:space-between;
-  font-size:13px;margin-bottom:8px;
-}
+.progress-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;}
 .progress-label strong{color:var(--accent)}
-.progress-track{
-  height:8px;background:var(--line);border-radius:4px;overflow:hidden;
-}
-.progress-fill{
-  height:100%;background:var(--accent);
-  border-radius:4px;transition:width .4s ease;
-}
+.progress-track{height:8px;background:var(--line);border-radius:4px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .4s ease;}
 
-.task-group{
-  margin:14px 14px 0;
-}
-.task-group-title{
-  font-size:12px;font-weight:700;
-  text-transform:uppercase;letter-spacing:.8px;
-  color:var(--muted);margin-bottom:8px;padding-left:2px;
-}
-.task-item{
-  background:var(--surface);
-  border:1px solid var(--line);
-  border-radius:12px;
-  margin-bottom:8px;
-  box-shadow:var(--shadow);
-  display:flex;align-items:center;gap:12px;
-  padding:12px 14px;
-  cursor:pointer;
-  transition:all .15s ease;
-  -webkit-user-select:none;user-select:none;
-}
-.task-item:active{background:#f5f5f0}
-.task-item.done{opacity:.5}
-.task-check{
-  width:24px;height:24px;min-width:24px;
-  border-radius:50%;border:2px solid var(--line);
-  background:#fff;
-  display:flex;align-items:center;justify-content:center;
-  font-size:13px;transition:all .2s ease;
-}
-.task-item.done .task-check{
-  background:var(--accent);border-color:var(--accent);
-}
-.task-check::after{
-  content:'';display:none;
-  width:6px;height:10px;
-  border:2px solid #fff;border-top:none;border-left:none;
-  transform:rotate(45deg) translateY(-1px);
-}
-.task-item.done .task-check::after{display:block}
-.task-text{flex:1;min-width:0}
-.task-name{font-size:14px;font-weight:500}
-.task-ref{font-size:12px;color:var(--muted);margin-top:2px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
+/* Order-based task groups */
+.tsk-order-block{margin:14px 14px 0;border-radius:14px;overflow:hidden;border:2px solid var(--line);}
+.tsk-order-head{background:var(--accent);color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.tsk-order-name{font-size:14px;font-weight:700;}
+.tsk-order-meta{font-size:12px;opacity:.85;}
+.tsk-order-badge{font-size:11px;font-weight:700;background:rgba(255,255,255,.2);padding:3px 8px;border-radius:999px;}
+.tsk-dish-item{background:var(--surface);border-top:1px solid var(--line);}
+.tsk-dish-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;-webkit-user-select:none;user-select:none;}
+.tsk-dish-head:active{background:#f9f9f6}
+.tsk-dish-check{width:26px;height:26px;min-width:26px;border-radius:50%;border:2px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;transition:all .2s ease;}
+.tsk-dish-check.checked{background:var(--accent);border-color:var(--accent);}
+.tsk-dish-check.checked::after{content:'✓';color:#fff;font-size:13px;font-weight:700;}
+.tsk-dish-name{flex:1;font-size:14px;font-weight:600;color:var(--ink);}
+.tsk-dish-name.done{text-decoration:line-through;color:var(--muted);}
+.tsk-dish-expand{font-size:12px;color:var(--muted);}
+.tsk-ing-panel{display:none;padding:0 14px 12px 50px;background:#fafaf7;}
+.tsk-ing-panel.open{display:block;}
+.tsk-ing-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dotted var(--line);}
+.tsk-ing-row:last-child{border-bottom:none;}
+.tsk-ing-name{flex:1;font-size:13px;color:var(--ink);}
+.tsk-ing-plan{font-size:12px;font-weight:700;color:var(--accent);min-width:68px;text-align:right;}
+.tsk-ing-input{width:72px;font-family:inherit;font-size:13px;font-weight:600;text-align:center;border:1.5px solid var(--line);border-radius:8px;padding:5px 4px;background:#fff;color:var(--ink);}
+.tsk-ing-input:focus{outline:none;border-color:var(--accent);}
+.tsk-ing-label{font-size:11px;color:var(--muted);min-width:28px;}
 
 /* ── TAB 3: RECIPES ── */
 .search-bar{
@@ -1307,7 +1276,7 @@ function renderOrderCard(o, isPast) {
     '<div class="order-detail" id="'+detailId+'">' +
       '<div class="detail-row"><span class="detail-label">📞 Утас</span><span class="detail-val">'+esc(phone)+'</span></div>' +
       (note ? '<div class="detail-row"><span class="detail-label">📝 Тэмдэглэл</span><span class="detail-val">'+esc(note)+'</span></div>' : '') +
-      (dishes ? '<div class="dish-list">🍽 <strong>Хоол:</strong><br>'+esc(dishes).replace(/,/g,'<br>')+'</div>' : '') +
+      buildIngSection(id, service, parseInt(pax)||0) +
       '<div class="status-btns">' +
         '<button class="btn-status preparing'+(status==='Бэлтгэж байна'?' active-status':'')+'" onclick="updateStatus(\''+id+'\',\'Бэлтгэж байна\')">🔵 Бэлтгэж байна</button>' +
         '<button class="btn-status done'+(status==='Дууссан'?' active-status':'')+'" onclick="updateStatus(\''+id+'\',\'Дууссан\')">✅ Дууссан</button>' +
@@ -1362,52 +1331,66 @@ function esc(s) {
 /* ─────────────────────────────────
    TASKS (Tab 2)
 ───────────────────────────────── */
-var TASK_DEFS = {
-  'Тогооч': function(order, dishes) {
-    var tasks = [];
-    var dishList = dishes ? dishes.split(/[,،\n]+/) : [];
-    dishList.forEach(function(d) {
-      var dn = d.trim();
-      if (!dn) return;
-      tasks.push({key:'cook_'+dn, name:'🍳 '+dn+' хийх', role:'Тогооч'});
-    });
-    tasks.push({key:'serve_prep', name:'🍽 Хоол хүргэх бэлтгэл', role:'Тогооч'});
-    tasks.push({key:'taste', name:'🧂 Амт тохируулах', role:'Тогооч'});
-    return tasks;
-  },
-  'Бэлтгэгч': function(order, dishes) {
-    return [
-      {key:'veg', name:'🥬 Ногоо угааж таслах', role:'Бэлтгэгч'},
-      {key:'meat', name:'🥩 Мах бэлтгэх', role:'Бэлтгэгч'},
-      {key:'sauce', name:'🫙 Соус бэлтгэх', role:'Бэлтгэгч'},
-      {key:'dishprep', name:'🔪 Орцны бэлтгэл', role:'Бэлтгэгч'}
-    ];
-  },
-  'Угаагч': function(order) {
-    return [
-      {key:'wash', name:'🫧 Аяга таваг угаах', role:'Угаагч'},
-      {key:'clean', name:'🧹 Гал тогоо цэвэрлэх', role:'Угаагч'},
-      {key:'trash', name:'♻️ Хог гаргах', role:'Угаагч'}
-    ];
+// ── Туслах функцууд ──
+function parseDishes(service) {
+  if (!service) return [];
+  var parts = service.split('|');
+  var dishes = [];
+  for (var i = 1; i < parts.length; i++) {
+    var d = parts[i].replace(/\(\d+\s*порц\)/g,'').trim();
+    // Remove ingredient details in ()
+    d = d.replace(/\([^)]*г[^)]*\)/g,'').trim();
+    if (d) dishes.push(d);
   }
-};
+  return dishes;
+}
 
-function getTaskKey(orderId, taskKey) {
-  return 'task_'+orderId+'_'+taskKey;
-}
-function isTaskDone(orderId, taskKey) {
-  return localStorage.getItem(getTaskKey(orderId,taskKey)) === '1';
-}
-function toggleTask(orderId, taskKey, el) {
-  var done = isTaskDone(orderId, taskKey);
-  if (done) {
-    localStorage.removeItem(getTaskKey(orderId,taskKey));
-  } else {
-    localStorage.setItem(getTaskKey(orderId,taskKey), '1');
-    logActivity('Даалгавар: ' + taskKey);
+function findRecipe(name) {
+  if (!name) return null;
+  var n = name.toLowerCase();
+  for (var i = 0; i < RECIPES.length; i++) {
+    var rn = RECIPES[i].name.toLowerCase();
+    if (rn === n || rn.indexOf(n) >= 0 || n.indexOf(rn) >= 0) return RECIPES[i];
   }
+  return null;
+}
+
+function calcPlanned(amtStr, pax) {
+  var m = amtStr.match(/(\d+\.?\d*)(г|мл|кг|ш)\/хүн/);
+  if (!m) return amtStr;
+  var val = parseFloat(m[1]) * pax;
+  var u = m[2];
+  if (u === 'г') return val >= 1000 ? (val/1000).toFixed(2)+' кг' : val+' г';
+  if (u === 'кг') return val.toFixed(2)+' кг';
+  if (u === 'мл') return val >= 1000 ? (val/1000).toFixed(2)+' л' : val+' мл';
+  if (u === 'ш') return val+' ш';
+  return val+' '+u;
+}
+
+function getActual(key) { return localStorage.getItem('actual_'+key) || ''; }
+function saveActual(key, val) { localStorage.setItem('actual_'+key, val); }
+
+function isDishDone(key) { return localStorage.getItem('dish_done_'+key) === '1'; }
+function toggleDish(key) {
+  var done = isDishDone(key);
+  if (done) localStorage.removeItem('dish_done_'+key);
+  else { localStorage.setItem('dish_done_'+key, '1'); logActivity('Хоол дууссан: '+key); }
   renderTasks();
 }
+function toggleIngPanel(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.toggle('open');
+}
+
+// Угаагчийн тогтмол даалгаварууд
+var WASH_TASKS = [
+  {key:'wash_dish',  name:'🫧 Аяга таваг угаах'},
+  {key:'wash_pot',   name:'🥘 Тогоо, хайруул угаах'},
+  {key:'clean_floor',name:'🧹 Шал цэвэрлэх'},
+  {key:'clean_table',name:'🪣 Ширээ, тавцан цэвэрлэх'},
+  {key:'trash_out',  name:'♻️ Хог гаргах'},
+  {key:'clean_sink', name:'🚿 Угаалтуур цэвэрлэх'},
+];
 
 function renderTasks() {
   if (!currentRole) return;
@@ -1421,60 +1404,152 @@ function renderTasks() {
   }
 
   var today = todayStr();
-  var relevantOrders = ordersData.filter(function(o) {
-    return o._parsedDate === today || !o._parsedDate;
-  });
+  var orders = ordersData.filter(function(o){ return !o._parsedDate || o._parsedDate >= today; });
+  if (!orders.length) orders = ordersData.slice(0, 3);
 
-  if (relevantOrders.length === 0) {
-    relevantOrders = ordersData.slice(0, 5);
-  }
-
-  var taskDef = TASK_DEFS[currentRole];
-  if (!taskDef) {
-    body.innerHTML = '<div class="error-wrap"><div class="error-ico">📋</div><p>Энэ үүрэгт даалгавар байхгүй.</p></div>';
-    progressWrap.innerHTML = '';
-    return;
-  }
-
-  var allTasks = [];
   var html = '';
+  var totalTasks = 0, doneTasks = 0;
 
-  relevantOrders.forEach(function(o) {
-    var id = o['id'] || o['ID'] || o['захиалгын_дугаар'] || o._idx;
-    var company = o['байгууллагын_нэр'] || o['компани'] || o['company'] || 'Нэргүй';
-    var dishes = o['хоол'] || o['dishes'] || o['хоолны_жагсаалт'] || '';
-    var tasks = taskDef(o, dishes);
+  // ── Угаагч: тогтмол цэвэрлэгээний ажлууд ──
+  if (currentRole === 'Угаагч') {
+    html += '<div class="tsk-order-block" style="border-color:#2c6a8f">';
+    html += '<div class="tsk-order-head" style="background:#2c6a8f">' +
+      '<div><div class="tsk-order-name">🫧 Өнөөдрийн цэвэрлэгээ</div>' +
+      '<div class="tsk-order-meta">' + formatDateMN(today) + '</div></div></div>';
 
-    html += '<div class="task-group">';
-    html += '<div class="task-group-title">🏢 '+esc(company)+'</div>';
-    tasks.forEach(function(t) {
-      allTasks.push({orderId:id, taskKey:t.key});
-      var done = isTaskDone(id, t.key);
-      html += '<div class="task-item'+(done?' done':'')+'" onclick="toggleTask(\''+id+'\',\''+t.key+'\',this)">' +
-        '<div class="task-check"></div>' +
-        '<div class="task-text">' +
-          '<div class="task-name">'+esc(t.name)+'</div>' +
-          '<div class="task-ref">'+esc(company)+' · '+formatDateMN(o._parsedDate||today)+'</div>' +
-        '</div>' +
-      '</div>';
+    WASH_TASKS.forEach(function(t) {
+      totalTasks++;
+      var done = isDishDone(t.key);
+      if (done) doneTasks++;
+      html += '<div class="tsk-dish-item">' +
+        '<div class="tsk-dish-head" onclick="toggleDish(\''+t.key+'\')">' +
+          '<div class="tsk-dish-check'+(done?' checked':'')+'"></div>' +
+          '<div class="tsk-dish-name'+(done?' done':'')+'">'+esc(t.name)+'</div>' +
+        '</div></div>';
+    });
+
+    // Per-order wash tasks
+    orders.forEach(function(o) {
+      var id = o['id'] || o._idx;
+      var company = o['байгууллага'] || 'Нэргүй';
+      var wkey = 'wash_order_'+id;
+      totalTasks++;
+      var done = isDishDone(wkey);
+      if (done) doneTasks++;
+      html += '<div class="tsk-dish-item">' +
+        '<div class="tsk-dish-head" onclick="toggleDish(\''+wkey+'\')">' +
+          '<div class="tsk-dish-check'+(done?' checked':'')+'"></div>' +
+          '<div class="tsk-dish-name'+(done?' done':'')+'">🍽 '+esc(company)+'-ын аяга сав угаах</div>' +
+        '</div></div>';
     });
     html += '</div>';
-  });
 
-  var total = allTasks.length;
-  var doneCount = allTasks.filter(function(t){ return isTaskDone(t.orderId,t.taskKey); }).length;
-  var pct = total > 0 ? Math.round(doneCount/total*100) : 0;
+  } else {
+    // ── Тогооч / Бэлтгэгч / Захирал: захиалга дээр үндэслэсэн даалгавар ──
+    orders.forEach(function(o) {
+      var id = o['id'] || o._idx;
+      var company = o['байгууллага'] || 'Нэргүй';
+      var pax = parseInt(o['хүн']) || 0;
+      var service = o['үйлчилгээ'] || '';
+      var timeStr = o._parsedTime ? ' · ' + o._parsedTime : '';
+      var dishes = parseDishes(service);
 
+      // Хэрэв хоол жагсаалт хоосон бол service-ийг задлах
+      if (!dishes.length && service) {
+        // Try to find any recognizable dish
+        RECIPES.forEach(function(r){
+          if (service.toLowerCase().indexOf(r.name.toLowerCase()) >= 0) dishes.push(r.name);
+        });
+      }
+      if (!dishes.length) return; // skip if no dishes found
+
+      var blockDone = dishes.every(function(d){ return isDishDone(id+'_'+d.replace(/\s/g,'_')); });
+
+      html += '<div class="tsk-order-block">';
+      html += '<div class="tsk-order-head">' +
+        '<div><div class="tsk-order-name">🏢 '+esc(company)+'</div>' +
+        '<div class="tsk-order-meta">👤 '+pax+' хүн'+timeStr+'</div></div>' +
+        '<span class="tsk-order-badge">'+(blockDone?'✅ Дууссан':'⏳ Хийгдэж байна')+'</span>' +
+      '</div>';
+
+      dishes.forEach(function(dishName) {
+        var dkey = id+'_'+dishName.replace(/\s/g,'_');
+        var done = isDishDone(dkey);
+        if (done) doneTasks++;
+        totalTasks++;
+        var panelId = 'ingpanel_'+dkey;
+        var recipe = findRecipe(dishName);
+
+        html += '<div class="tsk-dish-item">';
+        html += '<div class="tsk-dish-head" onclick="toggleIngPanel(\''+panelId+'\')">' +
+          '<div class="tsk-dish-check'+(done?' checked':'')+'" onclick="event.stopPropagation();toggleDish(\''+dkey+'\')"></div>' +
+          '<div class="tsk-dish-name'+(done?' done':'')+'">🍳 '+esc(dishName)+'</div>' +
+          '<div class="tsk-dish-expand">▾</div>' +
+        '</div>';
+
+        // Ingredient panel
+        html += '<div class="tsk-ing-panel" id="'+panelId+'">';
+        if (recipe && recipe.ingredients && pax > 0) {
+          html += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;justify-content:space-between">' +
+            '<span>Орц</span><span>Тооцоо · Бодит</span></div>';
+          recipe.ingredients.forEach(function(ing) {
+            var planned = calcPlanned(ing.a, pax);
+            var ikey = dkey+'_'+ing.n.replace(/\s/g,'_');
+            var actual = getActual(ikey);
+            html += '<div class="tsk-ing-row">' +
+              '<span class="tsk-ing-name">'+esc(ing.n)+'</span>' +
+              '<span class="tsk-ing-plan">'+esc(planned)+'</span>' +
+              '<input class="tsk-ing-input" type="text" placeholder="бодит" value="'+esc(actual)+'"' +
+              ' onchange="saveActual(\''+ikey+'\',this.value)">' +
+            '</div>';
+          });
+          if (currentRole === 'Тогооч' || currentRole === 'Захирал') {
+            html += '<div class="tsk-ing-row" style="margin-top:6px;border-top:1px solid var(--line);padding-top:8px">' +
+              '<span class="tsk-ing-name" style="font-weight:600">⏱ Хугацаа</span>' +
+              '<span class="tsk-ing-plan" style="color:var(--amber)">'+esc(recipe.time)+'</span>' +
+              '<input class="tsk-ing-input" type="time" placeholder="эхэлсэн"' +
+              ' value="'+esc(getActual(dkey+'_start_time'))+'"' +
+              ' onchange="saveActual(\''+dkey+'_start_time\',this.value)">' +
+            '</div>';
+          }
+        } else if (!recipe) {
+          html += '<div style="font-size:12px;color:var(--muted);padding:6px 0">Технологи карт олдсонгүй</div>';
+        } else {
+          html += '<div style="font-size:12px;color:var(--muted);padding:6px 0">Хүний тоо мэдэгдэхгүй байна</div>';
+        }
+
+        // Бэлтгэгчид: prep tasks
+        if (currentRole === 'Бэлтгэгч' || currentRole === 'Захирал') {
+          ['🥩 Мах бэлтгэх','🥬 Ногоо таслах','🫙 Соус бэлтгэх','🔪 Орц хэмжих'].forEach(function(pt) {
+            var pkey = dkey+'_prep_'+pt.replace(/\s/g,'_');
+            var pdone = isDishDone(pkey);
+            if (currentRole === 'Бэлтгэгч') { totalTasks++; if (pdone) doneTasks++; }
+            html += '<div class="tsk-ing-row" style="cursor:pointer" onclick="toggleDish(\''+pkey+'\')">' +
+              '<div class="tsk-dish-check'+(pdone?' checked':'')+'" style="width:20px;height:20px;min-width:20px;font-size:11px;flex-shrink:0"></div>' +
+              '<span class="tsk-ing-name" style="'+(pdone?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(pt)+'</span>' +
+            '</div>';
+          });
+        }
+
+        html += '</div></div>';
+      });
+
+      html += '</div>';
+    });
+  }
+
+  // Progress bar
+  var pct = totalTasks > 0 ? Math.round(doneTasks/totalTasks*100) : 0;
   progressWrap.innerHTML = '<div class="progress-bar-wrap">' +
-    '<div class="progress-label">' +
-      '<span>Явц</span>' +
-      '<strong>'+doneCount+' / '+total+' даалгавар дууссан</strong>' +
-    '</div>' +
+    '<div class="progress-label"><span>Гүйцэтгэл</span>' +
+    '<strong>'+doneTasks+' / '+totalTasks+' дууссан ('+pct+'%)</strong></div>' +
     '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>' +
   '</div>';
 
-  document.getElementById('tasks-subtitle').textContent = doneCount+'/'+total+' — '+pct+'% гүйцэтгэсэн';
-  body.innerHTML = html || '<div class="error-wrap"><div class="error-ico">📋</div><p>Даалгавар байхгүй.</p></div>';
+  if (document.getElementById('tasks-subtitle'))
+    document.getElementById('tasks-subtitle').textContent = doneTasks+'/'+totalTasks+' — '+pct+'%';
+
+  body.innerHTML = html || '<div class="error-wrap"><div class="error-ico">📋</div><p>Захиалга байхгүй.</p></div>';
 }
 
 /* ─────────────────────────────────
