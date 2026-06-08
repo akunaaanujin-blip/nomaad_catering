@@ -285,6 +285,22 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
           <label>И-мэйл <span style="font-weight:400;color:var(--muted)">(заавал биш)</span></label>
           <input type="email" name="Email" id="of-email" placeholder="example@mail.com">
         </div>
+        <!-- ── АРГА ХЭМЖЭЭНИЙ ТӨРӨЛ (хүний тооноос өмнө) ── -->
+        <div class="order-field">
+          <label>Арга хэмжээний төрөл <span style="color:#e11d48">*</span></label>
+          <select id="of-event" name="Arga_hemjeenii_turul" onchange="calcPrice();updateLocationField()">
+            <option value="">— Сонгоно уу —</option>
+            <option>Nomaad camp</option>
+            <option>Байгууллагын корпорат арга хэмжээ</option>
+            <option>Албан хурал</option>
+            <option>Найр · баяр</option>
+            <option>Хүлээн авалт</option>
+            <option>Ойн баяр</option>
+            <option>Гадаа арга хэмжээ</option>
+            <option>Сургалт · семинар</option>
+          </select>
+          <div style="margin-top:8px;padding:8px 12px;background:#e8f4f0;border-radius:8px;border-left:3px solid var(--accent);font-size:12px;color:var(--accent)">⛺ <strong>Nomaad Camp</strong> захиалагч бол дээрх жагсаалтаас <strong>Nomaad camp</strong> сонгоно уу.</div>
+        </div>
         <div class="order-field">
           <label>Хүний тоо</label>
           <input type="number" name="Hunii_too" id="of-pax" min="1" placeholder="0" required>
@@ -292,6 +308,14 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         <div class="order-field">
           <label>Арга хэмжээний газар</label>
           <input type="text" name="Gazar" id="of-location" placeholder="Хаяг, байршил...">
+          <!-- Nomaad camp сонгосон үед гарч ирэх байршлын сонголт -->
+          <select id="of-nomaad-location" style="display:none;margin-top:8px" onchange="syncNomaadLocation()">
+            <option value="">— Nomaad camp байршил сонгох —</option>
+            <option>NOMAAD SUMMIT</option>
+            <option>NOMAAD MEADOW</option>
+            <option>NOMAAD GROVE</option>
+            <option>NOMAAD MOBILE</option>
+          </select>
         </div>
         <div class="order-field full">
           <label>Хамрах хугацаа</label>
@@ -307,23 +331,6 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
             </div>
           </div>
           <div id="date-range-preview" style="margin-top:8px;font-size:13px;font-weight:600;color:var(--accent);display:none"></div>
-        </div>
-
-        <!-- ── АРГА ХЭМЖЭЭНИЙ ТӨРӨЛ ── -->
-        <div class="order-field">
-          <label>Арга хэмжээний төрөл <span style="color:#e11d48">*</span></label>
-          <select id="of-event" name="Arga_hemjeenii_turul" onchange="calcPrice()">
-            <option value="">— Сонгоно уу —</option>
-            <option>Nomaad camp</option>
-            <option>Байгууллагын корпорат арга хэмжээ</option>
-            <option>Албан хурал</option>
-            <option>Найр · баяр</option>
-            <option>Хүлээн авалт</option>
-            <option>Ойн баяр</option>
-            <option>Гадаа арга хэмжээ</option>
-            <option>Сургалт · семинар</option>
-          </select>
-          <div style="margin-top:8px;padding:8px 12px;background:#e8f4f0;border-radius:8px;border-left:3px solid var(--accent);font-size:12px;color:var(--accent)">⛺ <strong>Nomaad Camp</strong> захиалагч бол дээрх жагсаалтаас <strong>Nomaad camp</strong> сонгоно уу.</div>
         </div>
 
         <!-- Үйлчилгээнүүд -->
@@ -1235,6 +1242,29 @@ function updateDishesField() {
   }
   if (svcParts.length) parts.unshift(svcParts.join(' | '));
   document.getElementById('of-dishes').value = parts.join(' | ');
+}
+
+// Арга хэмжээний төрлөөс хамаарч байршлын талбарыг солих
+var NOMAAD_LOCATIONS = ['NOMAAD SUMMIT','NOMAAD MEADOW','NOMAAD GROVE','NOMAAD MOBILE'];
+function updateLocationField() {
+  var event = document.getElementById('of-event').value;
+  var sel = document.getElementById('of-nomaad-location');
+  var txt = document.getElementById('of-location');
+  if (!sel || !txt) return;
+  if (event === 'Nomaad camp') {
+    sel.style.display = '';
+    txt.style.display = 'none';
+    txt.value = sel.value;   // мэйл/тооцоонд байршлыг дамжуулна
+  } else {
+    sel.style.display = 'none';
+    txt.style.display = '';
+    // өмнө нь Nomaad байршил сонгосон бол цэвэрлэнэ
+    if (NOMAAD_LOCATIONS.indexOf(txt.value) >= 0) txt.value = '';
+  }
+}
+function syncNomaadLocation() {
+  document.getElementById('of-location').value =
+    document.getElementById('of-nomaad-location').value;
 }
 
 // Нэг үйлчилгээний мөрийн сонгосон хоолыг массив болгож буцаана
