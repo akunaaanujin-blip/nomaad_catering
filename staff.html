@@ -1377,6 +1377,7 @@ function switchTab(name) {
   var navBtn = document.getElementById('nav-'+name);
   if (navBtn) navBtn.classList.add('active');
 
+  if (name === 'orders') renderOrders();
   if (name === 'tasks') renderTasks();
   if (name === 'ingredients') { renderIngCalc(); loadStock(); }
   if (name === 'perf') renderPerf();
@@ -1646,7 +1647,7 @@ function parseService(service) {
   var packages = [], dishes = [];
   parts.forEach(function(p) {
     // Багц: "1-р Порц хоол (₮38,000/хүн) · 2026-06-06 13:00" гэх мэт
-    if (/^\d+\s*-?\s*р\b/.test(p) || p.indexOf('₮') >= 0) {
+    if (/^\d+\s*-?\s*р(?=\s|$)/.test(p) || p.indexOf('₮') >= 0) {
       var label = p
         .replace(/^\d+\s*-?\s*р\s*/, '')                 // "1-р " хасах
         .replace(/\s*\([^)]*₮[^)]*\)/g, '')              // "(₮38,000/хүн)" хасах
@@ -1731,7 +1732,30 @@ function toggleDish(key) {
   var done = isDishDone(key);
   if (done) localStorage.removeItem('dish_done_'+key);
   else { localStorage.setItem('dish_done_'+key, '1'); logActivity('Хоол дууссан: '+key); }
+  syncOrderStatusFromTasks();   // бүх хоол дуусвал захиалгыг автоматаар "Дууссан" болгоно
   renderTasks();
+}
+
+// Захиалгын бүх хоол дуусгасан эсэхээс хамаарч төлвийг автоматаар тохируулна
+function syncOrderStatusFromTasks() {
+  ordersData.forEach(function(o) {
+    var id = o['id'] || o._idx;
+    var dishes = parseDishes(o['үйлчилгээ'] || '');
+    if (!dishes.length) return;
+    var doneCount = 0;
+    dishes.forEach(function(dn) {
+      if (isDishDone(id+'_'+dn.replace(/\s/g,'_'))) doneCount++;
+    });
+    var cur = getOrderStatus(id);
+    if (doneCount === dishes.length) {
+      if (cur !== 'Дууссан') { setOrderStatus(id, 'Дууссан'); logActivity('✅ Захиалга дуусгав: '+(o['байгууллага']||id)); }
+    } else if (doneCount > 0) {
+      if (cur !== 'Бэлтгэж байна') setOrderStatus(id, 'Бэлтгэж байна');
+    } else {
+      // бүх хоол цуцлагдсан бол автомат төлвийг буцаана
+      if (cur === 'Дууссан' || cur === 'Бэлтгэж байна') setOrderStatus(id, 'Шинэ');
+    }
+  });
 }
 function toggleIngPanel(id) {
   var el = document.getElementById(id);
