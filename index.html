@@ -637,11 +637,19 @@ function refreshBookedDates(cb) {
 }
 
 function checkDateConflict(input, rowIdx) {
-  _runConflictCheck(rowIdx);
+  if (_bookedOrders === null) {
+    refreshBookedDates(function() { _runConflictCheck(rowIdx); });
+  } else {
+    _runConflictCheck(rowIdx);
+  }
 }
 
 function checkTimeConflict(rowIdx) {
-  _runConflictCheck(rowIdx);
+  if (_bookedOrders === null) {
+    refreshBookedDates(function() { _runConflictCheck(rowIdx); });
+  } else {
+    _runConflictCheck(rowIdx);
+  }
 }
 
 function _runConflictCheck(rowIdx) {
@@ -914,7 +922,7 @@ function buildSvcRowHTML(i) {
       '<select id="svc-sel-'+i+'" onchange="refreshPanels()">' +
       SVC_OPTIONS.map(function(o){return '<option value="'+o.v+'">'+o.l+'</option>';}).join('')+
       '</select></div>' +
-      '<div><div style="'+colStyle+'">Огноо</div><input type="date" id="svc-date-'+i+'" style="margin-top:0" onchange="checkDateConflict(this,'+i+')"><div id="date-warn-'+i+'" style="display:none;font-size:11px;color:#BB4A36;font-weight:600;margin-top:4px"></div></div>' +
+      '<div><div style="'+colStyle+'">Огноо</div><input type="date" id="svc-date-'+i+'" style="margin-top:0" onchange="checkDateConflict(this,'+i+')"><div id="date-warn-'+i+'" style="display:none;margin-top:6px;padding:6px 10px;background:#fdecea;border-left:3px solid #BB4A36;border-radius:6px;font-size:11.5px;color:#BB4A36;font-weight:600;line-height:1.4"></div></div>' +
       '<div><div style="'+colStyle+'">Цаг</div><select id="svc-time-'+i+'" style="margin-top:0" onchange="checkTimeConflict('+i+')">'+buildTimeOptions()+'</select></div>' +
     '</div>';
 }
