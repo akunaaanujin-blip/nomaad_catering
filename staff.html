@@ -937,10 +937,31 @@ body{
         </div>
       </div>
 
-      <div class="ing-section-title" style="margin-top:16px">Б. Нөөцийн мэдээлэл</div>
+      <div class="ing-section-title" style="margin-top:20px">Б. Ажилтны хоол</div>
+      <div class="ing-section-sub">Ажилчдад хийсэн хоолыг бүртгэж хүнснээс хасна</div>
+      <div style="padding:0 18px 10px">
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <select id="staff-meal-type" style="flex:1;min-width:140px;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:var(--bg);color:var(--ink)">
+            <option value="цуйван">🍜 Цуйван</option>
+            <option value="хуурга">🥘 Хуурга</option>
+            <option value="шөл">🍲 Гурилтай шөл</option>
+            <option value="будаатай">🍚 Будаатай хоол</option>
+            <option value="хуушуур">🥟 Хуушуур</option>
+          </select>
+          <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:6px 10px">
+            <span style="font-size:12px;color:var(--muted);white-space:nowrap">Хүн тоо:</span>
+            <input type="number" id="staff-meal-pax" min="1" max="50" value="5"
+              style="width:52px;font-family:inherit;font-size:15px;font-weight:700;border:none;background:transparent;text-align:center;color:var(--ink)">
+          </div>
+          <button onclick="addStaffMeal()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 16px;cursor:pointer;white-space:nowrap">＋ Бүртгэх</button>
+        </div>
+        <div id="staff-meal-list"></div>
+      </div>
+
+      <div class="ing-section-title" style="margin-top:16px">В. Нөөцийн мэдээлэл</div>
       <div style="padding:0 18px 10px;display:flex;align-items:center;justify-content:space-between">
-        <span class="section-sub">Google Sheets-ээс</span>
-        <button class="btn-refresh" onclick="loadStock()">Шинэчлэх</button>
+        <span class="section-sub">Нөөцийн бүртгэл хуудаснаас</span>
+        <button class="btn-refresh" onclick="loadStock()">🔄 Шинэчлэх</button>
       </div>
       <div id="stock-body">
         <div class="loading-wrap" style="padding:24px">
@@ -1100,6 +1121,7 @@ function enterApp(role) {
   switchTab(info.tabs[0]);
   buildRecipes();
   loadOrders();
+  renderStaffMealList();
 }
 
 function doLogout() {
@@ -1728,6 +1750,77 @@ var ING_UNITS = {
   'өндөг':'ш'
 };
 
+// ── Ажилтны хоолны орц (1 хүнд, грамм) ──
+var STAFF_MEAL_ING = {
+  'цуйван':    {'гурил':80, 'мах нийт':80, 'ногоо нийт':50},
+  'хуурга':    {'мах нийт':150, 'ногоо нийт':80, 'төмс':60},
+  'шөл':       {'гурил':60, 'мах нийт':50, 'ногоо нийт':40},
+  'будаатай':  {'мах нийт':120, 'ногоо нийт':60},
+  'хуушуур':   {'гурил':80, 'мах нийт':70}
+};
+
+var STAFF_MEAL_LABELS = {
+  'цуйван':'🍜 Цуйван', 'хуурга':'🥘 Хуурга',
+  'шөл':'🍲 Гурилтай шөл', 'будаатай':'🍚 Будаатай хоол', 'хуушуур':'🥟 Хуушуур'
+};
+
+function todayKey() { return new Date().toISOString().substring(0,10); }
+
+function getStaffMeals() {
+  try { return JSON.parse(localStorage.getItem('staff_meals_' + todayKey()) || '[]'); }
+  catch(e) { return []; }
+}
+function saveStaffMeals(arr) {
+  localStorage.setItem('staff_meals_' + todayKey(), JSON.stringify(arr));
+}
+
+function addStaffMeal() {
+  var type = document.getElementById('staff-meal-type').value;
+  var pax  = parseInt(document.getElementById('staff-meal-pax').value) || 1;
+  var meals = getStaffMeals();
+  meals.push({ type: type, pax: pax, time: new Date().toLocaleTimeString('mn-MN', {hour:'2-digit',minute:'2-digit'}) });
+  saveStaffMeals(meals);
+  renderStaffMealList();
+  renderIngCalc();
+}
+
+function removeStaffMeal(idx) {
+  var meals = getStaffMeals();
+  meals.splice(idx, 1);
+  saveStaffMeals(meals);
+  renderStaffMealList();
+  renderIngCalc();
+}
+
+function renderStaffMealList() {
+  var el = document.getElementById('staff-meal-list');
+  if (!el) return;
+  var meals = getStaffMeals();
+  if (!meals.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0">Өнөөдөр бүртгэл байхгүй</div>'; return; }
+  var html = '<div style="display:flex;flex-direction:column;gap:6px">';
+  meals.forEach(function(m, i) {
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px">' +
+      '<div><span style="font-weight:600;font-size:13px">' + esc(STAFF_MEAL_LABELS[m.type]||m.type) + '</span>' +
+      ' <span style="font-size:12px;color:var(--muted)">' + m.pax + ' хүн · ' + m.time + '</span></div>' +
+      '<button onclick="removeStaffMeal('+i+')" style="border:none;background:none;color:var(--red);font-size:16px;cursor:pointer;padding:2px 6px">✕</button>' +
+    '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function getStaffMealTotals() {
+  var totals = {};
+  var meals = getStaffMeals();
+  meals.forEach(function(m) {
+    var ing = STAFF_MEAL_ING[m.type] || {};
+    Object.keys(ing).forEach(function(k) {
+      totals[k] = (totals[k] || 0) + m.pax * ing[k];
+    });
+  });
+  return totals;
+}
+
 function renderIngCalc() {
   var body = document.getElementById('ing-calc-body');
   if (!ordersLoaded || ordersData.length === 0) {
@@ -1762,17 +1855,37 @@ function renderIngCalc() {
     });
   });
 
+  // Ажилтны хоолны орцыг хасах
+  var staffTotals = getStaffMealTotals();
+  Object.keys(staffTotals).forEach(function(k) {
+    totals[k] = (totals[k] || 0) - staffTotals[k];
+  });
+
   var KG_KEYS = ['хонины мах','гахайн мах','тахианы мах','мах нийт','гурил','төмс','ногоо нийт'];
-  var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Хүнс</span><span class="ing-amt-col">Хэмжээ</span><span class="ing-unit-col">Нэгж</span></div>';
+  var html = '<div class="ing-table">' +
+    '<div class="ing-table-row header">' +
+      '<span class="ing-name-col">Хүнс</span>' +
+      '<span class="ing-amt-col">Хэрэгцээ</span>' +
+      '<span class="ing-unit-col">Нэгж</span>' +
+    '</div>';
   var hasAny = false;
 
   KG_KEYS.forEach(function(k) {
     var grams = totals[k] || 0;
-    if (grams <= 0) return;
+    var staffG = staffTotals[k] || 0;
+    var orderG = grams + staffG; // захиалгын дүн
+    if (orderG <= 0 && staffG <= 0) return;
     hasAny = true;
     var unit = ING_UNITS[k] || 'кг';
-    var display = unit === 'кг' ? (grams/1000).toFixed(1) : grams;
-    html += '<div class="ing-table-row"><span class="ing-name-col">'+esc(k)+'</span><span class="ing-amt-col">'+display+'</span><span class="ing-unit-col">'+unit+'</span></div>';
+    var display = (grams/1000).toFixed(2);
+    var neg = grams < 0;
+    html += '<div class="ing-table-row">' +
+      '<span class="ing-name-col">' + esc(k) +
+        (staffG > 0 ? '<span style="font-size:10px;color:var(--muted);margin-left:4px">−' + (staffG/1000).toFixed(2) + 'кг ажилтан</span>' : '') +
+      '</span>' +
+      '<span class="ing-amt-col" style="' + (neg ? 'color:var(--red)' : '') + '">' + display + '</span>' +
+      '<span class="ing-unit-col">' + unit + '</span>' +
+    '</div>';
   });
 
   if (!hasAny) {
@@ -1782,34 +1895,33 @@ function renderIngCalc() {
   body.innerHTML = html;
 }
 
-/* Stock from Sheets */
+/* Stock from Sheets — JSONP */
 var stockLoaded = false;
 function loadStock() {
   stockLoaded = false;
   var body = document.getElementById('stock-body');
   body.innerHTML = '<div class="loading-wrap" style="padding:24px"><div class="spinner"></div><p>Уншиж байна...</p></div>';
 
-  var url = 'https://docs.google.com/spreadsheets/d/1gUt92TXoxWS5popXmM7g_gvJhU3LT2twTs3wp-l1Xss/gviz/tq?tqx=out:json&gid=1696013893';
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', url, true);
-  xhr.timeout = 10000;
-  xhr.onload = function() {
-    if (xhr.status === 200) {
-      try {
-        var raw = xhr.responseText;
-        var json = raw.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, '');
-        var data = JSON.parse(json);
-        renderStock(data);
-      } catch(e) {
-        showStockError('Өгөгдөл задлах алдаа.');
-      }
-    } else {
-      showStockError('Серверийн алдаа: '+xhr.status);
-    }
+  var cbName = 'gviz_stock_' + Date.now();
+  var done = false;
+  var timer = setTimeout(function(){
+    if (!done) { done = true; showStockError('Хугацаа дууссан.'); }
+  }, 8000);
+
+  window[cbName] = function(data) {
+    if (done) return; done = true;
+    clearTimeout(timer);
+    delete window[cbName];
+    var s = document.getElementById('_gviz_stock_s');
+    if (s) s.parentNode.removeChild(s);
+    renderStock(data);
   };
-  xhr.onerror = function(){ showStockError('Холболт алдаа.'); };
-  xhr.ontimeout = function(){ showStockError('Хугацаа дууссан.'); };
-  xhr.send();
+
+  var s = document.createElement('script');
+  s.id  = '_gviz_stock_s';
+  s.src = 'https://docs.google.com/spreadsheets/d/1gUt92TXoxWS5popXmM7g_gvJhU3LT2twTs3wp-l1Xss/gviz/tq?tqx=out:json,responseHandler:' + cbName + '&gid=1696013893';
+  s.onerror = function() { if (!done){ done=true; showStockError('Холболт алдаа.'); } };
+  document.head.appendChild(s);
 }
 
 function showStockError(msg) {
@@ -1825,16 +1937,20 @@ function renderStock(data) {
     body.innerHTML = '<div class="stock-empty">Нөөцийн мэдээлэл байхгүй.</div>';
     return;
   }
-  var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Нэр</span><span class="ing-amt-col">Тоо</span><span class="ing-unit-col">Нэгж</span></div>';
+  var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Материал</span><span class="ing-amt-col">Тоо</span><span class="ing-unit-col">Нэгж</span></div>';
   rows.forEach(function(row) {
     var cells = row.c || [];
-    var name = cells[0] && cells[0].v ? cells[0].v : '';
-    var qty  = cells[1] && cells[1].v != null ? cells[1].v : '';
+    // Баганын дараалал (update_sheet.py): Огноо(0) | Материал(1) | Нэгж(2) | Тоо(3) | Нэгж үнэ(4) | Нийт(5)
+    var name = cells[1] && cells[1].v ? cells[1].v : '';
     var unit = cells[2] && cells[2].v ? cells[2].v : '';
+    var qty  = cells[3] && cells[3].v != null ? cells[3].v : '';
     if (!name) return;
-    html += '<div class="ing-table-row">' +
-      '<span class="ing-name-col">'+esc(String(name))+'</span>' +
-      '<span class="ing-amt-col">'+esc(String(qty))+'</span>' +
+    var qtyNum = parseFloat(qty);
+    var qtyDisplay = isNaN(qtyNum) ? (qty||'—') : qtyNum;
+    var low = !isNaN(qtyNum) && qtyNum < 2;
+    html += '<div class="ing-table-row"' + (low ? ' style="background:#fff5f3"' : '') + '>' +
+      '<span class="ing-name-col">' + (low ? '⚠️ ' : '') + esc(String(name))+'</span>' +
+      '<span class="ing-amt-col" style="' + (low ? 'color:var(--red)' : '') + '">'+esc(String(qtyDisplay))+'</span>' +
       '<span class="ing-unit-col">'+esc(String(unit))+'</span>' +
     '</div>';
   });
