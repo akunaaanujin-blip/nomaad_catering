@@ -581,6 +581,45 @@ function updateDrinksVisibility() {
   }
 }
 
+// ── Огноо давхцал шалгах ──
+var _bookedDates = null; // null=ачаалаагүй, []=хоосон, ['2026-06-10',...]=дүүрсэн
+
+function loadBookedDates() {
+  fetch(SHEETS_URL + '?action=orders')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      _bookedDates = (d.orders || [])
+        .map(function(o){ return (o.арга_хэмжээний_огноо||'').substring(0,10); })
+        .filter(function(s){ return s.length === 10; });
+    })
+    .catch(function(){ _bookedDates = []; });
+}
+
+function checkDateConflict(input, rowIdx) {
+  var val  = input.value;
+  var warn = document.getElementById('date-warn-' + rowIdx);
+  if (!warn) return;
+  if (!val) {
+    warn.style.display = 'none';
+    input.style.borderColor = '';
+    return;
+  }
+  // Мөр дотроо ижил өдөр шалгах
+  var innerConflict = false;
+  for (var j = 0; j < svcCount; j++) {
+    if (j === rowIdx) continue;
+    var other = document.getElementById('svc-date-' + j);
+    if (other && other.value === val) { innerConflict = true; break; }
+  }
+  // Sheets-аас татсан захиалгуудтай давхцал шалгах
+  var sheetConflict = Array.isArray(_bookedDates) && _bookedDates.indexOf(val) >= 0;
+  var msg = innerConflict  ? '⚠️ Энэ мөр дотор ижил өдөр давхарлаж байна' :
+            sheetConflict  ? '⚠️ Энэ өдөр өөр захиалга бүртгэгдсэн байна — лавлана уу' : '';
+  warn.textContent = msg;
+  warn.style.display = msg ? 'block' : 'none';
+  input.style.borderColor = msg ? '#BB4A36' : '';
+}
+
 function updateDateRange() {
   var s = document.getElementById('of-start-date').value;
   var e = document.getElementById('of-end-date').value;
@@ -797,7 +836,7 @@ function buildSvcRowHTML(i) {
       '<select id="svc-sel-'+i+'" onchange="refreshPanels()">' +
       SVC_OPTIONS.map(function(o){return '<option value="'+o.v+'">'+o.l+'</option>';}).join('')+
       '</select></div>' +
-      '<div><div style="'+colStyle+'">Огноо</div><input type="date" id="svc-date-'+i+'" style="margin-top:0"></div>' +
+      '<div><div style="'+colStyle+'">Огноо</div><input type="date" id="svc-date-'+i+'" style="margin-top:0" onchange="checkDateConflict(this,'+i+')"><div id="date-warn-'+i+'" style="display:none;font-size:11px;color:#BB4A36;font-weight:600;margin-top:4px"></div></div>' +
       '<div><div style="'+colStyle+'">Цаг</div><select id="svc-time-'+i+'" style="margin-top:0">'+buildTimeOptions()+'</select></div>' +
     '</div>';
 }
@@ -1179,6 +1218,20 @@ async function handleSubmit(e) {
     return;
   }
 
+  // Огноо давхцал шалгах
+  var conflictDays = [];
+  for (var _ci = 0; _ci < svcCount; _ci++) {
+    var _cw = document.getElementById('date-warn-' + _ci);
+    var _cd = document.getElementById('svc-date-' + _ci);
+    if (_cw && _cw.style.display !== 'none' && _cd && _cd.value) {
+      conflictDays.push(_cd.value);
+    }
+  }
+  if (conflictDays.length) {
+    var ok = confirm('⚠️ Сонгосон огноонд захиалга давхцаж байна:\n' + conflictDays.join(', ') + '\n\nҮргэлжлүүлэх үү?');
+    if (!ok) return;
+  }
+
   const btn  = document.getElementById('submit-btn');
   const form = document.getElementById('order-form');
 
@@ -1419,6 +1472,7 @@ function showOrderSummary(isNomaadCamp) {
 
 // Хуудас ачаалахад 1 мөр харуулах
 renderSvcRows();
+loadBookedDates();
 // Reset pax to empty on load
 document.getElementById('of-pax').value = '';
 </script>
