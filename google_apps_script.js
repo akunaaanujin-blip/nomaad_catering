@@ -27,20 +27,31 @@ function doGet(e) {
         return respond({ orders: [] }, callback);
       }
 
-      const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 10).getValues();
-      const orders = rows.map((r, i) => ({
-        id:                    i + 1,
-        огноо:                 r[0] ? Utilities.formatDate(new Date(r[0]), 'Asia/Ulaanbaatar', 'yyyy-MM-dd HH:mm') : '',
-        байгууллага:           r[1] || '',
-        нэр:                   r[2] || '',
-        утас:                  r[3] || '',
-        арга_хэмжээний_огноо:  r[4] ? Utilities.formatDate(new Date(r[4]), 'Asia/Ulaanbaatar', 'yyyy-MM-dd') : '',
-        хүн:                   r[5] || '',
-        үйлчилгээ:             r[6] || '',
-        тэмдэглэл:             r[7] || '',
-        статус:                r[8] || 'Шинэ',
-        тайлбар:               r[9] || '',
-      }));
+      const lastCol = Math.max(sheet.getLastColumn(), 11);
+      const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, lastCol).getValues();
+      const orders = rows.map((r, i) => {
+        // col 5 (r[4]): огноо+цаг — Date object эсвэл string аль ч байж болно
+        let dt = '';
+        if (r[4]) {
+          dt = r[4] instanceof Date
+            ? Utilities.formatDate(r[4], 'Asia/Ulaanbaatar', 'yyyy-MM-dd HH:mm')
+            : String(r[4]);
+        }
+        return {
+          id:                   i + 1,
+          огноо:                r[0] ? Utilities.formatDate(new Date(r[0]), 'Asia/Ulaanbaatar', 'yyyy-MM-dd HH:mm') : '',
+          байгууллага:          r[1] || '',
+          нэр:                  r[2] || '',
+          утас:                 r[3] || '',
+          арга_хэмжээний_огноо: dt,
+          хүн:                  r[5] || '',
+          үйлчилгээ:            r[6] || '',
+          тэмдэглэл:            r[7] || '',
+          статус:               r[8] || 'Шинэ',
+          тайлбар:              r[9] || '',
+          арга_хэмжээ:          r[10] || '',
+        };
+      });
 
       return respond({ orders: orders.reverse() }, callback);
     }
@@ -74,8 +85,9 @@ function saveOrder(ss, data) {
     Number(data.хүн) || '',
     data.үйлчилгээ   || '',
     data.тэмдэглэл   || '',
-    'Шинэ',
+    data.төлөв       || 'Шинэ захиалга',
     '',
+    data.арга_хэмжээ || '',   // col 11 — арга хэмжээний төрөл
   ]);
 }
 

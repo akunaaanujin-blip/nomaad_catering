@@ -581,43 +581,90 @@ function updateDrinksVisibility() {
   }
 }
 
-// ── Огноо давхцал шалгах ──
-var _bookedDates = null; // null=ачаалаагүй, []=хоосон, ['2026-06-10',...]=дүүрсэн
+// ── Огноо/цаг давхцал шалгах ──
+// [{date:'2026-06-10', time:'14:00', isNomaad:true}, ...]
+var _bookedOrders = null;
 
 function loadBookedDates() {
   fetch(SHEETS_URL + '?action=orders')
     .then(function(r){ return r.json(); })
     .then(function(d){
-      _bookedDates = (d.orders || [])
-        .map(function(o){ return (o.арга_хэмжээний_огноо||'').substring(0,10); })
-        .filter(function(s){ return s.length === 10; });
+      _bookedOrders = (d.orders || [])
+        .filter(function(o){ return o.арга_хэмжээний_огноо; })
+        .map(function(o){
+          var raw = o.арга_хэмжээний_огноо || '';
+          var parts = raw.split(' ');
+          return {
+            date:     parts[0] || '',
+            time:     parts[1] || '',
+            isNomaad: (o.арга_хэмжээ || '').indexOf('Nomaad') >= 0
+          };
+        })
+        .filter(function(o){ return o.date.length === 10; });
     })
-    .catch(function(){ _bookedDates = []; });
+    .catch(function(){ _bookedOrders = []; });
 }
 
 function checkDateConflict(input, rowIdx) {
-  var val  = input.value;
-  var warn = document.getElementById('date-warn-' + rowIdx);
-  if (!warn) return;
-  if (!val) {
+  _runConflictCheck(rowIdx);
+}
+
+function checkTimeConflict(rowIdx) {
+  _runConflictCheck(rowIdx);
+}
+
+function _runConflictCheck(rowIdx) {
+  var dateEl  = document.getElementById('svc-date-' + rowIdx);
+  var timeEl  = document.getElementById('svc-time-' + rowIdx);
+  var warn    = document.getElementById('date-warn-' + rowIdx);
+  if (!warn || !dateEl) return;
+
+  var selDate = dateEl.value;
+  var selTime = timeEl ? timeEl.value : '';
+  var isCurrentNomaad = (document.getElementById('of-event') || {}).value === 'Nomaad camp';
+
+  if (!selDate) {
     warn.style.display = 'none';
-    input.style.borderColor = '';
+    dateEl.style.borderColor = '';
     return;
   }
-  // Мөр дотроо ижил өдөр шалгах
-  var innerConflict = false;
+
+  // 1. Мөр дотроо давхцал
+  var innerMsg = '';
   for (var j = 0; j < svcCount; j++) {
     if (j === rowIdx) continue;
-    var other = document.getElementById('svc-date-' + j);
-    if (other && other.value === val) { innerConflict = true; break; }
+    var od = document.getElementById('svc-date-' + j);
+    if (!od || od.value !== selDate) continue;
+    if (isCurrentNomaad) {
+      var ot = document.getElementById('svc-time-' + j);
+      if (ot && ot.value && ot.value === selTime) { innerMsg = '⚠️ Энэ мөр дотор ижил огноо+цаг давхарлаж байна'; break; }
+    } else {
+      innerMsg = '⚠️ Энэ мөр дотор ижил өдөр давхарлаж байна'; break;
+    }
   }
-  // Sheets-аас татсан захиалгуудтай давхцал шалгах
-  var sheetConflict = Array.isArray(_bookedDates) && _bookedDates.indexOf(val) >= 0;
-  var msg = innerConflict  ? '⚠️ Энэ мөр дотор ижил өдөр давхарлаж байна' :
-            sheetConflict  ? '⚠️ Энэ өдөр өөр захиалга бүртгэгдсэн байна — лавлана уу' : '';
+
+  // 2. Sheets-аас татсан захиалгуудтай давхцал
+  var sheetMsg = '';
+  if (!innerMsg && Array.isArray(_bookedOrders)) {
+    for (var k = 0; k < _bookedOrders.length; k++) {
+      var bo = _bookedOrders[k];
+      if (bo.date !== selDate) continue;
+      if (isCurrentNomaad && bo.isNomaad) {
+        // Nomaad camp: цаг давхцвал л алдаа
+        if (selTime && bo.time && bo.time === selTime) {
+          sheetMsg = '⚠️ Энэ цаг (' + selTime + ') аль хэдийн захиалгатай байна'; break;
+        }
+      } else if (!isCurrentNomaad) {
+        // Бусад: өдөр давхцвал л алдаа
+        sheetMsg = '⚠️ Энэ өдөр захиалгатай байна — лавлана уу'; break;
+      }
+    }
+  }
+
+  var msg = innerMsg || sheetMsg;
   warn.textContent = msg;
   warn.style.display = msg ? 'block' : 'none';
-  input.style.borderColor = msg ? '#BB4A36' : '';
+  dateEl.style.borderColor = msg ? '#BB4A36' : '';
 }
 
 function updateDateRange() {
@@ -837,7 +884,7 @@ function buildSvcRowHTML(i) {
       SVC_OPTIONS.map(function(o){return '<option value="'+o.v+'">'+o.l+'</option>';}).join('')+
       '</select></div>' +
       '<div><div style="'+colStyle+'">Огноо</div><input type="date" id="svc-date-'+i+'" style="margin-top:0" onchange="checkDateConflict(this,'+i+')"><div id="date-warn-'+i+'" style="display:none;font-size:11px;color:#BB4A36;font-weight:600;margin-top:4px"></div></div>' +
-      '<div><div style="'+colStyle+'">Цаг</div><select id="svc-time-'+i+'" style="margin-top:0">'+buildTimeOptions()+'</select></div>' +
+      '<div><div style="'+colStyle+'">Цаг</div><select id="svc-time-'+i+'" style="margin-top:0" onchange="checkTimeConflict('+i+')">'+buildTimeOptions()+'</select></div>' +
     '</div>';
 }
 
@@ -1218,17 +1265,17 @@ async function handleSubmit(e) {
     return;
   }
 
-  // Огноо давхцал шалгах
-  var conflictDays = [];
+  // Огноо/цаг давхцал шалгах
+  var conflictMsgs = [];
   for (var _ci = 0; _ci < svcCount; _ci++) {
     var _cw = document.getElementById('date-warn-' + _ci);
     var _cd = document.getElementById('svc-date-' + _ci);
     if (_cw && _cw.style.display !== 'none' && _cd && _cd.value) {
-      conflictDays.push(_cd.value);
+      conflictMsgs.push((_ci+1) + '-р үйлчилгээ: ' + _cd.value);
     }
   }
-  if (conflictDays.length) {
-    var ok = confirm('⚠️ Сонгосон огноонд захиалга давхцаж байна:\n' + conflictDays.join(', ') + '\n\nҮргэлжлүүлэх үү?');
+  if (conflictMsgs.length) {
+    var ok = confirm('⚠️ Огноо/цаг давхцаж байна:\n' + conflictMsgs.join('\n') + '\n\nҮргэлжлүүлэх үү?');
     if (!ok) return;
   }
 
