@@ -684,18 +684,19 @@ function _runConflictCheck(rowIdx) {
     return;
   }
 
-  // 1. Мөр дотроо давхцал
+  // Nomaad camp: давхцал шалгахгүй
+  if (isCurrentNomaad) {
+    warn.style.display = 'none';
+    dateEl.style.borderColor = '';
+    return;
+  }
+
+  // 1. Мөр дотроо ижил өдөр давхцал шалгах
   var innerMsg = '';
   for (var j = 0; j < svcCount; j++) {
     if (j === rowIdx) continue;
     var od = document.getElementById('svc-date-' + j);
-    if (!od || od.value !== selDate) continue;
-    if (isCurrentNomaad) {
-      var ot = document.getElementById('svc-time-' + j);
-      if (ot && ot.value && ot.value === selTime) { innerMsg = '⚠️ Энэ мөр дотор ижил огноо+цаг давхарлаж байна'; break; }
-    } else {
-      innerMsg = '⚠️ Энэ мөр дотор ижил өдөр давхарлаж байна'; break;
-    }
+    if (od && od.value === selDate) { innerMsg = '⚠️ Энэ мөр дотор ижил өдөр давхарлаж байна'; break; }
   }
 
   // 2. Sheets-аас татсан захиалгуудтай давхцал
@@ -704,13 +705,7 @@ function _runConflictCheck(rowIdx) {
     for (var k = 0; k < _bookedOrders.length; k++) {
       var bo = _bookedOrders[k];
       if (bo.date !== selDate) continue;
-      if (isCurrentNomaad && bo.isNomaad) {
-        // Nomaad camp: цаг давхцвал л алдаа
-        if (selTime && bo.time && bo.time === selTime) {
-          sheetMsg = '⚠️ Энэ цаг (' + selTime + ') аль хэдийн захиалгатай байна'; break;
-        }
-      } else if (!isCurrentNomaad) {
-        // Бусад: өдөр давхцвал л алдаа
+      if (!bo.isNomaad) {
         sheetMsg = '⚠️ Энэ өдөр захиалгатай байна — лавлана уу'; break;
       }
     }
