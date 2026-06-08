@@ -779,8 +779,8 @@ var BUF_SHOL = ['Брокли зутан шөл','Мөөгтэй зутан шө
 var UGULUUN_CHIPS = ['Брокли зутан','Хулууны зутан','Мөөгтэй шөл','Нарийн ногооны шөл','Бантан','Өндөг · талх · өргөст хэмх'];
 
 function chipHTML(items, g, max, ri) {
-  return items.map(function(item) {
-    return '<button type="button" class="dish-chip" data-g="'+g+'" data-max="'+max+'" data-row="'+ri+'" onclick="toggleDish(this)">'+item+'</button>';
+  return items.map(function(item, ci) {
+    return '<button type="button" class="dish-chip" data-g="'+g+'" data-max="'+max+'" data-row="'+ri+'" data-ci="'+ci+'" onclick="toggleDish(this)">'+item+'</button>';
   }).join('');
 }
 
@@ -1127,13 +1127,16 @@ function renderQty(ri) {
   if (!container) return;
   var panel = document.getElementById('food-panel-' + ri);
   var selected = panel ? panel.querySelectorAll('.dish-chip[data-g="por"].sel-green') : [];
-  var maxPax = parseInt(document.getElementById('of-pax').value) || 9999;
+  var paxVal = parseInt(document.getElementById('of-pax').value) || 0;
+  var maxPax = paxVal || 9999;
   var html = '';
   selected.forEach(function(btn) {
     var name = btn.textContent.trim();
-    var safeId = 'qty_' + ri + '_' + name.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
+    var safeId = 'qty_' + ri + '_' + btn.dataset.ci;
     var existing = document.getElementById(safeId);
     var val = existing ? existing.value : '';
+    // Зөвхөн нэг порц хоол сонгосон бол хүний тоогоор автоматаар бөглөнө
+    if (!val && selected.length === 1 && paxVal > 0) val = paxVal;
     html += '<div class="qty-row">' +
       '<span class="qty-name">' + name + '</span>' +
       '<span class="qty-unit">порц:</span>' +
@@ -1210,7 +1213,7 @@ function updateDishesField() {
     if (type === 'por' && fp) {
       fp.querySelectorAll('.dish-chip[data-g="por"].sel-green').forEach(function(btn) {
         var name = btn.textContent.trim();
-        var safeId = 'qty_' + i + '_' + name.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
+        var safeId = 'qty_' + i + '_' + btn.dataset.ci;
         var qtyEl = document.getElementById(safeId);
         parts.push(name + (qtyEl && qtyEl.value ? ' (' + qtyEl.value + ' порц)' : ''));
       });
@@ -1232,6 +1235,65 @@ function updateDishesField() {
   }
   if (svcParts.length) parts.unshift(svcParts.join(' | '));
   document.getElementById('of-dishes').value = parts.join(' | ');
+}
+
+// Нэг үйлчилгээний мөрийн сонгосон хоолыг массив болгож буцаана
+function getRowFoods(i, type) {
+  var fp = document.getElementById('food-panel-' + i);
+  var foods = [];
+  if (type === 'por' && fp) {
+    fp.querySelectorAll('.dish-chip[data-g="por"].sel-green').forEach(function(btn) {
+      var name = btn.textContent.trim();
+      var qtyEl = document.getElementById('qty_' + i + '_' + btn.dataset.ci);
+      foods.push(name + (qtyEl && qtyEl.value ? ' (' + qtyEl.value + ' порц)' : ''));
+    });
+  } else if (type === 'buf' && fp) {
+    ['buf-mah','buf-sal','buf-hac','buf-shol'].forEach(function(g) {
+      var cls = GROUP_COLORS[g];
+      fp.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).forEach(function(btn) {
+        foods.push(btn.textContent.trim());
+      });
+    });
+  } else if (type === 'boodog') {
+    foods.push('Хонь боодог × ' + (boodog_n[i] || 1) + ' ширхэг');
+  } else if (type === 'uguluun' && fp) {
+    var pax = document.getElementById('of-pax').value || '';
+    fp.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(b) {
+      foods.push(b.textContent.trim() + (pax ? ' × ' + pax + ' хүн' : ''));
+    });
+  }
+  return foods;
+}
+
+// Мэйлд цэгцтэй харагдах захиалгын хураангуй (байгууллага, хүн, үйлчилгээ, цаг, хоол)
+function buildOrderSummary() {
+  var org   = document.getElementById('of-org').value.trim();
+  var pax   = document.getElementById('of-pax').value;
+  var event = document.getElementById('of-event').value;
+  var lines = [];
+  lines.push('🏢 Байгууллага: ' + (org || '—'));
+  lines.push('👤 Нийт хүний тоо: ' + (pax || '—'));
+  if (event) lines.push('🎪 Арга хэмжээ: ' + event);
+  lines.push('');
+  lines.push('🍽 ҮЙЛЧИЛГЭЭ:');
+  for (var i = 0; i < svcCount; i++) {
+    var sv = document.getElementById('svc-sel-' + i);
+    if (!sv || !sv.value) continue;
+    var opt = SVC_OPTIONS.filter(function(o){ return o.v === sv.value; })[0];
+    if (!opt || !opt.v) continue;
+    var d = document.getElementById('svc-date-' + i);
+    var t = document.getElementById('svc-time-' + i);
+    var dt = (d && d.value ? d.value : '') + (t && t.value ? ' ' + t.value : '');
+    lines.push('');
+    lines.push((i + 1) + '-р үйлчилгээ: ' + opt.l + (dt ? '  ⏰ ' + dt : ''));
+    var foods = getRowFoods(i, sv.value);
+    if (foods.length) {
+      foods.forEach(function(f){ lines.push('   • ' + f); });
+    } else {
+      lines.push('   • (хоол сонгоогүй)');
+    }
+  }
+  return lines.join('\n');
 }
 
 
@@ -1399,6 +1461,8 @@ async function _doSubmit(btn, form) {
 
     // 2. Web3Forms → имэйл илгээх
     const fd = new FormData(form);
+    // Мэйлийн гол хэсэгт цэгцтэй хураангуй (байгууллага, хүн, үйлчилгээ, цаг, хоол)
+    fd.append('message', buildOrderSummary());
     fd.append('Zahialgiin_tuluw', isNomaadCamp ? 'Баталгаажсан — Nomaad camp (урьдчилгаа төлөгдсөн)' : 'Шинэ захиалга — баталгаажаагүй');
     if (_startStr) fd.append('Ehleh_ognoo_tsag', _startStr);
     if (_endDate)  fd.append('Duusah_ognoo', _endDate);
