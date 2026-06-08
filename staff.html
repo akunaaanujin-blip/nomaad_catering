@@ -1191,6 +1191,18 @@ body{
     </div>
 
     <!-- Tab 5: Performance -->
+    <!-- Tab: Бэлтгэсэн нөөц (хөлдөөсөн/урьдчилан бэлтгэсэн) -->
+    <div id="tab-prep" class="tab-panel">
+      <div class="section-header">
+        <div>
+          <div class="section-title">🧊 Бэлтгэсэн нөөц</div>
+          <div class="section-sub">Урьдчилан бэлтгэж хөлдөөсөн хоол, орц</div>
+        </div>
+        <button class="btn-refresh" onclick="renderPrepStock()">Шинэчлэх</button>
+      </div>
+      <div id="prep-body"></div>
+    </div>
+
     <div id="tab-perf" class="tab-panel">
       <div class="section-header">
         <div>
@@ -1230,6 +1242,9 @@ body{
     <button class="nav-item" data-tab="ingredients" id="nav-ingredients" onclick="switchTab('ingredients')">
       <span class="nav-icon">🥦</span>Хүнс
     </button>
+    <button class="nav-item" data-tab="prep" id="nav-prep" onclick="switchTab('prep')">
+      <span class="nav-icon">🧊</span>Бэлтгэл
+    </button>
     <button class="nav-item" data-tab="perf" id="nav-perf" onclick="switchTab('perf')">
       <span class="nav-icon">📊</span>Гүйцэтгэл
     </button>
@@ -1267,9 +1282,9 @@ var openPanels = {};   // ямар орцны самбар нээлттэй ба
 var stockData = null;  // нөөцийн sheet-ийн боловсруулсан өгөгдөл (өртгийн тайланд)
 
 var ROLES = {
-  'Захирал': {pin:'9999', emoji:'👔', tabs:['orders','tasks','recipes','ingredients','perf','staff']},
-  'Тогооч':  {pin:'1122', emoji:'👨‍🍳', tabs:['orders','tasks','recipes','ingredients']},
-  'Бэлтгэгч':{pin:'2233', emoji:'🥘', tabs:['tasks','recipes','ingredients']},
+  'Захирал': {pin:'9999', emoji:'👔', tabs:['orders','tasks','recipes','ingredients','prep','perf','staff']},
+  'Тогооч':  {pin:'1122', emoji:'👨‍🍳', tabs:['orders','tasks','recipes','ingredients','prep']},
+  'Бэлтгэгч':{pin:'2233', emoji:'🥘', tabs:['tasks','recipes','ingredients','prep']},
   'Угаагч':  {pin:'3344', emoji:'🫧', tabs:['tasks']}
 };
 
@@ -1343,7 +1358,7 @@ function enterApp(role) {
   document.getElementById('role-badge').textContent = info.emoji + ' ' + role;
 
   // Show/hide nav tabs
-  var allTabs = ['orders','tasks','recipes','ingredients','perf'];
+  var allTabs = ['orders','tasks','recipes','ingredients','prep','perf','staff'];
   allTabs.forEach(function(t) {
     var btn = document.getElementById('nav-'+t);
     if (info.tabs.indexOf(t) >= 0) {
@@ -1380,6 +1395,7 @@ function switchTab(name) {
   if (name === 'orders') renderOrders();
   if (name === 'tasks') renderTasks();
   if (name === 'ingredients') { renderIngCalc(); loadStock(); }
+  if (name === 'prep') renderPrepStock();
   if (name === 'perf') renderPerf();
   if (name === 'staff') renderStaffTab();
 }
@@ -2650,6 +2666,118 @@ function renderIngCalc() {
     html += '<div style="padding:20px;text-align:center;font-size:13px;color:var(--muted)">Тооцоолол хийх мэдээлэл хангалтгүй байна.</div>';
   }
   html += '</div>';
+  body.innerHTML = html;
+}
+
+/* ─────────────────────────────────
+   БЭЛТГЭСЭН НӨӨЦ (хөлдөөсөн/урьдчилан бэлтгэсэн)
+───────────────────────────────── */
+function getPrepStock() {
+  try { return JSON.parse(localStorage.getItem('prep_stock') || '[]'); }
+  catch(e) { return []; }
+}
+function savePrepStock(arr) { localStorage.setItem('prep_stock', JSON.stringify(arr)); }
+
+function addPrepItem() {
+  var name = (document.getElementById('prep-name').value || '').trim();
+  var qty  = parseFloat(document.getElementById('prep-qty').value) || 0;
+  var unit = document.getElementById('prep-unit').value;
+  var made = document.getElementById('prep-made').value || todayStr();
+  var exp  = document.getElementById('prep-exp').value || '';
+  if (!name) { alert('Хоол/орцны нэрээ оруулна уу.'); return; }
+  if (qty <= 0) { alert('Тоо хэмжээгээ оруулна уу.'); return; }
+  var arr = getPrepStock();
+  arr.push({ id: Date.now(), name: name, qty: qty, unit: unit, made: made, exp: exp });
+  savePrepStock(arr);
+  logActivity('🧊 Бэлтгэсэн нөөц нэмэв: ' + name + ' ' + qty + unit);
+  renderPrepStock();
+}
+
+function removePrepItem(id) {
+  var arr = getPrepStock().filter(function(it){ return String(it.id) !== String(id); });
+  savePrepStock(arr);
+  renderPrepStock();
+}
+
+// Үлдсэн хоног тооцох
+function daysLeft(expStr) {
+  if (!expStr) return null;
+  var today = new Date(todayStr() + 'T00:00:00');
+  var exp = new Date(expStr + 'T00:00:00');
+  return Math.round((exp - today) / 86400000);
+}
+
+function renderPrepStock() {
+  var body = document.getElementById('prep-body');
+  if (!body) return;
+  var canEdit = (currentRole === 'Тогооч' || currentRole === 'Бэлтгэгч');
+  var arr = getPrepStock();
+  // FIFO — дуусах хугацаагаар (эрт дуусахыг эхэнд), хугацаагүйг эцэст
+  arr.sort(function(a,b){
+    if (!a.exp && !b.exp) return (a.made||'').localeCompare(b.made||'');
+    if (!a.exp) return 1;
+    if (!b.exp) return -1;
+    return a.exp.localeCompare(b.exp);
+  });
+
+  var html = '';
+
+  // Нэмэх форм (Тогооч/Бэлтгэгч)
+  if (canEdit) {
+    html += '<div style="margin:0 14px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)">' +
+      '<div style="font-weight:700;font-size:13px;margin-bottom:10px">＋ Бэлтгэсэн зүйл нэмэх</div>' +
+      '<input id="prep-name" type="text" placeholder="Хоол/орцны нэр (жнь: Чанасан хорхог)" style="width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:14px;margin-bottom:8px">' +
+      '<div style="display:flex;gap:8px;margin-bottom:8px">' +
+        '<input id="prep-qty" type="number" min="0" step="0.1" placeholder="Тоо" style="flex:1;min-width:0;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:14px">' +
+        '<select id="prep-unit" style="flex:1;min-width:0;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:14px;background:#fff">' +
+          '<option value="порц">порц</option><option value="кг">кг</option><option value="г">г</option><option value="ш">ширхэг</option><option value="л">л</option>' +
+        '</select>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:10px">' +
+        '<div style="flex:1"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px">Бэлтгэсэн</div>' +
+          '<input id="prep-made" type="date" value="'+esc(todayStr())+'" style="width:100%;padding:8px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:13px"></div>' +
+        '<div style="flex:1"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px">Дуусах хугацаа</div>' +
+          '<input id="prep-exp" type="date" style="width:100%;padding:8px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:13px"></div>' +
+      '</div>' +
+      '<button onclick="addPrepItem()" style="width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer">＋ Нэмэх</button>' +
+    '</div>';
+  }
+
+  // Жагсаалт
+  if (!arr.length) {
+    html += '<div style="padding:30px 20px;text-align:center;color:var(--muted)"><div style="font-size:32px;margin-bottom:8px">🧊</div><p>Бэлтгэсэн нөөц байхгүй байна.</p></div>';
+    body.innerHTML = html;
+    return;
+  }
+
+  html += '<div style="margin:0 14px">';
+  arr.forEach(function(it) {
+    var dl = daysLeft(it.exp);
+    var warn = '', warnColor = '';
+    if (dl !== null) {
+      if (dl < 0)      { warn = '⚠️ Хугацаа дууссан'; warnColor = 'var(--red)'; }
+      else if (dl === 0){ warn = '⚠️ Өнөөдөр дуусна'; warnColor = 'var(--red)'; }
+      else if (dl <= 3){ warn = '⏳ '+dl+' хоног үлдсэн'; warnColor = 'var(--amber)'; }
+      else             { warn = dl+' хоног үлдсэн'; warnColor = 'var(--muted)'; }
+    }
+    var expired = (dl !== null && dl < 0);
+    html += '<div style="background:var(--surface);border:1px solid '+(expired?'var(--red)':'var(--line)')+';border-radius:12px;padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow);'+(expired?'background:#fff5f3':'')+'">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:700;font-size:15px">'+esc(it.name)+'</div>' +
+          '<div style="font-size:13px;color:var(--accent);font-weight:700;margin-top:2px">'+esc(String(it.qty))+' '+esc(it.unit)+'</div>' +
+        '</div>' +
+        (canEdit ? '<button onclick="removePrepItem(\''+it.id+'\')" style="border:1px solid var(--line);background:#fff;color:var(--red);border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer;flex-shrink:0">✕</button>' : '') +
+      '</div>' +
+      '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px;align-items:center">' +
+        (it.made ? '<span>📅 Бэлтгэсэн: '+esc(formatDateMN(it.made))+'</span>' : '') +
+        (it.exp ? '<span>⏰ Дуусах: '+esc(formatDateMN(it.exp))+'</span>' : '') +
+        (warn ? '<span style="font-weight:700;color:'+warnColor+'">'+warn+'</span>' : '') +
+      '</div>' +
+    '</div>';
+  });
+  html += '</div>';
+
   body.innerHTML = html;
 }
 
