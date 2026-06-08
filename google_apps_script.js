@@ -129,3 +129,13 @@ function respond(obj, callback) {
 function json(obj) {
   return respond(obj, null);
 }
+
+function onEdit(e) {
+  const sheet     = e.source.getActiveSheet();
+  const watchCols = [4, 5]; // D болон E багана
+  const dateCol   = 1;      // A багана руу огноо бичнэ
+
+  if (watchCols.includes(e.range.getColumn()) && e.range.getRow() > 1) {
+    sheet.getRange(e.range.getRow(), dateCol).setValue(new Date());
+  }
+}
