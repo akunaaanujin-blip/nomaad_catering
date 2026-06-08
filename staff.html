@@ -1710,8 +1710,17 @@ function prepActualInput(pkey, pt, pax) {
   '</div>';
 }
 
-// Бэлтгэлийн ажлыг дуусгах (бодит зарцуулалтын талбар хэвээр харагдана)
-function markPrepDone(pkey) {
+// Бэлтгэлийн ажлыг дуусгах — дуусгахдаа бодит зарцуулалтаа заавал бичнэ
+function markPrepDone(pkey, hint) {
+  var alreadyDone = isDishDone(pkey);
+  if (!alreadyDone && hint) {
+    var prev = getActual(pkey+'_act');
+    var msg = 'Энэ ажлыг дуусгаж байна.\n\nБодит зарцуулсан хэмжээгээ бичнэ үү' +
+              (hint ? '\n(Тооцоолсон: ' + hint + ')' : '');
+    var val = prompt(msg, prev || '');
+    if (val === null) return;          // Цуцлах дарвал дуусгахгүй
+    saveActual(pkey+'_act', val.trim());
+  }
   toggleDish(pkey);
 }
 
@@ -1957,12 +1966,13 @@ function renderTasks() {
               var pdone = isDishDone(pkey);
               var amt = pt.a ? ' <span style="color:var(--amber);font-weight:700;font-size:11px">· '+esc(pax ? calcPlanned(pt.a, pax) : pt.a)+'</span>'+
                 (pax ? '<span style="color:var(--muted);font-weight:500;font-size:10px">'+esc(calcBreakdown(pt.a, pax))+'</span>' : '') : '';
+              var phint = (pt.a && /\d/.test(pt.a)) ? (pax ? calcPlanned(pt.a, pax) : pt.a) : '';
               html += '<div style="padding:6px 0;border-bottom:1px dotted var(--line)">' +
                 '<div style="display:flex;align-items:center;gap:8px">' +
                   '<span class="tsk-ing-name" style="flex:1;'+(pdone?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(pt.name)+amt+
                     (assigned ? '<span class="assign-badge">→ Бэлтгэгч</span>' : '') +
                   '</span>' +
-                  '<button class="btn-done'+(pdone?' done':'')+'" onclick="markPrepDone(\''+pkey+'\')">'+
+                  '<button class="btn-done'+(pdone?' done':'')+'" onclick="markPrepDone(\''+pkey+'\',\''+esc(phint)+'\')">'+
                     (pdone ? '✓ Хийсэн' : 'Хийсэн') +
                   '</button>' +
                   '<button class="btn-assign'+(assigned?' assigned':'')+'" onclick="toggleAssign(\''+pkey+'\',this)">'+
@@ -2010,9 +2020,10 @@ function renderTasks() {
               totalTasks++; if (pdone) doneTasks++;
               var amt = pt.a ? ' <span style="color:var(--amber);font-weight:700;font-size:11px">· '+esc(pax ? calcPlanned(pt.a, pax) : pt.a)+'</span>'+
                 (pax ? '<span style="color:var(--muted);font-weight:500;font-size:10px">'+esc(calcBreakdown(pt.a, pax))+'</span>' : '') : '';
+              var phint = (pt.a && /\d/.test(pt.a)) ? (pax ? calcPlanned(pt.a, pax) : pt.a) : '';
               html += '<div style="padding:6px 0;border-bottom:1px dotted var(--line)">' +
                 '<div style="display:flex;align-items:center;gap:8px">' +
-                  '<div class="tsk-dish-check'+(pdone?' checked':'')+'" style="width:22px;height:22px;min-width:22px;font-size:11px;flex-shrink:0;cursor:pointer" onclick="markPrepDone(\''+pkey+'\')"></div>' +
+                  '<div class="tsk-dish-check'+(pdone?' checked':'')+'" style="width:22px;height:22px;min-width:22px;font-size:11px;flex-shrink:0;cursor:pointer" onclick="markPrepDone(\''+pkey+'\',\''+esc(phint)+'\')"></div>' +
                   '<span class="tsk-ing-name" style="flex:1;'+(pdone?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(pt.name)+amt+'</span>' +
                 '</div>' +
                 prepActualInput(pkey, pt, pax) +
