@@ -585,24 +585,55 @@ function updateDrinksVisibility() {
 // [{date:'2026-06-10', time:'14:00', isNomaad:true}, ...]
 var _bookedOrders = null;
 
-function loadBookedDates() {
-  fetch(SHEETS_URL + '?action=orders')
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      _bookedOrders = (d.orders || [])
-        .filter(function(o){ return o.арга_хэмжээний_огноо; })
-        .map(function(o){
-          var raw = o.арга_хэмжээний_огноо || '';
-          var parts = raw.split(' ');
-          return {
-            date:     parts[0] || '',
-            time:     parts[1] || '',
-            isNomaad: (o.арга_хэмжээ || '').indexOf('Nomaad') >= 0
-          };
-        })
-        .filter(function(o){ return o.date.length === 10; });
+function _parseOrders(orders) {
+  return (orders || [])
+    .filter(function(o){ return o.арга_хэмжээний_огноо; })
+    .map(function(o){
+      var parts = (o.арга_хэмжээний_огноо || '').split(' ');
+      return {
+        date:     parts[0] || '',
+        time:     parts[1] || '',
+        isNomaad: (o.арга_хэмжээ || '').indexOf('Nomaad') >= 0
+      };
     })
-    .catch(function(){ _bookedOrders = []; });
+    .filter(function(o){ return o.date.length === 10; });
+}
+
+function loadBookedDates() {
+  // JSONP — CORS-ийг тойрч ажилладаг
+  var cbName = 'nomaad_orders_' + Date.now();
+  window[cbName] = function(d) {
+    _bookedOrders = _parseOrders(d.orders);
+    delete window[cbName];
+    var s = document.getElementById('_jsonp_orders');
+    if (s) s.parentNode.removeChild(s);
+  };
+  var s = document.createElement('script');
+  s.id  = '_jsonp_orders';
+  s.src = SHEETS_URL + '?action=orders&callback=' + cbName;
+  s.onerror = function() { _bookedOrders = []; delete window[cbName]; };
+  document.head.appendChild(s);
+}
+
+function refreshBookedDates(cb) {
+  // Submit хийхийн өмнө шинэчилж шалгах
+  var cbName = 'nomaad_chk_' + Date.now();
+  var done   = false;
+  var timer  = setTimeout(function(){ if (!done) { done=true; cb(_bookedOrders||[]); } }, 4000);
+  window[cbName] = function(d) {
+    if (done) return; done = true;
+    clearTimeout(timer);
+    _bookedOrders = _parseOrders(d.orders);
+    delete window[cbName];
+    var s = document.getElementById('_jsonp_chk');
+    if (s) s.parentNode.removeChild(s);
+    cb(_bookedOrders);
+  };
+  var s = document.createElement('script');
+  s.id  = '_jsonp_chk';
+  s.src = SHEETS_URL + '?action=orders&callback=' + cbName;
+  s.onerror = function() { if (!done) { done=true; cb(_bookedOrders||[]); } };
+  document.head.appendChild(s);
 }
 
 function checkDateConflict(input, rowIdx) {
@@ -1265,22 +1296,40 @@ async function handleSubmit(e) {
     return;
   }
 
-  // Огноо/цаг давхцал шалгах
-  var conflictMsgs = [];
-  for (var _ci = 0; _ci < svcCount; _ci++) {
-    var _cw = document.getElementById('date-warn-' + _ci);
-    var _cd = document.getElementById('svc-date-' + _ci);
-    if (_cw && _cw.style.display !== 'none' && _cd && _cd.value) {
-      conflictMsgs.push((_ci+1) + '-р үйлчилгээ: ' + _cd.value);
-    }
-  }
-  if (conflictMsgs.length) {
-    var ok = confirm('⚠️ Огноо/цаг давхцаж байна:\n' + conflictMsgs.join('\n') + '\n\nҮргэлжлүүлэх үү?');
-    if (!ok) return;
-  }
-
   const btn  = document.getElementById('submit-btn');
   const form = document.getElementById('order-form');
+  btn.disabled = true;
+  btn.textContent = '🔍 Огноо шалгаж байна...';
+
+  // Submit-ийн өмнө шинэ мэдээлэл татаж давхцал шалгах
+  refreshBookedDates(function() {
+    // Дахин шалгах (warning div-уудыг refresh хийнэ)
+    for (var _ri = 0; _ri < svcCount; _ri++) {
+      var _rd = document.getElementById('svc-date-' + _ri);
+      if (_rd) _runConflictCheck(_ri);
+    }
+
+    var conflictMsgs = [];
+    for (var _ci = 0; _ci < svcCount; _ci++) {
+      var _cw = document.getElementById('date-warn-' + _ci);
+      var _cd = document.getElementById('svc-date-' + _ci);
+      if (_cw && _cw.style.display !== 'none' && _cd && _cd.value) {
+        conflictMsgs.push((_ci+1) + '-р үйлчилгээ: ' + _cd.value);
+      }
+    }
+    if (conflictMsgs.length) {
+      var ok = confirm('⚠️ Огноо/цаг давхцаж байна:\n' + conflictMsgs.join('\n') + '\n\nҮргэлжлүүлэх үү?');
+      if (!ok) {
+        btn.disabled = false;
+        btn.textContent = '✉️ Захиалга илгээх';
+        return;
+      }
+    }
+    _doSubmit(btn, form);
+  });
+}
+
+async function _doSubmit(btn, form) {
 
   btn.disabled    = true;
   btn.textContent = '⏳ Илгээж байна...';
