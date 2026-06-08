@@ -387,9 +387,9 @@ body{
 /* ── TAB 1: ORDERS ── */
 .orders-date-group{
   padding:16px 18px 6px;
-  font-size:12px;font-weight:700;
+  font-size:12px;font-weight:800;
   text-transform:uppercase;letter-spacing:1px;
-  color:var(--muted);
+  color:var(--accent);
 }
 
 .order-card{
@@ -400,7 +400,7 @@ body{
   box-shadow:var(--shadow);
   overflow:hidden;
 }
-.order-card.past{opacity:.55}
+.order-card.past{opacity:.78}
 .order-card-head{
   padding:14px 16px;
   cursor:pointer;
@@ -418,20 +418,20 @@ body{
 }
 .order-meta{
   display:flex;gap:16px;flex-wrap:wrap;
-  font-size:13px;color:var(--muted);
+  font-size:13px;font-weight:600;color:#5d564a;
 }
 .order-meta span{display:flex;align-items:center;gap:4px}
 .order-chips{
   display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;
 }
 .order-chip{
-  background:#f0efe9;color:var(--ink);
-  font-size:12px;font-weight:500;
+  background:var(--accent-soft);color:var(--accent);
+  font-size:12px;font-weight:600;
   padding:4px 10px;border-radius:20px;
-  white-space:nowrap;
+  white-space:nowrap;border:1px solid #cfe0d6;
 }
 .order-chip.pkg{
-  background:var(--accent-soft);color:var(--accent);font-weight:700;
+  background:var(--accent);color:#fff;font-weight:700;border-color:var(--accent);
 }
 .order-expand-hint{
   margin-top:10px;font-size:11px;font-weight:600;
@@ -1897,8 +1897,9 @@ function renderTasks() {
         var recipe = findRecipe(dishName);
 
         html += '<div class="tsk-dish-item">';
+        var dishCheckClick = (currentRole === 'Захирал') ? '' : ' onclick="event.stopPropagation();markDishDone(\''+dkey+'\',\''+panelId+'\')"';
         html += '<div class="tsk-dish-head" onclick="toggleIngPanel(\''+panelId+'\')">' +
-          '<div class="tsk-dish-check'+(done?' checked':'')+'" onclick="event.stopPropagation();markDishDone(\''+dkey+'\',\''+panelId+'\')"></div>' +
+          '<div class="tsk-dish-check'+(done?' checked':'')+'"'+dishCheckClick+'></div>' +
           '<div class="tsk-dish-name'+(done?' done':'')+'">🍳 '+esc(dishName)+'</div>' +
           '<div class="tsk-dish-expand">▾</div>' +
         '</div>';
@@ -1915,13 +1916,18 @@ function renderTasks() {
               '<span class="tsk-ing-plan">'+esc(planned)+'<span style="color:var(--muted);font-weight:400;font-size:10px">'+esc(calcBreakdown(ing.a, pax))+'</span></span>' +
             '</div>';
           });
-          if (currentRole === 'Тогооч' || currentRole === 'Захирал') {
+          if (currentRole === 'Тогооч') {
             html += '<div class="tsk-ing-row" style="margin-top:6px;border-top:1px solid var(--line);padding-top:8px">' +
               '<span class="tsk-ing-name" style="font-weight:600">⏱ Хугацаа</span>' +
               '<span class="tsk-ing-plan" style="color:var(--amber)">'+esc(recipe.time)+'</span>' +
               '<input class="tsk-ing-input" type="time" placeholder="эхэлсэн"' +
               ' value="'+esc(getActual(dkey+'_start_time'))+'"' +
               ' onchange="saveActual(\''+dkey+'_start_time\',this.value)">' +
+            '</div>';
+          } else if (currentRole === 'Захирал') {
+            html += '<div class="tsk-ing-row" style="margin-top:6px;border-top:1px solid var(--line);padding-top:8px">' +
+              '<span class="tsk-ing-name" style="font-weight:600">⏱ Хугацаа</span>' +
+              '<span class="tsk-ing-plan" style="color:var(--amber)">'+esc(recipe.time)+'</span>' +
             '</div>';
           }
         } else if (!recipe) {
@@ -1933,7 +1939,7 @@ function renderTasks() {
         // Бэлтгэлийн ажлууд — технологи картаас (жор бүрт өөр)
         var PREP_TASKS = (recipe && recipe.prepTasks) ? recipe.prepTasks : [];
 
-        if (currentRole === 'Тогооч' || currentRole === 'Захирал') {
+        if (currentRole === 'Тогооч') {
           // Тогооч: технологи картын дагуу бэлтгэлийн нарийн ажлуудыг харж,
           // Бэлтгэгч рүү ганцаар эсвэл бүгдийг нь илгээх товчтой
           if (PREP_TASKS.length) {
@@ -1964,6 +1970,28 @@ function renderTasks() {
                   '</button>' +
                 '</div>' +
                 prepActualInput(pkey, pt, pax) +
+              '</div>';
+            });
+            html += '</div>';
+          }
+
+        } else if (currentRole === 'Захирал') {
+          // Захирал: зөвхөн хяналт — бэлтгэлийн ажлыг харна, дарж өөрчлөх боломжгүй
+          if (PREP_TASKS.length) {
+            html += '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:8px">' +
+              '<div style="font-size:11px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Бэлтгэлийн ажлууд</div>';
+            PREP_TASKS.forEach(function(pt) {
+              var pkey = dkey+'_prep_'+pt.key;
+              var pdone = isDishDone(pkey);
+              var assigned = isAssigned(pkey);
+              var actual = getActual(pkey+'_act');
+              var amt = pt.a ? ' <span style="color:var(--amber);font-weight:700;font-size:11px">· '+esc(pax ? calcPlanned(pt.a, pax) : pt.a)+'</span>' : '';
+              html += '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dotted var(--line)">' +
+                '<span style="font-size:13px">'+(pdone?'✅':'⬜')+'</span>' +
+                '<span class="tsk-ing-name" style="flex:1;'+(pdone?'color:var(--muted)':'')+'">'+esc(pt.name)+amt+
+                  (assigned ? '<span class="assign-badge">→ Бэлтгэгч</span>' : '') +
+                '</span>' +
+                (actual ? '<span style="font-size:12px;font-weight:700;color:var(--accent)">'+esc(actual)+'</span>' : '') +
               '</div>';
             });
             html += '</div>';
