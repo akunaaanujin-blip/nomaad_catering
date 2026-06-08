@@ -1284,8 +1284,10 @@ function buildOrderSummary() {
     var d = document.getElementById('svc-date-' + i);
     var t = document.getElementById('svc-time-' + i);
     var dt = (d && d.value ? d.value : '') + (t && t.value ? ' ' + t.value : '');
+    // Үйлчилгээний нэрнээс үнийг хасна: "Порц хоол (₮38,000/хүн)" → "Порц хоол"
+    var svcLabel = opt.l.replace(/\s*\([^)]*₮[^)]*\)/g, '').trim();
     lines.push('');
-    lines.push((i + 1) + '-р үйлчилгээ: ' + opt.l + (dt ? '  ⏰ ' + dt : ''));
+    lines.push((i + 1) + '-р үйлчилгээ: ' + svcLabel + (dt ? '  ⏰ ' + dt : ''));
     var foods = getRowFoods(i, sv.value);
     if (foods.length) {
       foods.forEach(function(f){ lines.push('   • ' + f); });
