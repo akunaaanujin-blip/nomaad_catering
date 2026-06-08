@@ -1585,9 +1585,8 @@ function renderOrderCard(o, isPast) {
       (event ? '<div class="detail-row"><span class="detail-label">🎪 Арга хэмжээ</span><span class="detail-val">'+esc(event)+'</span></div>' : '') +
       (note ? '<div class="detail-row"><span class="detail-label">📝 Тэмдэглэл</span><span class="detail-val">'+esc(note)+'</span></div>' : '') +
       buildIngSection(id, service, parseInt(pax)||0) +
-      '<div class="status-btns">' +
-        '<button class="btn-status preparing'+(status==='Бэлтгэж байна'?' active-status':'')+'" onclick="updateStatus(\''+id+'\',\'Бэлтгэж байна\')">🔵 Бэлтгэж байна</button>' +
-        '<button class="btn-status done'+(status==='Дууссан'?' active-status':'')+'" onclick="updateStatus(\''+id+'\',\'Дууссан\')">✅ Дууссан</button>' +
+      '<div style="margin-top:10px;padding:9px 12px;background:var(--surface);border:1px dashed var(--line);border-radius:10px;font-size:12px;color:var(--muted);text-align:center">' +
+        'ℹ️ Төлөв нь Даалгавар хэсэгт бүх хоол дуусахад автоматаар шинэчлэгдэнэ' +
       '</div>' +
     '</div>' +
   '</div>';
@@ -1698,6 +1697,23 @@ function calcBreakdown(amtStr, pax) {
 
 function getActual(key) { return localStorage.getItem('actual_'+key) || ''; }
 function saveActual(key, val) { localStorage.setItem('actual_'+key, val); }
+
+// Бэлтгэлийн ажилд бодит зарцуулалт оруулах талбар (хэмжээтэй ажилд)
+function prepActualInput(pkey, pt, pax) {
+  if (!pt.a || !/\d/.test(pt.a)) return '';   // зөвхөн тоон хэмжээтэй алхамд
+  var actual = getActual(pkey+'_act');
+  var hint = pax ? calcPlanned(pt.a, pax) : pt.a;
+  return '<div style="display:flex;align-items:center;gap:6px;margin-top:5px">' +
+    '<span style="font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap">⚖️ Бодит зарцуулсан:</span>' +
+    '<input class="tsk-ing-input" type="text" placeholder="жнь ' + esc(hint) + '" value="' + esc(actual) + '"' +
+    ' onchange="saveActual(\'' + pkey + '_act\',this.value)" style="max-width:130px">' +
+  '</div>';
+}
+
+// Бэлтгэлийн ажлыг дуусгах (бодит зарцуулалтын талбар хэвээр харагдана)
+function markPrepDone(pkey) {
+  toggleDish(pkey);
+}
 
 function isAssigned(key) { return localStorage.getItem('assign_'+key) === '1'; }
 function toggleAssign(key, btn) {
@@ -1891,16 +1907,12 @@ function renderTasks() {
         html += '<div class="tsk-ing-panel'+(openPanels[panelId]?' open':'')+'" id="'+panelId+'">';
         if (recipe && recipe.ingredients && pax > 0) {
           html += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;justify-content:space-between">' +
-            '<span>Орц</span><span>Тооцоо · Бодит</span></div>';
+            '<span>Орц</span><span>Тооцоо</span></div>';
           recipe.ingredients.forEach(function(ing) {
             var planned = calcPlanned(ing.a, pax);
-            var ikey = dkey+'_'+ing.n.replace(/\s/g,'_');
-            var actual = getActual(ikey);
             html += '<div class="tsk-ing-row">' +
               '<span class="tsk-ing-name">'+esc(ing.n)+'</span>' +
               '<span class="tsk-ing-plan">'+esc(planned)+'<span style="color:var(--muted);font-weight:400;font-size:10px">'+esc(calcBreakdown(ing.a, pax))+'</span></span>' +
-              '<input class="tsk-ing-input" type="text" placeholder="бодит" value="'+esc(actual)+'"' +
-              ' onchange="saveActual(\''+ikey+'\',this.value)">' +
             '</div>';
           });
           if (currentRole === 'Тогооч' || currentRole === 'Захирал') {
@@ -1939,17 +1951,19 @@ function renderTasks() {
               var pdone = isDishDone(pkey);
               var amt = pt.a ? ' <span style="color:var(--amber);font-weight:700;font-size:11px">· '+esc(pax ? calcPlanned(pt.a, pax) : pt.a)+'</span>'+
                 (pax ? '<span style="color:var(--muted);font-weight:500;font-size:10px">'+esc(calcBreakdown(pt.a, pax))+'</span>' : '') : '';
-              html += '<div class="tsk-ing-row">' +
-                '<span class="tsk-ing-name" style="flex:1;'+(pdone?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(pt.name)+amt+
-                  (assigned ? '<span class="assign-badge">→ Бэлтгэгч</span>' : '') +
-                '</span>' +
-                // Баруун талд 2 товч: тогооч өөрөө хийсэн / бэлтгэгч рүү илгээх
-                '<button class="btn-done'+(pdone?' done':'')+'" onclick="toggleDish(\''+pkey+'\')">'+
-                  (pdone ? '✓ Хийсэн' : 'Хийсэн') +
-                '</button>' +
-                '<button class="btn-assign'+(assigned?' assigned':'')+'" onclick="toggleAssign(\''+pkey+'\',this)">'+
-                  (assigned ? '✓ Илгээсэн' : '→ Бэлтгэгч') +
-                '</button>' +
+              html += '<div style="padding:6px 0;border-bottom:1px dotted var(--line)">' +
+                '<div style="display:flex;align-items:center;gap:8px">' +
+                  '<span class="tsk-ing-name" style="flex:1;'+(pdone?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(pt.name)+amt+
+                    (assigned ? '<span class="assign-badge">→ Бэлтгэгч</span>' : '') +
+                  '</span>' +
+                  '<button class="btn-done'+(pdone?' done':'')+'" onclick="markPrepDone(\''+pkey+'\')">'+
+                    (pdone ? '✓ Хийсэн' : 'Хийсэн') +
+                  '</button>' +
+                  '<button class="btn-assign'+(assigned?' assigned':'')+'" onclick="toggleAssign(\''+pkey+'\',this)">'+
+                    (assigned ? '✓ Илгээсэн' : '→ Бэлтгэгч') +
+                  '</button>' +
+                '</div>' +
+                prepActualInput(pkey, pt, pax) +
               '</div>';
             });
             html += '</div>';
@@ -1968,9 +1982,12 @@ function renderTasks() {
               totalTasks++; if (pdone) doneTasks++;
               var amt = pt.a ? ' <span style="color:var(--amber);font-weight:700;font-size:11px">· '+esc(pax ? calcPlanned(pt.a, pax) : pt.a)+'</span>'+
                 (pax ? '<span style="color:var(--muted);font-weight:500;font-size:10px">'+esc(calcBreakdown(pt.a, pax))+'</span>' : '') : '';
-              html += '<div class="tsk-ing-row" style="cursor:pointer" onclick="toggleDish(\''+pkey+'\')">' +
-                '<div class="tsk-dish-check'+(pdone?' checked':'')+'" style="width:22px;height:22px;min-width:22px;font-size:11px;flex-shrink:0"></div>' +
-                '<span class="tsk-ing-name" style="'+(pdone?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(pt.name)+amt+'</span>' +
+              html += '<div style="padding:6px 0;border-bottom:1px dotted var(--line)">' +
+                '<div style="display:flex;align-items:center;gap:8px">' +
+                  '<div class="tsk-dish-check'+(pdone?' checked':'')+'" style="width:22px;height:22px;min-width:22px;font-size:11px;flex-shrink:0;cursor:pointer" onclick="markPrepDone(\''+pkey+'\')"></div>' +
+                  '<span class="tsk-ing-name" style="flex:1;'+(pdone?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(pt.name)+amt+'</span>' +
+                '</div>' +
+                prepActualInput(pkey, pt, pax) +
               '</div>';
             });
             html += '</div>';
@@ -2953,20 +2970,21 @@ function buildConsumptionDetail() {
     var dishHtml = '';
     dishes.forEach(function(dishName) {
       var recipe = findRecipe(dishName);
-      if (!recipe || !recipe.ingredients) return;
+      if (!recipe || !recipe.prepTasks) return;
       var dkey = id+'_'+dishName.replace(/\s/g,'_');
       var done = isDishDone(dkey);
       var rows = '';
-      recipe.ingredients.forEach(function(ing) {
-        var planned = calcPlanned(ing.a, pax);
-        var ikey = dkey+'_'+ing.n.replace(/\s/g,'_');
-        var actual = getActual(ikey);
+      recipe.prepTasks.forEach(function(pt) {
+        if (!pt.a || !/\d/.test(pt.a)) return;   // зөвхөн хэмжээтэй алхам
+        var planned = calcPlanned(pt.a, pax);
+        var actual = getActual(dkey+'_prep_'+pt.key+'_act');
         rows += '<div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:3px 0">' +
-          '<span style="flex:1;color:var(--ink)">'+esc(ing.n)+'</span>' +
+          '<span style="flex:1;color:var(--ink)">'+esc(pt.name)+'</span>' +
           '<span style="min-width:80px;text-align:right;color:var(--muted)">'+esc(planned)+'</span>' +
           '<span style="min-width:80px;text-align:right;font-weight:700;color:'+(actual?'var(--accent)':'var(--red)')+'">'+(actual?esc(actual):'—')+'</span>' +
         '</div>';
       });
+      if (!rows) return;
       dishHtml += '<div style="margin-top:8px">' +
         '<div style="font-weight:600;font-size:13px;margin-bottom:2px">🍳 '+esc(dishName)+(done?' <span style="color:var(--accent);font-size:11px">✅ дууссан</span>':'')+'</div>' +
         rows + '</div>';
@@ -3019,7 +3037,7 @@ function buildFoodReports() {
   var orders = ordersData.filter(function(o){ return !o._parsedDate || o._parsedDate >= today; });
   if (!orders.length) orders = ordersData.slice(0, 3);
 
-  // Орц нэгтгэл: name -> {plannedG, actualG, unit, hasActual}
+  // Бэлтгэлийн ажил тус бүрийн нэгтгэл: name -> {plannedG, actualG, unit, hasActual}
   var agg = {};
   orders.forEach(function(o) {
     var id = o['id'] || o._idx;
@@ -3028,13 +3046,15 @@ function buildFoodReports() {
     var dishes = parseDishes(o['үйлчилгээ'] || '');
     dishes.forEach(function(dishName) {
       var recipe = findRecipe(dishName);
-      if (!recipe || !recipe.ingredients) return;
+      if (!recipe || !recipe.prepTasks) return;
       var dkey = id+'_'+dishName.replace(/\s/g,'_');
-      recipe.ingredients.forEach(function(ing) {
-        var pg = plannedGramsRaw(ing.a, pax);
-        var a = agg[ing.n] || (agg[ing.n] = { plannedG:0, actualG:0, unit:(pg?pg.unit:'г'), hasActual:false });
-        if (pg) { a.plannedG += pg.g; a.unit = pg.unit; }
-        var aq = parseQtyRaw(getActual(dkey+'_'+ing.n.replace(/\s/g,'_')));
+      recipe.prepTasks.forEach(function(pt) {
+        if (!pt.a || !/\d/.test(pt.a)) return;
+        var pg = plannedGramsRaw(pt.a, pax);
+        if (!pg) return;
+        var a = agg[pt.name] || (agg[pt.name] = { plannedG:0, actualG:0, unit:pg.unit, hasActual:false });
+        a.plannedG += pg.g; a.unit = pg.unit;
+        var aq = parseQtyRaw(getActual(dkey+'_prep_'+pt.key+'_act'));
         if (aq) { a.actualG += aq.g; a.hasActual = true; }
       });
     });
