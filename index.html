@@ -604,6 +604,7 @@ function loadBookedDates() {
   var cbName = 'nomaad_orders_' + Date.now();
   window[cbName] = function(d) {
     _bookedOrders = _parseOrders(d.orders);
+    console.log('[NOMAAD] Захиалгууд ачааллаа:', _bookedOrders.length, _bookedOrders);
     delete window[cbName];
     var s = document.getElementById('_jsonp_orders');
     if (s) s.parentNode.removeChild(s);
