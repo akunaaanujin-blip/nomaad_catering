@@ -665,6 +665,8 @@ body{
 .ing-name-col{flex:1;font-weight:500}
 .ing-amt-col{font-weight:700;color:var(--accent);min-width:60px;text-align:right}
 .ing-unit-col{color:var(--muted);min-width:40px;text-align:right;font-size:12px}
+.ing-price-col{color:var(--ink);min-width:84px;text-align:right;font-size:12px;font-weight:600}
+.ing-table-row.header .ing-price-col{font-weight:700}
 
 .stock-empty{
   padding:24px 18px;text-align:center;
@@ -2546,7 +2548,7 @@ function renderStock(data) {
     body.innerHTML = '<div class="stock-empty">Нөөцийн мэдээлэл байхгүй.</div>';
     return;
   }
-  var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Материал</span><span class="ing-amt-col">Үлдэгдэл</span><span class="ing-unit-col">Нэгж</span></div>';
+  var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Материал</span><span class="ing-amt-col">Үлдэгдэл</span><span class="ing-unit-col">Нэгж</span><span class="ing-price-col">Нэгж үнэ</span></div>';
   var itemCount = 0, totalValue = 0;
   rows.forEach(function(row) {
     var cells = row.c || [];
@@ -2554,17 +2556,20 @@ function renderStock(data) {
     var name = cells[2] && cells[2].v ? cells[2].v : '';
     var unit = cells[3] && cells[3].v ? cells[3].v : '';
     var qty  = cells[4] && cells[4].v != null ? cells[4].v : '';
+    var price = cells[5] && cells[5].v != null ? parseFloat(cells[5].v) : NaN;
     var lineVal = cells[6] && cells[6].v != null ? parseFloat(cells[6].v) : 0;
     if (!name) return;
     itemCount++;
     if (!isNaN(lineVal)) totalValue += lineVal;
     var qtyNum = parseFloat(qty);
     var qtyDisplay = isNaN(qtyNum) ? (qty||'—') : qtyNum;
+    var priceDisplay = isNaN(price) ? '—' : price.toLocaleString('mn-MN')+'₮';
     var low = !isNaN(qtyNum) && qtyNum < 2;
     html += '<div class="ing-table-row"' + (low ? ' style="background:#fff5f3"' : '') + '>' +
       '<span class="ing-name-col">' + (low ? '⚠️ ' : '') + esc(String(name))+'</span>' +
       '<span class="ing-amt-col" style="' + (low ? 'color:var(--red)' : '') + '">'+esc(String(qtyDisplay))+'</span>' +
       '<span class="ing-unit-col">'+esc(String(unit))+'</span>' +
+      '<span class="ing-price-col">'+esc(priceDisplay)+'</span>' +
     '</div>';
   });
   html += '</div>';
