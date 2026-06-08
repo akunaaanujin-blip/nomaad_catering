@@ -1260,6 +1260,7 @@ var selectedRoleCard = null;
 var ordersData = [];
 var activeTab = 'orders';
 var openPanels = {};   // ямар орцны самбар нээлттэй байгааг render хооронд хадгална
+var stockData = null;  // нөөцийн sheet-ийн боловсруулсан өгөгдөл (өртгийн тайланд)
 
 var ROLES = {
   'Захирал': {pin:'9999', emoji:'👔', tabs:['orders','tasks','recipes','ingredients','perf','staff']},
@@ -2611,6 +2612,7 @@ function renderStock(data) {
   }
   var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Материал</span><span class="ing-amt-col">Үлдэгдэл</span><span class="ing-unit-col">Нэгж</span><span class="ing-price-col">Нэгж үнэ</span></div>';
   var itemCount = 0, totalValue = 0;
+  var items = [];
   rows.forEach(function(row) {
     var cells = row.c || [];
     // Баганын дараалал: №(0) | Огноо(1) | Материал(2) | Хэмжих нэгж(3) | Тоо(4) | Нэгж үнэ(5) | Нийт(6)
@@ -2622,6 +2624,7 @@ function renderStock(data) {
     if (!name) return;
     itemCount++;
     if (!isNaN(lineVal)) totalValue += lineVal;
+    items.push({ name:String(name), unit:String(unit||''), qty:parseFloat(qty), price:price, value:(isNaN(lineVal)?0:lineVal) });
     var qtyNum = parseFloat(qty);
     var qtyDisplay = isNaN(qtyNum) ? (qty||'—') : qtyNum;
     var priceDisplay = isNaN(price) ? '—' : price.toLocaleString('mn-MN')+'₮';
@@ -2641,6 +2644,9 @@ function renderStock(data) {
   '</div>';
   body.innerHTML = html;
   stockLoaded = true;
+  stockData = { items: items, totalValue: totalValue, itemCount: itemCount };
+  // Гүйцэтгэл идэвхтэй бол өртгийн тайланг шинэчилнэ
+  if (activeTab === 'perf') renderPerf();
 }
 
 /* ─────────────────────────────────
@@ -2949,8 +2955,148 @@ function buildConsumptionDetail() {
     blocks + '</div>';
 }
 
+// ── Тоо хэмжээ задлах туслахууд (тайлангийн нэгтгэлд) ──
+function plannedGramsRaw(amtStr, pax) {
+  var m = String(amtStr).match(/(\d+\.?\d*)(г|мл|кг|л|ш)\/хүн/);
+  if (!m) return null;
+  var v = parseFloat(m[1]) * pax, u = m[2];
+  if (u === 'кг') return { g: v*1000, unit: 'г' };
+  if (u === 'л')  return { g: v*1000, unit: 'мл' };
+  if (u === 'ш')  return { g: v, unit: 'ш' };
+  return { g: v, unit: u };
+}
+function parseQtyRaw(str) {
+  if (!str) return null;
+  var m = String(str).match(/(\d+\.?\d*)\s*(кг|г|л|мл|ш)?/);
+  if (!m) return null;
+  var v = parseFloat(m[1]), u = m[2] || 'г';
+  if (u === 'кг') return { g: v*1000, unit: 'г' };
+  if (u === 'л')  return { g: v*1000, unit: 'мл' };
+  return { g: v, unit: u };
+}
+function fmtAmt(g, unit) {
+  if (unit === 'ш') return (Math.round(g*10)/10) + ' ш';
+  if (g >= 1000) return (g/1000).toFixed(2) + (unit === 'мл' ? ' л' : ' кг');
+  return Math.round(g) + ' ' + (unit || 'г');
+}
+function reportCard(title, inner) {
+  return '<div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--shadow)">' +
+    '<div style="font-weight:700;font-size:14px;margin-bottom:8px">'+title+'</div>' + inner + '</div>';
+}
+
+// Захиралын хүнсний тайлангууд: зарцуулалт, алдагдал, ажилчдын хоол, өртөг
+function buildFoodReports() {
+  var today = todayStr();
+  var orders = ordersData.filter(function(o){ return !o._parsedDate || o._parsedDate >= today; });
+  if (!orders.length) orders = ordersData.slice(0, 3);
+
+  // Орц нэгтгэл: name -> {plannedG, actualG, unit, hasActual}
+  var agg = {};
+  orders.forEach(function(o) {
+    var id = o['id'] || o._idx;
+    var pax = parseInt(o['хүн']) || 0;
+    if (pax <= 0) return;
+    var dishes = parseDishes(o['үйлчилгээ'] || '');
+    dishes.forEach(function(dishName) {
+      var recipe = findRecipe(dishName);
+      if (!recipe || !recipe.ingredients) return;
+      var dkey = id+'_'+dishName.replace(/\s/g,'_');
+      recipe.ingredients.forEach(function(ing) {
+        var pg = plannedGramsRaw(ing.a, pax);
+        var a = agg[ing.n] || (agg[ing.n] = { plannedG:0, actualG:0, unit:(pg?pg.unit:'г'), hasActual:false });
+        if (pg) { a.plannedG += pg.g; a.unit = pg.unit; }
+        var aq = parseQtyRaw(getActual(dkey+'_'+ing.n.replace(/\s/g,'_')));
+        if (aq) { a.actualG += aq.g; a.hasActual = true; }
+      });
+    });
+  });
+  var ingNames = Object.keys(agg).filter(function(n){ return agg[n].plannedG > 0; })
+    .sort(function(a,b){ return agg[b].plannedG - agg[a].plannedG; });
+
+  var html = '';
+
+  // 1) Хүнсний зарцуулалтын тайлан
+  if (ingNames.length) {
+    var cons = '';
+    ingNames.forEach(function(n) {
+      var a = agg[n];
+      cons += '<div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)">' +
+        '<span style="flex:1">'+esc(n)+'</span>' +
+        '<span style="min-width:78px;text-align:right;color:var(--muted)">'+esc(fmtAmt(a.plannedG, a.unit))+'</span>' +
+        '<span style="min-width:78px;text-align:right;font-weight:700;color:'+(a.hasActual?'var(--accent)':'var(--muted)')+'">'+(a.hasActual?esc(fmtAmt(a.actualG, a.unit)):'—')+'</span>' +
+      '</div>';
+    });
+    html += reportCard('🥦 Хүнсний зарцуулалтын тайлан',
+      '<div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding-bottom:4px;border-bottom:2px solid var(--line)"><span style="flex:1">Орц</span><span style="min-width:78px;text-align:right">Тооцоо</span><span style="min-width:78px;text-align:right">Бодит</span></div>' + cons);
+  }
+
+  // 2) Алдагдал / зөрүүний тойм
+  var lossRows = '';
+  ingNames.forEach(function(n) {
+    var a = agg[n];
+    if (!a.hasActual) return;
+    var diff = a.actualG - a.plannedG;
+    if (Math.abs(diff) < 1) return;
+    var over = diff > 0;
+    lossRows += '<div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)">' +
+      '<span style="flex:1">'+esc(n)+'</span>' +
+      '<span style="min-width:90px;text-align:right;font-weight:700;color:'+(over?'var(--red)':'var(--accent)')+'">'+
+        (over?'▲ +':'▼ −')+esc(fmtAmt(Math.abs(diff), a.unit))+'</span>' +
+    '</div>';
+  });
+  if (lossRows) {
+    html += reportCard('⚖️ Алдагдал / зөрүүний тойм',
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">Бодит зарцуулалт тооцооноос хэр зөрсөн (▲ хэтэрсэн · ▼ хэмнэсэн)</div>' + lossRows);
+  } else if (ingNames.length) {
+    html += reportCard('⚖️ Алдагдал / зөрүүний тойм',
+      '<div style="font-size:13px;color:var(--muted);padding:6px 0">Бодит зарцуулалт хараахан бүртгэгдээгүй байна.</div>');
+  }
+
+  // 3) Ажилчдын хоолны тойм
+  var meals = getStaffMeals();
+  if (meals.length) {
+    var mealList = '';
+    meals.forEach(function(m) {
+      mealList += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0">' +
+        '<span>'+esc(STAFF_MEAL_LABELS[m.type]||m.type)+'</span>' +
+        '<span style="color:var(--muted)">'+m.pax+' хүн · '+esc(m.time||'')+'</span>' +
+      '</div>';
+    });
+    var st = getStaffMealTotals();
+    var stRows = '';
+    Object.keys(st).forEach(function(k){ if(st[k]>0) stRows += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;color:var(--muted)"><span>'+esc(k)+'</span><span>'+fmtAmt(st[k],'г')+'</span></div>'; });
+    html += reportCard('🍱 Ажилчдын хоолны тойм',
+      mealList + (stRows ? '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Зарцуулсан орц</div>'+stRows+'</div>' : ''));
+  } else {
+    html += reportCard('🍱 Ажилчдын хоолны тойм',
+      '<div style="font-size:13px;color:var(--muted);padding:6px 0">Өнөөдөр ажилчдын хоол бүртгэгдээгүй.</div>');
+  }
+
+  // 4) Хүнсний өртгийн тайлан (нөөцөөс)
+  if (stockData && stockData.items) {
+    var top = stockData.items.slice().filter(function(it){return it.value>0;}).sort(function(a,b){return b.value-a.value;}).slice(0,6);
+    var costRows = top.map(function(it){
+      return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0">' +
+        '<span style="flex:1">'+esc(it.name)+'</span>' +
+        '<span style="font-weight:700">'+it.value.toLocaleString('mn-MN')+'₮</span></div>';
+    }).join('');
+    html += reportCard('💰 Хүнсний өртгийн тайлан',
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:2px solid var(--line)">' +
+        '<span style="font-size:13px;color:var(--muted)">📦 '+stockData.itemCount+' нэр төрөл</span>' +
+        '<span style="font-weight:800;font-size:16px;color:var(--accent)">'+stockData.totalValue.toLocaleString('mn-MN')+'₮</span></div>' +
+      '<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Хамгийн өндөр өртөгтэй</div>' + costRows);
+  } else {
+    html += reportCard('💰 Хүнсний өртгийн тайлан',
+      '<div style="font-size:13px;color:var(--muted);padding:6px 0">Нөөцийн мэдээлэл ачаалж байна...</div>');
+  }
+
+  if (!html) return '';
+  return '<div style="margin-top:18px"><div class="chart-title" style="margin-bottom:10px;font-size:15px">📋 Хүнсний тайлан</div>' + html + '</div>';
+}
+
 function renderPerf() {
   var body = document.getElementById('perf-body');
+  if (!stockData) loadStock();   // өртгийн тайланд нөөцийн мэдээлэл татна
   var today = todayStr();
   document.getElementById('perf-date').textContent = formatDateMN(today);
 
@@ -3013,6 +3159,7 @@ function renderPerf() {
         '<div class="chart-pct">'+newPct+'%</div>' +
       '</div>' +
     '</div>' +
+    buildFoodReports() +
     buildConsumptionDetail() +
     '<div class="activity-section">' +
       '<div class="activity-head">📝 Сүүлийн үйлдлүүд</div>' +
