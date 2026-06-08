@@ -1640,6 +1640,14 @@ function calcPlanned(amtStr, pax) {
   return val+' '+u;
 }
 
+// "75г/хүн", 12 → " (75г × 12)" — тооцооллын задаргаа
+function calcBreakdown(amtStr, pax) {
+  if (!pax) return '';
+  var m = amtStr.match(/(\d+\.?\d*)(г|мл|кг|ш)\/хүн/);
+  if (!m) return '';
+  return ' (' + m[1] + m[2] + ' × ' + pax + ')';
+}
+
 function getActual(key) { return localStorage.getItem('actual_'+key) || ''; }
 function saveActual(key, val) { localStorage.setItem('actual_'+key, val); }
 
@@ -1813,7 +1821,7 @@ function renderTasks() {
             var actual = getActual(ikey);
             html += '<div class="tsk-ing-row">' +
               '<span class="tsk-ing-name">'+esc(ing.n)+'</span>' +
-              '<span class="tsk-ing-plan">'+esc(planned)+'</span>' +
+              '<span class="tsk-ing-plan">'+esc(planned)+'<span style="color:var(--muted);font-weight:400;font-size:10px">'+esc(calcBreakdown(ing.a, pax))+'</span></span>' +
               '<input class="tsk-ing-input" type="text" placeholder="бодит" value="'+esc(actual)+'"' +
               ' onchange="saveActual(\''+ikey+'\',this.value)">' +
             '</div>';
@@ -1852,7 +1860,8 @@ function renderTasks() {
               var pkey = dkey+'_prep_'+pt.key;
               var assigned = isAssigned(pkey);
               var pdone = isDishDone(pkey);
-              var amt = pt.a ? ' <span style="color:var(--amber);font-weight:700;font-size:11px">· '+esc(pax ? calcPlanned(pt.a, pax) : pt.a)+'</span>' : '';
+              var amt = pt.a ? ' <span style="color:var(--amber);font-weight:700;font-size:11px">· '+esc(pax ? calcPlanned(pt.a, pax) : pt.a)+'</span>'+
+                (pax ? '<span style="color:var(--muted);font-weight:500;font-size:10px">'+esc(calcBreakdown(pt.a, pax))+'</span>' : '') : '';
               html += '<div class="tsk-ing-row">' +
                 '<span class="tsk-ing-name" style="'+(pdone?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(pt.name)+amt+
                   (assigned ? '<span class="assign-badge">→ Бэлтгэгч</span>' : '') +
@@ -1876,7 +1885,8 @@ function renderTasks() {
               var pkey = dkey+'_prep_'+pt.key;
               var pdone = isDishDone(pkey);
               totalTasks++; if (pdone) doneTasks++;
-              var amt = pt.a ? ' <span style="color:var(--amber);font-weight:700;font-size:11px">· '+esc(pax ? calcPlanned(pt.a, pax) : pt.a)+'</span>' : '';
+              var amt = pt.a ? ' <span style="color:var(--amber);font-weight:700;font-size:11px">· '+esc(pax ? calcPlanned(pt.a, pax) : pt.a)+'</span>'+
+                (pax ? '<span style="color:var(--muted);font-weight:500;font-size:10px">'+esc(calcBreakdown(pt.a, pax))+'</span>' : '') : '';
               html += '<div class="tsk-ing-row" style="cursor:pointer" onclick="toggleDish(\''+pkey+'\')">' +
                 '<div class="tsk-dish-check'+(pdone?' checked':'')+'" style="width:22px;height:22px;min-width:22px;font-size:11px;flex-shrink:0"></div>' +
                 '<span class="tsk-ing-name" style="'+(pdone?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(pt.name)+amt+'</span>' +
