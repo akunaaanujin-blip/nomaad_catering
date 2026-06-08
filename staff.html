@@ -502,6 +502,13 @@ body{
 .tsk-ing-input{width:72px;font-family:inherit;font-size:13px;font-weight:600;text-align:center;border:1.5px solid var(--line);border-radius:8px;padding:5px 4px;background:#fff;color:var(--ink);}
 .tsk-ing-input:focus{outline:none;border-color:var(--accent);}
 .tsk-ing-label{font-size:11px;color:var(--muted);min-width:28px;}
+.btn-assign{font-family:inherit;font-size:11px;font-weight:700;border:1.5px solid var(--amber);
+  background:#fff;color:var(--amber);border-radius:8px;padding:4px 9px;cursor:pointer;
+  white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.btn-assign:active{background:var(--amber);color:#fff;}
+.btn-assign.assigned{background:var(--amber);color:#fff;border-color:var(--amber);}
+.assign-badge{display:inline-block;font-size:10px;font-weight:700;background:var(--amber-soft);
+  color:var(--amber);border-radius:6px;padding:2px 7px;margin-left:6px;}
 
 /* ── TAB 3: RECIPES ── */
 .search-bar{
@@ -1370,6 +1377,21 @@ function calcPlanned(amtStr, pax) {
 function getActual(key) { return localStorage.getItem('actual_'+key) || ''; }
 function saveActual(key, val) { localStorage.setItem('actual_'+key, val); }
 
+function isAssigned(key) { return localStorage.getItem('assign_'+key) === '1'; }
+function toggleAssign(key, btn) {
+  var assigned = isAssigned(key);
+  if (assigned) {
+    localStorage.removeItem('assign_'+key);
+  } else {
+    localStorage.setItem('assign_'+key, '1');
+    logActivity('Бэлтгэгч рүү илгээв: ' + key);
+  }
+  if (btn) {
+    btn.classList.toggle('assigned', !assigned);
+    btn.textContent = assigned ? '→ Бэлтгэгч' : '✓ Илгээсэн';
+  }
+}
+
 function isDishDone(key) { return localStorage.getItem('dish_done_'+key) === '1'; }
 function toggleDish(key) {
   var done = isDishDone(key);
@@ -1461,7 +1483,17 @@ function renderTasks() {
           if (service.toLowerCase().indexOf(r.name.toLowerCase()) >= 0) dishes.push(r.name);
         });
       }
-      if (!dishes.length) return; // skip if no dishes found
+      if (!dishes.length) return;
+
+      // Бэлтгэгч: хуваарилагдсан ажилгүй хоолыг алгасах
+      var PREP_CHECK = ['🥩 Мах бэлтгэх','🥬 Ногоо таслах','🫙 Соус бэлтгэх','🔪 Орц хэмжих'];
+      if (currentRole === 'Бэлтгэгч') {
+        dishes = dishes.filter(function(dn) {
+          var dk = id+'_'+dn.replace(/\s/g,'_');
+          return PREP_CHECK.some(function(pt){ return isAssigned(dk+'_prep_'+pt.replace(/\W/g,'_')); });
+        });
+        if (!dishes.length) return;
+      }
 
       var blockDone = dishes.every(function(d){ return isDishDone(id+'_'+d.replace(/\s/g,'_')); });
 
@@ -1518,17 +1550,46 @@ function renderTasks() {
           html += '<div style="font-size:12px;color:var(--muted);padding:6px 0">Хүний тоо мэдэгдэхгүй байна</div>';
         }
 
-        // Бэлтгэгчид: prep tasks
-        if (currentRole === 'Бэлтгэгч' || currentRole === 'Захирал') {
-          ['🥩 Мах бэлтгэх','🥬 Ногоо таслах','🫙 Соус бэлтгэх','🔪 Орц хэмжих'].forEach(function(pt) {
-            var pkey = dkey+'_prep_'+pt.replace(/\s/g,'_');
+        // Бэлтгэлийн ажлууд
+        var PREP_TASKS = ['🥩 Мах бэлтгэх','🥬 Ногоо таслах','🫙 Соус бэлтгэх','🔪 Орц хэмжих'];
+
+        if (currentRole === 'Тогооч' || currentRole === 'Захирал') {
+          // Тогооч: бүх prep ажлыг харж, Бэлтгэгч рүү илгээх товчтой
+          html += '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:8px">' +
+            '<div style="font-size:11px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Бэлтгэлийн ажлууд</div>';
+          PREP_TASKS.forEach(function(pt) {
+            var pkey = dkey+'_prep_'+pt.replace(/\W/g,'_');
+            var assigned = isAssigned(pkey);
             var pdone = isDishDone(pkey);
-            if (currentRole === 'Бэлтгэгч') { totalTasks++; if (pdone) doneTasks++; }
-            html += '<div class="tsk-ing-row" style="cursor:pointer" onclick="toggleDish(\''+pkey+'\')">' +
-              '<div class="tsk-dish-check'+(pdone?' checked':'')+'" style="width:20px;height:20px;min-width:20px;font-size:11px;flex-shrink:0"></div>' +
-              '<span class="tsk-ing-name" style="'+(pdone?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(pt)+'</span>' +
+            html += '<div class="tsk-ing-row">' +
+              '<span class="tsk-ing-name" style="'+(pdone?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(pt)+
+                (assigned ? '<span class="assign-badge">→ Бэлтгэгч</span>' : '') +
+              '</span>' +
+              '<button class="btn-assign'+(assigned?' assigned':'')+'" onclick="toggleAssign(\''+pkey+'\',this)">'+
+                (assigned ? '✓ Илгээсэн' : '→ Бэлтгэгч') +
+              '</button>' +
             '</div>';
           });
+          html += '</div>';
+
+        } else if (currentRole === 'Бэлтгэгч') {
+          // Бэлтгэгч: зөвхөн өөрт хуваарилагдсан ажлуудыг харна
+          var assignedPreps = PREP_TASKS.filter(function(pt){
+            return isAssigned(dkey+'_prep_'+pt.replace(/\W/g,'_'));
+          });
+          if (assignedPreps.length) {
+            html += '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:8px">';
+            assignedPreps.forEach(function(pt) {
+              var pkey = dkey+'_prep_'+pt.replace(/\W/g,'_');
+              var pdone = isDishDone(pkey);
+              totalTasks++; if (pdone) doneTasks++;
+              html += '<div class="tsk-ing-row" style="cursor:pointer" onclick="toggleDish(\''+pkey+'\')">' +
+                '<div class="tsk-dish-check'+(pdone?' checked':'')+'" style="width:22px;height:22px;min-width:22px;font-size:11px;flex-shrink:0"></div>' +
+                '<span class="tsk-ing-name" style="'+(pdone?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(pt)+'</span>' +
+              '</div>';
+            });
+            html += '</div>';
+          }
         }
 
         html += '</div></div>';
@@ -1549,7 +1610,10 @@ function renderTasks() {
   if (document.getElementById('tasks-subtitle'))
     document.getElementById('tasks-subtitle').textContent = doneTasks+'/'+totalTasks+' — '+pct+'%';
 
-  body.innerHTML = html || '<div class="error-wrap"><div class="error-ico">📋</div><p>Захиалга байхгүй.</p></div>';
+  var emptyMsg = currentRole === 'Бэлтгэгч'
+    ? '<div class="error-wrap"><div class="error-ico">⏳</div><p>Тогооч танд ажил хуваарилаагүй байна.<br><span style="font-size:12px;color:var(--muted)">Тогооч даалгавар илгээхийг хүлээнэ үү.</span></p></div>'
+    : '<div class="error-wrap"><div class="error-ico">📋</div><p>Захиалга байхгүй.</p></div>';
+  body.innerHTML = html || emptyMsg;
 }
 
 /* ─────────────────────────────────
