@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NOMAAD Catering · Меню ба үнэ</title>
-<meta name="description" content="NOMAAD Catering — Чимун ХХК. Порц хоол, буфет, хонь боодог. Байгууллагын арга хэмжээ, эвентийн кейтеринг.">
+<meta name="description" content="NOMAAD Catering — Чимун ХХК. Порц хоол, буфет, хорхог. Байгууллагын арга хэмжээ, эвентийн кейтеринг.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:wght@500;600;700&display=swap" rel="stylesheet">
@@ -223,7 +223,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
   <section class="hero">
     <div class="eyebrow">Кейтеринг үйлчилгээ</div>
     <h2>Арга хэмжээнд зориулсан мэргэжлийн хоол</h2>
-    <p>Байгууллагын хурлаас эхлээд гадаа арга хэмжээ хүртэл — дулаан хоолыг цагт нь, мэргэжлийн түвшинд хүргэнэ. Порц, буфет, хонь боодог болон өглөөний цайнаас сонгоно уу.</p>
+    <p>Байгууллагын хурлаас эхлээд гадаа арга хэмжээ хүртэл — дулаан хоолыг цагт нь, мэргэжлийн түвшинд хүргэнэ. Порц, буфет, хорхог болон өглөөний цайнаас сонгоно уу.</p>
   </section>
 
   <!-- Үнийн карт -->
@@ -237,11 +237,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
     <div class="tier buf">
       <div class="t-name">Буфет</div>
       <div class="t-price">₮54,000 <small>/ хүн</small></div>
-      <div class="t-desc">Олон төрлийн мах, салад, хачир, шөлтэй дэлгэмэл ширээ — хүн бүр өөрөө авна.</div>
+      <div class="t-desc">Олон төрлийн мах, салад, хачир, шөлнөөс сонгох авах боломж.</div>
       <a href="#order" class="t-badge" style="text-decoration:none;display:inline-block;margin-top:auto;cursor:pointer">Захиалах →</a>
     </div>
     <div class="tier shr">
-      <div class="t-name">Хонь боодог</div>
+      <div class="t-name">Хорхог</div>
       <div class="t-price">₮900,000 <small>/ бүтэн</small></div>
       <div class="t-desc">Уламжлалт аргаар чулуун дотор шарсан бүтэн хонь — 8–12 хүнд хүрнэ.</div>
       <a href="#order" class="t-badge" style="text-decoration:none;display:inline-block;margin-top:auto;cursor:pointer">Захиалах →</a>
@@ -473,7 +473,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
   </div>
 
   <footer>
-    <p style="font-size:11px;color:var(--muted);margin-bottom:6px;line-height:1.6">Заасан үнэ нь нэг хүний (порц/буфет) болон нэгж (боодог) дүн юм. Тээвэр, үйлчлэгч, тоног төхөөрөмжийн зардлыг арга хэмжээний хэмжээ, байршлаас хамааруулан тусдаа тооцно.</p>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:6px;line-height:1.6">Заасан үнэ нь нэг хүний (порц/буфет) болон нэгж (хорхог) дүн юм. Тээвэр, үйлчлэгч, тоног төхөөрөмжийн зардлыг арга хэмжээний хэмжээ, байршлаас хамааруулан тусдаа тооцно.</p>
     <p>© 2026 NOMAAD Catering · Чимун ХХК · nomaadcatering.mn</p>
   </footer>
 
@@ -748,7 +748,7 @@ function calcPrice() {
   updateDrinksVisibility();
   var pax = parseInt(document.getElementById('of-pax').value) || 0;
   var PRICES = {por: 38000, buf: 54000, boodog: 900000, uguluun: 12000};
-  var LABELS = {por: 'Порц хоол', buf: 'Буфет', boodog: 'Хонь боодог', uguluun: 'Өглөөний цай'};
+  var LABELS = {por: 'Порц хоол', buf: 'Буфет', boodog: 'Хорхог', uguluun: 'Өглөөний цай'};
   var lines = [], total = 0;
   for (var i = 0; i < svcCount; i++) {
     var s = document.getElementById('svc-sel-' + i);
@@ -832,7 +832,7 @@ function buildFoodPanelHTML(type, ri) {
     return '<div class="msec-body">' +
       '<div class="sel-group">' +
         '<div class="sel-group-head">' +
-          '<div class="sel-group-title">🐑 Хэдэн хонь боодог захиалах вэ?</div>' +
+          '<div class="sel-group-title">🐑 Хэдэн хорхог захиалах вэ?</div>' +
           '<span class="sel-badge green" style="background:#efe7d2;color:#7a6224" id="boodog-total-'+ri+'"></span>' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">' +
@@ -923,7 +923,7 @@ var SVC_OPTIONS = [
   {v:'',        l:'— Сонгоно уу —'},
   {v:'por',     l:'Порц хоол (₮38,000/хүн)'},
   {v:'buf',     l:'Буфет (₮54,000/хүн)'},
-  {v:'boodog',  l:'Хонь боодог (₮900,000)'},
+  {v:'boodog',  l:'Хорхог (₮900,000)'},
   {v:'uguluun', l:'Өглөөний цай (₮12,000/хүн)'},
 ];
 
@@ -1069,7 +1069,7 @@ function refreshPanels() {
   calcPrice();
 }
 
-// ── Хонь боодогийн тоо (per-row) ──
+// ── Хорхогийн тоо (per-row) ──
 function updateBoodogRow(ri) {
   var n = boodog_n[ri] || 1;
   var el = document.getElementById('boodog-count-' + ri);
@@ -1232,7 +1232,7 @@ function updateDishesField() {
         });
       });
     } else if (type === 'boodog') {
-      parts.push('Хонь боодог × ' + (boodog_n[i] || 1) + ' ширхэг');
+      parts.push('Хорхог × ' + (boodog_n[i] || 1) + ' ширхэг');
     } else if (type === 'uguluun' && fp) {
       var pax = document.getElementById('of-pax').value || '';
       fp.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(b) {
@@ -1285,7 +1285,7 @@ function getRowFoods(i, type) {
       });
     });
   } else if (type === 'boodog') {
-    foods.push('Хонь боодог × ' + (boodog_n[i] || 1) + ' ширхэг');
+    foods.push('Хорхог × ' + (boodog_n[i] || 1) + ' ширхэг');
   } else if (type === 'uguluun' && fp) {
     var pax = document.getElementById('of-pax').value || '';
     fp.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(b) {
@@ -1638,7 +1638,7 @@ function showOrderSummary(isNomaadCamp) {
           });
         });
       } else if (dtype === 'boodog') {
-        dishBits.push('Хонь боодог × ' + (boodog_n[ri] || 1) + ' ширхэг');
+        dishBits.push('Хорхог × ' + (boodog_n[ri] || 1) + ' ширхэг');
       } else if (dtype === 'uguluun' && fp) {
         fp.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(btn) {
           dishBits.push(btn.textContent.trim());
