@@ -2626,6 +2626,24 @@ function gramsToStockUnit(g, unit) {
   return 0;   // шуудай гэх мэт хөрвүүлэхгүй
 }
 
+// Бэлтгэсэн (хөлдөөсөн) нөөц нь түүхий орцыг зарцуулсан — материалаар нэгтгэнэ
+function getPreparedConsumptionByMaterial() {
+  var map = {};
+  getPrepStock().forEach(function(it){
+    var recipe = findRecipe(it.name);
+    if (!recipe || !recipe.ingredients) return;
+    var portions = (String(it.unit) === 'порц') ? (parseFloat(it.qty) || 0) : 0;
+    if (portions <= 0) return;   // зөвхөн порцоор бэлтгэснийг тооцно
+    recipe.ingredients.forEach(function(ing){
+      var pg = plannedGramsRaw(ing.a, portions);   // 1 хүний хэмжээ × порц
+      if (!pg) return;
+      var k = String(ing.n).toLowerCase().trim();
+      map[k] = (map[k] || 0) + pg.g;
+    });
+  });
+  return map;
+}
+
 function addStaffExpense() {
   var material = (document.getElementById('staff-exp-material').value || '').trim();
   var qty = parseFloat(document.getElementById('staff-exp-qty').value) || 0;
@@ -2798,12 +2816,14 @@ function addPrepItem() {
   savePrepStock(arr);
   logActivity('🧊 Бэлтгэсэн нөөц нэмэв: ' + name + ' ' + qty + unit);
   renderPrepStock();
+  renderStockFromCache();   // түүхий нөөцийн үлдэгдлийг шинэчилнэ
 }
 
 function removePrepItem(id) {
   var arr = getPrepStock().filter(function(it){ return String(it.id) !== String(id); });
   savePrepStock(arr);
   renderPrepStock();
+  renderStockFromCache();
 }
 
 // Үлдсэн хоног тооцох
@@ -2999,6 +3019,7 @@ function renderStock(data) {
   }
   var expMap   = getStaffExpenseByMaterial();      // ажилтны хоонд гарсан зарлага
   var orderMap = getOrderConsumptionByMaterial();  // захиалгын бодит зарцуулалт (грамм/ш)
+  var prepMap  = getPreparedConsumptionByMaterial(); // бэлтгэсэн нөөцөд орсон түүхий орц
   var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Материал</span><span class="ing-amt-col">Үлдэгдэл</span><span class="ing-unit-col">Нэгж</span><span class="ing-price-col">Нэгж үнэ</span></div>';
   var itemCount = 0, totalValue = 0;
   var items = [];
@@ -3015,10 +3036,11 @@ function renderStock(data) {
     if (!isNaN(lineVal)) totalValue += lineVal;
     var qtyNum = parseFloat(qty);
     var nameLower = String(name).toLowerCase().trim();
-    // Ажилтны зарлага (нөөцийн нэгжээр) + захиалгын зарцуулалт (нэгж рүү хөрвүүлсэн)
+    // Зарцуулалт: ажилтны зарлага + захиалга + бэлтгэсэн нөөц (бүгд нэгж рүү хөрвүүлсэн)
     var usedStaff = expMap[nameLower] || 0;
     var usedOrder = gramsToStockUnit(orderMap[nameLower] || 0, unit);
-    var used = usedStaff + usedOrder;
+    var usedPrep  = gramsToStockUnit(prepMap[nameLower] || 0, unit);
+    var used = usedStaff + usedOrder + usedPrep;
     var balance = isNaN(qtyNum) ? NaN : (qtyNum - used);
     items.push({ name:String(name), unit:String(unit||''), qty:(isNaN(balance)?parseFloat(qty):balance), price:price, value:(isNaN(lineVal)?0:lineVal) });
     var qtyDisplay = isNaN(balance) ? (qty||'—') : (Math.round(balance*100)/100);
@@ -3026,6 +3048,7 @@ function renderStock(data) {
     var low = !isNaN(balance) && balance <= 0;
     var usedParts = [];
     if (usedOrder > 0) usedParts.push('−'+(Math.round(usedOrder*100)/100)+' захиалга');
+    if (usedPrep > 0)  usedParts.push('−'+(Math.round(usedPrep*100)/100)+' бэлтгэл');
     if (usedStaff > 0) usedParts.push('−'+usedStaff+' хоол');
     var usedNote = usedParts.length ? ' <span style="font-size:10px;color:var(--amber)">('+usedParts.join(', ')+')</span>' : '';
     html += '<div class="ing-table-row"' + (low ? ' style="background:#fff5f3"' : '') + '>' +
