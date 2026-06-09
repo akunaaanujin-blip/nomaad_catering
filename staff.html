@@ -1273,6 +1273,7 @@ var ordersData = [];
 var activeTab = 'orders';
 var openPanels = {};   // ямар орцны самбар нээлттэй байгааг render хооронд хадгална
 var stockData = null;  // нөөцийн sheet-ийн боловсруулсан өгөгдөл (өртгийн тайланд)
+var SHEETS_POST_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
 
 var ROLES = {
   'Захирал': {pin:'9999', emoji:'👔', tabs:['orders','tasks','recipes','ingredients','prep','perf','staff']},
@@ -2559,6 +2560,14 @@ function addStaffExpense() {
   document.getElementById('staff-exp-material').value = '';
   document.getElementById('staff-exp-qty').value = '';
   logActivity('🍱 Ажилтны хоол зарлага: ' + material + ' ' + qty + unit);
+  // Google Sheet рүү бичих (Apps Script — тусдаа "Ажилтны хоол зарлага" таб)
+  try {
+    fetch(SHEETS_POST_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ type: 'expense', material: material, qty: qty, unit: unit, price: price, date: todayStr() })
+    }).catch(function(){});
+  } catch(e) {}
   renderStaffMealList();
   renderStockFromCache();   // нөөцийн үлдэгдлийг шинэчилнэ
 }

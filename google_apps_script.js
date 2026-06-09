@@ -1,12 +1,14 @@
-// NOMAAD Catering — Google Apps Script v2.1
-const SHEET_ORDERS = 'Захиалга';
-const SHEET_CALC   = 'Тооцоо';
+// NOMAAD Catering — Google Apps Script v2.2
+const SHEET_ORDERS  = 'Захиалга';
+const SHEET_CALC    = 'Тооцоо';
+const SHEET_EXPENSE = 'Ажилтны хоол зарлага';
 
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     const ss   = SpreadsheetApp.getActiveSpreadsheet();
     if (data.type === 'order') saveOrder(ss, data);
+    else if (data.type === 'expense') saveExpense(ss, data);
     else saveCalc(ss, data);
     return json({ status: 'ok' });
   } catch (err) {
@@ -90,6 +92,33 @@ function saveOrder(ss, data) {
     data.төлөв       || 'Шинэ захиалга',
     '',
     data.арга_хэмжээ || '',   // col 11 — арга хэмжээний төрөл
+  ]);
+}
+
+// Ажилтны хоонд нөөцөөс гаргасан зарлагыг тусдаа таб руу бичнэ
+function saveExpense(ss, data) {
+  let sheet = ss.getSheetByName(SHEET_EXPENSE);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_EXPENSE);
+    const h = ['Огноо','Материал','Хэмжих нэгж','Тоо','Нэгжийн үнэ (₮)','Нийт зардал (₮)','Бүртгэсэн'];
+    sheet.appendRow(h);
+    const hRange = sheet.getRange(1, 1, 1, h.length);
+    hRange.setFontWeight('bold');
+    hRange.setBackground('#C8743F');
+    hRange.setFontColor('#ffffff');
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidths(1, 7, [110, 200, 100, 70, 120, 130, 150]);
+  }
+  const qty   = Number(data.qty) || 0;
+  const price = Number(data.price) || 0;
+  sheet.appendRow([
+    data.date || '',
+    data.material || '',
+    data.unit || '',
+    qty,
+    price,
+    qty * price,
+    new Date(),
   ]);
 }
 
