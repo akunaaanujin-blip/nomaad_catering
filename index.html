@@ -806,7 +806,7 @@ function buildFoodPanelHTML(type, ri) {
     return '<div class="msec-body">' +
       '<div class="sel-group">' +
         '<div class="sel-group-head">' +
-          '<div class="sel-group-title">🍱 Порц хоол — хамгийн ихдээ 2 сонгоно</div>' +
+          '<div class="sel-group-title">🥩 Үндсэн мах — хамгийн ихдээ 2 сонгоно</div>' +
           '<span class="sel-badge green" id="por-badge-'+ri+'">0 / 2</span>' +
         '</div>' +
         '<div class="dish-chips">' + chipHTML(POR_CHIPS, 'por', 2, ri) + '</div>' +
@@ -814,6 +814,11 @@ function buildFoodPanelHTML(type, ri) {
         '<div id="por-qty-warn-'+ri+'" style="display:none;font-size:12px;color:var(--amber);font-weight:600;margin-top:6px">⚠️ 2 хоолны нийт порц нь хүний тооноос хэтрэхгүй</div>' +
         '<p class="sel-hint">* 2 хоолны порцын нийт = хүний тоо</p>' +
       '</div>' +
+      '<div class="sel-divider"></div>' +
+      bufGroup('🥗 Салад — 1 төрөл сонгоно','por-sal',1,'green',BUF_SAL,ri) +
+      '<div class="sel-divider"></div>' +
+      bufGroup('🍚 Хачир — 1 төрөл сонгоно','por-hac',1,'amber',BUF_HAC,ri) +
+      '<p class="sel-hint">* Порц = мах + салад + хачир (нэг тавагт)</p>' +
     '</div>';
   }
   if (type === 'buf') {
@@ -1099,7 +1104,8 @@ function toggleMsec(header) {
 
 // ── Chip сонгох / болиулах ──
 var GROUP_COLORS = {
-  'por':'sel-green','buf-mah':'sel-amber','buf-sal':'sel-green',
+  'por':'sel-green','por-sal':'sel-green','por-hac':'sel-amber',
+  'buf-mah':'sel-amber','buf-sal':'sel-green',
   'buf-hac':'sel-amber','buf-shol':'sel-blue','uguluun':'sel-green'
 };
 
@@ -1224,6 +1230,12 @@ function updateDishesField() {
         var qtyEl = document.getElementById(safeId);
         parts.push(name + (qtyEl && qtyEl.value ? ' (' + qtyEl.value + ' порц)' : ''));
       });
+      ['por-sal','por-hac'].forEach(function(g) {
+        var cls = GROUP_COLORS[g];
+        fp.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).forEach(function(btn) {
+          parts.push(btn.textContent.trim());
+        });
+      });
     } else if (type === 'buf' && fp) {
       ['buf-mah','buf-sal','buf-hac','buf-shol'].forEach(function(g) {
         var cls = GROUP_COLORS[g];
@@ -1276,6 +1288,13 @@ function getRowFoods(i, type) {
       var name = btn.textContent.trim();
       var qtyEl = document.getElementById('qty_' + i + '_' + btn.dataset.ci);
       foods.push(name + (qtyEl && qtyEl.value ? ' (' + qtyEl.value + ' порц)' : ''));
+    });
+    // Порцын дагалдах салад + хачир
+    ['por-sal','por-hac'].forEach(function(g) {
+      var cls = GROUP_COLORS[g];
+      fp.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).forEach(function(btn) {
+        foods.push(btn.textContent.trim());
+      });
     });
   } else if (type === 'buf' && fp) {
     ['buf-mah','buf-sal','buf-hac','buf-shol'].forEach(function(g) {
@@ -1627,9 +1646,14 @@ function showOrderSummary(isNomaadCamp) {
       if (dtype === 'por' && fp) {
         fp.querySelectorAll('.dish-chip[data-g="por"].sel-green').forEach(function(btn) {
           var nm = btn.textContent.trim();
-          var safeId = 'qty_' + ri + '_' + nm.replace(/[^a-zA-Z0-9]/g,'_').substring(0,20);
-          var qtyEl = document.getElementById(safeId);
+          var qtyEl = document.getElementById('qty_' + ri + '_' + btn.dataset.ci);
           dishBits.push(nm + (qtyEl && qtyEl.value ? ' (' + qtyEl.value + ' порц)' : ''));
+        });
+        ['por-sal','por-hac'].forEach(function(g) {
+          var cls = GROUP_COLORS[g];
+          fp.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).forEach(function(btn) {
+            dishBits.push(btn.textContent.trim());
+          });
         });
       } else if (dtype === 'buf' && fp) {
         ['buf-mah','buf-sal','buf-hac','buf-shol'].forEach(function(g) {
