@@ -1394,7 +1394,7 @@ function switchTab(name) {
 
   if (name === 'orders') renderOrders();
   if (name === 'tasks') renderTasks();
-  if (name === 'ingredients') { renderIngCalc(); loadStock(); }
+  if (name === 'ingredients') { renderIngCalc(); renderStaffMealList(); loadStock(); }
   if (name === 'prep') renderPrepStock();
   if (name === 'perf') renderPerf();
   if (name === 'staff') renderStaffTab();
@@ -1833,6 +1833,9 @@ function renderTasks() {
     return;
   }
 
+  // Нөөц хүрэлцээ харуулахын тулд нөөцийн мэдээлэл татна (нэг л удаа)
+  if (!stockData && !stockLoaded) loadStock();
+
   var today = todayStr();
   var orders = ordersData.filter(function(o){ return !o._parsedDate || o._parsedDate >= today; });
   if (!orders.length) orders = ordersData.slice(0, 3);
@@ -1923,14 +1926,17 @@ function renderTasks() {
 
         html += '<div class="tsk-dish-item">';
         var dishCheckClick = (currentRole === 'Захирал') ? '' : ' onclick="event.stopPropagation();markDishDone(\''+dkey+'\',\''+panelId+'\')"';
+        var prepBadge = findPreparedFor(dishName).length ? ' <span style="font-size:11px;font-weight:700;color:#1a4d6a;background:#e8f4ff;border:1px solid #bcdcf0;border-radius:6px;padding:1px 6px;white-space:nowrap">🧊 бэлтгэлтэй</span>' : '';
         html += '<div class="tsk-dish-head" onclick="toggleIngPanel(\''+panelId+'\')">' +
           '<div class="tsk-dish-check'+(done?' checked':'')+'"'+dishCheckClick+'></div>' +
-          '<div class="tsk-dish-name'+(done?' done':'')+'">🍳 '+esc(dishName)+'</div>' +
+          '<div class="tsk-dish-name'+(done?' done':'')+'">🍳 '+esc(dishName)+prepBadge+'</div>' +
           '<div class="tsk-dish-expand">▾</div>' +
         '</div>';
 
         // Ingredient panel (нээлттэй төлвийг хадгална)
         html += '<div class="tsk-ing-panel'+(openPanels[panelId]?' open':'')+'" id="'+panelId+'">';
+        // Нөөц / бэлтгэсэн нөөц хүрэх эсэх
+        html += buildDishAvailability(dishName, pax);
         if (recipe && recipe.ingredients && pax > 0) {
           html += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;justify-content:space-between">' +
             '<span>Орц</span><span>Тооцоо</span></div>';
@@ -2739,22 +2745,35 @@ function renderPrepStock() {
 
   // Нэмэх форм (Тогооч/Бэлтгэгч)
   if (canEdit) {
+    // Технологи картаас хоолны нэрсийн жагсаалт
+    var recipeOpts = RECIPES.map(function(r){ return '<option value="'+esc(r.name)+'">'; }).join('');
+    var fieldStyle = 'width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:14px';
     html += '<div style="margin:0 14px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)">' +
-      '<div style="font-weight:700;font-size:13px;margin-bottom:10px">＋ Бэлтгэсэн зүйл нэмэх</div>' +
-      '<input id="prep-name" type="text" placeholder="Хоол/орцны нэр (жнь: Чанасан хорхог)" style="width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:14px;margin-bottom:8px">' +
-      '<div style="display:flex;gap:8px;margin-bottom:8px">' +
-        '<input id="prep-qty" type="number" min="0" step="0.1" placeholder="Тоо" style="flex:1;min-width:0;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:14px">' +
-        '<select id="prep-unit" style="flex:1;min-width:0;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:14px;background:#fff">' +
-          '<option value="порц">порц</option><option value="кг">кг</option><option value="г">г</option><option value="ш">ширхэг</option><option value="л">л</option>' +
+      '<div style="font-weight:700;font-size:14px;margin-bottom:12px">🧊 Бэлтгэсэн зүйл нэмэх</div>' +
+
+      // Хоолны нэр — технологи картаас сонгоно (эсвэл гараар)
+      '<div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">1. ЯМАР ХООЛ БЭЛТГЭВ?</div>' +
+      '<input id="prep-name" list="prep-name-list" type="text" placeholder="Технологи картаас сонгох эсвэл бичих" style="'+fieldStyle+';margin-bottom:12px">' +
+      '<datalist id="prep-name-list">'+recipeOpts+'</datalist>' +
+
+      // Тоо хэмжээ — тод label-тай
+      '<div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">2. ХЭДИЙГ БЭЛТГЭВ?</div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:12px;align-items:stretch">' +
+        '<input id="prep-qty" type="number" min="0" step="0.1" placeholder="Жнь: 20" style="flex:1.5;min-width:0;'+fieldStyle+';font-weight:700;font-size:16px;text-align:center">' +
+        '<select id="prep-unit" style="flex:1;min-width:0;'+fieldStyle+';background:#fff">' +
+          '<option value="порц">порц</option><option value="ширхэг">ширхэг</option><option value="кг">кг</option><option value="г">грамм</option><option value="л">литр</option>' +
         '</select>' +
       '</div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:10px">' +
-        '<div style="flex:1"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px">Бэлтгэсэн</div>' +
-          '<input id="prep-made" type="date" value="'+esc(todayStr())+'" style="width:100%;padding:8px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:13px"></div>' +
-        '<div style="flex:1"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px">Дуусах хугацаа</div>' +
-          '<input id="prep-exp" type="date" style="width:100%;padding:8px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:13px"></div>' +
+
+      // Огноо
+      '<div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">3. ХУГАЦАА</div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:12px">' +
+        '<div style="flex:1"><div style="font-size:11px;color:var(--muted);margin-bottom:3px">Бэлтгэсэн өдөр</div>' +
+          '<input id="prep-made" type="date" value="'+esc(todayStr())+'" style="'+fieldStyle+';font-size:13px"></div>' +
+        '<div style="flex:1"><div style="font-size:11px;color:var(--muted);margin-bottom:3px">Дуусах өдөр</div>' +
+          '<input id="prep-exp" type="date" style="'+fieldStyle+';font-size:13px"></div>' +
       '</div>' +
-      '<button onclick="addPrepItem()" style="width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer">＋ Нэмэх</button>' +
+      '<button onclick="addPrepItem()" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">＋ Нөөцөд нэмэх</button>' +
     '</div>';
   }
 
@@ -2794,6 +2813,57 @@ function renderPrepStock() {
   html += '</div>';
 
   body.innerHTML = html;
+}
+
+// Тухайн хоолонд тохирох бэлтгэсэн нөөц олох (нэрээр)
+function findPreparedFor(dishName) {
+  var n = (dishName||'').toLowerCase().trim();
+  if (!n) return [];
+  return getPrepStock().filter(function(it){
+    var inm = (it.name||'').toLowerCase().trim();
+    return inm === n || inm.indexOf(n) >= 0 || n.indexOf(inm) >= 0;
+  });
+}
+
+// Орц нөөцөд байгаа эсэх (ойролцоо — эхний 3 үсгээр таамаглана)
+function stockHasIngredient(ingName) {
+  if (!stockData || !stockData.items || !stockData.items.length) return null; // мэдэгдэхгүй
+  var base = String(ingName).toLowerCase().replace(/\([^)]*\)/g,'').trim();
+  var first = base.split(/[\s,/]+/)[0] || '';
+  if (first.length < 3) return null;
+  var key = first.substring(0, 3);
+  return stockData.items.some(function(it){
+    return (parseFloat(it.qty) > 0) && (String(it.name).toLowerCase().indexOf(key) >= 0);
+  });
+}
+
+// Даалгавар дээр харагдах: бэлтгэсэн нөөц + түүхий нөөц хүрэх эсэх
+function buildDishAvailability(dishName, pax) {
+  var html = '';
+  // 1) Бэлтгэсэн (хөлдөөсөн) нөөц
+  var prep = findPreparedFor(dishName);
+  if (prep.length) {
+    var byUnit = {};
+    prep.forEach(function(it){ var u = it.unit||'ш'; byUnit[u] = (byUnit[u]||0) + (parseFloat(it.qty)||0); });
+    var parts = Object.keys(byUnit).map(function(u){ return byUnit[u] + ' ' + u; });
+    html += '<div style="background:#e8f4ff;border:1px solid #bcdcf0;border-radius:8px;padding:7px 10px;margin-bottom:6px;font-size:12px;font-weight:600;color:#1a4d6a">' +
+      '🧊 Бэлтгэсэн нөөцөд <b>'+esc(parts.join(', '))+'</b> байна — шинээр хийхийн өмнө шалгана уу' +
+    '</div>';
+  }
+  // 2) Түүхий нөөц хүрэлцэх эсэх (ойролцоо шалгалт)
+  var recipe = findRecipe(dishName);
+  if (recipe && recipe.ingredients && stockData && stockData.items && stockData.items.length) {
+    var missing = [];
+    recipe.ingredients.forEach(function(ing){
+      if (stockHasIngredient(ing.n) === false) missing.push(ing.n);
+    });
+    if (missing.length === 0) {
+      html += '<div style="font-size:12px;color:var(--accent);font-weight:600;margin-bottom:6px">📦 Нөөц хүрэлцээтэй — орцууд нөөцөд байна</div>';
+    } else {
+      html += '<div style="font-size:12px;color:var(--red);font-weight:600;margin-bottom:6px">📦 Нөөцөд дутагдаж магадгүй: '+esc(missing.join(', '))+'</div>';
+    }
+  }
+  return html;
 }
 
 /* Stock from Sheets — JSONP */
@@ -2873,8 +2943,9 @@ function renderStock(data) {
   body.innerHTML = html;
   stockLoaded = true;
   stockData = { items: items, totalValue: totalValue, itemCount: itemCount };
-  // Гүйцэтгэл идэвхтэй бол өртгийн тайланг шинэчилнэ
+  // Идэвхтэй табыг шинэчилнэ (өртгийн тайлан / нөөц хүрэлцээ)
   if (activeTab === 'perf') renderPerf();
+  if (activeTab === 'tasks') renderTasks();
 }
 
 /* ─────────────────────────────────
@@ -3336,6 +3407,27 @@ function buildFoodReports() {
   } else {
     html += reportCard('💰 Хүнсний өртгийн тайлан',
       '<div style="font-size:13px;color:var(--muted);padding:6px 0">Нөөцийн мэдээлэл ачаалж байна...</div>');
+  }
+
+  // 5) Бэлтгэсэн нөөц (хөлдөөсөн) хураангуй
+  var prepArr = getPrepStock();
+  if (prepArr.length) {
+    var soon = 0, expired = 0;
+    var prows = prepArr.slice().sort(function(a,b){ return (a.exp||'z').localeCompare(b.exp||'z'); }).map(function(it){
+      var dl = daysLeft(it.exp);
+      var st = '', col = 'var(--muted)';
+      if (dl !== null) {
+        if (dl < 0) { st = 'дууссан'; col = 'var(--red)'; expired++; }
+        else if (dl <= 3) { st = dl+' хоног'; col = 'var(--amber)'; soon++; }
+        else st = dl+' хоног';
+      }
+      return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)">' +
+        '<span style="flex:1">'+esc(it.name)+'</span>' +
+        '<span style="font-weight:700;color:var(--accent);min-width:70px;text-align:right">'+esc(String(it.qty))+' '+esc(it.unit)+'</span>' +
+        '<span style="min-width:64px;text-align:right;color:'+col+';font-weight:600">'+st+'</span></div>';
+    }).join('');
+    html += reportCard('🧊 Бэлтгэсэн нөөц',
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">'+prepArr.length+' төрөл'+(soon?' · ⏳ '+soon+' удахгүй дуусна':'')+(expired?' · ⚠️ '+expired+' хугацаа дууссан':'')+'</div>' + prows);
   }
 
   if (!html) return '';
