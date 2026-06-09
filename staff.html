@@ -3043,15 +3043,17 @@ function renderStock(data) {
     items.push({ name:String(name), unit:String(unit||''), qty:(isNaN(balance)?parseFloat(qty):balance), price:price, value:(isNaN(lineVal)?0:lineVal) });
     var qtyDisplay = isNaN(balance) ? (qty||'—') : (Math.round(balance*100)/100);
     var priceDisplay = isNaN(price) ? '—' : price.toLocaleString('mn-MN')+'₮';
-    var low = !isNaN(balance) && balance <= 0;
+    var over = !isNaN(balance) && balance < 0;   // хэтрүүлж зарцуулсан — улаан анхааруулга
+    var empty = !isNaN(balance) && balance === 0; // дууссан — амбер (анхааруулгагүй)
     var usedParts = [];
     if (usedOrder > 0) usedParts.push('−'+(Math.round(usedOrder*100)/100)+' захиалга');
     if (usedPrep > 0)  usedParts.push('−'+(Math.round(usedPrep*100)/100)+' бэлтгэл');
     if (usedStaff > 0) usedParts.push('−'+usedStaff+' хоол');
-    var usedNote = usedParts.length ? ' <span style="font-size:10px;color:var(--amber)">('+usedParts.join(', ')+')</span>' : '';
-    html += '<div class="ing-table-row"' + (low ? ' style="background:#fff5f3"' : '') + '>' +
-      '<span class="ing-name-col">' + (low ? '⚠️ ' : '') + esc(String(name))+'</span>' +
-      '<span class="ing-amt-col" style="' + (low ? 'color:var(--red)' : '') + '">'+esc(String(qtyDisplay))+usedNote+'</span>' +
+    var usedNote = usedParts.length ? ' <span style="font-size:10px;color:var(--muted)">('+usedParts.join(', ')+')</span>' : '';
+    var amtColor = over ? 'color:var(--red)' : (empty ? 'color:var(--amber)' : '');
+    html += '<div class="ing-table-row"' + (over ? ' style="background:#fff5f3"' : '') + '>' +
+      '<span class="ing-name-col">' + (over ? '⚠️ ' : '') + esc(String(name))+'</span>' +
+      '<span class="ing-amt-col" style="' + amtColor + '">'+esc(String(qtyDisplay))+usedNote+'</span>' +
       '<span class="ing-unit-col">'+esc(String(unit))+'</span>' +
       '<span class="ing-price-col">'+esc(priceDisplay)+'</span>' +
     '</div>';
