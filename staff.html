@@ -1160,7 +1160,7 @@ body{
       <div class="ing-section-sub">Ажилчдын хоонд хүнснээс гаргасан зарлага — нөөцийн үлдэгдлээс хасагдана</div>
       <div style="padding:0 18px 10px">
         <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:stretch">
-          <input id="staff-exp-material" list="staff-exp-mat-list" placeholder="Хүнс сонгох (нөөцөөс)"
+          <input id="staff-exp-material" list="staff-exp-mat-list" placeholder="Орц сонгох эсвэл шинэ нэр бичих"
             style="flex:2;min-width:150px;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink)">
           <datalist id="staff-exp-mat-list"></datalist>
           <input type="number" id="staff-exp-qty" min="0" step="0.1" placeholder="Тоо"
@@ -1173,7 +1173,7 @@ body{
       <div class="ing-section-title" style="margin-top:20px">В. 📥 Бараа материал авах</div>
       <div class="ing-section-sub">Шинээр авсан хүнс/барааг бүртгэнэ — нөөцийн үлдэгдэлд нэмэгдэнэ</div>
       <div style="padding:0 18px 10px">
-        <input id="buy-material" list="staff-exp-mat-list" placeholder="Материалын нэр (жнь: Хонь ястай)"
+        <input id="buy-material" list="staff-exp-mat-list" placeholder="Орц сонгох эсвэл шинэ нэр бичих"
           style="width:100%;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink);margin-bottom:8px">
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <input type="number" id="buy-qty" min="0" step="0.1" placeholder="Тоо"
@@ -2549,6 +2549,22 @@ function getStaffExpense() {
   try { return JSON.parse(localStorage.getItem('staff_food_expense') || '[]'); }
   catch(e) { return []; }
 }
+
+// Хүнсний нэгдсэн каталог: технологи картын бүх орц + нөөцийн материал (давхцалгүй)
+function getIngredientCatalog() {
+  var set = {};
+  RECIPES.forEach(function(r){
+    (r.ingredients || []).forEach(function(ing){ if (ing.n) set[String(ing.n).trim()] = true; });
+  });
+  if (stockData && stockData.items) {
+    stockData.items.forEach(function(it){ if (it.name) set[String(it.name).trim()] = true; });
+  }
+  return Object.keys(set).sort(function(a,b){ return a.localeCompare(b); });
+}
+function fillIngredientDatalist() {
+  var dl = document.getElementById('staff-exp-mat-list');
+  if (dl) dl.innerHTML = getIngredientCatalog().map(function(n){ return '<option value="'+esc(n)+'">'; }).join('');
+}
 function saveStaffExpense(arr) { localStorage.setItem('staff_food_expense', JSON.stringify(arr)); }
 
 // Материал бүрээс гарсан нийт зарлага (нөөцийн үлдэгдлээс хасахад)
@@ -2566,8 +2582,8 @@ function addStaffExpense() {
   var qty = parseFloat(document.getElementById('staff-exp-qty').value) || 0;
   if (!material) { alert('Хүнсээ сонгоно уу.'); return; }
   if (qty <= 0) { alert('Тоо хэмжээгээ оруулна уу.'); return; }
-  // Нөөцөөс нэгж ба үнийг автоматаар олно
-  var unit = 'ш', price = 0;
+  // Нөөцөөс нэгж ба үнийг автоматаар олно (олдохгүй бол кг)
+  var unit = 'кг', price = 0;
   if (stockData && stockData.items) {
     var m = stockData.items.filter(function(it){ return String(it.name).toLowerCase().trim() === material.toLowerCase().trim(); })[0];
     if (m) { unit = m.unit || unit; if (!isNaN(m.price)) price = m.price; }
@@ -2629,11 +2645,8 @@ function addPurchase() {
 function renderStaffMealList() {
   var el = document.getElementById('staff-meal-list');
   if (!el) return;
-  // Хүнсний сонголтыг нөөцөөс дүүргэх (datalist)
-  var dl = document.getElementById('staff-exp-mat-list');
-  if (dl && stockData && stockData.items) {
-    dl.innerHTML = stockData.items.map(function(it){ return '<option value="'+esc(it.name)+'">'; }).join('');
-  }
+  // Хүнсний сонголтыг технологи картын орц + нөөцөөс дүүргэх (datalist)
+  fillIngredientDatalist();
   var arr = getStaffExpense();
   if (!arr.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:6px 0">Зарлага бүртгэгдээгүй. Дээрээс хүнс сонгож тоо оруулаад «Зарлага» дарна уу.</div>'; return; }
   var totalVal = 0;
