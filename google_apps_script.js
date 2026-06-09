@@ -1,7 +1,8 @@
-// NOMAAD Catering — Google Apps Script v2.2
+// NOMAAD Catering — Google Apps Script v2.3
 const SHEET_ORDERS  = 'Захиалга';
 const SHEET_CALC    = 'Тооцоо';
 const SHEET_EXPENSE = 'Ажилтны хоол зарлага';
+const STOCK_GID     = 1696013893;   // Худалдан авалт / нөөцийн хуудас
 
 function doPost(e) {
   try {
@@ -9,11 +10,40 @@ function doPost(e) {
     const ss   = SpreadsheetApp.getActiveSpreadsheet();
     if (data.type === 'order') saveOrder(ss, data);
     else if (data.type === 'expense') saveExpense(ss, data);
+    else if (data.type === 'purchase') savePurchase(ss, data);
     else saveCalc(ss, data);
     return json({ status: 'ok' });
   } catch (err) {
     return json({ status: 'error', error: err.message });
   }
+}
+
+// gid-ээр хуудас олох
+function getSheetByGid(ss, gid) {
+  const sheets = ss.getSheets();
+  for (let i = 0; i < sheets.length; i++) {
+    if (sheets[i].getSheetId() === gid) return sheets[i];
+  }
+  return null;
+}
+
+// Шинээр авсан бараа материалыг нөөцийн хуудас руу нэмнэ
+// Багана: №(A) | Огноо(B) | Материал(C) | Хэмжих нэгж(D) | Тоо(E) | Нэгжийн үнэ(F) | Нийт дүн(G)
+function savePurchase(ss, data) {
+  const sheet = getSheetByGid(ss, STOCK_GID);
+  if (!sheet) throw new Error('Нөөцийн хуудас (gid ' + STOCK_GID + ') олдсонгүй');
+  const qty   = Number(data.qty) || 0;
+  const price = Number(data.price) || 0;
+  const num   = sheet.getLastRow();   // дараагийн дугаар (толгой мөртэй тооцвол)
+  sheet.appendRow([
+    num,
+    data.date || '',
+    data.material || '',
+    data.unit || '',
+    qty,
+    price,
+    qty * price,
+  ]);
 }
 
 function doGet(e) {
