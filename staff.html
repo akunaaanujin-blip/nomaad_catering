@@ -1156,23 +1156,16 @@ body{
         </div>
       </div>
 
-      <div class="ing-section-title" style="margin-top:20px">Б. Ажилтны хоол</div>
-      <div class="ing-section-sub">Ажилчдад хийсэн хоолыг бүртгэж хүнснээс хасна</div>
+      <div class="ing-section-title" style="margin-top:20px">Б. Ажилтны хоолны зарлага</div>
+      <div class="ing-section-sub">Ажилчдын хоонд хүнснээс гаргасан зарлага — нөөцийн үлдэгдлээс хасагдана</div>
       <div style="padding:0 18px 10px">
-        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-          <select id="staff-meal-type" style="flex:1;min-width:140px;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:var(--bg);color:var(--ink)">
-            <option value="цуйван">🍜 Цуйван</option>
-            <option value="хуурга">🥘 Хуурга</option>
-            <option value="шөл">🍲 Гурилтай шөл</option>
-            <option value="будаатай">🍚 Будаатай хоол</option>
-            <option value="хуушуур">🥟 Хуушуур</option>
-          </select>
-          <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:6px 10px">
-            <span style="font-size:12px;color:var(--muted);white-space:nowrap">Хүн тоо:</span>
-            <input type="number" id="staff-meal-pax" min="1" max="50" value="5"
-              style="width:52px;font-family:inherit;font-size:15px;font-weight:700;border:none;background:transparent;text-align:center;color:var(--ink)">
-          </div>
-          <button onclick="addStaffMeal()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 16px;cursor:pointer;white-space:nowrap">＋ Бүртгэх</button>
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:stretch">
+          <input id="staff-exp-material" list="staff-exp-mat-list" placeholder="Хүнс сонгох (нөөцөөс)"
+            style="flex:2;min-width:150px;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink)">
+          <datalist id="staff-exp-mat-list"></datalist>
+          <input type="number" id="staff-exp-qty" min="0" step="0.1" placeholder="Тоо"
+            style="flex:1;min-width:70px;font-family:inherit;font-size:14px;font-weight:700;text-align:center;border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff;color:var(--ink)">
+          <button onclick="addStaffExpense()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 16px;cursor:pointer;white-space:nowrap">＋ Зарлага</button>
         </div>
         <div id="staff-meal-list"></div>
       </div>
@@ -2530,90 +2523,75 @@ var ING_UNITS = {
   'өндөг':'ш'
 };
 
-// ── Ажилтны хоолны орц (1 хүнд, грамм) ──
-var STAFF_MEAL_ING = {
-  'цуйван':    {'гурил':80, 'мах нийт':80, 'ногоо нийт':50},
-  'хуурга':    {'мах нийт':150, 'ногоо нийт':80, 'төмс':60},
-  'шөл':       {'гурил':60, 'мах нийт':50, 'ногоо нийт':40},
-  'будаатай':  {'мах нийт':120, 'ногоо нийт':60},
-  'хуушуур':   {'гурил':80, 'мах нийт':70}
-};
-
-var STAFF_MEAL_LABELS = {
-  'цуйван':'🍜 Цуйван', 'хуурга':'🥘 Хуурга',
-  'шөл':'🍲 Гурилтай шөл', 'будаатай':'🍚 Будаатай хоол', 'хуушуур':'🥟 Хуушуур'
-};
-
 function todayKey() { return new Date().toISOString().substring(0,10); }
 
-function getStaffMeals() {
-  try { return JSON.parse(localStorage.getItem('staff_meals_' + todayKey()) || '[]'); }
+/* ── Ажилтны хоолны зарлага — нөөцөөс шууд хүнс гаргана ── */
+function getStaffExpense() {
+  try { return JSON.parse(localStorage.getItem('staff_food_expense') || '[]'); }
   catch(e) { return []; }
 }
-function saveStaffMeals(arr) {
-  localStorage.setItem('staff_meals_' + todayKey(), JSON.stringify(arr));
+function saveStaffExpense(arr) { localStorage.setItem('staff_food_expense', JSON.stringify(arr)); }
+
+// Материал бүрээс гарсан нийт зарлага (нөөцийн үлдэгдлээс хасахад)
+function getStaffExpenseByMaterial() {
+  var map = {};
+  getStaffExpense().forEach(function(e){
+    var k = String(e.material).toLowerCase().trim();
+    map[k] = (map[k] || 0) + (parseFloat(e.qty) || 0);
+  });
+  return map;
 }
 
-function addStaffMeal() {
-  var type = document.getElementById('staff-meal-type').value;
-  var pax  = parseInt(document.getElementById('staff-meal-pax').value) || 1;
-  var meals = getStaffMeals();
-  meals.push({ type: type, pax: pax, time: new Date().toLocaleTimeString('mn-MN', {hour:'2-digit',minute:'2-digit'}) });
-  saveStaffMeals(meals);
+function addStaffExpense() {
+  var material = (document.getElementById('staff-exp-material').value || '').trim();
+  var qty = parseFloat(document.getElementById('staff-exp-qty').value) || 0;
+  if (!material) { alert('Хүнсээ сонгоно уу.'); return; }
+  if (qty <= 0) { alert('Тоо хэмжээгээ оруулна уу.'); return; }
+  // Нөөцөөс нэгж ба үнийг автоматаар олно
+  var unit = 'ш', price = 0;
+  if (stockData && stockData.items) {
+    var m = stockData.items.filter(function(it){ return String(it.name).toLowerCase().trim() === material.toLowerCase().trim(); })[0];
+    if (m) { unit = m.unit || unit; if (!isNaN(m.price)) price = m.price; }
+  }
+  var arr = getStaffExpense();
+  arr.unshift({ id: Date.now(), material: material, qty: qty, unit: unit, price: price, date: todayStr() });
+  saveStaffExpense(arr);
+  document.getElementById('staff-exp-material').value = '';
+  document.getElementById('staff-exp-qty').value = '';
+  logActivity('🍱 Ажилтны хоол зарлага: ' + material + ' ' + qty + unit);
   renderStaffMealList();
-  renderIngCalc();
+  renderStockFromCache();   // нөөцийн үлдэгдлийг шинэчилнэ
 }
 
-function removeStaffMeal(idx) {
-  var meals = getStaffMeals();
-  meals.splice(idx, 1);
-  saveStaffMeals(meals);
+function removeStaffExpense(id) {
+  saveStaffExpense(getStaffExpense().filter(function(it){ return String(it.id) !== String(id); }));
   renderStaffMealList();
-  renderIngCalc();
-}
-
-function clearStaffMeals() {
-  if (!confirm('Өнөөдрийн ажилтны хоолны бүртгэлийг бүгдийг цэвэрлэх үү?')) return;
-  saveStaffMeals([]);
-  renderStaffMealList();
-  renderIngCalc();
+  renderStockFromCache();
 }
 
 function renderStaffMealList() {
   var el = document.getElementById('staff-meal-list');
   if (!el) return;
-  var meals = getStaffMeals();
-  if (!meals.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0">Өнөөдөр бүртгэл байхгүй</div>'; return; }
-  var totalPax = meals.reduce(function(s,m){ return s + (parseInt(m.pax)||0); }, 0);
-  // Зөвхөн хүнсний зарлага (зарцуулсан орц) — хоолны нэр гаргахгүй
-  var st = getStaffMealTotals();
-  var rows = '';
-  Object.keys(st).forEach(function(k){
-    if (st[k] > 0) rows += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)">' +
-      '<span style="flex:1">'+esc(k)+'</span>' +
-      '<span style="font-weight:700;color:var(--accent)">'+fmtAmt(st[k],'г')+'</span></div>';
-  });
-  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-      '<span style="font-size:12px;color:var(--muted)">Өнөөдөр '+meals.length+' удаа · нийт '+totalPax+' хүн</span>' +
-      '<button onclick="clearStaffMeals()" style="border:1px solid var(--line);background:#fff;color:var(--red);border-radius:8px;padding:3px 10px;font-size:12px;cursor:pointer">Цэвэрлэх</button>' +
-    '</div>' +
-    '<div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px">' +
-      '<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Зарцуулсан хүнс</div>' +
-      (rows || '<div style="font-size:13px;color:var(--muted)">Орц тооцоологдсонгүй</div>') +
+  // Хүнсний сонголтыг нөөцөөс дүүргэх (datalist)
+  var dl = document.getElementById('staff-exp-mat-list');
+  if (dl && stockData && stockData.items) {
+    dl.innerHTML = stockData.items.map(function(it){ return '<option value="'+esc(it.name)+'">'; }).join('');
+  }
+  var arr = getStaffExpense();
+  if (!arr.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:6px 0">Зарлага бүртгэгдээгүй. Дээрээс хүнс сонгож тоо оруулаад «Зарлага» дарна уу.</div>'; return; }
+  var totalVal = 0;
+  var rows = arr.map(function(e){
+    totalVal += (parseFloat(e.price)||0) * (parseFloat(e.qty)||0);
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:6px">' +
+      '<div style="flex:1;min-width:0"><span style="font-weight:600;font-size:13px">'+esc(e.material)+'</span>' +
+        ' <span style="font-size:11px;color:var(--muted)">'+esc(formatDateMN(e.date))+'</span></div>' +
+      '<span style="font-weight:700;color:var(--accent);white-space:nowrap">'+esc(String(e.qty))+' '+esc(e.unit)+'</span>' +
+      '<button onclick="removeStaffExpense(\''+e.id+'\')" style="border:none;background:none;color:var(--red);font-size:16px;cursor:pointer;padding:2px 4px">✕</button>' +
     '</div>';
+  }).join('');
+  var html = rows;
+  if (totalVal > 0) html += '<div style="display:flex;justify-content:space-between;padding:8px 12px;font-size:13px;font-weight:700"><span>Нийт зардал</span><span style="color:var(--accent)">'+totalVal.toLocaleString('mn-MN')+'₮</span></div>';
   el.innerHTML = html;
-}
-
-function getStaffMealTotals() {
-  var totals = {};
-  var meals = getStaffMeals();
-  meals.forEach(function(m) {
-    var ing = STAFF_MEAL_ING[m.type] || {};
-    Object.keys(ing).forEach(function(k) {
-      totals[k] = (totals[k] || 0) + m.pax * ing[k];
-    });
-  });
-  return totals;
 }
 
 function renderIngCalc() {
@@ -2650,12 +2628,6 @@ function renderIngCalc() {
     });
   });
 
-  // Ажилтны хоолны орцыг хасах
-  var staffTotals = getStaffMealTotals();
-  Object.keys(staffTotals).forEach(function(k) {
-    totals[k] = (totals[k] || 0) - staffTotals[k];
-  });
-
   var KG_KEYS = ['хонины мах','гахайн мах','тахианы мах','мах нийт','гурил','төмс','ногоо нийт'];
   var html = '<div class="ing-table">' +
     '<div class="ing-table-row header">' +
@@ -2667,18 +2639,13 @@ function renderIngCalc() {
 
   KG_KEYS.forEach(function(k) {
     var grams = totals[k] || 0;
-    var staffG = staffTotals[k] || 0;
-    var orderG = grams + staffG; // захиалгын дүн
-    if (orderG <= 0 && staffG <= 0) return;
+    if (grams <= 0) return;
     hasAny = true;
     var unit = ING_UNITS[k] || 'кг';
     var display = (grams/1000).toFixed(2);
-    var neg = grams < 0;
     html += '<div class="ing-table-row">' +
-      '<span class="ing-name-col">' + esc(k) +
-        (staffG > 0 ? '<span style="font-size:10px;color:var(--muted);margin-left:4px">−' + (staffG/1000).toFixed(2) + 'кг ажилтан</span>' : '') +
-      '</span>' +
-      '<span class="ing-amt-col" style="' + (neg ? 'color:var(--red)' : '') + '">' + display + '</span>' +
+      '<span class="ing-name-col">' + esc(k) + '</span>' +
+      '<span class="ing-amt-col">' + display + '</span>' +
       '<span class="ing-unit-col">' + unit + '</span>' +
     '</div>';
   });
@@ -2868,6 +2835,8 @@ function buildDishAvailability(dishName, pax) {
 
 /* Stock from Sheets — JSONP */
 var stockLoaded = false;
+var _stockRaw = null;   // gviz-ийн түүхий хариу (дахин render хийхэд)
+function renderStockFromCache() { if (_stockRaw) renderStock(_stockRaw); }
 function loadStock() {
   stockLoaded = false;
   var body = document.getElementById('stock-body');
@@ -2902,12 +2871,14 @@ function showStockError(msg) {
 }
 
 function renderStock(data) {
+  _stockRaw = data;
   var body = document.getElementById('stock-body');
   var rows = data && data.table && data.table.rows;
   if (!rows || rows.length === 0) {
     body.innerHTML = '<div class="stock-empty">Нөөцийн мэдээлэл байхгүй.</div>';
     return;
   }
+  var expMap = getStaffExpenseByMaterial();   // ажилтны хоонд гарсан зарлага
   var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Материал</span><span class="ing-amt-col">Үлдэгдэл</span><span class="ing-unit-col">Нэгж</span><span class="ing-price-col">Нэгж үнэ</span></div>';
   var itemCount = 0, totalValue = 0;
   var items = [];
@@ -2922,14 +2893,18 @@ function renderStock(data) {
     if (!name) return;
     itemCount++;
     if (!isNaN(lineVal)) totalValue += lineVal;
-    items.push({ name:String(name), unit:String(unit||''), qty:parseFloat(qty), price:price, value:(isNaN(lineVal)?0:lineVal) });
     var qtyNum = parseFloat(qty);
-    var qtyDisplay = isNaN(qtyNum) ? (qty||'—') : qtyNum;
+    // Ажилтны хоонд гарсан зарлагыг хасна
+    var used = expMap[String(name).toLowerCase().trim()] || 0;
+    var balance = isNaN(qtyNum) ? NaN : (qtyNum - used);
+    items.push({ name:String(name), unit:String(unit||''), qty:(isNaN(balance)?parseFloat(qty):balance), price:price, value:(isNaN(lineVal)?0:lineVal) });
+    var qtyDisplay = isNaN(balance) ? (qty||'—') : (Math.round(balance*100)/100);
     var priceDisplay = isNaN(price) ? '—' : price.toLocaleString('mn-MN')+'₮';
-    var low = !isNaN(qtyNum) && qtyNum <= 0;
+    var low = !isNaN(balance) && balance <= 0;
+    var usedNote = used > 0 ? ' <span style="font-size:10px;color:var(--amber)">(−'+used+' хоол)</span>' : '';
     html += '<div class="ing-table-row"' + (low ? ' style="background:#fff5f3"' : '') + '>' +
       '<span class="ing-name-col">' + (low ? '⚠️ ' : '') + esc(String(name))+'</span>' +
-      '<span class="ing-amt-col" style="' + (low ? 'color:var(--red)' : '') + '">'+esc(String(qtyDisplay))+'</span>' +
+      '<span class="ing-amt-col" style="' + (low ? 'color:var(--red)' : '') + '">'+esc(String(qtyDisplay))+usedNote+'</span>' +
       '<span class="ing-unit-col">'+esc(String(unit))+'</span>' +
       '<span class="ing-price-col">'+esc(priceDisplay)+'</span>' +
     '</div>';
@@ -3372,23 +3347,21 @@ function buildFoodReports() {
       '<div style="font-size:13px;color:var(--muted);padding:6px 0">Бодит зарцуулалт хараахан бүртгэгдээгүй байна.</div>');
   }
 
-  // 3) Ажилчдын хоолны хүнсний зарлага (хоолны нэр биш — зөвхөн зарцуулсан хүнс)
-  var meals = getStaffMeals();
-  if (meals.length) {
-    var mealPax = meals.reduce(function(s,m){ return s + (parseInt(m.pax)||0); }, 0);
-    var st = getStaffMealTotals();
-    var stRows = '';
-    Object.keys(st).forEach(function(k){
-      if (st[k] > 0) stRows += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)">' +
-        '<span style="flex:1">'+esc(k)+'</span>' +
-        '<span style="font-weight:700;color:var(--accent)">'+fmtAmt(st[k],'г')+'</span></div>';
-    });
-    html += reportCard('🍱 Ажилчдын хоолны хүнсний зарлага',
-      '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">Өнөөдөр '+meals.length+' удаагийн хоол · нийт '+mealPax+' хүн</div>' +
-      (stRows || '<div style="font-size:13px;color:var(--muted);padding:6px 0">Орц тооцоологдсонгүй.</div>'));
+  // 3) Ажилчдын хоолны зарлага (нөөцөөс гарсан хүнс)
+  var exp = getStaffExpense();
+  if (exp.length) {
+    var expTotal = 0;
+    var expRows = exp.map(function(e){
+      expTotal += (parseFloat(e.price)||0) * (parseFloat(e.qty)||0);
+      return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)">' +
+        '<span style="flex:1">'+esc(e.material)+'</span>' +
+        '<span style="font-weight:700;color:var(--accent)">'+esc(String(e.qty))+' '+esc(e.unit)+'</span></div>';
+    }).join('');
+    html += reportCard('🍱 Ажилчдын хоолны зарлага',
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">'+exp.length+' удаа нөөцөөс хүнс гаргасан'+(expTotal>0?' · '+expTotal.toLocaleString('mn-MN')+'₮':'')+'</div>' + expRows);
   } else {
-    html += reportCard('🍱 Ажилчдын хоолны хүнсний зарлага',
-      '<div style="font-size:13px;color:var(--muted);padding:6px 0">Өнөөдөр ажилчдын хоол бүртгэгдээгүй.</div>');
+    html += reportCard('🍱 Ажилчдын хоолны зарлага',
+      '<div style="font-size:13px;color:var(--muted);padding:6px 0">Ажилчдын хоолны зарлага бүртгэгдээгүй.</div>');
   }
 
   // 4) Хүнсний өртгийн тайлан (нөөцөөс)
