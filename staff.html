@@ -1010,6 +1010,18 @@ body{
   .order-list{grid-template-columns:repeat(3,1fr);}
   .staff-cards-grid{grid-template-columns:repeat(3,1fr);}
 }
+
+/* ── Хэрхэн ажиллах вэ — хөтлөлт ── */
+.htw{margin:0 4px 16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+.htw>summary{cursor:pointer;list-style:none;padding:13px 16px;font-weight:800;font-size:14px;background:linear-gradient(135deg,var(--accent),#2e6049);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.htw>summary::-webkit-details-marker{display:none}
+.htw>summary .chev{font-size:13px;font-weight:600;opacity:.85;transition:transform .2s}
+.htw[open]>summary .chev{transform:rotate(180deg)}
+.htw-body{padding:15px 16px 16px}
+.htw-step{display:flex;gap:11px;margin-bottom:13px;font-size:13px;line-height:1.55;color:var(--ink)}
+.htw-num{flex:none;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center}
+.htw-ccp{background:#fff5f3;border:1px solid var(--red);border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.55;color:#9e2b1e;margin-top:4px}
+.htw-tip{background:var(--accent-soft);border-radius:10px;padding:10px 12px;font-size:12px;color:#1a4228;margin-top:10px}
 </style>
 </head>
 <body>
@@ -1127,6 +1139,21 @@ body{
     <!-- Tab 3: Recipes -->
     <div id="tab-recipes" class="tab-panel">
       <div style="padding:14px 14px 4px">
+        <details class="htw" open>
+          <summary>📋 Технологи картаар хэрхэн ажиллах вэ?<span class="chev">▾</span></summary>
+          <div class="htw-body">
+            <div class="htw-step"><span class="htw-num">1</span><div><b>Захиалгаа хар.</b> «📋 Даалгавар» хэсгээс тухайн захиалгын хоол, <b>хүний тоог</b> хараарай.</div></div>
+            <div class="htw-step"><span class="htw-num">2</span><div><b>Орцыг хэмж.</b> Карт орцыг <b>хүний тоонд автоматаар тооцоолж</b> өгнө (жнь 180г × 100 = 18 кг). Яг тэр хэмжээгээр гарга.</div></div>
+            <div class="htw-step"><span class="htw-num">3</span><div><b>Ажлын байр ариутга.</b> Самбар, хутга, гараа цэвэрлэ. <b>Түүхий ↔ болсон</b> хоолыг тусгаарла (хөндлөн бохирдлоос сэргийлнэ).</div></div>
+            <div class="htw-step"><span class="htw-num">4</span><div><b>Аргачлалын дагуу хий.</b> Хоол бүрийн <b>«📖 Хийх аргачлал»</b> доторх алхмуудыг дарааллаар нь яг гүйцэтгэ.</div></div>
+            <div class="htw-step"><span class="htw-num">5</span><div><b>Цөмийн температур шалга.</b> Доорх улаан анхааруулгыг үзнэ үү — энэ нь хамгийн чухал хяналт.</div></div>
+            <div class="htw-step"><span class="htw-num">6</span><div><b>Хөргө ба хадгал.</b> Шууд үйлчлэхгүй бол blast chiller-т <b>+63→+3°C хүртэл 90 мин дотор</b> хөргөж, вакуумжуулж, шошго (нэр·огноо·хугацаа) наагаад 0–4°C-т хадгал.</div></div>
+            <div class="htw-step"><span class="htw-num">7</span><div><b>Дулаацуул.</b> Үйлчилгээний өмнө цөмийн темп <b>≥75°C</b> хүртэл, зөвхөн <b>нэг удаа</b> дулаацуул.</div></div>
+            <div class="htw-step"><span class="htw-num">8</span><div><b>Хоол дуусга.</b> «Даалгавар» хэсэгт <b>«✓ Хоол дуусгах»</b> товч дармагц орц нь <b>нөөцөөс автоматаар хасагдана.</b></div></div>
+            <div class="htw-ccp">⚠️ <b>Хамгийн чухал (CCP):</b> Махны <b>цөмийн температур ≥75°C</b>, тахианых <b>≥74°C</b> болсныг тэмдэглэгчээр <b>заавал</b> шалгана. Энэ нь хүнсний хордлогоос сэргийлэх гол хяналт.</div>
+            <div class="htw-tip">💡 Хоол бүрийн <b>дэлгэрэнгүй орц + аргачлалыг</b> доорх картууд дээр дарж үзнэ. «Даалгавар» хэсэгт ч хоол бүрийн доор харагдана.</div>
+          </div>
+        </details>
         <div class="section-title" style="padding:0 4px 10px">📖 Технологийн карт</div>
         <div class="search-bar" style="padding:0 0 8px">
           <input type="search" class="search-input" id="recipe-search" placeholder="Хоол хайх..." oninput="filterRecipes(this.value)">
