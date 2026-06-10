@@ -1143,6 +1143,10 @@ body{
 
       <div class="ing-section-title">А. 🛒 Авах хүнсний жагсаалт</div>
       <div class="ing-section-sub">Ирсэн захиалгаас тооцсон — АВАХ = хэрэгцээ − нөөц</div>
+      <div style="display:flex;gap:8px;padding:0 18px 8px">
+        <button onclick="downloadShoppingCSV()" style="flex:1;font-family:inherit;font-size:13px;font-weight:700;background:#1d6f42;color:#fff;border:none;border-radius:9px;padding:9px;cursor:pointer">📊 Excel татах</button>
+        <button onclick="printShoppingPDF()" style="flex:1;font-family:inherit;font-size:13px;font-weight:700;background:#b8412e;color:#fff;border:none;border-radius:9px;padding:9px;cursor:pointer">📄 PDF татах</button>
+      </div>
       <div id="ing-calc-body">
         <div class="ing-table">
           <div class="ing-table-row header">
@@ -1584,7 +1588,7 @@ function renderOrderCard(o, isPast) {
     return '<span class="order-chip pkg">'+esc(p)+'</span>';
   }).join('');
   var dishChips = svc.dishes.map(function(d){
-    return '<span class="order-chip">🍳 '+esc(d)+'</span>';
+    return '<span class="order-chip">🍳 '+esc(d.name)+(d.dt?' <span style="color:var(--muted);font-weight:500">· 🕒 '+esc(d.dt)+'</span>':'')+'</span>';
   }).join('');
 
   var badgeClass = status === 'Шинэ' ? 'badge-amber' :
@@ -1671,28 +1675,29 @@ function parseService(service) {
   if (!service) return { packages: [], dishes: [] };
   var parts = service.split('|').map(function(s){ return s.trim(); }).filter(Boolean);
   var packages = [], dishes = [];
+  var curDt = '';   // тухайн багцын (хоолны) өдөр цаг — дараагийн хоолнуудад дагалдана
   parts.forEach(function(p) {
     // Багц: "1-р Порц хоол (₮38,000/хүн) · 2026-06-06 13:00" гэх мэт
     if (/^\d+\s*-?\s*р(?=\s|$)/.test(p) || p.indexOf('₮') >= 0) {
-      // Огноо+цагийг авна (тухайн хоолны өдөр цаг)
       var dtm = p.match(/·\s*(\d{4})-(\d{2})-(\d{2})[ T]?(\d{1,2}:\d{2})?/);
-      var dt = dtm ? ((+dtm[2]) + '.' + (+dtm[3]) + (dtm[4] ? (' ' + dtm[4]) : '')) : '';
+      curDt = dtm ? ((+dtm[2]) + '.' + (+dtm[3]) + (dtm[4] ? (' ' + dtm[4]) : '')) : '';
       var label = p
         .replace(/^\d+\s*-?\s*р\s*/, '')                 // "1-р " хасах
         .replace(/\s*\([^)]*₮[^)]*\)/g, '')              // "(₮38,000/хүн)" хасах
         .replace(/\s*·\s*\d{4}-\d{2}-\d{2}[ T]?\d{0,2}:?\d{0,2}.*$/, '') // "· огноо цаг" хасах
         .trim();
-      if (label) packages.push(dt ? (label + ' · 🕒 ' + dt) : label);
+      if (label) packages.push(dt0(label, curDt));
     } else {
       var d = p.replace(/\(\d+\s*порц\)/g, '').replace(/\([^)]*г[^)]*\)/g, '').trim();
-      if (d) dishes.push(d);
+      if (d) dishes.push({ name: d, dt: curDt });
     }
   });
   return { packages: packages, dishes: dishes };
 }
+function dt0(label, dt) { return dt ? (label + ' · 🕒 ' + dt) : label; }
 
 function parseDishes(service) {
-  return parseService(service).dishes;
+  return parseService(service).dishes.map(function(d){ return d.name; });
 }
 
 function findRecipe(name) {
@@ -2634,22 +2639,15 @@ function renderStaffMealList() {
   el.innerHTML = html;
 }
 
-function renderIngCalc() {
-  var body = document.getElementById('ing-calc-body');
-  if (!ordersLoaded || ordersData.length === 0) {
-    body.innerHTML = '<div class="ing-table"><div style="padding:20px;text-align:center;font-size:13px;color:var(--muted)">Захиалга байхгүй байна.</div></div>';
-    return;
-  }
+// Авах жагсаалтыг тооцоолж буцаана (render ба татах хоёуланд)
+function computeShoppingList() {
   var today = todayStr();
   var orders = ordersData.filter(function(o){ return !o._parsedDate || o._parsedDate >= today; });
-
-  // Захиалга бүрийн хоолны орцыг детальд жороор нэгтгэх (нөөцийн нэртэй тааруулж)
   var agg = {};
   orders.forEach(function(o) {
     var pax = parseInt(o['хүн'] || o['хүн_тоо'] || o['pax'] || 0) || 0;
     if (pax <= 0) return;
-    var dishes = parseDishes(o['үйлчилгээ'] || o['хоол'] || '');
-    dishes.forEach(function(dn) {
+    parseDishes(o['үйлчилгээ'] || o['хоол'] || '').forEach(function(dn) {
       var recipe = findRecipe(dn);
       if (!recipe || !recipe.ingredients) return;
       recipe.ingredients.forEach(function(ing) {
@@ -2661,57 +2659,94 @@ function renderIngCalc() {
       });
     });
   });
-  var keys = Object.keys(agg).sort(function(a,b){ return agg[b].grams - agg[a].grams; });
-  if (!keys.length) {
-    body.innerHTML = '<div class="ing-table"><div style="padding:20px;text-align:center;font-size:13px;color:var(--muted)">Тооцоолох захиалга/жор алга.</div></div>';
-    return;
-  }
-
-  // Нөөцийн үлдэгдэл (нэрээр)
   var stockMap = {};
   if (stockData && stockData.items) {
     stockData.items.forEach(function(it){ stockMap[String(it.name).toLowerCase().trim()] = it; });
   }
+  return Object.keys(agg).sort(function(a,b){ return agg[b].grams - agg[a].grams; }).map(function(k) {
+    var a = agg[k], stk = stockMap[k];
+    var name = stk ? stk.name : a.label;
+    var needed, stock = '—', buy, buyHi = true;
+    if (stk) {
+      var su = String(stk.unit), needU = gramsToStockUnit(a.grams, su);
+      if (needU > 0) {
+        var sqty = parseFloat(stk.qty) || 0;
+        needed = (Math.round(needU*100)/100) + ' ' + su;
+        stock  = (Math.round(sqty*100)/100) + ' ' + su;
+        var b = Math.max(0, needU - sqty);
+        buy = b > 0 ? (Math.round(b*100)/100) + ' ' + su : '✓ хүрэлцэнэ';
+        buyHi = b > 0;
+      } else { needed = fmtAmt(a.grams, a.unit); buy = fmtAmt(a.grams, a.unit); }
+    } else { needed = fmtAmt(a.grams, a.unit); buy = fmtAmt(a.grams, a.unit); }
+    return { name:String(name), needed:needed, stock:stock, buy:buy, buyHi:buyHi };
+  });
+}
 
+function renderIngCalc() {
+  var body = document.getElementById('ing-calc-body');
+  if (!ordersLoaded || ordersData.length === 0) {
+    body.innerHTML = '<div class="ing-table"><div style="padding:20px;text-align:center;font-size:13px;color:var(--muted)">Захиалга байхгүй байна.</div></div>';
+    return;
+  }
+  var rows = computeShoppingList();
+  if (!rows.length) {
+    body.innerHTML = '<div class="ing-table"><div style="padding:20px;text-align:center;font-size:13px;color:var(--muted)">Тооцоолох захиалга/жор алга.</div></div>';
+    return;
+  }
   var html = '<div class="ing-table"><div class="ing-table-row header">' +
     '<span class="ing-name-col">Хүнс</span>' +
     '<span style="min-width:60px;text-align:right">Хэрэгцээ</span>' +
     '<span style="min-width:54px;text-align:right">Нөөц</span>' +
     '<span style="min-width:64px;text-align:right">🛒 Авах</span>' +
   '</div>';
-
-  keys.forEach(function(k) {
-    var a = agg[k];
-    var stk = stockMap[k];
-    var name = stk ? stk.name : a.label;
-    var neededDisp, stockDisp = '—', buyDisp, buyHi = true;
-    if (stk) {
-      var su = String(stk.unit);
-      var needU = gramsToStockUnit(a.grams, su);
-      if (needU > 0) {
-        var sqty = parseFloat(stk.qty) || 0;
-        neededDisp = (Math.round(needU*100)/100) + ' ' + su;
-        stockDisp  = (Math.round(sqty*100)/100) + ' ' + su;
-        var buy = Math.max(0, needU - sqty);
-        buyDisp = buy > 0 ? (Math.round(buy*100)/100) + ' ' + su : '✓ хүрэлцэнэ';
-        buyHi = buy > 0;
-      } else {
-        neededDisp = fmtAmt(a.grams, a.unit);
-        buyDisp = fmtAmt(a.grams, a.unit);
-      }
-    } else {
-      neededDisp = fmtAmt(a.grams, a.unit);
-      buyDisp = fmtAmt(a.grams, a.unit);
-    }
+  rows.forEach(function(r) {
     html += '<div class="ing-table-row">' +
-      '<span class="ing-name-col">'+esc(String(name))+'</span>' +
-      '<span style="min-width:60px;text-align:right;color:var(--muted);font-size:12px">'+esc(neededDisp)+'</span>' +
-      '<span style="min-width:54px;text-align:right;font-size:12px;color:var(--muted)">'+esc(stockDisp)+'</span>' +
-      '<span style="min-width:64px;text-align:right;font-weight:700;font-size:13px;color:'+(buyHi?'var(--red)':'var(--accent)')+'">'+esc(buyDisp)+'</span>' +
+      '<span class="ing-name-col">'+esc(r.name)+'</span>' +
+      '<span style="min-width:60px;text-align:right;color:var(--muted);font-size:12px">'+esc(r.needed)+'</span>' +
+      '<span style="min-width:54px;text-align:right;font-size:12px;color:var(--muted)">'+esc(r.stock)+'</span>' +
+      '<span style="min-width:64px;text-align:right;font-weight:700;font-size:13px;color:'+(r.buyHi?'var(--red)':'var(--accent)')+'">'+esc(r.buy)+'</span>' +
     '</div>';
   });
   html += '</div>';
   body.innerHTML = html;
+}
+
+// Excel (CSV) татах — UTF-8 BOM-той (кирилл зөв)
+function downloadShoppingCSV() {
+  var rows = computeShoppingList();
+  if (!rows.length) { alert('Жагсаалт хоосон байна.'); return; }
+  var csv = 'Хүнс,Хэрэгцээ,Нөөц,Авах\n';
+  rows.forEach(function(r){
+    csv += '"'+r.name.replace(/"/g,'""')+'","'+r.needed+'","'+r.stock+'","'+r.buy.replace('✓ ','')+'"\n';
+  });
+  var blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Авах_хүнс_' + todayStr() + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+}
+
+// PDF татах — хэвлэх цонхоор (Save as PDF)
+function printShoppingPDF() {
+  var rows = computeShoppingList();
+  if (!rows.length) { alert('Жагсаалт хоосон байна.'); return; }
+  var body = rows.map(function(r){
+    return '<tr><td>'+esc(r.name)+'</td><td>'+esc(r.needed)+'</td><td>'+esc(r.stock)+'</td><td class="buy">'+esc(r.buy)+'</td></tr>';
+  }).join('');
+  var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Авах хүнс</title>' +
+    '<style>body{font-family:Arial,sans-serif;padding:24px;color:#222}h2{color:#1F4A38;margin:0 0 4px}' +
+    '.sub{color:#666;font-size:12px;margin-bottom:14px}table{width:100%;border-collapse:collapse}' +
+    'th,td{border:1px solid #ccc;padding:8px 10px;text-align:left;font-size:13px}' +
+    'th{background:#1F4A38;color:#fff}td.buy{font-weight:700;color:#b8412e}tr:nth-child(even){background:#f6f6f3}</style></head><body>' +
+    '<h2>🛒 Авах хүнсний жагсаалт — NOMAAD</h2>' +
+    '<div class="sub">'+formatDateMN(todayStr())+' · ирсэн захиалгаас тооцсон</div>' +
+    '<table><thead><tr><th>Хүнс</th><th>Хэрэгцээ</th><th>Нөөц</th><th>🛒 Авах</th></tr></thead><tbody>'+body+'</tbody></table>' +
+    '</body></html>';
+  var w = window.open('', '_blank');
+  if (!w) { alert('Хэвлэх цонх нээгдсэнгүй (pop-up зөвшөөрнө үү).'); return; }
+  w.document.write(doc); w.document.close();
+  setTimeout(function(){ w.focus(); w.print(); }, 350);
 }
 
 /* ─────────────────────────────────
