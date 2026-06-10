@@ -1787,7 +1787,7 @@ function parseService(service) {
         .trim();
       if (label) packages.push(dt0(label, curDt));
     } else {
-      var d = p.replace(/\(\d+\s*порц\)/g, '').replace(/\([^)]*г[^)]*\)/g, '').trim();
+      var d = cleanDishName(p);   // "Өглөөний цай:" угтвар, "× N хүн/ширхэг" дагавар цэвэрлэнэ → жортой таарна
       if (d) dishes.push({ name: d, dt: curDt });
     }
   });
@@ -2354,8 +2354,8 @@ var RECIPES = [
   },
   {cat:'🍚 Буфет хачир', name:'Амталсан будаа',
    portion:'120г/хүн', time:'25 мин',
-   ingredients:[{n:'Будаа',a:'80г/хүн'}, {n:'Сонгино',a:'15г/хүн'}, {n:'Соя соус',a:'10мл/хүн'}, {n:'Турмерик',a:'3г/хүн'}, {n:'Чинжүү',a:'20мл/хүн'}],
-   prepTasks:[{key:'p1',name:'🔪 Будаа хэмжих',a:'80г/хүн',ing:'Будаа'}, {key:'p2',name:'🔪 Сонгино хэмжих',a:'15г/хүн',ing:'Сонгино'}, {key:'p3',name:'🔪 Соя соус хэмжих',a:'10мл/хүн',ing:'Соя соус'}, {key:'p4',name:'🔪 Турмерик хэмжих',a:'3г/хүн',ing:'Турмерик'}, {key:'p5',name:'🔪 Чинжүү хэмжих',a:'20мл/хүн',ing:'Чинжүү'}, {key:'p6',name:'🍳 Технологийн дагуу хийж гүйцэтгэх',a:''}],
+   ingredients:[{n:'Будаа',a:'80г/хүн'}, {n:'Сонгино',a:'15г/хүн'}, {n:'Соё соус',a:'10мл/хүн'}, {n:'Турмерик',a:'3г/хүн'}, {n:'Чинжүү',a:'20мл/хүн'}],
+   prepTasks:[{key:'p1',name:'🔪 Будаа хэмжих',a:'80г/хүн',ing:'Будаа'}, {key:'p2',name:'🔪 Сонгино хэмжих',a:'15г/хүн',ing:'Сонгино'}, {key:'p3',name:'🔪 Соё соус хэмжих',a:'10мл/хүн',ing:'Соё соус'}, {key:'p4',name:'🔪 Турмерик хэмжих',a:'3г/хүн',ing:'Турмерик'}, {key:'p5',name:'🔪 Чинжүү хэмжих',a:'20мл/хүн',ing:'Чинжүү'}, {key:'p6',name:'🍳 Технологийн дагуу хийж гүйцэтгэх',a:''}],
    method:'1️⃣ БЭЛТГЭЛ: Орцыг хэмжиж угаана. Ажлын талбай, багажийг ариутгана.\n2️⃣ ХООЛ ХИЙХ: Будааг буцалгаж хатааж, хуурсан сонгино+соя соустай хольно. Цөмийн температур ≥75°C-т хүргэнэ.\n3️⃣ ХУРДАН ХӨРГӨЛТ: Blast chiller-т +63→+3°C 90 минутын дотор (гүехэн саванд хийвэл хурдан хөрнө).\n4️⃣ ВАКУУМ/ХАДГАЛАХ: Цэвэр саванд хийж битүүмжилнэ (шаардвал вакуум). Шошго + огноо. 0–4°C-т 3 хоног.\n5️⃣ ДУЛААЦУУЛАХ: ≥75°C-т ≥2 мин. ℹ️ Шарсан төмс зэрэг шаржигнуур хачрыг үйлчилгээний дөхүүлж шинээр хийх нь чанартай.'
   },
   {cat:'🍚 Буфет хачир', name:'Шарсан төмс',
@@ -2786,16 +2786,22 @@ function renderStaffMealList() {
 }
 
 // Авах жагсаалтыг тооцоолж буцаана (render ба татах хоёуланд)
+var _shoppingMissing = [];   // жор олдоогүй (тооцоонд ороогүй) хоолнууд
 function computeShoppingList() {
   var today = todayStr();
   var orders = ordersData.filter(function(o){ return !o._parsedDate || o._parsedDate >= today; });
   var agg = {};
+  var missSet = {};
+  _shoppingMissing = [];
   orders.forEach(function(o) {
     var pax = parseInt(o['хүн'] || o['хүн_тоо'] || o['pax'] || 0) || 0;
     if (pax <= 0) return;
     parseDishes(o['үйлчилгээ'] || o['хоол'] || '').forEach(function(dn) {
       var recipe = findRecipe(dn);
-      if (!recipe || !recipe.ingredients) return;
+      if (!recipe || !recipe.ingredients) {
+        if (dn && !missSet[dn]) { missSet[dn] = 1; _shoppingMissing.push(dn); }   // жоргүй хоолыг тэмдэглэнэ
+        return;
+      }
       recipe.ingredients.forEach(function(ing) {
         var pg = plannedGramsRaw(ing.a, pax);
         if (!pg) return;
@@ -2854,6 +2860,12 @@ function renderIngCalc() {
     '</div>';
   });
   html += '</div>';
+  if (_shoppingMissing.length) {
+    html += '<div style="margin:10px 14px 0;padding:10px 12px;background:#fff8ec;border:1px solid var(--amber);border-radius:10px;font-size:12px;color:#8a6d3b;line-height:1.5">' +
+      '⚠️ Эдгээр захиалсан хоол технологи картгүй тул авах тооцоонд <b>ОРООГҮЙ</b>: ' + _shoppingMissing.map(esc).join(' · ') +
+      '<br><span style="color:var(--muted)">Технологи хэсэгт жор нэмбэл автоматаар тооцогдоно.</span>' +
+    '</div>';
+  }
   body.innerHTML = html;
 }
 
