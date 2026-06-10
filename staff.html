@@ -4202,6 +4202,54 @@ function setReportPrice(id, val) {
   renderPerf();
 }
 
+// Технологи карт (төлөвлөсөн БРУТТО) ↔ хоол дуусгах үед оруулсан бодит зарцуулалтын зөрүү
+function buildActualVarianceReport() {
+  var agg = {}, anyActual = false;
+  ordersData.forEach(function(o){
+    var id = o['id'] || o['ID'] || o['захиалгын_дугаар'] || o._idx;
+    var pax = parseInt(o['хүн'] || o['хүн_тоо'] || 0) || 0;
+    if (!pax) return;
+    parseDishes(o['үйлчилгээ'] || '').forEach(function(dn){
+      var dkey = id + '_' + dn.replace(/\s/g,'_');
+      if (!isDishDone(dkey)) return;
+      var r = findRecipe(dn);
+      if (!r || !r.ingredients) return;
+      r.ingredients.forEach(function(ing, i){
+        var pg = plannedGramsRaw(ing.a, pax);
+        if (!pg) return;
+        var a = agg[ing.n] || (agg[ing.n] = { plan:0, act:0, unit:pg.unit, hasActual:false });
+        a.plan += pg.g; a.unit = pg.unit;
+        var aq = parseQtyRaw(getActual(dkey + '_act_ing_' + i));
+        if (aq) { a.act += aq.g; a.hasActual = true; anyActual = true; }
+        else { a.act += pg.g; }   // бодит оруулаагүй → төлөвлөсөнтэй тэнцүү
+      });
+    });
+  });
+  var names = Object.keys(agg).filter(function(n){ return agg[n].plan > 0 && agg[n].hasActual; })
+    .sort(function(a,b){ return Math.abs(agg[b].act-agg[b].plan) - Math.abs(agg[a].act-agg[a].plan); });
+  if (!anyActual || !names.length)
+    return reportCard('🎯 Технологи карт ↔ бодит зөрүү', '<div style="font-size:12px;color:var(--muted);line-height:1.5">Хоол дуусгахдаа бодит хэмжээ оруулаагүй байна. <br>Даалгавар → хоол «✓ дуусгах» үед бодит БРУТТО хэмжээгээ оруулбал энд зөрүү харагдана.</div>');
+  var nOver = 0, nUnder = 0, nOk = 0;
+  names.forEach(function(n){ var d = agg[n].act - agg[n].plan; if (Math.abs(d) < 1) nOk++; else if (d > 0) nOver++; else nUnder++; });
+  var cc = function(v, label, color){ return '<div style="flex:1;background:#fbf7ef;border:1px solid var(--line);border-radius:10px;padding:8px 10px;text-align:center"><div style="font-size:17px;font-weight:800;color:'+color+'">'+v+'</div><div style="font-size:10px;color:var(--muted)">'+label+'</div></div>'; };
+  var summary = '<div style="display:flex;gap:7px;margin-bottom:10px">' +
+    cc(nOver, '▲ хэтэрсэн', 'var(--red)') + cc(nUnder, '▼ хэмнэсэн', 'var(--accent)') + cc(nOk, '✓ тохирсон', 'var(--muted)') + '</div>';
+  var rows = names.map(function(n){
+    var a = agg[n], diff = a.act - a.plan;
+    var badge = Math.abs(diff) < 1 ? '<span style="color:var(--accent);font-weight:700;white-space:nowrap">✓ тохирсон</span>'
+      : diff > 0 ? '<span style="color:var(--red);font-weight:700;white-space:nowrap">▲ +'+esc(fmtAmt(diff, a.unit))+'</span>'
+      : '<span style="color:var(--accent);font-weight:700;white-space:nowrap">▼ '+esc(fmtAmt(-diff, a.unit))+'</span>';
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--line)">' +
+      '<div style="font-weight:600;font-size:13px;margin-bottom:3px">'+esc(n)+'</div>' +
+      '<div style="display:flex;gap:12px;font-size:12px;flex-wrap:wrap;align-items:center">' +
+        '<span style="color:var(--muted)">Карт <b style="color:var(--ink)">'+esc(fmtAmt(a.plan, a.unit))+'</b></span>' +
+        '<span style="color:var(--muted)">Бодит <b style="color:var(--ink)">'+esc(fmtAmt(a.act, a.unit))+'</b></span>' +
+        badge +
+      '</div></div>';
+  }).join('');
+  return reportCard('🎯 Технологи карт ↔ бодит зөрүү <span style="font-size:11px;font-weight:500;color:var(--muted)">· дууссан хоол</span>', summary + rows);
+}
+
 function renderPerf() {
   var body = document.getElementById('perf-body');
   if (!stockData) loadStock();   // өртгийн тайланд нөөцийн мэдээлэл татна
@@ -4227,6 +4275,7 @@ function renderPerf() {
 
   body.innerHTML =
     buildProfitReport() +
+    (ordersLoaded ? buildActualVarianceReport() : '') +
     '<div class="chart-title" style="margin:18px 0 10px;font-size:15px">📊 Өнөөдрийн гүйцэтгэл</div>' +
     '<div class="perf-grid">' +
       '<div class="perf-card accent"><div class="pc-val">'+total+'</div><div class="pc-label">Нийт захиалга</div></div>' +
