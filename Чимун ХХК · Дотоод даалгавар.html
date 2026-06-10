@@ -1,0 +1,2027 @@
+<!DOCTYPE html>
+<!-- saved from url=(0041)https://chimunllc.github.io/chimun-tasks/ -->
+<html lang="mn" data-fs="xl" data-theme="light"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Чимун ХХК · Дотоод даалгавар</title>
+
+<!-- PWA / installable on phone home screen -->
+<link rel="manifest" href="https://chimunllc.github.io/chimun-tasks/manifest.json">
+<meta name="theme-color" content="#fbfbfa">
+<meta name="theme-color" content="#191919" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/svg+xml" href="./Чимун ХХК · Дотоод даалгавар_files/icon.svg">
+<link rel="apple-touch-icon" href="https://chimunllc.github.io/chimun-tasks/apple-touch-icon.png">
+<!-- iOS Safari "Add to Home Screen" → looks like a real app -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<!-- black-translucent: апп нь статус барын ард урсаж, бүх дэлгэцийг бүрхэнэ.
+     iOS-ийн систем статус барын текст өнгийг автомат тохируулна (theme-color дээр үндэслэнэ). -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Чимун Tasks">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="Чимун Tasks">
+<!-- Inter — Notion/Linear-ийн ашигладаг фонт. Native апп шиг typography -->
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+<link href="./Чимун ХХК · Дотоод даалгавар_files/css2" rel="stylesheet">
+<link rel="stylesheet" href="./Чимун ХХК · Дотоод даалгавар_files/styles.css">
+</head>
+<body>
+
+<!-- ─── INSTALL BANNER — "Гэрийн дэлгэц рүү нэмэх" зөвлөгөө ─── -->
+<div class="install-banner" id="install-banner" role="region" aria-label="Аппыг суулгах">
+  <div class="ib-icon">📱</div>
+  <div class="ib-text">
+    <div class="ib-title">Аппыг суулгах</div>
+    <div class="ib-sub">Гэрийн дэлгэцээс шууд нээж, илүү хурдан ажиллуулна</div>
+  </div>
+  <button class="ib-btn" id="install-btn" type="button">Суулгах</button>
+  <button class="ib-close" id="install-close" type="button" aria-label="Хаах">×</button>
+</div>
+
+<!-- iOS install instruction modal -->
+<div class="ios-install-modal" id="ios-install-modal" role="dialog" aria-label="iOS суулгах заавар">
+  <div class="iim-sheet">
+    <div class="iim-handle"></div>
+    <h3>📱 iPhone дээр суулгах</h3>
+    <div class="iim-sub">Safari доороос дараах 3 алхмыг хийнэ үү:</div>
+    <ol>
+      <li>Доод хэсэгт байгаа <strong>Хуваалцах</strong> товчийг (□↑) дарна</li>
+      <li>Жагсаалтаас <strong>"Add to Home Screen"</strong> сонгоно</li>
+      <li>Баруун дээд буланд <strong>"Add"</strong> товчийг дарна</li>
+    </ol>
+    <button class="iim-close" id="ios-install-close" type="button">Ойлголоо</button>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN — shown until authenticated -->
+<div class="login-screen hidden" id="login-screen">
+  <div class="login-card">
+    <div class="login-logo" style="background:transparent;padding:0;">
+      <img src="./Чимун ХХК · Дотоод даалгавар_files/icon.svg" alt="Чимун ХХК" style="width:72px;height:72px;display:block;border-radius:16px;">
+    </div>
+    <h1>Чимун ХХК · Дотоод даалгавар</h1>
+    <p class="login-sub">Утас эсвэл и-мэйл + PIN кодоор нэвтэрнэ үү</p>
+
+    <form id="pin-login-form" autocomplete="off">
+      <label class="login-label">Утасны дугаар <span style="font-size:11px;color:var(--muted);font-weight:400;">(эсвэл и-мэйл)</span></label>
+      <input id="login-id-input" type="text" inputmode="email" required="" autocomplete="username" spellcheck="false" placeholder="99112233 эсвэл name@example.com">
+
+      <label class="login-label">PIN код (4 орон)</label>
+      <input id="login-pin-input" type="tel" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" minlength="4" required="" autocomplete="off" placeholder="● ● ● ●">
+
+      <button type="submit" class="login-submit">Нэвтрэх</button>
+    </form>
+
+    <div class="login-error" id="login-error"></div>
+
+    <!-- ─── Шинэ ажилтан бүртгүүлэх форм (нуугдсан, link дарахад нээгдэнэ) ─── -->
+    <div id="register-section" style="display:none; margin-top:18px; text-align:left; border-top:1px solid var(--border); padding-top:18px;">
+      <h2 style="font-size:16px; margin:0 0 4px;">Шинэ ажилтан бүртгэл</h2>
+      <p style="font-size:12px; color:var(--muted); margin:0 0 12px;">Мэдээллээ оруулаад бүртгүүлснээр шууд нэвтрэх боломжтой.</p>
+
+      <label class="login-label">Бүртгэлийн төрөл <span style="color:var(--danger)">*</span></label>
+      <div id="reg-worker-type" style="display:flex; gap:8px; margin-bottom:14px;">
+        <button type="button" class="reg-type-btn active" data-type="permanent" style="flex:1; padding:10px; border:2px solid var(--primary); background:var(--primary); color:#fff; border-radius:var(--r-md); font-size:13px; font-weight:600; cursor:pointer;">Үндсэн ажилтан</button>
+        <button type="button" class="reg-type-btn" data-type="daily" style="flex:1; padding:10px; border:2px solid var(--border); background:var(--panel); color:var(--text); border-radius:var(--r-md); font-size:13px; font-weight:600; cursor:pointer;">Өдрийн ажилтан</button>
+      </div>
+
+      <label class="login-label">Овог <span style="color:var(--danger)">*</span></label>
+      <input id="reg-surname" type="text" placeholder="Жишээ: Болд" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:14px; margin-bottom:8px;">
+
+      <label class="login-label">Нэр <span style="color:var(--danger)">*</span></label>
+      <input id="reg-givenname" type="text" placeholder="Жишээ: Энх" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:14px; margin-bottom:4px;">
+      <div id="reg-name-preview" style="font-size:12px; color:var(--muted); margin-bottom:8px; min-height:16px;"></div>
+
+      <div class="reg-permanent-only">
+      <label class="login-label">Албан тушаал <span style="color:var(--danger)">*</span></label>
+      <select id="reg-role" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:14px; margin-bottom:8px; background:var(--panel); color:var(--text);">
+        <option value="">— Сонгох —</option>
+        <optgroup label="Удирдлага">
+          <option value="Гүйцэтгэх захирал">Гүйцэтгэх захирал (CEO)</option>
+          <option value="Үйл ажиллагааны захирал">Үйл ажиллагааны захирал (COO)</option>
+        </optgroup>
+        <optgroup label="Борлуулалт">
+          <option value="Борлуулалтын менежер">Борлуулалтын менежер</option>
+          <option value="Захиалгын ажилтан">Захиалгын ажилтан</option>
+        </optgroup>
+        <optgroup label="Маркетинг">
+          <option value="Маркетингийн ажилтан">Маркетингийн ажилтан</option>
+          <option value="Контент бүтээгч">Контент бүтээгч</option>
+        </optgroup>
+        <optgroup label="Арга хэмжээ">
+          <option value="Эвент менежер">Эвент менежер</option>
+          <option value="Эвент талбайн зохицуулагч">Эвент талбайн зохицуулагч</option>
+          <option value="Эвент туслах">Эвент туслах</option>
+          <option value="Тайзны инженер">Тайзны инженер</option>
+        </optgroup>
+        <optgroup label="F&amp;B (Хоол)">
+          <option value="Ахлах тогооч">Ахлах тогооч</option>
+          <option value="Туслах тогооч">Туслах тогооч</option>
+          <option value="Бэлтгэгч (prep)">Бэлтгэгч (prep)</option>
+          <option value="Бармен">Бармен / Бартендер</option>
+          <option value="Зөөгч">Зөөгч</option>
+        </optgroup>
+        <optgroup label="Кемп">
+          <option value="Кемпийн ахлах менежер">Кемпийн ахлах менежер</option>
+          <option value="Кемп туслах">Кемп туслах</option>
+          <option value="Үйлчлэгч">Үйлчлэгч</option>
+        </optgroup>
+        <optgroup label="Логистик">
+          <option value="Агуулахын ахлах / Нярав">Агуулахын ахлах / Нярав</option>
+          <option value="Жолооч">Жолооч</option>
+          <option value="Агуулахын ажилтан">Агуулахын ажилтан</option>
+          <option value="Цэвэрлэгээ / үйлчилгээний ажилтан">Цэвэрлэгээ / үйлчилгээний ажилтан</option>
+          <option value="Засвар үйлчилгээний ажилтан">Засвар үйлчилгээний ажилтан</option>
+        </optgroup>
+        <optgroup label="Санхүү / Захиргаа">
+          <option value="Ерөнхий нягтлан">Ерөнхий нягтлан</option>
+          <option value="Туслах нягтлан">Туслах нягтлан</option>
+          <option value="Хүний нөөц / Захиргаа">Хүний нөөц / Захиргаа</option>
+        </optgroup>
+      </select>
+
+      <label class="login-label">Аль салбар? <span style="color:var(--danger)">*</span></label>
+      <select id="reg-group" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:14px; margin-bottom:8px;">
+        <option value="">— Сонгох —</option>
+        <option value="M Event">Эм Ивент</option>
+        <option value="Camp">Номаад кемп</option>
+        <option value="Нэгдсэн">Захиргаа / Нэгдсэн</option>
+      </select>
+      </div>
+
+      <label class="login-label">Утасны дугаар <span style="color:var(--danger)">*</span></label>
+      <input id="reg-phone" type="tel" inputmode="numeric" placeholder="99112233" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:14px; margin-bottom:8px;">
+
+      <div class="reg-permanent-only">
+      <label class="login-label">И-мэйл <span style="color:var(--danger)">*</span></label>
+      <input id="reg-email" type="email" placeholder="name@example.com" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:14px; margin-bottom:8px;">
+      </div>
+
+      <label class="login-label">Регистрийн дугаар (РД) <span style="color:var(--danger)">*</span></label>
+      <input id="reg-rd" type="text" maxlength="10" placeholder="АБ12345678" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:14px; margin-bottom:8px; text-transform:uppercase;">
+
+      <div class="reg-permanent-only">
+      <label class="login-label">Гэрийн хаяг <span style="color:var(--danger)">*</span></label>
+      <textarea id="reg-address" rows="2" placeholder="Жишээ: УБ, СБД, 7-р хороо, 14 байр, 32 тоот" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:14px; margin-bottom:8px; font-family:inherit; resize:vertical;"></textarea>
+      </div>
+
+      <label class="login-label">Selfie зураг <span style="color:var(--danger)">*</span> <span style="font-size:11px;color:var(--muted)">(өөрөө гэрэл сайтай газар татна)</span></label>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+        <div id="reg-photo-preview" style="width:64px; height:64px; border-radius:50%; background:var(--panel-hover); display:inline-flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; border:2px dashed var(--border);">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        </div>
+        <label for="reg-photo" style="flex:1; padding:12px; background:linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color:#fff; border:none; border-radius:var(--r-md); font-size:13px; font-weight:600; text-align:center; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+          Selfie татах
+        </label>
+        <input id="reg-photo" type="file" accept="image/*" capture="user" style="display:none;">
+      </div>
+
+      <div class="reg-permanent-only">
+      <h3 style="font-size:13px;font-weight:700;margin:18px 0 6px;border-top:1px solid var(--border);padding-top:14px;color:var(--text);">Яаралтай үед холбоо барих</h3>
+      <label class="login-label">Хэн болох <span style="color:var(--danger)">*</span></label>
+      <select id="reg-emergency-relation" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:14px; margin-bottom:8px; background:var(--panel); color:var(--text);">
+        <option value="">— Сонгох —</option>
+        <option value="Эх">Эх</option>
+        <option value="Аав">Аав</option>
+        <option value="Эхнэр">Эхнэр</option>
+        <option value="Нөхөр">Нөхөр</option>
+        <option value="Хүү">Хүү</option>
+        <option value="Охин">Охин</option>
+        <option value="Ах">Ах</option>
+        <option value="Эгч">Эгч</option>
+        <option value="Дүү">Дүү</option>
+        <option value="Хадам аав">Хадам аав</option>
+        <option value="Хадам эх">Хадам эх</option>
+        <option value="Найз">Найз</option>
+        <option value="Хамтран ажилладаг">Хамтран ажилладаг</option>
+        <option value="Бусад">Бусад</option>
+      </select>
+
+      <label class="login-label">Нэр <span style="color:var(--danger)">*</span></label>
+      <input id="reg-emergency-name" type="text" placeholder="Жишээ: Долгормаа" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:14px; margin-bottom:8px;">
+
+      <label class="login-label">Утасны дугаар <span style="color:var(--danger)">*</span></label>
+      <input id="reg-emergency-phone" type="tel" inputmode="numeric" placeholder="99887766" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:14px; margin-bottom:12px;">
+      </div>
+
+      <!-- ─── Цалин хүлээн авах данс (бүх ажилтанд шаардлагатай) ─── -->
+      <h3 style="font-size:13px;font-weight:700;margin:18px 0 6px;border-top:1px solid var(--border);padding-top:14px;color:var(--text);">Цалин хүлээн авах данс</h3>
+      <label class="login-label">Банк <span style="color:var(--danger)">*</span></label>
+      <select id="reg-bank" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:14px; margin-bottom:8px; background:var(--panel); color:var(--text);">
+        <option value="">— Сонгох —</option>
+        <option value="Хаан банк">Хаан банк</option>
+        <option value="Голомт банк">Голомт банк</option>
+        <option value="ХХБ">ХХБ (Худалдаа Хөгжлийн Банк)</option>
+        <option value="Төрийн банк">Төрийн банк</option>
+        <option value="Хас банк">Хас банк</option>
+        <option value="Капитрон банк">Капитрон банк</option>
+        <option value="М банк">М банк</option>
+        <option value="Ариг банк">Ариг банк</option>
+        <option value="Чингис банк">Чингис банк</option>
+        <option value="Богд банк">Богд банк</option>
+        <option value="Тээвэр хөгжлийн банк">Тээвэр хөгжлийн банк</option>
+        <option value="Үндэсний хөрөнгө оруулалтын банк">Үндэсний хөрөнгө оруулалтын банк</option>
+      </select>
+      <label class="login-label">Дансны дугаар <span style="color:var(--danger)">*</span></label>
+      <input id="reg-bank-account" type="text" inputmode="numeric" placeholder="Жишээ: 5012345678" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:14px; margin-bottom:8px;">
+      <label class="login-label">Данс эзэмшигчийн нэр <span style="color:var(--danger)">*</span></label>
+      <input id="reg-bank-holder" type="text" placeholder="Дансан дээрх нэр (РД-тэй таарах)" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:14px; margin-bottom:12px;">
+
+      <!-- Цагийн ажилтны цалин: менежер ажил дуусахад "Цагийн цалин" хэсэгт
+           өдрийн хөлс × хоногоор гараар оруулж шилжүүлнэ. Бүртгэлд хугацаа/хөлс шаардахгүй. -->
+
+      <h3 style="font-size:13px;font-weight:700;margin:18px 0 6px;border-top:1px solid var(--border);padding-top:14px;color:var(--text);">Нэвтрэх</h3>
+      <label class="login-label">PIN код (4 орон) <span style="color:var(--danger)">*</span></label>
+      <input id="reg-pin" type="tel" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="● ● ● ●" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:14px; margin-bottom:12px;">
+
+      <p style="font-size:11px;color:var(--muted);margin:0 0 12px;line-height:1.4;">
+        Бүртгүүлсний дараа шууд нэвтрэх боломжтой. Цалинг нягтлан гараар олгоно.
+      </p>
+      <button type="button" id="reg-submit" class="login-submit" style="width:100%;">Бүртгүүлэх</button>
+      <div class="login-error" id="reg-error" style="margin-top:8px;"></div>
+      <button type="button" id="reg-cancel" style="background:none; border:none; color:var(--muted); font-size:13px; cursor:pointer; margin-top:10px; width:100%;">← Нэвтрэх рүү буцах</button>
+    </div>
+
+    <div class="login-footer" id="login-footer-default">
+      PIN кодоо мартсан/мэдэхгүй бол CEO-той холбогдоно уу.
+      <br><br>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button type="button" id="show-register-permanent-btn" class="reg-entry-btn" style="flex:1; padding:10px; border:1px solid var(--primary); background:var(--panel); color:var(--primary); border-radius:var(--r-md); font-size:13px; font-weight:600; cursor:pointer;">Бүртгүүлэх: Үндсэн ажилтан</button>
+        <button type="button" id="show-register-daily-btn" class="reg-entry-btn" style="flex:1; padding:10px; border:1px solid var(--primary); background:var(--panel); color:var(--primary); border-radius:var(--r-md); font-size:13px; font-weight:600; cursor:pointer;">Бүртгүүлэх: Цагийн ажилтан</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="app" style="">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand"><span id="brand-text"><img src="./Чимун ХХК · Дотоод даалгавар_files/icon.svg" alt="" style="width:22px;height:22px;border-radius:5px;vertical-align:-5px;margin-right:8px;"> Чимун ХХК</span></div>
+
+    <div class="section-label">Mailbox</div>
+    <div class="nav-item" data-view="dashboard" id="nav-dashboard">
+      <span><svg class="lcd-icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg><span id="nav-dashboard-label">Миний тойм</span></span><span class="count-badge"></span>
+    </div>
+    <div class="nav-item" data-view="calendar" id="nav-calendar">
+      <span><svg class="lcd-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>Календарь</span><span class="count-badge"></span>
+    </div>
+    <div class="nav-item" data-view="mine">
+      <span><svg class="lcd-icon" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>Ирсэн ажил</span><span class="count-badge" id="cnt-mine">3</span>
+    </div>
+    <div class="nav-item active" data-view="delegated">
+      <span><svg class="lcd-icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>Илгээсэн ажил</span><span class="count-badge" id="cnt-delegated">0</span>
+    </div>
+    <div class="nav-item" data-view="finance">
+      <span><svg class="lcd-icon" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="3"></circle><path d="M6 12h.01M18 12h.01"></path></svg>Санхүү</span><span class="count-badge" id="cnt-finance">0</span>
+    </div>
+    <div class="nav-item" data-view="hourly" id="nav-hourly" style="">
+      <span><svg class="lcd-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>Цагийн цалин</span><span class="count-badge" id="cnt-hourly">0</span>
+    </div>
+    <div class="nav-item" data-view="orders" id="nav-orders" style="display:none;">
+      <span><svg class="lcd-icon" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>Захиалга</span><span class="count-badge" id="cnt-orders">0</span>
+    </div>
+    <div class="nav-item" data-view="products" id="nav-products" style="display:none;">
+      <span><svg class="lcd-icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>Бараа</span><span class="count-badge" id="cnt-products">0</span>
+    </div>
+    <div class="nav-item" data-view="archive" id="nav-archive" style="display:none;">
+      <span><svg class="lcd-icon" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>Архив</span><span class="count-badge" id="cnt-archive">0</span>
+    </div>
+    <div class="section-label" id="nav-projects-label">Төслүүд</div>
+    <div id="project-list"><div class="project-item">
+      <span class="proj-name">Сезоны өмнөх бэлтгэл</span>
+      <span class="count-badge">18</span>
+      <button class="proj-del" title="Төсөл устгах" aria-label="Устгах">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div></div>
+    <div class="add-project" id="add-project">+ Шинэ төсөл</div>
+
+    <!-- User chip — populated after Google sign-in -->
+    <div class="user-chip" id="user-chip">
+      <div class="avatar" id="user-avatar">НА</div>
+      <div class="meta">
+        <div class="name" id="user-name">Н.Анужин</div>
+        <div class="role" id="user-role">Кемпийн ахлах менежер</div>
+      </div>
+      <button class="logout-btn" id="logout-btn" title="Гарах" aria-label="Гарах">⎋</button>
+    </div>
+  </aside>
+
+  <!-- Mobile sidebar backdrop -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="header">
+      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Цэс нээх">☰</button>
+      <div style="flex:1; min-width:0;">
+        <h1 id="view-title"><svg class="lcd-icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>Илгээсэн ажил</h1>
+        <div class="sub" id="view-sub">Та өөр хүнд оноосон ажлууд</div>
+      </div>
+      <div class="header-actions">
+        <button class="theme-toggle" id="theme-toggle" aria-label="Theme солих" title="Light/Dark солих">
+          <svg id="theme-icon-light" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+          <svg id="theme-icon-dark" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+        <button class="bell-btn has-unread" id="notif-btn" aria-label="Мэдэгдэл">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+          </svg>
+          <span class="notif-badge" id="notif-badge" style="">20</span>
+        </button>
+        <button class="btn" id="settings-btn" aria-label="Тохиргоо"><svg class="lcd-icon" viewBox="0 0 24 24" style="margin:0;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+        <button class="btn" id="export-btn" title="Даалгаврын тайланг CSV (Excel)-ээр татах" style="display:none;"><svg class="lcd-icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>Тайлан</button>
+        <button class="btn" id="new-finance-btn" title="Санхүүгийн хүсэлт CEO-руу илгээх"><svg class="lcd-icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>Хүсэлт</button>
+        <button class="btn btn-primary" id="new-task-btn"><svg class="lcd-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Шинэ</button>
+      </div>
+
+      <!-- Notification drawer (mobile: bottom sheet, desktop: dropdown) -->
+      <div class="notif-backdrop" id="notif-backdrop"></div>
+      <div class="notif-panel" id="notif-panel" hidden="">
+        <div class="notif-header">
+          <span>Мэдэгдэл</span>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <button class="notif-mark-read" id="notif-mark-all">Бүгдийг уншсан</button>
+            <button class="close-btn" id="notif-close" aria-label="Хаах">×</button>
+          </div>
+        </div>
+        <div class="notif-list" id="notif-list">
+    <div class="notif-group notif-group-active">
+      <div class="notif-group-header">Идэвхтэй <span class="notif-group-count">20</span></div>
+      
+      <div class="notif-item unread" data-task-id="t_ag3k5881mpzhlczh" data-notif-id="assigned-t_ag3k5881mpzhlczh">
+        <div class="notif-icon assigned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"></path></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">Шинэ даалгавар: 6сарын6ны захиалгын бүрэн эсэхийг шалгах</div>
+          <div class="notif-time">1 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_ag3k5881mpzhlczh" data-notif-id="today-t_ag3k5881mpzhlczh-2026-06-05">
+        <div class="notif-icon due_today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">Өнөөдөр дуусах: 6сарын6ны захиалгын бүрэн эсэхийг шалгах</div>
+          <div class="notif-time">1 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_n22rchd3mpzbzlyx" data-notif-id="finance-executed-t_n22rchd3mpzbzlyx">
+        <div class="notif-icon stage_unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">💵 Гүйлгээ хийгдсэн: Түдвэндаржаа — 28,700₮</div>
+          <div class="notif-time">1 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_hhjxyqynmpt4jjnz" data-notif-id="overdue-t_hhjxyqynmpt4jjnz-2026-06-05">
+        <div class="notif-icon overdue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" x2="12" y1="9" y2="13"></line><line x1="12" x2="12.01" y1="17" y2="17"></line></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">Хоцорсон: Талын салхи өглөөний цайны бэлтгэл</div>
+          <div class="notif-time">1 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_f7nazmlumpw29cx4" data-notif-id="overdue-t_f7nazmlumpw29cx4-2026-06-05">
+        <div class="notif-icon overdue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" x2="12" y1="9" y2="13"></line><line x1="12" x2="12.01" y1="17" y2="17"></line></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">Хоцорсон: Катеринг үйлчилгээ</div>
+          <div class="notif-time">1 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_4ysg9brtmpz4f32n" data-notif-id="finance-executed-t_4ysg9brtmpz4f32n">
+        <div class="notif-icon stage_unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">💵 Гүйлгээ хийгдсэн: Анужин — 700,000₮</div>
+          <div class="notif-time">17 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_88se3wd2mpz4jqzn" data-notif-id="finance-executed-t_88se3wd2mpz4jqzn">
+        <div class="notif-icon stage_unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">💵 Гүйлгээ хийгдсэн: Анужин — 1,500,000₮</div>
+          <div class="notif-time">17 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_njeumw5hmpz4lu9c" data-notif-id="finance-executed-t_njeumw5hmpz4lu9c">
+        <div class="notif-icon stage_unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">💵 Гүйлгээ хийгдсэн: Анужин — 1,000,000₮</div>
+          <div class="notif-time">17 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_qxutw613mpz4o2fv" data-notif-id="finance-executed-t_qxutw613mpz4o2fv">
+        <div class="notif-icon stage_unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">💵 Гүйлгээ хийгдсэн: Анужин — 50,000₮</div>
+          <div class="notif-time">17 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_hebxzxnqmpzb0vwj" data-notif-id="finance-executed-t_hebxzxnqmpzb0vwj">
+        <div class="notif-icon stage_unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">💵 Гүйлгээ хийгдсэн: Дэлгэрням лхамжав — 100,000₮</div>
+          <div class="notif-time">17 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_n22rchd3mpzbzlyx" data-notif-id="finance-approved-t_n22rchd3mpzbzlyx">
+        <div class="notif-icon stage_unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">✓ Зөвшөөрөгдсөн: Түдвэндаржаа — 28,700₮</div>
+          <div class="notif-time">17 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_8bmuqm44mpzc3an8" data-notif-id="finance-executed-t_8bmuqm44mpzc3an8">
+        <div class="notif-icon stage_unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">💵 Гүйлгээ хийгдсэн: Г.Мөнх-Учрал — 26,950,000₮</div>
+          <div class="notif-time">17 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_4ysg9brtmpz4f32n" data-notif-id="finance-approved-t_4ysg9brtmpz4f32n">
+        <div class="notif-icon stage_unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">✓ Зөвшөөрөгдсөн: Анужин — 700,000₮</div>
+          <div class="notif-time">19 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_88se3wd2mpz4jqzn" data-notif-id="finance-approved-t_88se3wd2mpz4jqzn">
+        <div class="notif-icon stage_unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">✓ Зөвшөөрөгдсөн: Анужин — 1,500,000₮</div>
+          <div class="notif-time">19 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_njeumw5hmpz4lu9c" data-notif-id="finance-approved-t_njeumw5hmpz4lu9c">
+        <div class="notif-icon stage_unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">✓ Зөвшөөрөгдсөн: Анужин — 1,000,000₮</div>
+          <div class="notif-time">19 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_hebxzxnqmpzb0vwj" data-notif-id="finance-approved-t_hebxzxnqmpzb0vwj">
+        <div class="notif-icon stage_unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">✓ Зөвшөөрөгдсөн: Дэлгэрням лхамжав — 100,000₮</div>
+          <div class="notif-time">19 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_qxutw613mpz4o2fv" data-notif-id="finance-approved-t_qxutw613mpz4o2fv">
+        <div class="notif-icon stage_unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">✓ Зөвшөөрөгдсөн: Анужин — 50,000₮</div>
+          <div class="notif-time">22 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_hhjxyqynmpt4jjnz" data-notif-id="today-t_hhjxyqynmpt4jjnz-2026-06-04">
+        <div class="notif-icon due_today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">Өнөөдөр дуусах: Талын салхи өглөөний цайны бэлтгэл</div>
+          <div class="notif-time">23 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_f7nazmlumpw29cx4" data-notif-id="today-t_f7nazmlumpw29cx4-2026-06-04">
+        <div class="notif-icon due_today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">Өнөөдөр дуусах: Катеринг үйлчилгээ</div>
+          <div class="notif-time">23 цаг өмнө</div>
+        </div>
+      </div>
+    
+      <div class="notif-item unread" data-task-id="t_ahbnqzjimpper3xi" data-notif-id="finance-executed-t_ahbnqzjimpper3xi">
+        <div class="notif-icon stage_unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+        <div class="notif-body">
+          <div class="notif-msg">💵 Гүйлгээ хийгдсэн: Эрбол — 180,000₮</div>
+          <div class="notif-time">23 цаг өмнө</div>
+        </div>
+      </div>
+    
+    </div>
+  </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <!-- Ажлын ерөнхий filter — санхүүгийн view-д нуугдана -->
+      <span class="filter-group" id="task-filters">
+        <div class="filter-pill" data-status="open">Идэвхтэй</div>
+        <div class="filter-pill" data-status="overdue"><svg class="lcd-icon" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>Хоцорсон</div>
+        <div class="filter-pill" data-status="today"><svg class="lcd-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>Өнөөдөр</div>
+        <div class="filter-pill" data-status="week">Энэ долоо хоног</div>
+        <div class="filter-pill" data-status="month">Энэ сар</div>
+        <div class="filter-pill" data-status="done"><svg class="lcd-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>Дууссан</div>
+        <div class="filter-pill active" data-status="all">Бүгд</div>
+      </span>
+      <!-- Санхүүгийн үе шатны filter — зөвхөн Санхүү view-д харагдана -->
+      <span class="filter-group" id="fin-filters" style="display:none;">
+        <div class="filter-pill" data-status="f-pending">🕐 Хүлээгдэж буй</div>
+        <div class="filter-pill" data-status="f-await-txn">💸 Гүйлгээ хүлээж буй</div>
+        <div class="filter-pill" data-status="f-await-close">💵 Хаахыг хүлээж буй</div>
+        <div class="filter-pill" data-status="f-done"><svg class="lcd-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>Дууссан</div>
+        <div class="filter-pill active" data-status="all">Бүгд</div>
+      </span>
+      <!-- Санхүү — эрэмбэлэх (зөвхөн Санхүү view) -->
+      <select id="fin-sort" style="display:none; padding:6px 10px; border:1px solid var(--border); border-radius:var(--r-md); background:var(--panel); color:var(--text); font-size:13px; cursor:pointer;">
+        <option value="smart">⭐ Ач холбогдлоор</option>
+        <option value="date">🕐 Огноогоор</option>
+        <option value="amount">💰 Дүнгээр</option>
+        <option value="requester">👤 Илгээгчээр</option>
+      </select>
+      <div class="search"><input type="text" id="search" placeholder="Хайх... (from:Бат due:today priority:high)" title="Шүүлт: from:нэр, by:нэр, due:today/overdue/2026-05-30, priority:high/med/low, status:open/done, branch:m-event/camp"></div>
+    </div>
+
+    <div class="tasks" id="tasks">
+      <div class="table-head">
+        <div></div>
+        <div>Даалгавар</div>
+        <div>Хариуцагч</div>
+        <div>Эцсийн хугацаа</div>
+        <div>Зэрэглэл</div>
+        <div></div>
+      </div>
+      <div id="task-list"><div class="task-row" data-task-id="t_k9wc8vyimpw5c3jk" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">ё</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot declined" title="Татгалзсан"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">БД</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Б.Дэлгэрбат</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due overdue" style="display:none;color:var(--danger);font-weight:600;">3 хоног өмнө</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--ok);">●</span>
+        <span class="meta-desktop-only meta-project">—</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Б.Дэлгэрбат">
+        <span class="avatar">БД</span>
+        <span class="name">Б.Дэлгэрбат</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due overdue" data-act="open">3 хоног өмнө</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority low" data-act="open">
+        ⚪ Чөлөөтэй
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row" data-task-id="t_81nr8r7pmpw24apy" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Medow camp</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot in_progress" title="Хийгдэж байна"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">СС</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">С.Содхүү</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due overdue" style="display:none;color:var(--danger);font-weight:600;">2 хоног өмнө</span>
+        
+        <span class="meta-desktop-only meta-project">Сезоны өмнөх бэлтгэл</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → С.Содхүү">
+        <span class="avatar">СС</span>
+        <span class="name">С.Содхүү</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due overdue" data-act="open">2 хоног өмнө</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority none" data-act="open">
+        —
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row" data-task-id="t_q4j6rtldmpw2ez3u" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Чимун таск</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot in_progress" title="Хийгдэж байна"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">СС</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">С.Содхүү</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due overdue" style="display:none;color:var(--danger);font-weight:600;">2 хоног өмнө</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--warn);">●</span>
+        <span class="meta-desktop-only meta-project">Сезоны өмнөх бэлтгэл</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → С.Содхүү">
+        <span class="avatar">СС</span>
+        <span class="name">С.Содхүү</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due overdue" data-act="open">2 хоног өмнө</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority med" data-act="open">
+        🟡 Энгийн
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row" data-task-id="t_vg7psf0mmpxjwqr1" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">ажилтан авах</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot in_progress" title="Хийгдэж байна"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">БО</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Б.Одончимэг</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due soon" style="display:none;color:var(--warn);font-weight:600;">Өнөөдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">Сезоны өмнөх бэлтгэл</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Б.Одончимэг">
+        <span class="avatar">БО</span>
+        <span class="name">Б.Одончимэг</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due soon" data-act="open">Өнөөдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row" data-task-id="t_ownwi24cmpxk4pa6" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Бартендэр</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot open" title="Шинэ"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">СЦ</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">С.Цэлмэг</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due soon" style="display:none;color:var(--warn);font-weight:600;">Өнөөдөр</span>
+        
+        <span class="meta-desktop-only meta-project">Сезоны өмнөх бэлтгэл</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → С.Цэлмэг">
+        <span class="avatar">СЦ</span>
+        <span class="name">С.Цэлмэг</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due soon" data-act="open">Өнөөдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority none" data-act="open">
+        —
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row" data-task-id="t_8q7zygvqmpz1o66e" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Талын салхи Гал тогоо</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot in_progress" title="Хийгдэж байна"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">ЭЧ</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Э.Чинбат</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due soon" style="display:none;color:var(--warn);font-weight:600;">Өнөөдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">—</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Э.Чинбат">
+        <span class="avatar">ЭЧ</span>
+        <span class="name">Э.Чинбат</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due soon" data-act="open">Өнөөдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row" data-task-id="t_a8f2wqmymq0cvltt" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">6/6 төрийн банк</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot in_progress" title="Хийгдэж байна"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">БО</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Б.Одончимэг</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due soon" style="display:none;color:var(--warn);font-weight:600;">Өнөөдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">Сезоны өмнөх бэлтгэл</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Б.Одончимэг">
+        <span class="avatar">БО</span>
+        <span class="name">Б.Одончимэг</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due soon" data-act="open">Өнөөдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row" data-task-id="t_869klgrdmq0d1b2j" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Хоол</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot open" title="Шинэ"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">ЭЧ</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Э.Чинбат</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due soon" style="display:none;color:var(--warn);font-weight:600;">Өнөөдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">—</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Э.Чинбат">
+        <span class="avatar">ЭЧ</span>
+        <span class="name">Э.Чинбат</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due soon" data-act="open">Өнөөдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row" data-task-id="t_zawcyp2vmq0dgre0" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Кофе</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot open" title="Шинэ"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">БО</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Б.Одончимэг</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due soon" style="display:none;color:var(--warn);font-weight:600;">Өнөөдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">—</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Б.Одончимэг">
+        <span class="avatar">БО</span>
+        <span class="name">Б.Одончимэг</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due soon" data-act="open">Өнөөдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row" data-task-id="t_1aeptt4amq0do6oj" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Ахуйн хэрэгсэл</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot open" title="Шинэ"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">БН</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Б.Намуунбайгаль</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due soon" style="display:none;color:var(--warn);font-weight:600;">Өнөөдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">—</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Б.Намуунбайгаль">
+        <span class="avatar">БН</span>
+        <span class="name">Б.Намуунбайгаль</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due soon" data-act="open">Өнөөдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row" data-task-id="t_rg0l59r4mq0do6oj" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Ахуйн хэрэгсэл</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot open" title="Шинэ"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">БО</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Б.Одончимэг</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due soon" style="display:none;color:var(--warn);font-weight:600;">Өнөөдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">—</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Б.Одончимэг">
+        <span class="avatar">БО</span>
+        <span class="name">Б.Одончимэг</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due soon" data-act="open">Өнөөдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row" data-task-id="t_0rkxyz6smq0do6oj" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Ахуйн хэрэгсэл</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot open" title="Шинэ"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">ЭЧ</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Э.Чинбат</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due soon" style="display:none;color:var(--warn);font-weight:600;">Өнөөдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">—</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Э.Чинбат">
+        <span class="avatar">ЭЧ</span>
+        <span class="name">Э.Чинбат</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due soon" data-act="open">Өнөөдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row" data-task-id="t_las8odu9mq0eayml" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Талын салхи хаяг</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot open" title="Шинэ"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">ББ</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Б.Батжаргал</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due soon" style="display:none;color:var(--warn);font-weight:600;">Өнөөдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">—</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Б.Батжаргал">
+        <span class="avatar">ББ</span>
+        <span class="name">Б.Батжаргал</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due soon" data-act="open">Өнөөдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row" data-task-id="t_cz880bwemq0es9tw" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Кемп гал того</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot open" title="Шинэ"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">ЭЧ</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Э.Чинбат</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due soon" style="display:none;color:var(--warn);font-weight:600;">Өнөөдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">—</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Э.Чинбат">
+        <span class="avatar">ЭЧ</span>
+        <span class="name">Э.Чинбат</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due soon" data-act="open">Өнөөдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row" data-task-id="t_kacwjwd1mpzfrkgq" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">нөат тайлан</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot open" title="Шинэ"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">ОТ</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">О.Түвдэндаржаа</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due soon" style="display:none;color:var(--warn);font-weight:600;">Маргааш</span>
+        
+        <span class="meta-desktop-only meta-project">—</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → О.Түвдэндаржаа">
+        <span class="avatar">ОТ</span>
+        <span class="name">О.Түвдэндаржаа</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due soon" data-act="open">Маргааш</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority none" data-act="open">
+        —
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row" data-task-id="t_8qvlc2ptmpyrb4f8" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox " data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Гал тогоо</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot in_progress" title="Хийгдэж байна"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">ЭЧ</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Э.Чинбат</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due " style="display:none;color:var(--muted);font-weight:400;">4 хоног дараа</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--warn);">●</span>
+        <span class="meta-desktop-only meta-project">—</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Э.Чинбат">
+        <span class="avatar">ЭЧ</span>
+        <span class="name">Э.Чинбат</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due " data-act="open">4 хоног дараа</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority med" data-act="open">
+        🟡 Энгийн
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row completed" data-task-id="t_7o8re6zpmpw2ez3u" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox checked" data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Чимун таск</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot done" title="Дууссан"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">ББ</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Б.Батжаргал</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due " style="display:none;color:var(--muted);font-weight:400;">2 хоног өмнө</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--warn);">●</span>
+        <span class="meta-desktop-only meta-project">Сезоны өмнөх бэлтгэл</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Б.Батжаргал">
+        <span class="avatar">ББ</span>
+        <span class="name">Б.Батжаргал</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due " data-act="open">2 хоног өмнө</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority med" data-act="open">
+        🟡 Энгийн
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row completed" data-task-id="t_9kb5261umpw4i94b" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox checked" data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Агуулахын гал тогоо</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot done" title="Дууссан"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">ЭЧ</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Э.Чинбат</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due " style="display:none;color:var(--muted);font-weight:400;">Өчигдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">Сезоны өмнөх бэлтгэл</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Э.Чинбат">
+        <span class="avatar">ЭЧ</span>
+        <span class="name">Э.Чинбат</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due " data-act="open">Өчигдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row completed" data-task-id="t_vhtxx25gmpw4serk" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox checked" data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Захиалга</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot done" title="Дууссан"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">ГМ</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Г.Мөнх-Учрал</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due " style="display:none;color:var(--muted);font-weight:400;">Өчигдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--warn);">●</span>
+        <span class="meta-desktop-only meta-project">Сезоны өмнөх бэлтгэл</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Г.Мөнх-Учрал">
+        <span class="avatar">ГМ</span>
+        <span class="name">Г.Мөнх-Учрал</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due " data-act="open">Өчигдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority med" data-act="open">
+        🟡 Энгийн
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row completed" data-task-id="t_47edw70bmpw4yde6" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox checked" data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">цагийн ажилтан</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot done" title="Дууссан"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">БО</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Б.Одончимэг</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due " style="display:none;color:var(--muted);font-weight:400;">Өчигдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">Сезоны өмнөх бэлтгэл</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Б.Одончимэг">
+        <span class="avatar">БО</span>
+        <span class="name">Б.Одончимэг</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due " data-act="open">Өчигдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row completed" data-task-id="t_k84xblqkmpxk29ec" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox checked" data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Бартендэр</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot done" title="Дууссан"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">СЦ</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">С.Цэлмэг</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due " style="display:none;color:var(--muted);font-weight:400;">Өчигдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">—</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → С.Цэлмэг">
+        <span class="avatar">СЦ</span>
+        <span class="name">С.Цэлмэг</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due " data-act="open">Өчигдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row completed" data-task-id="t_a8qt6qkqmpyprrpm" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox checked" data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Гал тогоо</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot done" title="Дууссан"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">ЭЧ</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Э.Чинбат</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due " style="display:none;color:var(--muted);font-weight:400;">Өчигдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">Сезоны өмнөх бэлтгэл</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Э.Чинбат">
+        <span class="avatar">ЭЧ</span>
+        <span class="name">Э.Чинбат</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due " data-act="open">Өчигдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row completed" data-task-id="t_yfxtuklmmpytcazs" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox checked" data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Мишок</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot done" title="Дууссан"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">БО</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Б.Одончимэг</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due " style="display:none;color:var(--muted);font-weight:400;">Өчигдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">—</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Б.Одончимэг">
+        <span class="avatar">БО</span>
+        <span class="name">Б.Одончимэг</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due " data-act="open">Өчигдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div><div class="task-row completed" data-task-id="t_dd1erf3vmpxvxue5" draggable="true">
+    <div>
+      <!-- Status indicator (clickable биш) — нээж байж дуусгана. -->
+      <div class="checkbox checked" data-act="open" style="cursor:pointer;"></div>
+    </div>
+    <div class="task-title-wrap" data-act="open">
+      <div class="task-title" data-act="open">Талын салхи</div>
+      <div class="task-meta" data-act="open">
+        <span class="status-dot done" title="Дууссан"></span>
+        <span class="meta-mobile-only avatar-circle sm" style="display:none;background:linear-gradient(135deg,var(--primary),var(--primary-hover));">БО</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--text-soft);font-weight:500;">Б.Одончимэг</span>
+        <span class="meta-mobile-only meta-dot" style="display:none;"></span><span class="meta-mobile-only meta-due " style="display:none;color:var(--muted);font-weight:400;">Өнөөдөр</span>
+        <span class="meta-mobile-only" style="display:none;color:var(--danger);">●</span>
+        <span class="meta-desktop-only meta-project">Сезоны өмнөх бэлтгэл</span>
+        <span class="meta-desktop-only meta-dot"></span><span class="meta-desktop-only delegated-from">Н.Анужин</span>
+        
+        
+      </div>
+    </div>
+    <div class="col-assignee">
+      <span class="assignee-chip" data-act="open" title="Н.Анужин → Б.Одончимэг">
+        <span class="avatar">БО</span>
+        <span class="name">Б.Одончимэг</span>
+      </span>
+    </div>
+    <div class="col-due">
+      <span class="due " data-act="open">Өнөөдөр</span>
+    </div>
+    <div class="col-priority">
+      <span class="priority high" data-act="open">
+        🔴 Яаралтай
+      </span>
+    </div>
+    <div class="col-rowactions">
+      <button class="row-menu-btn" title="Шуурхай үйлдэл" data-act="menu">⋯</button>
+      <button class="delete-btn" title="Устгах" data-act="delete">×</button>
+    </div>
+  </div></div>
+    </div>
+  </main>
+</div>
+
+<!-- NEW TASK MODAL -->
+<div class="modal-bg open" id="task-modal">
+  <div class="modal"><button type="button" class="modal-close-x" aria-label="Хаах"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    <h2 id="task-modal-title"><span style="font-size:13px;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 12px;border-radius:999px;vertical-align:middle;">✓ Дууссан даалгавар</span></h2>
+    <div id="t-creator-info" style="display: block; font-size: 12px; color: var(--muted); margin: -8px 0px 12px; padding: 8px 10px; background: var(--panel-hover); border-radius: 6px;">📋 <strong>Н.Анужин</strong> → <strong>Г.Мөнх-Учрал</strong> · Jun 2, 2026, 12:22 PM<br><span style="color:var(--danger);font-weight:600;">🔒 Танд засах эрхгүй (зөвхөн харах).</span><div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">✅ Биелэлтийн зураг (10)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;"><button type="button" data-lightbox="https://lh3.googleusercontent.com/d/1lPKoYKc1pVN5zUciio8AlHHr6JJs98ER=w1600" data-fallback="https://drive.google.com/file/d/1lPKoYKc1pVN5zUciio8AlHHr6JJs98ER/view?usp=drivesdk" title="Биелэлт 1" style="width:92px;height:92px;border-radius:6px;overflow:hidden;border:1px solid var(--border);background:var(--panel-hover);padding:0;cursor:zoom-in;display:block;"><img src="./Чимун ХХК · Дотоод даалгавар_files/2026-06-04_t_vhtxx25gmpw4serk_completion.png" alt="Биелэлт 1" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></button><button type="button" data-lightbox="https://lh3.googleusercontent.com/d/1fqGmuZYwrG0K_fNhqN_Wgt_KkEPkNZzf=w1600" data-fallback="https://drive.google.com/file/d/1fqGmuZYwrG0K_fNhqN_Wgt_KkEPkNZzf/view?usp=drivesdk" title="Биелэлт 2" style="width:92px;height:92px;border-radius:6px;overflow:hidden;border:1px solid var(--border);background:var(--panel-hover);padding:0;cursor:zoom-in;display:block;"><img src="./Чимун ХХК · Дотоод даалгавар_files/2026-06-04_t_vhtxx25gmpw4serk_completion(1).png" alt="Биелэлт 2" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></button><button type="button" data-lightbox="https://lh3.googleusercontent.com/d/1dysQeDzHvC35IpDxzsFZvbOEoojjInD7=w1600" data-fallback="https://drive.google.com/file/d/1dysQeDzHvC35IpDxzsFZvbOEoojjInD7/view?usp=drivesdk" title="Биелэлт 3" style="width:92px;height:92px;border-radius:6px;overflow:hidden;border:1px solid var(--border);background:var(--panel-hover);padding:0;cursor:zoom-in;display:block;"><img src="./Чимун ХХК · Дотоод даалгавар_files/2026-06-04_t_vhtxx25gmpw4serk_completion(2).png" alt="Биелэлт 3" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></button><button type="button" data-lightbox="https://lh3.googleusercontent.com/d/17YK3Y8sgfwopVCleE-GAEK_bdK_y0xIW=w1600" data-fallback="https://drive.google.com/file/d/17YK3Y8sgfwopVCleE-GAEK_bdK_y0xIW/view?usp=drivesdk" title="Биелэлт 4" style="width:92px;height:92px;border-radius:6px;overflow:hidden;border:1px solid var(--border);background:var(--panel-hover);padding:0;cursor:zoom-in;display:block;"><img src="./Чимун ХХК · Дотоод даалгавар_files/2026-06-04_t_vhtxx25gmpw4serk_completion(3).png" alt="Биелэлт 4" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></button><button type="button" data-lightbox="https://lh3.googleusercontent.com/d/1vzUoXvE1EO35jHHAjtsTpnlDdEMXUK-m=w1600" data-fallback="https://drive.google.com/file/d/1vzUoXvE1EO35jHHAjtsTpnlDdEMXUK-m/view?usp=drivesdk" title="Биелэлт 5" style="width:92px;height:92px;border-radius:6px;overflow:hidden;border:1px solid var(--border);background:var(--panel-hover);padding:0;cursor:zoom-in;display:block;"><img src="./Чимун ХХК · Дотоод даалгавар_files/2026-06-04_t_vhtxx25gmpw4serk_completion(4).png" alt="Биелэлт 5" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></button><button type="button" data-lightbox="https://lh3.googleusercontent.com/d/1xDFTi1iFEEBiwhGTB9bHPwOYOJWsbMRe=w1600" data-fallback="https://drive.google.com/file/d/1xDFTi1iFEEBiwhGTB9bHPwOYOJWsbMRe/view?usp=drivesdk" title="Биелэлт 6" style="width:92px;height:92px;border-radius:6px;overflow:hidden;border:1px solid var(--border);background:var(--panel-hover);padding:0;cursor:zoom-in;display:block;"><img src="./Чимун ХХК · Дотоод даалгавар_files/2026-06-04_t_vhtxx25gmpw4serk_completion(5).png" alt="Биелэлт 6" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></button><button type="button" data-lightbox="https://lh3.googleusercontent.com/d/1CrbR7Xvc5gY7yyb0q9eFTqGM-NTHqrHJ=w1600" data-fallback="https://drive.google.com/file/d/1CrbR7Xvc5gY7yyb0q9eFTqGM-NTHqrHJ/view?usp=drivesdk" title="Биелэлт 7" style="width:92px;height:92px;border-radius:6px;overflow:hidden;border:1px solid var(--border);background:var(--panel-hover);padding:0;cursor:zoom-in;display:block;"><img src="./Чимун ХХК · Дотоод даалгавар_files/2026-06-04_t_vhtxx25gmpw4serk_completion(6).png" alt="Биелэлт 7" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></button><button type="button" data-lightbox="https://lh3.googleusercontent.com/d/1wxXrpY-tFlRbaEV2r7fuv3cReE8qpZBw=w1600" data-fallback="https://drive.google.com/file/d/1wxXrpY-tFlRbaEV2r7fuv3cReE8qpZBw/view?usp=drivesdk" title="Биелэлт 8" style="width:92px;height:92px;border-radius:6px;overflow:hidden;border:1px solid var(--border);background:var(--panel-hover);padding:0;cursor:zoom-in;display:block;"><img src="./Чимун ХХК · Дотоод даалгавар_files/2026-06-04_t_vhtxx25gmpw4serk_completion(7).png" alt="Биелэлт 8" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></button><button type="button" data-lightbox="https://lh3.googleusercontent.com/d/13XoFzneBAk8ywoetrBKr3Js7VcekDTpJ=w1600" data-fallback="https://drive.google.com/file/d/13XoFzneBAk8ywoetrBKr3Js7VcekDTpJ/view?usp=drivesdk" title="Биелэлт 9" style="width:92px;height:92px;border-radius:6px;overflow:hidden;border:1px solid var(--border);background:var(--panel-hover);padding:0;cursor:zoom-in;display:block;"><img src="./Чимун ХХК · Дотоод даалгавар_files/2026-06-04_t_vhtxx25gmpw4serk_completion(8).png" alt="Биелэлт 9" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></button><button type="button" data-lightbox="https://lh3.googleusercontent.com/d/15iGYCWYPPX-Nahk7t6kpLRYx8oPV6A_6=w1600" data-fallback="https://drive.google.com/file/d/15iGYCWYPPX-Nahk7t6kpLRYx8oPV6A_6/view?usp=drivesdk" title="Биелэлт 10" style="width:92px;height:92px;border-radius:6px;overflow:hidden;border:1px solid var(--border);background:var(--panel-hover);padding:0;cursor:zoom-in;display:block;"><img src="./Чимун ХХК · Дотоод даалгавар_files/2026-06-04_t_vhtxx25gmpw4serk_completion(9).png" alt="Биелэлт 10" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></button></div>
+      </div></div>
+    <label style="display: none;">Гарчиг *</label>
+    <input id="t-title" placeholder="Жишээ: Хурим - 2026/06/15 - тоног бэлдэх" style="display: none;">
+    <label style="display: none;">Тайлбар</label>
+    <textarea id="t-desc" placeholder="Дэлгэрэнгүй..." style="display: none;"></textarea>
+    <label style="display: none;">Аль салбарт хамаарах вэ? <span style="font-size:11px;color:var(--muted);font-weight:400;">(статистикад тус салбарт тооцогдоно)</span></label>
+    <select id="t-branch" style="display: none;"><option value="">— Сонгох (заавал биш) —</option><option value="m-event">M Event</option><option value="camp">NOMAAD Camp</option><option value="shared">Удирдлага</option></select>
+    <label style="display: none;">Төсөл</label>
+    <select id="t-project" style="display: none;"><option value="">— Төсөлгүй —</option><option value="pre-season">Сезоны өмнөх бэлтгэл</option></select>
+    <label style="display: none;">Хариуцагч <span style="font-size:11px;color:var(--muted);font-weight:400;">(нэг буюу олон сонгож болно)</span></label>
+    <div class="assignee-picker-wrap" style="display: none;">
+      <select id="t-assignee" style="display: none;"><option value="88006790">Г.Мөнх-Учрал (Гүйцэтгэх Захирал)</option><option value="91204938">О.Түвдэндаржаа (Туслах нягтлан)</option><option value="86657676">И.Алтансүх (Үйл ажиллагааны захирал)</option><option value="88028216">Н.Анужин (Кемпийн ахлах менежер)</option><option value="99337760">Б.Батжаргал (Кемпийн ахлах менежер)</option><option value="88394636">Г.Сайнжаргал (Эвент менежер)</option><option value="99179417">Б.Дэлгэрбат (Үйл ажиллагааны захирал)</option><option value="80535220">С.Содхүү (Кемпийн ахлах менежер)</option><option value="99285468">Э.Нинждолгор (Агуулахын ахлах / Нярав)</option><option value="95185655">Б.Хишигтогтох (Цэвэрлэгээ / үйлчилгээний ажилтан)</option><option value="96426418">О.Эрдэнэхүү (Агуулахын ажилтан)</option><option value="89904109">Б.Пүрэвдагва (Агуулахын ахлах / Нярав)</option><option value="90212176">К.Эрбол (Өдрийн ажилтан)</option><option value="85459605">Б.Одончимэг (Кемп туслах)</option><option value="91998829">Г.Дөлгөөн (Өдрийн ажилтан)</option><option value="90505456">Ц.Бат эрдэнэ (Өдрийн ажилтан)</option><option value="99711540">Б.Жамбалцанжид (Өдрийн ажилтан)</option><option value="90150820">Б.Болдоо (Өдрийн ажилтан)</option><option value="80165652">Э.Содонжавхаа (Өдрийн ажилтан)</option><option value="89258385">Э.Чинбат (Ахлах тогооч)</option><option value="99353267">Э.Мөгхцэлмэг (Өдрийн ажилтан)</option><option value="89603196">С.Цэлмэг (Кемп туслах)</option><option value="90299210">С.Сайнхүү (Өдрийн ажилтан)</option><option value="88180085">Ө.Батпүрэв (Өдрийн ажилтан)</option><option value="89222588">Б.Хэнч Биш (Өдрийн ажилтан)</option><option value="99461258">Т.Золбоо (Өдрийн ажилтан)</option><option value="95339886">М.Цогцацрах (Өдрийн ажилтан)</option><option value="88550342">Т.Гантогтох (Өдрийн ажилтан)</option><option value="96915051">Э.Азбаяр (Өдрийн ажилтан)</option><option value="85708282">Ц.Мөнхболд (Өдрийн ажилтан)</option><option value="85707251">Ц.Даваажаргал (Өдрийн ажилтан)</option><option value="85707250">Д.Бямбаренчин (Өдрийн ажилтан)</option><option value="95280380">Г.Жамъянгарав (Өдрийн ажилтан)</option><option value="95109223">Э.Оюун-Эрдэнэ (Зөөгч)</option><option value="88159176">Б.Намуунбайгаль (Зөөгч)</option><option value="80563389">Б.Амартөр (Өдрийн ажилтан)</option></select>
+      <button type="button" id="t-assignee-multi" class="btn-multi-pick" style="display: none;">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        Олон хүнд оноох
+      </button>
+    </div>
+    <div id="t-multi-chips" style="display:none;flex-wrap:wrap;gap:6px;margin-top:6px;"></div>
+
+<!-- ─── Multi-assignee picker modal ─── -->
+<div class="modal-bg" id="multi-pick-modal">
+  <div class="modal" style="max-width:480px;"><button type="button" class="modal-close-x" aria-label="Хаах"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    <h2>Хариуцагчдыг сонгох</h2>
+    <input type="text" id="mp-search" placeholder="Хайх (нэр)..." style="width:100%;margin-bottom:10px;">
+    <label class="mp-row" style="border-bottom:1px solid var(--border);padding:10px 0;margin-bottom:6px;font-weight:700;">
+      <input type="checkbox" id="mp-all" style="width:18px;height:18px;">
+      <span>Бүх ажилтан</span>
+    </label>
+    <div id="mp-list" style="max-height:50vh;overflow-y:auto;"></div>
+    <div class="modal-actions">
+      <button class="btn" id="mp-cancel">Болих</button>
+      <button class="btn btn-primary" id="mp-save"><span id="mp-save-count">0</span> хүн сонгох</button>
+    </div>
+  </div>
+</div>
+    <label style="display: none;">Эцсийн хугацаа</label>
+    <input type="date" id="t-due" style="display: none;">
+    <label style="display: none;">Зэрэглэл</label>
+    <select id="t-priority" style="display: none;">
+      <option value="med">🟡 Энгийн</option>
+      <option value="high">🔴 Яаралтай</option>
+      <option value="low">⚪ Чөлөөтэй</option>
+    </select>
+
+    <label style="display: none;">Давтамж</label>
+    <select id="t-recurrence" style="display: none;">
+      <option value="">Давтагдахгүй (нэг удаагийн)</option>
+      <option value="daily">Өдөр бүр</option>
+      <option value="weekly">Долоо хоног бүр</option>
+      <option value="biweekly">2 долоо хоног тутамд</option>
+      <option value="monthly">Сар бүр</option>
+      <option value="quarterly">Улирал бүр</option>
+    </select>
+
+    <label id="t-requires-photo-label" style="display: none; align-items: center; gap: 8px; margin-top: 10px; cursor: pointer; user-select: none;">
+      <input type="checkbox" id="t-requires-photo" style="width: 18px; height: 18px; cursor: pointer; display: none;">
+      <span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>Дуусгахдаа биелэлтийн зураг шаардах</span>
+    </label>
+    <div id="t-requires-photo-hint" style="font-size: 11px; color: var(--muted); margin: -4px 0px 8px 26px; display: none;">Хариуцагч даалгавраа дуусгахдаа нотлох зураг хавсаргана</div>
+
+    <label id="t-image-label" style="display: none;">Зураг хавсаргах <span style="font-size:11px;color:var(--muted);font-weight:400;">(заавал биш — олон сонгож болно)</span></label>
+    <input type="file" id="t-image-input" accept="image/*" multiple="" style="display:none;">
+    <div id="t-image-row" style="display: none; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px;">
+      <label for="t-image-input" id="t-image-btn" class="btn" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+        Зураг нэмэх
+      </label>
+      <span id="t-image-uploading" style="display:none; font-size:12px; color:var(--muted);">Хуулж байна…</span>
+    </div>
+    <div id="t-image-preview" style="display: none; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;"></div>
+
+    <!-- ─── СТАТУС ТОВЧНУУД (зөвхөн хадгалагдсан task үед харагдана) ─── -->
+    <div id="t-readonly-card">
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px;">Захиалга</div>
+        <div style="font-size:14px;color:var(--muted);margin-bottom:12px;line-height:1.5;white-space:pre-wrap;">Хятад руу сүүлд захиалсан барааны захиалгын хуудсыг хувилж өгнө үү? шинээр авсан гал тогооны хэрэгслийн бүртгэл</div>
+        <div style="display:grid;grid-template-columns:90px 1fr;gap:6px 12px;font-size:13px;">
+          <div style="color:var(--muted);">Төлөв</div><div style="color:#15803d;font-weight:700;">✓ Дууссан</div>
+          <div style="color:var(--muted);">Салбар</div><div>NOMAAD Camp</div>
+          <div style="color:var(--muted);">Төсөл</div><div>pre-season</div>
+          <div style="color:var(--muted);">Хугацаа</div><div style="font-weight:600;">Өчигдөр</div>
+          <div style="color:var(--muted);">Зэрэглэл</div><div style="color:#f59e0b;font-weight:600;">Энгийн</div>
+        </div>
+        
+      </div>
+    </div><div id="t-status-bar" style="display:none; margin:14px -4px 4px; padding:10px 4px; border-top:1px solid var(--border);">
+      <div style="font-size:11px; color:var(--muted); margin-bottom:6px; padding:0 8px;">Үйлдэл</div>
+      <div id="t-action-buttons" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+    </div>
+
+
+    <!-- ─── ҮЙЛ ЯВДЛЫН ТҮҮХ (Activity log) ─── -->
+    <div id="t-activity-section" style="margin: 14px -4px 4px; padding: 10px 4px; border-top: 1px solid var(--border);">
+      <button id="t-activity-toggle" type="button" style="background:none; border:none; color:var(--muted); font-size:11px; padding:0 8px; cursor:pointer; display:flex; align-items:center; gap:4px; width:100%; text-align:left;">
+        <span id="t-activity-icon">▸</span> Үйл явдлын түүх (<span id="t-activity-count">0</span>)
+      </button>
+      <div id="t-activity-list" style="display:none; flex-direction:column; gap:4px; padding:6px 8px; margin-top:4px; font-size:11px; color:var(--muted);"><div style="color:var(--muted);font-style:italic;">Түүх алга</div></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" id="t-duplicate" style="margin-right: auto; display: none;">⧉ Хуулбарлах</button>
+      <button class="btn" id="t-cancel" style="display: none;">Болих</button>
+      <button class="btn btn-primary" id="t-save" style="display: none;">Хадгалах</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL — notification permission helper-ийг агуулна.
+     Хуучин n8n URL config inputs устгасан (хэрэглэгч хэзээ ч өөрчилдөггүй,
+     default URL-ууд хатуу coded). -->
+<div class="modal-bg" id="settings-modal">
+  <div class="modal"><button type="button" class="modal-close-x" aria-label="Хаах"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    <h2>Тохиргоо</h2>
+    <div id="s-advanced"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="s-cancel">Хаах</button>
+    </div>
+  </div>
+</div>
+
+<!-- FINANCE REQUEST MODAL — submit + (CEO) decide -->
+<div class="modal-bg" id="finance-modal">
+  <div class="modal"><button type="button" class="modal-close-x" aria-label="Хаах"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    <h2 id="finance-modal-title">Санхүүгийн хүсэлт</h2>
+    <div id="f-decision-info" style="display:none; font-size:12px; margin:-6px 0 14px; padding:10px 12px; border-radius:8px; line-height:1.5;"></div>
+
+    <!-- ҮНДСЭН АСУУЛТ — бүх ажилтанд ижил, ярианы хэлбэр -->
+    <label>Санхүүгийн хүсэлтийн зарцуулалт тайлбар <span class="req">*</span></label>
+    <input id="f-purpose" placeholder="Жишээ: Дуучин Болд — 5/22 концерт">
+
+    <!-- Дансны ангилал/салбар нь зөвхөн нягтлан/CEO-д харагдана. Энгийн ажилтан мэдэхгүй учир хоосон үлдээнэ. -->
+    <div id="f-accountant-only" style="display:none;">
+      <label>Үндсэн ангилал <span class="req">*</span> <span style="font-size:11px;color:var(--muted);font-weight:400;">(нягтлан бөглөх)</span></label>
+      <select id="f-main-category"></select>
+
+      <label>Дэд ангилал <span class="req">*</span></label>
+      <select id="f-category" disabled=""><option value="">— Эхлээд үндсэн ангилал сонго —</option></select>
+
+      <label>Аль салбарт? <span class="req">*</span></label>
+      <select id="f-dept-branch"></select>
+    </div>
+
+    <label>Үнэ <span style="font-weight:400;color:var(--muted);font-size:12px;">(мэдэхгүй бол хоосон үлдээж болно)</span></label>
+    <div id="f-amount-display" style="display:none; padding:6px 0; border-bottom:1px dashed var(--border); font-weight:600; font-size:16px; color:var(--text);"></div>
+    <input id="f-amount" type="number" min="0" step="1000" inputmode="numeric" placeholder="Жишээ: 250000">
+
+    <!-- Stage 1 — Илгээгчийн хавсаргадаг бараа зураг + нэхэмжлэх (олон файл) -->
+    <label id="f-purchase-label" style="font-weight:600;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>Бараа бүтээгдэхүүний зураг / нэхэмжлэх <span style="color:var(--danger);">*</span> <span style="color:var(--muted);font-weight:400;font-size:12px;">(заавал — CEO харж шийдвэр гаргана)</span></label>
+    <div id="f-purchase-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;"></div>
+    <label for="f-purchase-file" id="f-purchase-btn" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:14px; background:linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color:#fff; border-radius:var(--r-md); font-size:14px; font-weight:600; cursor:pointer; margin-bottom:6px;">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+      Зураг / баримт хавсаргах
+    </label>
+    <input id="f-purchase-file" type="file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" multiple="" style="display:none;">
+    <div id="f-purchase-preview" style="margin-top:6px;font-size:12px;"></div>
+
+    <label>Дансны нэр</label>
+    <input id="f-beneficiary" placeholder="Шинэст ХХК / Б.Алтансүх">
+
+    <label>Банк</label>
+    <select id="f-bank"></select>
+
+    <label>Дансны дугаар</label>
+    <input id="f-account" inputmode="numeric" placeholder="5045123456">
+
+    <label>Зэрэглэл</label>
+    <select id="f-priority">
+      <option value="med">🟡 Энгийн</option>
+      <option value="high">🔴 Чухал</option>
+      <option value="low">⚪ Чөлөөтэй</option>
+    </select>
+
+    <!-- Огноо + Нэмэлт тайлбар + Давтагдах уу хасагдав. JS dependency-д hidden үлдээв. -->
+    <input id="f-due" type="hidden">
+    <textarea id="f-justification" style="display:none;"></textarea>
+    <select id="f-frequency" style="display:none;"></select>
+
+    <!-- Stage 3 + 4 — Зөвхөн нягтлан/CEO-д харагдана. Илгээгчид хэрэггүй. -->
+    <div id="f-accountant-stages" style="display:none;">
+
+    <!-- Stage 3 — Туслах нягтлан шилжүүлсэний дараа: банкны гүйлгээний баримт (нэг файл) -->
+    <label id="f-payment-label" style="font-weight:600;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>Шилжүүлгийн баримт <span style="color:var(--danger);">*</span></label>
+    <div id="f-payment-preview" style="margin:6px 0;font-size:12px;"></div>
+    <label for="f-payment-file" id="f-payment-btn" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:14px; background:linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color:#fff; border-radius:var(--r-md); font-size:14px; font-weight:600; cursor:pointer; margin-bottom:6px;">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+      Шилжүүлгийн баримт хавсаргах
+    </label>
+    <input id="f-payment-file" type="file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" style="display:none;">
+
+    <!-- Stage 4 — Туслах нягтлан хүлээн авч хаах: НӨАТ + бараа баримтууд (олон файл) -->
+    <label id="f-receipt-label" style="font-weight:600;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>Хүлээн авалтын баримт <span style="color:var(--muted);font-weight:400;font-size:12px;">(НӨАТ, баримт, бараа зураг — олон файл)</span> <span style="color:var(--danger);">*</span></label>
+    <div id="f-receipt-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;"></div>
+    <label for="f-receipt-file" id="f-receipt-btn" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:14px; background:linear-gradient(135deg, var(--accent-green), var(--accent-blue)); color:#fff; border-radius:var(--r-md); font-size:14px; font-weight:600; cursor:pointer; margin-bottom:6px;">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+      НӨАТ / баримт / бараа зураг хавсаргах
+    </label>
+    <input id="f-receipt-file" type="file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" multiple="" style="display:none;">
+    <div id="f-receipt-preview" style="margin-top:6px;font-size:12px;"></div>
+
+    </div>
+    <!-- /f-accountant-stages -->
+
+    <!-- CEO дүгнэлт (зөвхөн CEO үед) -->
+    <label id="f-decision-reason-label" style="display:none;">CEO дүгнэлт</label>
+    <textarea id="f-decision-reason" style="display:none;" placeholder="Жишээ: Дүн өндөр, 30%-ийг бууруулсан"></textarea>
+
+    <!-- DECISION BUTTONS — зөвхөн CEO + pending хүсэлт үед харагдана -->
+    <div class="modal-actions" id="f-decision-actions" style="display:none; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-top:18px;">
+      <button class="btn" id="f-defer">🕐 Хойшлуулах</button>
+      <div style="display:flex; gap:6px;">
+        <button class="btn btn-danger" id="f-reject">✗ Татгалзах</button>
+        <button class="btn btn-primary" id="f-approve">✓ Зөвшөөрөх</button>
+      </div>
+    </div>
+
+    <!-- STAGE 3 — Шилжүүлсэн гэж тэмдэглэх (Туслах нягтлан) -->
+    <div class="modal-actions" id="f-execute-actions" style="display:none; margin-top:18px;">
+      <button class="btn btn-primary" id="f-execute">✓ Шилжүүлсэн (баримт хавсаргав)</button>
+    </div>
+
+    <!-- STAGE 4 — Хянаж хаах (Туслах нягтлан) — 3 үр дүн -->
+    <div class="modal-actions" id="f-receipt-actions" style="display:none; flex-wrap:wrap; gap:6px; margin-top:18px;">
+      <button class="btn btn-primary" id="f-close-match">✓ Баримт таарсан · хаах</button>
+      <button class="btn" id="f-close-short" style="border-color:var(--warn);color:var(--warn);">⚠ Дутуу · тайлбараар хаах</button>
+      <button class="btn" id="f-close-noreceipt">📝 Баримтгүй · тайлбараар хаах</button>
+    </div>
+
+    <!-- SUBMIT / VIEW ACTIONS -->
+    <div class="modal-actions" id="f-submit-actions" style="margin-top:18px;">
+      <button class="btn btn-danger" id="f-delete" style="display:none;">🗑 Устгах</button>
+      <button class="btn" id="f-cancel">Болих</button>
+      <button class="btn btn-primary" id="f-save">Илгээх</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── COMPLETION PHOTOS MODAL — даалгавар дуусгахдаа олон зураг хавсаргах ─── -->
+<div class="modal-bg" id="completion-photos-modal">
+  <div class="modal" style="max-width:480px;"><button type="button" class="modal-close-x" aria-label="Хаах"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    <h2><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>Биелэлтийн зураг</h2>
+    <div id="cp-task-title" style="font-size:13px; color:var(--muted); margin:-6px 0 14px; padding:8px 10px; background:var(--panel-hover); border-radius:6px;"></div>
+    <p style="font-size:13px; color:var(--muted); margin:0 0 12px; line-height:1.5;">Хэдэн ч зураг хавсаргаж болно. Бүх зургийг хавсаргасны дараа "Даалгавар дуусгах" товчийг дарна.</p>
+    <div id="cp-photos-list" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(90px, 1fr)); gap:8px; margin-bottom:12px;"></div>
+    <label for="cp-photo-input" class="login-submit" style="display:block; text-align:center; cursor:pointer; padding:12px; background:linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color:#fff; border-radius:8px; font-weight:600; font-size:14px;">
+      ➕ Зураг нэмэх
+    </label>
+    <input id="cp-photo-input" type="file" accept="image/*" capture="environment" style="display:none;">
+    <div id="cp-upload-status" style="font-size:12px; color:var(--muted); margin-top:8px; min-height:18px;"></div>
+    <div class="modal-actions">
+      <button class="btn" id="cp-cancel">Болих</button>
+      <button class="btn btn-primary" id="cp-done" disabled="">Даалгавар дуусгах</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast + Confirm dialog containers -->
+<div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+<div class="modal-bg" id="confirm-modal" role="dialog" aria-modal="true">
+  <div class="confirm-dialog">
+    <h3 id="confirm-title">Баталгаажуул</h3>
+    <p id="confirm-msg"></p>
+    <div class="actions">
+      <button class="btn" id="confirm-cancel">Болих</button>
+      <button class="btn btn-primary" id="confirm-ok">Тийм</button>
+    </div>
+  </div>
+</div>
+
+<!-- Текст оруулах dialog — native window.prompt-ийн орлуулга (iOS PWA-д найдвартай) -->
+<div class="modal-bg" id="prompt-modal" role="dialog" aria-modal="true">
+  <div class="confirm-dialog">
+    <h3 id="prompt-title">Оролт</h3>
+    <p id="prompt-msg" style="margin-bottom:10px;"></p>
+    <textarea id="prompt-input" rows="2" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-md);font-size:14px;font-family:inherit;resize:vertical;color:var(--text);background:var(--panel);"></textarea>
+    <div class="actions" style="margin-top:14px;">
+      <button class="btn" id="prompt-cancel">Болих</button>
+      <button class="btn btn-primary" id="prompt-ok">Илгээх</button>
+    </div>
+  </div>
+</div>
+
+<!-- Цагийн ажилтны цалин шилжүүлэх — өдрийн цалин × ажилласан өдөр + эхэлсэн огноо -->
+<div class="modal-bg" id="hourly-pay-modal" role="dialog" aria-modal="true">
+  <div class="confirm-dialog">
+    <h3>Цалин шилжүүлэх</h3>
+    <p id="hp-worker" style="margin:2px 0 12px;font-size:13px;color:var(--muted);"></p>
+    <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text);">Өдрийн цалин (₮)</label>
+    <input id="hp-rate" type="number" inputmode="numeric" min="0" step="1000" placeholder="Жишээ: 80000" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-md);font-size:14px;margin-bottom:10px;color:var(--text);background:var(--panel);">
+    <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text);">Ажилласан өдөр</label>
+    <input id="hp-days" type="number" inputmode="numeric" min="1" step="1" placeholder="Жишээ: 2" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-md);font-size:14px;margin-bottom:10px;color:var(--text);background:var(--panel);">
+    <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text);">Эхэлсэн огноо</label>
+    <input id="hp-start" type="date" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-md);font-size:14px;margin-bottom:10px;color:var(--text);background:var(--panel);">
+    <div id="hp-total" style="font-size:15px;font-weight:700;color:var(--accent-green);margin:4px 0 2px;">Дүн: ₮0</div>
+    <div class="actions" style="margin-top:14px;">
+      <button class="btn" id="hp-cancel">Болих</button>
+      <button class="btn btn-primary" id="hp-ok">Шилжүүлсэн</button>
+    </div>
+  </div>
+</div>
+
+<div class="conn-status online" id="conn">
+  <span class="dot"></span><span id="conn-text">n8n холбогдсон</span>
+</div>
+
+<!-- ─── МОБАЙЛ ДООД НАВ — утсанд зориулсан, ≤720px үед харагдана ─── -->
+<nav class="mobile-bottom-nav" id="mobile-nav" aria-label="Үндсэн нав">
+  <div class="mobile-bottom-nav-inner">
+    <button class="mobile-nav-item active" data-view="mine">
+      <svg class="lcd-icon nav-svg" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg><span>Ирсэн</span>
+    </button>
+    <button class="mobile-nav-item" data-view="delegated">
+      <svg class="lcd-icon nav-svg" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg><span>Илгээсэн</span>
+    </button>
+    <button class="mobile-nav-item" data-view="finance">
+      <svg class="lcd-icon nav-svg" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="3"></circle></svg><span>Санхүү</span>
+    </button>
+    <button class="mobile-nav-item" id="mobile-menu-more">
+      <svg class="lcd-icon nav-svg" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg><span>Цэс</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ─── FAB товч — шинэ ажил үүсгэх (мобайлд) ─── -->
+<button class="fab" id="fab-new" aria-label="Шинэ ажил үүсгэх">+</button>
+
+<!-- ─── FAB SHEET — + товч дарахад сонголтын меню ─── -->
+<div class="fab-sheet-bg" id="fab-sheet-bg" aria-hidden="true">
+  <div class="fab-sheet" role="dialog" aria-label="Шинэ зүйл үүсгэх">
+    <div class="fab-sheet-handle"></div>
+    <div class="fab-sheet-title">Шинээр үүсгэх</div>
+    <button class="fab-sheet-item" data-action="task" type="button">
+      <span class="fsi-icon" style="background:#eef2ff;color:#4f46e5;">
+        <svg class="lcd-icon" viewBox="0 0 24 24" style="width:22px;height:22px;"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>
+      </span>
+      <div class="fsi-text">
+        <div class="fsi-name">Даалгавар</div>
+        <div class="fsi-sub">Ажилтанд ажил оноох</div>
+      </div>
+    </button>
+    <button class="fab-sheet-item" data-action="finance" type="button">
+      <span class="fsi-icon" style="background:#fef3c7;color:#b45309;">
+        <svg class="lcd-icon" viewBox="0 0 24 24" style="width:22px;height:22px;"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="3"></circle></svg>
+      </span>
+      <div class="fsi-text">
+        <div class="fsi-name">Санхүүгийн хүсэлт</div>
+        <div class="fsi-sub">Төлбөр / зардлын зөвшөөрөл</div>
+      </div>
+    </button>
+    <button class="fab-sheet-item" data-action="order" type="button" id="fab-sheet-order">
+      <span class="fsi-icon" style="background:#dcfce7;color:#15803d;">
+        <svg class="lcd-icon" viewBox="0 0 24 24" style="width:22px;height:22px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      </span>
+      <div class="fsi-text">
+        <div class="fsi-name">Шинэ захиалга</div>
+        <div class="fsi-sub">M Event түрээсийн захиалга үүсгэх</div>
+      </div>
+    </button>
+    <button class="fab-sheet-cancel" type="button" id="fab-sheet-cancel">Болих</button>
+  </div>
+</div>
+
+<!-- ─── BULK ACTION BAR — олон task сонгосон үед дээд талд гарах ─── -->
+<div class="bulk-bar" id="bulk-bar">
+  <button class="bulk-cancel" id="bulk-cancel" aria-label="Цуцлах">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+  </button>
+  <div class="bulk-count"><span id="bulk-count-num">0</span> ажил сонгогдсон</div>
+  <div class="bulk-actions">
+    <button class="bulk-act bulk-act-done" id="bulk-done" title="Дуусгах">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      <span>Дуусгах</span>
+    </button>
+    <button class="bulk-act bulk-act-done" id="bulk-restore" title="Сэргээх" style="display:none;">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+      <span>Сэргээх</span>
+    </button>
+    <button class="bulk-act bulk-act-delete" id="bulk-delete" title="Устгах">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"></path></svg>
+      <span>Устгах</span>
+    </button>
+  </div>
+</div>
+
+<!-- ─── OFFLINE BANNER — интернэт салахад дээд талд ─── -->
+<div class="offline-banner" id="offline-banner">
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path><path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+  <span>Интернэтгүй — өөрчлөлт офлайнд хадгалагдана</span>
+  <span class="offline-queue-count" id="offline-queue-count" style="display:none;"></span>
+</div>
+
+<!-- ─── PROFILE MODAL — өөрийн мэдээлэл + PIN засах ─── -->
+<div class="modal-bg" id="profile-modal">
+  <div class="modal"><button type="button" class="modal-close-x" aria-label="Хаах"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    <h2>Миний профайл</h2>
+    <div class="profile-avatar-section">
+      <div class="profile-avatar-display" id="profile-avatar-display">
+        <span id="profile-avatar-initials">??</span>
+        <img id="profile-avatar-img" src="https://chimunllc.github.io/chimun-tasks/" alt="" style="display:none;">
+      </div>
+      <div>
+        <label for="profile-avatar-input" class="profile-avatar-upload-btn">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          Зураг сонгох
+        </label>
+        <input type="file" id="profile-avatar-input" accept="image/*" style="display:none;">
+        <button type="button" id="profile-avatar-clear" style="background:none;border:none;color:var(--muted);font-size:12px;margin-left:8px;cursor:pointer;display:none;">Арилгах</button>
+      </div>
+    </div>
+    <label>Овог нэр</label>
+    <input id="profile-name" type="text" placeholder="Жишээ: Г.Мөнх-Учрал">
+    <label>Албан тушаал</label>
+    <input id="profile-role" type="text" readonly="" style="opacity:.7;cursor:not-allowed;">
+    <label>Утасны дугаар</label>
+    <input id="profile-phone" type="tel" inputmode="numeric" placeholder="99112233">
+    <label>И-мэйл</label>
+    <input id="profile-email" type="email" placeholder="name@example.com">
+
+    <h3 style="font-size:14px;font-weight:700;margin:20px 0 10px;border-top:1px solid var(--border);padding-top:16px;">Харагдах байдал</h3>
+    <label>Үсгийн хэмжээ</label>
+    <div class="font-size-picker">
+      <button type="button" class="fs-btn" data-fs="sm">A</button>
+      <button type="button" class="fs-btn fs-default" data-fs="md">A</button>
+      <button type="button" class="fs-btn fs-lg" data-fs="lg">A</button>
+      <button type="button" class="fs-btn fs-xl" data-fs="xl">A</button>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:14px;cursor:pointer;">
+      <input type="checkbox" id="profile-high-contrast" style="width:18px;height:18px;cursor:pointer;">
+      <span>Илүү тод харагдах горим (high contrast)</span>
+    </label>
+
+    <h3 style="font-size:14px;font-weight:700;margin:20px 0 10px;border-top:1px solid var(--border);padding-top:16px;">PIN солих</h3>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 10px;">Хоосон үлдээвэл PIN солигдохгүй.</p>
+    <label>Одоогийн PIN</label>
+    <input id="profile-pin-current" type="tel" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="● ● ● ●">
+    <label>Шинэ PIN (4 орон)</label>
+    <input id="profile-pin-new" type="tel" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="● ● ● ●">
+    <label>Шинэ PIN дахин</label>
+    <input id="profile-pin-confirm" type="tel" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="● ● ● ●">
+
+    <div class="modal-actions">
+      <button class="btn" id="profile-cancel">Болих</button>
+      <button class="btn btn-primary" id="profile-save">Хадгалах</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PENDING REGISTRATION REVIEW (CEO) — шинэ ажилтны хүсэлт ─── -->
+<div class="modal-bg" id="pending-reg-modal">
+  <div class="modal" style="max-width:520px;"><button type="button" class="modal-close-x" aria-label="Хаах"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    <h2>Шинэ ажилтны хүсэлт</h2>
+    <div id="pending-reg-photo-wrap" style="display:flex;justify-content:center;margin-bottom:12px;">
+      <div id="pending-reg-photo" style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));color:#fff;font-weight:700;font-size:28px;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;"></div>
+    </div>
+    <div id="pending-reg-info" style="background:var(--panel-hover);padding:12px;border-radius:8px;margin-bottom:14px;font-size:13px;line-height:1.7;"></div>
+
+    <h3 style="font-size:13px;font-weight:700;margin:14px 0 10px;border-top:1px solid var(--border);padding-top:12px;">CEO тохиргоо</h3>
+
+    <label>Цалин (нэг сар, ₮)</label>
+    <input id="reg-salary" type="text" inputmode="numeric" placeholder="Жишээ: 1500000">
+
+    <label>Зэрэглэл</label>
+    <select id="reg-level">
+      <option value="40">40 — Энгийн ажилтан</option>
+      <option value="60">60 — Менежер / Нярав</option>
+      <option value="80">80 — ҮАХ Захирал</option>
+      <option value="100">100 — CEO</option>
+    </select>
+
+    <label>Тэмдэглэл (заавал биш)</label>
+    <textarea id="reg-notes" rows="2" placeholder="Дотоод тэмдэглэл..."></textarea>
+
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="reg-reject">Татгалзах</button>
+      <button class="btn btn-primary" id="reg-approve" style="background:var(--accent-green) !important;">Зөвшөөрч бүртгэх</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── STAFF MANAGEMENT MODAL — CEO ажилтан удирдах ─── -->
+<div class="modal-bg" id="staff-modal">
+  <div class="modal" style="max-width:560px;"><button type="button" class="modal-close-x" aria-label="Хаах"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    <h2>Ажилтан удирдах</h2>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.5;">
+      Ажлаас гарсан ажилтныг "Гарсан" гэж тэмдэглэх. Master Sheet-д шууд тэмдэглэгдэж, тэр ажилтан аппд нэвтрэх боломжгүй болно.
+    </p>
+    <input type="text" id="staff-search" placeholder="Хайх (нэр, албан тушаал)..." style="width:100%;margin-bottom:10px;">
+    <div id="staff-list" style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+    <div class="modal-actions">
+      <button class="btn" id="staff-close">Хаах</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PERMISSIONS MODAL — CEO эрх тохируулах ─── -->
+<div class="modal-bg" id="permissions-modal">
+  <div class="modal"><button type="button" class="modal-close-x" aria-label="Хаах"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    <h2>Эрхийн тохиргоо</h2>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 16px;line-height:1.5;">
+      Ямар ажилтанд ямар үйлдэл хийх эрх олгох вэ? Зөвхөн CEO харах боломжтой.
+    </p>
+    <div id="perm-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <p style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.5;">
+      * Тохируулга Master Sheet-д хадгалагдахын тулд n8n endpoint шаардлагатай.
+        Одоогоор зөвхөн локал төхөөрөмжид хадгалагдана.
+    </p>
+    <div class="modal-actions">
+      <button class="btn" id="perm-cancel">Болих</button>
+      <button class="btn btn-primary" id="perm-save">Хадгалах</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── ONBOARDING TOUR — анх удаа нэвтрэх ажилтанд богино зааварчилгаа ─── -->
+<div class="onboarding-bg" id="onboarding-bg">
+  <div class="onboarding-card">
+    <button class="onboarding-skip" id="ob-skip" type="button">Алгасах</button>
+    <div class="onboarding-progress">
+      <span class="onboarding-dot active"></span>
+      <span class="onboarding-dot"></span>
+      <span class="onboarding-dot"></span>
+      <span class="onboarding-dot"></span>
+    </div>
+    <div class="onboarding-illustration" id="ob-illus"></div>
+    <h2 class="onboarding-title" id="ob-title"></h2>
+    <p class="onboarding-text" id="ob-text"></p>
+    <div class="onboarding-actions">
+      <button class="btn" id="ob-prev" style="display:none;">← Өмнөх</button>
+      <button class="btn btn-primary" id="ob-next">Дараах →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── KEYBOARD SHORTCUTS HELP (? товчоор нээгдэнэ) ─── -->
+<div class="modal-bg" id="shortcuts-modal">
+  <div class="modal"><button type="button" class="modal-close-x" aria-label="Хаах"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    <h2>Гарын товчлуурын shortcut</h2>
+    <div class="shortcuts-list">
+      <div class="shortcut-row"><span class="shortcut-keys"><kbd>⌘</kbd><kbd>K</kbd></span><span class="shortcut-desc">Хайлт / командын меню</span></div>
+      <div class="shortcut-row"><span class="shortcut-keys"><kbd>⌘</kbd><kbd>N</kbd></span><span class="shortcut-desc">Шинэ ажил үүсгэх</span></div>
+      <div class="shortcut-row"><span class="shortcut-keys"><kbd>⌘</kbd><kbd>F</kbd></span><span class="shortcut-desc">Шинэ санхүүгийн хүсэлт</span></div>
+      <div class="shortcut-row"><span class="shortcut-keys"><kbd>Esc</kbd></span><span class="shortcut-desc">Modal / popup хаах</span></div>
+      <div class="shortcut-row"><span class="shortcut-keys"><kbd>?</kbd></span><span class="shortcut-desc">Энэ туслах харах</span></div>
+      <div class="shortcut-row"><span class="shortcut-keys"><kbd>1</kbd>...<kbd>4</kbd></span><span class="shortcut-desc">Tab шилжих (Ирсэн, Илгээсэн, Санхүү, Тойм)</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── COMMAND PALETTE (⌘K / Ctrl+K) ─── -->
+<div class="cmd-palette-bg" id="cmd-palette-bg">
+  <div class="cmd-palette" role="dialog" aria-label="Command Palette">
+    <input id="cmd-input" type="text" placeholder="Хайх эсвэл үйлдэл сонгох… (Esc-эс гарах)" autocomplete="off">
+    <div class="cmd-palette-results" id="cmd-results"></div>
+  </div>
+</div>
+
+<!-- Lightbox — app дотор зураг томруулж харах -->
+<div id="lightbox" style="display: flex; position: fixed; inset: 0px; background: rgba(0, 0, 0, 0.92); z-index: 10000; align-items: center; justify-content: center; cursor: zoom-out; padding: 20px;">
+  <img id="lightbox-img" src="./Чимун ХХК · Дотоод даалгавар_files/2026-06-04_t_vhtxx25gmpw4serk_completion(10).png" alt="" style="max-width:100%; max-height:100%; object-fit:contain; border-radius:6px; box-shadow:0 4px 30px rgba(0,0,0,0.6);">
+  <button id="lightbox-close" type="button" style="position:fixed; top:20px; right:20px; width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.15); color:#fff; border:none; cursor:pointer; font-size:20px; line-height:1; display:flex; align-items:center; justify-content:center;" aria-label="Хаах">×</button>
+  <a id="lightbox-open" href="https://drive.google.com/file/d/1lPKoYKc1pVN5zUciio8AlHHr6JJs98ER/view?usp=drivesdk" target="_blank" rel="noopener" style="position:fixed; bottom:20px; right:20px; padding:8px 14px; background:rgba(255,255,255,0.15); color:#fff; border-radius:6px; text-decoration:none; font-size:13px;" title="Drive дээр нээх">Drive дээр нээх ↗</a>
+</div>
+
+<script src="./Чимун ХХК · Дотоод даалгавар_files/app.js"></script>
+
+
+</body></html>

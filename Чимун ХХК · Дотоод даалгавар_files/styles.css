@@ -1,0 +1,5063 @@
+  :root {
+    /* Палитр */
+    --bg: #fafafa;
+    --panel: #ffffff;
+    --panel-hover: #f5f5f7;
+    --border: #ebebed;
+    --border-strong: #d1d5db;
+    --text: #18181b;
+    --text-soft: #3f3f46;
+    --muted: #71717a;
+    --muted-soft: #a1a1aa;
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    --primary-soft: #f0f0ff;
+    --danger: #ef4444;
+    --danger-soft: #fef2f2;
+    --warn: #f59e0b;
+    --warn-soft: #fffbeb;
+    --ok: #10b981;
+    --ok-soft: #ecfdf5;
+    --info: #3b82f6;
+    --info-soft: #eff6ff;
+
+    /* Spacing scale */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-8: 48px;
+
+    /* Radius scale */
+    --r-sm: 6px;
+    --r-md: 8px;
+    --r-lg: 12px;
+    --r-xl: 16px;
+    --r-full: 9999px;
+
+    /* Shadow scale */
+    --shadow-xs: 0 1px 2px rgba(0,0,0,.04);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,.08), 0 2px 4px -2px rgba(0,0,0,.04);
+    --shadow-lg: 0 10px 25px -5px rgba(0,0,0,.10), 0 6px 10px -6px rgba(0,0,0,.05);
+    --shadow-xl: 0 25px 50px -12px rgba(0,0,0,.25);
+    --shadow: var(--shadow-sm);
+
+    /* Easing */
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --duration: 200ms;
+  }
+
+  /* Dark mode */
+  html[data-theme="dark"] {
+    --bg: #0a0a0a;
+    --panel: #18181b;
+    --panel-hover: #27272a;
+    --border: #27272a;
+    --border-strong: #3f3f46;
+    --text: #fafafa;
+    --text-soft: #d4d4d8;
+    --muted: #a1a1aa;
+    --muted-soft: #71717a;
+    --primary: #818cf8;
+    --primary-hover: #a5b4fc;
+    --primary-soft: rgba(99,102,241,.15);
+    --danger: #f87171;
+    --danger-soft: rgba(239,68,68,.15);
+    --warn: #fbbf24;
+    --warn-soft: rgba(245,158,11,.15);
+    --ok: #34d399;
+    --ok-soft: rgba(16,185,129,.15);
+    --info: #60a5fa;
+    --info-soft: rgba(59,130,246,.15);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.3);
+    --shadow-md: 0 4px 6px rgba(0,0,0,.4);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,.5);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ─── ШИНЭ DESIGN TOKEN-ЫН ҮНДСЭН СТАНДАРТ КЛАСС-УУД ─── */
+
+  /* Avatar тойрог */
+  .avatar-circle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: var(--r-full);
+    font-size: 12px; font-weight: 600; color: #fff;
+    background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+    flex-shrink: 0; letter-spacing: -0.02em;
+  }
+  .avatar-circle.sm { width: 22px; height: 22px; font-size: 10px; }
+  .avatar-circle.lg { width: 40px; height: 40px; font-size: 15px; }
+
+  /* Status цэг */
+  .status-dot {
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: var(--r-full); flex-shrink: 0;
+  }
+  .status-dot.open        { background: var(--muted-soft); }
+  .status-dot.in_progress { background: var(--info); box-shadow: 0 0 0 3px var(--info-soft); }
+  .status-dot.done        { background: var(--ok); }
+  .status-dot.declined    { background: var(--danger); }
+
+  /* Status pill (модал доторх том) */
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: var(--r-full);
+    font-size: 12px; font-weight: 600;
+  }
+  .status-pill.open        { background: var(--panel-hover); color: var(--text-soft); }
+  .status-pill.in_progress { background: var(--info-soft); color: var(--info); }
+  .status-pill.done        { background: var(--ok-soft); color: var(--ok); }
+  .status-pill.declined    { background: var(--danger-soft); color: var(--danger); }
+
+  /* Орчин үеийн товч */
+  .btn-modern {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 8px 14px; border-radius: var(--r-md);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    border: 1px solid transparent; background: transparent;
+    color: var(--text); transition: all var(--duration) var(--ease);
+    white-space: nowrap;
+  }
+  .btn-modern:hover { background: var(--panel-hover); }
+  .btn-modern.primary { background: var(--primary); color: #fff; }
+  .btn-modern.primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .btn-modern.outline { border-color: var(--border); }
+  .btn-modern.outline:hover { border-color: var(--border-strong); background: var(--panel-hover); }
+  .btn-modern.danger { color: var(--danger); }
+  .btn-modern.danger:hover { background: var(--danger-soft); }
+  .btn-modern.ok { color: var(--ok); }
+  .btn-modern.ok:hover { background: var(--ok-soft); }
+  .btn-modern.icon-only { padding: 8px; }
+  .btn-modern.sm { padding: 6px 10px; font-size: 12px; }
+
+  /* Theme toggle товч */
+  .theme-toggle {
+    background: none; border: none; cursor: pointer; padding: 8px;
+    border-radius: var(--r-md); color: var(--muted);
+    transition: all var(--duration) var(--ease);
+  }
+  .theme-toggle:hover { background: var(--panel-hover); color: var(--text); }
+  .app { display: grid; grid-template-columns: 260px 1fr; height: 100vh; }
+  /* SIDEBAR */
+  .sidebar {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 20px 14px;
+    overflow-y: auto;
+  }
+  .brand {
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: .2px;
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .brand .dot { width: 22px; height: 22px; border-radius: 6px; background: var(--primary); display:inline-block; }
+  .section-label {
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: .8px;
+    color: var(--muted);
+    margin: 16px 6px 6px;
+  }
+  .nav-item, .project-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text);
+    user-select: none;
+  }
+  .nav-item:hover, .project-item:hover { background: var(--panel-hover); }
+  .nav-item.active, .project-item.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+  .count-badge {
+    background: var(--panel-hover); color: var(--muted); font-size: 11px;
+    padding: 1px 7px; border-radius: 10px; min-width: 18px; text-align: center;
+  }
+  .nav-item.active .count-badge, .project-item.active .count-badge { background: var(--panel); color: var(--primary); }
+  .add-project { color: var(--muted); cursor: pointer; padding: 7px 10px; font-size: 13px; }
+  .add-project:hover { color: var(--primary); }
+  .who-am-i {
+    margin-top: 14px; padding: 10px; background: var(--panel-hover); border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .who-am-i label { font-size: 11px; color: var(--muted); display:block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .6px;}
+  .who-am-i select { width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); font-size: 13px; }
+  /* MAIN */
+  .main { display: flex; flex-direction: column; overflow: hidden; }
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 28px; border-bottom: 1px solid var(--border); background: var(--panel);
+  }
+  .header h1 { margin: 0; font-size: 20px; font-weight: 700; }
+  .header .sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    border: 1px solid var(--border); background: var(--panel); padding: 7px 13px; border-radius: 7px;
+    font-size: 13px; cursor: pointer; color: var(--text);
+  }
+  .btn:hover { background: var(--panel-hover); }
+  .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
+  .btn-primary:hover { background: #4338ca; }
+  .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); font-weight: 600; }
+  .btn-danger:hover { background: #b91c1c; }
+  .toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 28px; background: var(--panel); border-bottom: 1px solid var(--border);
+  }
+  .filter-pill {
+    border: 1px solid var(--border); background: var(--panel); padding: 7px 14px; border-radius: 999px;
+    font-size: 13px; color: var(--muted); cursor: pointer;
+    min-height: 32px; display: inline-flex; align-items: center;
+    transition: background .12s, border-color .12s;
+  }
+  .filter-pill:hover { background: var(--panel-hover); }
+  .filter-pill.active { background: var(--primary-soft); color: var(--primary); border-color: var(--primary-soft); font-weight: 600; }
+  @media (max-width: 720px) {
+    .filter-pill { padding: 9px 16px; min-height: 38px; font-size: 13px; }
+  }
+  .search { flex: 1; max-width: 280px; }
+  .search input {
+    width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
+    background: var(--panel); color: var(--text);
+  }
+  /* TASKS */
+  .tasks {
+    flex: 1; overflow-y: auto; padding: 0 28px 80px;
+  }
+  .table-head {
+    display: grid;
+    grid-template-columns: 26px 1fr 160px 130px 110px 36px;
+    padding: 10px 8px;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--bg); z-index: 1;
+  }
+  .task-row {
+    display: grid;
+    grid-template-columns: 24px 1fr auto auto auto;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 12px 14px;
+    background: var(--panel);
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
+    margin: 4px 0;
+    transition: all var(--duration) var(--ease);
+    cursor: pointer;
+  }
+  .task-row:hover {
+    background: var(--panel-hover);
+    border-color: var(--border);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+  .task-row.completed .task-title { text-decoration: line-through; color: var(--muted); }
+  .task-row.completed { opacity: 0.55; }
+  /* 5-stage act parent — highlighted card */
+  .task-row.act-parent {
+    background: var(--primary-soft);
+    border-color: var(--primary-soft);
+  }
+  .task-row.act-parent .task-title { font-weight: 700; }
+  .act-progress {
+    font-size: 11px; color: var(--primary); font-weight: 600;
+    background: var(--panel); padding: 2px 8px; border-radius: 999px;
+    border: 1px solid #c7d2fe;
+    margin-left: 8px; white-space: nowrap;
+  }
+  /* sub-task — indented under its parent */
+  .task-row.subtask { margin-left: 28px; background: var(--panel-hover); }
+  .stage-badge {
+    display: inline-block;
+    background: var(--primary-soft); color: var(--primary);
+    font-size: 10px; font-weight: 700;
+    padding: 2px 6px; border-radius: 4px;
+    margin-right: 6px; letter-spacing: .3px;
+  }
+  /* locked sub-task — previous stage not done yet */
+  .task-row.locked-stage { opacity: 0.55; }
+  .task-row.locked-stage .checkbox {
+    cursor: not-allowed; background: var(--panel-hover); border-color: var(--border);
+  }
+  .task-row.locked-stage .task-title { color: var(--muted); }
+  .stage-locked-hint {
+    font-size: 10px; color: var(--warn); font-weight: 600;
+    background: var(--warn-soft); padding: 2px 6px; border-radius: 4px;
+    margin-left: 6px;
+  }
+  /* Finance request decision pills */
+  .finance-pill {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 2px 8px; border-radius: 4px; margin-left: 6px;
+  }
+  .finance-pill.pending  { background: #fef3c7; color: #92400e; }
+  .finance-pill.approved { background: #d1fae5; color: #065f46; }
+  .finance-pill.rejected { background: #fee2e2; color: #991b1b; }
+  .finance-pill.deferred { background: #e0e7ff; color: #3730a3; }
+  .finance-pill.executed { background: #dcfce7; color: #166534; }
+  .checkbox {
+    width: 20px; height: 20px; border: 1.5px solid var(--border-strong); border-radius: var(--r-full);
+    display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+    background: var(--panel); transition: all var(--duration) var(--ease);
+    flex-shrink: 0;
+  }
+  .checkbox:hover { border-color: var(--ok); background: var(--ok-soft); }
+  .checkbox.checked { background: var(--ok); border-color: var(--ok); }
+  .checkbox.checked::after { content: "✓"; color: #fff; font-size: 12px; font-weight: bold; }
+  .task-title-wrap { display: flex; flex-direction: column; min-width: 0; }
+  .task-title { font-weight: 500; font-size: 14px; color: var(--text); outline: none; word-break: break-word; line-height: 1.4; }
+  .task-meta { font-size: 12px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .task-meta .meta-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--muted-soft); }
+  .delegated-from {
+    color: var(--primary); font-weight: 500;
+    background: var(--primary-soft); padding: 2px 8px; border-radius: var(--r-full);
+    font-size: 11px;
+  }
+  /* Assignee — avatar circle + нэр (модерн стиль) */
+  .col-assignee { display: flex; align-items: center; }
+  .assignee-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 4px 10px 4px 4px; border-radius: var(--r-full);
+    background: transparent; font-size: 13px; cursor: pointer;
+    transition: background var(--duration) var(--ease);
+  }
+  .assignee-chip:hover { background: var(--panel-hover); }
+  .assignee-chip .avatar {
+    width: 24px; height: 24px; border-radius: var(--r-full); flex-shrink: 0;
+    background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+    color: #fff; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; letter-spacing: -0.02em;
+  }
+  .assignee-chip .name { color: var(--text-soft); font-weight: 500; }
+  /* Хугацаа — relative date */
+  .due {
+    font-size: 12px; padding: 4px 10px; border-radius: var(--r-full);
+    color: var(--muted); background: transparent; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+    transition: background var(--duration) var(--ease);
+  }
+  .due:hover { background: var(--panel-hover); }
+  .due.overdue { background: var(--danger-soft); color: var(--danger); font-weight: 600; }
+  .due.soon { background: var(--warn-soft); color: var(--warn); font-weight: 600; }
+  .due.today { background: var(--info-soft); color: var(--info); font-weight: 600; }
+  /* Зэрэглэл — flag icon */
+  .priority {
+    font-size: 11px; padding: 3px 8px; border-radius: var(--r-sm);
+    font-weight: 600; display: inline-flex; align-items: center; gap: 3px;
+  }
+  .priority.high { background: var(--danger-soft); color: var(--danger); }
+  .priority.med  { background: var(--warn-soft); color: var(--warn); }
+  .priority.low  { background: var(--ok-soft); color: var(--ok); }
+  .priority.none { display: none; } /* зэрэглэлгүй бол үзүүлэхгүй */
+  /* Устгах — hover үед л харагдана */
+  .delete-btn {
+    border: none; background: transparent; color: var(--muted-soft); cursor: pointer;
+    font-size: 16px; padding: 6px; border-radius: var(--r-sm); opacity: 0;
+    transition: all var(--duration) var(--ease);
+  }
+  .task-row:hover .delete-btn { opacity: 1; }
+  .delete-btn:hover { color: var(--danger); background: var(--danger-soft); }
+  .delete-btn.locked { cursor: not-allowed; opacity: 0.5; }
+  .delete-btn.locked:hover { color: var(--muted); background: transparent; }
+  .add-task-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px; border: 2px dashed var(--border); border-radius: 8px; margin: 12px 0;
+    color: var(--muted); cursor: pointer;
+  }
+  .add-task-row:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+  .add-task-row input {
+    flex: 1; border: none; outline: none; background: transparent; font-size: 14px;
+  }
+  .empty {
+    text-align: center; color: var(--muted); padding: 80px 20px;
+  }
+  .empty .icon { font-size: 56px; margin-bottom: 16px; opacity: .85; }
+  .empty .title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .empty .sub { font-size: 13px; color: var(--muted); }
+  /* CONNECTION STATUS */
+  .conn-status {
+    position: fixed; bottom: 14px; right: 18px; padding: 6px 12px; border-radius: 999px;
+    font-size: 11px; background: var(--panel); border: 1px solid var(--border); box-shadow: var(--shadow);
+    color: var(--muted); display: flex; align-items: center; gap: 6px;
+  }
+  .conn-status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .conn-status.online .dot { background: var(--ok); }
+  .conn-status.offline .dot { background: var(--warn); }
+  /* MODAL */
+  /* ─── Modal: Slide-in side panel (Linear/Notion style) ─── */
+  .modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0);
+    display: none; z-index: 100;
+    transition: background var(--duration) var(--ease);
+    pointer-events: none;
+  }
+  .modal-bg.open {
+    display: block;
+    background: rgba(0,0,0,.3);
+    pointer-events: auto;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+  .modal {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    background: var(--panel); padding: 24px 28px;
+    width: min(560px, 100%); height: 100%; overflow-y: auto;
+    box-shadow: var(--shadow-xl);
+    transform: translateX(100%);
+    transition: transform var(--duration) var(--ease);
+    border-radius: 0;
+    border-left: 1px solid var(--border);
+  }
+  .modal-bg.open .modal { transform: translateX(0); }
+  .modal h2 {
+    margin: 0 0 18px; font-size: 18px; font-weight: 600;
+    color: var(--text); letter-spacing: -0.01em;
+  }
+  .modal label {
+    display: block; font-size: 12px; color: var(--muted);
+    margin: 14px 0 6px; font-weight: 500;
+  }
+  .modal input, .modal select, .modal textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: var(--r-md); font-size: 14px; color: var(--text);
+    background: var(--panel);
+    transition: border-color var(--duration) var(--ease);
+    font-family: inherit;
+  }
+  .modal input:focus, .modal select:focus, .modal textarea:focus {
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+  }
+  .modal textarea { resize: vertical; min-height: 80px; }
+  .modal-actions {
+    display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px;
+    padding-top: 16px; border-top: 1px solid var(--border);
+  }
+
+  /* Modal section headers (Finance modal-д хэрэглэгдэнэ) */
+  .modal-section {
+    margin: 18px 0 8px;
+    padding: 8px 12px;
+    background: var(--panel-hover);
+    border-left: 3px solid var(--primary);
+    border-radius: 0 6px 6px 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .modal-section:first-of-type { margin-top: 0; }
+  /* Modal-н label-уудын шаардлагатай * нь тод болгох */
+  .modal label { font-size: 12px; color: var(--muted); margin: 12px 0 4px; }
+  .modal label .req { color: var(--danger); }
+  .modal .field-hint { font-size: 11px; color: var(--muted); margin: 2px 0 6px; line-height: 1.4; }
+
+  /* LOGIN SCREEN — full-page overlay shown until authenticated */
+  .login-screen {
+    position: fixed; inset: 0; z-index: 200;
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    /* Flex + margin:auto loud-on-card нь content < viewport үед төв,
+       content > viewport үед scroll-той ч ажиллана. */
+    display: flex; flex-direction: column;
+    padding: 24px;
+    padding-top: max(24px, env(safe-area-inset-top, 24px));
+    padding-bottom: max(48px, env(safe-area-inset-bottom, 24px));
+    color: #fff; text-align: center;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  /* Card-ийг flex container дотор бүх талын margin:auto-аар голчилно. */
+  .login-screen > .login-card {
+    margin: auto;
+  }
+  .login-screen.hidden { display: none; }
+  .login-card {
+    background: var(--panel); color: var(--text); border-radius: 16px;
+    padding: 36px 28px; max-width: 380px; width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  }
+  .login-logo {
+    width: 64px; height: 64px; margin: 0 auto 18px;
+    background: var(--primary); border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; color: #fff;
+  }
+  .login-card h1 { margin: 0 0 8px; font-size: 22px; }
+  .login-card .login-sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; line-height: 1.5; }
+  #pin-login-form { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+  .login-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin: 14px 0 4px; text-align: left; }
+  #login-id-input, #login-pin-input {
+    width: 100%; padding: 12px 14px; font-size: 16px;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--panel); color: var(--text);
+    -webkit-appearance: none; appearance: none;
+  }
+  #login-pin-input { letter-spacing: 8px; text-align: center; font-weight: 600; }
+  #login-id-input:focus, #login-pin-input:focus { outline: 2px solid var(--primary); outline-offset: -1px; border-color: var(--primary); }
+  #login-id-input { text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
+  .login-submit {
+    width: 100%; margin-top: 18px; padding: 13px 18px;
+    background: var(--primary); color: #fff; border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: background .15s ease;
+  }
+  .login-submit:hover { background: #4338ca; }
+  .login-submit:active { transform: scale(.98); }
+  .login-error {
+    background: #fee2e2; color: var(--danger); padding: 10px 14px;
+    border-radius: 8px; font-size: 13px; margin-top: 12px; display: none; text-align: left;
+  }
+  .login-error.show { display: block; }
+  .login-footer { font-size: 11px; color: var(--muted); margin-top: 18px; line-height: 1.5; }
+  .login-config-warning {
+    background: #fef3c7; color: var(--warn); padding: 12px 14px; border-radius: 8px;
+    font-size: 12px; margin-bottom: 16px; text-align: left; line-height: 1.5;
+  }
+
+  /* User chip in sidebar (replaces "Би хэн бэ?" dropdown) */
+  .user-chip {
+    margin-top: 12px; padding: 10px; background: var(--panel-hover); border: 1px solid var(--border);
+    border-radius: 8px; display: flex; align-items: center; gap: 10px;
+  }
+  .user-chip .avatar {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;
+    flex-shrink: 0; overflow: hidden;
+  }
+  .user-chip .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .user-chip .meta { flex: 1; min-width: 0; }
+  .user-chip .meta .name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-chip .meta .role { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-chip .logout-btn {
+    background: none; border: none; color: var(--muted); cursor: pointer; padding: 6px;
+    border-radius: 6px;
+  }
+  .user-chip .logout-btn:hover { background: var(--panel-hover); color: var(--danger); }
+
+  /* TOAST + CONFIRM (alert/confirm-ийг сольсон) */
+  .toast-stack {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 200; display: flex; flex-direction: column; gap: 8px; align-items: center;
+    pointer-events: none; width: max-content; max-width: 92%;
+  }
+  .toast {
+    background: #1f2328; color: #fff; padding: 12px 18px; border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(15,23,42,.25);
+    font-size: 13px; line-height: 1.4; max-width: 460px;
+    display: flex; align-items: center; gap: 10px;
+    animation: toast-in .25s ease-out;
+    pointer-events: auto;
+  }
+  .toast.success { background: #15803d; }
+  .toast.error   { background: #b91c1c; }
+  .toast.warn    { background: #b45309; }
+  .toast .toast-icon { font-size: 18px; line-height: 1; }
+  @keyframes toast-in {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+  .confirm-dialog {
+    background: var(--panel); border-radius: 14px; padding: 22px;
+    max-width: 360px; width: 92%; box-shadow: 0 20px 50px rgba(0,0,0,.25);
+  }
+  .confirm-dialog h3 { margin: 0 0 8px; font-size: 16px; }
+  .confirm-dialog p  { margin: 0 0 18px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .confirm-dialog .actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* NOTIFICATION BELL + DRAWER */
+  .bell-btn {
+    position: relative;
+    padding: 8px 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .bell-btn:hover { background: var(--panel-hover); }
+  .bell-btn svg { width: 18px; height: 18px; display: block; }
+  .bell-btn.has-unread svg { color: var(--primary); }
+  @keyframes bell-shake {
+    0%, 100% { transform: rotate(0); }
+    20%, 60% { transform: rotate(-12deg); }
+    40%, 80% { transform: rotate(12deg); }
+  }
+  .bell-btn.has-unread svg { animation: bell-shake .6s ease-in-out 1; transform-origin: 50% 20%; }
+  .notif-badge {
+    position: absolute; top: -6px; right: -6px;
+    background: var(--danger); color: #fff;
+    border-radius: 999px;
+    padding: 0 6px;
+    min-width: 20px; height: 20px;
+    font-size: 11px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 2px solid #fff;
+    line-height: 1;
+  }
+  /* DESKTOP: dropdown panel */
+  .notif-panel {
+    position: fixed; top: 64px; right: 16px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; box-shadow: 0 12px 36px rgba(15,23,42,.20);
+    width: 380px; max-width: calc(100vw - 32px);
+    max-height: 70vh;
+    z-index: 110;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  /* CRITICAL: hidden attribute override —
+     display:flex дээр [hidden] нь автоматаар display:none-руу шилжихгүй
+     учир заавал тодорхой override хэрэгтэй */
+  .notif-panel[hidden] { display: none !important; }
+  .notif-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 105;
+  }
+  .notif-backdrop.open { display: block; }
+  .notif-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+    font-weight: 600; font-size: 15px;
+  }
+  .notif-header .close-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 22px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 50%;
+    transition: background .12s;
+  }
+  .notif-header .close-btn:hover { background: var(--panel-hover); color: var(--text); }
+  .notif-mark-read {
+    background: none; border: none; color: var(--primary);
+    font-size: 12px; cursor: pointer; padding: 6px 10px;
+    border-radius: 6px;
+  }
+  .notif-mark-read:hover { background: var(--primary-soft); text-decoration: none; }
+  .notif-list { overflow-y: auto; flex: 1; }
+  .notif-item {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 14px 18px; border-bottom: 1px solid #f1f3f5;
+    cursor: pointer; transition: background .12s;
+  }
+  .notif-item:hover { background: var(--panel-hover); }
+  .notif-item.unread { background: var(--primary-soft); }
+  .notif-item.unread:hover { background: var(--primary-soft); }
+  .notif-item.unread::before {
+    content: ''; position: absolute; margin-left: -10px; margin-top: 8px;
+    width: 6px; height: 6px; border-radius: 50%; background: var(--primary);
+  }
+  .notif-icon {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--panel-hover);
+    color: var(--muted);
+  }
+  .notif-icon svg { width: 18px; height: 18px; }
+  .notif-icon.assigned    { background: var(--primary-soft); color: var(--primary); }
+  .notif-icon.overdue     { background: var(--danger-soft); color: var(--danger); }
+  .notif-icon.due_today   { background: var(--warn-soft); color: var(--warn); }
+  .notif-icon.stage_unlock{ background: var(--ok-soft); color: var(--ok); }
+  .notif-body { flex: 1; min-width: 0; }
+  .notif-msg { font-size: 14px; color: var(--text); line-height: 1.4; }
+  .notif-time { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .notif-empty {
+    padding: 56px 24px; text-align: center;
+    color: var(--muted);
+  }
+  .notif-empty .icon {
+    font-size: 48px; margin-bottom: 10px; opacity: .35;
+  }
+  .notif-empty .title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .notif-empty .sub { font-size: 12px; }
+
+  /* MOBILE: bottom sheet drawer */
+  @media (max-width: 720px) {
+    .notif-panel {
+      top: auto; bottom: 0; right: 0; left: 0;
+      width: 100%; max-width: 100%;
+      border-radius: 16px 16px 0 0;
+      max-height: 85vh;
+      animation: drawer-up .25s ease-out;
+    }
+    .notif-header .close-btn { width: 36px; height: 36px; }
+    .notif-item { padding: 16px 18px; }
+    .notif-icon { width: 40px; height: 40px; }
+    .notif-msg { font-size: 15px; }
+  }
+  @keyframes drawer-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
+  /* MOBILE HAMBURGER */
+  .mobile-menu-btn {
+    display: none;
+    background: none; border: none; cursor: pointer;
+    padding: 4px 8px; margin-right: 6px;
+    font-size: 22px; line-height: 1; color: var(--text);
+  }
+  .sidebar-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.4); z-index: 90;
+  }
+  .sidebar-backdrop.open { display: block; }
+
+  /* ─── Command palette (⌘K) ─── */
+  .cmd-palette-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    display: none; align-items: flex-start; justify-content: center;
+    z-index: 200; padding-top: 80px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .cmd-palette-bg.open { display: flex; animation: fadeIn 150ms var(--ease); }
+  .cmd-palette {
+    background: var(--panel); width: min(560px, 92%);
+    border-radius: var(--r-lg); box-shadow: var(--shadow-xl);
+    overflow: hidden; border: 1px solid var(--border);
+  }
+  .cmd-palette input {
+    width: 100%; border: none; padding: 16px 20px; font-size: 16px;
+    background: transparent; color: var(--text); outline: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .cmd-palette-results {
+    max-height: 60vh; overflow-y: auto; padding: 8px;
+  }
+  .cmd-result {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: var(--r-md);
+    cursor: pointer; font-size: 14px;
+  }
+  .cmd-result:hover, .cmd-result.active {
+    background: var(--primary-soft); color: var(--primary);
+  }
+  .cmd-result .icon { font-size: 18px; }
+  .cmd-result .hint { margin-left: auto; font-size: 11px; color: var(--muted); }
+  .cmd-result-section {
+    font-size: 11px; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 12px 12px 6px; font-weight: 600;
+  }
+
+  /* ─── Animations ─── */
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+  .animate-in { animation: slideUp 200ms var(--ease) both; }
+
+  /* ─── Мобайл доод нав + FAB товч ─── */
+  .mobile-bottom-nav {
+    display: none;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+  }
+  .mobile-bottom-nav-inner {
+    display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px;
+  }
+  .mobile-nav-item {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 8px 4px; cursor: pointer; color: var(--muted);
+    font-size: 10px; gap: 3px; transition: color var(--duration) var(--ease);
+    border: none; background: transparent;
+  }
+  .mobile-nav-item .icon { font-size: 20px; line-height: 1; }
+  .mobile-nav-item.active { color: var(--primary); }
+  .mobile-nav-item .badge {
+    position: absolute; margin-top: -28px; margin-left: 14px;
+    background: var(--danger); color: #fff; font-size: 10px;
+    padding: 1px 5px; border-radius: var(--r-full); min-width: 16px;
+    text-align: center; font-weight: 600;
+  }
+  .fab {
+    display: none;
+    position: fixed; right: 16px;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    z-index: 60;
+    width: 52px; height: 52px; border-radius: var(--r-full);
+    background: var(--primary); color: #fff; border: none;
+    font-size: 26px; cursor: pointer; box-shadow: var(--shadow-lg);
+    transition: transform var(--duration) var(--ease);
+    display: none; align-items: center; justify-content: center;
+    padding: 0; line-height: 1;
+  }
+  .fab:hover, .fab:active { transform: scale(1.05); background: var(--primary-hover); }
+
+  @media (max-width: 720px) {
+    .app { grid-template-columns: 1fr; }
+
+    /* Sidebar slides in from the left as a drawer */
+    .sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0; width: 84%; max-width: 320px;
+      z-index: 100;
+      transform: translateX(-100%);
+      transition: transform var(--duration) var(--ease);
+      box-shadow: var(--shadow-xl);
+      display: block;
+    }
+    .sidebar.open { transform: translateX(0); }
+
+    .mobile-menu-btn { display: inline-flex; }
+    .mobile-bottom-nav { display: block; }
+    .fab { display: block; }
+
+    /* Header — мобайлд хэт олон товч хасах. Зөвхөн menu + theme + bell + + */
+    .header { padding: 12px 14px; }
+    .header h1 { font-size: 17px; }
+    .header .sub { font-size: 11px; }
+    .header-actions { gap: 4px; }
+    .header-actions .btn { padding: 6px 10px; font-size: 12px; }
+    /* Утсан дээр зөвхөн bell + theme + Шинэ товчийг үлдээж бусдыг нуух
+       (зөв тохиолдолд Цэс/FAB-аар орлуулагдана) */
+    #settings-btn,
+    #export-btn,
+    #new-order-btn,
+    #new-finance-btn { display: none; }
+
+    /* Toolbar: search голчилбол өөрөө мөр болж буурна */
+    .toolbar { padding: 10px 14px; flex-wrap: wrap; gap: 6px; }
+    .search { flex: 1 1 100%; max-width: 100%; }
+
+    .tasks { padding: 8px 12px 140px; }
+    .table-head { display: none; }
+
+    /* ─── Мобайл task row — Цэвэрхэн, давхардалгүй ───
+       checkbox │ title (+ meta нэг мөр доор) │ chevron ▸
+       Avatar+нэр, хугацаа, зэрэглэл бүгд meta мөрөнд орно
+       Илүүдэл "delegated-from" пилл арилна — avatar нэр хариулна */
+    .task-row {
+      grid-template-columns: 24px 1fr 16px;
+      column-gap: 12px;
+      row-gap: 0;
+      padding: 14px 14px;
+      align-items: center;
+    }
+    .task-row:hover { transform: none; }
+    .task-row::after {
+      content: '›';
+      grid-column: 3;
+      color: var(--muted-soft);
+      font-size: 20px; line-height: 1;
+      text-align: right;
+    }
+    /* Title жижигхэн боловч ихэхэн уншигдахуйц */
+    .task-title { font-size: 14px; font-weight: 500; }
+    /* Meta — нэг мөр доор: avatar + нэр + хугацаа + priority */
+    .task-meta {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; margin-top: 4px;
+      flex-wrap: nowrap; overflow: hidden;
+    }
+    .task-meta > * { flex-shrink: 0; }
+    .task-meta .meta-dot { width: 3px; height: 3px; }
+    /* Утсан дээр assignee chip хасч, зөвхөн avatar+нэрийг meta мөрөнд тусгах */
+    .col-assignee { display: none; }
+    /* Due, priority харагдахаа болино — meta мөрөнд тусгасан */
+    .col-due, .col-priority { display: none; }
+    /* Устгах товч мобайлд үргэлж харагдана */
+    .delete-btn { opacity: 1; padding: 4px; }
+    /* Long meta-г overflow хийхэд "..." болгоно */
+    .task-meta .delegated-from,
+    .task-meta .meta-project {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      max-width: 30vw;
+    }
+
+    /* Mobile-only meta элементүүдийг ил гаргаж, desktop-only-уудыг нуух */
+    .task-meta .meta-mobile-only { display: inline-flex !important; align-items: center; }
+    .task-meta .meta-desktop-only { display: none !important; }
+
+    /* Connection chip stays visible but smaller */
+    .conn-status { bottom: 80px; right: 10px; font-size: 10px; padding: 4px 8px; }
+
+    /* Модал bottom sheet хэлбэрээр мобайлд */
+    .modal {
+      top: auto; bottom: 0; right: 0; left: 0;
+      width: 100%; max-width: 100%; height: 92vh; max-height: 92vh;
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      padding: 24px 18px calc(28px + env(safe-area-inset-bottom)) 18px;
+      transform: translateY(100%);
+      border-left: none; border-top: 1px solid var(--border);
+    }
+    .modal-bg.open .modal { transform: translateY(0); }
+    /* Bottom sheet-д drag handle харагдуулна */
+    .modal::before {
+      content: ''; display: block; width: 40px; height: 4px;
+      background: var(--border-strong); border-radius: var(--r-full);
+      margin: 0 auto 16px;
+    }
+  }
+
+/* ═══════════════════════════════════════════════════════════
+   МОБАЙЛ UX САЙЖРУУЛАЛТ (2026-05-24)
+   Утсан дээр ашиглахад уншигдах, дарагдах байдлыг сайжруулсан.
+   - Touch target минимум 44×44px (Apple/Google зөвлөмж)
+   - Үсэг 14-16px (16px input нь iOS-д auto-zoom-ийг сэргийлнэ)
+   - Илүү уужим зай (breathing room)
+   - Тодорхой ялгаатай contrast
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 720px) {
+  /* ── Үндсэн уншигдах хэмжээ ── */
+  body { font-size: 15px; line-height: 1.5; }
+
+  /* iOS Safari: input font-size < 16px бол focus хийхэд zoom хийдэг.
+     Бүх input/select/textarea-г 16px болгоё. */
+  input, select, textarea, button {
+    font-size: 16px !important;
+  }
+
+  /* ── Header — гарчиг том, тодорхой ── */
+  .header h1 { font-size: 20px !important; line-height: 1.3; }
+  .header .sub { font-size: 13px !important; }
+  .header { padding: 14px 16px !important; }
+
+  /* ── Header дээрх товч (menu, theme, bell) 44px ── */
+  .header-actions .btn,
+  .mobile-menu-btn,
+  #theme-toggle, #notif-btn {
+    min-width: 44px; min-height: 44px;
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 10px 12px !important;
+    font-size: 15px !important;
+  }
+
+  /* ── Sidebar дотор товчлуурууд ── */
+  .nav-item {
+    padding: 14px 16px !important;
+    font-size: 15px !important;
+    min-height: 48px;
+    border-radius: 10px;
+  }
+  .section-label {
+    font-size: 12px !important;
+    margin: 16px 12px 8px !important;
+    letter-spacing: .5px;
+  }
+  .add-project {
+    padding: 14px 16px !important;
+    font-size: 15px !important;
+    min-height: 48px;
+  }
+  .user-chip {
+    padding: 14px !important;
+    margin-top: 16px;
+  }
+  .user-chip .meta .name { font-size: 15px !important; }
+  .user-chip .meta .role { font-size: 13px !important; }
+  .user-chip .logout-btn {
+    min-width: 44px; min-height: 44px;
+    padding: 10px !important;
+  }
+  .user-chip .avatar { width: 42px; height: 42px; font-size: 16px; }
+
+  /* ── Task row — илүү уужим, илүү уншигдахуйц ── */
+  .task-row {
+    padding: 16px 14px !important;
+    min-height: 64px;
+  }
+  .task-row .task-title-wrap { gap: 6px; }
+  .task-row .title { font-size: 15px !important; line-height: 1.35; }
+  .task-row .meta-row,
+  .task-row .meta { font-size: 13px !important; }
+  .task-row::after { font-size: 24px !important; }
+
+  /* Checkbox-ийг том болгох (дарахад амар) */
+  .task-row input[type="checkbox"] {
+    width: 22px; height: 22px;
+    cursor: pointer;
+  }
+
+  /* ── Toolbar / search ── */
+  .toolbar { padding: 12px 14px !important; gap: 8px !important; }
+  .search input {
+    padding: 12px 14px !important;
+    min-height: 44px;
+  }
+  .pill, .filter-pill, .chip {
+    padding: 8px 14px !important;
+    font-size: 14px !important;
+    min-height: 36px;
+    display: inline-flex; align-items: center;
+  }
+
+  /* ── Modal / sheet (доороос гарах хуудас) ── */
+  .modal, .sheet {
+    padding: 20px 18px !important;
+  }
+  .modal h2, .sheet h2 { font-size: 19px !important; }
+  .modal label, .sheet label {
+    font-size: 13px !important;
+    margin-bottom: 6px;
+  }
+  .modal input, .modal select, .modal textarea,
+  .sheet input, .sheet select, .sheet textarea {
+    padding: 14px !important;
+    margin-bottom: 14px;
+  }
+  .modal .btn, .sheet .btn,
+  .modal button, .sheet button {
+    min-height: 48px;
+    padding: 14px 18px !important;
+    font-size: 16px !important;
+    font-weight: 600;
+  }
+
+  /* ── FAB (хөвөгч + товч) том болгох ── */
+  .fab {
+    width: 60px !important; height: 60px !important;
+    font-size: 28px !important;
+    bottom: 88px !important; right: 18px !important;
+    box-shadow: 0 8px 24px rgba(79,70,229,.4);
+  }
+
+  /* ── Bottom nav — туузын товчлууруудыг тод харагдуулах ── */
+  .mobile-bottom-nav {
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom)) !important;
+    box-shadow: 0 -2px 12px rgba(0,0,0,.08);
+  }
+  .mobile-bottom-nav .nav-btn,
+  .mobile-bottom-nav button {
+    min-height: 56px;
+    font-size: 11px !important;
+    padding: 6px !important;
+  }
+  .mobile-bottom-nav .nav-icon,
+  .mobile-bottom-nav svg {
+    width: 24px !important; height: 24px !important;
+    margin-bottom: 2px;
+  }
+
+  /* ── Бүртгэлийн форм (login) — илүү тав тухтай ── */
+  .login-card { padding: 28px 22px !important; }
+  .login-card h1 { font-size: 20px !important; }
+  .login-card .login-sub { font-size: 14px !important; }
+  .login-label { font-size: 12px !important; }
+  #login-id-input, #login-pin-input {
+    padding: 14px 16px !important;
+    min-height: 50px;
+  }
+  .login-submit {
+    padding: 16px 18px !important;
+    font-size: 16px !important;
+    min-height: 52px;
+  }
+  #register-section input,
+  #register-section select {
+    padding: 13px 14px !important;
+    margin-bottom: 12px !important;
+    min-height: 48px;
+  }
+
+  /* ── Notification panel — мобайл дээр доороос гарах bottom sheet ── */
+  .notif-panel {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 85vh !important;
+    border-radius: 20px 20px 0 0 !important;
+    z-index: 200 !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+    box-shadow: 0 -8px 32px rgba(0,0,0,.18) !important;
+    border: none !important;
+    border-top: 1px solid var(--border) !important;
+  }
+  .notif-backdrop {
+    z-index: 195 !important;
+  }
+  .notif-item {
+    padding: 14px 18px !important;
+    min-height: 56px;
+  }
+  .notif-title { font-size: 14px !important; }
+  .notif-body { font-size: 13px !important; }
+  .notif-header {
+    padding: 14px 18px !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  /* Handle bar — дээд талд iOS-маяг */
+  .notif-panel::before {
+    content: '';
+    display: block;
+    width: 40px; height: 4px;
+    background: var(--border-strong);
+    border-radius: 999px;
+    margin: 8px auto 0;
+  }
+
+  /* ── Илүү тав тухтай spacing ── */
+  .tasks { padding: 12px 12px 160px !important; }
+
+  /* Дарах боломжтой бүх товч default-аар 44px */
+  button, [role="button"], .clickable {
+    min-height: 44px;
+  }
+  /* Зөвхөн жижиг хүйсний (icon-only) товчийг хасахгүй байх */
+  .icon-btn-sm, .checkbox-style { min-height: auto; }
+}
+
+/* ── Үндсэн (бүх дэлгэц) — focus тодорхой харагдах ── */
+*:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── Reduced motion-г хүндэтгэх ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NATIVE-FEEL ҮЕ (2026-05-24)
+   Вэбсайтаас илүү апп шиг харагдуулах нэмэлт давхарга.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Bounce scroll-ыг хааж native апп шиг тогтвортой ─ */
+html, body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Текст сонголтыг чимэглэлийн элементүүд дээр унтраах (long-press цэс саатуулна) */
+.header, .sidebar, .mobile-bottom-nav, .nav-item, .fab,
+.mobile-nav-item, .task-row .checkbox, .btn, button {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+.task-row .title, .task-row .desc, input, textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* ═══ INSTALL BANNER ─ "Гэрийн дэлгэц рүү нэмэх" зөвлөгөө ═══ */
+.install-banner {
+  display: none;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 250;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff;
+  padding: 14px 16px max(14px, env(safe-area-inset-top, 14px));
+  padding-top: max(14px, env(safe-area-inset-top, 14px));
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  animation: slideDown 300ms ease-out;
+}
+.install-banner.show { display: flex; align-items: center; gap: 12px; }
+.install-banner .ib-icon {
+  width: 44px; height: 44px; flex-shrink: 0;
+  background: rgba(255,255,255,.18); border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+}
+.install-banner .ib-text { flex: 1; min-width: 0; line-height: 1.35; }
+.install-banner .ib-title { font-weight: 600; font-size: 15px; }
+.install-banner .ib-sub { font-size: 12px; opacity: .9; margin-top: 2px; }
+.install-banner .ib-btn {
+  flex-shrink: 0; padding: 10px 16px; border-radius: 8px;
+  background: #fff; color: var(--primary); font-weight: 600; font-size: 14px;
+  border: none; cursor: pointer; min-height: 40px;
+}
+.install-banner .ib-close {
+  flex-shrink: 0; padding: 8px; margin: -8px -4px -8px 0;
+  background: none; border: none; color: #fff; cursor: pointer;
+  font-size: 22px; line-height: 1; opacity: .8;
+  min-width: 36px; min-height: 36px;
+}
+.install-banner .ib-close:hover { opacity: 1; }
+
+/* iOS install instructions modal */
+.ios-install-modal {
+  display: none; position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,.5);
+  align-items: flex-end; justify-content: center;
+}
+.ios-install-modal.show { display: flex; }
+.ios-install-modal .iim-sheet {
+  background: var(--panel); color: var(--text);
+  width: 100%; max-width: 440px;
+  border-radius: 20px 20px 0 0;
+  padding: 24px 22px max(24px, env(safe-area-inset-bottom));
+  animation: slideUp 280ms cubic-bezier(.32,.72,0,1);
+}
+.ios-install-modal .iim-handle {
+  width: 40px; height: 4px; background: var(--border-strong);
+  border-radius: 999px; margin: 0 auto 18px;
+}
+.ios-install-modal h3 { margin: 0 0 6px; font-size: 18px; font-weight: 700; }
+.ios-install-modal .iim-sub { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+.ios-install-modal ol { padding-left: 22px; margin: 0; line-height: 1.7; font-size: 15px; }
+.ios-install-modal ol li { margin-bottom: 8px; }
+.ios-install-modal .iim-icon { display: inline-block; vertical-align: middle; }
+.ios-install-modal .iim-close {
+  width: 100%; margin-top: 18px; padding: 14px;
+  background: var(--primary); color: #fff; border: none; border-radius: 12px;
+  font-size: 16px; font-weight: 600; cursor: pointer; min-height: 50px;
+}
+
+@keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
+/* ═══ STANDALONE MODE (PWA нь home screen-ээс нээгдсэн үе) ═══
+   Browser UI байхгүй тул илүү native шиг харагдуулна. */
+@media (display-mode: standalone) {
+  /* Дээд талд статус барын зайг бөглөх */
+  body {
+    padding-top: env(safe-area-inset-top);
+    background: var(--bg);
+  }
+  /* Header тус нь status bar-тай нэг өнгөтэй болоход */
+  .header {
+    background: var(--panel);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+  /* Install banner-ийг харуулахгүй (аль хэдийн суулгасан) */
+  .install-banner, .ios-install-modal { display: none !important; }
+}
+
+/* ═══ МОБАЙЛ NATIVE-FEEL ═══ */
+@media (max-width: 720px) {
+
+  /* ── Header — iOS/Android large title маяг ── */
+  .header {
+    position: sticky; top: 0; z-index: 40;
+    background: var(--panel) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    backdrop-filter: saturate(180%) blur(12px);
+  }
+
+  /* ── Task мөр — карт маяг, тус тусдаа, shadow-той ── */
+  .tasks {
+    background: var(--bg) !important;
+    padding: 12px 12px 160px !important;
+  }
+  .task-row {
+    background: var(--panel) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 14px !important;
+    margin-bottom: 10px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.03) !important;
+    transition: transform 120ms ease, box-shadow 120ms ease !important;
+  }
+  .task-row:active {
+    transform: scale(.98) !important;
+    box-shadow: 0 0 0 rgba(0,0,0,0) !important;
+  }
+  .table-head { display: none !important; }
+
+  /* ── Modal-ыг bottom sheet болгох ── */
+  .modal-bg.open { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  .modal {
+    top: auto !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: 92vh !important;
+    border-radius: 20px 20px 0 0 !important;
+    border: none !important;
+    transform: translateY(100%) !important;
+    padding: 8px 20px max(24px, env(safe-area-inset-bottom)) !important;
+    overflow-y: auto;
+  }
+  .modal-bg.open .modal { transform: translateY(0) !important; }
+  /* Sheet handle (доороос гарах modal-ийн дээд талын зураас) */
+  .modal::before {
+    content: ''; display: block;
+    width: 40px; height: 4px;
+    background: var(--border-strong); border-radius: 999px;
+    margin: 8px auto 16px;
+  }
+
+  /* ── Mobile bottom nav — active state-ийн доор pill ── */
+  .mobile-bottom-nav {
+    background: var(--panel) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-top: 1px solid var(--border) !important;
+  }
+  .mobile-nav-item {
+    position: relative;
+    transition: color 150ms ease, transform 120ms ease !important;
+  }
+  .mobile-nav-item:active { transform: scale(.92); }
+  .mobile-nav-item.active {
+    color: var(--primary) !important;
+  }
+  .mobile-nav-item.active::before {
+    content: ''; position: absolute; top: 4px; left: 50%;
+    transform: translateX(-50%); width: 32px; height: 3px;
+    background: var(--primary); border-radius: 0 0 4px 4px;
+  }
+
+  /* ── Press feedback бүх товч дээр ── */
+  button:active, .btn:active, .nav-item:active,
+  .chip:active, .pill:active, .add-project:active {
+    transform: scale(.96);
+    transition: transform 80ms ease;
+  }
+
+  /* ── FAB pulse / active ── */
+  .fab:active {
+    transform: scale(.92) !important;
+    box-shadow: 0 4px 12px rgba(79,70,229,.5) !important;
+  }
+
+  /* ── Хэвтээ scroll бүхэлд нь хаах ── */
+  body { overflow-x: hidden; }
+
+  /* ── Sidebar-ийн арын дэвсгэр тодорхой харагдах ── */
+  .sidebar-backdrop {
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE-FIRST NATIVE LAYOUT (v3 — 2026-05-24)
+   Утсан дээр desktop dashboard загвараас "mobile app" загвар руу.
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 720px) {
+
+  /* ── Бүх хуудсын дэвсгэр өнгийг native апп шиг ── */
+  body, .app {
+    background: var(--bg) !important;
+  }
+
+  /* ── HEADER — iOS large title маяг ── */
+  .header {
+    display: block !important;
+    padding: max(12px, env(safe-area-inset-top, 12px)) 18px 8px !important;
+    border-bottom: none !important;
+    background: var(--bg) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    position: relative !important;
+  }
+  .header > div:first-of-type {
+    flex: none !important;
+  }
+  /* Large title */
+  .header h1 {
+    font-size: 28px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em !important;
+    line-height: 1.15 !important;
+    margin: 4px 0 2px !important;
+  }
+  .header .sub {
+    font-size: 14px !important;
+    color: var(--muted) !important;
+    margin-top: 4px !important;
+  }
+
+  /* ── Header-ийн ачаалал арилгах: хамгийн чухал товч (3) л үлдээх ── */
+  .header-actions {
+    position: absolute !important;
+    top: max(10px, env(safe-area-inset-top, 10px)) !important;
+    right: 14px !important;
+    gap: 4px !important;
+  }
+  /* Жижиг icon-only хэлбэрт оруулах */
+  .header-actions .btn {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    background: var(--panel) !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06) !important;
+    font-size: 0 !important; /* text нуух */
+  }
+  /* Тэмдэглэгчээр (emoji) товчийг ил гаргах */
+  .header-actions .btn::before {
+    font-size: 18px;
+    line-height: 1;
+  }
+  #settings-btn::before { content: '⚙'; font-size: 16px; }
+  #export-btn::before { content: '📊'; }
+  #new-order-btn::before { content: '📋'; }
+  #new-finance-btn::before { content: '💸'; }
+  #new-task-btn::before { content: '＋'; font-size: 22px; font-weight: 300; }
+
+  /* Утасны header дээр зөвхөн notif + theme үлдээх, бусдыг FAB/menu рүү шилжүүлнэ */
+  #settings-btn,
+  #export-btn,
+  #new-order-btn,
+  #new-finance-btn,
+  #new-task-btn { display: none !important; }
+  /* Notif + theme — icon-only товч хэлбэр */
+  #theme-toggle, #notif-btn {
+    width: 40px !important; height: 40px !important;
+    min-width: 40px !important;
+    border-radius: 50% !important;
+    background: var(--panel) !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06) !important;
+    border: 1px solid var(--border) !important;
+    padding: 0 !important;
+  }
+
+  /* Mobile menu (hamburger) — header-ийн зүүн дээр ── */
+  .mobile-menu-btn {
+    position: absolute !important;
+    top: max(10px, env(safe-area-inset-top, 10px)) !important;
+    left: 14px !important;
+    width: 40px !important; height: 40px !important;
+    border-radius: 50% !important;
+    background: var(--panel) !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06) !important;
+    border: 1px solid var(--border) !important;
+    padding: 0 !important;
+    font-size: 18px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+  /* h1 нь header дотроос menu/notif товчид нөлөөлөхгүйн тулд padding-top нэмэх */
+  .header > div:nth-child(2) {
+    padding-top: 44px !important;
+  }
+
+  /* ── TOOLBAR — filter pills, илүүдэл нь хасах ── */
+  .toolbar {
+    padding: 8px 14px 10px !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    background: var(--bg) !important;
+  }
+  .toolbar::-webkit-scrollbar { display: none; }
+  .filter-pill {
+    flex-shrink: 0 !important;
+    padding: 8px 14px !important;
+    background: var(--panel) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 999px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--text) !important;
+    min-height: 36px !important;
+    cursor: pointer !important;
+  }
+  .filter-pill.active {
+    background: var(--primary) !important;
+    color: #fff !important;
+    border-color: var(--primary) !important;
+  }
+  /* Search-ийг toolbar-аас тусдаа доош зөөх */
+  .toolbar .search {
+    order: 99 !important;
+    flex: 1 1 100% !important;
+    margin-top: 0 !important;
+  }
+
+  /* ── Sidebar — brand-ыг утсан дээр нуух (зай хэмнэх) ── */
+  .sidebar .brand {
+    font-size: 18px !important;
+    padding: 18px 18px 12px !important;
+  }
+  .sidebar {
+    padding: 12px 12px max(20px, env(safe-area-inset-bottom)) !important;
+    border-radius: 0 20px 20px 0 !important;
+  }
+
+  /* ── Connection status (зүүн доод) — pill маяг, тод биш ── */
+  .conn-status {
+    bottom: calc(78px + env(safe-area-inset-bottom)) !important;
+    left: 12px !important;
+    font-size: 11px !important;
+    padding: 4px 10px !important;
+    opacity: .7;
+  }
+
+  /* ── Task мөр илүү тав тухтай ── */
+  .task-row {
+    padding: 14px 16px !important;
+    background: var(--panel) !important;
+  }
+
+  /* ── Empty state-ийг сайхан болгох (хэрэв байгаа бол) ── */
+  #task-list:empty::after {
+    content: '✨ Танд оноосон ажил алга байна.\A Шинэ ажил үүсгэхдээ доорх + товчийг дарна уу.';
+    white-space: pre-line;
+    display: block;
+    text-align: center;
+    color: var(--muted);
+    font-size: 15px;
+    padding: 60px 20px;
+    line-height: 1.6;
+  }
+
+  /* ── Filter pill-ийн дотроос emoji-г жижигрүүлэх (overflow саатуулах) ── */
+  .filter-pill { white-space: nowrap; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NOTION / LINEAR ХЭВ МАЯГ (v4 — 2026-05-24)
+   Минимал, цэвэрхэн, орчин үеийн task app загвар.
+   - Inter фонт
+   - Бараг үл харагдах хүрээ
+   - Грэйскейл + нэг ягаан accent
+   - Илүү зай, илүү амьсгал
+   - Emoji-г хэрэглэхгүй бол хэрэглэхгүй
+   ═══════════════════════════════════════════════════════════ */
+
+/* Inter фонтыг бүхэл аппын суурь фонт болгох */
+body, input, textarea, select, button {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif !important;
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Notion/Linear-ийн өнгөний систем — өөрчлөлт зөвхөн мобайлд */
+@media (max-width: 720px) {
+  :root {
+    --bg: #fbfbfa !important;              /* Notion light bg */
+    --panel: #ffffff !important;
+    --panel-hover: #f7f7f5 !important;
+    --border: rgba(15, 15, 15, 0.06) !important;  /* Бараг үл харагдах */
+    --border-strong: rgba(15, 15, 15, 0.10) !important;
+    --text: #37352f !important;            /* Notion-ы үсгийн өнгө */
+    --muted: #787774 !important;
+    --muted-soft: #9b9a97 !important;
+    --primary: #5e6ad2 !important;         /* Linear blue */
+    --primary-hover: #4b56b8 !important;
+    --primary-soft: rgba(94, 106, 210, 0.08) !important;
+    --shadow-sm: none !important;          /* Сүүдрийг бүгдийг арилгах */
+    --shadow-md: 0 1px 2px rgba(15, 15, 15, 0.04) !important;
+    --shadow-lg: 0 4px 12px rgba(15, 15, 15, 0.06) !important;
+    --shadow-xl: 0 8px 24px rgba(15, 15, 15, 0.08) !important;
+  }
+
+  /* Dark mode override */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191919 !important;            /* Notion dark */
+      --panel: #2f2f2f !important;
+      --panel-hover: #373737 !important;
+      --border: rgba(255, 255, 255, 0.06) !important;
+      --border-strong: rgba(255, 255, 255, 0.10) !important;
+      --text: #ffffff !important;
+      --muted: #9b9a97 !important;
+      --muted-soft: #6f6e69 !important;
+      --primary: #7d87de !important;
+    }
+  }
+
+  /* ── HEADER — туйлын цэвэрхэн ── */
+  .header {
+    background: var(--bg) !important;
+    padding: max(18px, env(safe-area-inset-top, 18px)) 20px 12px !important;
+  }
+  .header h1 {
+    font-size: 32px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.03em !important;
+    color: var(--text) !important;
+  }
+  .header .sub {
+    font-size: 14px !important;
+    color: var(--muted) !important;
+    font-weight: 400 !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  /* ── Header дээрх icon товчлуурууд — flat, no shadow ── */
+  .header-actions .btn,
+  #theme-toggle, #notif-btn,
+  .mobile-menu-btn {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--muted) !important;
+    width: 36px !important; height: 36px !important;
+    min-width: 36px !important;
+    border-radius: 8px !important;
+    transition: background 120ms ease !important;
+  }
+  .header-actions .btn:hover,
+  #theme-toggle:hover, #notif-btn:hover,
+  .mobile-menu-btn:hover {
+    background: var(--panel-hover) !important;
+  }
+  .header-actions .btn:active,
+  #theme-toggle:active, #notif-btn:active,
+  .mobile-menu-btn:active {
+    background: var(--border) !important;
+  }
+
+  /* ── TOOLBAR — pill маяг, минимал ── */
+  .toolbar {
+    padding: 6px 16px 16px !important;
+    background: var(--bg) !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  .filter-pill {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 6px 12px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: var(--muted) !important;
+    letter-spacing: -0.01em !important;
+    min-height: auto !important;
+  }
+  .filter-pill.active {
+    background: var(--panel-hover) !important;
+    color: var(--text) !important;
+    font-weight: 600 !important;
+  }
+  .search input {
+    background: var(--panel-hover) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 10px 14px !important;
+    font-size: 15px !important;
+  }
+  .search input:focus {
+    background: var(--panel) !important;
+    box-shadow: 0 0 0 2px var(--primary-soft) !important;
+    outline: none !important;
+  }
+
+  /* ── TASK МӨР — Notion маяг, хүрээгүй жагсаалт ── */
+  .tasks { background: var(--bg) !important; padding: 4px 8px 160px !important; }
+  .task-row {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    margin-bottom: 1px !important;
+    padding: 10px 12px !important;
+    transition: background 100ms ease !important;
+    min-height: 44px !important;
+  }
+  .task-row:hover { background: var(--panel-hover) !important; }
+  .task-row:active { background: var(--border) !important; transform: none !important; }
+  .task-row .title {
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    color: var(--text) !important;
+    letter-spacing: -0.01em !important;
+  }
+  .task-row .meta-row,
+  .task-row .meta {
+    font-size: 13px !important;
+    color: var(--muted) !important;
+    margin-top: 3px !important;
+  }
+  .task-row::after {
+    color: var(--muted-soft) !important;
+    font-size: 16px !important;
+    opacity: .5;
+  }
+  /* Task list-ийн хооронд жижиг тусгаарлагч */
+  #task-list { padding-top: 8px; }
+
+  /* ── SIDEBAR — цэвэрхэн, Linear маяг ── */
+  .sidebar {
+    background: var(--panel) !important;
+    border-right: 1px solid var(--border) !important;
+    box-shadow: var(--shadow-lg) !important;
+  }
+  .sidebar .brand {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    color: var(--text) !important;
+    padding: 16px 16px 20px !important;
+    letter-spacing: -0.02em !important;
+  }
+  .sidebar .brand .dot {
+    width: 24px !important; height: 24px !important;
+    border-radius: 6px !important;
+    background: var(--primary) !important;
+  }
+  .section-label {
+    font-size: 11px !important;
+    color: var(--muted) !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    padding: 14px 10px 6px !important;
+    margin: 0 !important;
+  }
+  .nav-item {
+    background: transparent !important;
+    border-radius: 6px !important;
+    padding: 8px 10px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: var(--text) !important;
+    letter-spacing: -0.01em !important;
+    min-height: 36px !important;
+    transition: background 100ms ease !important;
+  }
+  .nav-item:hover { background: var(--panel-hover) !important; }
+  .nav-item.active {
+    background: var(--panel-hover) !important;
+    color: var(--text) !important;
+    font-weight: 600 !important;
+  }
+  .count-badge {
+    background: var(--border) !important;
+    color: var(--muted) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 1px 7px !important;
+    border-radius: 999px !important;
+    min-width: 20px !important;
+  }
+  .add-project {
+    color: var(--muted) !important;
+    font-size: 13px !important;
+    padding: 8px 10px !important;
+  }
+  .user-chip {
+    background: transparent !important;
+    border: none !important;
+    border-top: 1px solid var(--border) !important;
+    border-radius: 0 !important;
+    margin: 16px -12px 0 !important;
+    padding: 12px 14px !important;
+  }
+  .user-chip .meta .name { font-size: 14px !important; font-weight: 600 !important; }
+  .user-chip .meta .role { font-size: 12px !important; color: var(--muted) !important; }
+
+  /* ── BOTTOM NAV — Linear/Notion mobile маяг, цэвэрхэн ── */
+  .mobile-bottom-nav {
+    background: var(--panel) !important;
+    border-top: 1px solid var(--border) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .mobile-nav-item {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: var(--muted) !important;
+    letter-spacing: -0.01em !important;
+    padding: 8px 4px !important;
+  }
+  .mobile-nav-item .icon {
+    font-size: 22px !important;
+    line-height: 1 !important;
+    filter: grayscale(.3);
+    transition: filter 120ms ease;
+  }
+  .mobile-nav-item.active {
+    color: var(--text) !important;
+    font-weight: 600 !important;
+  }
+  .mobile-nav-item.active .icon { filter: none; }
+  .mobile-nav-item.active::before {
+    display: none !important;  /* pill indicator-ийг хасах */
+  }
+
+  /* ── FAB — Linear-ийн "+" маяг, дугуй биш дөрвөлжин ── */
+  .fab {
+    width: 52px !important; height: 52px !important;
+    border-radius: 14px !important;
+    background: var(--primary) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 14px rgba(94, 106, 210, 0.35) !important;
+    font-size: 24px !important;
+    font-weight: 400 !important;
+    line-height: 1 !important;
+  }
+  .fab:active { transform: scale(.92) !important; }
+
+  /* ── MODAL / SHEET — Linear маяг ── */
+  .modal {
+    background: var(--panel) !important;
+    padding: 12px 22px max(28px, env(safe-area-inset-bottom)) !important;
+  }
+  .modal h2 {
+    font-size: 19px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    color: var(--text) !important;
+    margin: 8px 0 18px !important;
+  }
+  .modal label {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--muted) !important;
+    margin: 14px 0 4px !important;
+    letter-spacing: -0.01em !important;
+    text-transform: none !important;
+  }
+  .modal input,
+  .modal select,
+  .modal textarea {
+    background: var(--panel-hover) !important;
+    border: 1px solid transparent !important;
+    border-radius: 8px !important;
+    padding: 12px 14px !important;
+    font-size: 15px !important;
+    color: var(--text) !important;
+    transition: background 120ms ease, border-color 120ms ease !important;
+  }
+  .modal input:focus,
+  .modal select:focus,
+  .modal textarea:focus {
+    background: var(--panel) !important;
+    border-color: var(--primary) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px var(--primary-soft) !important;
+  }
+  .modal .btn,
+  .modal button {
+    background: var(--panel-hover) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    color: var(--text) !important;
+    font-weight: 500 !important;
+    padding: 12px 16px !important;
+  }
+  .modal .btn-primary {
+    background: var(--primary) !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+  }
+  .modal .btn-primary:active { background: var(--primary-hover) !important; }
+
+  /* ── LOGIN SCREEN — Linear "Sign in" маяг ── */
+  .login-screen {
+    background: var(--bg) !important;
+    color: var(--text) !important;
+    padding: 32px 24px !important;
+  }
+  .login-card {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 24px 4px !important;
+    max-width: 360px !important;
+  }
+  .login-logo {
+    background: var(--text) !important;
+    color: var(--bg) !important;
+    font-size: 28px !important;
+    border-radius: 12px !important;
+    width: 56px !important; height: 56px !important;
+    margin: 0 auto 24px !important;
+  }
+  .login-card h1 {
+    font-size: 24px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+  }
+  .login-card .login-sub { font-size: 14px !important; color: var(--muted) !important; }
+  .login-label {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--text) !important;
+    text-transform: none !important;
+    letter-spacing: -0.01em !important;
+  }
+  #login-id-input, #login-pin-input {
+    background: var(--panel-hover) !important;
+    border: 1px solid transparent !important;
+    border-radius: 10px !important;
+  }
+  #login-id-input:focus, #login-pin-input:focus {
+    background: var(--panel) !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px var(--primary-soft) !important;
+    outline: none !important;
+  }
+  .login-submit {
+    background: var(--text) !important;
+    color: var(--bg) !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+  }
+
+  /* ── INSTALL BANNER — Linear маяг flat ── */
+  .install-banner {
+    background: var(--text) !important;
+    color: var(--bg) !important;
+  }
+  .install-banner .ib-btn {
+    background: var(--bg) !important;
+    color: var(--text) !important;
+  }
+
+  /* ── Бүх gradient/emoji icon арилгах ── */
+  .brand .dot { background: var(--primary) !important; }
+}
+
+/* Connection status badge-ийг утсан дээр нуух — апп шиг харагдахад үл хэрэгтэй */
+@media (max-width: 720px) {
+  .conn-status { display: none !important; }
+}
+
+/* ═══ FAB SHEET — + товчны сонголтын меню ═══ */
+.fab-sheet-bg {
+  position: fixed; inset: 0; z-index: 150;
+  background: rgba(0, 0, 0, 0);
+  pointer-events: none;
+  display: flex; align-items: flex-end; justify-content: center;
+  transition: background 200ms ease;
+}
+.fab-sheet-bg.open {
+  background: rgba(0, 0, 0, .35);
+  pointer-events: auto;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.fab-sheet {
+  background: var(--panel);
+  width: 100%; max-width: 440px;
+  border-radius: 20px 20px 0 0;
+  padding: 8px 14px max(24px, env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 280ms cubic-bezier(.32, .72, 0, 1);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, .15);
+}
+.fab-sheet-bg.open .fab-sheet { transform: translateY(0); }
+.fab-sheet-handle {
+  width: 40px; height: 4px; background: var(--border-strong);
+  border-radius: 999px; margin: 8px auto 14px;
+}
+.fab-sheet-title {
+  font-size: 13px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .04em;
+  padding: 0 8px 10px;
+}
+.fab-sheet-item {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; padding: 14px 10px;
+  background: transparent; border: none; cursor: pointer;
+  border-radius: 12px; text-align: left;
+  transition: background 120ms ease, transform 80ms ease;
+  min-height: 64px;
+}
+.fab-sheet-item:hover { background: var(--panel-hover); }
+.fab-sheet-item:active { background: var(--border); transform: scale(.98); }
+.fsi-icon {
+  flex-shrink: 0;
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.fsi-text { flex: 1; min-width: 0; }
+.fsi-name {
+  font-size: 16px; font-weight: 600; color: var(--text);
+  letter-spacing: -0.01em;
+}
+.fsi-sub {
+  font-size: 13px; color: var(--muted); margin-top: 2px;
+  letter-spacing: -0.01em;
+}
+.fab-sheet-cancel {
+  width: 100%; margin-top: 8px; padding: 14px;
+  background: var(--panel-hover); border: none; border-radius: 12px;
+  font-size: 16px; font-weight: 600; color: var(--text);
+  cursor: pointer; min-height: 52px;
+}
+.fab-sheet-cancel:active { background: var(--border); }
+
+/* ═══════════════════════════════════════════════════════════
+   DESKTOP REFINEMENT (v5 — 2026-05-24)
+   Утсан дээрх Notion/Linear загварыг desktop руу шилжүүлсэн.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Notion/Linear өнгөний систем — БҮХ ДЭЛГЭЦЭД (зөвхөн мобайл биш) */
+:root {
+  --bg: #fbfbfa !important;
+  --panel: #ffffff !important;
+  --panel-hover: #f7f7f5 !important;
+  --border: rgba(15, 15, 15, 0.08) !important;
+  --border-strong: rgba(15, 15, 15, 0.12) !important;
+  --text: #37352f !important;
+  --muted: #787774 !important;
+  --muted-soft: #9b9a97 !important;
+  --primary: #5e6ad2 !important;
+  --primary-hover: #4b56b8 !important;
+  --primary-soft: rgba(94, 106, 210, 0.10) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191919 !important;
+    --panel: #2f2f2f !important;
+    --panel-hover: #373737 !important;
+    --border: rgba(255, 255, 255, 0.08) !important;
+    --border-strong: rgba(255, 255, 255, 0.12) !important;
+    --text: #ffffff !important;
+    --muted: #9b9a97 !important;
+    --muted-soft: #6f6e69 !important;
+    --primary: #7d87de !important;
+    --primary-soft: rgba(125, 135, 222, 0.15) !important;
+  }
+}
+
+/* ── HEADER (desktop) — flat, цэвэрхэн ── */
+.header {
+  background: var(--bg) !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 18px 28px 14px !important;
+}
+.header h1 {
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--text) !important;
+}
+.header .sub { color: var(--muted) !important; }
+
+/* Header дээрх товчлуурууд — Linear маяг flat */
+.header-actions { gap: 4px !important; }
+.header-actions .btn {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  color: var(--text) !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  padding: 7px 12px !important;
+  border-radius: 6px !important;
+  letter-spacing: -0.01em !important;
+  box-shadow: none !important;
+  transition: background 100ms ease !important;
+}
+.header-actions .btn:hover {
+  background: var(--panel-hover) !important;
+  border-color: var(--border) !important;
+}
+.header-actions .btn.btn-primary {
+  background: var(--text) !important;
+  color: var(--bg) !important;
+  border-color: var(--text) !important;
+  font-weight: 600 !important;
+}
+.header-actions .btn.btn-primary:hover {
+  background: var(--muted) !important;
+  border-color: var(--muted) !important;
+}
+#theme-toggle, #notif-btn {
+  background: transparent !important;
+  border: none !important;
+  color: var(--muted) !important;
+  width: 36px !important; height: 36px !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+#theme-toggle:hover, #notif-btn:hover {
+  background: var(--panel-hover) !important;
+  color: var(--text) !important;
+}
+
+/* ── FILTER PILLS (desktop) — text button маяг ── */
+.toolbar {
+  background: var(--bg) !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 12px 28px !important;
+}
+.filter-pill {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--muted) !important;
+  letter-spacing: -0.01em !important;
+  cursor: pointer;
+  transition: background 100ms ease, color 100ms ease;
+}
+.filter-pill:hover {
+  background: var(--panel-hover) !important;
+  color: var(--text) !important;
+}
+.filter-pill.active {
+  background: var(--panel-hover) !important;
+  color: var(--text) !important;
+  font-weight: 600 !important;
+}
+.search input {
+  background: var(--panel-hover) !important;
+  border: 1px solid transparent !important;
+  border-radius: 6px !important;
+  padding: 7px 12px !important;
+  font-size: 13px !important;
+  letter-spacing: -0.01em !important;
+}
+.search input:focus {
+  background: var(--panel) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px var(--primary-soft) !important;
+  outline: none !important;
+}
+
+/* ── TABLE HEAD (desktop) — Linear маяг ── */
+.table-head {
+  background: transparent !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 10px 16px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--muted) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+}
+
+/* ── TASK ROWS (desktop) — Linear маяг, шугам бүрэн арилгасан ── */
+.tasks { background: var(--bg) !important; }
+.task-row {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 10px 16px !important;
+  margin: 0 !important;
+  transition: background 80ms ease !important;
+}
+.task-row:hover {
+  background: var(--panel-hover) !important;
+  transform: none !important;
+}
+.task-row .title {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: var(--text) !important;
+  letter-spacing: -0.01em !important;
+}
+.task-row .meta-row,
+.task-row .meta {
+  font-size: 12px !important;
+  color: var(--muted) !important;
+}
+
+/* ── SIDEBAR (desktop) — Linear маяг ── */
+.sidebar {
+  background: var(--bg) !important;
+  border-right: 1px solid var(--border) !important;
+  padding: 14px 10px !important;
+}
+.sidebar .brand {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: var(--text) !important;
+  padding: 8px 10px 20px !important;
+  letter-spacing: -0.02em !important;
+  display: flex; align-items: center; gap: 8px;
+}
+.sidebar .brand .dot {
+  width: 22px !important; height: 22px !important;
+  border-radius: 6px !important;
+  background: var(--primary) !important;
+}
+.section-label {
+  font-size: 11px !important;
+  color: var(--muted) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  padding: 14px 10px 6px !important;
+  margin: 0 !important;
+}
+.nav-item {
+  background: transparent !important;
+  border-radius: 5px !important;
+  padding: 5px 10px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--text) !important;
+  letter-spacing: -0.01em !important;
+  min-height: 30px !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  transition: background 80ms ease !important;
+  margin-bottom: 1px;
+}
+/* HTML-д inline style="display:none"-той nav-item-ийг хүндэтгэх.
+   `display: flex !important` нэмбэл inline display:none эвдэрнэ. */
+.nav-item:not([style*="display:none"]):not([style*="display: none"]) {
+  display: flex !important;
+}
+.nav-item:hover { background: var(--panel-hover) !important; }
+.nav-item.active {
+  background: var(--panel-hover) !important;
+  color: var(--text) !important;
+  font-weight: 600 !important;
+}
+.count-badge {
+  background: var(--border) !important;
+  color: var(--muted) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 1px 6px !important;
+  border-radius: 999px !important;
+  min-width: 20px !important;
+}
+.add-project {
+  color: var(--muted) !important;
+  font-size: 13px !important;
+  padding: 6px 10px !important;
+  border-radius: 5px !important;
+  transition: background 80ms ease;
+}
+.add-project:hover { background: var(--panel-hover) !important; color: var(--text) !important; }
+.user-chip {
+  background: var(--panel-hover) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  padding: 8px !important;
+}
+.user-chip .avatar {
+  width: 28px !important; height: 28px !important;
+  font-size: 11px !important;
+  border-radius: 6px !important;
+  background: var(--primary) !important;
+}
+.user-chip .meta .name { font-size: 13px !important; font-weight: 600 !important; }
+.user-chip .meta .role { font-size: 11px !important; color: var(--muted) !important; }
+
+/* ── NOTIFICATION PANEL (desktop) — давхар салгах ── */
+@media (min-width: 721px) {
+  .notif-panel {
+    width: 380px !important;
+    right: 28px !important;
+    top: 70px !important;
+    max-height: 75vh !important;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 32px rgba(15, 15, 15, .12), 0 2px 8px rgba(15, 15, 15, .06) !important;
+    border: 1px solid var(--border) !important;
+  }
+  .notif-panel::before { display: none !important; }
+  .notif-header {
+    padding: 14px 16px !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  .notif-header > span:first-child {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em;
+  }
+  .notif-mark-read {
+    background: transparent !important;
+    border: none !important;
+    color: var(--primary) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer;
+    padding: 4px 8px !important;
+    border-radius: 4px;
+  }
+  .notif-mark-read:hover { background: var(--primary-soft) !important; }
+  .notif-item {
+    padding: 12px 16px !important;
+    border-bottom: 1px solid var(--border) !important;
+    border-radius: 0 !important;
+  }
+  .notif-item:hover { background: var(--panel-hover) !important; }
+}
+
+/* ── MODAL (desktop) — Linear маяг ── */
+@media (min-width: 721px) {
+  .modal {
+    padding: 24px 28px !important;
+    border-radius: 0 !important;
+  }
+  .modal h2 {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+  }
+  .modal label {
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: var(--text) !important;
+    text-transform: none !important;
+  }
+  .modal input, .modal select, .modal textarea {
+    background: var(--panel-hover) !important;
+    border: 1px solid transparent !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+  }
+  .modal input:focus, .modal select:focus, .modal textarea:focus {
+    background: var(--panel) !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px var(--primary-soft) !important;
+    outline: none !important;
+  }
+  .modal .btn, .modal button {
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+  }
+  .modal .btn-primary {
+    background: var(--text) !important;
+    color: var(--bg) !important;
+    font-weight: 600 !important;
+  }
+  .modal .btn-primary:hover {
+    background: var(--muted) !important;
+  }
+}
+
+/* ── conn-status-ийг бүх дэлгэцэнд нуух ── */
+.conn-status { display: none !important; }
+
+/* ── Default body font + smoothing ── */
+body {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+/* Notification z-index — table head + sticky header дээгүүр гарах */
+@media (min-width: 721px) {
+  .notif-panel { z-index: 200 !important; }
+  .notif-backdrop { z-index: 195 !important; }
+  .table-head { z-index: 1 !important; position: relative; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DESKTOP NARROW / TABLET LAYOUT (721px — 1000px)
+   PWA window-ыг жижиг болгох үед content cramped болж байсныг засах.
+   - Sidebar нарийсна (260px → 200px)
+   - Header дотор товч компакт болно
+   - Filter pills wrap биш scroll
+   - Modal full-width болно
+   ═══════════════════════════════════════════════════════════ */
+@media (min-width: 721px) and (max-width: 1000px) {
+  .app {
+    grid-template-columns: 200px 1fr !important;
+  }
+  .sidebar {
+    padding: 12px 8px !important;
+  }
+  .sidebar .brand {
+    font-size: 13px !important;
+    padding: 6px 8px 16px !important;
+  }
+  .nav-item {
+    font-size: 12px !important;
+    padding: 4px 8px !important;
+  }
+  .nav-item span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .section-label {
+    font-size: 10px !important;
+    padding: 12px 8px 4px !important;
+  }
+  .user-chip {
+    padding: 6px !important;
+  }
+  .user-chip .meta .name { font-size: 12px !important; }
+  .user-chip .meta .role { font-size: 10px !important; }
+
+  .header {
+    padding: 14px 18px 10px !important;
+  }
+  .header h1 { font-size: 18px !important; }
+  .header .sub { font-size: 12px !important; }
+  .header-actions { gap: 2px !important; }
+  .header-actions .btn {
+    padding: 6px 8px !important;
+    font-size: 12px !important;
+  }
+  /* Header дотор зөвхөн чухал товчуудыг үлдээх — Тайлан, Захиалга-г нуух */
+  #export-btn,
+  #new-order-btn {
+    display: none !important;
+  }
+
+  .toolbar {
+    padding: 10px 18px !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+  }
+  .toolbar::-webkit-scrollbar { display: none; }
+  .filter-pill {
+    flex-shrink: 0 !important;
+    font-size: 12px !important;
+    padding: 5px 10px !important;
+  }
+  .search {
+    flex-shrink: 0 !important;
+    min-width: 160px;
+  }
+
+  /* Notification panel narrow window-д бүх өргөн */
+  .notif-panel {
+    width: 340px !important;
+    right: 18px !important;
+  }
+
+  /* Modal — narrow window-д бараг бүх өргөн */
+  .modal {
+    width: 100% !important;
+    max-width: 480px !important;
+  }
+
+  /* Table head-ийн багана нарийсгах */
+  .table-head {
+    padding: 8px 14px !important;
+    font-size: 10px !important;
+  }
+  .task-row {
+    padding: 8px 14px !important;
+  }
+}
+
+/* ═══ Илүү жижиг (хэрэв 900px доороос ороод mobile-д ороогүй бол) ═══ */
+@media (min-width: 721px) and (max-width: 860px) {
+  .header-actions #new-finance-btn,
+  .header-actions #settings-btn {
+    /* Эдгээрийг бас нуух — зөвхөн +Шинэ үлдээх */
+    display: none !important;
+  }
+}
+
+/* ═══ Notification panel — desktop засвар ═══
+   - Backdrop dim арилгах (header нь саармаг харагдаж байсныг засна)
+   - Panel-д бат бөх background, table-аас текст харагдахгүй
+   - Click-outside-to-close зориулсан transparent backdrop үлдээх */
+@media (min-width: 721px) {
+  .notif-backdrop {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .notif-panel {
+    background: var(--panel) !important;
+    /* Background-ыг explicit-ээр solid болгох */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  /* Notification item тус тусдаа solid background */
+  .notif-item {
+    background: var(--panel) !important;
+  }
+  .notif-list {
+    background: var(--panel) !important;
+  }
+}
+
+/* ═══ Notification panel — content bleed-through-ийн эцсийн засвар ═══
+   Panel-ийн content area-аар доорх table-head текст харагдаж байсныг засна.
+   - Isolation: isolate шинэ stacking context үүсгэнэ
+   - z-index 9999 — бүх content-аас дээгүүр
+   - Бүх дотоод элементэд solid background  */
+.notif-panel,
+.notif-panel.show,
+.notif-panel:not([hidden]) {
+  isolation: isolate !important;
+  z-index: 9999 !important;
+  background: #ffffff !important;
+}
+@media (prefers-color-scheme: dark) {
+  .notif-panel,
+  .notif-panel.show,
+  .notif-panel:not([hidden]) {
+    background: #2f2f2f !important;
+  }
+}
+.notif-panel * {
+  background-color: inherit;
+}
+/* Solid тус тусын дотоод элементүүд */
+.notif-header,
+.notif-list,
+.notif-item,
+.notif-empty,
+.notif-footer {
+  background: #ffffff !important;
+  position: relative;
+  z-index: 1;
+}
+@media (prefers-color-scheme: dark) {
+  .notif-header,
+  .notif-list,
+  .notif-item,
+  .notif-empty,
+  .notif-footer {
+    background: #2f2f2f !important;
+  }
+}
+/* Backdrop-ийг доогуур харин click-able үлдээх */
+.notif-backdrop {
+  z-index: 9998 !important;
+}
+
+/* ═══ Lucide-маяг SVG icons — emoji-г орлуулсан ═══ */
+.lcd-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -4px;
+  flex-shrink: 0;
+}
+.nav-item .lcd-icon { margin-right: 8px; opacity: 0.7; }
+.nav-item.active .lcd-icon { opacity: 1; color: var(--primary); }
+.filter-pill .lcd-icon { width: 14px; height: 14px; margin-right: 4px; vertical-align: -2px; }
+.header h1 .lcd-icon { width: 22px; height: 22px; margin-right: 8px; vertical-align: -4px; color: var(--muted); }
+.header-actions .btn .lcd-icon { width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; }
+.brand .lcd-icon { width: 16px; height: 16px; margin-right: 4px; vertical-align: -3px; color: var(--muted); }
+.search .lcd-icon { width: 14px; height: 14px; }
+.empty-state .lcd-icon { width: 48px; height: 48px; opacity: 0.3; }
+
+/* Mobile bottom nav SVG icons — emoji-аас орлуулсан */
+.mobile-nav-item .lcd-icon.nav-svg {
+  width: 22px !important;
+  height: 22px !important;
+  margin-bottom: 4px !important;
+  vertical-align: middle;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ═══ Notification panel — мобайл дээр центрт жижиг modal ═══
+   Доороос гарах bottom sheet-ийн оронд дэлгэцийн төвд жижиг карт.
+   Цонх дотор анхаарал төвлөрөх, илүү "native dialog" мэдрэмж. */
+@media (max-width: 720px) {
+  .notif-panel,
+  .notif-panel.show,
+  .notif-panel:not([hidden]) {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 380px !important;
+    max-height: 70vh !important;
+    border-radius: 16px !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, .18), 0 8px 16px rgba(0, 0, 0, .08) !important;
+    animation: notif-pop-in .22s cubic-bezier(.34, 1.2, .64, 1) !important;
+    padding-bottom: 0 !important;
+  }
+  /* Bottom-sheet handle bar-ыг арилгах (центрт modal-д хэрэггүй) */
+  .notif-panel::before {
+    display: none !important;
+  }
+  /* Backdrop — modal маягийн харанхуй blur */
+  .notif-backdrop {
+    background: rgba(0, 0, 0, .35) !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+    z-index: 9998 !important;
+  }
+  /* Header — модал шиг тодорхой close товчтой */
+  .notif-header {
+    border-bottom: 1px solid var(--border) !important;
+    padding: 14px 16px !important;
+  }
+  /* List scrollable дотроо */
+  .notif-list {
+    max-height: calc(70vh - 60px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@keyframes notif-pop-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* ═══ Mobile header + task row duplicates засвар ═══ */
+@media (max-width: 720px) {
+  /* Header h1 — bell + theme товчтой хэт ойртохгүй байх ёстой.
+     Зүүн талд hamburger 40px, баруун талд 2 товч ~80px зай хэрэгтэй. */
+  .header {
+    padding-left: 60px !important;
+    padding-right: 96px !important;
+  }
+  .header h1 {
+    font-size: 26px !important;
+    line-height: 1.15 !important;
+    word-break: break-word;
+    hyphens: auto;
+  }
+  /* Bell/theme товчны байрлал — header-ын дотор тогтоох */
+  .header-actions {
+    right: 12px !important;
+  }
+  .mobile-menu-btn {
+    left: 12px !important;
+  }
+
+  /* Task row — мобайлд .col-assignee хэвээр харагдсан асуудлыг 100% хаах */
+  .col-assignee,
+  .col-due,
+  .col-priority {
+    display: none !important;
+  }
+  /* Status-dot нь meta-ийн эхэнд status харуулдаг — мобайлд илүү давхардсан мэт.
+     Зөвхөн pending/declined үед л харуулна, бусдад нуух. */
+  .task-row .status-dot {
+    display: none !important;
+  }
+  .task-row.has-decision .status-dot,
+  .task-row[data-decision="pending"] .status-dot {
+    display: inline-block !important;
+  }
+}
+
+/* ═══ Modal close X товч — бүх modal-ын баруун дээд буланд ═══ */
+.modal-close-x {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--panel-hover);
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, color 120ms ease;
+  z-index: 10;
+  -webkit-tap-highlight-color: transparent;
+}
+.modal-close-x:hover {
+  background: var(--border);
+  color: var(--text);
+}
+.modal-close-x:active {
+  transform: scale(.92);
+}
+/* Мобайлд илүү том, илүү тод */
+@media (max-width: 720px) {
+  .modal-close-x {
+    width: 40px;
+    height: 40px;
+    top: max(14px, env(safe-area-inset-top, 14px));
+    right: 14px;
+  }
+  /* Modal h2 баруун талд close товчинд зай гаргах */
+  .modal h2 {
+    padding-right: 50px !important;
+  }
+}
+/* .modal анхдагчаар position: fixed — close X-ийн absolute байрлал-д хангалттай. */
+
+/* ═══════════════════════════════════════════════════════════
+   REBRAND — амьд өнгө, тод hierarchy (v7 — 2026-05-24)
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Semantic өнгөнүүд ── */
+:root {
+  --accent-blue:   #5e6ad2;
+  --accent-purple: #8b5cf6;
+  --accent-green:  #10b981;
+  --accent-amber:  #f59e0b;
+  --accent-red:    #ef4444;
+  --accent-rose:   #f43f5e;
+  --accent-cyan:   #06b6d4;
+
+  --finance-bg: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  --order-bg:   linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  --task-bg:    linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  --danger-soft: #fef2f2;
+  --warn-soft:   #fffbeb;
+  --ok-soft:     #ecfdf5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --finance-bg: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.04));
+    --order-bg:   linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04));
+    --task-bg:    linear-gradient(135deg, rgba(94,106,210,0.12), rgba(94,106,210,0.04));
+    --danger-soft: rgba(239,68,68,0.10);
+    --warn-soft:   rgba(245,158,11,0.10);
+    --ok-soft:     rgba(16,185,129,0.10);
+  }
+}
+
+/* ── X close товч — solid улаан, цэвэрхэн, sticky ──
+   Gradient/border/glow байхгүй. Зөвхөн solid улаан bg + цагаан icon.
+   `.modal button { background ... !important }`-ийг давах ёстой тул
+   `.modal .modal-close-x` (specificity 0,2,0) ашигласан. */
+.modal .modal-close-x,
+.modal-bg .modal-close-x {
+  background: var(--accent-red) !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  position: sticky !important;
+  position: -webkit-sticky !important;
+  top: 12px !important;
+  margin-left: auto !important;
+  margin-bottom: -32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 100 !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  max-width: 32px !important;
+  max-height: 32px !important;
+  aspect-ratio: 1 / 1 !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  border-radius: 50% !important;
+  border: none !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  transition: background-color 120ms ease, transform 100ms ease !important;
+}
+.modal .modal-close-x:hover,
+.modal-bg .modal-close-x:hover {
+  background: #dc2626 !important;
+  background-image: none !important;
+}
+.modal .modal-close-x:active,
+.modal-bg .modal-close-x:active {
+  transform: scale(.92) !important;
+  background: #b91c1c !important;
+}
+.modal .modal-close-x svg {
+  width: 16px !important;
+  height: 16px !important;
+  stroke: #ffffff !important;
+  stroke-width: 2.5 !important;
+}
+@media (max-width: 720px) {
+  .modal .modal-close-x,
+  .modal-bg .modal-close-x {
+    top: max(14px, env(safe-area-inset-top, 14px)) !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    max-width: 36px !important;
+    max-height: 36px !important;
+  }
+  .modal .modal-close-x svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+}
+
+/* ── Primary товч — илүү тод, gradient ── */
+.btn-primary,
+.modal .btn-primary,
+.login-submit {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(94, 106, 210, 0.25), 0 2px 4px rgba(94, 106, 210, 0.15) !important;
+  font-weight: 600 !important;
+}
+.btn-primary:hover,
+.modal .btn-primary:hover,
+.login-submit:hover {
+  background: linear-gradient(135deg, #4b56b8 0%, #7c3aed 100%) !important;
+  box-shadow: 0 6px 20px rgba(94, 106, 210, 0.35) !important;
+  transform: translateY(-1px);
+}
+.btn-primary:active,
+.modal .btn-primary:active,
+.login-submit:active {
+  transform: translateY(0) scale(.98);
+}
+
+/* + Шинэ товч (header) — арилгасан */
+.header-actions .btn-primary {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(94, 106, 210, 0.25) !important;
+}
+
+/* ── Action товчнууд — Зөвшөөрөх / Татгалзах / Хойшлуулах ──
+   Бодит ID-ууд: #f-approve, #f-reject, #f-defer (Гүйцэтгэх, Татгалзах гэх мэт)
+   `.modal button !important`-ийг давахын тулд `.modal #id` ашиглана.
+   Мобайл болон desktop хоёулангийнх. */
+.modal #f-approve,
+.modal-bg #f-approve,
+button#f-approve,
+.modal #f-execute,
+button#f-execute,
+.btn-approve {
+  background: var(--accent-green) !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border: none !important;
+}
+.modal #f-approve:hover,
+button#f-approve:hover,
+.btn-approve:hover {
+  background: #059669 !important;
+}
+
+.modal #f-reject,
+.modal-bg #f-reject,
+button#f-reject,
+.modal .btn-danger,
+button.btn-danger,
+.btn-decline {
+  background: var(--accent-red) !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border: none !important;
+}
+.modal #f-reject:hover,
+button#f-reject:hover,
+.modal .btn-danger:hover,
+.btn-decline:hover {
+  background: #dc2626 !important;
+}
+
+.modal #f-defer,
+.modal-bg #f-defer,
+button#f-defer,
+.btn-defer {
+  background: var(--accent-amber) !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border: none !important;
+}
+.modal #f-defer:hover,
+button#f-defer:hover,
+.btn-defer:hover {
+  background: #d97706 !important;
+}
+
+/* btn-action — task өсөлтийн товч (Эхлүүлэх / Дуусгах / Татгалзах) */
+.btn-action {
+  font-weight: 600 !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+.btn-action[data-action="start"],
+.btn-action[data-action="in_progress"] {
+  background: var(--accent-blue) !important;
+}
+.btn-action[data-action="start"]:hover {
+  background: #4b56b8 !important;
+}
+.btn-action[data-action="done"],
+.btn-action[data-action="complete"] {
+  background: var(--accent-green) !important;
+}
+.btn-action[data-action="done"]:hover {
+  background: #059669 !important;
+}
+.btn-action[data-action="decline"],
+.btn-action[data-action="reject"] {
+  background: var(--accent-red) !important;
+}
+.btn-action[data-action="decline"]:hover {
+  background: #dc2626 !important;
+}
+.btn-action[data-action="defer"],
+.btn-action[data-action="postpone"] {
+  background: var(--accent-amber) !important;
+}
+.btn-action[data-action="defer"]:hover {
+  background: #d97706 !important;
+}
+
+/* ── Filter pills — идэвхтэй pill-ийг илүү тод ── */
+.filter-pill.active {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(94, 106, 210, 0.30) !important;
+}
+
+/* ── FAB — gradient илүү амьд ── */
+.fab {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%) !important;
+  box-shadow: 0 8px 24px rgba(94, 106, 210, 0.40), 0 4px 8px rgba(139, 92, 246, 0.25) !important;
+}
+.fab:active {
+  box-shadow: 0 4px 16px rgba(94, 106, 210, 0.50) !important;
+}
+
+/* ── Empty state icon — өнгөтэй, амьд ── */
+.empty .lcd-icon {
+  opacity: 1 !important;
+  color: var(--accent-blue) !important;
+  background: var(--task-bg);
+  border-radius: 50%;
+  padding: 16px;
+  box-sizing: content-box;
+}
+
+/* ── Status / decision badges — амьд өнгөтэй ── */
+.finance-pill {
+  font-weight: 600 !important;
+  padding: 4px 10px !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.finance-pill.pending {
+  background: var(--warn-soft) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(245, 158, 11, 0.20);
+}
+.finance-pill.approved {
+  background: var(--ok-soft) !important;
+  color: #047857 !important;
+  border: 1px solid rgba(16, 185, 129, 0.20);
+}
+.finance-pill.rejected {
+  background: var(--danger-soft) !important;
+  color: #b91c1c !important;
+  border: 1px solid rgba(239, 68, 68, 0.20);
+}
+.finance-pill.deferred {
+  background: rgba(99, 102, 241, 0.10) !important;
+  color: #4338ca !important;
+  border: 1px solid rgba(99, 102, 241, 0.20);
+}
+.finance-pill.executed {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+}
+
+/* ── Bell badge (notification count) — илүү тод ── */
+.notif-badge,
+.bell-btn .notif-badge {
+  background: linear-gradient(135deg, var(--accent-red) 0%, var(--accent-rose) 100%) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35) !important;
+  border: 2px solid var(--bg) !important;
+}
+
+/* ── Count badge (nav item тоо) — нэрхээ илүү ── */
+.count-badge {
+  font-weight: 600 !important;
+}
+.nav-item.active .count-badge {
+  background: var(--accent-blue) !important;
+  color: #ffffff !important;
+}
+
+/* ── Login screen — цэвэрхэн, нэг өнгөтэй (gradient бус) ── */
+.login-screen {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+.login-card {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 4px 24px rgba(15, 15, 15, 0.04) !important;
+}
+.login-logo {
+  background: var(--accent-blue) !important;
+  background-image: none !important;
+  box-shadow: 0 4px 12px rgba(94, 106, 210, 0.20) !important;
+}
+
+/* ── User avatar — gradient ── */
+.user-chip .avatar,
+.task-row .avatar,
+.assignee-chip .avatar {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+
+/* ── Header h1-ийн icon — primary өнгө ── */
+.header h1 .lcd-icon {
+  color: var(--accent-blue) !important;
+  opacity: 1 !important;
+}
+
+/* ── Task row hover — илүү тод feedback ── */
+.task-row:hover {
+  background: var(--task-bg) !important;
+}
+
+/* ── Priority dot — илүү тод ── */
+.task-row .priority-dot,
+.meta-mobile-only[style*="●"] {
+  font-size: 14px !important;
+}
+
+/* ── Search input focus — gradient ring ── */
+.search input:focus {
+  box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.20) !important;
+  border-color: var(--accent-blue) !important;
+}
+
+/* ── Mobile nav active — color tint ── */
+@media (max-width: 720px) {
+  .mobile-nav-item.active {
+    color: var(--accent-blue) !important;
+  }
+  .mobile-nav-item.active .lcd-icon {
+    color: var(--accent-blue) !important;
+  }
+}
+
+/* ── Sidebar active nav item — primary tint ── */
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(94, 106, 210, 0.08), rgba(139, 92, 246, 0.04)) !important;
+  color: var(--accent-blue) !important;
+  font-weight: 600 !important;
+}
+.nav-item.active .lcd-icon {
+  color: var(--accent-blue) !important;
+  opacity: 1 !important;
+}
+
+/* ── Toast — амьд өнгөтэй ── */
+.toast {
+  font-weight: 500 !important;
+}
+.toast.success { border-left: 4px solid var(--accent-green); }
+.toast.error   { border-left: 4px solid var(--accent-red); }
+.toast.warn    { border-left: 4px solid var(--accent-amber); }
+.toast.info    { border-left: 4px solid var(--accent-blue); }
+
+/* ── Status dot — finance pending бол улбар ── */
+.task-row .status-dot {
+  background: var(--accent-amber) !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+.task-row .status-dot.done {
+  background: var(--accent-green) !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+.task-row .status-dot.declined {
+  background: var(--accent-red) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ПРОФЕССИОНАЛ UI СТАНДАРТ (v8 — 2026-05-24)
+   Бүх товч, badge, текст-ийн нэгдсэн систем.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Typography стандарт ── */
+body {
+  font-size: 15px;
+  line-height: 1.5;
+}
+.modal label,
+.modal-bg label {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--text) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  margin-bottom: 6px !important;
+  display: block;
+}
+.modal h2,
+.modal-bg h2 {
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--text) !important;
+  margin: 4px 0 16px !important;
+  line-height: 1.3;
+}
+@media (max-width: 720px) {
+  .modal h2,
+  .modal-bg h2 {
+    font-size: 18px !important;
+  }
+}
+
+/* ── Status badge — нэгдсэн стиль ── */
+.status-badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.status-badge.status-open {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+}
+.status-badge.status-in_progress {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+}
+.status-badge.status-done {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+.status-badge.status-declined {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+/* ── btn-action стандарт хэмжээ — inline style арилгасан ──
+   Бүх color rule аль хэдийн дээр тодорхойлсон (#3b82f6, #10b981 г.м.) */
+.btn-action {
+  padding: 9px 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  border: none !important;
+  color: #ffffff !important;
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  transition: background 120ms ease, transform 80ms ease, box-shadow 120ms ease;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.btn-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+.btn-action:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: none;
+}
+
+/* Бүх action color override (specificity .btn-action) */
+.btn-action[data-action="start"] { background: var(--accent-blue) !important; }
+.btn-action[data-action="start"]:hover { background: #4b56b8 !important; }
+.btn-action[data-action="done"],
+.btn-action[data-action="complete"] { background: var(--accent-green) !important; }
+.btn-action[data-action="done"]:hover { background: #059669 !important; }
+.btn-action[data-action="reopen"] { background: var(--accent-amber) !important; }
+.btn-action[data-action="reopen"]:hover { background: #d97706 !important; }
+.btn-action[data-action="decline"],
+.btn-action[data-action="reject"] { background: var(--accent-red) !important; }
+.btn-action[data-action="decline"]:hover { background: #dc2626 !important; }
+.btn-action[data-action="clarify"] { background: var(--accent-purple) !important; }
+.btn-action[data-action="clarify"]:hover { background: #7c3aed !important; }
+.btn-action[data-action="defer"],
+.btn-action[data-action="postpone"] { background: var(--accent-amber) !important; }
+.btn-action[data-action="defer"]:hover { background: #d97706 !important; }
+
+/* ── Action buttons агуулагч grid ── */
+#t-action-buttons,
+#t-status-bar > div:last-child {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── Modal actions row (Болих / Хадгалах) ── */
+.modal-actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  margin-top: 20px !important;
+  padding-top: 16px !important;
+  border-top: 1px solid var(--border) !important;
+}
+.modal-actions .btn {
+  min-height: 40px !important;
+  padding: 10px 18px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+}
+
+/* ── Section divider дотор modal ── */
+#t-status-bar,
+#t-comments-section,
+#t-activity-section {
+  border-top: 1px solid var(--border) !important;
+  padding-top: 14px !important;
+  margin-top: 16px !important;
+}
+#t-status-bar > div:first-child,
+#t-comments-section > div:first-child {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--muted) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px !important;
+  padding: 0 !important;
+}
+
+/* ── Comments section ── */
+#t-comments-section textarea {
+  background: var(--panel-hover) !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  font-size: 14px !important;
+  min-height: 60px;
+}
+#t-comments-section textarea:focus {
+  background: var(--panel) !important;
+  border-color: var(--accent-blue) !important;
+  box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.15) !important;
+  outline: none !important;
+}
+
+/* "Илгээх" button дотор comments — primary биш, accent-blue solid */
+#t-comment-send {
+  background: var(--accent-blue) !important;
+  background-image: none !important;
+  color: #fff !important;
+  padding: 8px 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  border: none !important;
+  min-height: 36px;
+}
+#t-comment-send:hover {
+  background: #4b56b8 !important;
+}
+
+/* File input clean style */
+.modal input[type="file"],
+.modal-bg input[type="file"] {
+  background: var(--panel-hover) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  padding: 8px !important;
+  font-size: 13px !important;
+}
+
+/* ── Mobile-д товчны spacing ── */
+@media (max-width: 720px) {
+  .btn-action {
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    min-height: 40px;
+  }
+  .modal-actions .btn {
+    flex: 1 !important;
+    min-height: 44px !important;
+  }
+}
+
+/* ── Empty state — content-ийг дээш ойртуулах (хэт доош харагдсан) ── */
+.empty {
+  padding: 32px 20px !important;
+}
+@media (max-width: 720px) {
+  .empty {
+    padding: 24px 16px !important;
+  }
+}
+
+/* ═══ Гарын авлагын dark mode (data-theme="dark") ═══
+   prefers-color-scheme-аас гадуур хэрэглэгчийн сонгосон theme-ийг хадгална.
+   Хэрэв системийн theme dark гэхдээ хэрэглэгч "light" сонговол light хэвээр.
+   data-theme="light" → албадан light, data-theme="dark" → албадан dark. */
+:root[data-theme="dark"] {
+  --bg: #191919 !important;
+  --panel: #2f2f2f !important;
+  --panel-hover: #373737 !important;
+  --border: rgba(255, 255, 255, 0.08) !important;
+  --border-strong: rgba(255, 255, 255, 0.12) !important;
+  --text: #ffffff !important;
+  --muted: #9b9a97 !important;
+  --muted-soft: #6f6e69 !important;
+  --primary: #7d87de !important;
+  --primary-soft: rgba(125, 135, 222, 0.15) !important;
+}
+:root[data-theme="light"] {
+  --bg: #fbfbfa !important;
+  --panel: #ffffff !important;
+  --panel-hover: #f7f7f5 !important;
+  --border: rgba(15, 15, 15, 0.08) !important;
+  --border-strong: rgba(15, 15, 15, 0.12) !important;
+  --text: #37352f !important;
+  --muted: #787774 !important;
+  --muted-soft: #9b9a97 !important;
+  --primary: #5e6ad2 !important;
+  --primary-soft: rgba(94, 106, 210, 0.10) !important;
+}
+/* Notif panel-ийн solid background — data-theme харгалзах */
+:root[data-theme="dark"] .modal .modal-close-x { background: var(--accent-red) !important; }
+:root[data-theme="dark"] .notif-panel,
+:root[data-theme="dark"] .notif-header,
+:root[data-theme="dark"] .notif-list,
+:root[data-theme="dark"] .notif-item {
+  background: #2f2f2f !important;
+}
+
+/* ═══ Notification категори бүлгүүд ═══ */
+.notif-group {
+  margin-bottom: 8px;
+}
+.notif-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--panel);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.notif-group-count {
+  background: var(--border);
+  color: var(--muted);
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.notif-group-active .notif-group-header {
+  color: var(--accent-red);
+}
+.notif-group-active .notif-group-count {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--accent-red);
+}
+.notif-group-archive {
+  opacity: 0.65;
+}
+.notif-group-archive .notif-group-header {
+  color: var(--muted-soft);
+}
+
+/* ═══ CEO Dashboard ═══ */
+.dashboard {
+  padding: 8px 4px 32px;
+}
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.dash-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.dash-kpi {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 110px;
+}
+.dash-kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.dash-kpi-value {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin: 8px 0 4px;
+}
+.dash-kpi-value.danger { color: var(--accent-red); }
+.dash-kpi-value.warn { color: var(--accent-amber); }
+.dash-kpi-value.primary { color: var(--accent-blue); }
+.dash-kpi-value.ok { color: var(--accent-green); }
+.dash-kpi-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+.dash-chart, .dash-finance, .dash-staff {
+  grid-column: span 2;
+}
+.dash-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 14px;
+  letter-spacing: -0.01em;
+}
+.dash-donut {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.dash-legend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.dash-legend > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dash-legend .dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  display: inline-block;
+}
+.dash-legend strong {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--text);
+}
+.dash-finance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.dash-finance-row:last-child { border-bottom: none; }
+.dash-finance-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+.dash-finance-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.dash-finance-value.ok { color: var(--accent-green); }
+.dash-finance-value.warn { color: var(--accent-amber); }
+.dash-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+.dash-bar-label {
+  width: 110px;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-bar-track {
+  flex: 1;
+  height: 8px;
+  background: var(--panel-hover);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.dash-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+  border-radius: 999px;
+  transition: width 300ms ease;
+}
+.dash-bar-count {
+  width: 24px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.dash-empty {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  padding: 20px;
+}
+
+/* Tablet/Mobile dashboard layout */
+@media (max-width: 1000px) {
+  .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-chart, .dash-finance, .dash-staff { grid-column: span 2; }
+}
+@media (max-width: 720px) {
+  .dashboard { padding: 4px 0 100px; }
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 0 4px;
+  }
+  .dash-card { padding: 14px; }
+  .dash-kpi-value { font-size: 28px; }
+  .dash-chart, .dash-finance, .dash-staff { grid-column: span 2; }
+  .dash-donut { flex-direction: column; align-items: stretch; }
+  .dash-donut svg { align-self: center; }
+}
+
+/* ═══ Toast — амьд анимаци + SVG icon + close товч ═══ */
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--muted);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
+  min-width: 260px;
+  max-width: 380px;
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.toast.toast-enter { animation: toast-in 220ms cubic-bezier(.32,1.2,.64,1) both; }
+.toast.toast-leave { animation: toast-out 180ms ease-in both; }
+@keyframes toast-in {
+  from { transform: translateY(-12px) scale(.96); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes toast-out {
+  to { transform: translateY(-8px) scale(.98); opacity: 0; }
+}
+.toast .toast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px; height: 24px;
+  flex-shrink: 0;
+}
+.toast .toast-msg { flex: 1; }
+.toast .toast-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.toast .toast-close:hover { background: var(--panel-hover); color: var(--text); }
+.toast.success { border-left-color: var(--accent-green); }
+.toast.success .toast-icon { color: var(--accent-green); }
+.toast.error { border-left-color: var(--accent-red); }
+.toast.error .toast-icon { color: var(--accent-red); }
+.toast.warn { border-left-color: var(--accent-amber); }
+.toast.warn .toast-icon { color: var(--accent-amber); }
+.toast.info .toast-icon { color: var(--accent-blue); }
+
+/* ═══ Empty state action button ═══ */
+.empty .empty-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(94, 106, 210, 0.25);
+  transition: transform 100ms ease, box-shadow 120ms ease;
+}
+.empty .empty-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(94, 106, 210, 0.35);
+}
+.empty .empty-action:active { transform: translateY(0) scale(.98); }
+
+/* ═══ Keyboard shortcuts modal ═══ */
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.shortcut-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 8px;
+  border-radius: 6px;
+}
+.shortcut-row:hover { background: var(--panel-hover); }
+.shortcut-desc {
+  font-size: 13px;
+  color: var(--text);
+}
+.shortcut-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.shortcut-keys kbd {
+  display: inline-block;
+  padding: 2px 8px;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--panel-hover);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  line-height: 1.4;
+}
+
+/* ═══ Loading skeleton ═══ */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--panel-hover) 0%,
+    rgba(0,0,0,0.04) 50%,
+    var(--panel-hover) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.skeleton-row .skeleton-circle { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; }
+.skeleton-row .skeleton-line { flex: 1; height: 14px; }
+.skeleton-row .skeleton-line-sm { width: 40%; height: 10px; }
+
+/* ═══ Activity timeline — vertical, dot + connector маяг ═══ */
+.timeline {
+  position: relative;
+  padding-left: 4px;
+}
+.timeline-item {
+  position: relative;
+  padding-left: 28px;
+  padding-bottom: 14px;
+  font-size: 13px;
+}
+.timeline-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 7px; top: 14px; bottom: -2px;
+  width: 2px;
+  background: var(--border);
+}
+.timeline-dot {
+  position: absolute;
+  left: 2px; top: 4px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--border);
+}
+.timeline-content { line-height: 1.5; }
+.timeline-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+.timeline-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.timeline-who { font-weight: 600; color: var(--text); }
+.timeline-action { color: var(--muted); }
+.timeline-detail {
+  display: inline-block;
+  background: var(--panel-hover);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text);
+  margin-top: 2px;
+}
+.timeline-reason {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-style: italic;
+}
+.timeline-time {
+  font-size: 11px;
+  color: var(--muted-soft);
+  margin-top: 4px;
+}
+
+/* ═══ Onboarding tour ═══ */
+.onboarding-bg {
+  display: none;
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(15, 15, 15, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.onboarding-bg.open {
+  display: flex;
+  animation: ob-fade-in 200ms ease both;
+}
+@keyframes ob-fade-in { from { opacity: 0; } to { opacity: 1; } }
+.onboarding-card {
+  background: var(--panel);
+  border-radius: 20px;
+  padding: 32px 28px 24px;
+  max-width: 420px;
+  width: 100%;
+  position: relative;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+  animation: ob-pop-in 280ms cubic-bezier(.32,1.2,.64,1) both;
+}
+@keyframes ob-pop-in {
+  from { transform: scale(.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.onboarding-skip {
+  position: absolute;
+  top: 14px; right: 14px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.onboarding-skip:hover { background: var(--panel-hover); color: var(--text); }
+.onboarding-progress {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 0 24px;
+}
+.onboarding-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  transition: width 200ms ease, background 200ms ease;
+}
+.onboarding-dot.active {
+  background: var(--accent-blue);
+  width: 24px;
+  border-radius: 999px;
+}
+.onboarding-illustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+.onboarding-illustration .lcd-icon {
+  width: 64px; height: 64px;
+  opacity: 1;
+  color: var(--accent-blue);
+}
+.onboarding-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 10px;
+  color: var(--text);
+}
+.onboarding-text {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+.onboarding-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.onboarding-actions .btn {
+  flex: 1;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+}
+.onboarding-actions .btn-primary {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)) !important;
+  color: #fff !important;
+  border: none !important;
+}
+@media (max-width: 720px) {
+  .onboarding-card { padding: 28px 22px 20px; border-radius: 16px; }
+  .onboarding-title { font-size: 19px; }
+  .onboarding-text { font-size: 14px; }
+}
+
+/* ═══ Loading skeleton — task list ═══ */
+.task-list-skeleton {
+  padding: 8px 0;
+}
+.task-list-skeleton .skeleton-row {
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+}
+.task-list-skeleton .skeleton-circle { width: 22px; height: 22px; }
+.task-list-skeleton .skeleton-stack { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.task-list-skeleton .skeleton-stack .skeleton-line:nth-child(1) { width: 70%; height: 14px; }
+.task-list-skeleton .skeleton-stack .skeleton-line:nth-child(2) { width: 40%; height: 10px; }
+
+/* ═══ Confirm / Prompt dialog — центрт байрлуулах ═══
+   .modal-bg.open нь display: block боловч .confirm-dialog нь positioning-гүй
+   тул зүүн дээд буланд гарч байсныг засна. Position: fixed + transform-аар
+   төв. Bottom-sheet биш, modal popup маяг.  */
+.confirm-dialog {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  max-width: 380px !important;
+  width: calc(100vw - 32px) !important;
+  z-index: 110;
+  animation: confirm-pop-in 200ms cubic-bezier(.32, 1.2, .64, 1) both;
+}
+@keyframes confirm-pop-in {
+  from { transform: translate(-50%, -50%) scale(.92); opacity: 0; }
+  to   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+.confirm-dialog h3 {
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  margin: 0 0 10px !important;
+}
+.confirm-dialog p {
+  font-size: 14px !important;
+  color: var(--muted) !important;
+  margin: 0 0 20px !important;
+  line-height: 1.5 !important;
+}
+.confirm-dialog .actions .btn {
+  padding: 10px 18px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  min-height: 40px;
+}
+@media (max-width: 720px) {
+  .confirm-dialog {
+    padding: 24px 20px !important;
+    border-radius: 16px !important;
+  }
+  .confirm-dialog .actions .btn {
+    flex: 1;
+    min-height: 44px;
+  }
+  .confirm-dialog .actions {
+    gap: 10px !important;
+  }
+}
+/* Confirm/prompt-д close X товч хэрэггүй — Болих товч аль хэдийн байна */
+#confirm-modal .modal-close-x,
+#prompt-modal .modal-close-x {
+  display: none !important;
+}
+
+/* ═══ Pull-to-refresh indicator ═══ */
+#ptr-indicator {
+  position: fixed;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--panel);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+}
+@media (max-width: 720px) {
+  #ptr-indicator { display: flex; }
+}
+.ptr-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+}
+#ptr-indicator.ready .ptr-spinner {
+  border-top-color: var(--accent-green);
+  transform: rotate(180deg);
+  transition: transform 200ms ease;
+}
+#ptr-indicator.refreshing .ptr-spinner {
+  animation: ptr-spin 0.7s linear infinite;
+}
+@keyframes ptr-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ═══ Inline editable task title ═══ */
+.task-title.editing {
+  background: var(--panel);
+  border: 2px solid var(--accent-blue);
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.15);
+}
+
+/* ═══ Calendar view ═══ */
+.calendar-view {
+  padding: 12px 4px 32px;
+}
+.cal-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 0 8px;
+}
+.cal-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 0 4px;
+}
+.cal-nav {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--panel-hover);
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.cal-nav:hover { background: var(--border); }
+.cal-today-btn {
+  margin-left: auto;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--accent-blue);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cal-today-btn:hover { background: #4b56b8; }
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 6px;
+  padding: 0 4px;
+}
+.cal-weekdays > div {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  padding: 6px 0;
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 0 4px;
+}
+.cal-cell {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 6px 4px 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+  transition: background 100ms ease, border-color 100ms ease;
+}
+.cal-cell:hover { background: var(--panel-hover); }
+.cal-cell.cal-empty {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+}
+.cal-num {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1;
+}
+.cal-cell.cal-today .cal-num {
+  background: var(--accent-blue);
+  color: #fff;
+  border-radius: 50%;
+  width: 22px; height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+.cal-cell.cal-selected {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 2px rgba(94, 106, 210, 0.15);
+}
+.cal-cell.cal-overdue {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+.cal-dots {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.cal-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.cal-dot-high, .cal-task-priority.cal-dot-high { background: var(--accent-red); }
+.cal-dot-med, .cal-task-priority.cal-dot-med { background: var(--accent-amber); }
+.cal-dot-low, .cal-task-priority.cal-dot-low { background: var(--accent-blue); }
+.cal-dot-done { background: var(--accent-green); }
+.cal-more {
+  font-size: 9px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.cal-selected-info {
+  margin-top: 18px;
+  padding: 0 4px;
+}
+.cal-selected-date {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  padding: 0 8px;
+}
+.cal-task {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 100ms ease;
+}
+.cal-task:hover { background: var(--panel-hover); }
+.cal-task-priority {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.cal-task-title {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+}
+.cal-task-title.done {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.cal-task-assignee {
+  font-size: 12px;
+  color: var(--muted);
+}
+.cal-empty-msg {
+  font-size: 13px;
+  color: var(--muted-soft);
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+}
+
+@media (max-width: 720px) {
+  .calendar-view { padding: 4px 0 120px; }
+  .cal-header { padding: 0 12px; gap: 6px; }
+  .cal-title { font-size: 16px; }
+  .cal-num { font-size: 12px; }
+  .cal-cell { padding: 4px 2px; }
+  .cal-cell.cal-today .cal-num { width: 20px; height: 20px; font-size: 11px; }
+  .cal-task-assignee { display: none; }
+  .cal-selected-info { padding: 0 8px; }
+}
+
+/* ═══ Bulk action bar ═══ */
+.bulk-bar {
+  position: fixed;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--accent-blue);
+  color: #fff;
+  padding: 10px 12px 10px 8px;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(94, 106, 210, 0.4), 0 4px 12px rgba(0,0,0,0.10);
+  z-index: 500;
+  transition: top 240ms cubic-bezier(.32,1.2,.64,1);
+  min-width: 320px;
+  max-width: calc(100vw - 24px);
+}
+.bulk-bar.open {
+  top: max(14px, env(safe-area-inset-top, 14px));
+}
+.bulk-cancel {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.bulk-cancel:hover { background: rgba(255, 255, 255, 0.25); }
+.bulk-count {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.bulk-actions {
+  display: flex;
+  gap: 6px;
+}
+.bulk-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.bulk-act:hover { background: rgba(255, 255, 255, 0.25); }
+.bulk-act-delete { background: rgba(239, 68, 68, 0.55); }
+.bulk-act-delete:hover { background: rgba(239, 68, 68, 0.75); }
+
+@media (max-width: 720px) {
+  .bulk-bar { min-width: auto; left: 12px; right: 12px; transform: none; }
+  .bulk-bar.open {
+    top: max(12px, env(safe-area-inset-top, 12px));
+  }
+  .bulk-act span { display: none; }  /* мобайлд зөвхөн icon */
+  .bulk-act { padding: 8px; width: 36px; height: 36px; justify-content: center; }
+}
+
+/* Selected task row */
+.task-row.bulk-selected {
+  background: rgba(94, 106, 210, 0.10) !important;
+  border-left: 3px solid var(--accent-blue) !important;
+  padding-left: 13px !important;
+}
+.task-row.bulk-selected::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 6px;
+}
+
+/* ═══ Recurring task icon ═══ */
+.recur-icon {
+  display: inline-block;
+  vertical-align: -2px;
+  color: var(--accent-blue);
+  margin-right: 4px;
+  opacity: 0.85;
+}
+
+/* ═══ Цагийн ажилтан — хязгаарлагдмал хандалт (зөвхөн өөрийн Ирсэн ажил) ═══ */
+body.role-daily #nav-dashboard,
+body.role-daily #nav-calendar,
+body.role-daily .nav-item[data-view="delegated"],
+body.role-daily .nav-item[data-view="finance"],
+body.role-daily .mobile-nav-item[data-view="delegated"],
+body.role-daily .mobile-nav-item[data-view="finance"],
+body.role-daily #new-task-btn,
+body.role-daily #new-finance-btn,
+body.role-daily #new-order-btn,
+body.role-daily #export-btn,
+body.role-daily #nav-projects-label,
+body.role-daily #project-list,
+body.role-daily #add-project { display: none !important; }
+
+/* ═══ Тойм: ажилтны ачаалал — даркуй мөр + чөлөөтэй badge ═══ */
+.dash-staff-scroll { max-height: 320px; overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
+.dash-staff-clickable { cursor: pointer; border-radius: 6px; transition: background 100ms ease; padding: 2px 6px; margin: 0 -6px; }
+.dash-staff-clickable:hover { background: var(--panel-hover); }
+.dash-staff-clickable.is-free .dash-bar-label { color: var(--muted); }
+.dash-free {
+  font-size: 11px; font-weight: 600;
+  color: #10b981; background: rgba(16,185,129,0.12);
+  padding: 1px 8px; border-radius: 999px; white-space: nowrap;
+}
+
+/* ═══ Мөрийн шуурхай үйлдэл (⋯ цэс) ═══ */
+.col-rowactions { display: flex; align-items: center; gap: 2px; justify-content: flex-end; }
+.row-menu-btn {
+  width: 26px; height: 26px;
+  border: none; background: transparent;
+  color: var(--muted);
+  border-radius: 6px; cursor: pointer;
+  font-size: 17px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.row-menu-btn:hover { background: var(--panel-hover); color: var(--text); }
+.row-action-menu {
+  position: fixed; z-index: 11000;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  padding: 4px; min-width: 170px;
+  display: flex; flex-direction: column;
+}
+.ram-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px;
+  background: none; border: none;
+  color: var(--text); font-size: 13px;
+  text-align: left; cursor: pointer;
+  border-radius: 6px; width: 100%;
+  font-family: inherit;
+}
+.ram-item:hover { background: var(--panel-hover); }
+.ram-item.danger { color: var(--danger); }
+.ram-ic { width: 16px; text-align: center; opacity: .85; flex: none; }
+
+/* ═══ Анхны ачааллын skeleton (cache хоосон үед) ═══ */
+.skeleton-wrap { display: flex; flex-direction: column; }
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sk {
+  background: linear-gradient(90deg, var(--panel-hover) 25%, var(--border) 37%, var(--panel-hover) 63%);
+  background-size: 400% 100%;
+  border-radius: 6px;
+  animation: sk-shimmer 1.3s ease-in-out infinite;
+}
+.sk-dot { width: 18px; height: 18px; border-radius: 50%; flex: none; }
+.sk-line { height: 12px; }
+.sk-chip { width: 80px; height: 22px; border-radius: 999px; flex: none; }
+@keyframes sk-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+@media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
+
+/* Telegram section removed */
+
+/* ═══ Dashboard action товчнууд ═══ */
+.dashboard-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.dashboard-actions .btn {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  padding: 8px 14px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+.dashboard-actions .btn:hover {
+  background: var(--panel-hover) !important;
+}
+
+/* ═══ Personal KPI bar chart ═══ */
+.kpi-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 6px;
+  height: 160px;
+  padding: 8px 4px 0;
+}
+.kpi-bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  height: 100%;
+}
+.kpi-bar-track {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  min-height: 0;
+}
+.kpi-bar-fill {
+  width: 100%;
+  background: var(--accent-blue);
+  border-radius: 6px 6px 2px 2px;
+  min-height: 2px;
+  transition: height 300ms cubic-bezier(.32,1.2,.64,1);
+}
+.kpi-bar-fill.today {
+  background: linear-gradient(180deg, var(--accent-purple), var(--accent-blue));
+}
+.kpi-bar-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+}
+.kpi-bar-day {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.kpi-bar-day.today {
+  color: var(--accent-blue);
+  font-weight: 700;
+}
+
+/* ═══ Дашбордыг хэвлэх (PDF) — print стиль ═══ */
+@media print {
+  body { background: #fff !important; }
+  .sidebar, .header-actions, .toolbar, .fab, .mobile-bottom-nav,
+  .install-banner, #ptr-indicator, .bulk-bar, .dashboard-actions { display: none !important; }
+  .app { grid-template-columns: 1fr !important; }
+  .dash-card { break-inside: avoid; box-shadow: none !important; }
+  .header { background: #fff !important; border-bottom: 1px solid #ccc; }
+}
+
+/* ═══ Profile modal — avatar upload + profile fields ═══ */
+.profile-avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.profile-avatar-display {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  color: #fff;
+  font-size: 26px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+.profile-avatar-display img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.profile-avatar-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--accent-blue);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.profile-avatar-upload-btn:hover {
+  background: #4b56b8;
+}
+/* User chip avatar — img-г бүрэн дүүргэх */
+.user-chip .avatar img {
+  border-radius: inherit;
+}
+
+/* ═══ Font size scale (data-fs="sm|md|lg|xl") ═══ */
+:root[data-fs="sm"] { font-size: 14px; }
+:root[data-fs="md"] { font-size: 16px; }  /* default */
+:root[data-fs="lg"] { font-size: 17px; }
+:root[data-fs="xl"] { font-size: 19px; }
+
+/* Font size picker UI */
+.font-size-picker {
+  display: flex;
+  gap: 8px;
+  margin: 6px 0;
+}
+.fs-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--panel-hover);
+  border: 2px solid transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.fs-btn[data-fs="sm"] { font-size: 12px; }
+.fs-btn[data-fs="md"] { font-size: 14px; }
+.fs-btn[data-fs="lg"] { font-size: 17px; }
+.fs-btn[data-fs="xl"] { font-size: 20px; }
+.fs-btn:hover { background: var(--border); }
+.fs-btn.active {
+  background: var(--panel);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+/* ═══ High contrast mode ═══ */
+:root.high-contrast {
+  --border: rgba(15, 15, 15, 0.25) !important;
+  --border-strong: rgba(15, 15, 15, 0.40) !important;
+  --text: #000000 !important;
+  --muted: #444444 !important;
+  --muted-soft: #666666 !important;
+  --bg: #ffffff !important;
+  --panel: #ffffff !important;
+  --panel-hover: #f0f0f0 !important;
+}
+:root.high-contrast .filter-pill,
+:root.high-contrast .nav-item,
+:root.high-contrast .task-row {
+  border: 1px solid var(--border) !important;
+}
+:root.high-contrast .filter-pill.active {
+  outline: 2px solid #000000;
+}
+:root.high-contrast.dark,
+:root.high-contrast[data-theme="dark"] {
+  --text: #ffffff !important;
+  --bg: #000000 !important;
+  --panel: #1a1a1a !important;
+  --panel-hover: #2a2a2a !important;
+  --border: rgba(255, 255, 255, 0.30) !important;
+}
+
+/* ═══ Drag-drop reorder visual ═══ */
+.task-row[draggable="true"] { cursor: grab; }
+.task-row.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+.task-row.drag-over {
+  background: rgba(94, 106, 210, 0.10) !important;
+  border-top: 2px solid var(--accent-blue) !important;
+}
+@media (max-width: 720px) {
+  /* Touch device — drag disable, swipe action хэрэглэгдэх */
+  .task-row[draggable="true"] { cursor: pointer; }
+}
+
+/* ═══ Permissions UI rows ═══ */
+.perm-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--panel-hover);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 100ms ease;
+}
+.perm-row:hover { background: var(--border); }
+.perm-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* ═══ Offline banner ═══ */
+.offline-banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: var(--accent-amber);
+  color: #fff;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  z-index: 600;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  transform: translateY(-100%);
+  transition: transform 240ms ease;
+}
+.offline-banner.show {
+  display: flex;
+  transform: translateY(0);
+}
+.offline-queue-count {
+  opacity: 0.85;
+  font-weight: 500;
+}
+@media (max-width: 720px) {
+  .offline-banner {
+    padding-top: max(10px, env(safe-area-inset-top, 10px));
+  }
+}
+
+/* ═══ Task list "More" button (virtual scroll) ═══ */
+.task-list-more {
+  width: 100%;
+  padding: 12px 16px;
+  margin-top: 10px;
+  background: var(--panel-hover);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--accent-blue);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.task-list-more:hover {
+  background: var(--border);
+}
+
+/* ═══ Multi-assignee picker ═══ */
+.assignee-picker-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.assignee-picker-wrap select {
+  flex: 1;
+}
+.btn-multi-pick {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  background: var(--panel-hover);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--accent-blue);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-multi-pick:hover {
+  background: var(--border);
+}
+@media (max-width: 720px) {
+  .assignee-picker-wrap { flex-direction: column; }
+  .btn-multi-pick { padding: 10px 12px; min-height: 40px; justify-content: center; }
+}
+
+/* Selected chips */
+.t-multi-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 4px;
+  background: var(--panel-hover);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.t-multi-chip .mp-avatar {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.t-multi-chip button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.t-multi-chip button:hover {
+  color: var(--accent-red);
+}
+.t-multi-more {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: var(--accent-blue);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Picker modal rows */
+.mp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.mp-row:hover {
+  background: var(--panel-hover);
+}
+.mp-row .mp-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.mp-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.mp-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+.mp-role {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ═══ Project item — устгах товчтой ═══ */
+.project-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+  transition: background 100ms ease;
+}
+.project-item:hover {
+  background: var(--panel-hover);
+}
+.project-item.active {
+  background: var(--panel-hover);
+  font-weight: 600;
+}
+.project-item .proj-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-item .proj-del {
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 120ms ease, background 100ms ease, color 100ms ease;
+  padding: 0;
+}
+.project-item:hover .proj-del {
+  opacity: 1;
+}
+.project-item .proj-del:hover {
+  background: rgba(239, 68, 68, 0.10);
+  color: var(--accent-red);
+}
+/* Мобайл дээр delete товч үргэлж харагдана */
+@media (max-width: 720px) {
+  .project-item .proj-del { opacity: 1; }
+}
+
+/* ═══ Staff management list ═══ */
+.staff-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--panel-hover);
+  border-radius: 8px;
+  transition: background 100ms ease;
+}
+.staff-row.staff-left {
+  opacity: 0.65;
+}
+.staff-row .staff-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.staff-row.staff-left .staff-avatar {
+  background: var(--muted-soft);
+  filter: grayscale(.6);
+}
+.staff-info {
+  flex: 1;
+  min-width: 0;
+}
+.staff-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.staff-you {
+  font-size: 11px;
+  color: var(--accent-blue);
+  font-weight: 500;
+}
+.staff-role {
+  font-size: 12px;
+  color: var(--muted);
+}
+.staff-status {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.status-active {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--accent-green);
+}
+.status-left {
+  background: rgba(239, 68, 68, 0.10);
+  color: var(--accent-red);
+}
+.staff-action {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.staff-action.leave {
+  background: rgba(239, 68, 68, 0.10);
+  color: var(--accent-red);
+}
+.staff-action.leave:hover {
+  background: var(--accent-red);
+  color: #fff;
+}
+.staff-action.restore {
+  background: rgba(16, 185, 129, 0.10);
+  color: var(--accent-green);
+}
+.staff-action.restore:hover {
+  background: var(--accent-green);
+  color: #fff;
+}
+@media (max-width: 720px) {
+  .staff-row {
+    flex-wrap: wrap;
+  }
+  .staff-action {
+    width: 100%;
+    margin-top: 4px;
+    padding: 10px;
+    min-height: 40px;
+  }
+}
+
+/* ═══ Pending registration row ═══ */
+.staff-row.staff-pending {
+  background: rgba(245, 158, 11, 0.08);
+  border-left: 3px solid var(--accent-amber);
+}
+.status-pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+}
+.staff-action.approve {
+  background: var(--accent-amber);
+  color: #fff;
+}
+.staff-action.approve:hover {
+  background: #d97706;
+}
+
+/* Dashboard pending registration card */
+.dash-kpi-clickable {
+  transition: transform 100ms ease, box-shadow 120ms ease;
+}
+.dash-kpi-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.18);
+}
+
+/* Финансын модал — readonly талбарыг "энгийн текст шиг" харуулна (засах боломжгүй гэдэг нь
+   шууд харагдана). Зөвхөн finance-modal дотор хэрэглэнэ. */
+#finance-modal input[readonly],
+#finance-modal textarea[readonly] {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px dashed var(--border) !important;
+  border-radius: 0 !important;
+  padding: 6px 0 !important;
+  cursor: default;
+  color: var(--text);
+  font-weight: 500;
+}
+#finance-modal select[disabled] {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px dashed var(--border) !important;
+  border-radius: 0 !important;
+  padding: 6px 0 !important;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: default;
+  color: var(--text);
+  font-weight: 500;
+}
+#finance-modal input[readonly]:focus,
+#finance-modal textarea[readonly]:focus,
+#finance-modal select[disabled]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* ─── M-Event Захиалга view ─────────────────────────────── */
+.orders-wrap { display: grid; gap: 14px; padding: 4px 2px 24px; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+.order-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,.04)); }
+.order-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.order-no { font-weight: 700; font-size: 14px; color: var(--text); }
+.order-total { font-weight: 700; font-size: 16px; color: var(--primary); white-space: nowrap; }
+.order-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-left: 8px; }
+.order-badge.os-new { background: var(--info-soft); color: var(--info); }
+.order-badge.os-ok { background: var(--primary-soft); color: var(--primary-hover); }
+.order-badge.os-prep { background: var(--warn-soft); color: var(--warn); }
+.order-badge.os-done { background: var(--ok-soft); color: var(--ok); }
+.order-badge.os-cancel { background: var(--danger-soft); color: var(--danger); }
+.order-cust { font-size: 13.5px; color: var(--text-soft); margin-bottom: 4px; }
+.order-cust a { color: var(--primary); text-decoration: none; }
+.order-meta { font-size: 12.5px; color: var(--muted); margin: 2px 0; }
+.order-items { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12.5px; }
+.order-items th { text-align: left; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); padding: 4px 6px; }
+.order-items td { padding: 4px 6px; border-bottom: 1px solid var(--border); color: var(--text-soft); }
+.order-items .num { text-align: right; }
+.order-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.order-sub { font-size: 12px; color: var(--muted); }
+.order-status-sel { font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.order-status-sel select { font-family: inherit; font-size: 13px; padding: 5px 8px; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--panel); color: var(--text); cursor: pointer; }
+.orders-empty { text-align: center; padding: 64px 20px; color: var(--muted); }
+.orders-empty .icon { font-size: 40px; margin-bottom: 12px; }
+.orders-empty .sub { font-size: 13px; color: var(--muted-soft); margin-top: 6px; }
+
+/* ─── M-Event Бараа (backoffice) view ───────────────────── */
+.prod-toolbar { display: flex; gap: 10px; align-items: center; margin: 4px 2px 10px; }
+.prod-search { flex: 1; padding: 9px 12px; border: 1px solid var(--border-strong); border-radius: 8px; font-family: inherit; font-size: 14px; background: var(--panel); color: var(--text); }
+.prod-count { font-size: 12.5px; color: var(--muted); margin: 0 2px 10px; }
+.prod-list { display: flex; flex-direction: column; gap: 8px; padding-bottom: 24px; }
+.prod-row { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; }
+.prod-img { width: 48px; height: 48px; border-radius: 8px; overflow: hidden; background: var(--bg); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.prod-img img { width: 100%; height: 100%; object-fit: cover; }
+.prod-img .ph { font-size: 22px; opacity: .4; }
+.prod-main { flex: 1; min-width: 120px; }
+.prod-name { width: 100%; font-size: 14px; font-weight: 600; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; background: transparent; color: var(--text); font-family: inherit; }
+.prod-name:hover, .prod-name:focus { border-color: var(--border-strong); background: var(--panel); outline: none; }
+.prod-sub { font-size: 11.5px; color: var(--muted); padding-left: 6px; margin-top: 2px; }
+.prod-fld { display: flex; flex-direction: column; font-size: 10.5px; color: var(--muted); gap: 2px; }
+.prod-fld input { width: 96px; padding: 6px 8px; border: 1px solid var(--border-strong); border-radius: 6px; font-size: 13px; font-family: inherit; text-align: right; background: var(--panel); color: var(--text); }
+.prod-fld.sm input { width: 64px; }
+.prod-save { padding: 8px 14px; border: 1px solid var(--primary); background: var(--primary-soft); color: var(--primary-hover); border-radius: 7px; font-weight: 600; font-size: 13px; white-space: nowrap; }
+.prod-save:hover { background: var(--primary); color: #fff; }
+.pnf { background: var(--panel); border: 1px solid var(--primary); border-radius: 10px; padding: 14px; margin: 0 2px 12px; }
+.pnf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.pnf-grid label { display: flex; flex-direction: column; font-size: 11.5px; color: var(--muted); gap: 3px; }
+.pnf-grid label.pnf-wide { grid-column: span 3; }
+.pnf-grid input { padding: 7px 9px; border: 1px solid var(--border-strong); border-radius: 6px; font-size: 13.5px; font-family: inherit; background: var(--panel); color: var(--text); }
+.pnf-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+@media (max-width: 720px) {
+  .prod-row { flex-wrap: wrap; }
+  .pnf-grid { grid-template-columns: 1fr 1fr; }
+  .pnf-grid label.pnf-wide { grid-column: span 2; }
+}
+
+/* ─── Монгол огнооны календар (захиалгын форм) ─── */
+.mc-pop {
+  margin-top: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  z-index: 70;
+  position: relative;
+}
+.mc-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.mc-title { font-weight: 700; font-size: 13px; }
+.mc-nav {
+  background: none; border: none; font-size: 20px; line-height: 1;
+  cursor: pointer; color: var(--text); padding: 2px 10px; border-radius: 6px;
+}
+.mc-nav:hover { background: var(--panel-hover); }
+.mc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.mc-cell {
+  text-align: center; padding: 7px 0; font-size: 13px; border-radius: 7px;
+  user-select: none;
+}
+.mc-cell.wd { color: var(--muted); font-size: 11px; font-weight: 700; padding: 4px 0; }
+.mc-cell.day { cursor: pointer; }
+.mc-cell.day:hover { background: var(--panel-hover); }
+.mc-cell.weekend { color: var(--danger); }
+.mc-cell.today { outline: 1.5px solid var(--primary); outline-offset: -1.5px; }
+.mc-cell.sel { background: var(--primary); color: #fff; font-weight: 700; }
+.mc-cell.sel.weekend { color: #fff; }
+.mc-cell.empty { visibility: hidden; }
+.mcal-display { background: var(--panel); }
+
+/* ─── Ажилтны role inline засвар ───────────────────────── */
+.staff-role-edit { background:none; border:none; cursor:pointer; color:var(--muted); font-size:12px; padding:0 4px; opacity:.6; }
+.staff-role-edit:hover { opacity:1; color:var(--primary); }
+.staff-role-select { font-family:inherit; font-size:12.5px; padding:3px 6px; border:1px solid var(--primary); border-radius:6px; background:var(--panel); color:var(--text); max-width:240px; }

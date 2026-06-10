@@ -6,6 +6,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["/Users/anujinninj/Desktop/NOMAAD CATERING/server.py"],
       "port": 7788
+    },
+    {
+      "name": "poster",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "/tmp/poster_preview"],
+      "port": 8765
     }
   ]
 }

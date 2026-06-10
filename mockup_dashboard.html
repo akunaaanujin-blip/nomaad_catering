@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NOMAAD — Нөөцийн самбар</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F5F0E6;--surface:#fff;--ink:#20271F;--muted:#8A8276;--line:#E2E6DF;--accent:#1F4A38;--soft:#E3EDE7;--amber:#C8743F;--amber-soft:#F5E2D5;--red:#BB4A36;--red-soft:#fdecea;--green:#27543f;--green-soft:#d4edda;--radius:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);padding-bottom:60px}
+.band{height:6px;background:linear-gradient(90deg,#1F4A38 25%,#6B8E6F 25% 50%,#D9C7A3 50% 75%,#C8743F 75%)}
+.topbar{background:linear-gradient(135deg,#163528,#1F4A38 55%,#2E6049);color:#fff;padding:20px 0}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.dot{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:17px}
+h1{font-family:'Lora',serif;font-size:20px;font-weight:700}
+.tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:rgba(255,255,255,.16);padding:5px 12px;border-radius:999px}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--line);margin:24px 0 20px}
+.tab{font-family:inherit;font-size:13px;font-weight:700;padding:10px 22px;border:none;border-bottom:3px solid transparent;background:none;cursor:pointer;color:var(--muted);margin-bottom:-2px;transition:all .15s}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* SECTION TITLE */
+.sec-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:24px 0 12px;display:flex;align-items:center;gap:8px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--line)}
+
+/* STATS */
+.stats{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px;flex:1;min-width:130px}
+.stat .sv{font-family:'Lora',serif;font-size:26px;font-weight:700;color:var(--accent)}
+.stat .sl{font-size:12px;color:var(--muted);margin-top:2px}
+.stat.warn .sv{color:var(--amber)}
+.stat.danger .sv{color:var(--red)}
+
+/* ORDER CARDS */
+.order-list{display:flex;flex-direction:column;gap:8px;margin-bottom:24px}
+.o-card{background:var(--surface);border:1.5px solid var(--amber);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.o-card.done{border-color:#6B8E6F;background:#f7fdf9}
+.o-org{font-size:15px;font-weight:700;flex:1;min-width:160px}
+.o-meta{display:flex;gap:8px;flex-wrap:wrap}
+.o-badge{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:8px;background:var(--bg)}
+.o-badge.pax{background:var(--soft);color:var(--accent)}
+.o-badge.date{background:#f0f0f0;color:#555}
+.o-badge.svc{background:var(--amber-soft);color:#7a4010}
+.o-status{font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--amber-soft);color:var(--amber);white-space:nowrap}
+.o-status.done{background:var(--green-soft);color:var(--green)}
+
+/* INVENTORY TABLE */
+.inv-wrap{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+.inv-head{display:grid;grid-template-columns:2fr 1fr 1fr 1.5fr 1fr;padding:10px 16px;background:#f8f9f7;border-bottom:1px solid var(--line);font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.inv-row{display:grid;grid-template-columns:2fr 1fr 1fr 1.5fr 1fr;padding:11px 16px;border-bottom:1px solid var(--line);font-size:13px;align-items:center;transition:background .1s}
+.inv-row:last-child{border-bottom:none}
+.inv-row:hover{background:#fafbf9}
+.inv-row.ok{background:#f7fdf9}
+.inv-row.warn{background:#fffbf5}
+.inv-row.danger{background:#fef5f4}
+.i-name{font-weight:600}
+.i-need{font-family:'Lora',serif;font-size:15px;font-weight:700;color:var(--accent)}
+.i-have{font-family:'Lora',serif;font-size:15px;font-weight:700}
+.inv-row.ok .i-have{color:var(--green)}
+.inv-row.warn .i-have{color:var(--amber)}
+.inv-row.danger .i-have{color:var(--red)}
+.i-diff{font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:8px;text-align:center}
+.inv-row.ok .i-diff{background:var(--green-soft);color:var(--green)}
+.inv-row.warn .i-diff{background:var(--amber-soft);color:var(--amber)}
+.inv-row.danger .i-diff{background:var(--red-soft);color:var(--red)}
+.i-status{font-size:18px;text-align:center}
+
+/* SHOPPING LIST */
+.shop-box{background:var(--red-soft);border:1.5px solid #f5c6cb;border-radius:var(--radius);padding:16px 18px;margin-bottom:20px}
+.shop-title{font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.shop-list{display:flex;flex-direction:column;gap:6px}
+.shop-item{display:flex;justify-content:space-between;font-size:13px;padding:8px 12px;background:rgba(255,255,255,.7);border-radius:8px}
+.shop-item .si-name{font-weight:600}
+.shop-item .si-qty{font-weight:700;color:var(--red)}
+
+/* COOK INV */
+.cook-inv{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+.cook-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;padding:11px 16px;border-bottom:1px solid var(--line);font-size:13px;align-items:center}
+.cook-row:last-child{border-bottom:none}
+.cook-row.header{background:#f8f9f7;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.c-have{font-family:'Lora',serif;font-size:15px;font-weight:700;color:#2c6a8f}
+.c-need{font-family:'Lora',serif;font-size:15px;font-weight:700;color:var(--accent)}
+.c-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:8px}
+.c-badge.ok{background:var(--green-soft);color:var(--green)}
+.c-badge.low{background:var(--amber-soft);color:var(--amber)}
+.c-badge.out{background:var(--red-soft);color:var(--red)}
+</style>
+</head>
+<body>
+<div class="band"></div>
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><div class="dot">🍽️</div><div><h1>NOMAAD Catering</h1><div style="font-size:12px;opacity:.75;margin-top:2px">Нөөцийн самбар</div></div></div>
+    <span class="tag">Хоолны технологи</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active">📊 Нөөцийн самбар</button>
+    <button class="tab">📋 Ирсэн захиалга</button>
+    <button class="tab">🥩 Боловсруулаагүй нөөц</button>
+    <button class="tab">❄️ Боловсруулсан нөөц</button>
+    <button class="tab">🍱 Хоолны технологи</button>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat"><div class="sv">3</div><div class="sl">Ирэх захиалга</div></div>
+    <div class="stat"><div class="sv">430</div><div class="sl">Нийт хүн</div></div>
+    <div class="stat warn"><div class="sv">5</div><div class="sl">Дутагдалтай зүйл</div></div>
+    <div class="stat danger"><div class="sv">2</div><div class="sl">Нөөц 0 байна</div></div>
+  </div>
+
+  <!-- ORDERS -->
+  <div class="sec-title">📋 Ирэх захиалгууд</div>
+  <div class="order-list">
+    <div class="o-card">
+      <div class="o-org">Монгол Банк</div>
+      <div class="o-meta">
+        <span class="o-badge pax">👥 150 хүн</span>
+        <span class="o-badge date">📅 2026-06-10</span>
+        <span class="o-badge svc">🍴 Буфет</span>
+      </div>
+      <span class="o-status">⏳ Хүлээгдэж байна</span>
+    </div>
+    <div class="o-card">
+      <div class="o-org">Эрдэнэт Үйлдвэр</div>
+      <div class="o-meta">
+        <span class="o-badge pax">👥 200 хүн</span>
+        <span class="o-badge date">📅 2026-06-12</span>
+        <span class="o-badge svc">🍴 Буфет</span>
+      </div>
+      <span class="o-status">⏳ Хүлээгдэж байна</span>
+    </div>
+    <div class="o-card done">
+      <div class="o-org">Голомт Банк</div>
+      <div class="o-meta">
+        <span class="o-badge pax">👥 80 хүн</span>
+        <span class="o-badge date">📅 2026-06-08</span>
+        <span class="o-badge svc">🥩 Порц хоол</span>
+      </div>
+      <span class="o-status done">✅ Төлбөр төлсөн</span>
+    </div>
+  </div>
+
+  <!-- SHOPPING LIST -->
+  <div class="shop-box">
+    <div class="shop-title">🛒 Захаас авах шаардлагатай (430 хүнд)</div>
+    <div class="shop-list">
+      <div class="shop-item"><span class="si-name">Хонины зөөлөн мах</span><span class="si-qty">+24.5кг дутна</span></div>
+      <div class="shop-item"><span class="si-name">Тахианы ясгүй гуя/цээж</span><span class="si-qty">+18.2кг дутна</span></div>
+      <div class="shop-item"><span class="si-name">Будаа</span><span class="si-qty">+46кг дутна</span></div>
+      <div class="shop-item"><span class="si-name">Гурил</span><span class="si-qty">+12кг дутна</span></div>
+      <div class="shop-item"><span class="si-name">Салад орц</span><span class="si-qty">+8кг дутна</span></div>
+    </div>
+  </div>
+
+  <!-- RAW INV -->
+  <div class="sec-title">🥩 Боловсруулаагүй нөөц — 430 хүний шаардлагатай харьцуулсан</div>
+  <div class="inv-wrap">
+    <div class="inv-head"><span>Нэр</span><span>Шаардлага</span><span>Нөөц</span><span>Зөрүү</span><span>Байдал</span></div>
+    <div class="inv-row ok"><span class="i-name">Гахайн цорой</span><span class="i-need">24кг</span><span class="i-have">30кг</span><span class="i-diff">+6кг</span><span class="i-status">✅</span></div>
+    <div class="inv-row ok"><span class="i-name">Соёгийн соус</span><span class="i-need">12л</span><span class="i-have">15л</span><span class="i-diff">+3л</span><span class="i-status">✅</span></div>
+    <div class="inv-row warn"><span class="i-name">Хонины зөөлөн мах</span><span class="i-need">55кг</span><span class="i-have">30кг</span><span class="i-diff">-25кг</span><span class="i-status">⚠️</span></div>
+    <div class="inv-row warn"><span class="i-name">Тахианы гуя/цээж</span><span class="i-need">49кг</span><span class="i-have">31кг</span><span class="i-diff">-18кг</span><span class="i-status">⚠️</span></div>
+    <div class="inv-row danger"><span class="i-name">Будаа</span><span class="i-need">64кг</span><span class="i-have">18кг</span><span class="i-diff">-46кг</span><span class="i-status">❌</span></div>
+    <div class="inv-row danger"><span class="i-name">Гурил</span><span class="i-need">47кг</span><span class="i-have">35кг</span><span class="i-diff">-12кг</span><span class="i-status">❌</span></div>
+  </div>
+
+  <!-- COOK INV -->
+  <div class="sec-title">❄️ Боловсруулсан нөөц (гүн хөлдөөгч)</div>
+  <div class="cook-inv">
+    <div class="cook-row header"><span>Нэр</span><span>Шаардлага</span><span>Нөөц</span><span>Байдал</span></div>
+    <div class="cook-row"><span style="font-weight:600">Соусанд жигнэсэн хонины мах</span><span class="c-need">43уут</span><span class="c-have">20уут</span><span><span class="c-badge low">⚠️ Дутна</span></span></div>
+    <div class="cook-row"><span style="font-weight:600">Терияки тахиа (маринадтай)</span><span class="c-need">38уут</span><span class="c-have">38уут</span><span><span class="c-badge ok">✅ Хүрнэ</span></span></div>
+    <div class="cook-row"><span style="font-weight:600">Гахайн цорой (бэлдсэн)</span><span class="c-need">28уут</span><span class="c-have">0уут</span><span><span class="c-badge out">❌ Байхгүй</span></span></div>
+    <div class="cook-row"><span style="font-weight:600">Мини шорлог (шоронтой)</span><span class="c-need">22уут</span><span class="c-have">30уут</span><span><span class="c-badge ok">✅ Хүрнэ</span></span></div>
+  </div>
+</div>
+</body>
+</html>
