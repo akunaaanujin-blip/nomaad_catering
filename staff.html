@@ -2122,6 +2122,17 @@ function buildMethRows(dkey, method) {
   var ro = (currentRole === 'Захирал');   // Захирал зөвхөн харна
   var steps = getMethSteps(dkey);
   var idx = -1, html = '';
+  // Орц бүрийн нөөцийг (нийт = боловсруулаагүй + боловсруулсан) урьдчилан индекслэнэ
+  var stockIdx = {};
+  if (stockData && stockData.items && stockData.items.length) {
+    var _pm = getPreparedConsumptionByMaterial();
+    stockData.items.forEach(function(it){
+      var k = String(it.name).toLowerCase().trim();
+      var raw = parseFloat(it.qty) || 0;
+      var prepU = gramsToStockUnit(_pm[k] || 0, it.unit);
+      stockIdx[k] = { total: raw + prepU, unit: it.unit || '' };
+    });
+  }
   String(method).split('\n').forEach(function(raw){
     var line = raw.trim();
     if (!line) { html += '<div style="height:6px"></div>'; return; }
@@ -2130,6 +2141,18 @@ function buildMethRows(dkey, method) {
       return;
     }
     idx++;
+    // «• Орц — арга» мөр бол тухайн орцын нөөцийг жижгээр хажууд нь харуулна
+    var stockTag = '';
+    var dashPos = line.indexOf('—');
+    if (line.indexOf('•') === 0 && dashPos > 0) {
+      var ingNm = line.substring(1, dashPos).trim();
+      var si = ingNm ? stockIdx[resolveToStockMaterial(ingNm)] : null;
+      if (si) {
+        var av = Math.round(si.total*100)/100;
+        var low = si.total <= 0;
+        stockTag = ' <span style="font-size:10px;font-weight:700;white-space:nowrap;color:'+(low?'var(--red)':'var(--muted)')+'">· 📦 '+(low?'дууссан':'нөөц '+av+esc(si.unit))+'</span>';
+      }
+    }
     var st = steps[idx] || {};
     var done = !!st.done, note = st.note || '';
     var showNote = done || note;
@@ -2144,7 +2167,7 @@ function buildMethRows(dkey, method) {
     }
     html += '<div style="display:flex;gap:9px;padding:5px 0;align-items:flex-start">' + box +
       '<div style="flex:1;min-width:0">' +
-        '<div style="font-size:12.5px;line-height:1.5;color:'+(done?'var(--muted)':'var(--ink)')+';'+(done?'text-decoration:line-through':'')+'">'+esc(line)+'</div>' +
+        '<div style="font-size:12.5px;line-height:1.5;color:'+(done?'var(--muted)':'var(--ink)')+';'+(done?'text-decoration:line-through':'')+'">'+esc(line)+stockTag+'</div>' +
         (done && st.time ? '<div style="font-size:10.5px;color:var(--accent);font-weight:600;margin-top:1px">🕒 '+esc(st.time)+(st.role?' · '+esc(st.role):'')+'</div>' : '') +
         noteEl +
       '</div>' +
