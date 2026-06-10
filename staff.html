@@ -1162,7 +1162,7 @@ body{
           <button class="btn-refresh" onclick="refreshAll()">🔄 Шинэчлэх</button>
         </div>
         <div class="search-bar" style="padding:0 0 8px">
-          <input type="search" class="search-input" id="recipe-search" placeholder="Хоол хайх..." oninput="filterRecipes(this.value)">
+          <input type="search" class="search-input" id="recipe-search" placeholder="Хоол эсвэл орц хайх (жнь Төмс)..." oninput="filterRecipes(this.value)">
         </div>
       </div>
       <div id="recipes-body"></div>
@@ -2389,6 +2389,7 @@ var RECIPES = [
    RECIPES (Tab 3)
 ───────────────────────────────── */
 function buildRecipes() {
+  applyRecipeOverrides();   // Захиралын хадгалсан орцын засваруудыг буулгана
   filterRecipes('');
 }
 
@@ -2396,18 +2397,31 @@ function filterRecipes(q) {
   q = q.toLowerCase().trim();
   var body = document.getElementById('recipes-body');
   var cats = {};
+  var ingMatch = {};   // idx -> орцоор таарсан бол тухайн орц (badge харуулна)
+  var ingHitCount = 0;
   RECIPES.forEach(function(r) {
-    if (q && r.name.toLowerCase().indexOf(q) < 0 && r.cat.toLowerCase().indexOf(q) < 0) return;
+    var nameHit = !q || r.name.toLowerCase().indexOf(q) >= 0 || r.cat.toLowerCase().indexOf(q) >= 0;
+    var mi = null;
+    if (q && !nameHit && r.ingredients) {
+      mi = r.ingredients.filter(function(ing){ return String(ing.n).toLowerCase().indexOf(q) >= 0; })[0];
+    }
+    if (!nameHit && !mi) return;
     if (!cats[r.cat]) cats[r.cat] = [];
     cats[r.cat].push(r);
+    if (mi && !nameHit) { ingMatch[RECIPES.indexOf(r)] = mi; ingHitCount++; }
   });
 
   var html = '';
+  // Орцоор хайсан бол: «<орц> орсон N хоол» гэсэн тойм гарчиг
+  if (q && ingHitCount > 0) {
+    html += '<div style="margin:0 14px 4px;padding:9px 12px;background:var(--accent-soft);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--accent)">🔍 «'+esc(q)+'» орц <b>'+ingHitCount+'</b> хоолонд ордог</div>';
+  }
   Object.keys(cats).forEach(function(cat) {
     html += '<div class="recipe-category">'+esc(cat)+'</div>';
     html += '<div class="recipe-grid">';
     cats[cat].forEach(function(r, i) {
       var idx = RECIPES.indexOf(r);
+      var mi = ingMatch[idx];
       html += '<div class="recipe-card" onclick="openRecipeModal('+idx+')">' +
         '<div class="rc-cat">'+esc(cat)+'</div>' +
         '<div class="rc-name">'+esc(r.name)+'</div>' +
@@ -2415,6 +2429,7 @@ function filterRecipes(q) {
           '<span>👤 '+esc(r.portion)+'</span>' +
           '<span>⏱ '+esc(r.time)+'</span>' +
         '</div>' +
+        (mi ? '<div style="margin-top:6px;font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:3px 7px;display:inline-block">🥬 '+esc(mi.n)+' · '+esc(mi.a||'')+'</div>' : '') +
       '</div>';
     });
     html += '</div>';
@@ -2433,7 +2448,8 @@ function openRecipeModal(idx) {
   head.innerHTML = '<h2>'+esc(r.name)+'</h2>' +
     '<span class="badge badge-green">'+esc(r.cat)+'</span> ' +
     '<span class="badge badge-blue" style="margin-left:4px">👤 '+esc(r.portion)+'</span> ' +
-    '<span class="badge badge-amber" style="margin-left:4px">⏱ '+esc(r.time)+'</span>';
+    '<span class="badge badge-amber" style="margin-left:4px">⏱ '+esc(r.time)+'</span>' +
+    (getRecipeOverride(r.name) ? ' <span class="badge" style="margin-left:4px;background:#fbe8d4;color:#8a3324">✏️ засварласан</span>' : '');
 
   var ingHtml = '<div class="recipe-section-title">Орц — 1 хүнд</div>' +
     '<div style="font-size:11px;color:var(--muted);margin:0 0 8px;line-height:1.5"><b>БРУТТО = түүхий авах</b> · НЕТТО = чанасны дараах идэх (хорогдол хассан)</div>' +
@@ -2456,7 +2472,14 @@ function openRecipeModal(idx) {
   });
   ingHtml += '</table>';
 
-  mbody.innerHTML = ingHtml +
+  var editControls = (currentRole === 'Захирал')
+    ? '<div style="display:flex;gap:8px;margin-top:12px">' +
+        '<button onclick="openRecipeEdit('+idx+')" style="flex:1;padding:10px;background:var(--surface);color:var(--accent);border:1.5px solid var(--accent);border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">✏️ Орц засах</button>' +
+        (getRecipeOverride(r.name) ? '<button onclick="resetRecipeOverride('+idx+')" style="padding:10px 12px;background:var(--surface);color:var(--muted);border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">↺ Анхных</button>' : '') +
+      '</div>'
+    : '';
+
+  mbody.innerHTML = ingHtml + editControls +
     '<div class="recipe-section-title" style="margin-top:16px">Аргачлал</div>' +
     '<div class="method-text">'+esc(r.method).replace(/\n/g,'<br>')+'</div>';
 
@@ -2466,6 +2489,85 @@ function openRecipeModal(idx) {
 function closeRecipeModal(e) {
   if (e && e.target !== document.getElementById('recipe-modal')) return;
   document.getElementById('recipe-modal').classList.remove('open');
+}
+
+/* ── Технологи картын орц засах (Захирал) — энэ төхөөрөмжид хадгална ── */
+function getRecipeOverride(name) {
+  try { var s = localStorage.getItem('recipe_ing_' + name); return s ? JSON.parse(s) : null; } catch(e) { return null; }
+}
+function saveRecipeOverride(name, ings) {
+  try { localStorage.setItem('recipe_ing_' + name, JSON.stringify(ings)); } catch(e) {}
+}
+// Хадгалсан засваруудыг RECIPES дээр буулгана (эхлэхэд дуудна)
+function applyRecipeOverrides() {
+  RECIPES.forEach(function(r){
+    var ov = getRecipeOverride(r.name);
+    if (ov && ov.length) {
+      if (!r._orig) r._orig = r.ingredients;   // анхны орцыг хадгална (буцаахад)
+      r.ingredients = ov;
+      if (r.prepTasks) r.prepTasks.forEach(function(pt){ if (pt.ing) { var m = ov.filter(function(x){ return x.n === pt.ing; })[0]; if (m) pt.a = m.a; } });
+    }
+  });
+}
+function resetRecipeOverride(idx) {
+  var r = RECIPES[idx]; if (!r) return;
+  if (!confirm('«'+r.name+'»-ийн орцыг анхны хувилбар руу буцаах уу?')) return;
+  if (r._orig) r.ingredients = r._orig;
+  try { localStorage.removeItem('recipe_ing_' + r.name); } catch(e) {}
+  logActivity('↺ Технологи карт анхны болгов: ' + r.name);
+  openRecipeModal(idx);
+}
+
+// Засах горимыг нээнэ — орц бүрийн нэр + нэг хүний хэмжээг засна
+function openRecipeEdit(idx) {
+  var r = RECIPES[idx]; if (!r) return;
+  var mbody = document.getElementById('recipe-modal-body');
+  var rowsHtml = (r.ingredients || []).map(function(ing){ return recipeEditRowHtml(ing.n, ing.a); }).join('');
+  mbody.innerHTML =
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5">✏️ Орцын нэр ба <b>нэг хүнд</b> ногдох хэмжээг засна. Хадгалсны дараа өртөг, авах хүнс, хорогдол бүгд шинэчлэгдэнэ. <span style="color:var(--amber)">(Энэ төхөөрөмжид хадгалагдана)</span></div>' +
+    '<div id="redit-rows">' + rowsHtml + '</div>' +
+    '<button onclick="addRecipeEditRow()" style="width:100%;margin-top:6px;padding:9px;background:var(--surface);color:var(--accent);border:1.5px dashed var(--accent);border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">➕ Орц нэмэх</button>' +
+    '<div style="display:flex;gap:8px;margin-top:14px">' +
+      '<button onclick="saveRecipeEdit('+idx+')" style="flex:2;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer">💾 Хадгалах</button>' +
+      '<button onclick="openRecipeModal('+idx+')" style="flex:1;padding:12px;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer">Болих</button>' +
+    '</div>';
+}
+function recipeEditRowHtml(n, a) {
+  var m = String(a || '').match(/([\d.]+)\s*(г|мл|кг|л|ш)/);
+  var q = m ? m[1] : '', u = m ? m[2] : 'г';
+  var opts = ['г','мл','кг','л','ш'].map(function(x){ return '<option'+(x===u?' selected':'')+'>'+x+'</option>'; }).join('');
+  return '<div class="redit-row" style="display:flex;gap:6px;margin-bottom:7px;align-items:center">' +
+    '<input class="redit-n" value="'+esc(n)+'" placeholder="Орцын нэр" style="flex:1;min-width:0;font-family:inherit;font-size:13.5px;border:1.5px solid var(--line);border-radius:8px;padding:8px 9px;background:#fff;color:var(--ink)">' +
+    '<input class="redit-q" type="number" min="0" step="any" value="'+esc(q)+'" placeholder="0" style="width:58px;font-family:inherit;font-size:13.5px;font-weight:700;text-align:right;border:1.5px solid var(--line);border-radius:8px;padding:8px 6px;background:#fff;color:var(--ink)">' +
+    '<select class="redit-u" style="font-family:inherit;font-size:13px;border:1.5px solid var(--line);border-radius:8px;padding:8px 3px;background:#fff">'+opts+'</select>' +
+    '<span style="font-size:10.5px;color:var(--muted);white-space:nowrap">/хүн</span>' +
+    '<button onclick="this.closest(\'.redit-row\').remove()" style="border:none;background:none;color:var(--red);font-size:17px;cursor:pointer;padding:0 3px">✕</button>' +
+  '</div>';
+}
+function addRecipeEditRow() {
+  var c = document.getElementById('redit-rows');
+  if (c) c.insertAdjacentHTML('beforeend', recipeEditRowHtml('', ''));
+}
+function saveRecipeEdit(idx) {
+  var r = RECIPES[idx]; if (!r) return;
+  var rows = document.querySelectorAll('#redit-rows .redit-row');
+  var ings = [];
+  rows.forEach(function(row){
+    var nEl = row.querySelector('.redit-n'), qEl = row.querySelector('.redit-q'), uEl = row.querySelector('.redit-u');
+    var n = nEl ? (nEl.value || '').trim() : '';
+    if (!n) return;
+    var q = qEl ? (qEl.value || '').trim() : '';
+    var u = uEl ? uEl.value : 'г';
+    ings.push({ n: n, a: q ? (q + u + '/хүн') : '' });
+  });
+  if (!ings.length) { alert('Дор хаяж нэг орц оруулна уу.'); return; }
+  if (!r._orig) r._orig = r.ingredients;
+  r.ingredients = ings;
+  if (r.prepTasks) r.prepTasks.forEach(function(pt){ if (pt.ing) { var m = ings.filter(function(x){ return x.n === pt.ing; })[0]; if (m) pt.a = m.a; } });
+  saveRecipeOverride(r.name, ings);
+  logActivity('✏️ Технологи карт засав: ' + r.name);
+  openRecipeModal(idx);              // дахин нээж шинэ орцыг харуулна
+  if (typeof renderStockFromCache === 'function') renderStockFromCache();
 }
 
 /* ─────────────────────────────────
