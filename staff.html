@@ -1459,6 +1459,7 @@ function enterApp(role) {
   switchTab(info.tabs[0]);
   buildRecipes();
   loadOrders();
+  loadStock();   // эхлэхэд нөөцийг ачаалж тавьна — захиалгын өртөг/ашиг шууд гарна
   renderStaffMealList();
 }
 
@@ -3591,10 +3592,11 @@ function renderStock(data) {
   body.innerHTML = html;
   stockLoaded = true;
   stockData = { items: items, totalValue: totalValue, itemCount: itemCount };
-  // Идэвхтэй табыг шинэчилнэ (өртгийн тайлан / нөөц хүрэлцээ / авах жагсаалт)
+  // Идэвхтэй табыг шинэчилнэ (өртгийн тайлан / нөөц хүрэлцээ / авах жагсаалт / захиалгын өртөг)
   if (activeTab === 'perf') renderPerf();
   if (activeTab === 'tasks') renderTasks();
   if (activeTab === 'ingredients') renderIngCalc();
+  if (activeTab === 'orders') renderOrders();   // нөөц ирмэгц захиалгын өртөг/ашиг шинэчлэгдэнэ
 }
 
 /* ─────────────────────────────────
