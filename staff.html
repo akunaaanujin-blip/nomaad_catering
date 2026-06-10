@@ -2597,11 +2597,21 @@ function getOrderConsumptionByMaterial() {
 
 // Грамм/ширхэгийг нөөцийн нэгж рүү хөрвүүлнэ (хасахын тулд)
 function gramsToStockUnit(g, unit) {
-  var u = String(unit).toLowerCase();
+  var u = String(unit).toLowerCase().trim();
   if (u === 'кг' || u === 'л') return g / 1000;
-  if (u === 'г' || u === 'грамм' || u === 'мл' || u === 'ш' || u === 'ширхэг') return g;
+  if (u === 'г' || u === 'гр' || u === 'грамм' || u === 'мл' || u === 'ш' || u === 'ширхэг') return g;
   return 0;   // шуудай гэх мэт хөрвүүлэхгүй
 }
+
+// Нэгж үнийг кг/л-д шилжүүлсэн дүн (үнэ зөв эсэхийг шалгахад) — ш зэрэгт null
+function impliedPricePerKg(price, unit) {
+  var u = String(unit).toLowerCase().trim();
+  if (u === 'кг' || u === 'л') return price;
+  if (u === 'г' || u === 'гр' || u === 'грамм' || u === 'мл') return price * 1000;
+  return null;   // ш/ширхэг/шуудай — кг-аар шалгахгүй
+}
+// Түүхий хүнсний бодит дээд үнэ (₮/кг). Үүнээс дээш бол «Нэгж үнэ» буруу (савны нийт үнэ) гэж үзнэ
+var PRICE_CEILING_PER_KG = 50000;
 
 // Бэлтгэсэн нөөц нь тухайн орцыг түүхий нөөцөөс авсан — материалаар (1:1 нэрээр) нэгтгэнэ
 function getPreparedConsumptionByMaterial() {
@@ -2642,7 +2652,7 @@ function computeOrderCost(o) {
   if (pax <= 0) return null;
   var dishes = parseDishes(o['үйлчилгээ'] || o['хоол'] || '');
   if (!dishes.length) return null;
-  var total = 0, dishLines = [], missingPrice = [];
+  var total = 0, dishLines = [], missingPrice = [], badPrice = [];
   dishes.forEach(function(dn){
     var r = findRecipe(dn);
     if (!r || !r.ingredients) return;
@@ -2654,13 +2664,16 @@ function computeOrderCost(o) {
       var stk = (stockData && stockData.items) ? stockData.items.filter(function(it){ return String(it.name).toLowerCase().trim() === key; })[0] : null;
       var price = stk ? parseFloat(stk.price) : NaN;
       if (!stk || isNaN(price) || price <= 0) { partial = true; if (missingPrice.indexOf(ing.n) < 0) missingPrice.push(ing.n); return; }
+      // Утгагүй өндөр нэгж үнэ (савны нийт үнэ буруу бичсэн) — өртөгт оруулахгүй, тэмдэглэнэ
+      var pk = impliedPricePerKg(price, stk.unit);
+      if (pk != null && pk > PRICE_CEILING_PER_KG) { partial = true; if (badPrice.indexOf(stk.name) < 0) badPrice.push(stk.name); return; }
       dishCost += gramsToStockUnit(pg.g, stk.unit) * price;
     });
     total += dishCost;
     dishLines.push({ name: r.name, cost: dishCost, partial: partial });
   });
   dishLines.sort(function(a,b){ return b.cost - a.cost; });
-  return { pax: pax, total: total, perPax: total / pax, dishLines: dishLines, missingPrice: missingPrice };
+  return { pax: pax, total: total, perPax: total / pax, dishLines: dishLines, missingPrice: missingPrice, badPrice: badPrice };
 }
 
 // Захиалгад үйлчлүүлэгчээс авах нэг хүний үнэ (localStorage-д хадгална)
@@ -4152,7 +4165,7 @@ function buildFoodReports() {
 function buildProfitReport() {
   if (!ordersLoaded) return reportCard('💰 Өртөг ба ашиг', '<div style="font-size:12px;color:var(--muted)">Захиалга ачааллаж байна…</div>');
   if (!stockLoaded) return reportCard('💰 Өртөг ба ашиг', '<div style="font-size:12px;color:var(--muted)">Нөөц ачаалж байна… (өртөг тооцоход нөөцийн үнэ хэрэгтэй)</div>');
-  var list = [], totalCost = 0, totalRev = 0, totalProfit = 0, priced = 0;
+  var list = [], totalCost = 0, totalRev = 0, totalProfit = 0, priced = 0, badSet = {};
   ordersData.forEach(function(o){
     var c = computeOrderCost(o);
     if (!c) return;
@@ -4162,6 +4175,7 @@ function buildProfitReport() {
     var profit = ppp > 0 ? rev - c.total : 0;
     totalCost += c.total;
     if (ppp > 0) { totalRev += rev; totalProfit += profit; priced++; }
+    (c.badPrice || []).forEach(function(b){ badSet[b] = 1; });
     list.push({ id:id, company:(o['байгууллага']||o['байгууллагын_нэр']||'Нэргүй'), date:(o._parsedDate||''), pax:c.pax, cost:c.total, ppp:ppp, rev:rev, profit:profit });
   });
   if (!list.length) return reportCard('💰 Өртөг ба ашиг', '<div style="font-size:12px;color:var(--muted)">'+(ordersData.length ? 'Захиалгуудад хүн тоо эсвэл технологи карттай хоол алга байна.' : 'Захиалга алга байна.')+'</div>');
@@ -4177,6 +4191,8 @@ function buildProfitReport() {
     card('Нийт орцын өртөг', fmtMNT(totalCost)) + card('Нийт орлого', fmtMNT(totalRev)) +
     card('Нийт ашиг', fmtMNT(totalProfit), pcol) + card('Дундаж маржин', margin+'%', pcol) + '</div>';
   if (priced < list.length) summary += '<div style="font-size:11px;color:var(--amber);margin:-2px 0 8px;line-height:1.5">ℹ️ '+(list.length-priced)+'/'+list.length+' захиалгад үнэ оруулаагүй — орлого/ашиг дутуу. Доор оруулна уу.</div>';
+  var badList = Object.keys(badSet);
+  if (badList.length) summary += '<div style="font-size:11px;color:var(--red);background:#fff5f3;border:1px solid var(--red);border-radius:9px;padding:8px 10px;margin:2px 0 10px;line-height:1.6">⚠️ <b>'+badList.length+' орцын нэгж үнэ хэт өндөр</b> (нэг кг нь '+PRICE_CEILING_PER_KG.toLocaleString('mn-MN')+'₮-өөс дээш — савны нийт үнэ байж магадгүй) тул өртөгт <b>ОРООГҮЙ</b>. Нөөц хуудсан дээр «Нэгж үнэ»-г нэг кг/л/ширхэгийн үнээр зөв болгоно уу:<br><span style="color:#8a3324">'+badList.slice(0,14).map(esc).join(' · ')+(badList.length>14?' …':'')+'</span></div>';
   var rows = list.map(function(r){
     var rprof = r.ppp > 0
       ? '<span style="color:'+(r.profit>=0?'var(--accent)':'var(--red)')+';font-weight:700">Ашиг '+fmtMNT(r.profit)+'</span>'
