@@ -1110,7 +1110,7 @@ body{
         </div>
         <div style="display:flex;gap:6px">
           <button class="btn-refresh" onclick="printOrdersPDF()" style="background:#b8412e;color:#fff;border-color:#b8412e">📄 PDF</button>
-          <button class="btn-refresh" onclick="loadOrders()">Шинэчлэх</button>
+          <button class="btn-refresh" onclick="refreshAll()">🔄 Шинэчлэх</button>
         </div>
       </div>
       <div id="orders-body">
@@ -1128,7 +1128,7 @@ body{
           <div class="section-title">✅ Даалгавар</div>
           <div class="section-sub" id="tasks-subtitle">Өнөөдрийн даалгаврууд</div>
         </div>
-        <button class="btn-refresh" onclick="renderTasks()">Шинэчлэх</button>
+        <button class="btn-refresh" onclick="refreshAll()">🔄 Шинэчлэх</button>
       </div>
       <div id="tasks-progress-wrap"></div>
       <div id="tasks-body">
@@ -1157,7 +1157,10 @@ body{
             <div class="htw-tip">💡 Хоол бүрийн <b>дэлгэрэнгүй орц + аргачлалыг</b> доорх картууд дээр дарж үзнэ. «Даалгавар» хэсэгт ч хоол бүрийн доор харагдана.</div>
           </div>
         </details>
-        <div class="section-title" style="padding:0 4px 10px">📖 Технологийн карт</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px 10px">
+          <div class="section-title" style="padding:0">📖 Технологийн карт</div>
+          <button class="btn-refresh" onclick="refreshAll()">🔄 Шинэчлэх</button>
+        </div>
         <div class="search-bar" style="padding:0 0 8px">
           <input type="search" class="search-input" id="recipe-search" placeholder="Хоол хайх..." oninput="filterRecipes(this.value)">
         </div>
@@ -1170,6 +1173,7 @@ body{
     <div id="tab-ingredients" class="tab-panel">
       <div class="section-header">
         <div class="section-title">🛒 Авах хүнс</div>
+        <button class="btn-refresh" onclick="refreshAll()">🔄 Шинэчлэх</button>
       </div>
 
       <div class="ing-section-title">🛒 Авах хүнсний жагсаалт</div>
@@ -1198,7 +1202,8 @@ body{
         <div class="section-title">📦 Нөөц</div>
       </div>
 
-      <div class="ing-section-title">📥 Бараа материал авах</div>
+      <div id="buy-section">
+      <div class="ing-section-title">📥 Бараа материал авах <span style="font-size:10px;font-weight:600;color:var(--muted)">(зөвхөн Захирал/Нягтлан)</span></div>
       <div class="ing-section-sub">Олон барааг нэг нэгээр нэмээд, эцэст нь «Нөөцөд бүртгэх» товч дарна — нөөцийн үлдэгдэлд нэмэгдэнэ</div>
       <div style="padding:0 18px 10px">
         <input id="buy-material" list="staff-exp-mat-list" placeholder="Орц сонгох эсвэл шинэ нэр бичих"
@@ -1217,6 +1222,7 @@ body{
         <div id="buy-draft" style="margin-top:8px"></div>
         <div id="buy-msg" style="font-size:12px;text-align:center;margin-top:6px"></div>
       </div>
+      </div><!-- /buy-section -->
 
       <!-- Ажилтны хоолны зарлага — дээш зөөв; олон хүнс нэмж нэг товчоор гаргана -->
       <div class="ing-section-title" style="margin-top:16px">🍱 Ажилтны хоолны зарлага</div>
@@ -1238,7 +1244,7 @@ body{
       <div class="ing-section-title" style="margin-top:20px">📦 Одоогийн нөөцийн үлдэгдэл</div>
       <div style="padding:0 18px 8px;display:flex;align-items:center;justify-content:space-between">
         <span class="section-sub">Авсан − зарцуулсан = үлдэгдэл</span>
-        <button class="btn-refresh" onclick="loadStock()">🔄 Шинэчлэх</button>
+        <button class="btn-refresh" onclick="refreshAll()">🔄 Шинэчлэх</button>
       </div>
       <div id="stock-body">
         <div class="loading-wrap" style="padding:24px">
@@ -1247,8 +1253,7 @@ body{
         </div>
       </div>
       <div style="padding:10px 18px 6px;display:flex;gap:8px;flex-wrap:wrap">
-        <button onclick="downloadStockBalanceCSV()" style="flex:1;min-width:120px;font-family:inherit;font-size:13px;font-weight:700;background:#1d6f42;color:#fff;border:none;border-radius:9px;padding:9px;cursor:pointer">📊 Үлдэгдэл (Excel)</button>
-        <button onclick="downloadStockRawCSV()" style="flex:1;min-width:120px;font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px;cursor:pointer">📦 Нөөц (Excel)</button>
+        <button onclick="downloadStockBalanceCSV()" style="flex:1;min-width:140px;font-family:inherit;font-size:13px;font-weight:700;background:#1d6f42;color:#fff;border:none;border-radius:9px;padding:9px;cursor:pointer">📊 Нөөц татах (Excel)</button>
         <button onclick="printStockPDF()" style="flex:1;min-width:90px;font-family:inherit;font-size:13px;font-weight:700;background:#b8412e;color:#fff;border:none;border-radius:9px;padding:9px;cursor:pointer">📄 PDF</button>
       </div>
     </div>
@@ -1272,7 +1277,7 @@ body{
           <div class="section-title">📊 Гүйцэтгэл</div>
           <div class="section-sub" id="perf-date"></div>
         </div>
-        <button class="btn-refresh" onclick="renderPerf()">Шинэчлэх</button>
+        <button class="btn-refresh" onclick="refreshAll()">🔄 Шинэчлэх</button>
       </div>
       <div id="perf-body"></div>
     </div>
@@ -1474,7 +1479,11 @@ function switchTab(name) {
   if (name === 'orders') renderOrders();
   if (name === 'tasks') renderTasks();
   if (name === 'ingredients') { renderIngCalc(); loadStock(); }
-  if (name === 'noots') { loadStock(); renderStaffMealList(); renderStaffExpenseDraft(); renderPurchaseDraft(); }
+  if (name === 'noots') {
+    loadStock(); renderStaffMealList(); renderStaffExpenseDraft(); renderPurchaseDraft();
+    var bs = document.getElementById('buy-section');   // бараа авах — зөвхөн Захирал/Нягтлан
+    if (bs) bs.style.display = (currentRole === 'Захирал' || currentRole === 'Нягтлан') ? '' : 'none';
+  }
   if (name === 'prep') renderPrepStock();
   if (name === 'perf') renderPerf();
   if (name === 'staff') renderStaffTab();
@@ -1556,6 +1565,15 @@ function loadOrders() {
     showOrdersError('Холболт алдаа. Дахин оролдоно уу.');
   };
   document.head.appendChild(script);
+}
+
+// Бүх таб — Google Sheet-ийн өгөгдлийг ДАХИН ТАТАЖ шинэчилнэ (захиалга + нөөц)
+function refreshAll() {
+  loadOrders();   // захиалга дахин татаж orders/tasks/ingredients-г шинэчилнэ
+  loadStock();    // нөөц дахин татаж stock болон хамаарах табуудыг шинэчилнэ
+  if (activeTab === 'prep') renderPrepStock();
+  if (activeTab === 'staff') renderStaffTab();
+  if (activeTab === 'recipes') filterRecipes(document.getElementById('recipe-search') ? document.getElementById('recipe-search').value : '');
 }
 
 function showOrdersError(msg) {
