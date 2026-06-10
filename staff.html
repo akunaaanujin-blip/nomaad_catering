@@ -2082,6 +2082,63 @@ function undoDish(dkey, panelId) {
   logActivity('↩ Хоол буцаав: '+dkey);
 }
 
+// ── Хоол бүрийн «хийсэн үйлдлийн тэмдэглэл» (аргачлал доторх) ──
+function getDishNotes(dkey) {
+  try { return JSON.parse(localStorage.getItem('dishnotes_'+dkey) || '[]'); } catch(e) { return []; }
+}
+function saveDishNotes(dkey, arr) { localStorage.setItem('dishnotes_'+dkey, JSON.stringify(arr)); }
+
+function renderNotesList(dkey) {
+  var arr = getDishNotes(dkey);
+  if (!arr.length) return '<div style="font-size:11.5px;color:var(--muted);padding:3px 0">Тэмдэглэл алга — хийсэн үйлдлээ доор бичнэ үү.</div>';
+  var canDel = (currentRole === 'Захирал' || currentRole === 'Тогооч');
+  return arr.map(function(n, i){
+    return '<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px dotted var(--line)">' +
+      '<span style="font-size:11px;color:var(--accent);font-weight:700;white-space:nowrap">🕒 '+esc(n.time)+'</span>' +
+      '<span style="flex:1;font-size:12.5px;color:var(--ink);min-width:0">'+(n.role?'<b>'+esc(n.role)+':</b> ':'')+esc(n.text)+'</span>' +
+      (canDel ? '<button onclick="removeDishNote(\''+dkey+'\','+i+')" style="border:none;background:none;color:var(--red);font-size:13px;cursor:pointer;padding:0 2px;flex:none">✕</button>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function notesSectionHtml(dkey) {
+  var inputHtml = (currentRole === 'Захирал') ? '' :
+    '<div style="display:flex;gap:6px;margin-top:8px">' +
+      '<input id="noteinput_'+dkey+'" type="text" placeholder="Хийсэн үйлдлээ бичих..." onkeydown="if(event.key===\'Enter\'){event.preventDefault();addDishNote(\''+dkey+'\');}" ' +
+        'style="flex:1;min-width:0;font-family:inherit;font-size:13px;border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;background:#fff;color:var(--ink)">' +
+      '<button onclick="addDishNote(\''+dkey+'\')" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:8px 14px;cursor:pointer;white-space:nowrap">＋ Нэмэх</button>' +
+    '</div>';
+  return '<div style="margin-top:11px;border-top:1px dashed var(--line);padding-top:10px">' +
+    '<div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">📝 Хийсэн үйлдлийн тэмдэглэл</div>' +
+    '<div id="notes_'+dkey+'">'+renderNotesList(dkey)+'</div>' +
+    inputHtml +
+  '</div>';
+}
+
+function addDishNote(dkey) {
+  var el = document.getElementById('noteinput_'+dkey);
+  if (!el) return;
+  var text = (el.value || '').trim();
+  if (!text) return;
+  var arr = getDishNotes(dkey);
+  var d = new Date();
+  var time = (d.getMonth()+1)+'.'+d.getDate()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+  arr.push({ text:text, time:time, role:currentRole || '' });
+  saveDishNotes(dkey, arr);
+  el.value = '';
+  var list = document.getElementById('notes_'+dkey);
+  if (list) list.innerHTML = renderNotesList(dkey);   // зөвхөн жагсаалтыг шинэчилнэ (аргачлал нээлттэй хэвээр)
+  logActivity('📝 Тэмдэглэл: '+text);
+}
+
+function removeDishNote(dkey, i) {
+  var arr = getDishNotes(dkey);
+  arr.splice(i, 1);
+  saveDishNotes(dkey, arr);
+  var list = document.getElementById('notes_'+dkey);
+  if (list) list.innerHTML = renderNotesList(dkey);
+}
+
 // Угаагчийн тогтмол даалгаварууд
 var WASH_TASKS = [
   {key:'wash_dish',  name:'🫧 Аяга таваг угаах'},
@@ -2227,11 +2284,12 @@ function renderTasks() {
           html += '<div style="font-size:12px;color:var(--muted);padding:6px 0">Хүний тоо мэдэгдэхгүй байна</div>';
         }
 
-        // Хийх аргачлал (HACCP стандарт) — нугалж/дэлгэх
+        // Хийх аргачлал (HACCP стандарт) — нугалж/дэлгэх, дотор нь тэмдэглэлийн хэсэгтэй
         if (recipe && recipe.method) {
           html += '<details style="margin-top:8px;border-top:1px dashed var(--line);padding-top:8px">' +
             '<summary style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;list-style:none">📖 Хийх аргачлал — дэлгэхийн тулд дарна уу</summary>' +
             '<div style="font-size:13px;line-height:1.7;color:var(--ink);background:var(--accent-soft);border-radius:10px;padding:10px 12px;margin-top:6px;white-space:pre-line">'+esc(recipe.method)+'</div>' +
+            notesSectionHtml(dkey) +
           '</details>';
         }
 
