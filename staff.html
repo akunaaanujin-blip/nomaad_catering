@@ -1915,12 +1915,10 @@ function calcPlanned(amtStr, pax) {
   if (!m) return amtStr;
   var val = parseFloat(m[1]) * pax;
   var u = m[2];
-  // Бага нэгжээр (гр/мл) — кг/л болгохгүй
-  if (u === 'кг') return Math.round(val*1000)+' гр';
-  if (u === 'л')  return Math.round(val*1000)+' мл';
-  if (u === 'г')  return Math.round(val)+' гр';
-  if (u === 'мл') return Math.round(val)+' мл';
-  if (u === 'ш')  return val+' ш';
+  if (u === 'г') return val >= 1000 ? (val/1000).toFixed(2)+' кг' : val+' г';
+  if (u === 'кг') return val.toFixed(2)+' кг';
+  if (u === 'мл') return val >= 1000 ? (val/1000).toFixed(2)+' л' : val+' мл';
+  if (u === 'ш') return val+' ш';
   return val+' '+u;
 }
 
@@ -2811,13 +2809,11 @@ function computeShoppingList() {
       var su = String(stk.unit), needU = gramsToStockUnit(a.grams, su);
       if (needU > 0) {
         var sqty = parseFloat(stk.qty) || 0;
-        // Нөөцийн нэгжээс ГРАММ руу хөрвүүлж, бүгдийг гр/мл-ээр харуулна
-        var stockG = (su === 'кг' || su === 'л') ? sqty*1000 : sqty;
-        needed = fmtAmt(a.grams, a.unit);
-        stock  = (su === 'ш' || su === 'шуудай') ? ((Math.round(sqty*100)/100)+' '+su) : fmtAmt(stockG, a.unit);
-        var bG = Math.max(0, a.grams - stockG);
-        buy = bG > 0 ? fmtAmt(bG, a.unit) : '✓ хүрэлцэнэ';
-        buyHi = bG > 0;
+        needed = (Math.round(needU*100)/100) + ' ' + su;
+        stock  = (Math.round(sqty*100)/100) + ' ' + su;
+        var b = Math.max(0, needU - sqty);
+        buy = b > 0 ? (Math.round(b*100)/100) + ' ' + su : '✓ хүрэлцэнэ';
+        buyHi = b > 0;
       } else { needed = fmtAmt(a.grams, a.unit); buy = fmtAmt(a.grams, a.unit); }
     } else { needed = fmtAmt(a.grams, a.unit); buy = fmtAmt(a.grams, a.unit); }
     return { name:String(name), needed:needed, stock:stock, buy:buy, buyHi:buyHi };
@@ -3738,8 +3734,8 @@ function parseQtyRaw(str) {
 }
 function fmtAmt(g, unit) {
   if (unit === 'ш') return (Math.round(g*10)/10) + ' ш';
-  // Бага нэгжээр (гр/мл) — кг/л болгохгүй
-  return Math.round(g) + ' ' + (unit === 'мл' ? 'мл' : 'гр');
+  if (g >= 1000) return (g/1000).toFixed(2) + (unit === 'мл' ? ' л' : ' кг');
+  return Math.round(g) + ' ' + (unit || 'г');
 }
 function reportCard(title, inner) {
   return '<div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--shadow)">' +
