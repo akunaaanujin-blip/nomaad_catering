@@ -1205,7 +1205,6 @@ document.getElementById('of-pax').addEventListener('input', function() {
 // ── Сонгосон хоолуудыг hidden field-д хадгалах ──
 function updateDishesField() {
   var parts = [];
-  var svcParts = [];
   for (var i = 0; i < svcCount; i++) {
     var sv = document.getElementById('svc-sel-' + i);
     if (!sv || !sv.value) continue;
@@ -1214,7 +1213,8 @@ function updateDishesField() {
     var d = document.getElementById('svc-date-' + i);
     var t = document.getElementById('svc-time-' + i);
     var dtStr = (d && d.value ? ' · ' + d.value : '') + (t && t.value ? ' ' + t.value : '');
-    svcParts.push(ORDINALS[i] + ' ' + opt.l + dtStr);
+    // Багцыг эхэнд нь, дараа нь түүний хоолыг шууд доор нь (ээлжилсэн) → даалгавар/захиалга дээр багц бүрийн хоол тусдаа харагдана
+    parts.push(ORDINALS[i] + ' ' + opt.l + dtStr);
     var fp = document.getElementById('food-panel-' + i);
     var type = sv.value;
     if (type === 'por' && fp) {
@@ -1240,7 +1240,6 @@ function updateDishesField() {
       });
     }
   }
-  if (svcParts.length) parts.unshift(svcParts.join(' | '));
   document.getElementById('of-dishes').value = parts.join(' | ');
 }
 

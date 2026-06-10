@@ -1618,47 +1618,39 @@ function dishCategory(raw) {
   return 'buffet';
 }
 
-// Захиалгын үйлчилгээ — АНГИЛАЛААР бүлэглэнэ (нэг ангилалд олон багц/цаг байж болно)
+// Захиалгын үйлчилгээ — багц бүрийг ТУСАД НЬ (дараалсан), хоолыг өмнөх багц дор нь
 function parseOrderSchedule(service) {
-  var out = { groups: [], firstDate: '', firstTime: '' };
+  var out = { groups: [], looseDishes: [], firstDate: '', firstTime: '' };
   if (!service) return out;
-  var packages = [], rawDishes = [];
-  service.split('|').map(function(s){ return s.trim(); }).filter(Boolean).forEach(function(p) {
-    if (/^\d+\s*-?\s*р(?=\s|$)/.test(p) || p.indexOf('₮') >= 0) {
+  var parts = service.split('|').map(function(s){ return s.trim(); }).filter(Boolean);
+  function isPkg(p){ return /^\d+\s*-?\s*р(?=\s|$)/.test(p) || p.indexOf('₮') >= 0; }
+  // Формат таних: багц↔хоол ээлжилсэн (шинэ) бол хоолыг өмнөх багцад; бүх багц урд (хуучин) бол сул жагсаалт
+  var lastPkg = -1, firstDish = -1;
+  parts.forEach(function(p, i){ if (isPkg(p)) lastPkg = i; else if (firstDish < 0) firstDish = i; });
+  var interleaved = (firstDish >= 0 && firstDish < lastPkg);
+  var cur = null;
+  function parseDish(p){
+    var nm = cleanDishName(p);
+    if (!nm) return null;
+    var qm = p.match(/[×x]\s*(\d+)\s*(ширхэг|ш|порц)/i) || p.match(/\((\d+)\s*порц\)/i);
+    return { name:nm, qty:(qm ? ('×'+qm[1]) : '') };
+  }
+  parts.forEach(function(p){
+    if (isPkg(p)) {
       var m = p.match(/·\s*(\d{4})-(\d{2})-(\d{2})[ T]?(\d{1,2}:\d{2})?/);
       var fullDate = m ? (m[1]+'-'+m[2]+'-'+m[3]) : '';
       var time = (m && m[4]) ? m[4] : '';
       var name = p.replace(/^\d+\s*-?\s*р\s*/,'').replace(/\s*\([^)]*₮[^)]*\)/g,'').replace(/\s*·\s*\d{4}-\d{2}-\d{2}[ T]?\d{0,2}:?\d{0,2}.*$/,'').trim();
-      packages.push({ name:name, cat:svcCategory(name), fullDate:fullDate, time:time, disp:(m ? ((+m[2])+'.'+(+m[3])+(time?(' '+time):'')) : '') });
+      cur = { name:name, cat:svcCategory(name), fullDate:fullDate, time:time, disp:(m ? ((+m[2])+'.'+(+m[3])+(time?(' '+time):'')) : ''), dishes:[] };
+      out.groups.push(cur);
     } else {
-      rawDishes.push(p);
+      var d = parseDish(p);
+      if (!d) return;
+      if (interleaved && cur) cur.dishes.push(d);
+      else out.looseDishes.push(d);
     }
   });
-  var defName = { buffet:'Буфет', porc:'Порц хоол', horhog:'Хорхог', breakfast:'Өглөөний цай' };
-  var groupMap = {};
-  function getGroup(cat) {
-    if (!groupMap[cat]) { groupMap[cat] = { cat:cat, name:defName[cat]||'Үйлчилгээ', times:[], dishes:[], _seen:{} }; out.groups.push(groupMap[cat]); }
-    return groupMap[cat];
-  }
-  packages.forEach(function(pk){ var g = getGroup(pk.cat); g.name = pk.name || g.name; g.times.push(pk); });
-  rawDishes.forEach(function(raw){
-    var dcat = dishCategory(raw);
-    var name = cleanDishName(raw);
-    if (!name) return;
-    var qm = raw.match(/[×x]\s*(\d+)\s*(ширхэг|ш|порц)/i) || raw.match(/\((\d+)\s*порц\)/i);
-    var qty = qm ? ('×'+qm[1]) : '';
-    // Тохирох ангилалын групп; багцгүй ангилал ба ганц багцтай бол тэр багц руу
-    var g = groupMap[dcat] ? groupMap[dcat] : (packages.length === 1 ? getGroup(packages[0].cat) : getGroup(dcat));
-    var key = name.toLowerCase();
-    if (!g._seen[key]) { g._seen[key] = 1; g.dishes.push({ name:name, qty:qty }); }   // давхцалгүй
-  });
-  out.groups.forEach(function(g){ g.times.sort(function(a,b){ return (a.fullDate+' '+a.time).localeCompare(b.fullDate+' '+b.time); }); });
-  out.groups.sort(function(a,b){
-    var ta = a.times.length ? (a.times[0].fullDate+' '+a.times[0].time) : 'zzz';
-    var tb = b.times.length ? (b.times[0].fullDate+' '+b.times[0].time) : 'zzz';
-    return ta.localeCompare(tb);
-  });
-  var dated = packages.filter(function(p){ return p.fullDate; }).map(function(p){ return p.fullDate+' '+p.time; }).sort();
+  var dated = out.groups.filter(function(g){ return g.fullDate; }).map(function(g){ return g.fullDate+' '+g.time; }).sort();
   if (dated.length) { var fp = dated[0].split(' '); out.firstDate = fp[0]; out.firstTime = fp[1]||''; }
   return out;
 }
@@ -1681,26 +1673,26 @@ function renderOrderCard(o, isPast) {
   var dateStr2 = sch.firstDate ? formatDateMN(sch.firstDate) : dateStr;
   var timeStr2 = sch.firstTime || timeStr;
 
-  // Үйлчилгээ АНГИЛАЛААР — нэр + бүх цаг нь, доор нь хоол (нэг ангилалд олон багц байж болно)
-  var scheduleHtml = sch.groups.map(function(g){
-    var timeChips = g.times.map(function(t){
-      return '<span style="background:var(--accent,#1F4A38);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;white-space:nowrap">🕒 '+esc(t.disp||'цаг ?')+'</span>';
-    }).join('');
-    var dishes = g.dishes.length
-      ? '<div style="font-size:12.5px;color:var(--muted);margin:5px 0 0 2px;line-height:1.55">🍽 '+g.dishes.map(function(d){
-          return esc(d.name)+(d.qty?' <span style="color:var(--accent);font-weight:700">'+esc(d.qty)+'</span>':'');
-        }).join('  ·  ')+'</div>'
-      : '';
-    return '<div style="margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)">' +
-      '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:5px">' +
-        '<span style="font-weight:700;font-size:13.5px">'+esc(g.name)+
-          (g.times.length>1?' <span style="font-weight:500;color:var(--muted);font-size:11px">'+g.times.length+' удаа</span>':'')+'</span>' +
-        timeChips +
+  // Үйлчилгээ бүрийг ТУСАД НЬ дугаартай — цаг, нэр, доор нь өөрийн хоол
+  function dishLine(arr, indent){
+    return '<div style="font-size:12.5px;color:var(--muted);margin:5px 0 0 '+indent+';line-height:1.55">🍽 '+arr.map(function(d){
+      return esc(d.name)+(d.qty?' <span style="color:var(--accent);font-weight:700">'+esc(d.qty)+'</span>':'');
+    }).join('  ·  ')+'</div>';
+  }
+  var scheduleHtml = sch.groups.map(function(g, idx){
+    return '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)">' +
+      '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px">' +
+        '<span style="background:var(--surface);border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:700;min-width:20px;height:20px;padding:0 5px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center">'+(idx+1)+'</span>' +
+        '<span style="background:var(--accent,#1F4A38);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;white-space:nowrap">🕒 '+esc(g.disp||'цаг ?')+'</span>' +
+        '<span style="font-weight:700;font-size:13.5px">'+esc(g.name)+'</span>' +
       '</div>' +
-      dishes +
+      (g.dishes.length ? dishLine(g.dishes, '30px') : '') +
     '</div>';
   }).join('');
-  var dishListHtml = '';
+  // Багцад хуваарилаагүй хоол (хуучин форматын захиалга) — нэг жагсаалт
+  var dishListHtml = sch.looseDishes.length
+    ? '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)">' + dishLine(sch.looseDishes, '2px') + '</div>'
+    : '';
 
   var badgeClass = status === 'Шинэ' ? 'badge-amber' :
                    status === 'Бэлтгэж байна' ? 'badge-blue' :
