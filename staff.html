@@ -1674,12 +1674,15 @@ function parseService(service) {
   parts.forEach(function(p) {
     // Багц: "1-р Порц хоол (₮38,000/хүн) · 2026-06-06 13:00" гэх мэт
     if (/^\d+\s*-?\s*р(?=\s|$)/.test(p) || p.indexOf('₮') >= 0) {
+      // Огноо+цагийг авна (тухайн хоолны өдөр цаг)
+      var dtm = p.match(/·\s*(\d{4})-(\d{2})-(\d{2})[ T]?(\d{1,2}:\d{2})?/);
+      var dt = dtm ? ((+dtm[2]) + '.' + (+dtm[3]) + (dtm[4] ? (' ' + dtm[4]) : '')) : '';
       var label = p
         .replace(/^\d+\s*-?\s*р\s*/, '')                 // "1-р " хасах
         .replace(/\s*\([^)]*₮[^)]*\)/g, '')              // "(₮38,000/хүн)" хасах
         .replace(/\s*·\s*\d{4}-\d{2}-\d{2}[ T]?\d{0,2}:?\d{0,2}.*$/, '') // "· огноо цаг" хасах
         .trim();
-      if (label) packages.push(label);
+      if (label) packages.push(dt ? (label + ' · 🕒 ' + dt) : label);
     } else {
       var d = p.replace(/\(\d+\s*порц\)/g, '').replace(/\([^)]*г[^)]*\)/g, '').trim();
       if (d) dishes.push(d);
