@@ -1673,25 +1673,28 @@ function renderOrderCard(o, isPast) {
   var dateStr2 = sch.firstDate ? formatDateMN(sch.firstDate) : dateStr;
   var timeStr2 = sch.firstTime || timeStr;
 
-  // Үйлчилгээ бүрийг ТУСАД НЬ дугаартай — цаг, нэр, доор нь өөрийн хоол
-  function dishLine(arr, indent){
-    return '<div style="font-size:12.5px;color:var(--muted);margin:5px 0 0 '+indent+';line-height:1.55">🍽 '+arr.map(function(d){
-      return esc(d.name)+(d.qty?' <span style="color:var(--accent);font-weight:700">'+esc(d.qty)+'</span>':'');
-    }).join('  ·  ')+'</div>';
+  // Имэйлийн хураангуй шиг — "N-р үйлчилгээ: нэр ⏰ бүтэн огноо/цаг", хоол нь товчоор (•)
+  function bullets(arr){
+    return arr.map(function(d){
+      return '<div style="font-size:12.5px;color:#4a443a;margin:3px 0 0 16px;line-height:1.5">• '+esc(d.name)+(d.qty?' <span style="color:var(--accent);font-weight:700">'+esc(d.qty)+'</span>':'')+'</div>';
+    }).join('');
   }
   var scheduleHtml = sch.groups.map(function(g, idx){
-    return '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)">' +
-      '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px">' +
-        '<span style="background:var(--surface);border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:700;min-width:20px;height:20px;padding:0 5px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center">'+(idx+1)+'</span>' +
-        '<span style="background:var(--accent,#1F4A38);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;white-space:nowrap">🕒 '+esc(g.disp||'цаг ?')+'</span>' +
-        '<span style="font-weight:700;font-size:13.5px">'+esc(g.name)+'</span>' +
-      '</div>' +
-      (g.dishes.length ? dishLine(g.dishes, '30px') : '') +
+    var dt = g.fullDate ? (g.fullDate + (g.time ? ' ' + g.time : '')) : (g.disp || '');
+    return '<div style="margin-top:10px">' +
+      '<div style="font-size:13px;font-weight:700;color:var(--ink)">'+(idx+1)+'-р үйлчилгээ: '+esc(g.name)+
+        (dt?' <span style="color:var(--accent);font-weight:700;white-space:nowrap">⏰ '+esc(dt)+'</span>':'')+'</div>' +
+      (g.dishes.length ? bullets(g.dishes) : '') +
     '</div>';
   }).join('');
-  // Багцад хуваарилаагүй хоол (хуучин форматын захиалга) — нэг жагсаалт
+  // Багцад хуваарилаагүй хоол (хуучин форматын захиалга)
   var dishListHtml = sch.looseDishes.length
-    ? '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)">' + dishLine(sch.looseDishes, '2px') + '</div>'
+    ? '<div style="margin-top:8px">'+bullets(sch.looseDishes)+'</div>'
+    : '';
+  // Хамрах хугацаа (хамгийн эрт → хамгийн сүүл огноо)
+  var _ds = sch.groups.filter(function(g){ return g.fullDate; }).map(function(g){ return g.fullDate; }).sort();
+  var rangeHtml = _ds.length
+    ? '<div style="margin-top:11px;font-size:12px;color:var(--muted);font-weight:600">📅 Хамрах хугацаа: '+esc(_ds[0])+(_ds[_ds.length-1]!==_ds[0]?' → '+esc(_ds[_ds.length-1]):'')+'</div>'
     : '';
 
   var badgeClass = status === 'Шинэ' ? 'badge-amber' :
@@ -1711,8 +1714,11 @@ function renderOrderCard(o, isPast) {
         '<span>👤 '+pax+' хүн</span>' +
         '<span>📅 '+dateStr2+(timeStr2?' '+timeStr2:'')+'</span>' +
       '</div>' +
-      (scheduleHtml ? '<div style="margin-top:7px">'+scheduleHtml+'</div>' : '') +
-      dishListHtml +
+      ((scheduleHtml||dishListHtml) ?
+        '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">' +
+          '<div style="font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.4px">🍽 ҮЙЛЧИЛГЭЭ</div>' +
+          scheduleHtml + dishListHtml + rangeHtml +
+        '</div>' : '') +
       '<div class="order-expand-hint">Дэлгэрэнгүй ▾</div>' +
     '</div>' +
     '<div class="order-detail" id="'+detailId+'">' +
