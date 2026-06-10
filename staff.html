@@ -3372,7 +3372,7 @@ function renderStock(data) {
   var expMap   = getStaffExpenseByMaterial();      // ажилтны хоонд гарсан зарлага
   var orderMap = getOrderConsumptionByMaterial();  // захиалгын бодит зарцуулалт (грамм/ш)
   var prepMap  = getPreparedConsumptionByMaterial(); // бэлтгэсэн нөөцөд орсон түүхий орц
-  var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Материал</span><span class="ing-amt-col">Үлдэгдэл</span><span class="ing-unit-col">Нэгж</span><span class="ing-price-col">Нэгж үнэ</span></div>';
+  var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Материал</span><span class="ing-amt-col">Нийт үлд.</span><span class="ing-unit-col">Нэгж</span><span class="ing-price-col">Нэгж үнэ</span></div>';
   var itemCount = 0, totalValue = 0;
   var items = [];
   rows.forEach(function(row) {
@@ -3388,26 +3388,38 @@ function renderStock(data) {
     if (!isNaN(lineVal)) totalValue += lineVal;
     var qtyNum = parseFloat(qty);
     var nameLower = String(name).toLowerCase().trim();
-    // Зарцуулалт: ажилтны зарлага + захиалга + бэлтгэсэн нөөц (бүгд нэгж рүү хөрвүүлсэн)
+    var r2 = function(x){ return Math.round(x*100)/100; };
+    // Зарцуулалт ба боловсруулалт (бүгд нэгж рүү хөрвүүлсэн)
     var usedStaff = expMap[nameLower] || 0;
     var usedOrder = gramsToStockUnit(orderMap[nameLower] || 0, unit);
-    var usedPrep  = gramsToStockUnit(prepMap[nameLower] || 0, unit);
-    var used = usedStaff + usedOrder + usedPrep;
-    var balance = isNaN(qtyNum) ? NaN : (qtyNum - used);
-    items.push({ name:String(name), unit:String(unit||''), qty:(isNaN(balance)?parseFloat(qty):balance), price:price, value:(isNaN(lineVal)?0:lineVal) });
-    var qtyDisplay = isNaN(balance) ? (qty||'—') : (Math.round(balance*100)/100);
+    var usedPrep  = gramsToStockUnit(prepMap[nameLower] || 0, unit);   // боловсруулсан (бэлтгэсэн)
+    // Боловсруулаагүй (түүхий) үлдэгдэл — зарцуулсан ба боловсруулсныг хассан
+    var rawLeft   = isNaN(qtyNum) ? NaN : (qtyNum - usedStaff - usedOrder - usedPrep);
+    // Нийт үлдэгдэл = боловсруулаагүй + боловсруулсан (бэлтгэсэн нь зүгээр хэлбэр нь өөрчлөгдсөн, нөөцөд хэвээр)
+    var totalLeft = isNaN(qtyNum) ? NaN : (qtyNum - usedStaff - usedOrder);
+    // Тооцоонд (авах жагсаалт г.м) түүхий үлдэгдлийг дамжуулна — бэлтгэснийг тэндээ буцааж нэмдэг
+    items.push({ name:String(name), unit:String(unit||''), qty:(isNaN(rawLeft)?parseFloat(qty):rawLeft), price:price, value:(isNaN(lineVal)?0:lineVal) });
+    var totalDisplay = isNaN(totalLeft) ? (qty||'—') : r2(totalLeft);
     var priceDisplay = isNaN(price) ? '—' : price.toLocaleString('mn-MN')+'₮';
-    var over = !isNaN(balance) && balance < 0;   // хэтрүүлж зарцуулсан — улаан анхааруулга
-    var empty = !isNaN(balance) && balance === 0; // дууссан — амбер (анхааруулгагүй)
-    var usedParts = [];
-    if (usedOrder > 0) usedParts.push('−'+(Math.round(usedOrder*100)/100)+' захиалга');
-    if (usedPrep > 0)  usedParts.push('−'+(Math.round(usedPrep*100)/100)+' бэлтгэл');
-    if (usedStaff > 0) usedParts.push('−'+usedStaff+' хоол');
-    var usedNote = usedParts.length ? ' <span style="font-size:10px;color:var(--muted)">('+usedParts.join(', ')+')</span>' : '';
+    var over  = !isNaN(totalLeft) && totalLeft < 0;   // хэтрүүлж зарцуулсан — улаан анхааруулга
+    var empty = !isNaN(totalLeft) && totalLeft === 0; // дууссан — амбер
+    // «Боловсруулсан / боловсруулаагүй» ангилал (зөвхөн бэлтгэсэн нөөц байгаа үед)
+    var classNote = '';
+    if (usedPrep > 0 && !isNaN(totalLeft)) {
+      classNote = '<span style="display:block;font-size:10.5px;font-weight:500;margin-top:3px;line-height:1.5">' +
+        '<span style="color:var(--accent)">✅ Боловсруулсан ' + r2(usedPrep) + esc(String(unit)) + '</span>' +
+        '<span style="color:var(--muted)"> · 📦 Боловсруулаагүй ' + r2(rawLeft) + esc(String(unit)) + '</span>' +
+      '</span>';
+    }
+    // Зарцуулсан тэмдэглэл (захиалга / ажилтны хоол)
+    var consumedParts = [];
+    if (usedOrder > 0) consumedParts.push('−'+r2(usedOrder)+' захиалга');
+    if (usedStaff > 0) consumedParts.push('−'+r2(usedStaff)+' хоол');
+    var consumedNote = consumedParts.length ? ' <span style="font-size:10px;color:var(--muted);font-weight:400">('+consumedParts.join(', ')+')</span>' : '';
     var amtColor = over ? 'color:var(--red)' : (empty ? 'color:var(--amber)' : '');
     html += '<div class="ing-table-row"' + (over ? ' style="background:#fff5f3"' : '') + '>' +
-      '<span class="ing-name-col">' + (over ? '⚠️ ' : '') + esc(String(name))+'</span>' +
-      '<span class="ing-amt-col" style="' + amtColor + '">'+esc(String(qtyDisplay))+usedNote+'</span>' +
+      '<span class="ing-name-col">' + (over ? '⚠️ ' : '') + esc(String(name)) + classNote + '</span>' +
+      '<span class="ing-amt-col" style="' + amtColor + '">'+esc(String(totalDisplay))+consumedNote+'</span>' +
       '<span class="ing-unit-col">'+esc(String(unit))+'</span>' +
       '<span class="ing-price-col">'+esc(priceDisplay)+'</span>' +
     '</div>';
