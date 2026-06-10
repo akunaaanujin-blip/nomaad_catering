@@ -1136,12 +1136,13 @@ body{
     </div>
 
     <!-- Tab 4: Ingredients -->
+    <!-- Tab: Хүнс — Авах жагсаалт -->
     <div id="tab-ingredients" class="tab-panel">
       <div class="section-header">
-        <div class="section-title">🥦 Хүнсний хэрэгцээ</div>
+        <div class="section-title">🛒 Авах хүнс</div>
       </div>
 
-      <div class="ing-section-title">А. 🛒 Авах хүнсний жагсаалт</div>
+      <div class="ing-section-title">🛒 Авах хүнсний жагсаалт</div>
       <div class="ing-section-sub">Ирсэн захиалгаас тооцсон — АВАХ = хэрэгцээ − нөөц</div>
       <div style="display:flex;gap:8px;padding:0 18px 8px">
         <button onclick="downloadShoppingCSV()" style="flex:1;font-family:inherit;font-size:13px;font-weight:700;background:#1d6f42;color:#fff;border:none;border-radius:9px;padding:9px;cursor:pointer">📊 Excel татах</button>
@@ -1159,26 +1160,20 @@ body{
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="ing-section-title" style="margin-top:20px">Б. Ажилтны хоолны зарлага</div>
-      <div class="ing-section-sub">Ажилчдын хоонд хүнснээс гаргасан зарлага — нөөцийн үлдэгдлээс хасагдана</div>
-      <div style="padding:0 18px 10px">
-        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:stretch">
-          <input id="staff-exp-material" list="staff-exp-mat-list" placeholder="Орц сонгох эсвэл шинэ нэр бичих"
-            style="flex:2;min-width:150px;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink)">
-          <datalist id="staff-exp-mat-list"></datalist>
-          <input type="number" id="staff-exp-qty" min="0" step="0.1" placeholder="Тоо"
-            style="flex:1;min-width:70px;font-family:inherit;font-size:14px;font-weight:700;text-align:center;border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff;color:var(--ink)">
-          <button onclick="addStaffExpense()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 16px;cursor:pointer;white-space:nowrap">＋ Зарлага</button>
-        </div>
-        <div id="staff-meal-list"></div>
+    <!-- Tab: Нөөц — Бараа авах + Үлдэгдэл + Ажилтны зарлага -->
+    <div id="tab-noots" class="tab-panel">
+      <div class="section-header">
+        <div class="section-title">📦 Нөөц</div>
       </div>
 
-      <div class="ing-section-title" style="margin-top:20px">В. 📥 Бараа материал авах</div>
+      <div class="ing-section-title">📥 Бараа материал авах</div>
       <div class="ing-section-sub">Шинээр авсан хүнс/барааг бүртгэнэ — нөөцийн үлдэгдэлд нэмэгдэнэ</div>
       <div style="padding:0 18px 10px">
         <input id="buy-material" list="staff-exp-mat-list" placeholder="Орц сонгох эсвэл шинэ нэр бичих"
           style="width:100%;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink);margin-bottom:8px">
+        <datalist id="staff-exp-mat-list"></datalist>
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <input type="number" id="buy-qty" min="0" step="0.1" placeholder="Тоо"
             style="flex:1;min-width:0;font-family:inherit;font-size:14px;font-weight:700;text-align:center;border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff;color:var(--ink)">
@@ -1192,7 +1187,7 @@ body{
         <div id="buy-msg" style="font-size:12px;text-align:center;margin-top:6px"></div>
       </div>
 
-      <div class="ing-section-title" style="margin-top:16px">Г. Одоогийн нөөцийн үлдэгдэл</div>
+      <div class="ing-section-title" style="margin-top:16px">Одоогийн нөөцийн үлдэгдэл</div>
       <div style="padding:0 18px 10px;display:flex;align-items:center;justify-content:space-between">
         <span class="section-sub">Авсан − зарцуулсан = үлдэгдэл</span>
         <button class="btn-refresh" onclick="loadStock()">🔄 Шинэчлэх</button>
@@ -1202,6 +1197,19 @@ body{
           <div class="spinner"></div>
           <p>Уншиж байна...</p>
         </div>
+      </div>
+
+      <div class="ing-section-title" style="margin-top:20px">Ажилтны хоолны зарлага</div>
+      <div class="ing-section-sub">Ажилчдын хоонд хүнснээс гаргасан зарлага — нөөцийн үлдэгдлээс хасагдана</div>
+      <div style="padding:0 18px 10px">
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:stretch">
+          <input id="staff-exp-material" list="staff-exp-mat-list" placeholder="Орц сонгох эсвэл шинэ нэр бичих"
+            style="flex:2;min-width:150px;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink)">
+          <input type="number" id="staff-exp-qty" min="0" step="0.1" placeholder="Тоо"
+            style="flex:1;min-width:70px;font-family:inherit;font-size:14px;font-weight:700;text-align:center;border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff;color:var(--ink)">
+          <button onclick="addStaffExpense()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 16px;cursor:pointer;white-space:nowrap">＋ Зарлага</button>
+        </div>
+        <div id="staff-meal-list"></div>
       </div>
     </div>
 
@@ -1255,7 +1263,10 @@ body{
       <span class="nav-icon">📖</span>Технологи
     </button>
     <button class="nav-item" data-tab="ingredients" id="nav-ingredients" onclick="switchTab('ingredients')">
-      <span class="nav-icon">🥦</span>Хүнс
+      <span class="nav-icon">🛒</span>Авах
+    </button>
+    <button class="nav-item" data-tab="noots" id="nav-noots" onclick="switchTab('noots')">
+      <span class="nav-icon">📦</span>Нөөц
     </button>
     <button class="nav-item" data-tab="prep" id="nav-prep" onclick="switchTab('prep')">
       <span class="nav-icon">🧊</span>Бэлтгэл
@@ -1298,9 +1309,9 @@ var stockData = null;  // нөөцийн sheet-ийн боловсруулсан
 var SHEETS_POST_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
 
 var ROLES = {
-  'Захирал': {pin:'9999', emoji:'👔', tabs:['orders','tasks','recipes','ingredients','prep','perf','staff']},
-  'Тогооч':  {pin:'1122', emoji:'👨‍🍳', tabs:['orders','tasks','recipes','ingredients','prep']},
-  'Бэлтгэгч':{pin:'2233', emoji:'🥘', tabs:['tasks','recipes','ingredients','prep']},
+  'Захирал': {pin:'9999', emoji:'👔', tabs:['orders','tasks','recipes','ingredients','noots','prep','perf','staff']},
+  'Тогооч':  {pin:'1122', emoji:'👨‍🍳', tabs:['orders','tasks','recipes','ingredients','noots','prep']},
+  'Бэлтгэгч':{pin:'2233', emoji:'🥘', tabs:['tasks','recipes','ingredients','noots','prep']},
   'Угаагч':  {pin:'3344', emoji:'🫧', tabs:['tasks']}
 };
 
@@ -1374,7 +1385,7 @@ function enterApp(role) {
   document.getElementById('role-badge').textContent = info.emoji + ' ' + role;
 
   // Show/hide nav tabs
-  var allTabs = ['orders','tasks','recipes','ingredients','prep','perf','staff'];
+  var allTabs = ['orders','tasks','recipes','ingredients','noots','prep','perf','staff'];
   allTabs.forEach(function(t) {
     var btn = document.getElementById('nav-'+t);
     if (info.tabs.indexOf(t) >= 0) {
@@ -1410,7 +1421,8 @@ function switchTab(name) {
 
   if (name === 'orders') renderOrders();
   if (name === 'tasks') renderTasks();
-  if (name === 'ingredients') { renderIngCalc(); renderStaffMealList(); loadStock(); }
+  if (name === 'ingredients') { renderIngCalc(); loadStock(); }
+  if (name === 'noots') { loadStock(); renderStaffMealList(); }
   if (name === 'prep') renderPrepStock();
   if (name === 'perf') renderPerf();
   if (name === 'staff') renderStaffTab();
