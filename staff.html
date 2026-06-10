@@ -2801,6 +2801,7 @@ function computeShoppingList() {
   if (stockData && stockData.items) {
     stockData.items.forEach(function(it){ stockMap[String(it.name).toLowerCase().trim()] = it; });
   }
+  var prepMap = getPreparedConsumptionByMaterial();   // бэлтгэсэн нөөц (түүхийгээс хасагдсаныг буцааж нэмнэ)
   return Object.keys(agg).sort(function(a,b){ return agg[b].grams - agg[a].grams; }).map(function(k) {
     var a = agg[k], stk = stockMap[k];
     var name = stk ? stk.name : a.label;
@@ -2809,9 +2810,12 @@ function computeShoppingList() {
       var su = String(stk.unit), needU = gramsToStockUnit(a.grams, su);
       if (needU > 0) {
         var sqty = parseFloat(stk.qty) || 0;
+        // stk.qty аль хэдийн бэлтгэлийн хэмжээгээр хасагдсан тул буцааж нэмж бодит нөөцийг гаргана
+        var prepU = gramsToStockUnit(prepMap[k] || 0, su);
+        var avail = sqty + prepU;
         needed = (Math.round(needU*100)/100) + ' ' + su;
-        stock  = (Math.round(sqty*100)/100) + ' ' + su;
-        var b = Math.max(0, needU - sqty);
+        stock  = (Math.round(sqty*100)/100) + ' ' + su + (prepU > 0 ? ' +🧊' + (Math.round(prepU*100)/100) : '');
+        var b = Math.max(0, needU - avail);
         buy = b > 0 ? (Math.round(b*100)/100) + ' ' + su : '✓ хүрэлцэнэ';
         buyHi = b > 0;
       } else { needed = fmtAmt(a.grams, a.unit); buy = fmtAmt(a.grams, a.unit); }
@@ -3140,55 +3144,58 @@ function removePrepItem(id) {
 }
 
 // Сонгосон хоолны технологи картаас бэлтгэх (хэрчих/цэвэрлэх) орцыг харуулна
+// Хэмжээ нь хүний тоогоор биш — бэлтгэгч бодит жингээ шууд бичнэ
 function renderPrepIngredients() {
   var box = document.getElementById('prep-ingredients');
   if (!box) return;
-  var dEl = document.getElementById('prep-dish'), pEl = document.getElementById('prep-pax');
+  var dEl = document.getElementById('prep-dish');
   var di = dEl ? dEl.value : '';
-  var pax = pEl ? (parseInt(pEl.value) || 0) : 0;
   if (di === '' || !RECIPES[di]) { box.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">Хоолоо сонгоно уу.</div>'; return; }
-  if (pax <= 0) { box.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">Хэдэн хүнд бэлтгэхээ оруулна уу.</div>'; return; }
   var r = RECIPES[di];
   // Бэлтгэх шаардлагатай орц = хэрчих/цэвэрлэдэг (хорогдолтой) орцууд (амтлагч биш)
   var prepIngs = (r.ingredients || []).filter(function(ing){ return ingLossPct(ing.n, r.cat) > 0; });
   if (!prepIngs.length) { box.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">Энэ хоолд урьдчилан бэлтгэх (хэрчих) орц алга.</div>'; return; }
-  box.innerHTML = '<div style="font-size:11px;color:var(--muted);font-weight:700;margin:8px 0 2px">3. БЭЛДСЭН ОРЦОО ТЭМДЭГЛЭ ('+pax+' хүнд):</div>' +
-    prepIngs.map(function(ing){
-      var pg = plannedGramsRaw(ing.a, pax);
-      var amt = pg ? fmtAmt(pg.g, pg.unit) : esc(ing.a);
-      return '<label style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px dotted var(--line);cursor:pointer">' +
-        '<input type="checkbox" class="prepck" data-ing="'+esc(ing.n)+'" data-g="'+(pg?pg.g:0)+'" data-u="'+(pg?pg.unit:'г')+'" style="width:20px;height:20px;flex:none">' +
-        '<span style="flex:1;font-size:13.5px;font-weight:600">'+esc(ing.n)+'</span>' +
-        '<span style="font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap">'+amt+'</span>' +
-      '</label>';
+  box.innerHTML = '<div style="font-size:11px;color:var(--muted);font-weight:700;margin:10px 0 4px">2. БЭЛДСЭН ЖИНГЭЭ БИЧ:</div>' +
+    prepIngs.map(function(ing, idx){
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dotted var(--line)">' +
+        '<span style="flex:1;font-size:13.5px;font-weight:600;min-width:0">'+esc(ing.n)+
+          ' <span style="font-size:10.5px;color:var(--muted);font-weight:400">('+esc(ing.a)+')</span></span>' +
+        '<input type="number" min="0" step="0.1" class="prepw" data-ing="'+esc(ing.n)+'" data-row="'+idx+'" placeholder="0" ' +
+          'style="width:70px;padding:7px;border:1.5px solid var(--line);border-radius:8px;text-align:right;font-size:14px;font-weight:700;font-family:inherit">' +
+        '<select class="prepu" data-row="'+idx+'" style="padding:7px 4px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:#fff;font-family:inherit">' +
+          '<option value="кг">кг</option><option value="г">г</option><option value="ш">ш</option>' +
+        '</select>' +
+      '</div>';
     }).join('');
 }
 
-// Тэмдэглэсэн орцыг бэлтгэсэн нөөцөд бүртгэнэ (хоолтой холбож)
+// Бичсэн жинг бэлтгэсэн нөөцөд бүртгэнэ (хоолтой холбож, түүхий нөөцөөс хасна)
 function addPrepFromDish() {
   var dEl = document.getElementById('prep-dish');
   var di = dEl ? dEl.value : '';
   if (di === '' || !RECIPES[di]) { alert('Хоолоо сонгоно уу.'); return; }
   var r = RECIPES[di];
-  var checks = document.querySelectorAll('.prepck');
+  var inputs = document.querySelectorAll('.prepw');
   var arr = getPrepStock();
   var made = todayStr();
   var d = new Date(); d.setDate(d.getDate() + 2);
   var exp = d.toISOString().substring(0, 10);   // ердийн бэлтгэсэн орц 2 хоног
   var n = 0;
-  checks.forEach(function(ck){
-    if (!ck.checked) return;
-    var g = parseFloat(ck.dataset.g) || 0, u = ck.dataset.u || 'г', qty, unit;
-    if (g >= 1000) { qty = Math.round(g/10)/100; unit = (u === 'мл' ? 'л' : 'кг'); }
-    else { qty = Math.round(g); unit = (u === 'мл' ? 'мл' : 'г'); }
-    arr.push({ id: String(Date.now())+'_'+n, name: ck.dataset.ing, qty: qty, unit: unit, made: made, exp: exp, dish: r.name });
+  inputs.forEach(function(inp){
+    var v = parseFloat(inp.value) || 0;
+    if (v <= 0) return;
+    var row = inp.dataset.row;
+    var sel = document.querySelector('.prepu[data-row="'+row+'"]');
+    var unit = sel ? sel.value : 'кг';
+    arr.push({ id: String(Date.now())+'_'+n, name: inp.dataset.ing, qty: v, unit: unit, made: made, exp: exp, dish: r.name });
     n++;
   });
-  if (!n) { alert('Бэлдсэн орцоо тэмдэглэнэ үү (☑).'); return; }
+  if (!n) { alert('Дор хаяж нэг орцын жинг бичнэ үү.'); return; }
   savePrepStock(arr);
   logActivity('🧊 ' + r.name + '-д ' + n + ' орц бэлтгэв');
-  renderPrepStock();
-  renderStockFromCache();   // түүхий нөөцөөс хасна
+  if (dEl) dEl.value = '';
+  renderPrepStock();          // форм цэвэрлэгдэнэ
+  renderStockFromCache();     // түүхий нөөцөөс хасна
 }
 
 // Үлдсэн хоног тооцох
@@ -3220,12 +3227,10 @@ function renderPrepStock() {
     var fieldStyle = 'width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:14px';
     html += '<div style="margin:0 14px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)">' +
       '<div style="font-weight:700;font-size:14px;margin-bottom:3px">🧊 Орц бэлтгэх</div>' +
-      '<div style="font-size:11.5px;color:var(--muted);margin-bottom:12px">Хоол сонгоод, технологи картын орцоос <b>бэлдсэнээ тэмдэглэнэ</b> (жнь Нийслэл саладны төмс, лууван хэрчсэн)</div>' +
+      '<div style="font-size:11.5px;color:var(--muted);margin-bottom:12px">Хоол сонгоод, технологи картын орцоос <b>бэлдсэн жингээ</b> бичнэ (жнь Нийслэл саладны төмс, лууван хэрчсэн)</div>' +
       '<div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">1. ХООЛ СОНГОХ</div>' +
-      '<select id="prep-dish" onchange="renderPrepIngredients()" style="'+fieldStyle+';background:#fff;margin-bottom:12px">'+dishOpts+'</select>' +
-      '<div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">2. ХЭДЭН ХҮНД БЭЛТГЭВ?</div>' +
-      '<input id="prep-pax" type="number" min="0" oninput="renderPrepIngredients()" placeholder="Жнь: 50" style="'+fieldStyle+';font-weight:700;font-size:16px;text-align:center;margin-bottom:6px">' +
-      '<div id="prep-ingredients"><div style="font-size:12px;color:var(--muted);padding:8px 0">Хоол ба хүний тоогоо сонгоно уу.</div></div>' +
+      '<select id="prep-dish" onchange="renderPrepIngredients()" style="'+fieldStyle+';background:#fff;margin-bottom:4px">'+dishOpts+'</select>' +
+      '<div id="prep-ingredients"><div style="font-size:12px;color:var(--muted);padding:8px 0">Хоолоо сонгоно уу.</div></div>' +
       '<button onclick="addPrepFromDish()" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;margin-top:12px">✓ Бэлтгэснийг тэмдэглэх</button>' +
     '</div>';
   }
