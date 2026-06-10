@@ -1141,8 +1141,8 @@ body{
         <div class="section-title">🥦 Хүнсний хэрэгцээ</div>
       </div>
 
-      <div class="ing-section-title">А. Захиалгын хүнсний хэрэгцээ</div>
-      <div class="ing-section-sub">Идэвхтэй захиалга дээр үндэслэсэн тооцоо</div>
+      <div class="ing-section-title">А. 🛒 Авах хүнсний жагсаалт</div>
+      <div class="ing-section-sub">Ирсэн захиалгаас тооцсон — АВАХ = хэрэгцээ − нөөц</div>
       <div id="ing-calc-body">
         <div class="ing-table">
           <div class="ing-table-row header">
@@ -2638,59 +2638,76 @@ function renderIngCalc() {
     body.innerHTML = '<div class="ing-table"><div style="padding:20px;text-align:center;font-size:13px;color:var(--muted)">Захиалга байхгүй байна.</div></div>';
     return;
   }
-
-  var totals = {};
   var today = todayStr();
+  var orders = ordersData.filter(function(o){ return !o._parsedDate || o._parsedDate >= today; });
 
-  ordersData.forEach(function(o) {
-    if (o._parsedDate && o._parsedDate < today) return; // skip past
+  // Захиалга бүрийн хоолны орцыг детальд жороор нэгтгэх (нөөцийн нэртэй тааруулж)
+  var agg = {};
+  orders.forEach(function(o) {
     var pax = parseInt(o['хүн'] || o['хүн_тоо'] || o['pax'] || 0) || 0;
     if (pax <= 0) return;
-    var dishes = (o['хоол'] || o['dishes'] || o['үйлчилгээ'] || '').toLowerCase();
-
-    ING_MAP.forEach(function(im) {
-      if (dishes.indexOf(im.match) < 0) return;
-      if (im.grams_map) {
-        Object.keys(im.grams_map).forEach(function(k) {
-          totals[k] = (totals[k]||0) + pax * im.grams_map[k];
-        });
-      } else if (im.grams_each) {
-        im.keys.forEach(function(k) {
-          totals[k] = (totals[k]||0) + pax * im.grams_each;
-        });
-      } else {
-        im.keys.forEach(function(k) {
-          totals[k] = (totals[k]||0) + pax * im.grams;
-        });
-      }
+    var dishes = parseDishes(o['үйлчилгээ'] || o['хоол'] || '');
+    dishes.forEach(function(dn) {
+      var recipe = findRecipe(dn);
+      if (!recipe || !recipe.ingredients) return;
+      recipe.ingredients.forEach(function(ing) {
+        var pg = plannedGramsRaw(ing.a, pax);
+        if (!pg) return;
+        var k = resolveToStockMaterial(ing.n);
+        if (!agg[k]) agg[k] = { grams:0, unit:pg.unit, label:ing.n };
+        agg[k].grams += pg.g;
+      });
     });
   });
+  var keys = Object.keys(agg).sort(function(a,b){ return agg[b].grams - agg[a].grams; });
+  if (!keys.length) {
+    body.innerHTML = '<div class="ing-table"><div style="padding:20px;text-align:center;font-size:13px;color:var(--muted)">Тооцоолох захиалга/жор алга.</div></div>';
+    return;
+  }
 
-  var KG_KEYS = ['хонины мах','гахайн мах','тахианы мах','мах нийт','гурил','төмс','ногоо нийт'];
-  var html = '<div class="ing-table">' +
-    '<div class="ing-table-row header">' +
-      '<span class="ing-name-col">Хүнс</span>' +
-      '<span class="ing-amt-col">Хэрэгцээ</span>' +
-      '<span class="ing-unit-col">Нэгж</span>' +
-    '</div>';
-  var hasAny = false;
+  // Нөөцийн үлдэгдэл (нэрээр)
+  var stockMap = {};
+  if (stockData && stockData.items) {
+    stockData.items.forEach(function(it){ stockMap[String(it.name).toLowerCase().trim()] = it; });
+  }
 
-  KG_KEYS.forEach(function(k) {
-    var grams = totals[k] || 0;
-    if (grams <= 0) return;
-    hasAny = true;
-    var unit = ING_UNITS[k] || 'кг';
-    var display = (grams/1000).toFixed(2);
+  var html = '<div class="ing-table"><div class="ing-table-row header">' +
+    '<span class="ing-name-col">Хүнс</span>' +
+    '<span style="min-width:60px;text-align:right">Хэрэгцээ</span>' +
+    '<span style="min-width:54px;text-align:right">Нөөц</span>' +
+    '<span style="min-width:64px;text-align:right">🛒 Авах</span>' +
+  '</div>';
+
+  keys.forEach(function(k) {
+    var a = agg[k];
+    var stk = stockMap[k];
+    var name = stk ? stk.name : a.label;
+    var neededDisp, stockDisp = '—', buyDisp, buyHi = true;
+    if (stk) {
+      var su = String(stk.unit);
+      var needU = gramsToStockUnit(a.grams, su);
+      if (needU > 0) {
+        var sqty = parseFloat(stk.qty) || 0;
+        neededDisp = (Math.round(needU*100)/100) + ' ' + su;
+        stockDisp  = (Math.round(sqty*100)/100) + ' ' + su;
+        var buy = Math.max(0, needU - sqty);
+        buyDisp = buy > 0 ? (Math.round(buy*100)/100) + ' ' + su : '✓ хүрэлцэнэ';
+        buyHi = buy > 0;
+      } else {
+        neededDisp = fmtAmt(a.grams, a.unit);
+        buyDisp = fmtAmt(a.grams, a.unit);
+      }
+    } else {
+      neededDisp = fmtAmt(a.grams, a.unit);
+      buyDisp = fmtAmt(a.grams, a.unit);
+    }
     html += '<div class="ing-table-row">' +
-      '<span class="ing-name-col">' + esc(k) + '</span>' +
-      '<span class="ing-amt-col">' + display + '</span>' +
-      '<span class="ing-unit-col">' + unit + '</span>' +
+      '<span class="ing-name-col">'+esc(String(name))+'</span>' +
+      '<span style="min-width:60px;text-align:right;color:var(--muted);font-size:12px">'+esc(neededDisp)+'</span>' +
+      '<span style="min-width:54px;text-align:right;font-size:12px;color:var(--muted)">'+esc(stockDisp)+'</span>' +
+      '<span style="min-width:64px;text-align:right;font-weight:700;font-size:13px;color:'+(buyHi?'var(--red)':'var(--accent)')+'">'+esc(buyDisp)+'</span>' +
     '</div>';
   });
-
-  if (!hasAny) {
-    html += '<div style="padding:20px;text-align:center;font-size:13px;color:var(--muted)">Тооцоолол хийх мэдээлэл хангалтгүй байна.</div>';
-  }
   html += '</div>';
   body.innerHTML = html;
 }
@@ -2970,9 +2987,10 @@ function renderStock(data) {
   body.innerHTML = html;
   stockLoaded = true;
   stockData = { items: items, totalValue: totalValue, itemCount: itemCount };
-  // Идэвхтэй табыг шинэчилнэ (өртгийн тайлан / нөөц хүрэлцээ)
+  // Идэвхтэй табыг шинэчилнэ (өртгийн тайлан / нөөц хүрэлцээ / авах жагсаалт)
   if (activeTab === 'perf') renderPerf();
   if (activeTab === 'tasks') renderTasks();
+  if (activeTab === 'ingredients') renderIngCalc();
 }
 
 /* ─────────────────────────────────
