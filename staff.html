@@ -2049,10 +2049,10 @@ function openFinishModal(dkey, panelId, dishName, pax) {
   finishCtx = { dkey:dkey, panelId:panelId, ings:recipe.ingredients };
   document.getElementById('finish-modal-head').innerHTML =
     '<h2 style="font-size:18px;margin:0">✓ '+esc(dishName)+'</h2>' +
-    '<div style="font-size:12px;color:var(--muted);margin-top:3px">Бодит зарцуулсан хэмжээгээ шалгаж/засаад баталгаажуулна уу ('+pax+' хүн)</div>';
+    '<div style="font-size:12px;color:var(--muted);margin-top:3px">Бодит зарцуулсан түүхий (БРУТТО) хэмжээгээ шалгаж/засаад баталгаажуулна уу ('+pax+' хүн)</div>';
   var rows = recipe.ingredients.map(function(ing, i){
     var pg = plannedGramsRaw(ing.a, pax);
-    var planText = pg ? fmtAmt(pg.g, pg.unit) : (pax ? calcPlanned(ing.a, pax) : ing.a);
+    var planText = pg ? fmtAmt(bruttoG(pg.g, ing.n), pg.unit) : (pax ? calcPlanned(ing.a, pax) : ing.a);   // БРУТТО (түүхий)
     var saved = getActual(dkey+'_act_ing_'+i);
     return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)">' +
       '<span style="flex:1;font-size:13px;font-weight:600;min-width:0">'+esc(ing.n)+'</span>' +
@@ -2409,11 +2409,26 @@ function openRecipeModal(idx) {
     '<span class="badge badge-blue" style="margin-left:4px">👤 '+esc(r.portion)+'</span> ' +
     '<span class="badge badge-amber" style="margin-left:4px">⏱ '+esc(r.time)+'</span>';
 
-  var ingHtml = '<div class="recipe-section-title">Орц</div><ul class="ingredient-list">';
+  var ingHtml = '<div class="recipe-section-title">Орц — 1 хүнд</div>' +
+    '<div style="font-size:11px;color:var(--muted);margin:0 0 8px;line-height:1.5">НЕТТО = хоолонд орох цэвэр · <b>БРУТТО = түүхий авах</b> (хорогдол нэмсэн)</div>' +
+    '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+    '<tr style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.3px"><td style="padding:4px">Орц</td><td style="text-align:right">НЕТТО</td><td style="text-align:center">Хорогдол</td><td style="text-align:right">БРУТТО</td></tr>';
   r.ingredients.forEach(function(ing) {
-    ingHtml += '<li><span class="ing-name">'+esc(ing.n)+'</span><span class="ing-amount">'+esc(ing.a)+'</span></li>';
+    var pp = plannedGramsRaw(ing.a, 1);
+    var loss = ingLossPct(ing.n);
+    if (!pp) {
+      ingHtml += '<tr style="border-top:1px solid var(--line)"><td style="padding:6px 4px">'+esc(ing.n)+'</td><td colspan="3" style="text-align:right;color:var(--muted)">'+esc(ing.a||'—')+'</td></tr>';
+      return;
+    }
+    var net = Math.round(pp.g*10)/10, brut = Math.round(bruttoG(pp.g, ing.n));
+    ingHtml += '<tr style="border-top:1px solid var(--line)">' +
+      '<td style="padding:6px 4px">'+esc(ing.n)+'</td>' +
+      '<td style="text-align:right;white-space:nowrap">'+net+pp.unit+'</td>' +
+      '<td style="text-align:center;color:var(--muted)">'+(loss>0?'−'+loss+'%':'—')+'</td>' +
+      '<td style="text-align:right;font-weight:700;color:var(--accent);white-space:nowrap">'+(loss>0?brut:net)+pp.unit+'</td>' +
+    '</tr>';
   });
-  ingHtml += '</ul>';
+  ingHtml += '</table>';
 
   mbody.innerHTML = ingHtml +
     '<div class="recipe-section-title" style="margin-top:16px">Аргачлал</div>' +
@@ -2542,9 +2557,9 @@ function getOrderConsumptionByMaterial() {
       if (!recipe || !recipe.ingredients) return;
       recipe.ingredients.forEach(function(ing, i){
         var g = 0;
-        var actual = getActual(dkey+'_act_ing_'+i);   // тогоочийн оруулсан бодит хэмжээ
+        var actual = getActual(dkey+'_act_ing_'+i);   // тогоочийн оруулсан бодит хэмжээ (БРУТТО)
         if (actual) { var aq = parseQtyRaw(actual); g = aq ? aq.g : 0; }
-        else if (pax > 0) { var pg = plannedGramsRaw(ing.a, pax); g = pg ? pg.g : 0; }
+        else if (pax > 0) { var pg = plannedGramsRaw(ing.a, pax); g = pg ? bruttoG(pg.g, ing.n) : 0; }   // БРУТТО хасна
         if (!g) return;
         var k = resolveToStockMaterial(ing.n);
         map[k] = (map[k] || 0) + g;
@@ -2778,7 +2793,7 @@ function computeShoppingList() {
         if (!pg) return;
         var k = resolveToStockMaterial(ing.n);
         if (!agg[k]) agg[k] = { grams:0, unit:pg.unit, label:ing.n };
-        agg[k].grams += pg.g;
+        agg[k].grams += bruttoG(pg.g, ing.n);   // БРУТТО — хорогдол тооцсон түүхий хэмжээ
       });
     });
   });
@@ -3689,6 +3704,23 @@ function plannedGramsRaw(amtStr, pax) {
   if (u === 'л')  return { g: v*1000, unit: 'мл' };
   if (u === 'ш')  return { g: v, unit: 'ш' };
   return { g: v, unit: u };
+}
+
+/* ── ХОРОГДОЛ (ангилалаар) — НЕТТО → БРУТТО (түүхий авах) ── */
+function ingLossPct(name) {
+  var n = String(name).toLowerCase();
+  // Хорогдолгүй: амтлагч, соус, тос, шингэн, гурил, будаа, бяслаг, өндөг г.м.
+  if (/давс|перец|перц|соус|амтлагч|сироп|зөгийн бал|чихэр|цуу|шүүс|тос|сүү|зөөхий|крем|дашида|буллион|крахмал|турмерик|гоньд|розмарин|сухар|өндөг|бяслаг|^ус$|ус |гич|утаа|гурил|будаа|хөөлгөгч|пүнтүүз|гоймон|пюре/.test(n)) return 0;
+  if (/тахиа/.test(n)) return 25;                                  // тахиа
+  if (/мах|гуя|цул|цээж|^яс|хиам|хорхог|машиндсан/.test(n)) return 30; // мах
+  if (/төмс|лууван|сонгино|байцаа|манжин|сармис|нэрэвч/.test(n)) return 15; // хальсладаг ногоо
+  if (/огурцы|хэмх|чинжүү|помидор|хулуу|брокли|редиска|навч|мөөг|хаш|янцуй|миог|нэрс|гүзээлзгэн|улаан перец|далайн/.test(n)) return 10; // бусад ногоо
+  return 0;
+}
+// НЕТТО грамм → БРУТТО грамм (хорогдол тооцсон, авах/нөөцөд)
+function bruttoG(netG, name) {
+  var loss = ingLossPct(name);
+  return loss > 0 ? (netG / (1 - loss/100)) : netG;
 }
 function parseQtyRaw(str) {
   if (!str) return null;
