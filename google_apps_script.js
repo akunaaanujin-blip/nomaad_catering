@@ -1,4 +1,4 @@
-// NOMAAD Catering — Google Apps Script v2.3
+// NOMAAD Catering — Google Apps Script v2.4 (захиалгад байршил нэмсэн)
 const SHEET_ORDERS  = 'Захиалга';
 const SHEET_CALC    = 'Тооцоо';
 const SHEET_EXPENSE = 'Ажилтны хоол зарлага';
