@@ -1593,21 +1593,55 @@ function buildIngSection(id, service, pax) {
   return html;
 }
 
-// Захиалгын үйлчилгээний хуваарь (багц+цаг) ба цэвэр хоолны жагсаалт
+// Үйлчилгээ/хоолны ангилал тогтоох (багц ↔ хоолыг тааруулахад)
+function svcCategory(name) {
+  var s = String(name).toLowerCase();
+  if (/порц/.test(s)) return 'porc';
+  if (/цай/.test(s)) return 'breakfast';
+  if (/хорхог|боодог/.test(s)) return 'horhog';
+  return 'buffet';
+}
+// Хоолны нэрийг цэвэрлэх (угтвар, × N хүн/ширхэг, (Nг) арилгана)
+function cleanDishName(raw) {
+  return String(raw)
+    .replace(/^Өглөөний цай:\s*/i,'')
+    .replace(/\s*[×x]\s*\d+\s*(хүн|ширхэг|порц).*$/i,'')
+    .replace(/\([^)]*г[^)]*\)/g,'')
+    .trim();
+}
+
+// Захиалгын үйлчилгээний хуваарь — багц бүрийн ДООР өөрийн хоолыг бүлэглэнэ
 function parseOrderSchedule(service) {
   var out = { schedule: [], dishes: [], firstDate: '', firstTime: '' };
   if (!service) return out;
+  var rawDishes = [];
   service.split('|').map(function(s){ return s.trim(); }).filter(Boolean).forEach(function(p) {
     if (/^\d+\s*-?\s*р(?=\s|$)/.test(p) || p.indexOf('₮') >= 0) {
       var m = p.match(/·\s*(\d{4})-(\d{2})-(\d{2})[ T]?(\d{1,2}:\d{2})?/);
       var fullDate = m ? (m[1]+'-'+m[2]+'-'+m[3]) : '';
       var time = (m && m[4]) ? m[4] : '';
       var name = p.replace(/^\d+\s*-?\s*р\s*/,'').replace(/\s*\([^)]*₮[^)]*\)/g,'').replace(/\s*·\s*\d{4}-\d{2}-\d{2}[ T]?\d{0,2}:?\d{0,2}.*$/,'').trim();
-      out.schedule.push({ name:name, fullDate:fullDate, time:time, disp:(m ? ((+m[2])+'.'+(+m[3])+(time?(' '+time):'')) : '') });
+      out.schedule.push({ name:name, fullDate:fullDate, time:time, disp:(m ? ((+m[2])+'.'+(+m[3])+(time?(' '+time):'')) : ''), cat:svcCategory(name), dishes:[] });
     } else {
-      var d = p.replace(/^Өглөөний цай:\s*/,'').replace(/\s*[×x]\s*\d+\s*(хүн|ширхэг).*$/,'').replace(/\(\d+\s*порц\)/g,'').replace(/\([^)]*г[^)]*\)/g,'').trim();
-      if (d) out.dishes.push(d);
+      rawDishes.push(p);   // хоолыг түр хадгалж, дараа нь багцад хуваарилна
     }
+  });
+  // Хоол бүрийг ангилалаар нь тохирох багцын доор оруулна
+  rawDishes.forEach(function(raw) {
+    var dcat;
+    if (/^Өглөөний цай:/i.test(raw)) dcat = 'breakfast';
+    else if (/\(\s*порц\s*\)/i.test(raw)) dcat = 'porc';
+    else if (/хорхог|боодог/i.test(raw)) dcat = 'horhog';
+    else dcat = 'buffet';
+    var name = cleanDishName(raw);
+    if (!name) return;
+    var target = null;
+    for (var i = 0; i < out.schedule.length; i++) {
+      if (out.schedule[i].cat === dcat) { target = out.schedule[i]; break; }
+    }
+    if (target) target.dishes.push(name);
+    else if (out.schedule.length === 1) out.schedule[0].dishes.push(name);  // ганц багц бол түүн дор
+    else out.dishes.push(name);   // тохирох багцгүй — сул жагсаалт
   });
   var dated = out.schedule.filter(function(s){ return s.fullDate; });
   if (dated.length) {
@@ -1636,15 +1670,21 @@ function renderOrderCard(o, isPast) {
   var dateStr2 = sch.firstDate ? formatDateMN(sch.firstDate) : dateStr;
   var timeStr2 = sch.firstTime || timeStr;
 
-  // Үйлчилгээний хуваарь — багц бүр цагтайгаа
+  // Үйлчилгээний хуваарь — багц бүр цагтайгаа, доор нь өөрийн хоол
   var scheduleHtml = sch.schedule.map(function(s){
-    return '<div style="display:flex;align-items:center;gap:7px;margin-top:5px">' +
-      '<span style="background:var(--accent,#1F4A38);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;white-space:nowrap">🕒 '+esc(s.disp||'цаг ?')+'</span>' +
-      '<span style="font-weight:600;font-size:13.5px">'+esc(s.name)+'</span>' +
+    var dishes = s.dishes.length
+      ? '<div style="font-size:12.5px;color:var(--muted);margin:4px 0 0 4px;line-height:1.5">🍽 '+s.dishes.map(esc).join('  ·  ')+'</div>'
+      : '';
+    return '<div style="margin-top:8px">' +
+      '<div style="display:flex;align-items:center;gap:7px">' +
+        '<span style="background:var(--accent,#1F4A38);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;white-space:nowrap">🕒 '+esc(s.disp||'цаг ?')+'</span>' +
+        '<span style="font-weight:600;font-size:13.5px">'+esc(s.name)+'</span>' +
+      '</div>' +
+      dishes +
     '</div>';
   }).join('');
 
-  // Цэвэр хоолны жагсаалт
+  // Багцад ороогүй сул хоол (хэрэв байвал)
   var dishListHtml = sch.dishes.length
     ? '<div style="font-size:12.5px;color:var(--muted);margin-top:9px;line-height:1.55;padding-left:2px">🍽 '+sch.dishes.map(esc).join('  ·  ')+'</div>'
     : '';
