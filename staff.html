@@ -1810,6 +1810,7 @@ function renderOrderCard(o, isPast) {
       (contact ? '<div class="detail-row"><span class="detail-label">👤 Хариуцагч</span><span class="detail-val">'+esc(contact)+'</span></div>' : '') +
       (event ? '<div class="detail-row"><span class="detail-label">🎪 Арга хэмжээ</span><span class="detail-val">'+esc(event)+'</span></div>' : '') +
       (note ? '<div class="detail-row"><span class="detail-label">📝 Тэмдэглэл</span><span class="detail-val">'+esc(note)+'</span></div>' : '') +
+      ((currentRole==='Захирал' || currentRole==='Нягтлан') ? orderCostHtml(o, id) : '') +
       '<button onclick="event.stopPropagation();printOneOrderPDF('+o._idx+')" style="width:100%;margin-top:10px;padding:11px;background:#b8412e;color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer">📄 Энэ захиалгыг PDF татах</button>' +
       '<div style="margin-top:10px;padding:9px 12px;background:var(--surface);border:1px dashed var(--line);border-radius:10px;font-size:12px;color:var(--muted);text-align:center">' +
         'ℹ️ Төлөв нь Даалгавар хэсэгт бүх хоол дуусахад автоматаар шинэчлэгдэнэ' +
@@ -2627,6 +2628,91 @@ function lookupStockUnitPrice(material) {
     if (m) { res.unit = m.unit || res.unit; if (!isNaN(m.price)) res.price = m.price; }
   }
   return res;
+}
+
+/* ── ЗАХИАЛГЫН ӨРТӨГ БА АШИГ ── */
+// Мөнгөн дүн форматлах
+function fmtMNT(n) { return Math.round(n).toLocaleString('mn-MN') + '₮'; }
+
+// Нэг захиалгын орцын өртгийг нөөц дэх үнээр тооцоолно (БРУТТО × нэгж үнэ)
+function computeOrderCost(o) {
+  var pax = parseInt(o['хүн'] || o['хүн_тоо'] || o['pax'] || 0) || 0;
+  if (pax <= 0) return null;
+  var dishes = parseDishes(o['үйлчилгээ'] || o['хоол'] || '');
+  if (!dishes.length) return null;
+  var total = 0, dishLines = [], missingPrice = [];
+  dishes.forEach(function(dn){
+    var r = findRecipe(dn);
+    if (!r || !r.ingredients) return;
+    var dishCost = 0, partial = false;
+    r.ingredients.forEach(function(ing){
+      var pg = plannedGramsRaw(ing.a, pax);
+      if (!pg) return;
+      var key = resolveToStockMaterial(ing.n);
+      var stk = (stockData && stockData.items) ? stockData.items.filter(function(it){ return String(it.name).toLowerCase().trim() === key; })[0] : null;
+      var price = stk ? parseFloat(stk.price) : NaN;
+      if (!stk || isNaN(price) || price <= 0) { partial = true; if (missingPrice.indexOf(ing.n) < 0) missingPrice.push(ing.n); return; }
+      dishCost += gramsToStockUnit(pg.g, stk.unit) * price;
+    });
+    total += dishCost;
+    dishLines.push({ name: r.name, cost: dishCost, partial: partial });
+  });
+  dishLines.sort(function(a,b){ return b.cost - a.cost; });
+  return { pax: pax, total: total, perPax: total / pax, dishLines: dishLines, missingPrice: missingPrice };
+}
+
+// Захиалгад үйлчлүүлэгчээс авах нэг хүний үнэ (localStorage-д хадгална)
+function getOrderPrice(id) { try { return parseFloat(localStorage.getItem('order_ppp_' + id)) || 0; } catch(e){ return 0; } }
+function saveOrderPrice(id, v) { try { localStorage.setItem('order_ppp_' + id, String(v||0)); } catch(e){} }
+
+// Захиалгын дэлгэрэнгүйд харуулах өртөг/ашгийн блок (зөвхөн Захирал/Нягтлан)
+function orderCostHtml(o, id) {
+  if (!stockLoaded) return '<div style="margin-top:10px;padding:10px 12px;background:var(--surface);border:1px dashed var(--line);border-radius:10px;font-size:12px;color:var(--muted);text-align:center">💰 Өртөг тооцоход нөөц ачаална уу (Нөөц таб → Шинэчлэх)</div>';
+  var c = computeOrderCost(o);
+  if (!c) return '';
+  var rows = c.dishLines.map(function(d){
+    return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:3px 0;color:#4a443a">' +
+      '<span style="flex:1;min-width:0">'+esc(d.name)+(d.partial?' <span style="color:var(--amber)">∗</span>':'')+'</span>' +
+      '<span style="font-weight:600;white-space:nowrap">'+fmtMNT(d.cost)+'</span>' +
+    '</div>';
+  }).join('');
+  var ppp = getOrderPrice(id);
+  var profitInner = '';
+  if (ppp > 0) {
+    var rev = ppp * c.pax, profit = rev - c.total, margin = rev > 0 ? Math.round(profit/rev*100) : 0;
+    var pc = profit >= 0 ? 'var(--accent)' : 'var(--red)';
+    profitInner = 'Орлого: <b>'+fmtMNT(rev)+'</b> · Ашиг: <b style="color:'+pc+'">'+fmtMNT(profit)+'</b> <span style="color:'+pc+';font-weight:700">('+margin+'%)</span>';
+  } else {
+    profitInner = '<span style="color:var(--muted);font-size:12px">Нэг хүний үнэ оруулбал ашиг гарна</span>';
+  }
+  var missNote = c.missingPrice.length
+    ? '<div style="margin-top:7px;font-size:11px;color:var(--amber);line-height:1.5">∗ Үнэгүй орц (өртөгт ороогүй): '+c.missingPrice.slice(0,8).map(esc).join(', ')+(c.missingPrice.length>8?'…':'')+'</div>'
+    : '';
+  return '<div style="margin-top:12px;padding:12px 14px;background:#fbf7ef;border:1px solid var(--line);border-radius:12px">' +
+    '<div style="font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.4px;margin-bottom:8px">💰 ӨРТӨГ БА АШИГ</div>' +
+    '<div style="display:flex;justify-content:space-between;gap:8px;font-size:14px;font-weight:800;margin-bottom:2px"><span>Орцын нийт өртөг</span><span>'+fmtMNT(c.total)+'</span></div>' +
+    '<div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--muted);margin-bottom:9px"><span>Нэг хүний өртөг</span><span style="font-weight:700">'+fmtMNT(c.perPax)+'</span></div>' +
+    '<details style="margin-bottom:9px"><summary style="font-size:11.5px;color:var(--accent);cursor:pointer;font-weight:600">🍽 Хоол тус бүрийн өртөг</summary><div style="margin-top:5px">'+rows+'</div></details>' +
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+      '<span style="font-size:12.5px;font-weight:600;white-space:nowrap">Нэг хүнээс авах үнэ:</span>' +
+      '<input type="number" min="0" step="any" id="oprice_'+id+'" value="'+(ppp||'')+'" placeholder="₮" onclick="event.stopPropagation()" oninput="updateOrderProfit(\''+id+'\','+c.pax+','+c.total+')" style="width:110px;font-family:inherit;font-size:14px;font-weight:700;text-align:right;border:1.5px solid var(--line);border-radius:9px;padding:7px 9px;background:#fff;color:var(--ink)">' +
+    '</div>' +
+    '<div id="oprofit_'+id+'" style="margin-top:8px;font-size:13.5px;font-weight:600">'+profitInner+'</div>' +
+    missNote +
+  '</div>';
+}
+
+function updateOrderProfit(id, pax, cost) {
+  var inp = document.getElementById('oprice_' + id);
+  if (!inp) return;
+  var ppp = parseFloat(inp.value) || 0;
+  saveOrderPrice(id, ppp);
+  var el = document.getElementById('oprofit_' + id);
+  if (!el) return;
+  if (ppp <= 0) { el.innerHTML = '<span style="color:var(--muted);font-size:12px">Нэг хүний үнэ оруулбал ашиг гарна</span>'; return; }
+  var rev = ppp * pax, profit = rev - cost, margin = rev > 0 ? Math.round(profit/rev*100) : 0;
+  var pc = profit >= 0 ? 'var(--accent)' : 'var(--red)';
+  el.innerHTML = 'Орлого: <b>'+fmtMNT(rev)+'</b> · Ашиг: <b style="color:'+pc+'">'+fmtMNT(profit)+'</b> <span style="color:'+pc+';font-weight:700">('+margin+'%)</span>';
 }
 
 // Хүнсийг түр жагсаалтад нэмнэ (хараахан зарлага гаргаагүй)
