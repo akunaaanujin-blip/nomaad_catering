@@ -1194,6 +1194,9 @@ body{
           </div>
         </div>
       </div>
+
+      <!-- Нэмэлт хүнсний хүсэлт: Тогооч→Захирал→Нягтлан -->
+      <div id="requests-section" style="padding:0 14px 14px"></div>
     </div>
 
     <!-- Tab: Нөөц — Бараа авах + Үлдэгдэл + Ажилтны зарлага -->
@@ -1478,7 +1481,7 @@ function switchTab(name) {
 
   if (name === 'orders') renderOrders();
   if (name === 'tasks') renderTasks();
-  if (name === 'ingredients') { renderIngCalc(); loadStock(); }
+  if (name === 'ingredients') { renderIngCalc(); loadStock(); loadRequests(); }
   if (name === 'noots') {
     loadStock(); renderStaffMealList(); renderStaffExpenseDraft(); renderPurchaseDraft();
     var bs = document.getElementById('buy-section');   // бараа авах — зөвхөн Захирал/Нягтлан
@@ -2834,6 +2837,97 @@ function renderIngCalc() {
     '</div>';
   }
   body.innerHTML = html;
+}
+
+/* ── Нэмэлт хүнсний хүсэлт: Тогооч → Захирал → Нягтлан (Google Sheet-ээр) ── */
+var requestsData = [];
+
+function loadRequests() {
+  var cb = 'reqCb_' + Date.now();
+  var done = false;
+  var t = setTimeout(function(){ if(!done){ done=true; delete window[cb]; } }, 9000);
+  window[cb] = function(d){
+    if (done) return; done = true; clearTimeout(t); delete window[cb];
+    requestsData = (d && d.requests) ? d.requests : [];
+    var sc = document.getElementById('_reqscript'); if (sc) sc.remove();
+    renderRequestsSection();
+  };
+  var s = document.createElement('script'); s.id = '_reqscript';
+  s.src = SHEETS_POST_URL + '?action=requests&callback=' + cb;
+  s.onerror = function(){ if(done)return; done=true; clearTimeout(t); delete window[cb]; var e=document.getElementById('_reqscript'); if(e)e.remove(); renderRequestsSection(); };
+  document.head.appendChild(s);
+}
+
+function postJSON(payload) {
+  try { fetch(SHEETS_POST_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(payload) }).catch(function(){}); } catch(e){}
+}
+
+function addRequest() {
+  var mat = (document.getElementById('req-material').value || '').trim();
+  var qty = parseFloat(document.getElementById('req-qty').value) || 0;
+  var unit = document.getElementById('req-unit').value;
+  if (!mat) { alert('Авах хүнсний нэрээ бичнэ үү.'); return; }
+  var id = String(Date.now());
+  requestsData.unshift({ id:id, материал:mat, тоо:(qty||''), нэгж:unit, хүсэгч:currentRole||'', статус:'Хүлээгдэж буй', огноо:todayStr() });
+  postJSON({ type:'request', id:id, material:mat, qty:qty, unit:unit, by:currentRole||'', date:todayStr(), status:'Хүлээгдэж буй' });
+  document.getElementById('req-material').value = ''; document.getElementById('req-qty').value = '';
+  logActivity('➕ Хүсэлт: ' + mat + ' ' + qty + unit);
+  renderRequestsSection();
+}
+
+function updateRequest(id, status) {
+  requestsData.forEach(function(r){ if (r.id === id) r.статус = status; });
+  postJSON({ type:'request_update', id:id, status:status });
+  logActivity((status==='Зөвшөөрсөн'?'✅':'❌') + ' Хүсэлт ' + status);
+  renderRequestsSection();
+}
+
+function reqRow(r, actions) {
+  var amt = (r.тоо ? esc(String(r.тоо)) + ' ' : '') + esc(r.нэгж || '');
+  var sc = r.статус==='Зөвшөөрсөн' ? 'var(--accent)' : (r.статус==='Татгалзсан' ? 'var(--red)' : 'var(--amber)');
+  return '<div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:6px">' +
+    '<div style="flex:1;min-width:0"><span style="font-weight:600;font-size:13px">'+esc(r.материал)+'</span> <span style="color:var(--accent);font-weight:700">'+amt+'</span>' +
+      (r.хүсэгч ? ' <span style="font-size:11px;color:var(--muted)">· '+esc(r.хүсэгч)+'</span>' : '') + '</div>' +
+    (actions || '<span style="font-size:11px;font-weight:700;color:'+sc+';white-space:nowrap">'+esc(r.статус)+'</span>') +
+  '</div>';
+}
+
+function renderRequestsSection() {
+  var el = document.getElementById('requests-section');
+  if (!el) return;
+  fillIngredientDatalist();   // req-material-ийн санал
+  var pend = requestsData.filter(function(r){ return r.статус==='Хүлээгдэж буй'; });
+  var appr = requestsData.filter(function(r){ return r.статус==='Зөвшөөрсөн'; });
+  var title = function(t){ return '<div class="ing-section-title" style="margin-top:18px;padding-left:4px">'+t+'</div>'; };
+  var empty = function(t){ return '<div style="font-size:12px;color:var(--muted);padding:4px 0">'+t+'</div>'; };
+  var html = '';
+
+  if (currentRole==='Тогооч' || currentRole==='Бэлтгэгч') {
+    html += title('➕ Нэмэлт хүнсний хүсэлт — Захиралд илгээх');
+    html += '<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:stretch">' +
+      '<input id="req-material" list="staff-exp-mat-list" placeholder="Авах хүнс" style="flex:2;min-width:130px;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink)">' +
+      '<input id="req-qty" type="number" min="0" step="0.1" placeholder="Тоо" style="flex:1;min-width:56px;font-family:inherit;font-size:14px;font-weight:700;text-align:center;border:1.5px solid var(--line);border-radius:10px;padding:9px 8px;background:#fff;color:var(--ink)">' +
+      '<select id="req-unit" style="flex:1;min-width:62px;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 6px;background:#fff"><option value="кг">кг</option><option value="ш">ш</option><option value="шуудай">шуудай</option><option value="л">л</option><option value="г">г</option></select>' +
+      '<button onclick="addRequest()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:9px 16px;cursor:pointer;white-space:nowrap">📤 Илгээх</button>' +
+    '</div>';
+    var mine = requestsData.filter(function(r){ return r.хүсэгч===currentRole; });
+    html += mine.length ? mine.map(function(r){ return reqRow(r); }).join('') : empty('Хүсэлт илгээгээгүй байна.');
+
+  } else if (currentRole==='Захирал') {
+    html += title('📋 Хүлээгдэж буй хүсэлтүүд ('+pend.length+')');
+    html += pend.length ? pend.map(function(r){
+      var act = '<button onclick="updateRequest(\''+r.id+'\',\'Зөвшөөрсөн\')" style="font-family:inherit;font-size:12px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 11px;cursor:pointer;white-space:nowrap">✓ Зөвшөөрөх</button>' +
+        '<button onclick="updateRequest(\''+r.id+'\',\'Татгалзсан\')" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--surface);color:var(--red);border:1.5px solid var(--red);border-radius:8px;padding:6px 9px;cursor:pointer;margin-left:5px">✕</button>';
+      return reqRow(r, act);
+    }).join('') : empty('Хүлээгдэж буй хүсэлт алга.');
+    if (appr.length) { html += title('✅ Зөвшөөрсөн ('+appr.length+')'); html += appr.map(function(r){ return reqRow(r); }).join(''); }
+
+  } else if (currentRole==='Нягтлан') {
+    html += title('🧾 Эцсийн авах захиалга — зөвшөөрсөн нэмэлт бараа');
+    html += appr.length ? appr.map(function(r){ return reqRow(r); }).join('') : empty('Зөвшөөрсөн нэмэлт бараа алга.');
+    html += '<div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">ℹ️ Дээрх «Авах хүнсний жагсаалт» (захиалгаас) + эдгээр зөвшөөрсөн бараа = <b>эцсийн авах захиалга</b>.</div>';
+  }
+  el.innerHTML = html;
 }
 
 // Excel (CSV) татах — UTF-8 BOM-той (кирилл зөв)

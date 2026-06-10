@@ -1,8 +1,9 @@
-// NOMAAD Catering — Google Apps Script v2.4 (захиалгад байршил нэмсэн)
-const SHEET_ORDERS  = 'Захиалга';
-const SHEET_CALC    = 'Тооцоо';
-const SHEET_EXPENSE = 'Ажилтны хоол зарлага';
-const STOCK_GID     = 1696013893;   // Худалдан авалт / нөөцийн хуудас
+// NOMAAD Catering — Google Apps Script v2.5 (худалдан авах хүсэлтийн урсгал нэмсэн)
+const SHEET_ORDERS   = 'Захиалга';
+const SHEET_CALC     = 'Тооцоо';
+const SHEET_EXPENSE  = 'Ажилтны хоол зарлага';
+const SHEET_REQUESTS = 'Худалдан авах хүсэлт';
+const STOCK_GID      = 1696013893;   // Худалдан авалт / нөөцийн хуудас
 
 function doPost(e) {
   try {
@@ -11,10 +12,50 @@ function doPost(e) {
     if (data.type === 'order') saveOrder(ss, data);
     else if (data.type === 'expense') saveExpense(ss, data);
     else if (data.type === 'purchase') savePurchase(ss, data);
+    else if (data.type === 'request') saveRequest(ss, data);
+    else if (data.type === 'request_update') updateRequest(ss, data);
     else saveCalc(ss, data);
     return json({ status: 'ok' });
   } catch (err) {
     return json({ status: 'error', error: err.message });
+  }
+}
+
+// Тогоочийн нэмэлт хүнсний хүсэлтийг бүртгэнэ
+function saveRequest(ss, data) {
+  let sheet = ss.getSheetByName(SHEET_REQUESTS);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_REQUESTS);
+    const h = ['ID','Огноо','Бараа','Тоо','Нэгж','Хүсэлт гаргасан','Статус','Тэмдэглэл'];
+    sheet.appendRow(h);
+    const hr = sheet.getRange(1, 1, 1, h.length);
+    hr.setFontWeight('bold'); hr.setBackground('#C8743F'); hr.setFontColor('#ffffff');
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidths(1, 8, [120, 130, 180, 60, 70, 130, 120, 200]);
+  }
+  sheet.appendRow([
+    String(data.id || Date.now()),
+    data.date || '',
+    data.material || '',
+    Number(data.qty) || '',
+    data.unit || '',
+    data.by || '',
+    data.status || 'Хүлээгдэж буй',
+    data.note || '',
+  ]);
+}
+
+// Хүсэлтийн статусыг (Зөвшөөрсөн/Татгалзсан) шинэчилнэ
+function updateRequest(ss, data) {
+  const sheet = ss.getSheetByName(SHEET_REQUESTS);
+  if (!sheet || sheet.getLastRow() < 2) return;
+  const ids = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+  for (let i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]) === String(data.id)) {
+      sheet.getRange(i + 2, 7).setValue(data.status || '');
+      if (data.note != null) sheet.getRange(i + 2, 8).setValue(data.note);
+      return;
+    }
   }
 }
 
@@ -91,7 +132,25 @@ function doGet(e) {
       return respond({ orders: orders.reverse() }, callback);
     }
 
-    return respond({ status: 'ok', message: 'NOMAAD Catering API v2.1' }, callback);
+    if (action === 'requests') {
+      const ss    = SpreadsheetApp.getActiveSpreadsheet();
+      const sheet = ss.getSheetByName(SHEET_REQUESTS);
+      if (!sheet || sheet.getLastRow() < 2) return respond({ requests: [] }, callback);
+      const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 8).getValues();
+      const requests = rows.map(r => ({
+        id:        String(r[0]),
+        огноо:     r[1] ? (function(){ try { return Utilities.formatDate(new Date(r[1]), 'Asia/Ulaanbaatar', 'yyyy-MM-dd HH:mm'); } catch(e){ return String(r[1]); } })() : '',
+        материал:  r[2] || '',
+        тоо:       r[3] || '',
+        нэгж:      r[4] || '',
+        хүсэгч:    r[5] || '',
+        статус:    r[6] || 'Хүлээгдэж буй',
+        тэмдэглэл: r[7] || '',
+      })).filter(x => x.материал);
+      return respond({ requests: requests.reverse() }, callback);
+    }
+
+    return respond({ status: 'ok', message: 'NOMAAD Catering API v2.5' }, callback);
   } catch (err) {
     return respond({ status: 'error', error: err.message }, e.parameter.callback);
   }
