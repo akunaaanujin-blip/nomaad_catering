@@ -1187,8 +1187,25 @@ body{
         <div id="buy-msg" style="font-size:12px;text-align:center;margin-top:6px"></div>
       </div>
 
-      <div class="ing-section-title" style="margin-top:16px">Одоогийн нөөцийн үлдэгдэл</div>
-      <div style="padding:0 18px 10px;display:flex;align-items:center;justify-content:space-between">
+      <!-- Ажилтны хоолны зарлага — дээш зөөв; олон хүнс нэмж нэг товчоор гаргана -->
+      <div class="ing-section-title" style="margin-top:16px">🍱 Ажилтны хоолны зарлага</div>
+      <div class="ing-section-sub">Хүнсээ нэг нэгээр нэмээд, эцэст нь «Зарлага гаргах» товч дарна — нөөцийн үлдэгдлээс хасагдана</div>
+      <div style="padding:0 18px 10px">
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:stretch">
+          <input id="staff-exp-material" list="staff-exp-mat-list" placeholder="Орц сонгох эсвэл шинэ нэр бичих"
+            style="flex:2;min-width:150px;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink)">
+          <input type="number" id="staff-exp-qty" min="0" step="0.1" placeholder="Тоо" onkeydown="if(event.key==='Enter'){event.preventDefault();addStaffExpenseDraft();}"
+            style="flex:1;min-width:70px;font-family:inherit;font-size:14px;font-weight:700;text-align:center;border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff;color:var(--ink)">
+          <button onclick="addStaffExpenseDraft()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--surface);color:var(--accent);border:1.5px solid var(--accent);border-radius:10px;padding:10px 16px;cursor:pointer;white-space:nowrap">＋ Нэмэх</button>
+        </div>
+        <div id="staff-exp-draft"></div>
+        <div id="staff-exp-msg" style="font-size:12px;text-align:center;margin:4px 0"></div>
+        <div id="staff-meal-list" style="margin-top:8px"></div>
+      </div>
+
+      <!-- Нөөцийн үлдэгдэл + татах товчнууд -->
+      <div class="ing-section-title" style="margin-top:20px">📦 Одоогийн нөөцийн үлдэгдэл</div>
+      <div style="padding:0 18px 8px;display:flex;align-items:center;justify-content:space-between">
         <span class="section-sub">Авсан − зарцуулсан = үлдэгдэл</span>
         <button class="btn-refresh" onclick="loadStock()">🔄 Шинэчлэх</button>
       </div>
@@ -1198,18 +1215,10 @@ body{
           <p>Уншиж байна...</p>
         </div>
       </div>
-
-      <div class="ing-section-title" style="margin-top:20px">Ажилтны хоолны зарлага</div>
-      <div class="ing-section-sub">Ажилчдын хоонд хүнснээс гаргасан зарлага — нөөцийн үлдэгдлээс хасагдана</div>
-      <div style="padding:0 18px 10px">
-        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:stretch">
-          <input id="staff-exp-material" list="staff-exp-mat-list" placeholder="Орц сонгох эсвэл шинэ нэр бичих"
-            style="flex:2;min-width:150px;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink)">
-          <input type="number" id="staff-exp-qty" min="0" step="0.1" placeholder="Тоо"
-            style="flex:1;min-width:70px;font-family:inherit;font-size:14px;font-weight:700;text-align:center;border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff;color:var(--ink)">
-          <button onclick="addStaffExpense()" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 16px;cursor:pointer;white-space:nowrap">＋ Зарлага</button>
-        </div>
-        <div id="staff-meal-list"></div>
+      <div style="padding:10px 18px 6px;display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="downloadStockBalanceCSV()" style="flex:1;min-width:120px;font-family:inherit;font-size:13px;font-weight:700;background:#1d6f42;color:#fff;border:none;border-radius:9px;padding:9px;cursor:pointer">📊 Үлдэгдэл (Excel)</button>
+        <button onclick="downloadStockRawCSV()" style="flex:1;min-width:120px;font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px;cursor:pointer">📦 Нөөц (Excel)</button>
+        <button onclick="printStockPDF()" style="flex:1;min-width:90px;font-family:inherit;font-size:13px;font-weight:700;background:#b8412e;color:#fff;border:none;border-radius:9px;padding:9px;cursor:pointer">📄 PDF</button>
       </div>
     </div>
 
@@ -1422,7 +1431,7 @@ function switchTab(name) {
   if (name === 'orders') renderOrders();
   if (name === 'tasks') renderTasks();
   if (name === 'ingredients') { renderIngCalc(); loadStock(); }
-  if (name === 'noots') { loadStock(); renderStaffMealList(); }
+  if (name === 'noots') { loadStock(); renderStaffMealList(); renderStaffExpenseDraft(); }
   if (name === 'prep') renderPrepStock();
   if (name === 'perf') renderPerf();
   if (name === 'staff') renderStaffTab();
@@ -2601,33 +2610,80 @@ function getPreparedConsumptionByMaterial() {
   return map;
 }
 
-function addStaffExpense() {
-  var material = (document.getElementById('staff-exp-material').value || '').trim();
-  var qty = parseFloat(document.getElementById('staff-exp-qty').value) || 0;
-  if (!material) { alert('Хүнсээ сонгоно уу.'); return; }
-  if (qty <= 0) { alert('Тоо хэмжээгээ оруулна уу.'); return; }
-  // Нөөцөөс нэгж ба үнийг автоматаар олно (олдохгүй бол кг)
-  var unit = 'кг', price = 0;
+// Гаргах гэж буй хүнсний түр жагсаалт (commit хийгээгүй)
+var staffExpenseDraft = [];
+
+// Нөөцөөс материалын нэгж ба үнийг автоматаар олно (олдохгүй бол кг/0)
+function lookupStockUnitPrice(material) {
+  var res = { unit: 'кг', price: 0 };
   if (stockData && stockData.items) {
     var m = stockData.items.filter(function(it){ return String(it.name).toLowerCase().trim() === material.toLowerCase().trim(); })[0];
-    if (m) { unit = m.unit || unit; if (!isNaN(m.price)) price = m.price; }
+    if (m) { res.unit = m.unit || res.unit; if (!isNaN(m.price)) res.price = m.price; }
   }
+  return res;
+}
+
+// Хүнсийг түр жагсаалтад нэмнэ (хараахан зарлага гаргаагүй)
+function addStaffExpenseDraft() {
+  var matEl = document.getElementById('staff-exp-material');
+  var qtyEl = document.getElementById('staff-exp-qty');
+  var material = (matEl.value || '').trim();
+  var qty = parseFloat(qtyEl.value) || 0;
+  if (!material) { alert('Хүнсээ сонгоно уу.'); return; }
+  if (qty <= 0) { alert('Тоо хэмжээгээ оруулна уу.'); return; }
+  var up = lookupStockUnitPrice(material);
+  staffExpenseDraft.push({ material: material, qty: qty, unit: up.unit, price: up.price });
+  matEl.value = ''; qtyEl.value = '';
+  matEl.focus();
+  var msg = document.getElementById('staff-exp-msg'); if (msg) msg.textContent = '';
+  renderStaffExpenseDraft();
+}
+
+function removeStaffExpenseDraft(idx) {
+  staffExpenseDraft.splice(idx, 1);
+  renderStaffExpenseDraft();
+}
+
+// Түр жагсаалтыг харуулна + «Зарлага гаргах» товч
+function renderStaffExpenseDraft() {
+  var el = document.getElementById('staff-exp-draft');
+  if (!el) return;
+  if (!staffExpenseDraft.length) { el.innerHTML = ''; return; }
+  var rows = staffExpenseDraft.map(function(d, i){
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px dashed var(--accent);border-radius:10px;padding:7px 12px;margin-bottom:6px">' +
+      '<span style="font-weight:600;font-size:13px;flex:1;min-width:0">'+esc(d.material)+'</span>' +
+      '<span style="font-weight:700;color:var(--accent);white-space:nowrap">'+esc(String(d.qty))+' '+esc(d.unit)+'</span>' +
+      '<button onclick="removeStaffExpenseDraft('+i+')" style="border:none;background:none;color:var(--red);font-size:16px;cursor:pointer;padding:2px 4px">✕</button>' +
+    '</div>';
+  }).join('');
+  el.innerHTML = '<div style="margin-bottom:8px">'+rows+'</div>' +
+    '<button onclick="submitStaffExpense()" style="width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">✓ Зарлага гаргах ('+staffExpenseDraft.length+')</button>';
+}
+
+// Түр жагсаалтын БҮХ хүнсийг нэг дор зарлага болгож бүртгэнэ
+function submitStaffExpense() {
+  if (!staffExpenseDraft.length) { alert('Эхлээд хүнс нэмнэ үү.'); return; }
   var arr = getStaffExpense();
-  arr.unshift({ id: Date.now(), material: material, qty: qty, unit: unit, price: price, date: todayStr() });
+  var today = todayStr();
+  var count = staffExpenseDraft.length;
+  staffExpenseDraft.forEach(function(d, i){
+    arr.unshift({ id: String(Date.now())+'_'+i, material: d.material, qty: d.qty, unit: d.unit, price: d.price, date: today });
+    logActivity('🍱 Ажилтны хоол зарлага: ' + d.material + ' ' + d.qty + d.unit);
+    // Google Sheet рүү бичих (Apps Script — тусдаа "Ажилтны хоол зарлага" таб)
+    try {
+      fetch(SHEETS_POST_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ type: 'expense', material: d.material, qty: d.qty, unit: d.unit, price: d.price, date: today })
+      }).catch(function(){});
+    } catch(e) {}
+  });
   saveStaffExpense(arr);
-  document.getElementById('staff-exp-material').value = '';
-  document.getElementById('staff-exp-qty').value = '';
-  logActivity('🍱 Ажилтны хоол зарлага: ' + material + ' ' + qty + unit);
-  // Google Sheet рүү бичих (Apps Script — тусдаа "Ажилтны хоол зарлага" таб)
-  try {
-    fetch(SHEETS_POST_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ type: 'expense', material: material, qty: qty, unit: unit, price: price, date: todayStr() })
-    }).catch(function(){});
-  } catch(e) {}
+  staffExpenseDraft = [];
+  renderStaffExpenseDraft();
   renderStaffMealList();
   renderStockFromCache();   // нөөцийн үлдэгдлийг шинэчилнэ
+  var msg = document.getElementById('staff-exp-msg');
+  if (msg) { msg.style.color = 'var(--accent)'; msg.textContent = '✓ ' + count + ' хүнсний зарлага гарлаа — нөөцөөс хасагдлаа'; setTimeout(function(){ if (msg) msg.textContent = ''; }, 4000); }
 }
 
 function removeStaffExpense(id) {
@@ -2792,6 +2848,70 @@ function printShoppingPDF() {
     '<h2>🛒 Авах хүнсний жагсаалт — NOMAAD</h2>' +
     '<div class="sub">'+formatDateMN(todayStr())+' · ирсэн захиалгаас тооцсон</div>' +
     '<table><thead><tr><th>Хүнс</th><th>Хэрэгцээ</th><th>Нөөц</th><th>🛒 Авах</th></tr></thead><tbody>'+body+'</tbody></table>' +
+    '</body></html>';
+  var w = window.open('', '_blank');
+  if (!w) { alert('Хэвлэх цонх нээгдсэнгүй (pop-up зөвшөөрнө үү).'); return; }
+  w.document.write(doc); w.document.close();
+  setTimeout(function(){ w.focus(); w.print(); }, 350);
+}
+
+// ── Татах туслах: CSV-г UTF-8 BOM-той татна (Excel дээр кирилл зөв) ──
+function downloadCSV(csv, filename) {
+  var blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+}
+
+// Нөөцийн ҮЛДЭГДЭЛ татах (Excel) — зарцуулалт хассан одоогийн үлдэгдэл
+function downloadStockBalanceCSV() {
+  if (!stockData || !stockData.items || !stockData.items.length) { alert('Нөөцийн мэдээлэл алга. Эхлээд «🔄 Шинэчлэх» дарна уу.'); return; }
+  var csv = 'Материал,Үлдэгдэл,Нэгж,Нэгж үнэ (₮),Нийт өртөг (₮)\n';
+  stockData.items.forEach(function(it){
+    var bal = Math.round((parseFloat(it.qty)||0)*100)/100;
+    csv += '"'+String(it.name).replace(/"/g,'""')+'",'+bal+',"'+(it.unit||'')+'",'+(isNaN(it.price)?'':it.price)+','+(it.value||0)+'\n';
+  });
+  csv += 'НИЙТ,,,,'+(stockData.totalValue||0)+'\n';
+  downloadCSV(csv, 'Нөөц_үлдэгдэл_' + todayStr() + '.csv');
+}
+
+// НӨӨЦ / худалдан авалт татах (Excel) — sheet дэх түүхий бүртгэл (хасалтгүй)
+function downloadStockRawCSV() {
+  var rows = _stockRaw && _stockRaw.table && _stockRaw.table.rows;
+  if (!rows || !rows.length) { alert('Нөөцийн мэдээлэл алга. Эхлээд «🔄 Шинэчлэх» дарна уу.'); return; }
+  var csv = 'Огноо,Материал,Нэгж,Тоо,Нэгж үнэ (₮),Нийт дүн (₮)\n';
+  rows.forEach(function(row){
+    var c = row.c || [];
+    var name = c[2] && c[2].v != null ? c[2].v : '';
+    if (!name) return;
+    var date = c[1] && c[1].v != null ? c[1].v : '';
+    var unit = c[3] && c[3].v != null ? c[3].v : '';
+    var qty  = c[4] && c[4].v != null ? c[4].v : '';
+    var price = c[5] && c[5].v != null ? c[5].v : '';
+    var tot  = c[6] && c[6].v != null ? c[6].v : '';
+    csv += '"'+String(date)+'","'+String(name).replace(/"/g,'""')+'","'+unit+'",'+qty+','+price+','+tot+'\n';
+  });
+  downloadCSV(csv, 'Нөөц_худалдан_авалт_' + todayStr() + '.csv');
+}
+
+// Нөөцийн үлдэгдэл — PDF (хэвлэх цонхоор)
+function printStockPDF() {
+  if (!stockData || !stockData.items || !stockData.items.length) { alert('Нөөцийн мэдээлэл алга. Эхлээд «🔄 Шинэчлэх» дарна уу.'); return; }
+  var body = stockData.items.map(function(it){
+    var bal = Math.round((parseFloat(it.qty)||0)*100)/100;
+    return '<tr><td>'+esc(String(it.name))+'</td><td class="r">'+bal+'</td><td>'+esc(String(it.unit||''))+'</td><td class="r">'+(isNaN(it.price)?'—':it.price.toLocaleString('mn-MN')+'₮')+'</td><td class="r">'+(it.value||0).toLocaleString('mn-MN')+'₮</td></tr>';
+  }).join('');
+  var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Нөөцийн үлдэгдэл</title>' +
+    '<style>body{font-family:Arial,sans-serif;padding:24px;color:#222}h2{color:#1F4A38;margin:0 0 4px}' +
+    '.sub{color:#666;font-size:12px;margin-bottom:14px}table{width:100%;border-collapse:collapse}' +
+    'th,td{border:1px solid #ccc;padding:8px 10px;text-align:left;font-size:13px}td.r,th.r{text-align:right}' +
+    'th{background:#1F4A38;color:#fff}tr:nth-child(even){background:#f6f6f3}tfoot td{font-weight:700;background:#eef3f0}</style></head><body>' +
+    '<h2>📦 Нөөцийн үлдэгдэл — NOMAAD</h2>' +
+    '<div class="sub">'+formatDateMN(todayStr())+' · зарцуулалт хассан одоогийн үлдэгдэл</div>' +
+    '<table><thead><tr><th>Материал</th><th class="r">Үлдэгдэл</th><th>Нэгж</th><th class="r">Нэгж үнэ</th><th class="r">Нийт өртөг</th></tr></thead><tbody>'+body+'</tbody>' +
+    '<tfoot><tr><td colspan="4">Нийт өртөг</td><td class="r">'+(stockData.totalValue||0).toLocaleString('mn-MN')+'₮</td></tr></tfoot></table>' +
     '</body></html>';
   var w = window.open('', '_blank');
   if (!w) { alert('Хэвлэх цонх нээгдсэнгүй (pop-up зөвшөөрнө үү).'); return; }
