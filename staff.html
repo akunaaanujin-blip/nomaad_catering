@@ -1530,8 +1530,10 @@ function renderOrders() {
   ordersData.forEach(function(o, idx) {
     o._idx = idx;
     var parsed = parseOrderDate(o['арга_хэмжээний_огноо'] || o['огноо'] || o['date'] || '');
-    o._parsedDate = parsed.date;
-    o._parsedTime = parsed.time;
+    // Үйлчилгээний мөрөнд бичсэн бодит огноо/цагийг эрхэмлэнэ (арга_хэмжээний_огноо буруу байж болзошгүй)
+    var schD = parseOrderSchedule(o['үйлчилгээ'] || o['service'] || '');
+    o._parsedDate = schD.firstDate || parsed.date;
+    o._parsedTime = schD.firstTime || parsed.time;
     if (parsed.date === today) todayOrders.push(o);
     else if (parsed.date > today) upcomingOrders.push(o);
     else pastOrders.push(o);
@@ -1582,6 +1584,31 @@ function buildIngSection(id, service, pax) {
   return html;
 }
 
+// Захиалгын үйлчилгээний хуваарь (багц+цаг) ба цэвэр хоолны жагсаалт
+function parseOrderSchedule(service) {
+  var out = { schedule: [], dishes: [], firstDate: '', firstTime: '' };
+  if (!service) return out;
+  service.split('|').map(function(s){ return s.trim(); }).filter(Boolean).forEach(function(p) {
+    if (/^\d+\s*-?\s*р(?=\s|$)/.test(p) || p.indexOf('₮') >= 0) {
+      var m = p.match(/·\s*(\d{4})-(\d{2})-(\d{2})[ T]?(\d{1,2}:\d{2})?/);
+      var fullDate = m ? (m[1]+'-'+m[2]+'-'+m[3]) : '';
+      var time = (m && m[4]) ? m[4] : '';
+      var name = p.replace(/^\d+\s*-?\s*р\s*/,'').replace(/\s*\([^)]*₮[^)]*\)/g,'').replace(/\s*·\s*\d{4}-\d{2}-\d{2}[ T]?\d{0,2}:?\d{0,2}.*$/,'').trim();
+      out.schedule.push({ name:name, fullDate:fullDate, time:time, disp:(m ? ((+m[2])+'.'+(+m[3])+(time?(' '+time):'')) : '') });
+    } else {
+      var d = p.replace(/^Өглөөний цай:\s*/,'').replace(/\s*[×x]\s*\d+\s*(хүн|ширхэг).*$/,'').replace(/\(\d+\s*порц\)/g,'').replace(/\([^)]*г[^)]*\)/g,'').trim();
+      if (d) out.dishes.push(d);
+    }
+  });
+  var dated = out.schedule.filter(function(s){ return s.fullDate; });
+  if (dated.length) {
+    dated.sort(function(a,b){ return (a.fullDate+' '+a.time).localeCompare(b.fullDate+' '+b.time); });
+    out.firstDate = dated[0].fullDate;
+    out.firstTime = dated[0].time;
+  }
+  return out;
+}
+
 function renderOrderCard(o, isPast) {
   var id = o['id'] || o['ID'] || o['захиалгын_дугаар'] || o._idx;
   var company = o['байгууллага'] || o['байгууллагын_нэр'] || o['компани'] || o['company'] || 'Нэргүй';
@@ -1595,13 +1622,23 @@ function renderOrderCard(o, isPast) {
   var dateStr = o._parsedDate ? formatDateMN(o._parsedDate) : '—';
   var timeStr = o._parsedTime || '';
 
-  var svc = parseService(service);
-  var pkgChips = svc.packages.map(function(p){
-    return '<span class="order-chip pkg">'+esc(p)+'</span>';
+  var sch = parseOrderSchedule(service);
+  // Огноо/цаг — service-ийн хуваариас (арга_хэмжээний_огноо буруу байж болзошгүй тул эрхэмлэнэ)
+  var dateStr2 = sch.firstDate ? formatDateMN(sch.firstDate) : dateStr;
+  var timeStr2 = sch.firstTime || timeStr;
+
+  // Үйлчилгээний хуваарь — багц бүр цагтайгаа
+  var scheduleHtml = sch.schedule.map(function(s){
+    return '<div style="display:flex;align-items:center;gap:7px;margin-top:5px">' +
+      '<span style="background:var(--accent,#1F4A38);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;white-space:nowrap">🕒 '+esc(s.disp||'цаг ?')+'</span>' +
+      '<span style="font-weight:600;font-size:13.5px">'+esc(s.name)+'</span>' +
+    '</div>';
   }).join('');
-  var dishChips = svc.dishes.map(function(d){
-    return '<span class="order-chip">🍳 '+esc(d.name)+(d.dt?' <span style="color:var(--muted);font-weight:500">· 🕒 '+esc(d.dt)+'</span>':'')+'</span>';
-  }).join('');
+
+  // Цэвэр хоолны жагсаалт
+  var dishListHtml = sch.dishes.length
+    ? '<div style="font-size:12.5px;color:var(--muted);margin-top:9px;line-height:1.55;padding-left:2px">🍽 '+sch.dishes.map(esc).join('  ·  ')+'</div>'
+    : '';
 
   var badgeClass = status === 'Шинэ' ? 'badge-amber' :
                    status === 'Бэлтгэж байна' ? 'badge-blue' :
@@ -1618,9 +1655,10 @@ function renderOrderCard(o, isPast) {
       '</div>' +
       '<div class="order-meta">' +
         '<span>👤 '+pax+' хүн</span>' +
-        '<span>📅 '+dateStr+(timeStr?' '+timeStr:'')+'</span>' +
+        '<span>📅 '+dateStr2+(timeStr2?' '+timeStr2:'')+'</span>' +
       '</div>' +
-      ((pkgChips||dishChips) ? '<div class="order-chips">'+pkgChips+dishChips+'</div>' : '') +
+      (scheduleHtml ? '<div style="margin-top:7px">'+scheduleHtml+'</div>' : '') +
+      dishListHtml +
       '<div class="order-expand-hint">Дэлгэрэнгүй ▾</div>' +
     '</div>' +
     '<div class="order-detail" id="'+detailId+'">' +
