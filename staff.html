@@ -1108,7 +1108,10 @@ body{
           <div class="section-title">📋 Захиалга</div>
           <div class="section-sub" id="orders-date-label">Өнөөдрийн захиалга</div>
         </div>
-        <button class="btn-refresh" onclick="loadOrders()">Шинэчлэх</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn-refresh" onclick="printOrdersPDF()" style="background:#b8412e;color:#fff;border-color:#b8412e">📄 PDF</button>
+          <button class="btn-refresh" onclick="loadOrders()">Шинэчлэх</button>
+        </div>
       </div>
       <div id="orders-body">
         <div class="loading-wrap">
@@ -1324,6 +1327,18 @@ body{
         <button class="modal-close" onclick="closeRecipeModal()">✕</button>
         <div class="modal-head" id="recipe-modal-head"></div>
         <div class="modal-body" id="recipe-modal-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Хоол дуусгах — бодит зарцуулалт асуух модал -->
+  <div class="modal-overlay" id="finish-modal" onclick="closeFinishModal(event)">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div style="position:relative">
+        <button class="modal-close" onclick="closeFinishModal()">✕</button>
+        <div class="modal-head" id="finish-modal-head"></div>
+        <div class="modal-body" id="finish-modal-body"></div>
       </div>
     </div>
   </div>
@@ -1992,6 +2007,80 @@ function markDishDone(dkey, panelId) {
   toggleDish(dkey);
 }
 
+// ── Хоол дуусгах урсгал: бодит орц асуух / буцаахад код асуух ──
+var finishCtx = null;
+
+function toggleFinish(dkey, panelId, dishName, pax) {
+  if (isDishDone(dkey)) undoDish(dkey, panelId);          // дууссан → буцаах (код асууна)
+  else openFinishModal(dkey, panelId, dishName, pax);     // дуусаагүй → бодит орц асуух
+}
+
+// Дуусгахаас өмнө орц бүрийн БОДИТ зарцуулсан хэмжээг асуух модал
+function openFinishModal(dkey, panelId, dishName, pax) {
+  var recipe = findRecipe(dishName);
+  if (!recipe || !recipe.ingredients || !recipe.ingredients.length || !pax) {
+    markDishDoneNow(dkey, panelId);   // орц/хүн мэдэгдэхгүй бол шууд дуусгана
+    return;
+  }
+  finishCtx = { dkey:dkey, panelId:panelId, ings:recipe.ingredients };
+  document.getElementById('finish-modal-head').innerHTML =
+    '<h2 style="font-size:18px;margin:0">✓ '+esc(dishName)+'</h2>' +
+    '<div style="font-size:12px;color:var(--muted);margin-top:3px">Бодит зарцуулсан хэмжээгээ шалгаж/засаад баталгаажуулна уу ('+pax+' хүн)</div>';
+  var rows = recipe.ingredients.map(function(ing, i){
+    var pg = plannedGramsRaw(ing.a, pax);
+    var planText = pg ? fmtAmt(pg.g, pg.unit) : (pax ? calcPlanned(ing.a, pax) : ing.a);
+    var saved = getActual(dkey+'_act_ing_'+i);
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)">' +
+      '<span style="flex:1;font-size:13px;font-weight:600;min-width:0">'+esc(ing.n)+'</span>' +
+      '<span style="font-size:10.5px;color:var(--muted);white-space:nowrap">төл. '+esc(planText)+'</span>' +
+      '<input id="finin_'+i+'" type="text" value="'+esc(saved || planText)+'" ' +
+        'style="width:92px;font-family:inherit;font-size:13px;font-weight:700;text-align:center;border:1.5px solid var(--accent);border-radius:8px;padding:8px 6px;background:#fff;color:var(--ink)">' +
+    '</div>';
+  }).join('');
+  document.getElementById('finish-modal-body').innerHTML = rows +
+    '<button onclick="confirmFinish()" style="width:100%;margin-top:14px;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer">✓ Баталгаажуулж дуусгах</button>';
+  document.getElementById('finish-modal').classList.add('open');
+}
+
+function confirmFinish() {
+  if (!finishCtx) return;
+  var c = finishCtx;
+  c.ings.forEach(function(ing, i){
+    var el = document.getElementById('finin_'+i);
+    var v = el ? (el.value || '').trim() : '';
+    if (v) saveActual(c.dkey+'_act_ing_'+i, v);   // бодит зарцуулалт хадгална
+  });
+  closeFinishModal();
+  finishCtx = null;
+  markDishDoneNow(c.dkey, c.panelId);
+}
+
+function closeFinishModal(e) {
+  if (e && e.target !== document.getElementById('finish-modal')) return;
+  document.getElementById('finish-modal').classList.remove('open');
+}
+
+function markDishDoneNow(dkey, panelId) {
+  if (!isDishDone(dkey)) { localStorage.setItem('dish_done_'+dkey, '1'); logActivity('✅ Хоол дууссан: '+dkey); }
+  if (panelId) openPanels[panelId] = true;
+  syncOrderStatusFromTasks();
+  renderTasks();
+  renderStockFromCache();   // бодит зарцуулалтыг нөөцөөс хасна
+}
+
+// Дууссан хоолыг буцаах — Захирлын кодыг асууна
+function undoDish(dkey, panelId) {
+  var code = prompt('Дууссан хоолыг буцаахын тулд Захирлын кодыг (PIN) оруулна уу:');
+  if (code === null) return;
+  if (String(code).trim() !== ROLES['Захирал'].pin) { alert('❌ Буруу код. Буцаалт цуцлагдлаа.'); return; }
+  localStorage.removeItem('dish_done_'+dkey);
+  if (panelId) openPanels[panelId] = true;
+  syncOrderStatusFromTasks();
+  renderTasks();
+  renderStockFromCache();
+  logActivity('↩ Хоол буцаав: '+dkey);
+}
+
 // Угаагчийн тогтмол даалгаварууд
 var WASH_TASKS = [
   {key:'wash_dish',  name:'🫧 Аяга таваг угаах'},
@@ -2092,9 +2181,10 @@ function renderTasks() {
         totalTasks++;
         var panelId = 'ingpanel_'+dkey;
         var recipe = findRecipe(dishName);
+        var dnJs = dishName.replace(/\\/g,'\\\\').replace(/'/g,"\\'");   // onclick-д аюулгүй
 
         html += '<div class="tsk-dish-item">';
-        var dishCheckClick = (currentRole === 'Захирал') ? '' : ' onclick="event.stopPropagation();markDishDone(\''+dkey+'\',\''+panelId+'\')"';
+        var dishCheckClick = (currentRole === 'Захирал') ? '' : ' onclick="event.stopPropagation();toggleFinish(\''+dkey+'\',\''+panelId+'\',\''+dnJs+'\','+pax+')"';
         var prepBadge = findPreparedFor(dishName).length ? ' <span style="font-size:11px;font-weight:700;color:#1a4d6a;background:#e8f4ff;border:1px solid #bcdcf0;border-radius:6px;padding:1px 6px;white-space:nowrap">🧊 бэлтгэлтэй</span>' : '';
         html += '<div class="tsk-dish-head" onclick="toggleIngPanel(\''+panelId+'\')">' +
           '<div class="tsk-dish-check'+(done?' checked':'')+'"'+dishCheckClick+'></div>' +
@@ -2146,9 +2236,9 @@ function renderTasks() {
 
         // Хоол дуусгах товч (Захирлаас бусад — Захирал зөвхөн хянана)
         if (currentRole !== 'Захирал') {
-          html += '<button onclick="markDishDone(\'' + dkey + '\',\'' + panelId + '\')" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;' +
+          html += '<button onclick="toggleFinish(\'' + dkey + '\',\'' + panelId + '\',\'' + dnJs + '\',' + pax + ')" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;' +
             (done ? 'background:var(--surface);color:var(--muted);border:1.5px solid var(--line)' : 'background:var(--accent);color:#fff') + '">' +
-            (done ? '↩ Дуусгаагүй болгох' : '✓ Хоол дуусгах') + '</button>';
+            (done ? '🔒 Дуусгаагүй болгох (код)' : '✓ Хоол дуусгах') + '</button>';
         }
 
         html += '</div></div>';
@@ -2387,22 +2477,24 @@ function matchPrepIngredient(pt, recipe) {
 
 // Захиалгын бодит зарцуулалтыг орц (материал)-аар нэгтгэнэ → грамм/ширхэг
 function getOrderConsumptionByMaterial() {
-  // Зарцуулалт = ДУУССАН хоол бүрийн төлөвлөсөн орц (хүний тоогоор)
+  // Зарцуулалт = ДУУССАН хоол бүрийн орц. Бодит хэмжээ оруулсан бол түүгээр, эс бол төлөвлөсөн.
   var map = {};
   ordersData.forEach(function(o){
     var id = o['id'] || o._idx;
     var pax = parseInt(o['хүн']) || 0;
-    if (pax <= 0) return;
     parseDishes(o['үйлчилгээ'] || '').forEach(function(dn){
       var dkey = id+'_'+dn.replace(/\s/g,'_');
       if (!isDishDone(dkey)) return;   // зөвхөн дууссан хоол хасагдана
       var recipe = findRecipe(dn);
       if (!recipe || !recipe.ingredients) return;
-      recipe.ingredients.forEach(function(ing){
-        var pg = plannedGramsRaw(ing.a, pax);
-        if (!pg) return;
+      recipe.ingredients.forEach(function(ing, i){
+        var g = 0;
+        var actual = getActual(dkey+'_act_ing_'+i);   // тогоочийн оруулсан бодит хэмжээ
+        if (actual) { var aq = parseQtyRaw(actual); g = aq ? aq.g : 0; }
+        else if (pax > 0) { var pg = plannedGramsRaw(ing.a, pax); g = pg ? pg.g : 0; }
+        if (!g) return;
         var k = resolveToStockMaterial(ing.n);
-        map[k] = (map[k] || 0) + pg.g;
+        map[k] = (map[k] || 0) + g;
       });
     });
   });
@@ -2726,6 +2818,46 @@ function printShoppingPDF() {
     '<h2>🛒 Авах хүнсний жагсаалт — NOMAAD</h2>' +
     '<div class="sub">'+formatDateMN(todayStr())+' · ирсэн захиалгаас тооцсон</div>' +
     '<table><thead><tr><th>Хүнс</th><th>Хэрэгцээ</th><th>Нөөц</th><th>🛒 Авах</th></tr></thead><tbody>'+body+'</tbody></table>' +
+    '</body></html>';
+  var w = window.open('', '_blank');
+  if (!w) { alert('Хэвлэх цонх нээгдсэнгүй (pop-up зөвшөөрнө үү).'); return; }
+  w.document.write(doc); w.document.close();
+  setTimeout(function(){ w.focus(); w.print(); }, 350);
+}
+
+// Захиалгын жагсаалтыг PDF (хэвлэх цонхоор) — үйлчилгээ/хоол бүрэн
+function printOrdersPDF() {
+  if (!ordersData || !ordersData.length) { alert('Захиалга алга байна.'); return; }
+  var today = todayStr();
+  var list = ordersData.filter(function(o){ return !o._parsedDate || o._parsedDate >= today; });
+  if (!list.length) list = ordersData.slice();
+  function dishLis(arr){ return arr.map(function(d){ return '<li>'+esc(d.name)+(d.qty?' <b>'+esc(d.qty)+'</b>':'')+'</li>'; }).join(''); }
+  var blocks = list.map(function(o){
+    var company = o['байгууллага'] || o['байгууллагын_нэр'] || 'Нэргүй';
+    var pax = o['хүн'] || '—';
+    var contact = o['нэр'] || '', phone = o['утас'] || '';
+    var sch = parseOrderSchedule(o['үйлчилгээ'] || '');
+    var svcs = sch.groups.map(function(g, idx){
+      var dt = g.fullDate ? (g.fullDate + (g.time ? ' ' + g.time : '')) : '';
+      return '<div class="svc"><div class="svc-h">'+(idx+1)+'-р үйлчилгээ: '+esc(g.name)+(dt?' · ⏰ '+esc(dt):'')+'</div>'+
+        (g.dishes.length?'<ul>'+dishLis(g.dishes)+'</ul>':'')+'</div>';
+    }).join('');
+    if (sch.looseDishes.length) svcs += '<ul>'+dishLis(sch.looseDishes)+'</ul>';
+    return '<div class="ord">' +
+      '<div class="ord-h">🏢 '+esc(company)+' &nbsp;·&nbsp; 👤 '+esc(String(pax))+' хүн</div>' +
+      ((contact||phone)?'<div class="ord-c">'+esc(contact)+(phone?' · '+esc(phone):'')+'</div>':'') +
+      svcs + '</div>';
+  }).join('');
+  var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Захиалга</title><style>' +
+    'body{font-family:Arial,sans-serif;padding:24px;color:#222}h2{color:#1F4A38;margin:0 0 4px}' +
+    '.sub{color:#666;font-size:12px;margin-bottom:16px}' +
+    '.ord{border:1px solid #ccc;border-radius:8px;padding:12px 14px;margin-bottom:12px;page-break-inside:avoid}' +
+    '.ord-h{font-weight:700;font-size:15px;color:#1F4A38}.ord-c{font-size:12px;color:#666;margin:2px 0 4px}' +
+    '.svc{margin-top:7px}.svc-h{font-weight:700;font-size:13px;color:#b8412e}' +
+    'ul{margin:3px 0 0 20px;padding:0}li{font-size:12.5px;line-height:1.55}' +
+    '</style></head><body>' +
+    '<h2>📋 Захиалгын жагсаалт — NOMAAD</h2>' +
+    '<div class="sub">'+formatDateMN(today)+' · '+list.length+' захиалга</div>' + blocks +
     '</body></html>';
   var w = window.open('', '_blank');
   if (!w) { alert('Хэвлэх цонх нээгдсэнгүй (pop-up зөвшөөрнө үү).'); return; }
