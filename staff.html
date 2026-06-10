@@ -1624,32 +1624,50 @@ function parseOrderSchedule(service) {
   if (!service) return out;
   var parts = service.split('|').map(function(s){ return s.trim(); }).filter(Boolean);
   function isPkg(p){ return /^\d+\s*-?\s*р(?=\s|$)/.test(p) || p.indexOf('₮') >= 0; }
-  // Формат таних: багц↔хоол ээлжилсэн (шинэ) бол хоолыг өмнөх багцад; бүх багц урд (хуучин) бол сул жагсаалт
-  var lastPkg = -1, firstDish = -1;
-  parts.forEach(function(p, i){ if (isPkg(p)) lastPkg = i; else if (firstDish < 0) firstDish = i; });
-  var interleaved = (firstDish >= 0 && firstDish < lastPkg);
-  var cur = null;
+  function makeGroup(p){
+    var m = p.match(/·\s*(\d{4})-(\d{2})-(\d{2})[ T]?(\d{1,2}:\d{2})?/);
+    var fullDate = m ? (m[1]+'-'+m[2]+'-'+m[3]) : '';
+    var time = (m && m[4]) ? m[4] : '';
+    var name = p.replace(/^\d+\s*-?\s*р\s*/,'').replace(/\s*\([^)]*₮[^)]*\)/g,'').replace(/\s*·\s*\d{4}-\d{2}-\d{2}[ T]?\d{0,2}:?\d{0,2}.*$/,'').trim();
+    return { name:name, cat:svcCategory(name), fullDate:fullDate, time:time, disp:(m ? ((+m[2])+'.'+(+m[3])+(time?(' '+time):'')) : ''), dishes:[] };
+  }
   function parseDish(p){
     var nm = cleanDishName(p);
     if (!nm) return null;
     var qm = p.match(/[×x]\s*(\d+)\s*(ширхэг|ш|порц)/i) || p.match(/\((\d+)\s*порц\)/i);
-    return { name:nm, qty:(qm ? ('×'+qm[1]) : '') };
+    return { name:nm, qty:(qm ? ('×'+qm[1]) : ''), cat:dishCategory(p) };
   }
-  parts.forEach(function(p){
-    if (isPkg(p)) {
-      var m = p.match(/·\s*(\d{4})-(\d{2})-(\d{2})[ T]?(\d{1,2}:\d{2})?/);
-      var fullDate = m ? (m[1]+'-'+m[2]+'-'+m[3]) : '';
-      var time = (m && m[4]) ? m[4] : '';
-      var name = p.replace(/^\d+\s*-?\s*р\s*/,'').replace(/\s*\([^)]*₮[^)]*\)/g,'').replace(/\s*·\s*\d{4}-\d{2}-\d{2}[ T]?\d{0,2}:?\d{0,2}.*$/,'').trim();
-      cur = { name:name, cat:svcCategory(name), fullDate:fullDate, time:time, disp:(m ? ((+m[2])+'.'+(+m[3])+(time?(' '+time):'')) : ''), dishes:[] };
-      out.groups.push(cur);
-    } else {
-      var d = parseDish(p);
-      if (!d) return;
-      if (interleaved && cur) cur.dishes.push(d);
-      else out.looseDishes.push(d);
-    }
-  });
+  // Формат таних: багц↔хоол ээлжилсэн (шинэ) эсэх
+  var lastPkg = -1, firstDish = -1;
+  parts.forEach(function(p, i){ if (isPkg(p)) lastPkg = i; else if (firstDish < 0) firstDish = i; });
+  var interleaved = (firstDish >= 0 && firstDish < lastPkg);
+
+  if (interleaved) {
+    // ШИНЭ формат: хоол өмнөх багц дор нь яг тааруулна
+    var cur = null;
+    parts.forEach(function(p){
+      if (isPkg(p)) { cur = makeGroup(p); out.groups.push(cur); }
+      else { var d = parseDish(p); if (d) { if (cur) cur.dishes.push(d); else out.looseDishes.push(d); } }
+    });
+  } else {
+    // ХУУЧИН формат (бүх багц урд): хоол багцын дарааллаар бичигдсэн тул
+    // ангилал бүрийн хоолыг тухайн ангилалын багцуудад жигд хуваарилна
+    var dishes = [];
+    parts.forEach(function(p){ if (isPkg(p)) out.groups.push(makeGroup(p)); else { var d = parseDish(p); if (d) dishes.push(d); } });
+    var pkgByCat = {}; out.groups.forEach(function(g){ (pkgByCat[g.cat] = pkgByCat[g.cat] || []).push(g); });
+    var byCat = {}, catOrder = [];
+    dishes.forEach(function(d){ if (!byCat[d.cat]) { byCat[d.cat] = []; catOrder.push(d.cat); } byCat[d.cat].push(d); });
+    catOrder.forEach(function(cat){
+      var ds = byCat[cat];
+      var pks = pkgByCat[cat];
+      if ((!pks || !pks.length) && pkgByCat['buffet']) pks = pkgByCat['buffet'];   // тохирох багцгүй → буфет руу
+      if (!pks || !pks.length) { out.looseDishes = out.looseDishes.concat(ds); return; }
+      if (pks.length === 1) { pks[0].dishes = pks[0].dishes.concat(ds); return; }
+      var per = Math.ceil(ds.length / pks.length);   // жигд хуваах
+      pks.forEach(function(pk, i){ pk.dishes = pk.dishes.concat(ds.slice(i*per, (i+1)*per)); });
+    });
+  }
+
   var dated = out.groups.filter(function(g){ return g.fullDate; }).map(function(g){ return g.fullDate+' '+g.time; }).sort();
   if (dated.length) { var fp = dated[0].split(' '); out.firstDate = fp[0]; out.firstTime = fp[1]||''; }
   return out;
