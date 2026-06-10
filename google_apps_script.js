@@ -59,7 +59,7 @@ function doGet(e) {
         return respond({ orders: [] }, callback);
       }
 
-      const lastCol = Math.max(sheet.getLastColumn(), 11);
+      const lastCol = Math.max(sheet.getLastColumn(), 12);
       const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, lastCol).getValues();
       const orders = rows.map((r, i) => {
         // col 5 (r[4]): огноо+цаг — Date object эсвэл string аль ч байж болно
@@ -84,6 +84,7 @@ function doGet(e) {
           статус:               r[8] || 'Шинэ',
           тайлбар:              r[9] || '',
           арга_хэмжээ:          r[10] || '',
+          байршил:              r[11] || '',
         };
       });
 
@@ -101,14 +102,14 @@ function saveOrder(ss, data) {
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_ORDERS);
     const h = ['Бүртгэсэн огноо','Байгууллага','Нэр','Утас',
-               'Арга хэмжээний огноо','Хүн','Үйлчилгээ','Тэмдэглэл','Статус','Тайлбар'];
+               'Арга хэмжээний огноо','Хүн','Үйлчилгээ','Тэмдэглэл','Статус','Тайлбар','Арга хэмжээ','Байршил'];
     sheet.appendRow(h);
     const hRange = sheet.getRange(1, 1, 1, h.length);
     hRange.setFontWeight('bold');
     hRange.setBackground('#1F4A38');
     hRange.setFontColor('#ffffff');
     sheet.setFrozenRows(1);
-    sheet.setColumnWidths(1, 10, [130,160,120,110,140,60,180,200,90,160]);
+    sheet.setColumnWidths(1, 12, [130,160,120,110,140,60,180,200,90,120,140,170]);
   }
   sheet.appendRow([
     new Date(),
@@ -122,6 +123,7 @@ function saveOrder(ss, data) {
     data.төлөв       || 'Шинэ захиалга',
     '',
     data.арга_хэмжээ || '',   // col 11 — арга хэмжээний төрөл
+    data.газар       || '',   // col 12 — байршил (NOMAAD camp байршил эсвэл хаяг)
   ]);
 }
 

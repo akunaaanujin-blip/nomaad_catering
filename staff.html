@@ -1725,6 +1725,7 @@ function renderOrderCard(o, isPast) {
   var phone = o['утас'] || o['phone'] || '—';
   var note = o['тэмдэглэл'] || o['note'] || '';
   var event = o['арга_хэмжээ'] || o['event'] || '';
+  var location = o['байршил'] || o['газар'] || o['location'] || '';
   var status = getOrderStatus(id);
   var dateStr = o._parsedDate ? formatDateMN(o._parsedDate) : '—';
   var timeStr = o._parsedTime || '';
@@ -1775,6 +1776,7 @@ function renderOrderCard(o, isPast) {
         '<span>👤 '+pax+' хүн</span>' +
         '<span>📅 '+dateStr2+(timeStr2?' '+timeStr2:'')+'</span>' +
       '</div>' +
+      (location ? '<div style="margin-top:6px;font-size:12.5px;font-weight:700;color:var(--accent)">📍 '+esc(location)+'</div>' : '') +
       ((scheduleHtml||dishListHtml) ?
         '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">' +
           '<div style="font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.4px">🍽 ҮЙЛЧИЛГЭЭ</div>' +
@@ -2890,6 +2892,7 @@ function buildOrderPrintBlock(o) {
   var company = o['байгууллага'] || o['байгууллагын_нэр'] || 'Нэргүй';
   var pax = o['хүн'] || '—';
   var contact = o['нэр'] || '', phone = o['утас'] || '', event = o['арга_хэмжээ'] || '', note = o['тэмдэглэл'] || '';
+  var location = o['байршил'] || o['газар'] || o['location'] || '';
   var sch = parseOrderSchedule(o['үйлчилгээ'] || '');
   var svcs = sch.groups.map(function(g, idx){
     var dt = g.fullDate ? (g.fullDate + (g.time ? ' ' + g.time : '')) : '';
@@ -2901,6 +2904,7 @@ function buildOrderPrintBlock(o) {
     '<div class="ord-h">🏢 '+esc(company)+' &nbsp;·&nbsp; 👤 '+esc(String(pax))+' хүн</div>' +
     ((contact||phone)?'<div class="ord-c">📞 '+esc(contact)+(phone?' · '+esc(phone):'')+'</div>':'') +
     (event?'<div class="ord-c">🎪 '+esc(event)+'</div>':'') +
+    (location?'<div class="ord-c">📍 '+esc(location)+'</div>':'') +
     svcs +
     (note?'<div class="ord-c">📝 '+esc(note)+'</div>':'') +
   '</div>';
