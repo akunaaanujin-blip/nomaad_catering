@@ -2943,6 +2943,11 @@ function renderRequestsSection() {
   var appr = requestsData.filter(function(r){ return r.статус==='Зөвшөөрсөн'; });
   var title = function(t){ return '<div class="ing-section-title" style="margin-top:18px;padding-left:4px">'+t+'</div>'; };
   var empty = function(t){ return '<div style="font-size:12px;color:var(--muted);padding:4px 0">'+t+'</div>'; };
+  // Авах ёстой бүх зүйлийг (захиалгаас + зөвшөөрсөн хүсэлт) татах товчнууд
+  var dlBtns = '<div style="display:flex;gap:8px;margin-top:10px">' +
+    '<button onclick="downloadFinalPurchaseCSV()" style="flex:1;font-family:inherit;font-size:13px;font-weight:700;background:#1d6f42;color:#fff;border:none;border-radius:9px;padding:10px;cursor:pointer">📊 Авах захиалга татах</button>' +
+    '<button onclick="printFinalPurchasePDF()" style="flex:1;font-family:inherit;font-size:13px;font-weight:700;background:#b8412e;color:#fff;border:none;border-radius:9px;padding:10px;cursor:pointer">📄 PDF</button>' +
+  '</div>';
   var html = '';
 
   if (currentRole==='Тогооч' || currentRole==='Бэлтгэгч') {
@@ -2964,11 +2969,13 @@ function renderRequestsSection() {
       return reqRow(r, act);
     }).join('') : empty('Хүлээгдэж буй хүсэлт алга.');
     if (appr.length) { html += title('✅ Зөвшөөрсөн ('+appr.length+')'); html += appr.map(function(r){ return reqRow(r); }).join(''); }
+    html += dlBtns;   // авах ёстой бүхнийг татах
 
   } else if (currentRole==='Нягтлан') {
     html += title('🧾 Эцсийн авах захиалга — зөвшөөрсөн нэмэлт бараа');
     html += appr.length ? appr.map(function(r){ return reqRow(r); }).join('') : empty('Зөвшөөрсөн нэмэлт бараа алга.');
     html += '<div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">ℹ️ Дээрх «Авах хүнсний жагсаалт» (захиалгаас) + эдгээр зөвшөөрсөн бараа = <b>эцсийн авах захиалга</b>.</div>';
+    html += dlBtns;   // захиалгаас тооцсон авах ёстой + зөвшөөрсөн бараа = эцсийн жагсаалт
   }
   el.innerHTML = html;
 }
@@ -3004,6 +3011,48 @@ function printShoppingPDF() {
     '<h2>🛒 Авах хүнсний жагсаалт — NOMAAD</h2>' +
     '<div class="sub">'+formatDateMN(todayStr())+' · ирсэн захиалгаас тооцсон</div>' +
     '<table><thead><tr><th>Хүнс</th><th>Хэрэгцээ</th><th>Нөөц</th><th>🛒 Авах</th></tr></thead><tbody>'+body+'</tbody></table>' +
+    '</body></html>';
+  var w = window.open('', '_blank');
+  if (!w) { alert('Хэвлэх цонх нээгдсэнгүй (pop-up зөвшөөрнө үү).'); return; }
+  w.document.write(doc); w.document.close();
+  setTimeout(function(){ w.focus(); w.print(); }, 350);
+}
+
+// Эцсийн авах захиалгыг тооцоолно: захиалгаас гарсан авах ёстой + зөвшөөрсөн нэмэлт хүсэлт
+function computeFinalPurchase() {
+  var must = computeShoppingList().filter(function(r){ return r.buyHi; })   // зөвхөн авах ёстой (нөөц хүрэхгүй)
+    .map(function(r){ return { name:r.name, amt:String(r.buy).replace('✓ ','').replace(' хүрэлцэнэ',''), src:'Захиалгаас' }; });
+  var appr = (requestsData || []).filter(function(r){ return r.статус==='Зөвшөөрсөн'; })
+    .map(function(r){ return { name:r.материал, amt:(r.тоо?String(r.тоо)+' ':'')+(r.нэгж||''), src:'Нэмэлт хүсэлт' }; });
+  return must.concat(appr);
+}
+
+// Эцсийн авах захиалгыг Excel (CSV) болгон татна
+function downloadFinalPurchaseCSV() {
+  var rows = computeFinalPurchase();
+  if (!rows.length) { alert('Авах ёстой зүйл алга байна (нөөц хүрэлцэж байна).'); return; }
+  var csv = 'Бараа,Авах хэмжээ,Эх сурвалж\n';
+  rows.forEach(function(r){
+    csv += '"'+String(r.name).replace(/"/g,'""')+'","'+r.amt+'","'+r.src+'"\n';
+  });
+  downloadCSV(csv, 'Авах_захиалга_' + todayStr() + '.csv');
+}
+
+// Эцсийн авах захиалгыг PDF (хэвлэх) болгон гаргана
+function printFinalPurchasePDF() {
+  var rows = computeFinalPurchase();
+  if (!rows.length) { alert('Авах ёстой зүйл алга байна (нөөц хүрэлцэж байна).'); return; }
+  var body = rows.map(function(r){
+    return '<tr><td>'+esc(r.name)+'</td><td class="buy">'+esc(r.amt)+'</td><td class="src">'+esc(r.src)+'</td></tr>';
+  }).join('');
+  var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Авах захиалга</title>' +
+    '<style>body{font-family:Arial,sans-serif;padding:24px;color:#222}h2{color:#1F4A38;margin:0 0 4px}' +
+    '.sub{color:#666;font-size:12px;margin-bottom:14px}table{width:100%;border-collapse:collapse}' +
+    'th,td{border:1px solid #ccc;padding:8px 10px;text-align:left;font-size:13px}' +
+    'th{background:#1F4A38;color:#fff}td.buy{font-weight:700;color:#b8412e}td.src{color:#666;font-size:12px}tr:nth-child(even){background:#f6f6f3}</style></head><body>' +
+    '<h2>🛒 Авах захиалга — NOMAAD</h2>' +
+    '<div class="sub">'+formatDateMN(todayStr())+' · захиалгаас тооцсон + зөвшөөрсөн нэмэлт бараа</div>' +
+    '<table><thead><tr><th>Бараа</th><th>🛒 Авах хэмжээ</th><th>Эх сурвалж</th></tr></thead><tbody>'+body+'</tbody></table>' +
     '</body></html>';
   var w = window.open('', '_blank');
   if (!w) { alert('Хэвлэх цонх нээгдсэнгүй (pop-up зөвшөөрнө үү).'); return; }
