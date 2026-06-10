@@ -2084,61 +2084,77 @@ function undoDish(dkey, panelId) {
   logActivity('↩ Хоол буцаав: '+dkey);
 }
 
-// ── Хоол бүрийн «хийсэн үйлдлийн тэмдэглэл» (аргачлал доторх) ──
-function getDishNotes(dkey) {
-  try { return JSON.parse(localStorage.getItem('dishnotes_'+dkey) || '[]'); } catch(e) { return []; }
-}
-function saveDishNotes(dkey, arr) { localStorage.setItem('dishnotes_'+dkey, JSON.stringify(arr)); }
+// ── Аргачлалын АЛХАМ БҮРИЙГ тэмдэглэх (хийсэн үйлдлийн тэмдэглэл) ──
+var _methCache = {};   // dkey -> method текст (re-render-д)
 
-function renderNotesList(dkey) {
-  var arr = getDishNotes(dkey);
-  if (!arr.length) return '<div style="font-size:11.5px;color:var(--muted);padding:3px 0">Тэмдэглэл алга — хийсэн үйлдлээ доор бичнэ үү.</div>';
-  var canDel = (currentRole === 'Захирал' || currentRole === 'Тогооч');
-  return arr.map(function(n, i){
-    return '<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px dotted var(--line)">' +
-      '<span style="font-size:11px;color:var(--accent);font-weight:700;white-space:nowrap">🕒 '+esc(n.time)+'</span>' +
-      '<span style="flex:1;font-size:12.5px;color:var(--ink);min-width:0">'+(n.role?'<b>'+esc(n.role)+':</b> ':'')+esc(n.text)+'</span>' +
-      (canDel ? '<button onclick="removeDishNote(\''+dkey+'\','+i+')" style="border:none;background:none;color:var(--red);font-size:13px;cursor:pointer;padding:0 2px;flex:none">✕</button>' : '') +
-    '</div>';
-  }).join('');
+function getMethSteps(dkey) {
+  try { return JSON.parse(localStorage.getItem('methsteps_'+dkey) || '{}'); } catch(e) { return {}; }
 }
-
-function notesSectionHtml(dkey) {
-  var inputHtml = (currentRole === 'Захирал') ? '' :
-    '<div style="display:flex;gap:6px;margin-top:8px">' +
-      '<input id="noteinput_'+dkey+'" type="text" placeholder="Хийсэн үйлдлээ бичих..." onkeydown="if(event.key===\'Enter\'){event.preventDefault();addDishNote(\''+dkey+'\');}" ' +
-        'style="flex:1;min-width:0;font-family:inherit;font-size:13px;border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;background:#fff;color:var(--ink)">' +
-      '<button onclick="addDishNote(\''+dkey+'\')" style="font-family:inherit;font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:8px 14px;cursor:pointer;white-space:nowrap">＋ Нэмэх</button>' +
-    '</div>';
-  return '<div style="margin-top:11px;border-top:1px dashed var(--line);padding-top:10px">' +
-    '<div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">📝 Хийсэн үйлдлийн тэмдэглэл</div>' +
-    '<div id="notes_'+dkey+'">'+renderNotesList(dkey)+'</div>' +
-    inputHtml +
-  '</div>';
-}
-
-function addDishNote(dkey) {
-  var el = document.getElementById('noteinput_'+dkey);
-  if (!el) return;
-  var text = (el.value || '').trim();
-  if (!text) return;
-  var arr = getDishNotes(dkey);
+function saveMethSteps(dkey, obj) { localStorage.setItem('methsteps_'+dkey, JSON.stringify(obj)); }
+function nowStamp() {
   var d = new Date();
-  var time = (d.getMonth()+1)+'.'+d.getDate()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
-  arr.push({ text:text, time:time, role:currentRole || '' });
-  saveDishNotes(dkey, arr);
-  el.value = '';
-  var list = document.getElementById('notes_'+dkey);
-  if (list) list.innerHTML = renderNotesList(dkey);   // зөвхөн жагсаалтыг шинэчилнэ (аргачлал нээлттэй хэвээр)
-  logActivity('📝 Тэмдэглэл: '+text);
+  return (d.getMonth()+1)+'.'+d.getDate()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
 }
 
-function removeDishNote(dkey, i) {
-  var arr = getDishNotes(dkey);
-  arr.splice(i, 1);
-  saveDishNotes(dkey, arr);
-  var list = document.getElementById('notes_'+dkey);
-  if (list) list.innerHTML = renderNotesList(dkey);
+// Аргачлалын мөрүүдийг гарчиг ба алхам (✓+тэмдэглэлтэй) болгон харуулна
+function buildMethRows(dkey, method) {
+  var ro = (currentRole === 'Захирал');   // Захирал зөвхөн харна
+  var steps = getMethSteps(dkey);
+  var idx = -1, html = '';
+  String(method).split('\n').forEach(function(raw){
+    var line = raw.trim();
+    if (!line) { html += '<div style="height:6px"></div>'; return; }
+    if (/:$/.test(line)) {   // гарчиг (тодорхойлолтоор төгссөн)
+      html += '<div style="font-size:11.5px;font-weight:800;color:var(--accent);margin:10px 0 3px;text-transform:uppercase;letter-spacing:.3px">'+esc(line)+'</div>';
+      return;
+    }
+    idx++;
+    var st = steps[idx] || {};
+    var done = !!st.done, note = st.note || '';
+    var showNote = done || note;
+    var box = ro
+      ? '<div style="flex:none;width:20px;height:20px;margin-top:1px;border-radius:6px;border:2px solid '+(done?'var(--accent)':'var(--line)')+';background:'+(done?'var(--accent)':'#fff')+';color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center">'+(done?'✓':'')+'</div>'
+      : '<div onclick="toggleMethStep(\''+dkey+'\','+idx+')" style="flex:none;width:20px;height:20px;margin-top:1px;border-radius:6px;border:2px solid '+(done?'var(--accent)':'var(--line)')+';background:'+(done?'var(--accent)':'#fff')+';color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer">'+(done?'✓':'')+'</div>';
+    var noteEl = '';
+    if (showNote) {
+      noteEl = ro
+        ? (note ? '<div style="margin-top:4px;font-size:12px;color:var(--accent);background:var(--accent-soft);border-radius:7px;padding:5px 8px">📝 '+esc(note)+'</div>' : '')
+        : '<input value="'+esc(note)+'" oninput="saveMethNote(\''+dkey+'\','+idx+',this.value)" placeholder="тэмдэглэл (бодит хэмжээ, цаг, температур...)" style="width:100%;margin-top:4px;font-family:inherit;font-size:12px;border:1px solid var(--line);border-radius:7px;padding:6px 8px;background:#fff;color:var(--ink)">';
+    }
+    html += '<div style="display:flex;gap:9px;padding:5px 0;align-items:flex-start">' + box +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:12.5px;line-height:1.5;color:'+(done?'var(--muted)':'var(--ink)')+';'+(done?'text-decoration:line-through':'')+'">'+esc(line)+'</div>' +
+        (done && st.time ? '<div style="font-size:10.5px;color:var(--accent);font-weight:600;margin-top:1px">🕒 '+esc(st.time)+(st.role?' · '+esc(st.role):'')+'</div>' : '') +
+        noteEl +
+      '</div>' +
+    '</div>';
+  });
+  return html;
+}
+
+function methodChecklistHtml(dkey, method) {
+  _methCache[dkey] = method;
+  return '<div id="methlist_'+dkey+'" style="margin-top:6px;background:var(--accent-soft);border-radius:10px;padding:8px 12px">' +
+    buildMethRows(dkey, method) + '</div>';
+}
+
+function toggleMethStep(dkey, idx) {
+  var steps = getMethSteps(dkey);
+  var st = steps[idx] || {};
+  if (st.done) { st.done = false; st.time = ''; }
+  else { st.done = true; st.time = nowStamp(); st.role = currentRole || ''; }
+  steps[idx] = st;
+  saveMethSteps(dkey, steps);
+  var el = document.getElementById('methlist_'+dkey);
+  if (el && _methCache[dkey] != null) el.innerHTML = buildMethRows(dkey, _methCache[dkey]);   // аргачлал нээлттэй хэвээр
+}
+
+function saveMethNote(dkey, idx, value) {
+  var steps = getMethSteps(dkey);
+  var st = steps[idx] || {};
+  st.note = value;
+  steps[idx] = st;
+  saveMethSteps(dkey, steps);   // re-render хийхгүй (input фокус хадгална)
 }
 
 function renderTasks() {
@@ -2241,12 +2257,11 @@ function renderTasks() {
           html += '<div style="font-size:12px;color:var(--muted);padding:6px 0">Хүний тоо мэдэгдэхгүй байна</div>';
         }
 
-        // Хийх аргачлал (HACCP стандарт) — нугалж/дэлгэх, дотор нь тэмдэглэлийн хэсэгтэй
+        // Хийх аргачлал — алхам бүрийг тэмдэглэх чеклист (хийсэн үйлдлийн тэмдэглэлтэй)
         if (recipe && recipe.method) {
           html += '<details style="margin-top:8px;border-top:1px dashed var(--line);padding-top:8px">' +
-            '<summary style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;list-style:none">📖 Хийх аргачлал — дэлгэхийн тулд дарна уу</summary>' +
-            '<div style="font-size:13px;line-height:1.7;color:var(--ink);background:var(--accent-soft);border-radius:10px;padding:10px 12px;margin-top:6px;white-space:pre-line">'+esc(recipe.method)+'</div>' +
-            notesSectionHtml(dkey) +
+            '<summary style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;list-style:none">📖 Хийх аргачлал — алхам бүрийг тэмдэглэх</summary>' +
+            methodChecklistHtml(dkey, recipe.method) +
           '</details>';
         }
 
