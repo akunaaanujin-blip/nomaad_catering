@@ -1558,6 +1558,7 @@ function loadOrders() {
     renderOrders();
     renderTasks();
     renderIngCalc();
+    if (activeTab === 'perf') renderPerf();   // Тайлан нээлттэй бол өртөг/ашгийг шинэчилнэ
   };
 
   script.src = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec?action=orders&callback=' + cbName;
@@ -3057,12 +3058,14 @@ function renderRequestsSection() {
     }).join('') : empty('Хүлээгдэж буй хүсэлт алга.');
     if (appr.length) { html += title('✅ Зөвшөөрсөн ('+appr.length+')'); html += appr.map(function(r){ return reqRow(r); }).join(''); }
     html += dlBtns;   // авах ёстой бүхнийг татах
+    html += buildPurchaseOrderList();   // авсан хэмжээ бүртгэх → Бараа авахад нэмэх
 
   } else if (currentRole==='Нягтлан') {
     html += title('🧾 Эцсийн авах захиалга — зөвшөөрсөн нэмэлт бараа');
     html += appr.length ? appr.map(function(r){ return reqRow(r); }).join('') : empty('Зөвшөөрсөн нэмэлт бараа алга.');
     html += '<div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">ℹ️ Дээрх «Авах хүнсний жагсаалт» (захиалгаас) + эдгээр зөвшөөрсөн бараа = <b>эцсийн авах захиалга</b>.</div>';
     html += dlBtns;   // захиалгаас тооцсон авах ёстой + зөвшөөрсөн бараа = эцсийн жагсаалт
+    html += buildPurchaseOrderList();   // авсан хэмжээ бүртгэх → Бараа авахад нэмэх
   }
   el.innerHTML = html;
 }
@@ -3105,13 +3108,57 @@ function printShoppingPDF() {
   setTimeout(function(){ w.focus(); w.print(); }, 350);
 }
 
+// "9.55 кг" гэх мэт мөрийг {qty, unit} болгон задлана
+function parseAmtQtyUnit(s) {
+  var m = String(s).trim().match(/^([\d.]+)\s*(\S+)$/);
+  return m ? { qty: parseFloat(m[1]) || 0, unit: m[2] } : { qty: 0, unit: '' };
+}
+
 // Эцсийн авах захиалгыг тооцоолно: захиалгаас гарсан авах ёстой + зөвшөөрсөн нэмэлт хүсэлт
 function computeFinalPurchase() {
   var must = computeShoppingList().filter(function(r){ return r.buyHi; })   // зөвхөн авах ёстой (нөөц хүрэхгүй)
-    .map(function(r){ return { name:r.name, amt:String(r.buy).replace('✓ ','').replace(' хүрэлцэнэ',''), src:'Захиалгаас' }; });
+    .map(function(r){ var a = parseAmtQtyUnit(String(r.buy).replace('✓ ','').replace(' хүрэлцэнэ','')); return { name:r.name, amt:String(r.buy).replace('✓ ','').replace(' хүрэлцэнэ',''), qty:a.qty, unit:a.unit, src:'Захиалгаас' }; });
   var appr = (requestsData || []).filter(function(r){ return r.статус==='Зөвшөөрсөн'; })
-    .map(function(r){ return { name:r.материал, amt:(r.тоо?String(r.тоо)+' ':'')+(r.нэгж||''), src:'Нэмэлт хүсэлт' }; });
+    .map(function(r){ var q = parseFloat(r.тоо)||0, u = r.нэгж||''; return { name:r.материал, amt:(q?q+' ':'')+u, qty:q, unit:u, src:'Нэмэлт хүсэлт' }; });
   return must.concat(appr);
+}
+
+// Авсан тоо хэмжээ бүртгэх жагсаалт (Нягтлан/Захирал) — засаад «Бараа материал авах»-д нэмнэ
+function buildPurchaseOrderList() {
+  var rows = computeFinalPurchase();
+  if (!rows.length) return '';
+  var items = rows.map(function(r){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dotted var(--line)">' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:13px;font-weight:600">'+esc(r.name)+'</div>' +
+        '<div style="font-size:10.5px;color:var(--muted)">санал: '+esc(r.amt)+' · '+esc(r.src)+'</div>' +
+      '</div>' +
+      '<input type="number" min="0" step="any" class="buyqty" data-mat="'+esc(r.name)+'" data-unit="'+esc(r.unit)+'" value="'+(r.qty||'')+'" placeholder="авсан" style="width:72px;font-family:inherit;font-size:13.5px;font-weight:700;text-align:right;border:1.5px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;color:var(--ink)">' +
+      '<span style="font-size:12px;color:var(--muted);min-width:24px">'+esc(r.unit)+'</span>' +
+    '</div>';
+  }).join('');
+  return '<div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)">' +
+    '<div style="font-weight:700;font-size:13.5px;margin-bottom:3px">📥 Авсан тоо хэмжээ бүртгэх</div>' +
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Бодит авсан хэмжээгээ засаад доорх товчоор «Бараа материал авах»-д нэмнэ. Дараа нь үнээ оруулж нөөцөд бүртгэнэ.</div>' +
+    items +
+    '<button onclick="pushPurchaseOrderToDraft()" style="width:100%;margin-top:12px;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">📥 «Бараа материал авах»-д нэмэх</button>' +
+  '</div>';
+}
+
+// Жагсаалтаас бөглөсөн авсан хэмжээг худалдан авалтын draft руу шилжүүлнэ
+function pushPurchaseOrderToDraft() {
+  var inputs = document.querySelectorAll('.buyqty');
+  var n = 0;
+  inputs.forEach(function(inp){
+    var qty = parseFloat(inp.value) || 0;
+    if (qty <= 0) return;
+    purchaseDraft.push({ material: inp.dataset.mat, qty: qty, unit: inp.dataset.unit || 'кг', price: 0 });
+    n++;
+  });
+  if (!n) { alert('Авсан тоо хэмжээгээ оруулна уу.'); return; }
+  switchTab('noots');           // Бараа материал авах хэсэг рүү шилжинэ (draft автоматаар зурагдана)
+  var msg = document.getElementById('buy-msg');
+  if (msg) { msg.style.color = 'var(--accent)'; msg.textContent = '✓ ' + n + ' бараа нэмэгдлээ — нэгж үнээ оруулж «Нөөцөд бүртгэх» дарна уу'; }
 }
 
 // Эцсийн авах захиалгыг Excel (CSV) болгон татна
@@ -4103,6 +4150,7 @@ function buildFoodReports() {
 
 // Бүх захиалгын өртөг/ашгийн нэгдсэн тайлан
 function buildProfitReport() {
+  if (!ordersLoaded) return reportCard('💰 Өртөг ба ашиг', '<div style="font-size:12px;color:var(--muted)">Захиалга ачааллаж байна…</div>');
   if (!stockLoaded) return reportCard('💰 Өртөг ба ашиг', '<div style="font-size:12px;color:var(--muted)">Нөөц ачаалж байна… (өртөг тооцоход нөөцийн үнэ хэрэгтэй)</div>');
   var list = [], totalCost = 0, totalRev = 0, totalProfit = 0, priced = 0;
   ordersData.forEach(function(o){
@@ -4116,7 +4164,7 @@ function buildProfitReport() {
     if (ppp > 0) { totalRev += rev; totalProfit += profit; priced++; }
     list.push({ id:id, company:(o['байгууллага']||o['байгууллагын_нэр']||'Нэргүй'), date:(o._parsedDate||''), pax:c.pax, cost:c.total, ppp:ppp, rev:rev, profit:profit });
   });
-  if (!list.length) return reportCard('💰 Өртөг ба ашиг', '<div style="font-size:12px;color:var(--muted)">Тооцоолох захиалга/жор алга.</div>');
+  if (!list.length) return reportCard('💰 Өртөг ба ашиг', '<div style="font-size:12px;color:var(--muted)">'+(ordersData.length ? 'Захиалгуудад хүн тоо эсвэл технологи карттай хоол алга байна.' : 'Захиалга алга байна.')+'</div>');
   list.sort(function(a,b){ return (a.date||'9999').localeCompare(b.date||'9999'); });
   var margin = totalRev > 0 ? Math.round(totalProfit/totalRev*100) : 0;
   var pcol = totalProfit >= 0 ? 'var(--accent)' : 'var(--red)';
