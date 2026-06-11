@@ -1259,6 +1259,9 @@ body{
         <button onclick="downloadStockBalanceCSV()" style="flex:1;min-width:140px;font-family:inherit;font-size:13px;font-weight:700;background:#1d6f42;color:#fff;border:none;border-radius:9px;padding:9px;cursor:pointer">📊 Нөөц татах (Excel)</button>
         <button onclick="printStockPDF()" style="flex:1;min-width:90px;font-family:inherit;font-size:13px;font-weight:700;background:#b8412e;color:#fff;border:none;border-radius:9px;padding:9px;cursor:pointer">📄 PDF</button>
       </div>
+
+      <!-- NOMAAD camp — зөвхөн бэлтгэсэн хүнс илгээх + камп дахь нөөц -->
+      <div id="camp-section"></div>
     </div>
 
     <!-- Tab 5: Performance -->
@@ -1484,7 +1487,7 @@ function switchTab(name) {
   if (name === 'tasks') renderTasks();
   if (name === 'ingredients') { renderIngCalc(); loadStock(); loadRequests(); }
   if (name === 'noots') {
-    loadStock(); renderStaffMealList(); renderStaffExpenseDraft(); renderPurchaseDraft();
+    loadStock(); renderStaffMealList(); renderStaffExpenseDraft(); renderPurchaseDraft(); renderCampSection();
     var bs = document.getElementById('buy-section');   // бараа авах — зөвхөн Захирал/Нягтлан
     if (bs) bs.style.display = (currentRole === 'Захирал' || currentRole === 'Нягтлан') ? '' : 'none';
   }
@@ -2815,6 +2818,20 @@ function getPreparedConsumptionByMaterial() {
   return map;
 }
 
+// Боловсруулсан нөөцийг байршлаар (gal togoo / NOMAAD camp) задална — материал → {kitchen, camp} грамм
+function getPreparedByLocation() {
+  var map = {};
+  getPrepStock().forEach(function(it){
+    var k = resolveToStockMaterial(it.name);
+    var q = parseFloat(it.qty) || 0;
+    var u = String(it.unit).toLowerCase();
+    var g = (u === 'кг' || u === 'л') ? q * 1000 : q;
+    if (!map[k]) map[k] = { kitchen:0, camp:0 };
+    if (it.loc === 'camp') map[k].camp += g; else map[k].kitchen += g;
+  });
+  return map;
+}
+
 // Гаргах гэж буй хүнсний түр жагсаалт (commit хийгээгүй)
 var staffExpenseDraft = [];
 
@@ -3583,6 +3600,100 @@ function getPrepStock() {
 }
 function savePrepStock(arr) { localStorage.setItem('prep_stock', JSON.stringify(arr)); }
 
+/* ── NOMAAD camp — зөвхөн бэлтгэсэн (боловсруулсан) хүнс илгээнэ ── */
+// Бэлтгэсэн нэг зүйлийн тодорхой хэмжээг NOMAAD camp руу шилжүүлнэ
+function sendToCamp(prepId, qty) {
+  var arr = getPrepStock();
+  var it = arr.filter(function(x){ return String(x.id) === String(prepId); })[0];
+  if (!it) { alert('Бэлтгэсэн зүйл олдсонгүй.'); return; }
+  var send = parseFloat(qty) || 0;
+  var have = parseFloat(it.qty) || 0;
+  if (send <= 0) { alert('Хэмжээгээ оруулна уу.'); return; }
+  if (send > have) send = have;
+  if (send >= have) {
+    it.loc = 'camp';   // бүгдийг камп руу
+  } else {
+    it.qty = Math.round((have - send) * 100) / 100;   // үлдэгдэл гал тогоонд
+    arr.push({ id:String(Date.now())+'_c', name:it.name, qty:Math.round(send*100)/100, unit:it.unit, made:it.made, exp:it.exp, dish:it.dish, loc:'camp' });
+  }
+  savePrepStock(arr);
+  logActivity('🏕 NOMAAD camp руу илгээв: ' + it.name + ' ' + (Math.round(send*100)/100) + (it.unit||''));
+  renderCampSection();
+  renderPrepStock();
+  renderStockFromCache();
+}
+function doSendToCamp() {
+  var sel = document.getElementById('camp-item');
+  var id = sel ? sel.value : '';
+  if (!id) { alert('Бэлтгэсэн хүнсээ сонгоно уу.'); return; }
+  var qtyEl = document.getElementById('camp-qty');
+  sendToCamp(id, qtyEl ? qtyEl.value : 0);
+}
+function onCampItemPick() {
+  var sel = document.getElementById('camp-item');
+  var qtyEl = document.getElementById('camp-qty');
+  if (sel && qtyEl) { var opt = sel.options[sel.selectedIndex]; qtyEl.value = (opt && opt.dataset.qty) ? opt.dataset.qty : ''; }
+}
+// Камп дахь зүйлийг гал тогоо руу буцаана
+function returnFromCamp(prepId) {
+  var arr = getPrepStock();
+  var it = arr.filter(function(x){ return String(x.id) === String(prepId); })[0];
+  if (!it) return;
+  it.loc = 'kitchen';
+  savePrepStock(arr);
+  logActivity('↩️ Гал тогоо руу буцаав: ' + it.name);
+  renderCampSection(); renderPrepStock(); renderStockFromCache();
+}
+
+// Нөөц табын NOMAAD camp хэсгийг зурна (илгээх форм + камп дахь нөөц)
+function renderCampSection() {
+  var el = document.getElementById('camp-section');
+  if (!el) return;
+  var canSend = (currentRole === 'Тогооч' || currentRole === 'Бэлтгэгч' || currentRole === 'Захирал');
+  var all = getPrepStock();
+  var kitchen = all.filter(function(it){ return it.loc !== 'camp' && (parseFloat(it.qty)||0) > 0; });
+  var camp = all.filter(function(it){ return it.loc === 'camp'; });
+  camp.sort(function(a,b){ return (a.exp||'').localeCompare(b.exp||''); });
+  var fieldS = 'font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink)';
+  var html = '<div class="ing-section-title" style="margin-top:22px">🏕 NOMAAD camp <span style="font-size:10px;font-weight:600;color:var(--muted)">(зөвхөн бэлтгэсэн хүнс)</span></div>';
+
+  if (canSend) {
+    var opts = '<option value="">— Бэлтгэсэн хүнс сонгох —</option>' + kitchen.map(function(it){
+      return '<option value="'+it.id+'" data-qty="'+(it.qty)+'">'+esc(it.name)+' '+it.qty+esc(it.unit||'')+(it.dish?' · '+esc(it.dish):'')+'</option>';
+    }).join('');
+    html += '<div class="ing-section-sub">Бэлтгэсэн (боловсруулсан) хүснээс сонгож камп руу илгээнэ. Түүхий хүнс илгээх боломжгүй.</div>' +
+      '<div style="padding:0 18px 8px;display:flex;gap:8px;flex-wrap:wrap;align-items:stretch">' +
+        '<select id="camp-item" onchange="onCampItemPick()" style="flex:2;min-width:160px;'+fieldS+'">'+opts+'</select>' +
+        '<input id="camp-qty" type="number" min="0" step="0.1" placeholder="хэмжээ" style="flex:1;min-width:80px;'+fieldS+';font-weight:700;text-align:center">' +
+        '<button onclick="doSendToCamp()" style="font-family:inherit;font-size:14px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 18px;cursor:pointer;white-space:nowrap">🏕 Илгээх</button>' +
+      '</div>';
+    if (!kitchen.length) html += '<div style="padding:2px 18px 8px;font-size:12px;color:var(--muted)">Илгээх бэлтгэсэн хүнс алга — эхлээд Бэлтгэл табд бэлтгэнэ.</div>';
+  }
+
+  html += '<div class="ing-section-title" style="margin-top:12px;font-size:13px">📍 NOMAAD camp дахь нөөц ('+camp.length+')</div>';
+  if (!camp.length) {
+    html += '<div style="padding:6px 18px 8px;font-size:12px;color:var(--muted)">Камп дээр нөөц алга байна.</div>';
+  } else {
+    html += '<div style="padding:0 14px">' + camp.map(function(it){
+      var dl = daysLeft(it.exp), warn = '';
+      if (dl !== null) { if (dl < 0) warn = '⚠️ хугацаа дууссан'; else if (dl <= 1) warn = '⏳ '+(dl===0?'өнөөдөр дуусна':'1 хоног'); }
+      return '<div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:9px;box-shadow:var(--shadow)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+          '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">🏕 '+esc(it.name)+(it.dish?' <span style="font-size:11px;font-weight:600;color:var(--muted)">· '+esc(it.dish)+'</span>':'')+'</div>' +
+            '<div style="font-size:13px;color:var(--accent);font-weight:700;margin-top:2px">'+esc(String(it.qty))+' '+esc(it.unit||'')+'</div></div>' +
+          (canSend ? '<button onclick="returnFromCamp(\''+it.id+'\')" style="border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:8px;padding:4px 9px;font-size:12px;cursor:pointer;white-space:nowrap">↩️ Буцаах</button>' : '') +
+        '</div>' +
+        '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:7px">' +
+          (it.made?'<span>📅 '+esc(formatDateMN(it.made))+'</span>':'') +
+          (it.exp?'<span>⏰ дуусах '+esc(formatDateMN(it.exp))+'</span>':'') +
+          (warn?'<span style="font-weight:700;color:var(--red)">'+warn+'</span>':'') +
+        '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+  }
+  el.innerHTML = html;
+}
+
 function addPrepItem() {
   var name = (document.getElementById('prep-name').value || '').trim();
   var qty  = parseFloat(document.getElementById('prep-qty').value) || 0;
@@ -3719,7 +3830,7 @@ function renderPrepStock() {
     html += '<div style="background:var(--surface);border:1px solid '+(expired?'var(--red)':'var(--line)')+';border-radius:12px;padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow);'+(expired?'background:#fff5f3':'')+'">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-weight:700;font-size:15px">'+esc(it.name)+(it.dish?' <span style="font-size:11px;font-weight:600;color:var(--muted)">· '+esc(it.dish)+'</span>':'')+'</div>' +
+          '<div style="font-weight:700;font-size:15px">'+esc(it.name)+(it.dish?' <span style="font-size:11px;font-weight:600;color:var(--muted)">· '+esc(it.dish)+'</span>':'')+(it.loc==='camp'?' <span style="font-size:10px;font-weight:800;color:#fff;background:#473d78;border-radius:6px;padding:1px 6px">🏕 камп</span>':'')+'</div>' +
           '<div style="font-size:13px;color:var(--accent);font-weight:700;margin-top:2px">'+esc(String(it.qty))+' '+esc(it.unit)+'</div>' +
         '</div>' +
         (canEdit ? '<button onclick="removePrepItem(\''+it.id+'\')" style="border:1px solid var(--line);background:#fff;color:var(--red);border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer;flex-shrink:0">✕</button>' : '') +
@@ -3835,6 +3946,7 @@ function renderStock(data) {
   var expMap   = getStaffExpenseByMaterial();      // ажилтны хоонд гарсан зарлага
   var orderMap = getOrderConsumptionByMaterial();  // захиалгын бодит зарцуулалт (грамм/ш)
   var prepMap  = getPreparedConsumptionByMaterial(); // бэлтгэсэн нөөцөд орсон түүхий орц
+  var prepLocMap = getPreparedByLocation();          // боловсруулсаныг гал тогоо/камп гэж задлах
   var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Материал</span><span class="ing-amt-col">Нийт үлд.</span><span class="ing-unit-col">Нэгж</span><span class="ing-price-col">Нэгж үнэ</span></div>';
   var itemCount = 0, totalValue = 0;
   var items = [];
@@ -3869,8 +3981,11 @@ function renderStock(data) {
     // «Боловсруулсан / боловсруулаагүй» ангилал (зөвхөн бэлтгэсэн нөөц байгаа үед)
     var classNote = '';
     if (usedPrep > 0 && !isNaN(totalLeft)) {
+      var pl = prepLocMap[nameLower] || { kitchen:0, camp:0 };
+      var campU = gramsToStockUnit(pl.camp, unit), kitchU = gramsToStockUnit(pl.kitchen, unit);
+      var locNote = (campU > 0) ? ' <span style="color:#473d78;font-weight:700">(🏕 камп '+r2(campU)+esc(String(unit))+(kitchU>0?' · 🏠 '+r2(kitchU)+esc(String(unit)):'')+')</span>' : '';
       classNote = '<span style="display:block;font-size:10.5px;font-weight:500;margin-top:3px;line-height:1.5">' +
-        '<span style="color:var(--accent)">✅ Боловсруулсан ' + r2(usedPrep) + esc(String(unit)) + '</span>' +
+        '<span style="color:var(--accent)">✅ Боловсруулсан ' + r2(usedPrep) + esc(String(unit)) + '</span>' + locNote +
         '<span style="color:var(--muted)"> · 📦 Боловсруулаагүй ' + r2(rawLeft) + esc(String(unit)) + '</span>' +
       '</span>';
     }
