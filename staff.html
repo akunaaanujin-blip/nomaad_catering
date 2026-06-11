@@ -2256,6 +2256,10 @@ function renderTasks() {
         '<div class="tsk-order-meta">👤 '+pax+' хүн'+timeStr+'</div></div>' +
         '<span class="tsk-order-badge">'+(blockDone?'✅ Дууссан':'⏳ Хийгдэж байна')+'</span>' +
       '</div>';
+      // Энэ захиалгын бүх хоолны орцыг хэвлэх
+      html += '<div style="padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--line)">' +
+        '<button onclick="event.stopPropagation();printOrderRecipes('+o._idx+')" style="width:100%;padding:9px;background:#b8412e;color:#fff;border:none;border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">🖨 Энэ захиалгын орц хэвлэх</button>' +
+      '</div>';
 
       dishes.forEach(function(dishName) {
         var dkey = id+'_'+dishName.replace(/\s/g,'_');
@@ -3376,6 +3380,47 @@ function printOneOrderPDF(idx) {
   if (!o) { alert('Захиалга олдсонгүй.'); return; }
   var company = o['байгууллага'] || o['байгууллагын_нэр'] || 'Захиалга';
   openPrintWindow(ordersPrintDoc('Захиалга · '+company, formatDateMN(todayStr()), buildOrderPrintBlock(o)));
+}
+
+// Нэг захиалгын бүх хоолны орцыг (хүний тоогоор тооцсон) хэвлэнэ
+function printOrderRecipes(idx) {
+  var o = ordersData[idx];
+  if (!o) { alert('Захиалга олдсонгүй.'); return; }
+  var company = o['байгууллага'] || o['байгууллагын_нэр'] || 'Захиалга';
+  var pax = parseInt(o['хүн']) || 0;
+  var service = o['үйлчилгээ'] || '';
+  var sch = parseOrderSchedule(service);
+  var dishTimeMap = {};
+  sch.groups.forEach(function(g){ (g.dishes||[]).forEach(function(d){ if (!dishTimeMap[d.name]) dishTimeMap[d.name] = g; }); });
+  var dishes = parseDishes(service);
+  if (!dishes.length && service) { RECIPES.forEach(function(r){ if (service.toLowerCase().indexOf(r.name.toLowerCase()) >= 0) dishes.push(r.name); }); }
+  if (!dishes.length) { alert('Хоол олдсонгүй.'); return; }
+  var blocks = dishes.map(function(dn){
+    var r = findRecipe(dn);
+    var g = dishTimeMap[dn] || {};
+    var timeTxt = g.time || g.disp || '';
+    var rows = (r && r.ingredients && r.ingredients.length)
+      ? r.ingredients.map(function(ing){ return '<tr><td>'+esc(ing.n)+'</td><td class="amt">'+esc(calcPlanned(ing.a, pax))+'</td></tr>'; }).join('')
+      : '<tr><td colspan="2" class="muted">Технологи карт олдсонгүй</td></tr>';
+    return '<div class="dish"><div class="dish-h">🍳 '+esc(dn)+(timeTxt?' <span class="t">⏰ '+esc(timeTxt)+'</span>':'')+'</div>' +
+      '<table><thead><tr><th>Орц</th><th>Хэмжээ ('+pax+' хүн)</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }).join('');
+  var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Орц — '+esc(company)+'</title><style>' +
+    'body{font-family:Arial,sans-serif;padding:24px;color:#222}h2{color:#1F4A38;margin:0 0 2px}' +
+    '.sub{color:#666;font-size:12px;margin-bottom:16px}' +
+    '.dish{margin-bottom:15px;page-break-inside:avoid}' +
+    '.dish-h{font-weight:700;font-size:15px;color:#b8412e;margin-bottom:5px}' +
+    '.dish-h .t{font-size:12px;color:#9a6a00;font-weight:600}' +
+    'table{width:100%;border-collapse:collapse}' +
+    'th,td{border:1px solid #ccc;padding:6px 9px;text-align:left;font-size:13px}' +
+    'th{background:#1F4A38;color:#fff;font-size:11px;text-transform:uppercase}' +
+    'td.amt{text-align:right;font-weight:700;white-space:nowrap;width:150px}' +
+    '.muted{color:#888}tr:nth-child(even) td{background:#f6f6f3}' +
+    '</style></head><body>' +
+    '<h2>🍳 Хоолны орц — '+esc(company)+'</h2>' +
+    '<div class="sub">👤 '+pax+' хүн · '+esc(formatDateMN(o._parsedDate||todayStr()))+' · '+dishes.length+' хоол</div>' +
+    blocks + '</body></html>';
+  openPrintWindow(doc);
 }
 
 // ── Татах туслах: CSV-г UTF-8 BOM-той татна (Excel дээр кирилл зөв) ──
