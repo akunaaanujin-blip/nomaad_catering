@@ -1368,6 +1368,14 @@ var selectedRoleCard = null;
 var ordersData = [];
 var activeTab = 'orders';
 var openPanels = {};   // ямар орцны самбар нээлттэй байгааг render хооронд хадгална
+var openSvc = {};      // даалгаврын аль үйлчилгээ блок дэлгээтэй байгааг хадгална (default эвхээстэй)
+function toggleSvc(key) {
+  openSvc[key] = !openSvc[key];
+  var el = document.getElementById('svcd_'+key);
+  if (el) el.style.display = openSvc[key] ? 'block' : 'none';
+  var ch = document.getElementById('svcchev_'+key);
+  if (ch) ch.textContent = openSvc[key] ? '▾' : '▸';
+}
 var stockData = null;  // нөөцийн sheet-ийн боловсруулсан өгөгдөл (өртгийн тайланд)
 var SHEETS_POST_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
 
@@ -2266,27 +2274,37 @@ function toggleSvcPrinted(idx, time, date) { setPrinted(idx, time, date, !isPrin
 
 // Нэг үйлчилгээний блок (компани + цаг + хэвлэх + хоолнууд) — {html, total, done}
 function renderSvcBlock(sb) {
-  var blockDone = sb.dishes.every(function(dn){ return isDishDone(sb.id+'_'+dn.replace(/\s/g,'_')); });
+  var doneCount = sb.dishes.filter(function(dn){ return isDishDone(sb.id+'_'+dn.replace(/\s/g,'_')); }).length;
+  var blockDone = (doneCount === sb.dishes.length);
   var printed = isPrinted(sb.idx, sb.time, sb.fullDate);
   var pArgs = sb.idx+',\''+sb.time+'\',\''+sb.fullDate+'\'';
+  var key = (sb.idx+'_'+(sb.fullDate||'')+'_'+(sb.time||'')).replace(/[^0-9a-zA-Z]/g,'_');
+  var open = !!openSvc[key];
+  var hasPrep = sb.dishes.some(function(dn){ return findPreparedFor(dn).length > 0; });
   var h = '<div class="tsk-order-block"'+(printed?' style="border-color:var(--accent)"':'')+'>';
-  h += '<div class="tsk-order-head">' +
-    '<div><div class="tsk-order-name">🏢 '+esc(sb.company)+'</div>' +
-    '<div class="tsk-order-meta">👤 '+sb.pax+' хүн'+(sb.time?' · ⏰ '+esc(sb.time):'')+(sb.svcName?' · '+esc(sb.svcName):'')+'</div></div>' +
-    '<div style="display:flex;align-items:center;gap:6px">' +
+  // Толгой — дарвал хоолнууд нь дэлгэгдэнэ/эвхэгдэнэ
+  h += '<div class="tsk-order-head" onclick="toggleSvc(\''+key+'\')" style="cursor:pointer">' +
+    '<div style="min-width:0"><div class="tsk-order-name">🏢 '+esc(sb.company)+'</div>' +
+    '<div class="tsk-order-meta">👤 '+sb.pax+' хүн'+(sb.time?' · ⏰ '+esc(sb.time):'')+' · 🍳 '+sb.dishes.length+' хоол'+(doneCount>0?' ('+doneCount+'✓)':'')+'</div></div>' +
+    '<div style="display:flex;align-items:center;gap:6px;flex:none">' +
+      (hasPrep?'<span style="font-size:11px;font-weight:800;background:#e8f4ff;color:#1a4d6a;padding:3px 7px;border-radius:999px;white-space:nowrap">🧊 бэлтгэлтэй</span>':'') +
       (printed?'<span style="font-size:11px;font-weight:800;background:rgba(255,255,255,.28);padding:3px 8px;border-radius:999px;white-space:nowrap">🖨 ✓</span>':'') +
-      '<span class="tsk-order-badge">'+(blockDone?'✅ Дууссан':'⏳ Хийгдэж байна')+'</span>' +
+      '<span class="tsk-order-badge">'+(blockDone?'✅ Дууссан':'⏳ '+doneCount+'/'+sb.dishes.length)+'</span>' +
+      '<span id="svcchev_'+key+'" style="font-size:15px;color:#fff;font-weight:700">'+(open?'▾':'▸')+'</span>' +
     '</div>' +
   '</div>';
+  // Хэвлэх + тэмдэглэх мөр (эвхэлтээс үл хамааран харагдана)
   h += '<div style="padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center">' +
     '<button onclick="event.stopPropagation();printOrderRecipes('+pArgs+')" style="flex:1;padding:9px;background:'+(printed?'#7d8a80':'#b8412e')+';color:#fff;border:none;border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">'+(printed?'🖨 Дахин хэвлэх':'🖨 Энэ хэсгийн орц хэвлэх')+'</button>' +
     '<span onclick="event.stopPropagation();toggleSvcPrinted('+pArgs+')" style="cursor:pointer;font-size:12.5px;font-weight:800;white-space:nowrap;padding:8px 12px;border-radius:9px;'+(printed?'background:var(--accent);color:#fff':'background:#fff;color:var(--muted);border:1.5px solid var(--line)')+'">'+(printed?'✓ Хэвлэсэн':'☐ Тэмдэглэх')+'</span>' +
   '</div>';
-  var total = 0, done = 0;
+  // Хоолнууд — эвхэгддэг (default хаалттай)
+  var total = 0, done = 0, dishesHtml = '';
   sb.dishes.forEach(function(dn){
     var res = taskDishCard(sb.id, dn, sb.pax);
-    h += res.html; total++; if (res.done) done++;
+    dishesHtml += res.html; total++; if (res.done) done++;
   });
+  h += '<div class="svc-dishes" id="svcd_'+key+'" style="display:'+(open?'block':'none')+'">'+dishesHtml+'</div>';
   h += '</div>';
   return { html: h, total: total, done: done };
 }
@@ -3726,9 +3744,9 @@ function renderPrepIngredients() {
   var di = dEl ? dEl.value : '';
   if (di === '' || !RECIPES[di]) { box.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">Хоолоо сонгоно уу.</div>'; return; }
   var r = RECIPES[di];
-  // Бэлтгэх шаардлагатай орц = хэрчих/цэвэрлэдэг (хорогдолтой) орцууд (амтлагч биш)
-  var prepIngs = (r.ingredients || []).filter(function(ing){ return ingLossPct(ing.n, r.cat) > 0; });
-  if (!prepIngs.length) { box.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">Энэ хоолд урьдчилан бэлтгэх (хэрчих) орц алга.</div>'; return; }
+  // «Орц бэлтгэх» хэсгийн БҮХ орц (гоймон, будаа зэрэг хорогдолгүй ч бэлддэг зүйлс орно)
+  var prepIngs = (r.ingredients || []).slice();
+  if (!prepIngs.length) { box.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">Энэ хоолд орц алга.</div>'; return; }
   box.innerHTML = '<div style="font-size:11px;color:var(--muted);font-weight:700;margin:10px 0 4px">2. БЭЛДСЭН ЖИНГЭЭ БИЧ:</div>' +
     prepIngs.map(function(ing, idx){
       return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dotted var(--line)">' +
@@ -3852,6 +3870,8 @@ function findPreparedFor(dishName) {
   var n = (dishName||'').toLowerCase().trim();
   if (!n) return [];
   return getPrepStock().filter(function(it){
+    var d = (it.dish||'').toLowerCase().trim();
+    if (d) return d === n;   // бэлтгэхдээ холбосон хоолоор яг таарна
     var inm = (it.name||'').toLowerCase().trim();
     return inm === n || inm.indexOf(n) >= 0 || n.indexOf(inm) >= 0;
   });
