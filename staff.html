@@ -2288,6 +2288,75 @@ function renderSvcBlock(sb) {
   return { html: h, total: total, done: done };
 }
 
+// Захиалгуудаас үйлчилгээний блокуудыг цуглуулна
+function collectSvcBlocks(orders) {
+  var svcBlocks = [];
+  orders.forEach(function(o) {
+    var id = o['id'] || o._idx;
+    var idx = (o._idx != null) ? o._idx : ordersData.indexOf(o);
+    var company = o['байгууллага'] || 'Нэргүй';
+    var pax = parseInt(o['хүн']) || 0;
+    var service = o['үйлчилгээ'] || '';
+    var sch = parseOrderSchedule(service);
+    var groups = sch.groups.filter(function(g){ return g.dishes && g.dishes.length; });
+    groups.forEach(function(g){
+      svcBlocks.push({ idx:idx, id:id, company:company, pax:pax, fullDate:(g.fullDate||''), time:(g.time||''), svcName:(g.name||''), dishes: g.dishes.map(function(d){ return d.name; }) });
+    });
+    var loose = (sch.looseDishes && sch.looseDishes.length) ? sch.looseDishes.map(function(d){ return d.name; }) : [];
+    if (!groups.length && !loose.length) {
+      var ds = parseDishes(service);
+      if (!ds.length && service) RECIPES.forEach(function(r){ if (service.toLowerCase().indexOf(r.name.toLowerCase()) >= 0) ds.push(r.name); });
+      loose = ds;
+    }
+    if (loose.length) svcBlocks.push({ idx:idx, id:id, company:company, pax:pax, fullDate:(o._parsedDate||''), time:'', svcName:'', dishes: loose });
+  });
+  return svcBlocks;
+}
+
+// Нэг өдрийн нэг хэсгийг (өглөө/өдөр/орой) БҮХЭЛД НЬ нэг хуудсаар хэвлэнэ
+function printPeriodRecipes(dateKey, periodSort) {
+  var today = todayStr();
+  var orders = ordersData.filter(function(o){ return !o._parsedDate || o._parsedDate >= today; });
+  if (!orders.length) orders = ordersData.slice(0, 3);
+  var blocks = collectSvcBlocks(orders).filter(function(sb){
+    var dk = sb.fullDate || '9999-12-31';
+    return dk === dateKey && mealPeriod(sb.time).sort === periodSort;
+  });
+  if (!blocks.length) { alert('Энэ хэсэгт хоол алга.'); return; }
+  var mp = mealPeriod(blocks[0].time);
+  var dLabel = (dateKey === '9999-12-31') ? 'Огноо тодорхойгүй' : formatDateMN(dateKey);
+  var totalDishes = 0;
+  var sections = blocks.map(function(sb){
+    var dishBlocks = sb.dishes.map(function(dn){
+      totalDishes++;
+      var r = findRecipe(dn);
+      var rows = (r && r.ingredients && r.ingredients.length)
+        ? r.ingredients.map(function(ing){ return '<tr><td>'+esc(ing.n)+'</td><td class="amt">'+esc(calcPlanned(ing.a, sb.pax))+'</td></tr>'; }).join('')
+        : '<tr><td colspan="2" class="muted">Технологи карт олдсонгүй</td></tr>';
+      return '<div class="dish"><div class="dish-h">🍳 '+esc(dn)+'</div><table><thead><tr><th>Орц</th><th>Хэмжээ ('+sb.pax+' хүн)</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    }).join('');
+    return '<div class="svc"><div class="svc-h">🏢 '+esc(sb.company)+' · 👤 '+sb.pax+' хүн'+(sb.time?' · ⏰ '+esc(sb.time):'')+'</div>'+dishBlocks+'</div>';
+  }).join('');
+  var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(mp.label)+' — '+esc(dLabel)+'</title><style>' +
+    'body{font-family:Arial,sans-serif;padding:24px;color:#222}h2{color:#1F4A38;margin:0 0 2px}' +
+    '.sub{color:#666;font-size:12px;margin-bottom:16px}' +
+    '.svc{margin-bottom:18px}' +
+    '.svc-h{font-weight:800;font-size:14px;color:#fff;background:#1F4A38;padding:7px 11px;border-radius:6px;margin-bottom:10px}' +
+    '.dish{margin-bottom:14px;page-break-inside:avoid}' +
+    '.dish-h{font-weight:700;font-size:14px;color:#b8412e;margin-bottom:5px}' +
+    'table{width:100%;border-collapse:collapse}' +
+    'th,td{border:1px solid #ccc;padding:6px 9px;text-align:left;font-size:13px}' +
+    'th{background:#6b6b66;color:#fff;font-size:11px;text-transform:uppercase}' +
+    'td.amt{text-align:right;font-weight:700;white-space:nowrap;width:150px}' +
+    '.muted{color:#888}tbody tr:nth-child(even) td{background:#f6f6f3}' +
+    '</style></head><body>' +
+    '<h2>'+mp.emoji+' '+esc(mp.label)+' — '+esc(dLabel)+'</h2>' +
+    '<div class="sub">'+blocks.length+' үйлчилгээ · '+totalDishes+' хоол</div>' +
+    sections + '</body></html>';
+  var ok = openPrintWindow(doc);
+  if (ok) { blocks.forEach(function(sb){ setPrinted(sb.idx, sb.time, sb.fullDate, true); }); if (activeTab === 'tasks') renderTasks(); }
+}
+
 function renderTasks() {
   if (!currentRole) return;
   var body = document.getElementById('tasks-body');
@@ -2310,26 +2379,7 @@ function renderTasks() {
   var totalTasks = 0, doneTasks = 0;
 
   // ── Бүх захиалгын үйлчилгээг цуглуулж, ОГНОО → Өглөө/Өдөр/Орой гэж бүлэглэнэ ──
-  var svcBlocks = [];
-  orders.forEach(function(o) {
-    var id = o['id'] || o._idx;
-    var idx = (o._idx != null) ? o._idx : ordersData.indexOf(o);
-    var company = o['байгууллага'] || 'Нэргүй';
-    var pax = parseInt(o['хүн']) || 0;
-    var service = o['үйлчилгээ'] || '';
-    var sch = parseOrderSchedule(service);
-    var groups = sch.groups.filter(function(g){ return g.dishes && g.dishes.length; });
-    groups.forEach(function(g){
-      svcBlocks.push({ idx:idx, id:id, company:company, pax:pax, fullDate:(g.fullDate||''), time:(g.time||''), svcName:(g.name||''), dishes: g.dishes.map(function(d){ return d.name; }) });
-    });
-    var loose = (sch.looseDishes && sch.looseDishes.length) ? sch.looseDishes.map(function(d){ return d.name; }) : [];
-    if (!groups.length && !loose.length) {
-      var ds = parseDishes(service);
-      if (!ds.length && service) RECIPES.forEach(function(r){ if (service.toLowerCase().indexOf(r.name.toLowerCase()) >= 0) ds.push(r.name); });
-      loose = ds;
-    }
-    if (loose.length) svcBlocks.push({ idx:idx, id:id, company:company, pax:pax, fullDate:(o._parsedDate||''), time:'', svcName:'', dishes: loose });
-  });
+  var svcBlocks = collectSvcBlocks(orders);
 
   // Огноо → мэргэжил (өглөө/өдөр/орой)
   var byDate = {}, dateKeys = [];
@@ -2348,7 +2398,10 @@ function renderTasks() {
     var periods = byDate[dk];
     Object.keys(periods).sort(function(a,b){ return a-b; }).forEach(function(pk){
       var per = periods[pk];
-      html += '<div style="margin:11px 14px 4px;padding:7px 13px;background:'+per.mp.bg+';color:'+per.mp.fg+';border-radius:9px;font-size:13px;font-weight:800;letter-spacing:.4px">'+per.mp.emoji+' '+per.mp.label.toUpperCase()+'</div>';
+      html += '<div style="margin:11px 14px 4px;padding:6px 8px 6px 13px;background:'+per.mp.bg+';color:'+per.mp.fg+';border-radius:9px;display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+        '<span style="font-size:13px;font-weight:800;letter-spacing:.4px">'+per.mp.emoji+' '+per.mp.label.toUpperCase()+'</span>' +
+        '<button onclick="event.stopPropagation();printPeriodRecipes(\''+dk+'\','+pk+')" style="font-family:inherit;font-size:12px;font-weight:800;background:'+per.mp.fg+';color:#fff;border:none;border-radius:7px;padding:6px 11px;cursor:pointer;white-space:nowrap">🖨 Бүгдийг хэвлэх</button>' +
+      '</div>';
       per.blocks.forEach(function(sb){
         var res = renderSvcBlock(sb);
         html += res.html; totalTasks += res.total; doneTasks += res.done;
