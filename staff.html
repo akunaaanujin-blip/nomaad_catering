@@ -2255,17 +2255,29 @@ function taskDishCard(id, dishName, pax) {
   return { html: html, done: done };
 }
 
+// Үйлчилгээ (хэсэг) хэвлэгдсэн эсэхийг тэмдэглэх (энэ төхөөрөмжид)
+function printedKey(idx, time, date) { return 'printed_' + idx + '|' + (date||'') + '|' + (time||''); }
+function isPrinted(idx, time, date) { try { return localStorage.getItem(printedKey(idx,time,date)) === '1'; } catch(e){ return false; } }
+function setPrinted(idx, time, date, val) { try { if (val) localStorage.setItem(printedKey(idx,time,date),'1'); else localStorage.removeItem(printedKey(idx,time,date)); } catch(e){} }
+function toggleSvcPrinted(idx, time, date) { setPrinted(idx, time, date, !isPrinted(idx, time, date)); renderTasks(); }
+
 // Нэг үйлчилгээний блок (компани + цаг + хэвлэх + хоолнууд) — {html, total, done}
 function renderSvcBlock(sb) {
   var blockDone = sb.dishes.every(function(dn){ return isDishDone(sb.id+'_'+dn.replace(/\s/g,'_')); });
-  var h = '<div class="tsk-order-block">';
+  var printed = isPrinted(sb.idx, sb.time, sb.fullDate);
+  var pArgs = sb.idx+',\''+sb.time+'\',\''+sb.fullDate+'\'';
+  var h = '<div class="tsk-order-block"'+(printed?' style="border-color:var(--accent)"':'')+'>';
   h += '<div class="tsk-order-head">' +
     '<div><div class="tsk-order-name">🏢 '+esc(sb.company)+'</div>' +
     '<div class="tsk-order-meta">👤 '+sb.pax+' хүн'+(sb.time?' · ⏰ '+esc(sb.time):'')+(sb.svcName?' · '+esc(sb.svcName):'')+'</div></div>' +
-    '<span class="tsk-order-badge">'+(blockDone?'✅ Дууссан':'⏳ Хийгдэж байна')+'</span>' +
+    '<div style="display:flex;align-items:center;gap:6px">' +
+      (printed?'<span style="font-size:11px;font-weight:800;background:rgba(255,255,255,.28);padding:3px 8px;border-radius:999px;white-space:nowrap">🖨 ✓</span>':'') +
+      '<span class="tsk-order-badge">'+(blockDone?'✅ Дууссан':'⏳ Хийгдэж байна')+'</span>' +
+    '</div>' +
   '</div>';
-  h += '<div style="padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--line)">' +
-    '<button onclick="event.stopPropagation();printOrderRecipes('+sb.idx+',\''+sb.time+'\',\''+sb.fullDate+'\')" style="width:100%;padding:9px;background:#b8412e;color:#fff;border:none;border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">🖨 Энэ хэсгийн орц хэвлэх</button>' +
+  h += '<div style="padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center">' +
+    '<button onclick="event.stopPropagation();printOrderRecipes('+pArgs+')" style="flex:1;padding:9px;background:'+(printed?'#7d8a80':'#b8412e')+';color:#fff;border:none;border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">'+(printed?'🖨 Дахин хэвлэх':'🖨 Энэ хэсгийн орц хэвлэх')+'</button>' +
+    '<span onclick="event.stopPropagation();toggleSvcPrinted('+pArgs+')" style="cursor:pointer;font-size:12.5px;font-weight:800;white-space:nowrap;padding:8px 12px;border-radius:9px;'+(printed?'background:var(--accent);color:#fff':'background:#fff;color:var(--muted);border:1.5px solid var(--line)')+'">'+(printed?'✓ Хэвлэсэн':'☐ Тэмдэглэх')+'</span>' +
   '</div>';
   var total = 0, done = 0;
   sb.dishes.forEach(function(dn){
@@ -3365,9 +3377,10 @@ function ordersPrintDoc(title, sub, blocks) {
 
 function openPrintWindow(doc) {
   var w = window.open('', '_blank');
-  if (!w) { alert('Хэвлэх цонх нээгдсэнгүй (pop-up зөвшөөрнө үү).'); return; }
+  if (!w) { alert('Хэвлэх цонх нээгдсэнгүй (pop-up зөвшөөрнө үү).'); return false; }
   w.document.write(doc); w.document.close();
   setTimeout(function(){ w.focus(); w.print(); }, 350);
+  return true;
 }
 
 // Бүх захиалгын жагсаалт — PDF
@@ -3439,7 +3452,9 @@ function printOrderRecipes(idx, fTime, fDate) {
     '<h2>🍳 Хоолны орц — '+esc(company)+'</h2>' +
     '<div class="sub">'+subTitle+'</div>' +
     blocks + '</body></html>';
-  openPrintWindow(doc);
+  var ok = openPrintWindow(doc);
+  // Хэвлэсэн бол тухайн хэсгийг автоматаар «✓ Хэвлэсэн» болгоно
+  if (ok && typeof fTime !== 'undefined') { setPrinted(idx, fTime, fDate, true); if (activeTab === 'tasks') renderTasks(); }
 }
 
 // ── Татах туслах: CSV-г UTF-8 BOM-той татна (Excel дээр кирилл зөв) ──
