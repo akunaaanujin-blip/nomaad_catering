@@ -2459,7 +2459,8 @@ function renderTasks() {
   svcBlocks.forEach(function(sb){
     var dk = sb.fullDate || '9999-12-31';
     if (!byDate[dk]) { byDate[dk] = {}; dateKeys.push(dk); }
-    var s = mealPeriod(sb.time).sort;
+    // Өглөөний цай (breakfast) нь цагаас үл хамаарч ҮРГЭЛЖ Өглөө баганад
+    var s = (sb.cat === 'breakfast' || /цай/.test((sb.svcName||'').toLowerCase())) ? 0 : mealPeriod(sb.time).sort;
     (byDate[dk][s] = byDate[dk][s] || []).push(sb);
   });
   dateKeys.sort();
