@@ -534,6 +534,20 @@ body{
 .tk-chev{color:#bdb9ad;font-size:12px;}
 .tk-detail{display:none;padding:4px 15px 15px 54px;}
 .tk-detail.open{display:block;}
+
+/* ── Даалгавар — 3 баганат самбар ── */
+.tk-board{display:flex;gap:10px;padding:12px;align-items:flex-start;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.tk-col{flex:1 0 0;min-width:168px;background:var(--surface);border:1px solid var(--line);border-radius:13px;overflow:hidden;box-shadow:var(--shadow);}
+.tk-col-head{padding:10px 12px;font-size:12.5px;font-weight:800;letter-spacing:.3px;border-bottom:2px solid;display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.tk-col-empty{padding:20px 12px;text-align:center;color:#c9c5b8;font-size:13px;}
+.tk-card{border-bottom:6px solid #f2f1ec;padding:9px 11px 5px;}
+.tk-card:last-child{border-bottom:none;}
+.tk-card-h{font-size:10.5px;font-weight:700;color:var(--muted);line-height:1.45;margin-bottom:2px;display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
+.tk-card .tk-dish{padding:9px 0;gap:9px;}
+.tk-card .tk-check{width:22px;height:22px;min-width:22px;font-size:12px;}
+.tk-card .tk-dname{font-size:13px;}
+.tk-card .tk-detail{padding:2px 0 10px 31px;}
+.tk-card .tk-chev{display:none;}
 .tsk-ing-name{flex:1;font-size:13px;color:var(--ink);}
 .tsk-ing-plan{font-size:12px;font-weight:700;color:var(--accent);min-width:68px;text-align:right;}
 .tsk-ing-input{width:72px;font-family:inherit;font-size:13px;font-weight:600;text-align:center;border:1.5px solid var(--line);border-radius:8px;padding:5px 4px;background:#fff;color:var(--ink);}
@@ -2267,6 +2281,13 @@ function mealPeriod(time) {
   if (time < '16:00') return { key:'day',     label:'Өдөр',  emoji:'☀️', sort:1, bg:'#fde3c0', fg:'#a35400' };
   return { key:'evening', label:'Орой', emoji:'🌆', sort:2, bg:'#e3e0ef', fg:'#473d78' };
 }
+// sort дугаараар мэргэжлийн мэдээлэл (баганын толгойд)
+function mealPeriodInfo(sort) {
+  if (sort === 0) return { label:'Өглөө', emoji:'🌅', fg:'#9a5b00' };
+  if (sort === 1) return { label:'Өдөр',  emoji:'☀️', fg:'#a35400' };
+  if (sort === 2) return { label:'Орой',  emoji:'🌆', fg:'#473d78' };
+  return { label:'Бусад', emoji:'⏰', fg:'#555' };
+}
 
 // Нэг хоолны цэвэр эгнээ + дэлгэрэнгүй ({html, done} буцаана)
 function taskDishRow(id, dishName, pax, cat) {
@@ -2425,44 +2446,47 @@ function renderTasks() {
   // ── Бүх захиалгын үйлчилгээг цуглуулж, ОГНОО → Өглөө/Өдөр/Орой гэж бүлэглэнэ ──
   var svcBlocks = collectSvcBlocks(orders);
 
-  // Огноо → мэргэжил (өглөө/өдөр/орой)
-  var byDate = {}, dateKeys = [];
-  svcBlocks.forEach(function(sb){
-    var dk = sb.fullDate || '9999-12-31';
-    if (!byDate[dk]) { byDate[dk] = {}; dateKeys.push(dk); }
-    var mp = mealPeriod(sb.time);
-    if (!byDate[dk][mp.sort]) byDate[dk][mp.sort] = { mp:mp, blocks:[] };
-    byDate[dk][mp.sort].blocks.push(sb);
-  });
-  dateKeys.sort();
+  // ── Үйлчилгээг МЭРГЭЖЛЭЭР (өглөө/өдөр/орой) 3 баганад хуваана ──
+  var periodCols = {};
+  svcBlocks.forEach(function(sb){ var s = mealPeriod(sb.time).sort; (periodCols[s] = periodCols[s] || []).push(sb); });
+  Object.keys(periodCols).forEach(function(s){ periodCols[s].sort(function(a,b){ return ((a.fullDate||'9999')+'_'+(a.time||'99')).localeCompare((b.fullDate||'9999')+'_'+(b.time||'99')); }); });
+  var colOrder = [0,1,2]; if (periodCols[3] && periodCols[3].length) colOrder.push(3);
 
   if (svcBlocks.length && currentRole !== 'Захирал') {
-    html += '<div style="margin:14px 16px 4px;padding:9px 13px;background:var(--accent-soft);border-radius:10px;font-size:12px;color:var(--accent);line-height:1.55;font-weight:600">💡 Хоол бэлэн болсны дараа зүүн талын ◯-г дарж дуусга. Хоол дээр дарвал орц ба аргачлал нээгдэнэ.</div>';
+    html += '<div style="margin:14px 14px 0;padding:9px 13px;background:var(--accent-soft);border-radius:10px;font-size:12px;color:var(--accent);line-height:1.55;font-weight:600">💡 Хоол бэлэн болсны дараа ◯-г дарж дуусга. Хоол дээр дарвал орц/аргачлал нээгдэнэ. Баганыг хажуу тийш гүйлгэнэ.</div>';
   }
 
-  dateKeys.forEach(function(dk){
-    var dLabel = (dk === '9999-12-31') ? 'Огноо тодорхойгүй' : formatDateMN(dk);
-    html += '<div class="tk-date">📅 '+esc(dLabel)+'</div>';
-    var periods = byDate[dk];
-    Object.keys(periods).sort(function(a,b){ return a-b; }).forEach(function(pk){
-      var per = periods[pk];
-      // тухайн хэсгийн нийт/дууссан тоо
-      var pT = 0, pD = 0;
-      per.blocks.forEach(function(sb){ sb.dishes.forEach(function(dn){ pT++; if (isDishDone(sb.id+'_'+dn.replace(/\s/g,'_'))) pD++; }); });
-      html += '<div class="tk-period">' +
-        '<div class="tk-pbar" style="background:'+per.mp.fg+'"></div>' +
-        '<div class="tk-phead">' +
-          '<span class="tk-ptitle" style="color:'+per.mp.fg+'">'+per.mp.emoji+' '+per.mp.label.toUpperCase()+
-            ' <span style="font-size:11px;font-weight:600;color:var(--muted)">· '+pD+'/'+pT+'</span></span>' +
-          '<button class="tk-print" onclick="printPeriodRecipes(\''+dk+'\','+pk+')">🖨 Хэвлэх</button>' +
-        '</div>';
-      per.blocks.forEach(function(sb){
-        var res = renderSvcSub(sb);
-        html += res.html; totalTasks += res.total; doneTasks += res.done;
+  html += '<div class="tk-board">';
+  colOrder.forEach(function(s){
+    var blocks = periodCols[s] || [];
+    var info = mealPeriodInfo(s);
+    var cT = 0, cD = 0;
+    blocks.forEach(function(sb){ sb.dishes.forEach(function(dn){ cT++; if (isDishDone(sb.id+'_'+dn.replace(/\s/g,'_'))) cD++; }); });
+    html += '<div class="tk-col">' +
+      '<div class="tk-col-head" style="border-color:'+info.fg+';color:'+info.fg+'">' +
+        '<span>'+info.emoji+' '+info.label.toUpperCase()+'</span>' +
+        '<span style="font-size:11px;font-weight:700;color:var(--muted)">'+cD+'/'+cT+'</span>' +
+      '</div>';
+    if (!blocks.length) {
+      html += '<div class="tk-col-empty">—</div>';
+    } else {
+      blocks.forEach(function(sb){
+        var pArgs = sb.idx+',\''+sb.time+'\',\''+sb.fullDate+'\'';
+        var printed = isPrinted(sb.idx, sb.time, sb.fullDate);
+        var dateS = sb.fullDate ? formatDateMN(sb.fullDate) : 'Огноогүй';
+        html += '<div class="tk-card">' +
+          '<div class="tk-card-h"><span>🏢 '+esc(sb.company)+'<br>'+esc(dateS)+(sb.time?' · '+esc(sb.time):'')+' · '+sb.pax+' хүн</span>' +
+            '<span class="tk-iprint" onclick="event.stopPropagation();printOrderRecipes('+pArgs+')" title="Орц хэвлэх">'+(printed?'🖨✓':'🖨')+'</span></div>';
+        sb.dishes.forEach(function(dn){
+          var res = taskDishRow(sb.id, dn, sb.pax, sb.cat);
+          html += res.html; totalTasks++; if (res.done) doneTasks++;
+        });
+        html += '</div>';
       });
-      html += '</div>';
-    });
+    }
+    html += '</div>';
   });
+  html += '</div>';
 
   // Progress bar
   var pct = totalTasks > 0 ? Math.round(doneTasks/totalTasks*100) : 0;
