@@ -1262,6 +1262,7 @@ body{
       </div>
       </div><!-- /buy-section -->
 
+      <div id="staff-exp-section">
       <!-- Ажилтны хоолны зарлага — дээш зөөв; олон хүнс нэмж нэг товчоор гаргана -->
       <div class="ing-section-title" style="margin-top:16px">🍱 Ажилтны хоолны зарлага</div>
       <div class="ing-section-sub">Хүнсээ нэг нэгээр нэмээд, эцэст нь «Зарлага гаргах» товч дарна — нөөцийн үлдэгдлээс хасагдана</div>
@@ -1277,6 +1278,7 @@ body{
         <div id="staff-exp-msg" style="font-size:12px;text-align:center;margin:4px 0"></div>
         <div id="staff-meal-list" style="margin-top:8px"></div>
       </div>
+      </div><!-- /staff-exp-section -->
 
       <!-- Нөөцийн үлдэгдэл + татах товчнууд -->
       <div class="ing-section-title" style="margin-top:20px">📦 Одоогийн нөөцийн үлдэгдэл</div>
@@ -1424,7 +1426,7 @@ var ROLES = {
   'Захирал': {pin:'9999', emoji:'👔', tabs:['orders','tasks','recipes','ingredients','noots','prep','perf','staff']},
   'Тогооч':  {pin:'1122', emoji:'👨‍🍳', tabs:['orders','tasks','recipes','ingredients','noots','prep']},
   'Бэлтгэгч':{pin:'2233', emoji:'🥘', tabs:['tasks','recipes','ingredients','noots','prep']},
-  'Нягтлан': {pin:'4455', emoji:'🧾', tabs:['ingredients','noots']}
+  'Нягтлан': {pin:'4455', emoji:'🧾', tabs:['noots']}
 };
 
 /* ─────────────────────────────────
@@ -1539,6 +1541,10 @@ function switchTab(name) {
     loadStock(); renderStaffMealList(); renderStaffExpenseDraft(); renderPurchaseDraft(); renderCampSection();
     var bs = document.getElementById('buy-section');   // бараа авах — зөвхөн Захирал/Нягтлан
     if (bs) bs.style.display = (currentRole === 'Захирал' || currentRole === 'Нягтлан') ? '' : 'none';
+    // Нягтланд зөвхөн бараа авах + нөөц үлдэгдэл — ажилтны зарлага, камп нуух
+    var nyat = (currentRole === 'Нягтлан');
+    var se = document.getElementById('staff-exp-section'); if (se) se.style.display = nyat ? 'none' : '';
+    var cs = document.getElementById('camp-section');     if (cs) cs.style.display = nyat ? 'none' : '';
   }
   if (name === 'prep') renderPrepStock();
   if (name === 'perf') renderPerf();
