@@ -2928,13 +2928,14 @@ function getOrderConsumptionByMaterial() {
       var recipe = findRecipe(dn, dc.cat);
       if (!recipe || !recipe.ingredients) return;
       recipe.ingredients.forEach(function(ing, i){
-        var g = 0;
+        var g = 0, srcUnit = 'г';
         var actual = getActual(dkey+'_act_ing_'+i);   // тогоочийн оруулсан бодит хэмжээ (БРУТТО)
-        if (actual) { var aq = parseQtyRaw(actual); g = aq ? aq.g : 0; }
-        else if (pax > 0) { var pg = plannedGramsRaw(ing.a, pax); g = pg ? pg.g : 0; }   // жор = БРУТТО (түүхий) хасна
+        if (actual) { var aq = parseQtyRaw(actual); if (aq) { g = aq.g; srcUnit = aq.unit; } }
+        else if (pax > 0) { var pg = plannedGramsRaw(ing.a, pax); if (pg) { g = pg.g; srcUnit = pg.unit; } }   // жор = БРУТТО (түүхий)
         if (!g) return;
         var k = resolveToStockMaterial(ing.n);
-        map[k] = (map[k] || 0) + g;
+        if (!map[k]) map[k] = { g:0, unit:srcUnit };   // {грамм/мл/ширхэг, эх нэгж}
+        map[k].g += g;
       });
     });
   });
@@ -2947,6 +2948,22 @@ function gramsToStockUnit(g, unit) {
   if (u === 'кг' || u === 'л') return g / 1000;
   if (u === 'г' || u === 'гр' || u === 'грамм' || u === 'мл' || u === 'ш' || u === 'ширхэг') return g;
   return 0;   // шуудай гэх мэт хөрвүүлэхгүй
+}
+
+// Нэгжийн ангилал: жин / шингэн / ширхэг
+function unitCategory(u) {
+  u = String(u || '').toLowerCase().trim();
+  if (u === 'ш' || u === 'ширхэг') return 'count';
+  if (u === 'кг' || u === 'г' || u === 'гр' || u === 'грамм') return 'mass';
+  if (u === 'л' || u === 'мл') return 'vol';
+  return 'other';
+}
+// Хоёр нэгжийг хооронд нь хөрвүүлж болох уу? Ширхэг зөвхөн ширхэгтэй; жин↔шингэнийг (≈1г/мл) зөвшөөрнө
+function unitsCompatible(a, b) {
+  var ca = unitCategory(a), cb = unitCategory(b);
+  if (ca === 'other' || cb === 'other') return false;
+  if (ca === 'count' || cb === 'count') return ca === cb;
+  return true;   // mass↔vol зөвшөөрнө
 }
 
 // Нэгж үнийг кг/л-д шилжүүлсэн дүн (үнэ зөв эсэхийг шалгахад) — ш зэрэгт null
@@ -3329,7 +3346,14 @@ function computeShoppingList() {
     var a = agg[k], stk = stockMap[k];
     var name = stk ? stk.name : a.label;
     var needed, stock = '—', buy, buyHi = true;
-    if (stk) {
+    if (stk && !unitsCompatible(a.unit, String(stk.unit))) {
+      // ⚠️ Нэгж тохирохгүй (ж: жор «г», нөөц «ш») — жорын нэгжээр шаардлага, нөөцийг хасч тооцохгүй
+      var sqm = parseFloat(stk.qty) || 0;
+      needed = fmtAmt(a.grams, a.unit);
+      stock  = '⚠' + (Math.round(sqm*100)/100) + String(stk.unit);
+      buy = fmtAmt(a.grams, a.unit) + ' ⚠';
+      buyHi = true;
+    } else if (stk) {
       var su = String(stk.unit), needU = gramsToStockUnit(a.grams, su);
       if (needU > 0) {
         var sqty = parseFloat(stk.qty) || 0;
@@ -4195,32 +4219,50 @@ function renderStock(data) {
   var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Материал</span><span class="ing-amt-col">Нийт үлд.</span><span class="ing-unit-col">Нэгж</span><span class="ing-price-col">Нэгж үнэ</span></div>';
   var itemCount = 0, totalValue = 0;
   var items = [];
+  var r2 = function(x){ return Math.round(x*100)/100; };
+
+  // ── 1) Давхардсан мөрийг материал+нэгжээр НЭГТГЭНЭ (нэг материалаас зарцуулалт нэг л удаа хасагдана) ──
+  var groups = {}, gOrder = [];
   rows.forEach(function(row) {
     var cells = row.c || [];
     // Баганын дараалал: №(0) | Огноо(1) | Материал(2) | Хэмжих нэгж(3) | Тоо(4) | Нэгж үнэ(5) | Нийт(6)
-    var name = cells[2] && cells[2].v ? cells[2].v : '';
-    var unit = cells[3] && cells[3].v ? cells[3].v : '';
-    var qty  = cells[4] && cells[4].v != null ? cells[4].v : '';
-    var price = cells[5] && cells[5].v != null ? parseFloat(cells[5].v) : NaN;
-    var lineVal = cells[6] && cells[6].v != null ? parseFloat(cells[6].v) : 0;
-    if (!name) return;
+    var nm = cells[2] && cells[2].v ? cells[2].v : '';
+    if (!nm) return;
+    var un = cells[3] && cells[3].v ? cells[3].v : '';
+    var qn = (cells[4] && cells[4].v != null) ? parseFloat(cells[4].v) : NaN;
+    var pr = (cells[5] && cells[5].v != null) ? parseFloat(cells[5].v) : NaN;
+    var lv = (cells[6] && cells[6].v != null) ? parseFloat(cells[6].v) : 0;
+    if (!isNaN(lv)) totalValue += lv;
+    var key = String(nm).toLowerCase().trim() + '|' + String(un).toLowerCase().trim();
+    if (!groups[key]) { groups[key] = { name:String(nm), unit:String(un||''), qty:0, hasQty:false, value:0, price:NaN }; gOrder.push(key); }
+    var gp = groups[key];
+    if (!isNaN(qn)) { gp.qty += qn; gp.hasQty = true; }
+    if (!isNaN(lv)) gp.value += lv;
+    if (isNaN(gp.price) && !isNaN(pr)) gp.price = pr;   // эхний нэгж үнэ
+  });
+
+  // ── 2) Бүлэг бүрд зарцуулалт/боловсруулалтыг НЭГ удаа хасна (нэгж тохирохыг шалгана) ──
+  gOrder.forEach(function(key) {
+    var grp = groups[key];
+    var name = grp.name, unit = grp.unit;
+    var nameLower = name.toLowerCase().trim();
+    var qtyNum = grp.hasQty ? grp.qty : NaN;
+    var price = grp.price;
     itemCount++;
-    if (!isNaN(lineVal)) totalValue += lineVal;
-    var qtyNum = parseFloat(qty);
-    var nameLower = String(name).toLowerCase().trim();
-    var r2 = function(x){ return Math.round(x*100)/100; };
-    // Зарцуулалт ба боловсруулалт (бүгд нэгж рүү хөрвүүлсэн)
+    // Захиалгын зарцуулалт {g, unit} — нэгж тохирохгүй бол хасахгүй (анхааруулна)
+    var oc = orderMap[nameLower];
+    var orderOK = oc ? unitsCompatible(oc.unit, unit) : true;
     var usedStaff = expMap[nameLower] || 0;
-    var usedOrder = gramsToStockUnit(orderMap[nameLower] || 0, unit);
+    var usedOrder = (oc && orderOK) ? gramsToStockUnit(oc.g, unit) : 0;
     var usedPrep  = gramsToStockUnit(prepMap[nameLower] || 0, unit);   // боловсруулсан (бэлтгэсэн)
-    var usedCampRaw = gramsToStockUnit(campRawMap[nameLower] || 0, unit); // камп руу явсан түүхий (нөөцөөс бүрэн гарсан)
+    var usedCampRaw = gramsToStockUnit(campRawMap[nameLower] || 0, unit); // камп руу явсан түүхий
+    var mismatch = !!(oc && !orderOK);   // зарцуулалт байгаа ч нэгж тохирохгүй
     // Боловсруулаагүй (түүхий) үлдэгдэл — зарцуулсан, боловсруулсан, камп-түүхийг хассан
     var rawLeft   = isNaN(qtyNum) ? NaN : (qtyNum - usedStaff - usedOrder - usedPrep - usedCampRaw);
     // Нийт үлдэгдэл = боловсруулаагүй + боловсруулсан (бэлтгэсэн нь нөөцөд хэвээр; камп-түүхий гарсан тул хасна)
     var totalLeft = isNaN(qtyNum) ? NaN : (qtyNum - usedStaff - usedOrder - usedCampRaw);
-    // Тооцоонд (авах жагсаалт г.м) түүхий үлдэгдлийг дамжуулна — бэлтгэснийг тэндээ буцааж нэмдэг
-    items.push({ name:String(name), unit:String(unit||''), qty:(isNaN(rawLeft)?parseFloat(qty):rawLeft), price:price, value:(isNaN(lineVal)?0:lineVal) });
-    var totalDisplay = isNaN(totalLeft) ? (qty||'—') : r2(totalLeft);
+    items.push({ name:name, unit:unit, qty:(isNaN(rawLeft)?(isNaN(qtyNum)?0:qtyNum):rawLeft), price:price, value:grp.value });
+    var totalDisplay = isNaN(totalLeft) ? (grp.hasQty ? r2(qtyNum) : '—') : r2(totalLeft);
     var priceDisplay = isNaN(price) ? '—' : price.toLocaleString('mn-MN')+'₮';
     var over  = !isNaN(totalLeft) && totalLeft < 0;   // хэтрүүлж зарцуулсан — улаан анхааруулга
     var empty = !isNaN(totalLeft) && totalLeft === 0; // дууссан — амбер
@@ -4234,6 +4276,10 @@ function renderStock(data) {
         '<span style="color:var(--accent)">✅ Боловсруулсан ' + r2(usedPrep) + esc(String(unit)) + '</span>' + locNote +
         '<span style="color:var(--muted)"> · 📦 Боловсруулаагүй ' + r2(rawLeft) + esc(String(unit)) + '</span>' +
       '</span>';
+    }
+    if (mismatch) {
+      classNote += '<span style="display:block;font-size:10.5px;font-weight:600;margin-top:3px;color:var(--amber);line-height:1.5">' +
+        '⚠️ Нэгж тохирохгүй: жорд ' + r2(oc.g) + esc(oc.unit) + ' хэрэгтэй ч нөөц «' + esc(unit) + '»-ээр бүртгэгдсэн тул хасаагүй. Нэгжийг «' + esc(oc.unit) + '» болгож засна уу.</span>';
     }
     // Зарцуулсан тэмдэглэл (захиалга / ажилтны хоол)
     var consumedParts = [];
