@@ -1761,7 +1761,11 @@ function parseOrderSchedule(service) {
   // Формат таних: багц↔хоол ээлжилсэн (шинэ) эсэх
   var lastPkg = -1, firstDish = -1;
   parts.forEach(function(p, i){ if (isPkg(p)) lastPkg = i; else if (firstDish < 0) firstDish = i; });
-  var interleaved = (firstDish >= 0 && firstDish < lastPkg);
+  // Багц бүр өөр ангилалтай (ижил ангиллын олон багцгүй) эсэх — тийм бол хоосон багцтай ч хоолыг ойрын багцад өгнө
+  var pcats = parts.filter(isPkg).map(function(p){ return svcCategory(p); });
+  var seenC = {}, dupCat = false;
+  pcats.forEach(function(c){ if (seenC[c]) dupCat = true; seenC[c] = 1; });
+  var interleaved = (firstDish >= 0 && firstDish < lastPkg) || (pcats.length >= 2 && !dupCat);
 
   if (interleaved) {
     // ШИНЭ формат: хоол өмнөх багц дор нь яг тааруулна
