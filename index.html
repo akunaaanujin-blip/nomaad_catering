@@ -1205,6 +1205,10 @@ document.getElementById('of-pax').addEventListener('input', function() {
 // ── Сонгосон хоолуудыг hidden field-д хадгалах ──
 function updateDishesField() {
   var parts = [];
+  // Эхний оруулсан огноог олж, огноогүй мөрүүдэд өвлүүлнэ (нүцгэн цаг гарахаас сэргийлнэ)
+  var firstDate = '';
+  for (var k = 0; k < svcCount; k++) { var dd = document.getElementById('svc-date-' + k); if (dd && dd.value) { firstDate = dd.value; break; } }
+  var lastDate = firstDate;
   for (var i = 0; i < svcCount; i++) {
     var sv = document.getElementById('svc-sel-' + i);
     if (!sv || !sv.value) continue;
@@ -1212,7 +1216,9 @@ function updateDishesField() {
     if (!opt || !opt.v) continue;
     var d = document.getElementById('svc-date-' + i);
     var t = document.getElementById('svc-time-' + i);
-    var dtStr = (d && d.value ? ' · ' + d.value : '') + (t && t.value ? ' ' + t.value : '');
+    if (d && d.value) lastDate = d.value;
+    var dv = lastDate;   // мөрд огноо байхгүй бол өмнөх/эхний огноог авна
+    var dtStr = (dv ? ' · ' + dv : '') + (t && t.value ? ' ' + t.value : '');
     // Багцыг эхэнд нь, дараа нь түүний хоолыг шууд доор нь (ээлжилсэн) → даалгавар/захиалга дээр багц бүрийн хоол тусдаа харагдана
     parts.push(ORDINALS[i] + ' ' + opt.l + dtStr);
     var fp = document.getElementById('food-panel-' + i);
