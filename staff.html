@@ -3746,6 +3746,16 @@ function onCampItemPick() {
   var qtyEl = document.getElementById('camp-qty');
   if (sel && qtyEl) { var opt = sel.options[sel.selectedIndex]; qtyEl.value = (opt && opt.dataset.qty) ? opt.dataset.qty : ''; }
 }
+// Түүхий орц сонгоход нэгжийг нөөцийн нэгжээр автоматаар тааруулна
+function onCampRawPick() {
+  var mEl = document.getElementById('camp-raw-mat'), uEl = document.getElementById('camp-raw-unit');
+  if (!mEl || !uEl || !mEl.value || !stockData || !stockData.items) return;
+  var stk = stockData.items.filter(function(it){ return String(it.name).toLowerCase().trim() === mEl.value.toLowerCase().trim(); })[0];
+  if (!stk || !stk.unit) return;
+  var u = String(stk.unit).toLowerCase().trim();
+  var m = (u==='кг')?'кг':((u==='ш'||u==='ширхэг'||u==='шуудай')?'ш':((u==='л')?'л':((u==='г'||u==='гр'||u==='грамм'||u==='мл')?'г':'')));
+  if (m) uEl.value = m;
+}
 // Камп дахь зүйлийг буцаана — бэлтгэсэн нь гал тогоо руу, түүхий нь нөөц рүү (устгана)
 function returnFromCamp(prepId) {
   var arr = getPrepStock();
@@ -3786,9 +3796,10 @@ function renderCampSection() {
         '<button onclick="doSendToCamp()" style="font-family:inherit;font-size:14px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 16px;cursor:pointer;white-space:nowrap">🏕 Илгээх</button>' +
       '</div>';
     // 2) Түүхий орц илгээх (машиндсан мах гэх мэт) — нөөцөөс
+    var rawOpts = '<option value="">— Орц сонгох —</option>' + getIngredientCatalog().map(function(n){ return '<option value="'+esc(n)+'">'+esc(n)+'</option>'; }).join('');
     html += '<div style="padding:6px 18px 3px;font-size:11px;font-weight:800;color:#7a4a2e;letter-spacing:.3px">🥩 ТҮҮХИЙ ОРЦ (нөөцөөс)</div>' +
       '<div style="padding:0 18px 8px;display:flex;gap:8px;flex-wrap:wrap;align-items:stretch">' +
-        '<input id="camp-raw-mat" list="staff-exp-mat-list" placeholder="Орц (жнь Машиндсан мах)" style="flex:2;min-width:140px;'+fieldS+'">' +
+        '<select id="camp-raw-mat" onchange="onCampRawPick()" style="flex:2;min-width:140px;'+fieldS+'">'+rawOpts+'</select>' +
         '<input id="camp-raw-qty" type="number" min="0" step="0.1" placeholder="тоо" style="flex:1;min-width:58px;'+fieldS+';font-weight:700;text-align:center">' +
         '<select id="camp-raw-unit" style="'+fieldS+'"><option value="кг">кг</option><option value="ш">ш</option><option value="л">л</option><option value="г">г</option></select>' +
         '<button onclick="doSendRawToCamp()" style="font-family:inherit;font-size:14px;font-weight:700;background:#7a4a2e;color:#fff;border:none;border-radius:10px;padding:10px 16px;cursor:pointer;white-space:nowrap">🏕 Илгээх</button>' +
