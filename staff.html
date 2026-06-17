@@ -1645,13 +1645,14 @@ function renderOrders() {
 
 // Захиалгын дэлгэрэнгүйд хоол тус бүрийн орцыг (хүний тоогоор тооцоолж) харуулна
 function buildIngSection(id, service, pax) {
-  var dishes = parseDishes(service);
+  var dishes = parseDishesWithCat(service);
   if (!dishes.length) return '';
   var html = '<div style="margin:8px 0;border-top:1px solid var(--line);padding-top:8px">' +
     '<div style="font-size:11px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🍽 Хоол ба орц' +
     (pax ? ' ('+pax+' хүн)' : '') + '</div>';
-  dishes.forEach(function(dishName) {
-    var recipe = findRecipe(dishName);
+  dishes.forEach(function(dc) {
+    var dishName = dc.name;
+    var recipe = findRecipe(dishName, dc.cat);
     html += '<div style="margin-bottom:8px">' +
       '<div style="font-weight:600;font-size:13px;margin-bottom:3px">🍳 '+esc(dishName)+'</div>';
     if (recipe && recipe.ingredients) {
@@ -1909,9 +1910,16 @@ function parseDishes(service) {
   return parseService(service).dishes.map(function(d){ return d.name; });
 }
 
-function findRecipe(name) {
+function findRecipe(name, cat) {
   if (!name) return null;
   var n = name.toLowerCase().trim();
+  // 0) Порц/хорхог багц бол «(порц)» хувилбарыг эрхэмлэнэ (Хорхог 250г vs буфет 110г зэрэг давхцлыг шийднэ)
+  if (cat === 'porc' || cat === 'horhog') {
+    var pn = n.replace(/\s*\(порц\)\s*$/, '') + ' (порц)';
+    for (var p = 0; p < RECIPES.length; p++) {
+      if (RECIPES[p].name.toLowerCase().trim() === pn) return RECIPES[p];
+    }
+  }
   // 1) Яг таарах (порц/буфет нэр давхцахаас сэргийлнэ)
   for (var i = 0; i < RECIPES.length; i++) {
     if (RECIPES[i].name.toLowerCase().trim() === n) return RECIPES[i];
@@ -1922,6 +1930,16 @@ function findRecipe(name) {
     if (rn.indexOf(n) >= 0 || n.indexOf(rn) >= 0) return RECIPES[j];
   }
   return null;
+}
+
+// Захиалгын service-ээс хоолыг БАГЦЫН ТӨРӨЛТЭЙ нь (порц/буфет/хорхог) гаргана
+function parseDishesWithCat(service) {
+  var sch = parseOrderSchedule(service);
+  var out = [];
+  sch.groups.forEach(function(g){ (g.dishes||[]).forEach(function(d){ out.push({ name:d.name, cat:(g.cat||'') }); }); });
+  (sch.looseDishes||[]).forEach(function(d){ out.push({ name:d.name, cat:(d.cat||'') }); });
+  if (!out.length) { parseDishes(service).forEach(function(nm){ out.push({ name:nm, cat:dishCategory(nm) }); }); }
+  return out;
 }
 
 function calcPlanned(amtStr, pax) {
@@ -1988,7 +2006,7 @@ function toggleAssign(key, btn) {
 // Нэг хоолны бүх бэлтгэлийн ажлыг нэг дор Бэлтгэгч рүү илгээх/буцаах
 function toggleAssignAll(dkey, btn) {
   var dishName = dkey.replace(/^[^_]*_/, '').replace(/_/g,' ');
-  var recipe = findRecipe(dishName);
+  var recipe = findRecipe(dishName, dishCategory(dishName));
   var preps = (recipe && recipe.prepTasks) ? recipe.prepTasks : [];
   if (!preps.length) return;
   var allAssigned = preps.every(function(pt){ return isAssigned(dkey+'_prep_'+pt.key); });
@@ -2048,14 +2066,14 @@ function markDishDone(dkey, panelId) {
 // ── Хоол дуусгах урсгал: бодит орц асуух / буцаахад код асуух ──
 var finishCtx = null;
 
-function toggleFinish(dkey, panelId, dishName, pax) {
+function toggleFinish(dkey, panelId, dishName, pax, cat) {
   if (isDishDone(dkey)) undoDish(dkey, panelId);          // дууссан → буцаах (код асууна)
-  else openFinishModal(dkey, panelId, dishName, pax);     // дуусаагүй → бодит орц асуух
+  else openFinishModal(dkey, panelId, dishName, pax, cat);     // дуусаагүй → бодит орц асуух
 }
 
 // Дуусгахаас өмнө орц бүрийн БОДИТ зарцуулсан хэмжээг асуух модал
-function openFinishModal(dkey, panelId, dishName, pax) {
-  var recipe = findRecipe(dishName);
+function openFinishModal(dkey, panelId, dishName, pax, cat) {
+  var recipe = findRecipe(dishName, cat || dishCategory(dishName));
   if (!recipe || !recipe.ingredients || !recipe.ingredients.length || !pax) {
     markDishDoneNow(dkey, panelId);   // орц/хүн мэдэгдэхгүй бол шууд дуусгана
     return;
@@ -2224,14 +2242,15 @@ function mealPeriod(time) {
 }
 
 // Нэг хоолны даалгаврын карт ({html, done} буцаана)
-function taskDishCard(id, dishName, pax) {
+function taskDishCard(id, dishName, pax, cat) {
+  cat = cat || dishCategory(dishName);
   var dkey = id+'_'+dishName.replace(/\s/g,'_');
   var done = isDishDone(dkey);
   var panelId = 'ingpanel_'+dkey;
-  var recipe = findRecipe(dishName);
+  var recipe = findRecipe(dishName, cat);
   var dnJs = dishName.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   var html = '<div class="tsk-dish-item">';
-  var dishCheckClick = (currentRole === 'Захирал') ? '' : ' onclick="event.stopPropagation();toggleFinish(\''+dkey+'\',\''+panelId+'\',\''+dnJs+'\','+pax+')"';
+  var dishCheckClick = (currentRole === 'Захирал') ? '' : ' onclick="event.stopPropagation();toggleFinish(\''+dkey+'\',\''+panelId+'\',\''+dnJs+'\','+pax+',\''+cat+'\')"';
   var prepBadge = findPreparedFor(dishName).length ? ' <span style="font-size:11px;font-weight:700;color:#1a4d6a;background:#e8f4ff;border:1px solid #bcdcf0;border-radius:6px;padding:1px 6px;white-space:nowrap">🧊 бэлтгэлтэй</span>' : '';
   html += '<div class="tsk-dish-head" onclick="toggleIngPanel(\''+panelId+'\')">' +
     '<div class="tsk-dish-check'+(done?' checked':'')+'"'+dishCheckClick+'></div>' +
@@ -2239,7 +2258,7 @@ function taskDishCard(id, dishName, pax) {
     '<div class="tsk-dish-expand">▾</div>' +
   '</div>';
   html += '<div class="tsk-ing-panel'+(openPanels[panelId]?' open':'')+'" id="'+panelId+'">';
-  html += buildDishAvailability(dishName, pax);
+  html += buildDishAvailability(dishName, pax, cat);
   if (recipe && recipe.ingredients && pax > 0) {
     html += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;justify-content:space-between"><span>Орц</span><span>Тооцоо</span></div>';
     recipe.ingredients.forEach(function(ing) {
@@ -2260,7 +2279,7 @@ function taskDishCard(id, dishName, pax) {
     html += '<details style="margin-top:8px;border-top:1px dashed var(--line);padding-top:8px"><summary style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;list-style:none">📖 Хийх аргачлал — алхам бүрийг тэмдэглэх</summary>' + methodChecklistHtml(dkey, recipe.method) + '</details>';
   }
   if (currentRole !== 'Захирал') {
-    html += '<button onclick="toggleFinish(\'' + dkey + '\',\'' + panelId + '\',\'' + dnJs + '\',' + pax + ')" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;' + (done ? 'background:var(--surface);color:var(--muted);border:1.5px solid var(--line)' : 'background:var(--accent);color:#fff') + '">' + (done ? '🔒 Дуусгаагүй болгох (код)' : '✓ Хоол дуусгах') + '</button>';
+    html += '<button onclick="toggleFinish(\'' + dkey + '\',\'' + panelId + '\',\'' + dnJs + '\',' + pax + ',\'' + cat + '\')" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;' + (done ? 'background:var(--surface);color:var(--muted);border:1.5px solid var(--line)' : 'background:var(--accent);color:#fff') + '">' + (done ? '🔒 Дуусгаагүй болгох (код)' : '✓ Хоол дуусгах') + '</button>';
   }
   html += '</div></div>';
   return { html: html, done: done };
@@ -2301,7 +2320,7 @@ function renderSvcBlock(sb) {
   // Хоолнууд — эвхэгддэг (default хаалттай)
   var total = 0, done = 0, dishesHtml = '';
   sb.dishes.forEach(function(dn){
-    var res = taskDishCard(sb.id, dn, sb.pax);
+    var res = taskDishCard(sb.id, dn, sb.pax, sb.cat);
     dishesHtml += res.html; total++; if (res.done) done++;
   });
   h += '<div class="svc-dishes" id="svcd_'+key+'" style="display:'+(open?'block':'none')+'">'+dishesHtml+'</div>';
@@ -2321,7 +2340,7 @@ function collectSvcBlocks(orders) {
     var sch = parseOrderSchedule(service);
     var groups = sch.groups.filter(function(g){ return g.dishes && g.dishes.length; });
     groups.forEach(function(g){
-      svcBlocks.push({ idx:idx, id:id, company:company, pax:pax, fullDate:(g.fullDate||''), time:(g.time||''), svcName:(g.name||''), dishes: g.dishes.map(function(d){ return d.name; }) });
+      svcBlocks.push({ idx:idx, id:id, company:company, pax:pax, fullDate:(g.fullDate||''), time:(g.time||''), svcName:(g.name||''), cat:(g.cat||''), dishes: g.dishes.map(function(d){ return d.name; }) });
     });
     var loose = (sch.looseDishes && sch.looseDishes.length) ? sch.looseDishes.map(function(d){ return d.name; }) : [];
     if (!groups.length && !loose.length) {
@@ -2350,7 +2369,7 @@ function printPeriodRecipes(dateKey, periodSort) {
   var sections = blocks.map(function(sb){
     var dishBlocks = sb.dishes.map(function(dn){
       totalDishes++;
-      var r = findRecipe(dn);
+      var r = findRecipe(dn, sb.cat || dishCategory(dn));
       var rows = (r && r.ingredients && r.ingredients.length)
         ? r.ingredients.map(function(ing){ return '<tr><td>'+esc(ing.n)+'</td><td class="amt">'+esc(calcPlanned(ing.a, sb.pax))+'</td></tr>'; }).join('')
         : '<tr><td colspan="2" class="muted">Технологи карт олдсонгүй</td></tr>';
@@ -2783,10 +2802,11 @@ function getOrderConsumptionByMaterial() {
   ordersData.forEach(function(o){
     var id = o['id'] || o._idx;
     var pax = parseInt(o['хүн']) || 0;
-    parseDishes(o['үйлчилгээ'] || '').forEach(function(dn){
+    parseDishesWithCat(o['үйлчилгээ'] || '').forEach(function(dc){
+      var dn = dc.name;
       var dkey = id+'_'+dn.replace(/\s/g,'_');
       if (!isDishDone(dkey)) return;   // зөвхөн дууссан хоол хасагдана
-      var recipe = findRecipe(dn);
+      var recipe = findRecipe(dn, dc.cat);
       if (!recipe || !recipe.ingredients) return;
       recipe.ingredients.forEach(function(ing, i){
         var g = 0;
@@ -2871,11 +2891,12 @@ function fmtMNT(n) { return Math.round(n).toLocaleString('mn-MN') + '₮'; }
 function computeOrderCost(o) {
   var pax = parseInt(o['хүн'] || o['хүн_тоо'] || o['pax'] || 0) || 0;
   if (pax <= 0) return null;
-  var dishes = parseDishes(o['үйлчилгээ'] || o['хоол'] || '');
+  var dishes = parseDishesWithCat(o['үйлчилгээ'] || o['хоол'] || '');
   if (!dishes.length) return null;
   var total = 0, dishLines = [], missingPrice = [], badPrice = [];
-  dishes.forEach(function(dn){
-    var r = findRecipe(dn);
+  dishes.forEach(function(dc){
+    var dn = dc.name;
+    var r = findRecipe(dn, dc.cat);
     if (!r || !r.ingredients) return;
     var dishCost = 0, partial = false;
     r.ingredients.forEach(function(ing){
@@ -3127,8 +3148,9 @@ function computeShoppingList() {
   orders.forEach(function(o) {
     var pax = parseInt(o['хүн'] || o['хүн_тоо'] || o['pax'] || 0) || 0;
     if (pax <= 0) return;
-    parseDishes(o['үйлчилгээ'] || o['хоол'] || '').forEach(function(dn) {
-      var recipe = findRecipe(dn);
+    parseDishesWithCat(o['үйлчилгээ'] || o['хоол'] || '').forEach(function(dc) {
+      var dn = dc.name;
+      var recipe = findRecipe(dn, dc.cat);
       if (!recipe || !recipe.ingredients) {
         if (dn && !missSet[dn]) { missSet[dn] = 1; _shoppingMissing.push(dn); }   // жоргүй хоолыг тэмдэглэнэ
         return;
@@ -3502,7 +3524,7 @@ function printOrderRecipes(idx, fTime, fDate) {
   // Хэсэг бүр (үйлчилгээ) → дотор нь хоолнууд
   var sections = groups.map(function(g){
     return { title: (g.name||'Үйлчилгээ') + (g.time?(' · ⏰ '+g.time):'') + (g.fullDate?(' · '+formatDateMN(g.fullDate)):''),
-             dishes: g.dishes.map(function(d){ return d.name; }) };
+             cat: g.cat, dishes: g.dishes.map(function(d){ return d.name; }) };
   });
   if (!fTime && sch.looseDishes && sch.looseDishes.length) sections.push({ title:'Бусад хоол', dishes: sch.looseDishes.map(function(d){ return d.name; }) });
   if (!sections.length && !fTime) {   // хуваари задраагүй бол энгийн жагсаалт
@@ -3515,7 +3537,7 @@ function printOrderRecipes(idx, fTime, fDate) {
   var blocks = sections.map(function(sec){
     var dishBlocks = sec.dishes.map(function(dn){
       nDishes++;
-      var r = findRecipe(dn);
+      var r = findRecipe(dn, sec.cat || dishCategory(dn));
       var rows = (r && r.ingredients && r.ingredients.length)
         ? r.ingredients.map(function(ing){ return '<tr><td>'+esc(ing.n)+'</td><td class="amt">'+esc(calcPlanned(ing.a, pax))+'</td></tr>'; }).join('')
         : '<tr><td colspan="2" class="muted">Технологи карт олдсонгүй</td></tr>';
@@ -3890,7 +3912,7 @@ function stockHasIngredient(ingName) {
 }
 
 // Даалгавар дээр харагдах: бэлтгэсэн нөөц + түүхий нөөц хүрэх эсэх
-function buildDishAvailability(dishName, pax) {
+function buildDishAvailability(dishName, pax, cat) {
   var html = '';
   // 1) Бэлтгэсэн (хөлдөөсөн) нөөц
   var prep = findPreparedFor(dishName);
@@ -3903,7 +3925,7 @@ function buildDishAvailability(dishName, pax) {
     '</div>';
   }
   // 2) Түүхий нөөц хүрэлцэх эсэх (ойролцоо шалгалт)
-  var recipe = findRecipe(dishName);
+  var recipe = findRecipe(dishName, cat || dishCategory(dishName));
   if (recipe && recipe.ingredients && stockData && stockData.items && stockData.items.length) {
     var missing = [];
     recipe.ingredients.forEach(function(ing){
@@ -4308,11 +4330,12 @@ function buildConsumptionDetail() {
     var id = o['id'] || o._idx;
     var company = o['байгууллага'] || 'Нэргүй';
     var pax = parseInt(o['хүн']) || 0;
-    var dishes = parseDishes(o['үйлчилгээ'] || '');
+    var dishes = parseDishesWithCat(o['үйлчилгээ'] || '');
     if (!dishes.length || pax <= 0) return;
     var dishHtml = '';
-    dishes.forEach(function(dishName) {
-      var recipe = findRecipe(dishName);
+    dishes.forEach(function(dc) {
+      var dishName = dc.name;
+      var recipe = findRecipe(dishName, dc.cat);
       if (!recipe || !recipe.prepTasks) return;
       var dkey = id+'_'+dishName.replace(/\s/g,'_');
       var done = isDishDone(dkey);
@@ -4404,9 +4427,10 @@ function buildFoodReports() {
     var id = o['id'] || o._idx;
     var pax = parseInt(o['хүн']) || 0;
     if (pax <= 0) return;
-    var dishes = parseDishes(o['үйлчилгээ'] || '');
-    dishes.forEach(function(dishName) {
-      var recipe = findRecipe(dishName);
+    var dishes = parseDishesWithCat(o['үйлчилгээ'] || '');
+    dishes.forEach(function(dc) {
+      var dishName = dc.name;
+      var recipe = findRecipe(dishName, dc.cat);
       if (!recipe || !recipe.prepTasks) return;
       var dkey = id+'_'+dishName.replace(/\s/g,'_');
       recipe.prepTasks.forEach(function(pt) {
@@ -4604,10 +4628,11 @@ function buildActualVarianceReport() {
     var id = o['id'] || o['ID'] || o['захиалгын_дугаар'] || o._idx;
     var pax = parseInt(o['хүн'] || o['хүн_тоо'] || 0) || 0;
     if (!pax) return;
-    parseDishes(o['үйлчилгээ'] || '').forEach(function(dn){
+    parseDishesWithCat(o['үйлчилгээ'] || '').forEach(function(dc){
+      var dn = dc.name;
       var dkey = id + '_' + dn.replace(/\s/g,'_');
       if (!isDishDone(dkey)) return;
-      var r = findRecipe(dn);
+      var r = findRecipe(dn, dc.cat);
       if (!r || !r.ingredients) return;
       r.ingredients.forEach(function(ing, i){
         var pg = plannedGramsRaw(ing.a, pax);
