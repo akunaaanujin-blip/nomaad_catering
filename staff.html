@@ -2916,9 +2916,18 @@ function matchPrepIngredient(pt, recipe) {
 
 // Захиалгын бодит зарцуулалтыг орц (материал)-аар нэгтгэнэ → грамм/ширхэг
 function getOrderConsumptionByMaterial() {
-  // Зарцуулалт = ДУУССАН хоол бүрийн орц. Бодит хэмжээ оруулсан бол түүгээр, эс бол төлөвлөсөн.
+  // Зарцуулалт = ДУУССАН хоол бүрийн орц (бодит оруулсан бол түүгээр, эс бол төлөвлөсөн).
+  // ⚠️ Зөвхөн ӨНӨӨДӨР ба ИРЭЭДҮЙН арга хэмжээ: өнгөрсөн (аль хэдийн болж өнгөрсөн)
+  // захиалгын орцыг ОДООГИЙН нөөцөөс ДАХИН хасахгүй (давхар хасалт → сөрөг үлдэгдэл болохоос сэргийлнэ).
   var map = {};
+  var today = todayStr();
   ordersData.forEach(function(o){
+    var d = o._parsedDate;
+    if (!d) {
+      var parsed = parseOrderDate(o['арга_хэмжээний_огноо'] || o['огноо'] || '');
+      d = (parseOrderSchedule(o['үйлчилгээ'] || '').firstDate) || parsed.date;
+    }
+    if (d && d < today) return;   // ⏮ өнгөрсөн арга хэмжээг алгасна
     var id = o['id'] || o._idx;
     var pax = parseInt(o['хүн']) || 0;
     parseDishesWithCat(o['үйлчилгээ'] || '').forEach(function(dc){
