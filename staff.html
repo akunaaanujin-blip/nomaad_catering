@@ -1747,8 +1747,10 @@ function parseOrderSchedule(service) {
     var m = p.match(/·\s*(\d{4})-(\d{2})-(\d{2})[ T]?(\d{1,2}:\d{2})?/);
     var fullDate = m ? (m[1]+'-'+m[2]+'-'+m[3]) : '';
     var time = (m && m[4]) ? m[4] : '';
-    var name = p.replace(/^\d+\s*-?\s*р\s*/,'').replace(/\s*\([^)]*₮[^)]*\)/g,'').replace(/\s*·\s*\d{4}-\d{2}-\d{2}[ T]?\d{0,2}:?\d{0,2}.*$/,'').trim();
-    return { name:name, cat:svcCategory(name), fullDate:fullDate, time:time, disp:(m ? ((+m[2])+'.'+(+m[3])+(time?(' '+time):'')) : ''), dishes:[] };
+    // Огноогүй ч нүцгэн цаг бичсэн бол (жнь "Буфет 13:30") түүнийг авна
+    if (!time) { var tm = p.match(/(?:^|\s)(\d{1,2}:\d{2})(?:\s|$)/); if (tm) time = tm[1]; }
+    var name = p.replace(/^\d+\s*-?\s*р\s*/,'').replace(/\s*\([^)]*₮[^)]*\)/g,'').replace(/\s*·\s*\d{4}-\d{2}-\d{2}[ T]?\d{0,2}:?\d{0,2}.*$/,'').replace(/\s+\d{1,2}:\d{2}\s*$/,'').trim();
+    return { name:name, cat:svcCategory(name), fullDate:fullDate, time:time, disp:(fullDate ? ((+fullDate.slice(5,7))+'.'+(+fullDate.slice(8,10))+(time?(' '+time):'')) : (time||'')), dishes:[] };
   }
   function parseDish(p){
     var nm = cleanDishName(p);
@@ -1786,6 +1788,12 @@ function parseOrderSchedule(service) {
       pks.forEach(function(pk, i){ pk.dishes = pk.dishes.concat(ds.slice(i*per, (i+1)*per)); });
     });
   }
+
+  // Огноогүй ч цагтай үйлчилгээнд огноог өвлүүлнэ (эхний огноо → дараа нь өмнөхөөс)
+  var firstD = '';
+  out.groups.forEach(function(g){ if (g.fullDate && !firstD) firstD = g.fullDate; });
+  var ld = firstD;
+  out.groups.forEach(function(g){ if (g.fullDate) ld = g.fullDate; else if (g.time) g.fullDate = ld; });
 
   var dated = out.groups.filter(function(g){ return g.fullDate; }).map(function(g){ return g.fullDate+' '+g.time; }).sort();
   if (dated.length) { var fp = dated[0].split(' '); out.firstDate = fp[0]; out.firstTime = fp[1]||''; }
