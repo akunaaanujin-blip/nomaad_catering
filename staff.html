@@ -4593,8 +4593,8 @@ function buildFoodReports() {
     }).join('');
     html += reportCard('💰 Хүнсний өртгийн тайлан',
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:2px solid var(--line)">' +
-        '<span style="font-size:13px;color:var(--muted)">📦 '+stockData.itemCount+' нэр төрөл</span>' +
-        '<span style="font-weight:800;font-size:16px;color:var(--accent)">'+stockData.totalValue.toLocaleString('mn-MN')+'₮</span></div>' +
+        '<span style="font-size:13px;color:var(--muted)">📦 '+(stockData.itemCount||0)+' нэр төрөл</span>' +
+        '<span style="font-weight:800;font-size:16px;color:var(--accent)">'+(stockData.totalValue||0).toLocaleString('mn-MN')+'₮</span></div>' +
       '<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Хамгийн өндөр өртөгтэй</div>' + costRows);
   } else {
     html += reportCard('💰 Хүнсний өртгийн тайлан',
