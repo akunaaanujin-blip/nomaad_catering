@@ -2416,8 +2416,8 @@ function renderTasks() {
   if (!stockData && !stockLoaded) loadStock();
 
   var today = todayStr();
-  var orders = ordersData.filter(function(o){ return !o._parsedDate || o._parsedDate >= today; });
-  if (!orders.length) orders = ordersData.slice(0, 3);
+  // БҮХ захиалга харагдана (огноогоор шүүхгүй — өнгөрсөн ч гэсэн хэвээр харагдана)
+  var orders = ordersData.slice();
 
   var html = '';
   var totalTasks = 0, doneTasks = 0;
