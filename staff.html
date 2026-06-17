@@ -548,6 +548,12 @@ body{
 .tk-card .tk-dname{font-size:13px;}
 .tk-card .tk-detail{padding:2px 0 10px 31px;}
 .tk-card .tk-chev{display:none;}
+.tk-card-done{opacity:.6;}
+.tk-card-h-done{cursor:pointer;color:var(--accent);}
+.tk-card-body{display:none;}
+.tk-card-body.open{display:block;}
+.tk-done-sep{margin:7px 5px 0;padding:6px 0 3px;text-align:center;font-size:10px;font-weight:800;letter-spacing:.6px;color:#a7a292;border-top:1px dashed #dcd9cc;}
+.tk-done-badge{font-size:10px;font-weight:800;color:var(--accent);white-space:nowrap;}
 .tsk-ing-name{flex:1;font-size:13px;color:var(--ink);}
 .tsk-ing-plan{font-size:12px;font-weight:700;color:var(--accent);min-width:68px;text-align:right;}
 .tsk-ing-input{width:72px;font-family:inherit;font-size:13px;font-weight:600;text-align:center;border:1.5px solid var(--line);border-radius:8px;padding:5px 4px;background:#fff;color:var(--ink);}
@@ -1401,6 +1407,8 @@ function toggleTkDetail(id) {
   var el = document.getElementById(id);
   if (el) { if (openTk[id]) el.classList.add('open'); else el.classList.remove('open'); }
 }
+var openDoneCard = {}; // дууссан үйлчилгээний картыг дэлгэх/нуух төлөв
+function toggleDoneCard(ck) { openDoneCard[ck] = !openDoneCard[ck]; renderTasks(); }
 var stockData = null;  // нөөцийн sheet-ийн боловсруулсан өгөгдөл (өртгийн тайланд)
 var SHEETS_POST_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
 
@@ -2508,18 +2516,39 @@ function renderTasks() {
       if (!blocks.length) {
         html += '<div class="tk-col-empty">—</div>';
       } else {
-        blocks.forEach(function(sb){
+        var activeCards = '', doneCards = '', nDoneCards = 0;
+        blocks.forEach(function(sb, bi){
           var pArgs = sb.idx+',\''+sb.time+'\',\''+sb.fullDate+'\'';
           var printed = isPrinted(sb.idx, sb.time, sb.fullDate);
-          html += '<div class="tk-card">' +
-            '<div class="tk-card-h"><span>🏢 '+esc(sb.company)+(sb.time?' · '+esc(sb.time):'')+' · '+sb.pax+' хүн</span>' +
-              '<span class="tk-iprint" onclick="event.stopPropagation();printOrderRecipes('+pArgs+')" title="Орц хэвлэх">'+(printed?'🖨✓':'🖨')+'</span></div>';
-          sb.dishes.forEach(function(dn){
-            var res = taskDishRow(sb.id, dn, sb.pax, sb.cat);
-            html += res.html; totalTasks++; if (res.done) doneTasks++;
-          });
-          html += '</div>';
+          // Хоол бүрийн дуусгасан төлөв — дуусаагүйг дээр, дууссаныг доор эрэмбэлнэ
+          var items = sb.dishes.map(function(dn){ return { dn:dn, done:isDishDone(sb.id+'_'+dn.replace(/\s/g,'_')) }; });
+          var nDone = 0; items.forEach(function(it){ if (it.done) nDone++; });
+          totalTasks += items.length; doneTasks += nDone;
+          items.sort(function(a,b){ return (a.done?1:0) - (b.done?1:0); });   // дуусаагүй нь түрүүнд
+          var dishesHtml = '';
+          items.forEach(function(it){ dishesHtml += taskDishRow(sb.id, it.dn, sb.pax, sb.cat).html; });
+          var allDone = items.length > 0 && nDone === items.length;
+          if (allDone) {
+            // Бүх хоол дууссан үйлчилгээ — нэг тийш (доош) эвхэгдэж, бүдгэрнэ
+            nDoneCards++;
+            var ck = dk+'_'+s+'_'+bi;
+            var open = !!openDoneCard[ck];
+            doneCards += '<div class="tk-card tk-card-done">' +
+              '<div class="tk-card-h tk-card-h-done" onclick="toggleDoneCard(\''+ck+'\')">' +
+                '<span>✓ 🏢 '+esc(sb.company)+(sb.time?' · '+esc(sb.time):'')+' · '+sb.pax+' хүн</span>' +
+                '<span class="tk-done-badge">'+(open?'нуух ▴':'үзэх ▾')+'</span></div>' +
+              '<div class="tk-card-body'+(open?' open':'')+'">'+dishesHtml+'</div>' +
+            '</div>';
+          } else {
+            activeCards += '<div class="tk-card">' +
+              '<div class="tk-card-h"><span>🏢 '+esc(sb.company)+(sb.time?' · '+esc(sb.time):'')+' · '+sb.pax+' хүн</span>' +
+                '<span class="tk-iprint" onclick="event.stopPropagation();printOrderRecipes('+pArgs+')" title="Орц хэвлэх">'+(printed?'🖨✓':'🖨')+'</span></div>' +
+              dishesHtml +
+            '</div>';
+          }
         });
+        html += activeCards;
+        if (nDoneCards) html += '<div class="tk-done-sep">✓ ДУУССАН · '+nDoneCards+'</div>' + doneCards;
       }
       html += '</div>';
     });
