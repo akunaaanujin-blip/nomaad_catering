@@ -513,6 +513,27 @@ body{
 .tsk-ing-panel.open{display:block;}
 .tsk-ing-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dotted var(--line);}
 .tsk-ing-row:last-child{border-bottom:none;}
+
+/* ── Даалгавар — цэвэр загвар ── */
+.tk-date{margin:22px 16px 9px;font-size:17px;font-weight:800;color:var(--ink);}
+.tk-period{margin:0 14px 14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);}
+.tk-pbar{height:3px;}
+.tk-phead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 15px;}
+.tk-ptitle{font-size:14px;font-weight:800;letter-spacing:.3px;}
+.tk-print{font-family:inherit;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:none;border-radius:8px;padding:6px 11px;cursor:pointer;white-space:nowrap;}
+.tk-svc{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 15px 5px;border-top:1px solid var(--line);background:#faf9f5;}
+.tk-svc-name{font-size:11.5px;font-weight:700;color:var(--muted);}
+.tk-iprint{font-size:16px;cursor:pointer;padding:3px 7px;border-radius:7px;line-height:1;}
+.tk-dish{display:flex;align-items:center;gap:13px;padding:13px 15px;border-top:1px solid var(--line);cursor:pointer;-webkit-user-select:none;user-select:none;}
+.tk-dish:active{background:#f9f9f6;}
+.tk-check{width:26px;height:26px;min-width:26px;border-radius:50%;border:2px solid #d6d3c8;background:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;}
+.tk-check.done{background:var(--accent);border-color:var(--accent);}
+.tk-dname{flex:1;font-size:15px;font-weight:600;line-height:1.3;color:var(--ink);}
+.tk-dish.done .tk-dname{text-decoration:line-through;color:var(--muted);}
+.tk-prep{font-size:10.5px;font-weight:700;color:#1a6b4a;white-space:nowrap;}
+.tk-chev{color:#bdb9ad;font-size:12px;}
+.tk-detail{display:none;padding:4px 15px 15px 54px;}
+.tk-detail.open{display:block;}
 .tsk-ing-name{flex:1;font-size:13px;color:var(--ink);}
 .tsk-ing-plan{font-size:12px;font-weight:700;color:var(--accent);min-width:68px;text-align:right;}
 .tsk-ing-input{width:72px;font-family:inherit;font-size:13px;font-weight:600;text-align:center;border:1.5px solid var(--line);border-radius:8px;padding:5px 4px;background:#fff;color:var(--ink);}
@@ -1368,13 +1389,19 @@ var selectedRoleCard = null;
 var ordersData = [];
 var activeTab = 'orders';
 var openPanels = {};   // ямар орцны самбар нээлттэй байгааг render хооронд хадгална
-var openSvc = {};      // даалгаврын аль үйлчилгээ блок дэлгээтэй байгааг хадгална (default эвхээстэй)
+var openSvc = {};      // (хуучин) — одоо ашиглагдахгүй
 function toggleSvc(key) {
   openSvc[key] = !openSvc[key];
   var el = document.getElementById('svcd_'+key);
   if (el) el.style.display = openSvc[key] ? 'block' : 'none';
   var ch = document.getElementById('svcchev_'+key);
   if (ch) ch.textContent = openSvc[key] ? '▾' : '▸';
+}
+var openTk = {};       // даалгаврын аль хоолны дэлгэрэнгүй нээлттэйг хадгална
+function toggleTkDetail(id) {
+  openTk[id] = !openTk[id];
+  var el = document.getElementById(id);
+  if (el) { if (openTk[id]) el.classList.add('open'); else el.classList.remove('open'); }
 }
 var stockData = null;  // нөөцийн sheet-ийн боловсруулсан өгөгдөл (өртгийн тайланд)
 var SHEETS_POST_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
@@ -2118,7 +2145,7 @@ function closeFinishModal(e) {
 
 function markDishDoneNow(dkey, panelId) {
   if (!isDishDone(dkey)) { localStorage.setItem('dish_done_'+dkey, '1'); logActivity('✅ Хоол дууссан: '+dkey); }
-  if (panelId) openPanels[panelId] = true;
+  if (panelId) { openPanels[panelId] = true; openTk[panelId] = true; }
   syncOrderStatusFromTasks();
   renderTasks();
   renderStockFromCache();   // бодит зарцуулалтыг нөөцөөс хасна
@@ -2241,48 +2268,45 @@ function mealPeriod(time) {
   return { key:'evening', label:'Орой', emoji:'🌆', sort:2, bg:'#e3e0ef', fg:'#473d78' };
 }
 
-// Нэг хоолны даалгаврын карт ({html, done} буцаана)
-function taskDishCard(id, dishName, pax, cat) {
+// Нэг хоолны цэвэр эгнээ + дэлгэрэнгүй ({html, done} буцаана)
+function taskDishRow(id, dishName, pax, cat) {
   cat = cat || dishCategory(dishName);
   var dkey = id+'_'+dishName.replace(/\s/g,'_');
   var done = isDishDone(dkey);
-  var panelId = 'ingpanel_'+dkey;
+  var detailId = 'tkd_'+dkey;
   var recipe = findRecipe(dishName, cat);
   var dnJs = dishName.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-  var html = '<div class="tsk-dish-item">';
-  var dishCheckClick = (currentRole === 'Захирал') ? '' : ' onclick="event.stopPropagation();toggleFinish(\''+dkey+'\',\''+panelId+'\',\''+dnJs+'\','+pax+',\''+cat+'\')"';
-  var prepBadge = findPreparedFor(dishName).length ? ' <span style="font-size:11px;font-weight:700;color:#1a4d6a;background:#e8f4ff;border:1px solid #bcdcf0;border-radius:6px;padding:1px 6px;white-space:nowrap">🧊 бэлтгэлтэй</span>' : '';
-  html += '<div class="tsk-dish-head" onclick="toggleIngPanel(\''+panelId+'\')">' +
-    '<div class="tsk-dish-check'+(done?' checked':'')+'"'+dishCheckClick+'></div>' +
-    '<div class="tsk-dish-name'+(done?' done':'')+'">🍳 '+esc(dishName)+prepBadge+'</div>' +
-    '<div class="tsk-dish-expand">▾</div>' +
+  var prep = findPreparedFor(dishName).length;
+  var finArgs = '\''+dkey+'\',\''+detailId+'\',\''+dnJs+'\','+pax+',\''+cat+'\'';
+  var checkClick = (currentRole === 'Захирал') ? '' : ' onclick="event.stopPropagation();toggleFinish('+finArgs+')"';
+  // ── Эгнээ ──
+  var h = '<div class="tk-dish'+(done?' done':'')+'" onclick="toggleTkDetail(\''+detailId+'\')">' +
+    '<div class="tk-check'+(done?' done':'')+'"'+checkClick+'>'+(done?'✓':'')+'</div>' +
+    '<div class="tk-dname">'+esc(dishName)+(prep?' <span class="tk-prep">🧊 бэлтгэлтэй</span>':'')+'</div>' +
+    '<span class="tk-chev">▾</span>' +
   '</div>';
-  html += '<div class="tsk-ing-panel'+(openPanels[panelId]?' open':'')+'" id="'+panelId+'">';
-  html += buildDishAvailability(dishName, pax, cat);
+  // ── Дэлгэрэнгүй (дарвал нээгдэнэ) ──
+  h += '<div class="tk-detail'+(openTk[detailId]?' open':'')+'" id="'+detailId+'">';
+  h += buildDishAvailability(dishName, pax, cat);
   if (recipe && recipe.ingredients && pax > 0) {
-    html += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;justify-content:space-between"><span>Орц</span><span>Тооцоо</span></div>';
+    h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:2px 0 6px">Орц — '+pax+' хүнд</div>';
     recipe.ingredients.forEach(function(ing) {
-      var planned = calcPlanned(ing.a, pax);
-      html += '<div class="tsk-ing-row"><span class="tsk-ing-name">'+esc(ing.n)+'</span><span class="tsk-ing-plan">'+esc(planned)+'<span style="color:var(--muted);font-weight:400;font-size:10px">'+esc(calcBreakdown(ing.a, pax))+'</span></span></div>';
+      h += '<div class="tsk-ing-row"><span class="tsk-ing-name">'+esc(ing.n)+'</span><span class="tsk-ing-plan">'+esc(calcPlanned(ing.a, pax))+'</span></div>';
     });
-    if (currentRole === 'Тогооч') {
-      html += '<div class="tsk-ing-row" style="margin-top:6px;border-top:1px solid var(--line);padding-top:8px"><span class="tsk-ing-name" style="font-weight:600">⏱ Хугацаа</span><span class="tsk-ing-plan" style="color:var(--amber)">'+esc(recipe.time)+'</span><input class="tsk-ing-input" type="time" placeholder="эхэлсэн" value="'+esc(getActual(dkey+'_start_time'))+'" onchange="saveActual(\''+dkey+'_start_time\',this.value)"></div>';
-    } else if (currentRole === 'Захирал') {
-      html += '<div class="tsk-ing-row" style="margin-top:6px;border-top:1px solid var(--line);padding-top:8px"><span class="tsk-ing-name" style="font-weight:600">⏱ Хугацаа</span><span class="tsk-ing-plan" style="color:var(--amber)">'+esc(recipe.time)+'</span></div>';
+    if (currentRole === 'Тогооч' || currentRole === 'Захирал') {
+      h += '<div class="tsk-ing-row" style="margin-top:6px;border-top:1px solid var(--line);padding-top:8px"><span class="tsk-ing-name" style="font-weight:600">⏱ Хугацаа</span><span class="tsk-ing-plan" style="color:var(--amber)">'+esc(recipe.time)+'</span></div>';
     }
   } else if (!recipe) {
-    html += '<div style="font-size:12px;color:var(--muted);padding:6px 0">Технологи карт олдсонгүй</div>';
-  } else {
-    html += '<div style="font-size:12px;color:var(--muted);padding:6px 0">Хүний тоо мэдэгдэхгүй байна</div>';
+    h += '<div style="font-size:12px;color:var(--muted);padding:6px 0">Технологи карт олдсонгүй</div>';
   }
   if (recipe && recipe.method) {
-    html += '<details style="margin-top:8px;border-top:1px dashed var(--line);padding-top:8px"><summary style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;list-style:none">📖 Хийх аргачлал — алхам бүрийг тэмдэглэх</summary>' + methodChecklistHtml(dkey, recipe.method) + '</details>';
+    h += '<details style="margin-top:8px"><summary style="font-size:12px;font-weight:700;color:var(--accent);cursor:pointer;list-style:none">📖 Хийх аргачлал</summary>' + methodChecklistHtml(dkey, recipe.method) + '</details>';
   }
   if (currentRole !== 'Захирал') {
-    html += '<button onclick="toggleFinish(\'' + dkey + '\',\'' + panelId + '\',\'' + dnJs + '\',' + pax + ',\'' + cat + '\')" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;' + (done ? 'background:var(--surface);color:var(--muted);border:1.5px solid var(--line)' : 'background:var(--accent);color:#fff') + '">' + (done ? '🔒 Дуусгаагүй болгох (код)' : '✓ Хоол дуусгах') + '</button>';
+    h += '<button onclick="event.stopPropagation();toggleFinish('+finArgs+')" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:11px;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer;'+(done?'background:var(--surface);color:var(--muted);border:1.5px solid var(--line)':'background:var(--accent);color:#fff')+'">'+(done?'↩️ Дуусгаагүй болгох':'✓ Хийж дууслаа')+'</button>';
   }
-  html += '</div></div>';
-  return { html: html, done: done };
+  h += '</div>';
+  return { html: h, done: done };
 }
 
 // Үйлчилгээ (хэсэг) хэвлэгдсэн эсэхийг тэмдэглэх (энэ төхөөрөмжид)
@@ -2292,39 +2316,19 @@ function setPrinted(idx, time, date, val) { try { if (val) localStorage.setItem(
 function toggleSvcPrinted(idx, time, date) { setPrinted(idx, time, date, !isPrinted(idx, time, date)); renderTasks(); }
 
 // Нэг үйлчилгээний блок (компани + цаг + хэвлэх + хоолнууд) — {html, total, done}
-function renderSvcBlock(sb) {
-  var doneCount = sb.dishes.filter(function(dn){ return isDishDone(sb.id+'_'+dn.replace(/\s/g,'_')); }).length;
-  var blockDone = (doneCount === sb.dishes.length);
+// Нэг үйлчилгээ — хөнгөн дэд гарчиг (компани · хүн · цаг + жижиг хэвлэх) + хоолны эгнээнүүд
+function renderSvcSub(sb) {
   var printed = isPrinted(sb.idx, sb.time, sb.fullDate);
   var pArgs = sb.idx+',\''+sb.time+'\',\''+sb.fullDate+'\'';
-  var key = (sb.idx+'_'+(sb.fullDate||'')+'_'+(sb.time||'')).replace(/[^0-9a-zA-Z]/g,'_');
-  var open = !!openSvc[key];
-  var hasPrep = sb.dishes.some(function(dn){ return findPreparedFor(dn).length > 0; });
-  var h = '<div class="tsk-order-block"'+(printed?' style="border-color:var(--accent)"':'')+'>';
-  // Толгой — дарвал хоолнууд нь дэлгэгдэнэ/эвхэгдэнэ
-  h += '<div class="tsk-order-head" onclick="toggleSvc(\''+key+'\')" style="cursor:pointer">' +
-    '<div style="min-width:0"><div class="tsk-order-name">🏢 '+esc(sb.company)+'</div>' +
-    '<div class="tsk-order-meta">👤 '+sb.pax+' хүн'+(sb.time?' · ⏰ '+esc(sb.time):'')+' · 🍳 '+sb.dishes.length+' хоол'+(doneCount>0?' ('+doneCount+'✓)':'')+'</div></div>' +
-    '<div style="display:flex;align-items:center;gap:6px;flex:none">' +
-      (hasPrep?'<span style="font-size:11px;font-weight:800;background:#e8f4ff;color:#1a4d6a;padding:3px 7px;border-radius:999px;white-space:nowrap">🧊 бэлтгэлтэй</span>':'') +
-      (printed?'<span style="font-size:11px;font-weight:800;background:rgba(255,255,255,.28);padding:3px 8px;border-radius:999px;white-space:nowrap">🖨 ✓</span>':'') +
-      '<span class="tsk-order-badge">'+(blockDone?'✅ Дууссан':'⏳ '+doneCount+'/'+sb.dishes.length)+'</span>' +
-      '<span id="svcchev_'+key+'" style="font-size:15px;color:#fff;font-weight:700">'+(open?'▾':'▸')+'</span>' +
-    '</div>' +
+  var h = '<div class="tk-svc">' +
+    '<span class="tk-svc-name">🏢 '+esc(sb.company)+' · '+sb.pax+' хүн'+(sb.time?' · '+esc(sb.time):'')+'</span>' +
+    '<span class="tk-iprint" onclick="event.stopPropagation();printOrderRecipes('+pArgs+')" title="Энэ үйлчилгээний орц хэвлэх">'+(printed?'🖨✓':'🖨')+'</span>' +
   '</div>';
-  // Хэвлэх + тэмдэглэх мөр (эвхэлтээс үл хамааран харагдана)
-  h += '<div style="padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center">' +
-    '<button onclick="event.stopPropagation();printOrderRecipes('+pArgs+')" style="flex:1;padding:9px;background:'+(printed?'#7d8a80':'#b8412e')+';color:#fff;border:none;border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">'+(printed?'🖨 Дахин хэвлэх':'🖨 Энэ хэсгийн орц хэвлэх')+'</button>' +
-    '<span onclick="event.stopPropagation();toggleSvcPrinted('+pArgs+')" style="cursor:pointer;font-size:12.5px;font-weight:800;white-space:nowrap;padding:8px 12px;border-radius:9px;'+(printed?'background:var(--accent);color:#fff':'background:#fff;color:var(--muted);border:1.5px solid var(--line)')+'">'+(printed?'✓ Хэвлэсэн':'☐ Тэмдэглэх')+'</span>' +
-  '</div>';
-  // Хоолнууд — эвхэгддэг (default хаалттай)
-  var total = 0, done = 0, dishesHtml = '';
+  var total = 0, done = 0;
   sb.dishes.forEach(function(dn){
-    var res = taskDishCard(sb.id, dn, sb.pax, sb.cat);
-    dishesHtml += res.html; total++; if (res.done) done++;
+    var res = taskDishRow(sb.id, dn, sb.pax, sb.cat);
+    h += res.html; total++; if (res.done) done++;
   });
-  h += '<div class="svc-dishes" id="svcd_'+key+'" style="display:'+(open?'block':'none')+'">'+dishesHtml+'</div>';
-  h += '</div>';
   return { html: h, total: total, done: done };
 }
 
@@ -2432,20 +2436,31 @@ function renderTasks() {
   });
   dateKeys.sort();
 
+  if (svcBlocks.length && currentRole !== 'Захирал') {
+    html += '<div style="margin:14px 16px 4px;padding:9px 13px;background:var(--accent-soft);border-radius:10px;font-size:12px;color:var(--accent);line-height:1.55;font-weight:600">💡 Хоол бэлэн болсны дараа зүүн талын ◯-г дарж дуусга. Хоол дээр дарвал орц ба аргачлал нээгдэнэ.</div>';
+  }
+
   dateKeys.forEach(function(dk){
     var dLabel = (dk === '9999-12-31') ? 'Огноо тодорхойгүй' : formatDateMN(dk);
-    html += '<div style="margin:20px 14px 2px;font-size:16px;font-weight:800;color:var(--ink)">📅 '+esc(dLabel)+'</div>';
+    html += '<div class="tk-date">📅 '+esc(dLabel)+'</div>';
     var periods = byDate[dk];
     Object.keys(periods).sort(function(a,b){ return a-b; }).forEach(function(pk){
       var per = periods[pk];
-      html += '<div style="margin:11px 14px 4px;padding:6px 8px 6px 13px;background:'+per.mp.bg+';color:'+per.mp.fg+';border-radius:9px;display:flex;justify-content:space-between;align-items:center;gap:8px">' +
-        '<span style="font-size:13px;font-weight:800;letter-spacing:.4px">'+per.mp.emoji+' '+per.mp.label.toUpperCase()+'</span>' +
-        '<button onclick="event.stopPropagation();printPeriodRecipes(\''+dk+'\','+pk+')" style="font-family:inherit;font-size:12px;font-weight:800;background:'+per.mp.fg+';color:#fff;border:none;border-radius:7px;padding:6px 11px;cursor:pointer;white-space:nowrap">🖨 Бүгдийг хэвлэх</button>' +
-      '</div>';
+      // тухайн хэсгийн нийт/дууссан тоо
+      var pT = 0, pD = 0;
+      per.blocks.forEach(function(sb){ sb.dishes.forEach(function(dn){ pT++; if (isDishDone(sb.id+'_'+dn.replace(/\s/g,'_'))) pD++; }); });
+      html += '<div class="tk-period">' +
+        '<div class="tk-pbar" style="background:'+per.mp.fg+'"></div>' +
+        '<div class="tk-phead">' +
+          '<span class="tk-ptitle" style="color:'+per.mp.fg+'">'+per.mp.emoji+' '+per.mp.label.toUpperCase()+
+            ' <span style="font-size:11px;font-weight:600;color:var(--muted)">· '+pD+'/'+pT+'</span></span>' +
+          '<button class="tk-print" onclick="printPeriodRecipes(\''+dk+'\','+pk+')">🖨 Хэвлэх</button>' +
+        '</div>';
       per.blocks.forEach(function(sb){
-        var res = renderSvcBlock(sb);
+        var res = renderSvcSub(sb);
         html += res.html; totalTasks += res.total; doneTasks += res.done;
       });
+      html += '</div>';
     });
   });
 
