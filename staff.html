@@ -1409,6 +1409,8 @@ function toggleTkDetail(id) {
 }
 var openDoneCard = {}; // дууссан үйлчилгээний картыг дэлгэх/нуух төлөв
 function toggleDoneCard(ck) { openDoneCard[ck] = !openDoneCard[ck]; renderTasks(); }
+var showDoneTasks = (localStorage.getItem('show_done_tasks') === '1'); // даалгаварт дууссан ажлыг харуулах эсэх (анхдаа НУУНА)
+function toggleShowDone() { showDoneTasks = !showDoneTasks; localStorage.setItem('show_done_tasks', showDoneTasks ? '1' : '0'); renderTasks(); }
 var stockData = null;  // нөөцийн sheet-ийн боловсруулсан өгөгдөл (өртгийн тайланд)
 var SHEETS_POST_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
 
@@ -2493,66 +2495,67 @@ function renderTasks() {
   dateKeys.sort();
   dateKeys.forEach(function(dk){ Object.keys(byDate[dk]).forEach(function(s){ byDate[dk][s].sort(function(a,b){ return (a.time||'99').localeCompare(b.time||'99'); }); }); });
 
-  if (svcBlocks.length && currentRole !== 'Захирал') {
-    html += '<div style="margin:14px 14px 0;padding:9px 13px;background:var(--accent-soft);border-radius:10px;font-size:12px;color:var(--accent);line-height:1.55;font-weight:600">💡 Өдөр бүрийн өглөө/өдөр/орой нь 3 баганаар. Хоол бэлэн бол ◯-г дарж дуусга, хоол дээр дарвал орц/аргачлал.</div>';
-  }
+  var hintHtml = (svcBlocks.length && currentRole !== 'Захирал')
+    ? '<div style="margin:14px 14px 0;padding:9px 13px;background:var(--accent-soft);border-radius:10px;font-size:12px;color:var(--accent);line-height:1.55;font-weight:600">💡 Өдөр бүрийн өглөө/өдөр/орой нь 3 баганаар. Хоол бэлэн бол ◯-г дарж дуусга, хоол дээр дарвал орц/аргачлал.</div>'
+    : '';
 
+  var boardHtml = '';
   dateKeys.forEach(function(dk){
     var dLabel = (dk === '9999-12-31') ? 'Огноо тодорхойгүй' : formatDateMN(dk);
     var pmap = byDate[dk];
     var cols = [0,1,2]; if (pmap[3] && pmap[3].length) cols.push(3);
-    html += '<div class="tk-date">📅 '+esc(dLabel)+'</div>';
-    html += '<div class="tk-board">';
+    var colsHtml = '', dateHasActive = false;
     cols.forEach(function(s){
       var blocks = pmap[s] || [];
       var info = mealPeriodInfo(s);
       var cT = 0, cD = 0;
       blocks.forEach(function(sb){ sb.dishes.forEach(function(dn){ cT++; if (isDishDone(sb.id+'_'+dn.replace(/\s/g,'_'))) cD++; }); });
-      html += '<div class="tk-col">' +
+      var activeCards = '', doneCards = '', nDoneCards = 0;
+      blocks.forEach(function(sb, bi){
+        var pArgs = sb.idx+',\''+sb.time+'\',\''+sb.fullDate+'\'';
+        var printed = isPrinted(sb.idx, sb.time, sb.fullDate);
+        var items = sb.dishes.map(function(dn){ return { dn:dn, done:isDishDone(sb.id+'_'+dn.replace(/\s/g,'_')) }; });
+        var nDone = 0; items.forEach(function(it){ if (it.done) nDone++; });
+        totalTasks += items.length; doneTasks += nDone;
+        var allDone = items.length > 0 && nDone === items.length;
+        if (allDone) {
+          if (!showDoneTasks) return;   // ✋ дууссан үйлчилгээг БҮР нууна
+          nDoneCards++;
+          var ck = dk+'_'+s+'_'+bi;
+          var open = !!openDoneCard[ck];
+          var dh = items.map(function(it){ return taskDishRow(sb.id, it.dn, sb.pax, sb.cat).html; }).join('');
+          doneCards += '<div class="tk-card tk-card-done">' +
+            '<div class="tk-card-h tk-card-h-done" onclick="toggleDoneCard(\''+ck+'\')">' +
+              '<span>✓ 🏢 '+esc(sb.company)+(sb.time?' · '+esc(sb.time):'')+' · '+sb.pax+' хүн</span>' +
+              '<span class="tk-done-badge">'+(open?'нуух ▴':'үзэх ▾')+'</span></div>' +
+            '<div class="tk-card-body'+(open?' open':'')+'">'+dh+'</div>' +
+          '</div>';
+        } else {
+          // дуусаагүй хоол; showDoneTasks бол дууссаныг доор, эс бөгөөс БҮР нууна
+          var shown = showDoneTasks
+            ? items.slice().sort(function(a,b){ return (a.done?1:0) - (b.done?1:0); })
+            : items.filter(function(it){ return !it.done; });
+          var dishesHtml = shown.map(function(it){ return taskDishRow(sb.id, it.dn, sb.pax, sb.cat).html; }).join('');
+          activeCards += '<div class="tk-card">' +
+            '<div class="tk-card-h"><span>🏢 '+esc(sb.company)+(sb.time?' · '+esc(sb.time):'')+' · '+sb.pax+' хүн</span>' +
+              '<span class="tk-iprint" onclick="event.stopPropagation();printOrderRecipes('+pArgs+')" title="Орц хэвлэх">'+(printed?'🖨✓':'🖨')+'</span></div>' +
+            dishesHtml +
+          '</div>';
+        }
+      });
+      var colInner = activeCards;
+      if (showDoneTasks && nDoneCards) colInner += '<div class="tk-done-sep">✓ ДУУССАН · '+nDoneCards+'</div>' + doneCards;
+      if (activeCards) dateHasActive = true;
+      colsHtml += '<div class="tk-col">' +
         '<div class="tk-col-head" style="border-color:'+info.fg+';color:'+info.fg+'">' +
           '<span>'+info.emoji+' '+info.label.toUpperCase()+'</span>' +
           '<span style="font-size:11px;font-weight:700;color:var(--muted)">'+cD+'/'+cT+'</span>' +
-        '</div>';
-      if (!blocks.length) {
-        html += '<div class="tk-col-empty">—</div>';
-      } else {
-        var activeCards = '', doneCards = '', nDoneCards = 0;
-        blocks.forEach(function(sb, bi){
-          var pArgs = sb.idx+',\''+sb.time+'\',\''+sb.fullDate+'\'';
-          var printed = isPrinted(sb.idx, sb.time, sb.fullDate);
-          // Хоол бүрийн дуусгасан төлөв — дуусаагүйг дээр, дууссаныг доор эрэмбэлнэ
-          var items = sb.dishes.map(function(dn){ return { dn:dn, done:isDishDone(sb.id+'_'+dn.replace(/\s/g,'_')) }; });
-          var nDone = 0; items.forEach(function(it){ if (it.done) nDone++; });
-          totalTasks += items.length; doneTasks += nDone;
-          items.sort(function(a,b){ return (a.done?1:0) - (b.done?1:0); });   // дуусаагүй нь түрүүнд
-          var dishesHtml = '';
-          items.forEach(function(it){ dishesHtml += taskDishRow(sb.id, it.dn, sb.pax, sb.cat).html; });
-          var allDone = items.length > 0 && nDone === items.length;
-          if (allDone) {
-            // Бүх хоол дууссан үйлчилгээ — нэг тийш (доош) эвхэгдэж, бүдгэрнэ
-            nDoneCards++;
-            var ck = dk+'_'+s+'_'+bi;
-            var open = !!openDoneCard[ck];
-            doneCards += '<div class="tk-card tk-card-done">' +
-              '<div class="tk-card-h tk-card-h-done" onclick="toggleDoneCard(\''+ck+'\')">' +
-                '<span>✓ 🏢 '+esc(sb.company)+(sb.time?' · '+esc(sb.time):'')+' · '+sb.pax+' хүн</span>' +
-                '<span class="tk-done-badge">'+(open?'нуух ▴':'үзэх ▾')+'</span></div>' +
-              '<div class="tk-card-body'+(open?' open':'')+'">'+dishesHtml+'</div>' +
-            '</div>';
-          } else {
-            activeCards += '<div class="tk-card">' +
-              '<div class="tk-card-h"><span>🏢 '+esc(sb.company)+(sb.time?' · '+esc(sb.time):'')+' · '+sb.pax+' хүн</span>' +
-                '<span class="tk-iprint" onclick="event.stopPropagation();printOrderRecipes('+pArgs+')" title="Орц хэвлэх">'+(printed?'🖨✓':'🖨')+'</span></div>' +
-              dishesHtml +
-            '</div>';
-          }
-        });
-        html += activeCards;
-        if (nDoneCards) html += '<div class="tk-done-sep">✓ ДУУССАН · '+nDoneCards+'</div>' + doneCards;
-      }
-      html += '</div>';
+        '</div>' + (colInner || '<div class="tk-col-empty">—</div>') +
+      '</div>';
     });
-    html += '</div>';
+    // ✋ Бүх ажил нь дууссан өдрийг (идэвхтэй ажилгүй) БҮР нууна
+    if (!showDoneTasks && !dateHasActive) return;
+    boardHtml += '<div class="tk-date">📅 '+esc(dLabel)+'</div><div class="tk-board">'+colsHtml+'</div>';
   });
 
   // Progress bar
@@ -2566,8 +2569,18 @@ function renderTasks() {
   if (document.getElementById('tasks-subtitle'))
     document.getElementById('tasks-subtitle').textContent = doneTasks+'/'+totalTasks+' — '+pct+'%';
 
-  var emptyMsg = '<div class="error-wrap"><div class="error-ico">📋</div><p>Захиалга байхгүй.</p></div>';
-  body.innerHTML = html || emptyMsg;
+  // Дууссан ажлыг харах/нуух товч (дууссан зүйл байгаа үед л)
+  var doneChip = '';
+  if (doneTasks > 0) {
+    doneChip = '<div style="margin:14px 14px 0;display:flex;justify-content:flex-end">' +
+      '<button onclick="toggleShowDone()" style="font-family:inherit;font-size:12px;font-weight:700;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);border-radius:9px;padding:7px 13px;cursor:pointer">' +
+      (showDoneTasks ? '🙈 Дууссаныг нуух' : '👁 Дууссан ('+doneTasks+') харах') +
+      '</button></div>';
+  }
+  var emptyMsg = svcBlocks.length
+    ? '<div class="error-wrap"><div class="error-ico">🎉</div><p>Идэвхтэй ажил алга — бүгд дууссан!</p></div>'
+    : '<div class="error-wrap"><div class="error-ico">📋</div><p>Захиалга байхгүй.</p></div>';
+  body.innerHTML = doneChip + (boardHtml ? (hintHtml + boardHtml) : emptyMsg);
 }
 
 /* ─────────────────────────────────
