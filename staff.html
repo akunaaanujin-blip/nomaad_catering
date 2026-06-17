@@ -2454,47 +2454,57 @@ function renderTasks() {
   // ── Бүх захиалгын үйлчилгээг цуглуулж, ОГНОО → Өглөө/Өдөр/Орой гэж бүлэглэнэ ──
   var svcBlocks = collectSvcBlocks(orders);
 
-  // ── Үйлчилгээг МЭРГЭЖЛЭЭР (өглөө/өдөр/орой) 3 баганад хуваана ──
-  var periodCols = {};
-  svcBlocks.forEach(function(sb){ var s = mealPeriod(sb.time).sort; (periodCols[s] = periodCols[s] || []).push(sb); });
-  Object.keys(periodCols).forEach(function(s){ periodCols[s].sort(function(a,b){ return ((a.fullDate||'9999')+'_'+(a.time||'99')).localeCompare((b.fullDate||'9999')+'_'+(b.time||'99')); }); });
-  var colOrder = [0,1,2]; if (periodCols[3] && periodCols[3].length) colOrder.push(3);
+  // ── ОГНОО бүрд тусдаа 3 БАГАНА (Өглөө/Өдөр/Орой) ──
+  var byDate = {}, dateKeys = [];
+  svcBlocks.forEach(function(sb){
+    var dk = sb.fullDate || '9999-12-31';
+    if (!byDate[dk]) { byDate[dk] = {}; dateKeys.push(dk); }
+    var s = mealPeriod(sb.time).sort;
+    (byDate[dk][s] = byDate[dk][s] || []).push(sb);
+  });
+  dateKeys.sort();
+  dateKeys.forEach(function(dk){ Object.keys(byDate[dk]).forEach(function(s){ byDate[dk][s].sort(function(a,b){ return (a.time||'99').localeCompare(b.time||'99'); }); }); });
 
   if (svcBlocks.length && currentRole !== 'Захирал') {
-    html += '<div style="margin:14px 14px 0;padding:9px 13px;background:var(--accent-soft);border-radius:10px;font-size:12px;color:var(--accent);line-height:1.55;font-weight:600">💡 Хоол бэлэн болсны дараа ◯-г дарж дуусга. Хоол дээр дарвал орц/аргачлал нээгдэнэ. Баганыг хажуу тийш гүйлгэнэ.</div>';
+    html += '<div style="margin:14px 14px 0;padding:9px 13px;background:var(--accent-soft);border-radius:10px;font-size:12px;color:var(--accent);line-height:1.55;font-weight:600">💡 Өдөр бүрийн өглөө/өдөр/орой нь 3 баганаар. Хоол бэлэн бол ◯-г дарж дуусга, хоол дээр дарвал орц/аргачлал.</div>';
   }
 
-  html += '<div class="tk-board">';
-  colOrder.forEach(function(s){
-    var blocks = periodCols[s] || [];
-    var info = mealPeriodInfo(s);
-    var cT = 0, cD = 0;
-    blocks.forEach(function(sb){ sb.dishes.forEach(function(dn){ cT++; if (isDishDone(sb.id+'_'+dn.replace(/\s/g,'_'))) cD++; }); });
-    html += '<div class="tk-col">' +
-      '<div class="tk-col-head" style="border-color:'+info.fg+';color:'+info.fg+'">' +
-        '<span>'+info.emoji+' '+info.label.toUpperCase()+'</span>' +
-        '<span style="font-size:11px;font-weight:700;color:var(--muted)">'+cD+'/'+cT+'</span>' +
-      '</div>';
-    if (!blocks.length) {
-      html += '<div class="tk-col-empty">—</div>';
-    } else {
-      blocks.forEach(function(sb){
-        var pArgs = sb.idx+',\''+sb.time+'\',\''+sb.fullDate+'\'';
-        var printed = isPrinted(sb.idx, sb.time, sb.fullDate);
-        var dateS = sb.fullDate ? formatDateMN(sb.fullDate) : 'Огноогүй';
-        html += '<div class="tk-card">' +
-          '<div class="tk-card-h"><span>🏢 '+esc(sb.company)+'<br>'+esc(dateS)+(sb.time?' · '+esc(sb.time):'')+' · '+sb.pax+' хүн</span>' +
-            '<span class="tk-iprint" onclick="event.stopPropagation();printOrderRecipes('+pArgs+')" title="Орц хэвлэх">'+(printed?'🖨✓':'🖨')+'</span></div>';
-        sb.dishes.forEach(function(dn){
-          var res = taskDishRow(sb.id, dn, sb.pax, sb.cat);
-          html += res.html; totalTasks++; if (res.done) doneTasks++;
+  dateKeys.forEach(function(dk){
+    var dLabel = (dk === '9999-12-31') ? 'Огноо тодорхойгүй' : formatDateMN(dk);
+    var pmap = byDate[dk];
+    var cols = [0,1,2]; if (pmap[3] && pmap[3].length) cols.push(3);
+    html += '<div class="tk-date">📅 '+esc(dLabel)+'</div>';
+    html += '<div class="tk-board">';
+    cols.forEach(function(s){
+      var blocks = pmap[s] || [];
+      var info = mealPeriodInfo(s);
+      var cT = 0, cD = 0;
+      blocks.forEach(function(sb){ sb.dishes.forEach(function(dn){ cT++; if (isDishDone(sb.id+'_'+dn.replace(/\s/g,'_'))) cD++; }); });
+      html += '<div class="tk-col">' +
+        '<div class="tk-col-head" style="border-color:'+info.fg+';color:'+info.fg+'">' +
+          '<span>'+info.emoji+' '+info.label.toUpperCase()+'</span>' +
+          '<span style="font-size:11px;font-weight:700;color:var(--muted)">'+cD+'/'+cT+'</span>' +
+        '</div>';
+      if (!blocks.length) {
+        html += '<div class="tk-col-empty">—</div>';
+      } else {
+        blocks.forEach(function(sb){
+          var pArgs = sb.idx+',\''+sb.time+'\',\''+sb.fullDate+'\'';
+          var printed = isPrinted(sb.idx, sb.time, sb.fullDate);
+          html += '<div class="tk-card">' +
+            '<div class="tk-card-h"><span>🏢 '+esc(sb.company)+(sb.time?' · '+esc(sb.time):'')+' · '+sb.pax+' хүн</span>' +
+              '<span class="tk-iprint" onclick="event.stopPropagation();printOrderRecipes('+pArgs+')" title="Орц хэвлэх">'+(printed?'🖨✓':'🖨')+'</span></div>';
+          sb.dishes.forEach(function(dn){
+            var res = taskDishRow(sb.id, dn, sb.pax, sb.cat);
+            html += res.html; totalTasks++; if (res.done) doneTasks++;
+          });
+          html += '</div>';
         });
-        html += '</div>';
-      });
-    }
+      }
+      html += '</div>';
+    });
     html += '</div>';
   });
-  html += '</div>';
 
   // Progress bar
   var pct = totalTasks > 0 ? Math.round(doneTasks/totalTasks*100) : 0;
