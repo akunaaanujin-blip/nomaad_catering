@@ -1244,8 +1244,8 @@ body{
       <div class="ing-section-title">📥 Бараа материал авах <span style="font-size:10px;font-weight:600;color:var(--muted)">(зөвхөн Захирал/Нягтлан)</span></div>
       <div class="ing-section-sub">Олон барааг нэг нэгээр нэмээд, эцэст нь «Нөөцөд бүртгэх» товч дарна — нөөцийн үлдэгдэлд нэмэгдэнэ</div>
       <div style="padding:0 18px 10px">
-        <input id="buy-material" list="staff-exp-mat-list" placeholder="Орц сонгох эсвэл шинэ нэр бичих"
-          style="width:100%;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink);margin-bottom:8px">
+        <select id="buy-material" onchange="onBuyMaterialPick()"
+          style="width:100%;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink);margin-bottom:8px"><option value="">— Бараа сонгох —</option></select>
         <datalist id="staff-exp-mat-list"></datalist>
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <input type="number" id="buy-qty" min="0" step="0.1" placeholder="Тоо"
@@ -1520,7 +1520,7 @@ function switchTab(name) {
   if (name === 'tasks') renderTasks();
   if (name === 'ingredients') { renderIngCalc(); loadStock(); loadRequests(); }
   if (name === 'noots') {
-    loadStock(); renderPurchaseDraft(); renderCampSection();
+    loadStock(); renderPurchaseDraft(); renderCampSection(); fillBuyMaterialSelect();
     var bs = document.getElementById('buy-section');   // бараа авах — зөвхөн Захирал/Нягтлан
     if (bs) bs.style.display = (currentRole === 'Захирал' || currentRole === 'Нягтлан') ? '' : 'none';
     // Нягтланд зөвхөн бараа авах + нөөц үлдэгдэл — камп нуух
@@ -3095,6 +3095,37 @@ function removeStaffExpense(id) {
   renderStockFromCache();
 }
 
+// «Бараа материал авах» сонголтыг орцуудаар дүүргэнэ (технологи карт + нөөц)
+function fillBuyMaterialSelect() {
+  var sel = document.getElementById('buy-material');
+  if (!sel) return;
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">— Бараа сонгох —</option>' +
+    getIngredientCatalog().map(function(n){ return '<option value="'+esc(n)+'">'+esc(n)+'</option>'; }).join('') +
+    '<option value="__new__">➕ Шинэ бараа (бичих)…</option>';
+  if (cur) sel.value = cur;
+}
+// Бараа сонгоход: шинэ нэр бичих эсвэл нэгж/үнийг нөөцөөс автоматаар тааруулна
+function onBuyMaterialPick() {
+  var sel = document.getElementById('buy-material');
+  if (!sel) return;
+  if (sel.value === '__new__') {
+    var nm = (prompt('Шинэ барааны нэр:') || '').trim();
+    sel.value = '';
+    if (!nm) return;
+    var o = document.createElement('option'); o.value = nm; o.textContent = nm;
+    sel.add(o, sel.options[sel.options.length - 1]);   // __new__-ийн өмнө
+    sel.value = nm;
+  }
+  var mat = sel.value;
+  if (!mat || !stockData || !stockData.items) return;
+  var stk = stockData.items.filter(function(it){ return String(it.name).toLowerCase().trim() === mat.toLowerCase().trim(); })[0];
+  if (!stk) return;
+  var pe = document.getElementById('buy-price'); if (pe && stk.price && !pe.value) pe.value = stk.price;
+  var ue = document.getElementById('buy-unit');
+  if (ue && stk.unit) { var u = String(stk.unit).toLowerCase().trim(); for (var i = 0; i < ue.options.length; i++) { if (ue.options[i].value.toLowerCase() === u) { ue.value = ue.options[i].value; break; } } }
+}
+
 // Шинээр авсан бараа материалыг нөөцийн sheet рүү бүртгэнэ
 // Авах гэж буй бараануудын түр жагсаалт (бүртгээгүй)
 var purchaseDraft = [];
@@ -4161,6 +4192,7 @@ function renderStock(data) {
   if (activeTab === 'tasks') renderTasks();
   if (activeTab === 'ingredients') renderIngCalc();
   if (activeTab === 'orders') renderOrders();   // нөөц ирмэгц захиалгын өртөг/ашиг шинэчлэгдэнэ
+  if (activeTab === 'noots') { fillBuyMaterialSelect(); renderCampSection(); }   // нөөцийн материалуудыг сонголтод нэмнэ
 }
 
 /* ─────────────────────────────────
