@@ -1495,6 +1495,7 @@ function enterApp(role) {
   switchTab(info.tabs[0]);
   buildRecipes();
   loadOrders();
+  loadDishDone();   // дуусгасан хоолны төлөвийг бүх төхөөрөмжөөс татна
   loadStock();   // эхлэхэд нөөцийг ачаалж тавьна — захиалгын өртөг/ашиг шууд гарна
   renderStaffMealList();
 }
@@ -1613,6 +1614,7 @@ function loadOrders() {
 // Бүх таб — Google Sheet-ийн өгөгдлийг ДАХИН ТАТАЖ шинэчилнэ (захиалга + нөөц)
 function refreshAll() {
   loadOrders();   // захиалга дахин татаж orders/tasks/ingredients-г шинэчилнэ
+  loadDishDone(); // дуусгасан хоолны төлөвийг бусад төхөөрөмжөөс дахин татна
   loadStock();    // нөөц дахин татаж stock болон хамаарах табуудыг шинэчилнэ
   if (activeTab === 'prep') renderPrepStock();
   if (activeTab === 'staff') renderStaffTab();
@@ -2059,10 +2061,36 @@ function toggleAssignAll(dkey, btn) {
 }
 
 function isDishDone(key) { return localStorage.getItem('dish_done_'+key) === '1'; }
+// Хоол дуусгах/буцаах төлөвийг Google Sheet рүү илгээнэ (бүх төхөөрөмжид нийтлэг)
+function postDishDone(dkey, done) {
+  try { postJSON({ type:'dishdone', dkey:dkey, done:(done?1:0), by:(currentRole||'') }); } catch(e){}
+}
+// Бүх төхөөрөмжийн дуусгасан төлөвийг sheet-ээс татаж localStorage-д буулгана
+function loadDishDone() {
+  var cb = 'doneCb_' + Date.now();
+  var fin = false;
+  var t = setTimeout(function(){ if(!fin){ fin=true; delete window[cb]; } }, 9000);
+  window[cb] = function(d){
+    if (fin) return; fin = true; clearTimeout(t); delete window[cb];
+    if (d && d.done) {
+      d.done.forEach(function(r){
+        var k = 'dish_done_' + r.dkey;
+        if (r.done === 1) localStorage.setItem(k, '1'); else localStorage.removeItem(k);
+      });
+      syncOrderStatusFromTasks();
+      if (activeTab === 'tasks') renderTasks();
+      if (activeTab === 'orders') renderOrders();
+    }
+  };
+  var s = document.createElement('script');
+  s.src = SHEETS_POST_URL + '?action=dishdone&callback=' + cb;
+  s.onerror = function(){ if(!fin){ fin=true; clearTimeout(t); delete window[cb]; } };
+  document.head.appendChild(s);
+}
 function toggleDish(key) {
   var done = isDishDone(key);
-  if (done) localStorage.removeItem('dish_done_'+key);
-  else { localStorage.setItem('dish_done_'+key, '1'); logActivity('Хоол дууссан: '+key); }
+  if (done) { localStorage.removeItem('dish_done_'+key); postDishDone(key, 0); }
+  else { localStorage.setItem('dish_done_'+key, '1'); postDishDone(key, 1); logActivity('Хоол дууссан: '+key); }
   syncOrderStatusFromTasks();   // бүх хоол дуусвал захиалгыг автоматаар "Дууссан" болгоно
   renderTasks();
 }
@@ -2156,7 +2184,7 @@ function closeFinishModal(e) {
 }
 
 function markDishDoneNow(dkey, panelId) {
-  if (!isDishDone(dkey)) { localStorage.setItem('dish_done_'+dkey, '1'); logActivity('✅ Хоол дууссан: '+dkey); }
+  if (!isDishDone(dkey)) { localStorage.setItem('dish_done_'+dkey, '1'); postDishDone(dkey, 1); logActivity('✅ Хоол дууссан: '+dkey); }
   if (panelId) { openPanels[panelId] = true; openTk[panelId] = true; }
   syncOrderStatusFromTasks();
   renderTasks();
@@ -2169,6 +2197,7 @@ function undoDish(dkey, panelId) {
   if (code === null) return;
   if (String(code).trim() !== ROLES['Захирал'].pin) { alert('❌ Буруу код. Буцаалт цуцлагдлаа.'); return; }
   localStorage.removeItem('dish_done_'+dkey);
+  postDishDone(dkey, 0);
   if (panelId) openPanels[panelId] = true;
   syncOrderStatusFromTasks();
   renderTasks();

@@ -1,8 +1,9 @@
-// NOMAAD Catering — Google Apps Script v2.5 (худалдан авах хүсэлтийн урсгал нэмсэн)
+// NOMAAD Catering — Google Apps Script v2.6 (хоол дуусгах төлөв бүх төхөөрөмжид sync)
 const SHEET_ORDERS   = 'Захиалга';
 const SHEET_CALC     = 'Тооцоо';
 const SHEET_EXPENSE  = 'Ажилтны хоол зарлага';
 const SHEET_REQUESTS = 'Худалдан авах хүсэлт';
+const SHEET_DONE     = 'Хоол дууссан';     // тогоочийн дуусгасан хоолны төлөв (бүх төхөөрөмжид нийтлэг)
 const STOCK_GID      = 1696013893;   // Худалдан авалт / нөөцийн хуудас
 
 function doPost(e) {
@@ -14,11 +15,40 @@ function doPost(e) {
     else if (data.type === 'purchase') savePurchase(ss, data);
     else if (data.type === 'request') saveRequest(ss, data);
     else if (data.type === 'request_update') updateRequest(ss, data);
+    else if (data.type === 'dishdone') saveDishDone(ss, data);
     else saveCalc(ss, data);
     return json({ status: 'ok' });
   } catch (err) {
     return json({ status: 'error', error: err.message });
   }
+}
+
+// Хоол дуусгасан/буцаасан төлөвийг бүртгэнэ (dkey бүрд нэг мөр — upsert)
+function saveDishDone(ss, data) {
+  let sheet = ss.getSheetByName(SHEET_DONE);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_DONE);
+    const h = ['dkey', 'Дууссан', 'Огноо', 'Хэн'];
+    sheet.appendRow(h);
+    const hr = sheet.getRange(1, 1, 1, h.length);
+    hr.setFontWeight('bold'); hr.setBackground('#1F4A38'); hr.setFontColor('#ffffff');
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidths(1, 4, [260, 80, 140, 110]);
+  }
+  const dkey = String(data.dkey || '');
+  if (!dkey) return;
+  const done = (data.done == 1 || data.done === '1' || data.done === true) ? 1 : 0;
+  const last = sheet.getLastRow();
+  if (last >= 2) {
+    const keys = sheet.getRange(2, 1, last - 1, 1).getValues();
+    for (let i = 0; i < keys.length; i++) {
+      if (String(keys[i][0]) === dkey) {
+        sheet.getRange(i + 2, 2, 1, 3).setValues([[done, new Date(), data.by || '']]);
+        return;
+      }
+    }
+  }
+  sheet.appendRow([dkey, done, new Date(), data.by || '']);
 }
 
 // Тогоочийн нэмэлт хүнсний хүсэлтийг бүртгэнэ
@@ -150,7 +180,16 @@ function doGet(e) {
       return respond({ requests: requests.reverse() }, callback);
     }
 
-    return respond({ status: 'ok', message: 'NOMAAD Catering API v2.5' }, callback);
+    if (action === 'dishdone') {
+      const ss    = SpreadsheetApp.getActiveSpreadsheet();
+      const sheet = ss.getSheetByName(SHEET_DONE);
+      if (!sheet || sheet.getLastRow() < 2) return respond({ done: [] }, callback);
+      const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
+      const done = rows.filter(r => r[0]).map(r => ({ dkey: String(r[0]), done: (Number(r[1]) === 1 ? 1 : 0) }));
+      return respond({ done: done }, callback);
+    }
+
+    return respond({ status: 'ok', message: 'NOMAAD Catering API v2.6' }, callback);
   } catch (err) {
     return respond({ status: 'error', error: err.message }, e.parameter.callback);
   }
