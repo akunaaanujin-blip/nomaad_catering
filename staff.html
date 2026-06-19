@@ -2178,7 +2178,7 @@ function openFinishModal(dkey, panelId, dishName, pax, cat) {
     markDishDoneNow(dkey, panelId);   // орц/хүн мэдэгдэхгүй бол шууд дуусгана
     return;
   }
-  finishCtx = { dkey:dkey, panelId:panelId, ings:recipe.ingredients };
+  finishCtx = { dkey:dkey, panelId:panelId, ings:recipe.ingredients, pax:pax, cat:(cat||dishCategory(dishName)) };
   document.getElementById('finish-modal-head').innerHTML =
     '<h2 style="font-size:18px;margin:0">✓ '+esc(dishName)+'</h2>' +
     '<div style="font-size:12px;color:var(--muted);margin-top:3px">Бодит зарцуулсан түүхий (БРУТТО) хэмжээгээ шалгаж/засаад баталгаажуулна уу ('+pax+' хүн)</div>';
@@ -2206,6 +2206,7 @@ function confirmFinish() {
     var v = el ? (el.value || '').trim() : '';
     if (v) saveActual(c.dkey+'_act_ing_'+i, v);   // бодит зарцуулалт хадгална
   });
+  logFinishExpenses(c.dkey, c.ings, c.pax, c.cat);   // бодит жинг АВТОМАТ зарлага болгоно (нөөцөөс хасна, бүх төхөөрөмжид)
   closeFinishModal();
   finishCtx = null;
   markDishDoneNow(c.dkey, c.panelId);
@@ -2214,6 +2215,46 @@ function confirmFinish() {
 function closeFinishModal(e) {
   if (e && e.target !== document.getElementById('finish-modal')) return;
   document.getElementById('finish-modal').classList.remove('open');
+}
+
+// ── Бодит жинг АВТОМАТ зарлага болгох (нөөцөөс хасна, Google Sheet-д бичнэ — бүх төхөөрөмжид) ──
+function pushExpense(material, qty, unit, price, date) {
+  try {
+    fetch(SHEETS_POST_URL, { method:'POST', headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({ type:'expense', material:material, qty:qty, unit:unit, price:price||0, date:date }) }).catch(function(){});
+  } catch(e) {}
+  if (typeof expenseData !== 'undefined') expenseData.push({ date:date, material:material, unit:unit, qty:qty, price:price||0 });
+}
+// Хоол дуусгахад орц бүрийн бодит (эс бөгөөс төлөвлөсөн) хэмжээг зарлага болгоно
+function logFinishExpenses(dkey, ings, pax, cat) {
+  if (!ings || !ings.length) return;
+  if (localStorage.getItem('finexp_'+dkey)) return;   // нэг хоолыг давхар зарлагалахгүй
+  var today = todayStr();
+  var logged = [];
+  ings.forEach(function(ing, i){
+    var v = getActual(dkey+'_act_ing_'+i);
+    var pg = v ? parseQtyRaw(v) : plannedGramsRaw(ing.a, pax);   // бодит, эс бол төлөвлөсөн (БРУТТО)
+    if (!pg || !pg.g) return;
+    var up = lookupStockUnitPrice(ing.n);   // нөөцийн нэгж/үнэ
+    var unit, qty;
+    if (up && up.unit && unitsCompatible(pg.unit, up.unit)) { unit = up.unit; qty = gramsToStockUnit(pg.g, up.unit); }
+    else { unit = pg.unit; qty = pg.g; }
+    qty = Math.round(qty*1000)/1000;
+    if (qty <= 0) return;
+    pushExpense(ing.n, qty, unit, (up && up.price) || 0, today);
+    logged.push({ material: ing.n, qty: qty, unit: unit, price: (up && up.price) || 0 });
+  });
+  if (logged.length) { try { localStorage.setItem('finexp_'+dkey, JSON.stringify(logged)); } catch(e){} }
+}
+// Дуусгасан хоолыг буцаахад автомат зарлагыг сөрөг бичиж буцаана (нөөц сэргэнэ)
+function reverseFinishExpenses(dkey) {
+  var fl = null;
+  try { fl = JSON.parse(localStorage.getItem('finexp_'+dkey) || 'null'); } catch(e) {}
+  if (fl && fl.length) {
+    var today = todayStr();
+    fl.forEach(function(e){ pushExpense(e.material, -Math.abs(e.qty), e.unit, e.price, today); });
+  }
+  try { localStorage.removeItem('finexp_'+dkey); } catch(e) {}
 }
 
 function markDishDoneNow(dkey, panelId) {
@@ -2229,6 +2270,7 @@ function undoDish(dkey, panelId) {
   var code = prompt('Дууссан хоолыг буцаахын тулд Захирлын кодыг (PIN) оруулна уу:');
   if (code === null) return;
   if (String(code).trim() !== ROLES['Захирал'].pin) { alert('❌ Буруу код. Буцаалт цуцлагдлаа.'); return; }
+  reverseFinishExpenses(dkey);   // автомат зарлагыг сөрөг бичиж нөөцийг сэргээнэ
   localStorage.removeItem('dish_done_'+dkey);
   postDishDone(dkey, 0);
   if (panelId) openPanels[panelId] = true;
