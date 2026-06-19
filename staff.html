@@ -1268,6 +1268,26 @@ body{
       </div>
       </div><!-- /buy-section -->
 
+      <!-- Зарлага гаргах (бодит жин) — нөөцийн үлдэгдлээс хасна -->
+      <div id="exp-section">
+      <div class="ing-section-title" style="margin-top:18px">➖ Зарлага гаргах <span style="font-size:10px;font-weight:600;color:var(--muted)">(бодит жингээр)</span></div>
+      <div class="ing-section-sub">Зарцуулсан хүнсээ бодит жингээр бичнэ — нөөцийн үлдэгдлээс шууд хасагдана</div>
+      <div style="padding:0 18px 10px">
+        <select id="exp-material" onchange="onExpMaterialPick()"
+          style="width:100%;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink);margin-bottom:8px"><option value="">— Материал сонгох —</option></select>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input type="number" id="exp-qty" min="0" step="0.01" placeholder="Бодит жин"
+            style="flex:2;min-width:0;font-family:inherit;font-size:14px;font-weight:700;text-align:center;border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff;color:var(--ink)">
+          <select id="exp-unit" style="flex:1;min-width:0;font-family:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff">
+            <option value="кг">кг</option><option value="г">грамм</option><option value="л">литр</option><option value="мл">мл</option><option value="ш">ширхэг</option>
+          </select>
+        </div>
+        <button onclick="addExpenseDraft()" style="width:100%;padding:11px;background:var(--surface);color:var(--red);border:1.5px solid var(--red);border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">＋ Нэмэх</button>
+        <div id="exp-draft" style="margin-top:8px"></div>
+        <div id="exp-msg" style="font-size:12px;text-align:center;margin-top:6px"></div>
+      </div>
+      </div><!-- /exp-section -->
+
       <!-- Нөөцийн үлдэгдэл + татах товчнууд -->
       <div class="ing-section-title" style="margin-top:20px">📦 Одоогийн нөөцийн үлдэгдэл</div>
       <div style="padding:0 18px 8px;display:flex;align-items:center;justify-content:space-between">
@@ -1531,9 +1551,12 @@ function switchTab(name) {
   if (name === 'tasks') renderTasks();
   if (name === 'ingredients') { renderIngCalc(); loadStock(); loadRequests(); }
   if (name === 'noots') {
-    loadStock(); renderPurchaseDraft(); renderCampSection(); fillBuyMaterialSelect();
+    loadStock(); renderPurchaseDraft(); renderExpenseDraft(); renderCampSection(); fillBuyMaterialSelect(); fillExpMaterialSelect();
     var bs = document.getElementById('buy-section');   // бараа авах — зөвхөн Захирал/Нягтлан
     if (bs) bs.style.display = (currentRole === 'Захирал' || currentRole === 'Нягтлан') ? '' : 'none';
+    // Зарлага (бодит жин) — хоол хийдэг хүмүүст (Нягтланд харагдахгүй)
+    var es = document.getElementById('exp-section');
+    if (es) es.style.display = (currentRole === 'Нягтлан') ? 'none' : '';
     // Нягтланд зөвхөн бараа авах + нөөц үлдэгдэл — камп нуух
     var cs = document.getElementById('camp-section'); if (cs) cs.style.display = (currentRole === 'Нягтлан') ? 'none' : '';
   }
@@ -3384,6 +3407,96 @@ function submitPurchase() {
   if (msg) { msg.style.color = 'var(--accent)'; msg.textContent = '✓ ' + count + ' бараа нөөцөд бүртгэгдлээ — Google Sheet рүү хадгалагдаж байна'; setTimeout(function(){ if (msg) msg.textContent = ''; }, 4000); }
 }
 
+/* ── ЗАРЛАГА (бодит жин) — нөөцийн үлдэгдлээс хасна, Google Sheet-д бичнэ (бүх төхөөрөмжид нийтлэг) ── */
+var expenseDraft = [];
+// Зарлагын материал сонголтыг нөөцөд байгаа (авсан) зүйлсээр дүүргэнэ
+function fillExpMaterialSelect() {
+  var sel = document.getElementById('exp-material');
+  if (!sel) return;
+  var cur = sel.value;
+  var seen = {}, uniq = [];
+  if (stockData && stockData.items) {
+    stockData.items.forEach(function(it){ var n = it.name, k = String(n).toLowerCase().trim(); if (n && !seen[k]) { seen[k] = 1; uniq.push(n); } });
+  }
+  uniq.sort(function(a,b){ return String(a).localeCompare(String(b)); });
+  sel.innerHTML = '<option value="">— Материал сонгох —</option>' +
+    uniq.map(function(n){ return '<option value="'+esc(n)+'">'+esc(n)+'</option>'; }).join('') +
+    '<option value="__new__">➕ Бусад (бичих)…</option>';
+  if (cur) sel.value = cur;
+}
+// Материал сонгоход нэгжийг нөөцөөс автоматаар тааруулна
+function onExpMaterialPick() {
+  var sel = document.getElementById('exp-material');
+  if (!sel) return;
+  if (sel.value === '__new__') {
+    var nm = (prompt('Материалын нэр:') || '').trim();
+    sel.value = '';
+    if (!nm) return;
+    var o = document.createElement('option'); o.value = nm; o.textContent = nm;
+    sel.add(o, sel.options[sel.options.length - 1]);
+    sel.value = nm;
+  }
+  var mat = sel.value;
+  if (!mat || !stockData || !stockData.items) return;
+  var stk = stockData.items.filter(function(it){ return String(it.name).toLowerCase().trim() === mat.toLowerCase().trim(); })[0];
+  if (stk && stk.unit) {
+    var ue = document.getElementById('exp-unit');
+    if (ue) { var u = String(stk.unit).toLowerCase().trim(); for (var i = 0; i < ue.options.length; i++) { if (ue.options[i].value.toLowerCase() === u) { ue.value = ue.options[i].value; break; } } }
+  }
+}
+function addExpenseDraft() {
+  var matEl = document.getElementById('exp-material');
+  var qtyEl = document.getElementById('exp-qty');
+  var material = (matEl.value || '').trim();
+  var qty = parseFloat(qtyEl.value) || 0;
+  var unit = document.getElementById('exp-unit').value;
+  var msg = document.getElementById('exp-msg');
+  if (!material) { msg.style.color = 'var(--red)'; msg.textContent = 'Материалаа сонгоно уу.'; return; }
+  if (qty <= 0) { msg.style.color = 'var(--red)'; msg.textContent = 'Бодит жингээ оруулна уу.'; return; }
+  var up = lookupStockUnitPrice(material);
+  expenseDraft.push({ material: material, qty: qty, unit: unit, price: (up && up.price) || 0 });
+  matEl.value = ''; qtyEl.value = ''; matEl.focus(); msg.textContent = '';
+  renderExpenseDraft();
+}
+function removeExpenseDraft(idx) { expenseDraft.splice(idx, 1); renderExpenseDraft(); }
+function renderExpenseDraft() {
+  var el = document.getElementById('exp-draft');
+  if (!el) return;
+  if (!expenseDraft.length) { el.innerHTML = ''; return; }
+  var rows = expenseDraft.map(function(d, i){
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px dashed var(--red);border-radius:10px;padding:7px 12px;margin-bottom:6px">' +
+      '<span style="font-weight:600;font-size:13px;flex:1;min-width:0">'+esc(d.material)+'</span>' +
+      '<span style="font-weight:700;color:var(--red);white-space:nowrap">−'+esc(String(d.qty))+' '+esc(d.unit)+'</span>' +
+      '<button onclick="removeExpenseDraft('+i+')" style="border:none;background:none;color:var(--red);font-size:16px;cursor:pointer;padding:2px 4px">✕</button>' +
+    '</div>';
+  }).join('');
+  el.innerHTML = '<div style="margin-bottom:8px">'+rows+'</div>' +
+    '<button onclick="submitExpense()" style="width:100%;padding:11px;background:var(--red);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">✓ Зарлага гаргах ('+expenseDraft.length+')</button>';
+}
+function submitExpense() {
+  if (!expenseDraft.length) { alert('Эхлээд хүнс нэмнэ үү.'); return; }
+  var msg = document.getElementById('exp-msg');
+  var today = todayStr();
+  var count = expenseDraft.length;
+  expenseDraft.forEach(function(d){
+    // Apps Script → «Ажилтны хоол зарлага» sheet рүү бичих (бүх төхөөрөмжид нийтлэг OUT дэвтэр)
+    try {
+      fetch(SHEETS_POST_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ type: 'expense', material: d.material, qty: d.qty, unit: d.unit, price: d.price, date: today })
+      }).catch(function(){});
+    } catch(e) {}
+    logActivity('➖ Зарлага (бодит жин): ' + d.material + ' ' + d.qty + d.unit);
+    // Шууд харуулах (optimistic) — Sheet-ээс дахин татах хүртэл
+    expenseData.push({ date: today, material: d.material, unit: d.unit, qty: d.qty, price: d.price });
+  });
+  expenseDraft = [];
+  renderExpenseDraft();
+  renderStockFromCache();
+  if (activeTab === 'ingredients') renderIngCalc();
+  if (msg) { msg.style.color = 'var(--accent)'; msg.textContent = '✓ ' + count + ' зарлага гарлаа — нөөцөөс хасагдаж, Sheet рүү хадгалагдаж байна'; setTimeout(function(){ if (msg) msg.textContent = ''; }, 4000); }
+}
+
 function renderStaffMealList() {
   var el = document.getElementById('staff-meal-list');
   if (!el) return;
@@ -3438,13 +3551,12 @@ function computeShoppingList() {
   if (stockData && stockData.items) {
     stockData.items.forEach(function(it){ stockMap[String(it.name).toLowerCase().trim()] = it; });
   }
-  var prepMap = getPreparedConsumptionByMaterial();   // бэлтгэсэн нөөц (түүхийгээс хасагдсаныг буцааж нэмнэ)
   return Object.keys(agg).sort(function(a,b){ return agg[b].grams - agg[a].grams; }).map(function(k) {
     var a = agg[k], stk = stockMap[k];
     var name = stk ? stk.name : a.label;
     var needed, stock = '—', buy, buyHi = true;
     if (stk && !unitsCompatible(a.unit, String(stk.unit))) {
-      // ⚠️ Нэгж тохирохгүй (ж: жор «г», нөөц «ш») — жорын нэгжээр шаардлага, нөөцийг хасч тооцохгүй
+      // ⚠️ Нэгж тохирохгүй (ж: жор «г», нөөц «ш») — жорын нэгжээр шаардлага, нөөцийг хасахгүй
       var sqm = parseFloat(stk.qty) || 0;
       needed = fmtAmt(a.grams, a.unit);
       stock  = '⚠' + (Math.round(sqm*100)/100) + String(stk.unit);
@@ -3453,12 +3565,9 @@ function computeShoppingList() {
     } else if (stk) {
       var su = String(stk.unit), needU = gramsToStockUnit(a.grams, su);
       if (needU > 0) {
-        var sqty = parseFloat(stk.qty) || 0;
-        // stk.qty аль хэдийн бэлтгэлийн хэмжээгээр хасагдсан тул буцааж нэмж бодит нөөцийг гаргана
-        var prepU = gramsToStockUnit(prepMap[k] || 0, su);
-        var avail = sqty + prepU;
+        var avail = parseFloat(stk.qty) || 0;   // үлдэгдэл = Орлого − Зарлага
         needed = (Math.round(needU*100)/100) + ' ' + su;
-        stock  = (Math.round(sqty*100)/100) + ' ' + su + (prepU > 0 ? ' +🧊' + (Math.round(prepU*100)/100) : '');
+        stock  = (Math.round(avail*100)/100) + ' ' + su;
         var b = Math.max(0, needU - avail);
         buy = b > 0 ? (Math.round(b*100)/100) + ' ' + su : '✓ хүрэлцэнэ';
         buyHi = b > 0;
@@ -4269,6 +4378,7 @@ var _stockRaw = null;   // gviz-ийн түүхий хариу (дахин rende
 function renderStockFromCache() { if (_stockRaw) renderStock(_stockRaw); }
 function loadStock() {
   stockLoaded = false;
+  loadExpenses();   // зарлагыг (OUT) бас Sheet-ээс татна — үлдэгдэл = Орлого − Зарлага
   var body = document.getElementById('stock-body');
   body.innerHTML = '<div class="loading-wrap" style="padding:24px"><div class="spinner"></div><p>Уншиж байна...</p></div>';
 
@@ -4300,6 +4410,58 @@ function showStockError(msg) {
     '<button class="btn-retry" onclick="loadStock()">Дахин оролдох</button></div>';
 }
 
+// ── ЗАРЛАГА (бодит жин, OUT) — Google Sheet-ээс уншина (бүх төхөөрөмжид нийтлэг) ──
+var expenseData = [];      // [{date, material, unit, qty, price}]
+var expenseLoaded = false;
+function loadExpenses() {
+  var cbName = 'gviz_exp_' + Date.now();
+  var done = false;
+  var timer = setTimeout(function(){ if(!done){ done=true; delete window[cbName]; } }, 9000);
+  window[cbName] = function(data) {
+    if (done) return; done = true; clearTimeout(timer); delete window[cbName];
+    var s = document.getElementById('_gviz_exp_s'); if (s && s.parentNode) s.parentNode.removeChild(s);
+    var arr = [];
+    var rows = data && data.table && data.table.rows;
+    if (rows) rows.forEach(function(row){
+      var c = row.c || [];
+      var mat = (c[1] && c[1].v != null) ? String(c[1].v).trim() : '';
+      if (!mat || mat === 'Материал') return;   // толгой мөрийг алгасна
+      var qty = (c[3] && c[3].v != null) ? parseFloat(c[3].v) : NaN;
+      if (isNaN(qty)) return;
+      arr.push({
+        date: (c[0] && c[0].v != null) ? c[0].v : '',
+        material: mat,
+        unit: (c[2] && c[2].v != null) ? String(c[2].v).trim() : '',
+        qty: qty,
+        price: (c[4] && c[4].v != null) ? (parseFloat(c[4].v) || 0) : 0
+      });
+    });
+    expenseData = arr; expenseLoaded = true;
+    renderStockFromCache();                          // үлдэгдлийг (Орлого−Зарлага) шинэчилнэ
+    if (activeTab === 'ingredients') renderIngCalc(); // авах жагсаалт
+  };
+  var s = document.createElement('script');
+  s.id = '_gviz_exp_s';
+  s.src = 'https://docs.google.com/spreadsheets/d/1gUt92TXoxWS5popXmM7g_gvJhU3LT2twTs3wp-l1Xss/gviz/tq?tqx=out:json,responseHandler:' + cbName + '&sheet=' + encodeURIComponent('Ажилтны хоол зарлага');
+  s.onerror = function(){ if(!done){ done=true; clearTimeout(timer); delete window[cbName]; expenseLoaded = true; } };
+  document.head.appendChild(s);
+}
+// Зарлагыг материалаар нэгтгэнэ → {матер: {g(грамм/мл/ширхэг), unit(суурь), dispName}}
+function getExpenseByMaterial() {
+  var map = {};
+  expenseData.forEach(function(e){
+    var q = parseFloat(e.qty); if (!q) return;
+    var u = String(e.unit || '').toLowerCase().trim();
+    var cat = unitCategory(u);
+    var base = (cat === 'mass') ? 'г' : (cat === 'vol') ? 'мл' : (cat === 'count') ? 'ш' : (u || 'г');
+    var g = (u === 'кг' || u === 'л') ? q*1000 : q;
+    var k = resolveToStockMaterial(e.material);
+    if (!map[k]) map[k] = { g:0, unit:base, dispName: e.material };
+    map[k].g += g;
+  });
+  return map;
+}
+
 function renderStock(data) {
   _stockRaw = data;
   var body = document.getElementById('stock-body');
@@ -4308,21 +4470,17 @@ function renderStock(data) {
     body.innerHTML = '<div class="stock-empty">Нөөцийн мэдээлэл байхгүй.</div>';
     return;
   }
-  var expMap   = getStaffExpenseByMaterial();      // ажилтны хоонд гарсан зарлага
-  var orderMap = getOrderConsumptionByMaterial();  // захиалгын бодит зарцуулалт (грамм/ш)
-  var prepMap  = getPreparedConsumptionByMaterial(); // бэлтгэсэн нөөцөд орсон түүхий орц
-  var prepLocMap = getPreparedByLocation();          // боловсруулсаныг гал тогоо/камп гэж задлах
-  var campRawMap = getCampRawByMaterial();           // NOMAAD camp руу явсан түүхий орц (нөөцөөс хасна)
-  var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Материал</span><span class="ing-amt-col">Нийт үлд.</span><span class="ing-unit-col">Нэгж</span><span class="ing-price-col">Нэгж үнэ</span></div>';
+  var outMap = getExpenseByMaterial();   // бодит жингээр гаргасан зарлага (Sheet-ээс) {матер:{g,unit,dispName}}
+  var html = '<div class="ing-table"><div class="ing-table-row header"><span class="ing-name-col">Материал</span><span class="ing-amt-col">Үлдэгдэл</span><span class="ing-unit-col">Нэгж</span><span class="ing-price-col">Нэгж үнэ</span></div>';
   var itemCount = 0, totalValue = 0;
   var items = [];
   var r2 = function(x){ return Math.round(x*100)/100; };
 
-  // ── 1) Давхардсан мөрийг материал+нэгжээр НЭГТГЭНЭ (нэг материалаас зарцуулалт нэг л удаа хасагдана) ──
+  // ── 1) ОРЛОГО: нөөц хуудас (бараа авалт + нээлтийн үлдэгдэл)-ыг материал+нэгжээр НЭГТГЭНЭ ──
   var groups = {}, gOrder = [];
   rows.forEach(function(row) {
     var cells = row.c || [];
-    // Баганын дараалал: №(0) | Огноо(1) | Материал(2) | Хэмжих нэгж(3) | Тоо(4) | Нэгж үнэ(5) | Нийт(6)
+    // №(0) | Огноо(1) | Материал(2) | Нэгж(3) | Тоо(4) | Нэгж үнэ(5) | Нийт(6)
     var nm = cells[2] && cells[2].v ? cells[2].v : '';
     if (!nm) return;
     var un = cells[3] && cells[3].v ? cells[3].v : '';
@@ -4335,62 +4493,53 @@ function renderStock(data) {
     var gp = groups[key];
     if (!isNaN(qn)) { gp.qty += qn; gp.hasQty = true; }
     if (!isNaN(lv)) gp.value += lv;
-    if (isNaN(gp.price) && !isNaN(pr)) gp.price = pr;   // эхний нэгж үнэ
+    if (isNaN(gp.price) && !isNaN(pr)) gp.price = pr;
   });
 
-  // ── 2) Бүлэг бүрд зарцуулалт/боловсруулалтыг НЭГ удаа хасна (нэгж тохирохыг шалгана) ──
+  // Нэг мөрийн HTML үүсгэх + items-д үлдэгдлийг хадгалах
+  function stockRowHtml(name, unit, inQty, hasIn, usedExp, price, value, mismatchEx) {
+    var remaining = hasIn ? (inQty - usedExp) : (0 - usedExp);
+    items.push({ name:name, unit:unit, qty:remaining, price:price, value:value||0 });
+    itemCount++;
+    var over = remaining < 0, empty = remaining === 0;
+    var priceDisplay = isNaN(price) ? '—' : price.toLocaleString('mn-MN')+'₮';
+    var parts = [];
+    if (hasIn) parts.push('📥'+r2(inQty));
+    if (usedExp > 0) parts.push('📤'+r2(usedExp));
+    var note = parts.length ? ' <span style="font-size:10px;color:var(--muted);font-weight:400">('+parts.join(' · ')+')</span>' : '';
+    var classNote = mismatchEx
+      ? '<span style="display:block;font-size:10.5px;font-weight:600;margin-top:3px;color:var(--amber);line-height:1.5">⚠️ Зарлагын нэгж нөөцтэй тохирохгүй тул хасаагүй. Нэгжээ ижил болгоно уу.</span>'
+      : '';
+    var amtColor = over ? 'color:var(--red)' : (empty ? 'color:var(--amber)' : '');
+    return '<div class="ing-table-row"' + (over ? ' style="background:#fff5f3"' : '') + '>' +
+      '<span class="ing-name-col">' + (over ? '⚠️ ' : '') + esc(name) + classNote + '</span>' +
+      '<span class="ing-amt-col" style="' + amtColor + '">'+esc(String(r2(remaining)))+note+'</span>' +
+      '<span class="ing-unit-col">'+esc(unit)+'</span>' +
+      '<span class="ing-price-col">'+priceDisplay+'</span>' +
+    '</div>';
+  }
+
+  // ── 2) ҮЛДЭГДЭЛ = ОРЛОГО (авсан) − ЗАРЛАГА (бодит жингээр гаргасан). Нэгж тохирохыг шалгана ──
+  var usedOut = {};
   gOrder.forEach(function(key) {
     var grp = groups[key];
-    var name = grp.name, unit = grp.unit;
-    var nameLower = name.toLowerCase().trim();
-    var qtyNum = grp.hasQty ? grp.qty : NaN;
-    var price = grp.price;
-    itemCount++;
-    // Захиалгын зарцуулалт {g, unit} — нэгж тохирохгүй бол хасахгүй (анхааруулна)
-    var oc = orderMap[nameLower];
-    var orderOK = oc ? unitsCompatible(oc.unit, unit) : true;
-    var usedStaff = expMap[nameLower] || 0;
-    var usedOrder = (oc && orderOK) ? gramsToStockUnit(oc.g, unit) : 0;
-    var usedPrep  = gramsToStockUnit(prepMap[nameLower] || 0, unit);   // боловсруулсан (бэлтгэсэн)
-    var usedCampRaw = gramsToStockUnit(campRawMap[nameLower] || 0, unit); // камп руу явсан түүхий
-    var mismatch = !!(oc && !orderOK);   // зарцуулалт байгаа ч нэгж тохирохгүй
-    // Боловсруулаагүй (түүхий) үлдэгдэл — зарцуулсан, боловсруулсан, камп-түүхийг хассан
-    var rawLeft   = isNaN(qtyNum) ? NaN : (qtyNum - usedStaff - usedOrder - usedPrep - usedCampRaw);
-    // Нийт үлдэгдэл = боловсруулаагүй + боловсруулсан (бэлтгэсэн нь нөөцөд хэвээр; камп-түүхий гарсан тул хасна)
-    var totalLeft = isNaN(qtyNum) ? NaN : (qtyNum - usedStaff - usedOrder - usedCampRaw);
-    items.push({ name:name, unit:unit, qty:(isNaN(rawLeft)?(isNaN(qtyNum)?0:qtyNum):rawLeft), price:price, value:grp.value });
-    var totalDisplay = isNaN(totalLeft) ? (grp.hasQty ? r2(qtyNum) : '—') : r2(totalLeft);
-    var priceDisplay = isNaN(price) ? '—' : price.toLocaleString('mn-MN')+'₮';
-    var over  = !isNaN(totalLeft) && totalLeft < 0;   // хэтрүүлж зарцуулсан — улаан анхааруулга
-    var empty = !isNaN(totalLeft) && totalLeft === 0; // дууссан — амбер
-    // «Боловсруулсан / боловсруулаагүй» ангилал (зөвхөн бэлтгэсэн нөөц байгаа үед)
-    var classNote = '';
-    if (usedPrep > 0 && !isNaN(totalLeft)) {
-      var pl = prepLocMap[nameLower] || { kitchen:0, camp:0 };
-      var campU = gramsToStockUnit(pl.camp, unit), kitchU = gramsToStockUnit(pl.kitchen, unit);
-      var locNote = (campU > 0) ? ' <span style="color:#473d78;font-weight:700">(🏕 камп '+r2(campU)+esc(String(unit))+(kitchU>0?' · 🏠 '+r2(kitchU)+esc(String(unit)):'')+')</span>' : '';
-      classNote = '<span style="display:block;font-size:10.5px;font-weight:500;margin-top:3px;line-height:1.5">' +
-        '<span style="color:var(--accent)">✅ Боловсруулсан ' + r2(usedPrep) + esc(String(unit)) + '</span>' + locNote +
-        '<span style="color:var(--muted)"> · 📦 Боловсруулаагүй ' + r2(rawLeft) + esc(String(unit)) + '</span>' +
-      '</span>';
-    }
-    if (mismatch) {
-      classNote += '<span style="display:block;font-size:10.5px;font-weight:600;margin-top:3px;color:var(--amber);line-height:1.5">' +
-        '⚠️ Нэгж тохирохгүй: жорд ' + r2(oc.g) + esc(oc.unit) + ' хэрэгтэй ч нөөц «' + esc(unit) + '»-ээр бүртгэгдсэн тул хасаагүй. Нэгжийг «' + esc(oc.unit) + '» болгож засна уу.</span>';
-    }
-    // Зарцуулсан тэмдэглэл (захиалга / ажилтны хоол)
-    var consumedParts = [];
-    if (usedOrder > 0) consumedParts.push('−'+r2(usedOrder)+' захиалга');
-    if (usedStaff > 0) consumedParts.push('−'+r2(usedStaff)+' хоол');
-    if (usedCampRaw > 0) consumedParts.push('−'+r2(usedCampRaw)+' 🏕камп');
-    var consumedNote = consumedParts.length ? ' <span style="font-size:10px;color:var(--muted);font-weight:400">('+consumedParts.join(', ')+')</span>' : '';
-    var amtColor = over ? 'color:var(--red)' : (empty ? 'color:var(--amber)' : '');
-    html += '<div class="ing-table-row"' + (over ? ' style="background:#fff5f3"' : '') + '>' +
-      '<span class="ing-name-col">' + (over ? '⚠️ ' : '') + esc(String(name)) + classNote + '</span>' +
-      '<span class="ing-amt-col" style="' + amtColor + '">'+esc(String(totalDisplay))+consumedNote+'</span>' +
-      '<span class="ing-unit-col">'+esc(String(unit))+'</span>' +
-      '<span class="ing-price-col">'+esc(priceDisplay)+'</span>' +
-    '</div>';
+    var name = grp.name, unit = grp.unit, nameLower = name.toLowerCase().trim();
+    var ex = outMap[nameLower];
+    var exOK = ex ? unitsCompatible(ex.unit, unit) : true;
+    var usedExp = (ex && exOK) ? gramsToStockUnit(ex.g, unit) : 0;
+    if (ex && exOK) usedOut[nameLower] = true;
+    html += stockRowHtml(name, unit, grp.hasQty?grp.qty:0, grp.hasQty, usedExp, grp.price, grp.value, !!(ex && !exOK));
+  });
+
+  // ── 3) Зарлага гарсан ч орлогогүй материал (сөрөг үлдэгдэл — анхааруулна) ──
+  Object.keys(outMap).forEach(function(nameLower) {
+    if (usedOut[nameLower]) return;
+    var ex = outMap[nameLower];
+    var u = ex.unit, q = ex.g;
+    if (u === 'г' && q >= 1000) { u = 'кг'; q = q/1000; }        // ойлгомжтой нэгж рүү
+    else if (u === 'мл' && q >= 1000) { u = 'л'; q = q/1000; }
+    if (q <= 0) return;
+    html += stockRowHtml(ex.dispName || nameLower, u, 0, false, q, NaN, 0, false);
   });
   html += '</div>';
   // Нийт дүн ба тоо ширхэгийн хураангуй
@@ -4406,7 +4555,7 @@ function renderStock(data) {
   if (activeTab === 'tasks') renderTasks();
   if (activeTab === 'ingredients') renderIngCalc();
   if (activeTab === 'orders') renderOrders();   // нөөц ирмэгц захиалгын өртөг/ашиг шинэчлэгдэнэ
-  if (activeTab === 'noots') { fillBuyMaterialSelect(); renderCampSection(); }   // нөөцийн материалуудыг сонголтод нэмнэ
+  if (activeTab === 'noots') { fillBuyMaterialSelect(); fillExpMaterialSelect(); renderCampSection(); }   // нөөц/зарлагын материалуудыг сонголтод нэмнэ
 }
 
 /* ─────────────────────────────────
