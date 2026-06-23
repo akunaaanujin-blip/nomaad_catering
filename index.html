@@ -67,8 +67,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--i
 .svc-block[data-idx="3"]{border-color:#8b5cf6}.svc-block[data-idx="3"] .svc-row{border-left-color:#8b5cf6}.svc-block[data-idx="3"] .svc-row-label{color:#8b5cf6}.svc-block[data-idx="3"] .dish-select.show{border-color:#8b5cf6;border-top-color:#e0d5fd}
 .svc-block[data-idx="4"]{border-color:#e11d48}.svc-block[data-idx="4"] .svc-row{border-left-color:#e11d48}.svc-block[data-idx="4"] .svc-row-label{color:#e11d48}.svc-block[data-idx="4"] .dish-select.show{border-color:#e11d48;border-top-color:#fcd5de}
 .svc-row{background:var(--surface);padding:14px 16px}
-.btn-add-svc{font-family:inherit;font-size:13px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:1.5px dashed var(--accent);border-radius:10px;padding:10px;cursor:pointer;width:100%;margin-top:4px;transition:all .15s}
-.btn-add-svc:hover{background:var(--accent);color:#fff}
+.btn-add-svc{font-family:inherit;font-size:15px;font-weight:800;color:#fff;background:var(--accent);border:none;border-radius:12px;padding:14px 16px;cursor:pointer;width:100%;margin-top:10px;box-shadow:0 3px 10px rgba(31,74,56,.22);transition:transform .12s,filter .12s;animation:svcPulse 2.4s ease-in-out infinite}
+.btn-add-svc:hover{filter:brightness(1.08)}
+.btn-add-svc:active{transform:scale(.985)}
+@keyframes svcPulse{0%,100%{box-shadow:0 3px 10px rgba(31,74,56,.22)}50%{box-shadow:0 4px 22px rgba(31,74,56,.46)}}
+.svc-multi-hint{background:#fff8ec;border:1px solid var(--amber);border-radius:10px;padding:10px 13px;font-size:12.5px;line-height:1.55;color:#8a5a1a;margin:2px 0 12px}
+.svc-submit-reminder{background:var(--accent-soft);border:1.5px dashed var(--accent);border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.55;color:var(--accent);font-weight:600;margin:4px 0 14px;text-align:center}
 .btn-svc-remove{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);color:var(--muted);font-size:15px;cursor:pointer;line-height:1;flex-shrink:0;transition:all .15s}
 .btn-svc-remove:hover{border-color:#d44;color:#d44;background:#fff}
 .svc-row-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
@@ -336,9 +340,10 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         <!-- Үйлчилгээнүүд -->
         <div class="order-field full" id="svc-rows-wrap">
           <label>Үйлчилгээ <span style="color:#e11d48">*</span></label>
+          <div class="svc-multi-hint">💡 <b>Хэд хэдэн үйлчилгээг НЭГ захиалгад нэмж болно.</b> Жишээ нь: өглөөний цай + өдрийн буфет, эсвэл өөр өөр өдрийн хоол. Тус тусад нь биш — доорх <b>«＋ Өөр үйлчилгээ нэмэх»</b> товчоор бүгдийг нэмээрэй.</div>
           <div id="svc-rows"></div>
 
-            <button type="button" class="btn-add-svc" onclick="addSvcRow()">＋ Үйлчилгээ нэмэх</button>
+            <button type="button" class="btn-add-svc" onclick="addSvcRow()">＋ Өөр үйлчилгээ нэмэх</button>
         </div>
 
         <!-- Сонгосон хоол (hidden) -->
@@ -410,6 +415,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-
         <div style="font-size:11px;color:var(--accent);margin-top:8px;opacity:.7">* Тээвэр, үйлчлэгч тусдаа тооцно</div>
       </div>
 
+      <div class="svc-submit-reminder">📋 Өөр өдөр эсвэл өөр үйлчилгээ байвал — илгээхээсээ өмнө дээр гарсан <b>«＋ Өөр үйлчилгээ нэмэх»</b>-ээр нэмж, бүгдийг <b>нэг захиалгаар</b> илгээгээрэй.</div>
       <button type="submit" class="btn-order" id="submit-btn">✉️ Захиалга илгээх</button>
     </form>
     <div class="order-success" id="order-success">
