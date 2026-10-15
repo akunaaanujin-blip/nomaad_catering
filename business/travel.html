@@ -59,6 +59,9 @@
   <div class="panel">
     <h2>＋ Борлуулалт</h2>
     <label>Бараа сонгох</label>
+    <div id="saleSearchWrap" style="display:none;margin-bottom:8px">
+      <input id="saleSearch" placeholder="🔍 Бараа хайх (жишээ: майхан, titan)" oninput="renderChips()">
+    </div>
     <div class="chips" id="saleChips"></div>
     <label for="saleItem">Эсвэл бараагаа бичих</label>
     <input id="saleItem" placeholder="Барааны нэр">
@@ -159,6 +162,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<script src="products.js"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
 <script>var BIZ_KEY = 'travel';</script>

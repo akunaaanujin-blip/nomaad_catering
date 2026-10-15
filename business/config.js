@@ -11,12 +11,12 @@ var BUSINESSES = {
     color: '#9B2C2C',
     unit: 'кг',
     products: [
-      { name: 'Үхрийн мах', unit: 'кг', price: 22000 },
-      { name: 'Хонины мах', unit: 'кг', price: 18000 },
-      { name: 'Ямааны мах', unit: 'кг', price: 16000 },
-      { name: 'Адууны мах', unit: 'кг', price: 20000 },
-      { name: 'Татсан мах', unit: 'кг', price: 24000 },
-      { name: 'Яс', unit: 'кг', price: 6000 },
+      { name: 'Үхрийн мах', unit: 'кг', price: 22000, cls: '2111100' },
+      { name: 'Хонины мах', unit: 'кг', price: 18000, cls: '2111500' },
+      { name: 'Ямааны мах', unit: 'кг', price: 16000, cls: '2111600' },
+      { name: 'Адууны мах', unit: 'кг', price: 20000, cls: '2111800' },
+      { name: 'Татсан мах', unit: 'кг', price: 24000, cls: '2111100' },
+      { name: 'Яс', unit: 'кг', price: 6000, cls: '2115941' },
     ],
     expenses: ['Мах татан авалт', 'Тээвэр', 'Цалин', 'Түрээс', 'Цахилгаан', 'Сав баглаа', 'Бусад'],
   },
@@ -39,12 +39,7 @@ var BUSINESSES = {
     icon: '🎒',
     color: '#1F4A38',
     unit: 'ш',
-    products: [
-      { name: 'Майхан', unit: 'ш', price: 0 },
-      { name: 'Унтлагын уут', unit: 'ш', price: 0 },
-      { name: 'Үүргэвч', unit: 'ш', price: 0 },
-      { name: 'Түрээс (өдрөөр)', unit: 'өдөр', price: 0 },
-    ],
+    products: (typeof TRAVEL_PRODUCTS !== 'undefined') ? TRAVEL_PRODUCTS : [],   // products.js
     expenses: ['Бараа татан авалт', 'Тээвэр', 'Цалин', 'Түрээс', 'Засвар', 'Бусад'],
   },
 };

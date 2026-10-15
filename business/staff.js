@@ -8,7 +8,8 @@ var LS_NAME = 'nb_name_' + BIZ_KEY;
 var LS_PROD = 'nb_products_' + BIZ_KEY;
 
 var staffName = load(LS_NAME, '');
-var products = load(LS_PROD, BIZ.products);
+var sheetProducts = load(LS_PROD, []);   // Sheet-ийн "Бараа" хуудасны мөрүүд (үнэ давхарлах)
+var products = mergeProducts(BIZ.products, sheetProducts);
 var sale = {};
 var expense = {};
 
@@ -52,22 +53,35 @@ function showMain() {
   if (typeof ebCheckInfo === 'function') { ebCheckInfo(); setInterval(ebCheckInfo, 30 * 60000); }
 }
 
-// ── Бараа (Sheet-ийн "Бараа" хуудаснаас шинэчлэгдэнэ) ──
+// ── Бараа ──
+// Үндсэн жагсаалт config.js / products.js-д (БҮНА кодтой), Sheet-ийн "Бараа" хуудас үнэ/нэгжийг давхарлаж, шинэ бараа нэмнэ.
+function mergeProducts(base, extra) {
+  var list = base.map(function (p) { return { name: p.name, unit: p.unit, price: p.price, cls: p.cls }; });
+  var byName = {};
+  list.forEach(function (p) { byName[p.name.toLowerCase()] = p; });
+  (extra || []).forEach(function (x) {
+    var p = byName[String(x.name).toLowerCase()];
+    if (p) { if (x.price) p.price = x.price; if (x.unit) p.unit = x.unit; }
+    else list.push({ name: x.name, unit: x.unit || BIZ.unit, price: x.price || 0, cls: '' });
+  });
+  return list;
+}
 function loadProducts() {
   if (!API_URL) return;
   jsonp({ action: 'products', biz: BIZ_KEY }, function (err, data) {
-    if (err || !data || !data.products || !data.products.length) return;
-    products = data.products;
-    save(LS_PROD, products);
+    if (err || !data || !data.products) return;
+    sheetProducts = data.products;
+    save(LS_PROD, sheetProducts);
+    products = mergeProducts(BIZ.products, sheetProducts);
   });
 }
 
 // ── Борлуулалт ──
 function openSale() {
-  sale = { item: '', unit: BIZ.unit, price: '', qty: '', pay: 'Бэлэн' };
-  $('saleChips').innerHTML = products.map(function (p, i) {
-    return '<button class="chip" onclick="pickProduct(' + i + ')">' + esc(p.name) + '</button>';
-  }).join('');
+  sale = { item: '', unit: BIZ.unit, price: '', qty: '', pay: 'Бэлэн', cls: '' };
+  $('saleSearch').value = '';
+  $('saleSearchWrap').style.display = products.length > 12 ? 'block' : 'none';
+  renderChips();
   $('saleItem').value = '';
   $('saleQty').value = '';
   $('salePrice').value = '';
@@ -78,16 +92,30 @@ function openSale() {
   calcSale();
   openSheet('saleSheet');
 }
+// Хайлтаар шүүж бараа харуулна (олон бараатай дэлгүүрт эхний 24-ийг)
+function renderChips() {
+  var q = $('saleSearch').value.trim().toLowerCase();
+  var shown = [];
+  products.forEach(function (p, i) {
+    if (!q || p.name.toLowerCase().indexOf(q) >= 0) shown.push(i);
+  });
+  var more = shown.length > 24 ? shown.length - 24 : 0;
+  $('saleChips').innerHTML = shown.slice(0, 24).map(function (i) {
+    return '<button class="chip' + (products[i].name === sale.item ? ' on' : '') + '" onclick="pickProduct(' + i + ')">' + esc(products[i].name) + '</button>';
+  }).join('') + (more ? '<span class="muted" style="align-self:center">+' + more + ' бараа — хайлтаар олно уу</span>' : '') +
+    (!shown.length ? '<span class="muted">Олдсонгүй — доор нэрийг нь бичнэ үү</span>' : '');
+}
 function pickProduct(i) {
   var p = products[i];
-  var chips = $('saleChips').children;
-  for (var k = 0; k < chips.length; k++) chips[k].classList.toggle('on', k === i);
+  sale.item = p.name;
+  sale.cls = p.cls || '';
+  renderChips();
   $('saleItem').value = p.name;
   sale.unit = p.unit || BIZ.unit;
   $('saleUnit').textContent = 'Тоо (' + sale.unit + ')';
-  if (p.price) $('salePrice').value = p.price;
+  $('salePrice').value = p.price ? p.price : '';
   calcSale();
-  $('saleQty').focus();
+  $(p.price ? 'saleQty' : 'salePrice').focus();
 }
 function setPay(v) {
   sale.pay = v;
@@ -110,7 +138,12 @@ function submitSale() {
     type: 'sale', item: item, qty: qty, unit: sale.unit, price: price,
     amount: Math.round(qty * price), pay: sale.pay,
   };
+  if (sale.cls && item === sale.item) r.classificationCode = sale.cls;   // БҮНА код (И-баримтад)
   if (!ebEnabled()) { finishSale(r); return; }
+  if (!r.classificationCode && !ebConfig().classificationCode) {
+    toast('И-баримтад барааны ангилал хэрэгтэй — жагсаалтаас бараагаа сонгоно уу');
+    return;
+  }
 
   // И-баримт гаргаад дараа нь хадгална
   var tin = $('saleTin').value.trim();
