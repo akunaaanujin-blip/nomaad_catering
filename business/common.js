@@ -36,12 +36,23 @@ function toast(msg) {
   toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2600);
 }
 
-// Apps Script-ээс JSONP-аар унших (CORS асуудалгүй)
+// Apps Script-ээс унших: эхлээд fetch (CORS), бүтэлгүйтвэл JSONP-оор дахин оролдоно.
+// (Зарим компьютерт реклам хаагч / хамгаалалт JSONP <script>-ийг хаадаг)
 function jsonp(params, cb) {
-  var name = 'cb_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
   var q = Object.keys(params).map(function (k) {
     return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
   }).join('&');
+  var done = false;
+  var finish = function (err, data) { if (!done) { done = true; cb(err, data); } };
+  var ctrl = window.AbortController ? new AbortController() : null;
+  var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 15000);
+  fetch(API_URL + '?' + q, { signal: ctrl ? ctrl.signal : undefined })
+    .then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+    .then(function (data) { clearTimeout(timer); finish(null, data); })
+    .catch(function () { clearTimeout(timer); jsonpScript(q, finish); });
+}
+function jsonpScript(q, cb) {
+  var name = 'cb_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
   var s = document.createElement('script');
   var done = false;
   window[name] = function (data) { done = true; cb(null, data); cleanup(); };
