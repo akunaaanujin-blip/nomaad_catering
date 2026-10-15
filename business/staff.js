@@ -56,7 +56,7 @@ function showMain() {
 // ── Бараа ──
 // Үндсэн жагсаалт config.js / products.js-д (БҮНА кодтой), Sheet-ийн "Бараа" хуудас үнэ/нэгжийг давхарлаж, шинэ бараа нэмнэ.
 function mergeProducts(base, extra) {
-  var list = base.map(function (p) { return { name: p.name, unit: p.unit, price: p.price, cls: p.cls }; });
+  var list = base.map(function (p) { return { name: p.name, unit: p.unit, price: p.price, cls: p.cls, cat: p.cat || '' }; });
   var byName = {};
   list.forEach(function (p) { byName[p.name.toLowerCase()] = p; });
   (extra || []).forEach(function (x) {
@@ -81,6 +81,8 @@ function openSale() {
   sale = { item: '', unit: BIZ.unit, price: '', qty: '', pay: 'Бэлэн', cls: '' };
   $('saleSearch').value = '';
   $('saleSearchWrap').style.display = products.length > 12 ? 'block' : 'none';
+  sale.cat = '';
+  renderCats();
   renderChips();
   $('saleItem').value = '';
   $('saleQty').value = '';
@@ -92,16 +94,28 @@ function openSale() {
   calcSale();
   openSheet('saleSheet');
 }
-// Хайлтаар шүүж бараа харуулна (олон бараатай дэлгүүрт эхний 24-ийг)
+// Ангиллын товчнууд (Baaz-ийн ангиллаар) — ангилалгүй дэлгүүрт харагдахгүй
+function renderCats() {
+  var cats = [];
+  products.forEach(function (p) { if (p.cat && cats.indexOf(p.cat) < 0) cats.push(p.cat); });
+  $('saleCats').style.display = cats.length > 1 ? 'flex' : 'none';
+  $('saleCats').innerHTML = ['Бүгд'].concat(cats).map(function (c) {
+    var v = c === 'Бүгд' ? '' : c;
+    return '<button class="chip cat' + (sale.cat === v ? ' on' : '') + '" onclick="setCat(' + esc(JSON.stringify(v)) + ')">' + esc(c) + '</button>';
+  }).join('');
+}
+function setCat(c) { sale.cat = c; renderCats(); renderChips(); }
+// Хайлт + ангиллаар шүүж бараа харуулна (эхний 24-ийг)
 function renderChips() {
   var q = $('saleSearch').value.trim().toLowerCase();
   var shown = [];
   products.forEach(function (p, i) {
+    if (sale.cat && p.cat !== sale.cat) return;
     if (!q || p.name.toLowerCase().indexOf(q) >= 0) shown.push(i);
   });
   var more = shown.length > 24 ? shown.length - 24 : 0;
   $('saleChips').innerHTML = shown.slice(0, 24).map(function (i) {
-    return '<button class="chip' + (products[i].name === sale.item ? ' on' : '') + '" onclick="pickProduct(' + i + ')">' + esc(products[i].name) + '</button>';
+    return '<button class="chip' + (products[i].name === sale.item ? ' on' : '') + '" onclick="pickProduct(' + i + ')">' + esc(products[i].name) + (products[i].price ? ' <small>' + fmt(products[i].price) + '</small>' : '') + '</button>';
   }).join('') + (more ? '<span class="muted" style="align-self:center">+' + more + ' бараа — хайлтаар олно уу</span>' : '') +
     (!shown.length ? '<span class="muted">Олдсонгүй — доор нэрийг нь бичнэ үү</span>' : '');
 }
