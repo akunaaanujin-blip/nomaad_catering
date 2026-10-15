@@ -1,7 +1,7 @@
 // ── НИЙТЛЭГ ТОХИРГОО ──
 // Google Apps Script-ээ deploy хийсний дараа гарах /exec холбоосыг энд тавина.
 // Хоосон байвал хуудсууд "туршилтын горим"-оор ажиллана (мэдээлэл зөвхөн энэ төхөөрөмжид хадгалагдана).
-var API_URL = '';
+var API_URL = 'https://script.google.com/macros/s/AKfycbzS1DKwIFDWPV2LBNCHKcrul_8bWFHUQHTc7ply7MeUbfBPl1YaRpfHudQMaYrSNpo8jg/exec';
 
 var BUSINESSES = {
   meat: {

@@ -1,7 +1,7 @@
 // NOMAAD Бизнесүүд — Google Apps Script v1.0
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
-// Суулгах: шинэ Google Sheet → Extensions → Apps Script → энэ кодыг хуулна →
+// Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
 // ADMIN_PIN-ээ сольно → Deploy → New deployment → Web app
 // (Execute as: Me, Who has access: Anyone) → гарсан /exec холбоосыг config.js-ийн API_URL-д тавина.
 
@@ -9,6 +9,7 @@ const ADMIN_PIN   = '0000';          // ← удирдагчийн PIN-ээ ЗА
 const SHEET_LOG   = 'Бүртгэл';
 const SHEET_PROD  = 'Бараа';
 const TZ          = 'Asia/Ulaanbaatar';
+const SHEET_ID    = '1Hkmo9ttsHfm6xfr49W0BpjkE2nnPPCL0dt2fP6rGyKI';   // NOMAAD Бизнесүүд — Бүртгэл
 
 const BIZ_NAMES = { meat: 'Махны дэлгүүр', cozy: 'Cozy Home Ulaanbaatar', travel: 'NOMAAD аяллын дэлгүүр' };
 const TYPE_NAMES = { sale: 'Борлуулалт', expense: 'Зарлага', close: 'Касс хаалт' };
@@ -96,7 +97,7 @@ function products(biz) {
 
 // ── Хуудас үүсгэх ──
 function logSheet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById(SHEET_ID);
   let sh = ss.getSheetByName(SHEET_LOG);
   if (!sh) {
     sh = ss.insertSheet(SHEET_LOG);
@@ -110,7 +111,7 @@ function logSheet() {
   return sh;
 }
 function prodSheet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById(SHEET_ID);
   let sh = ss.getSheetByName(SHEET_PROD);
   if (!sh) {
     sh = ss.insertSheet(SHEET_PROD);
@@ -124,7 +125,7 @@ function prodSheet() {
       ['cozy', 'Бараа 1', 'ш', 0],
       ['travel', 'Майхан', 'ш', 0],
     ]);
-    sh.setColumnWidths(1, 4, [200, 220, 80, 100]);
+    [200, 220, 80, 100].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
   }
   return sh;
 }
