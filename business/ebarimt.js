@@ -6,7 +6,8 @@
 var LS_EB = 'nb_ebarimt_' + BIZ_KEY;   // энэ компьютерийн тохиргоо
 
 function ebSettings() {
-  return load(LS_EB, { url: 'http://localhost:7080', test: false, on: true });
+  // Анхдагчаар унтраалттай — PosAPI суусан компьютер дээр тохиргооноос асаана
+  return load(LS_EB, { url: 'http://localhost:7080', test: false, on: false });
 }
 function ebConfig() {
   var s = ebSettings();

@@ -52,12 +52,14 @@ var BUSINESSES = {
 // ── И-БАРИМТ (PosAPI 3.0) ──
 // Дэлгүүрийн компьютер дээр PosAPI 3.0 ажиллаж байх ёстой (http://localhost:7080).
 // merchantTin хоосон бол тухайн бизнест И-баримт унтраалттай байна.
+// Мах + Аяллын дэлгүүр: Вайс бротерс (рег 8330042, ТТД 93202187027, НӨАТ төлөгч биш) — салбараар ялгана.
+// Cozy Home: И-баримт шаардлагагүй.
 // taxType: VAT_ABLE (НӨАТ төлөгч) · NO_VAT (НӨАТ төлөгч биш) — туршилтын орчинд шалгаж баталгаажуулна.
 // classificationCode: БҮНА ангиллын код (бараанд тусгайлан заагаагүй үед ашиглана).
 var EBARIMT = {
-  meat:   { merchantTin: '', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
+  meat:   { merchantTin: '93202187027', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
   cozy:   { merchantTin: '', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
-  travel: { merchantTin: '', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
+  travel: { merchantTin: '93202187027', branchNo: '002', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
 };
 
 // Туршилтын орчны мерчант (developer.itc.gov.mn-ийн заавраас). Тохиргоо цонхонд "Туршилт" асаахад ашиглана.
