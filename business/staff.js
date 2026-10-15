@@ -283,6 +283,7 @@ function renderToday() {
     if (r.type === 'sale') {
       return '<li><span>' + esc(r.item) + ' · ' + r.qty + ' ' + esc(r.unit) +
         '<small>' + r.time + ' · ' + esc(r.pay) + (r.ddtd ? ' · 🧾 баримттай' : '') + (r.returned ? ' · ↩ буцаагдсан' : '') + '</small>' +
+        (r.ddtd || /ДДТД/.test(r.note || '') ? '<small class="ddtd">ДДТД ' + esc(r.ddtd || (r.note.match(/ДДТД (\d+)/) || [])[1] || '') + '</small>' : '') +
         (r.ddtd && !r.returned && r.amount > 0 ? '<button class="mini" onclick="ebReturn(\'' + r.id + '\')">↩ Буцаах</button>' : '') +
         '</span><span class="amt ' + (r.amount < 0 ? 'r' : 'g') + '">' + (r.amount < 0 ? '−' + fmt(-r.amount) : '+' + fmt(r.amount)) + '</span></li>';
     }
