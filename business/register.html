@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ажилтны бүртгэл</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="login" style="margin-top:4vh;max-width:460px">
+  <div class="ico">📝</div>
+  <h1>Ажилтны бүртгэл</h1>
+  <p class="muted">Бүртгүүлсний дараа менежер баталгаажуулна. Баталгаажмагц өөрийн кодоор нэвтэрнэ.</p>
+
+  <div class="card" style="text-align:left" id="form">
+    <label for="rBiz">Ажиллах дэлгүүр *</label>
+    <select id="rBiz"></select>
+    <div class="row2">
+      <div><label for="rSurname">Овог</label><input id="rSurname" autocomplete="family-name"></div>
+      <div><label for="rName">Нэр *</label><input id="rName" autocomplete="given-name"></div>
+    </div>
+    <div class="row2">
+      <div><label for="rPhone">Утас *</label><input id="rPhone" inputmode="tel" autocomplete="tel" placeholder="99112233"></div>
+      <div><label for="rReg">Регистр</label><input id="rReg" placeholder="УБ90010101"></div>
+    </div>
+    <label for="rPos">Албан тушаал</label>
+    <input id="rPos" placeholder="Худалдагч, кассчин…">
+    <label for="rBank">Цалингийн данс (банк, дансны дугаар)</label>
+    <input id="rBank" placeholder="Хаан банк 5000123456">
+    <div class="row2">
+      <div><label for="rCode">Нэвтрэх код (4 орон) *</label><input id="rCode" class="code-input" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="••••"></div>
+      <div><label for="rCode2">Кодоо давтах *</label><input id="rCode2" class="code-input" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="••••"></div>
+    </div>
+    <p class="muted" style="font-size:13px;margin-top:6px">Кодоо бусдад бүү хэлээрэй. 1234, 0000 гэх мэт амархан код бүү сонгоорой.</p>
+    <p id="rMsg" class="muted" style="color:var(--red);min-height:20px;margin-top:6px"></p>
+    <button class="btn" id="rBtn" onclick="submitRegister()">Бүртгүүлэх</button>
+  </div>
+
+  <div class="card" id="done" style="display:none">
+    <div style="font-size:48px">✅</div>
+    <h2 style="margin:8px 0">Бүртгэл илгээгдлээ</h2>
+    <p class="muted">Менежер баталгаажуулсны дараа өөрийн дэлгүүрийн хуудсанд <b>өөрийн кодоор</b> нэвтэрнэ.</p>
+    <a class="btn" id="doneLink" href="index.html" style="text-decoration:none;text-align:center">Нэвтрэх хуудас руу</a>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script src="products.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+var params = new URLSearchParams(location.search);
+$('rBiz').innerHTML = Object.keys(BUSINESSES).map(function (k) {
+  var b = BUSINESSES[k];
+  return '<option value="' + k + '"' + (params.get('biz') === k ? ' selected' : '') + '>' + b.icon + ' ' + esc(b.name) + '</option>';
+}).join('');
+
+function submitRegister() {
+  var d = {
+    type: 'register', biz: $('rBiz').value,
+    surname: $('rSurname').value.trim(), name: $('rName').value.trim(),
+    phone: $('rPhone').value.replace(/[^\d+]/g, ''), regno: $('rReg').value.trim(),
+    position: $('rPos').value.trim(), bank: $('rBank').value.trim(), code: $('rCode').value.trim(),
+  };
+  var msg = '';
+  if (!d.name) msg = 'Нэрээ бичнэ үү';
+  else if (!/^\+?\d{8,12}$/.test(d.phone)) msg = 'Утасны дугаараа зөв бичнэ үү';
+  else if (!/^\d{4}$/.test(d.code)) msg = 'Нэвтрэх код 4 оронтой тоо байна';
+  else if (d.code !== $('rCode2').value.trim()) msg = 'Код хоорондоо таарахгүй байна';
+  else if (/^(\d)\1{3}$|^1234$|^4321$/.test(d.code)) msg = 'Илүү хэцүү код сонгоно уу';
+  $('rMsg').textContent = msg;
+  if (msg) return;
+  if (!API_URL) { $('rMsg').textContent = 'Систем тохируулагдаагүй байна'; return; }
+  $('rBtn').disabled = true;
+  $('rBtn').textContent = 'Илгээж байна...';
+  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(d) })
+    .then(function (r) { return r.json(); })
+    .then(function (res) {
+      $('rBtn').disabled = false;
+      $('rBtn').textContent = 'Бүртгүүлэх';
+      if (res.status === 'ok') {
+        $('form').style.display = 'none';
+        $('done').style.display = 'block';
+        $('doneLink').href = d.biz + '.html';
+        return;
+      }
+      $('rMsg').textContent = {
+        code_taken: 'Энэ код өөр ажилтанд ашиглагдаж байна — өөр код сонгоно уу',
+        fields: 'Нэр, утсаа зөв бөглөнө үү', code: 'Код 4 оронтой тоо байна',
+        busy: 'Олон бүртгэл ирсэн байна — түр хүлээгээд дахин оролдоно уу',
+      }[res.error] || 'Алдаа гарлаа: ' + (res.error || '');
+    })
+    .catch(function () {
+      $('rBtn').disabled = false;
+      $('rBtn').textContent = 'Бүртгүүлэх';
+      $('rMsg').textContent = 'Интернэт холболтоо шалгана уу';
+    });
+}
+</script>
+</body>
+</html>

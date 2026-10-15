@@ -176,3 +176,53 @@ label.check input{width:22px;height:22px}
 .cl-qty input{width:46px;padding:7px 2px}
 .cl-price{width:86px;padding:7px 6px;min-width:0}
 .cl-sum{font-size:14px}
+
+/* ── Удирдлага: Baaz маягийн бүтэц ── */
+.topnav{display:flex;gap:6px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:60px;z-index:4;overflow-x:auto}
+.topnav button{border:0;background:none;padding:8px 14px;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;color:var(--muted);white-space:nowrap}
+.topnav button.on{background:var(--accent);color:#fff}
+.badge{display:none;background:var(--red);color:#fff;border-radius:999px;font-size:11px;padding:1px 7px;margin-left:4px}
+.sec-title{margin:18px 0 4px;font-size:20px}
+.co-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:12px}
+.co-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;border-top:5px solid var(--accent);display:flex;flex-direction:column;gap:12px}
+.co-head{display:flex;gap:12px;align-items:center}
+.co-head b{font-size:17px;display:block}
+.co-head small{color:var(--muted);font-size:13px}
+.co-ico{font-size:34px}
+.co-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.co-stats div{background:var(--bg);border-radius:10px;padding:8px 10px}
+.co-stats span{display:block;font-size:12px;color:var(--muted)}
+.co-stats b{font-size:16px}
+.co-card .btn{margin-top:auto}
+.crumb{display:flex;align-items:center;gap:12px;margin-top:14px}
+.crumb h2{font-size:20px}
+.link{background:none;border:0;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;padding:0;text-decoration:none}
+.modtabs{display:flex;gap:6px;margin-top:12px;overflow-x:auto;padding-bottom:2px}
+.modtabs button{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+.modtabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.bar-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.search{max-width:260px;padding:9px 12px;font-size:15px}
+.month{display:flex;gap:8px;align-items:center;margin:0;color:var(--ink)}
+.month input{width:auto;padding:7px 10px;font-size:15px}
+.st-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px}
+.st-card{border:1.5px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.st-head{display:flex;justify-content:space-between;gap:8px}
+.st-head small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.st-sal{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.st-sal div{background:var(--bg);border-radius:8px;padding:6px 8px}
+.st-sal span{display:block;font-size:11px;color:var(--muted)}
+.st-sal b{font-size:14px}
+.st-sal .st-left{background:var(--green-soft)}
+.st-foot{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.btn.sm{display:inline-block;width:auto;padding:8px 12px;font-size:14px;margin:0}
+.pend{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.pend:last-child{border-bottom:0}
+.pend small{display:block;color:var(--muted);font-size:13px}
+.pend-act{display:flex;gap:6px;flex-wrap:wrap}
+.st-off{padding:6px 0;color:var(--muted)}
+.seg4{grid-template-columns:repeat(4,1fr)}
+.seg button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (max-width:600px){.st-sal{grid-template-columns:repeat(2,1fr)}}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpis .biz{padding:12px 14px}
+.kpis .biz .rev{font-size:20px;margin-top:4px}

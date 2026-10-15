@@ -56,7 +56,9 @@ function doLogin() {
     $('codeInput').disabled = false;
     if (err) { loginFail('Интернэт холболтоо шалгана уу'); return; }
     if (!data || data.status !== 'ok') {
-      loginFail(data && data.error === 'locked' ? 'Олон удаа буруу оруулсан — 10 минутын дараа оролдоно уу' : 'Код буруу байна');
+      loginFail(data && data.error === 'locked' ? 'Олон удаа буруу оруулсан — 10 минутын дараа оролдоно уу'
+        : data && data.error === 'pending' ? 'Таны бүртгэл менежерийн баталгаажуулалт хүлээж байна'
+        : 'Код буруу байна');
       return;
     }
     loginOk(data);

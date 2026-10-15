@@ -13,7 +13,7 @@
 <div class="login" id="login">
   <div class="ico">📊</div>
   <h1>Удирдлагын самбар</h1>
-  <p class="muted">3 бизнесийн нэгдсэн тайлан</p>
+  <p class="muted">Миний компаниуд · Санхүү · Бараа материал · Ажилчид</p>
   <div class="card" style="text-align:left">
     <label for="pinInput">PIN код</label>
     <input id="pinInput" type="password" inputmode="numeric" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()">
@@ -25,198 +25,68 @@
   <div class="top">
     <div class="ico">📊</div>
     <div><h1>Удирдлагын самбар</h1><small id="updated"></small></div>
-    <div class="right"><button onclick="refresh()">↻ Шинэчлэх</button> <button onclick="logout()">Гарах</button></div>
+    <div class="right"><button onclick="refresh()">↻</button> <button onclick="logout()">Гарах</button></div>
   </div>
-  <div class="wrap wide">
-    <div class="card" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
-      <div class="tabs" id="periodTabs">
-        <button data-p="today" class="on" onclick="setPeriod('today')">Өнөөдөр</button>
-        <button data-p="yesterday" onclick="setPeriod('yesterday')">Өчигдөр</button>
-        <button data-p="week" onclick="setPeriod('week')">7 хоног</button>
-        <button data-p="month" onclick="setPeriod('month')">Энэ сар</button>
-        <button data-p="last30" onclick="setPeriod('last30')">30 хоног</button>
-      </div>
-      <span class="muted" id="periodLabel"></span>
-    </div>
+  <nav class="topnav">
+    <button data-v="companies" onclick="go('companies')">🏢 Миний компаниуд</button>
+    <button data-v="staff" onclick="go('staff')">👥 Ажилчид <span class="badge" id="pendingBadge"></span></button>
+  </nav>
+  <div class="wrap wide" id="view"></div>
+</div>
 
-    <div class="kpis" id="kpis"></div>
-
-    <div class="grid2">
-      <div class="card">
-        <h2>Хамгийн их борлуулалттай бараа</h2>
-        <div class="scroll"><table id="topTable"></table></div>
-      </div>
-      <div class="card">
-        <h2>Касс хаалт</h2>
-        <div class="scroll"><table id="closeTable"></table></div>
-      </div>
+<!-- Ажилтан засах -->
+<div class="sheet" id="staffSheet" onclick="if(event.target===this)closeSheet('staffSheet')">
+  <div class="panel">
+    <h2 id="sfTitle">Ажилтан</h2>
+    <p class="muted" id="sfSub"></p>
+    <div class="row2">
+      <div><label for="sfStatus">Төлөв</label>
+        <select id="sfStatus"><option>Тийм</option><option>Хүлээгдэж</option><option>Үгүй</option></select></div>
+      <div><label for="sfRole">Эрх</label>
+        <select id="sfRole"><option>Худалдагч</option><option>Менежер</option></select></div>
     </div>
-
-    <div class="card">
-      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <h2 style="margin:0">Бүх бичлэг</h2>
-        <div class="tabs" id="bizTabs"></div>
-      </div>
-      <div class="scroll"><table id="recTable"></table></div>
+    <div class="row2">
+      <div><label for="sfBiz">Дэлгүүр</label><select id="sfBiz"></select></div>
+      <div><label for="sfPos">Албан тушаал</label><input id="sfPos"></div>
     </div>
+    <div class="row2">
+      <div><label for="sfSalary">Үндсэн цалин (₮/сар)</label><input id="sfSalary" type="number" inputmode="numeric" min="0"></div>
+      <div><label for="sfPhone">Утас</label><input id="sfPhone" inputmode="tel"></div>
+    </div>
+    <label for="sfBank">Цалингийн данс</label><input id="sfBank">
+    <label for="sfCode">Шинэ нэвтрэх код (солих бол л бөглөнө)</label>
+    <input id="sfCode" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="••••">
+    <button class="btn" onclick="saveStaff()">Хадгалах</button>
+    <button class="btn ghost" onclick="closeSheet('staffSheet')">Болих</button>
+  </div>
+</div>
+
+<!-- Цалингийн гүйлгээ -->
+<div class="sheet" id="salSheet" onclick="if(event.target===this)closeSheet('salSheet')">
+  <div class="panel">
+    <h2 id="slTitle">Цалингийн гүйлгээ</h2>
+    <label>Төрөл</label>
+    <div class="seg seg4" id="slKind">
+      <button data-v="Урьдчилгаа" onclick="setKind(this)">Урьдчилгаа</button>
+      <button data-v="Олгосон" onclick="setKind(this)">Олгосон</button>
+      <button data-v="Шагнал" onclick="setKind(this)">Шагнал</button>
+      <button data-v="Суутгал" onclick="setKind(this)">Суутгал</button>
+    </div>
+    <div class="row2">
+      <div><label for="slAmount">Дүн (₮)</label><input id="slAmount" type="number" inputmode="numeric" min="0"></div>
+      <div><label for="slMonth">Сар</label><input id="slMonth" type="month"></div>
+    </div>
+    <label for="slNote">Тайлбар</label><input id="slNote" placeholder="Жишээ: 10-р сарын урьдчилгаа">
+    <ul class="list card" id="slHistory" style="margin-top:12px"></ul>
+    <button class="btn" onclick="saveSalary()">Хадгалах</button>
+    <button class="btn ghost" onclick="closeSheet('salSheet')">Хаах</button>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
+<script src="products.js"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
-<script>
-var KEYS = ['meat', 'cozy', 'travel'];
-var pin = sessionStorage.getItem('nb_pin') || '';
-var records = [];
-var period = 'today';
-var bizFilter = 'all';
-
-if (!API_URL) $('demo').style.display = 'block';
-if (pin) doLogin(pin);
-
-function doLogin(p) {
-  pin = p || $('pinInput').value.trim();
-  if (!pin) { toast('PIN код оруулна уу'); return; }
-  $('loginBtn').disabled = true;
-  fetchData(function (ok) {
-    $('loginBtn').disabled = false;
-    if (!ok) { sessionStorage.removeItem('nb_pin'); pin = ''; return; }
-    sessionStorage.setItem('nb_pin', pin);
-    $('login').style.display = 'none';
-    $('main').style.display = 'block';
-    render();
-  });
-}
-function logout() { sessionStorage.removeItem('nb_pin'); location.reload(); }
-
-function fetchData(cb) {
-  var from = todayStr(new Date(Date.now() - 62 * 864e5));
-  if (!API_URL) {
-    if (pin !== '0000') { toast('PIN буруу байна'); cb(false); return; }
-    records = load('nb_records', []);
-    stamp(); cb(true); return;
-  }
-  jsonp({ action: 'data', pin: pin, from: from }, function (err, data) {
-    if (err) { toast('Холбогдож чадсангүй. Интернэтээ шалгана уу.'); cb(false); return; }
-    if (!data || data.status !== 'ok') { toast(data && data.error === 'pin' ? 'PIN буруу байна' : 'Алдаа гарлаа'); cb(false); return; }
-    records = data.records || [];
-    stamp(); cb(true);
-  });
-}
-function stamp() { $('updated').textContent = 'Шинэчилсэн: ' + timeStr(); }
-function refresh() { fetchData(function (ok) { if (ok) { render(); toast('✓ Шинэчлэгдлээ'); } }); }
-
-function setPeriod(p) {
-  period = p;
-  var b = $('periodTabs').children;
-  for (var i = 0; i < b.length; i++) b[i].classList.toggle('on', b[i].dataset.p === p);
-  render();
-}
-function setBiz(k) { bizFilter = k; render(); }
-
-function range() {
-  var now = new Date(), t = todayStr(now);
-  if (period === 'today') return [t, t];
-  if (period === 'yesterday') { var y = todayStr(new Date(Date.now() - 864e5)); return [y, y]; }
-  if (period === 'week') return [todayStr(new Date(Date.now() - 6 * 864e5)), t];
-  if (period === 'month') return [t.slice(0, 8) + '01', t];
-  return [todayStr(new Date(Date.now() - 29 * 864e5)), t];
-}
-
-function render() {
-  var r = range();
-  $('periodLabel').textContent = r[0] === r[1] ? r[0] : r[0] + ' — ' + r[1];
-  var inRange = records.filter(function (x) { return x.date >= r[0] && x.date <= r[1]; });
-
-  // ── Бизнес бүрийн карт ──
-  var tot = { sales: 0, cash: 0, card: 0, transfer: 0, exp: 0, n: 0 };
-  var html = KEYS.map(function (k) {
-    var B = BUSINESSES[k];
-    var s = { sales: 0, cash: 0, card: 0, transfer: 0, exp: 0, n: 0 };
-    inRange.forEach(function (x) {
-      if (x.biz !== k) return;
-      var a = Number(x.amount) || 0;
-      if (x.type === 'sale') {
-        s.sales += a; s.n++;
-        if (x.pay === 'Карт') s.card += a; else if (x.pay === 'Шилжүүлэг') s.transfer += a; else s.cash += a;
-      } else if (x.type === 'expense') s.exp += a;
-    });
-    for (var f in tot) tot[f] += s[f];
-    return card(B.icon + ' ' + esc(B.name), B.color, s);
-  }).join('');
-  $('kpis').innerHTML = card('Σ Нийт 3 бизнес', '#C8743F', tot) + html;
-
-  // ── Топ бараа ──
-  var prod = {};
-  inRange.forEach(function (x) {
-    if (x.type !== 'sale') return;
-    var key = x.biz + '|' + x.item;
-    if (!prod[key]) prod[key] = { biz: x.biz, item: x.item, qty: 0, unit: x.unit, amount: 0 };
-    prod[key].qty += Number(x.qty) || 0;
-    prod[key].amount += Number(x.amount) || 0;
-  });
-  var top = Object.keys(prod).map(function (k) { return prod[k]; })
-    .sort(function (a, b) { return b.amount - a.amount; }).slice(0, 10);
-  var max = top.length ? top[0].amount : 1;
-  $('topTable').innerHTML = top.length
-    ? '<tr><th>Бараа</th><th class="n">Тоо</th><th class="n">Дүн</th></tr>' + top.map(function (p) {
-        return '<tr><td>' + BUSINESSES[p.biz].icon + ' ' + esc(p.item) +
-          '<div class="bar"><i style="width:' + Math.round(p.amount / max * 100) + '%"></i></div></td>' +
-          '<td class="n">' + round2(p.qty) + ' ' + esc(p.unit) + '</td><td class="n">' + fmt(p.amount) + '</td></tr>';
-      }).join('')
-    : '<tr><td class="muted">Борлуулалт алга</td></tr>';
-
-  // ── Касс хаалт ──
-  var closes = inRange.filter(function (x) { return x.type === 'close'; }).reverse();
-  $('closeTable').innerHTML = closes.length
-    ? '<tr><th>Огноо</th><th>Бизнес</th><th>Ажилтан</th><th class="n">Тоолсон</th><th class="n">Зөрүү</th></tr>' + closes.map(function (c) {
-        var d = Number(c.diff) || 0;
-        return '<tr><td>' + esc(c.date) + ' ' + esc(c.time) + '</td><td>' + BUSINESSES[c.biz].icon + '</td><td>' + esc(c.staff) +
-          '</td><td class="n">' + fmt(c.counted) + '</td><td class="n">' +
-          (d === 0 ? '<span class="tag">✓</span>' : '<span class="tag r">' + (d > 0 ? '+' : '−') + fmt(Math.abs(d)) + '</span>') + '</td></tr>';
-      }).join('')
-    : '<tr><td class="muted">Касс хаалт алга</td></tr>';
-
-  // ── Бүх бичлэг ──
-  $('bizTabs').innerHTML = ['all'].concat(KEYS).map(function (k) {
-    var label = k === 'all' ? 'Бүгд' : BUSINESSES[k].icon + ' ' + BUSINESSES[k].name.split(' ')[0];
-    return '<button class="' + (bizFilter === k ? 'on' : '') + '" onclick="setBiz(\'' + k + '\')">' + esc(label) + '</button>';
-  }).join('');
-  var list = inRange.filter(function (x) { return bizFilter === 'all' || x.biz === bizFilter; }).reverse().slice(0, 300);
-  $('recTable').innerHTML = list.length
-    ? '<tr><th>Огноо</th><th></th><th>Төрөл</th><th>Дэлгэрэнгүй</th><th>Ажилтан</th><th class="n">Дүн</th></tr>' + list.map(function (x) {
-        var tag, detail, amt;
-        if (x.type === 'sale') {
-          tag = '<span class="tag">Борлуулалт</span>';
-          detail = esc(x.item) + ' · ' + round2(x.qty) + ' ' + esc(x.unit) + ' · ' + esc(x.pay);
-          amt = '+' + fmt(x.amount);
-        } else if (x.type === 'expense') {
-          tag = '<span class="tag r">Зарлага</span>';
-          detail = esc(x.category) + (x.note ? ' · ' + esc(x.note) : '');
-          amt = '−' + fmt(x.amount);
-        } else {
-          tag = '<span class="tag b">Касс</span>';
-          detail = 'Тоолсон ' + fmt(x.counted) + (x.note ? ' · ' + esc(x.note) : '');
-          amt = fmt(x.amount);
-        }
-        return '<tr><td>' + esc(x.date) + ' ' + esc(x.time) + '</td><td>' + BUSINESSES[x.biz].icon + '</td><td>' + tag +
-          '</td><td>' + detail + '</td><td>' + esc(x.staff) + '</td><td class="n">' + amt + '</td></tr>';
-      }).join('')
-    : '<tr><td class="muted">Бичлэг алга</td></tr>';
-}
-
-function card(title, color, s) {
-  var net = s.sales - s.exp;
-  return '<div class="biz" style="border-top-color:' + color + '"><h3>' + title + '</h3>' +
-    '<div class="rev">' + fmt(s.sales) + '</div><div class="muted">' + s.n + ' борлуулалт</div>' +
-    '<div class="line"><span>💵 Бэлэн</span><b>' + fmt(s.cash) + '</b></div>' +
-    '<div class="line"><span>💳 Карт</span><b>' + fmt(s.card) + '</b></div>' +
-    '<div class="line"><span>📱 Шилжүүлэг</span><b>' + fmt(s.transfer) + '</b></div>' +
-    '<div class="line"><span>Зарлага</span><b style="color:var(--red)">−' + fmt(s.exp) + '</b></div>' +
-    '<div class="line net"><span><b>Цэвэр</b></span><b style="color:' + (net >= 0 ? 'var(--green)' : 'var(--red)') + '">' + fmt(net) + '</b></div></div>';
-}
-function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
-</script>
+<script src="admin.js"></script>
 </body>
 </html>
