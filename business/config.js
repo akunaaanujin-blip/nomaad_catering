@@ -57,13 +57,13 @@ var BUSINESSES = {
 // taxType: VAT_ABLE (НӨАТ төлөгч) · NO_VAT (НӨАТ төлөгч биш) — туршилтын орчинд шалгаж баталгаажуулна.
 // classificationCode: БҮНА ангиллын код (бараанд тусгайлан заагаагүй үед ашиглана).
 var EBARIMT = {
-  meat:   { merchantTin: '93202187027', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
-  cozy:   { merchantTin: '', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
-  travel: { merchantTin: '93202187027', branchNo: '002', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
+  meat:   { legalName: 'Вайс бротерс', merchantTin: '93202187027', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
+  cozy:   { legalName: '', merchantTin: '', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
+  travel: { legalName: 'Вайс бротерс', merchantTin: '93202187027', branchNo: '002', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
 };
 
 // Туршилтын орчны мерчант (developer.itc.gov.mn-ийн заавраас). Тохиргоо цонхонд "Туршилт" асаахад ашиглана.
-var EBARIMT_TEST = { merchantTin: '37900846788', branchNo: '001', posNo: '', districtCode: '', taxType: 'VAT_ABLE', classificationCode: '2349010' };
+var EBARIMT_TEST = { legalName: 'ТЕСТИЙН ХЭРЭГЛЭГЧ 1', merchantTin: '37900846788', branchNo: '001', posNo: '', districtCode: '', taxType: 'VAT_ABLE', classificationCode: '2349010' };
 
 // Төлбөрийн хэлбэр → PosAPI код
 var EBARIMT_PAY = { 'Бэлэн': 'CASH', 'Карт': 'PAYMENT_CARD', 'Шилжүүлэг': 'PAYMENT_CARD' };

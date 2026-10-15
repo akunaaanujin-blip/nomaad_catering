@@ -37,6 +37,7 @@
       <button class="big close" onclick="openClose()"><span>🔒</span>Өдрийн касс хаах</button>
     </div>
     <div class="pending" id="pending"></div>
+    <div class="pending" id="ebWarn"></div>
 
     <div class="card">
       <h2>Өнөөдөр</h2>
@@ -147,7 +148,10 @@
       <input id="ebKhoroo" type="number" inputmode="numeric" min="1" max="45" placeholder="Хороо (жишээ: 12)">
     </div>
     <label class="check"><input type="checkbox" id="ebTest"> Туршилтын горим (туршилтын мерчант)</label>
-    <button class="btn ghost" style="color:var(--accent)" onclick="testEbConnection()">Холболт шалгах</button>
+    <div class="row2">
+      <button class="btn ghost" style="color:var(--accent)" onclick="testEbConnection()">Холболт шалгах</button>
+      <button class="btn ghost" style="color:var(--accent)" onclick="ebSendNow()">Одоо илгээх</button>
+    </div>
     <p class="muted" id="ebTestResult"></p>
     <button class="btn" onclick="saveEbSettings()">Хадгалах</button>
     <button class="btn ghost" onclick="closeSheet('ebSheet')">Болих</button>

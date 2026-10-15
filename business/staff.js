@@ -49,6 +49,7 @@ function showMain() {
   $('today').textContent = todayStr();
   renderEbBadge();
   renderToday();
+  if (typeof ebCheckInfo === 'function') { ebCheckInfo(); setInterval(ebCheckInfo, 30 * 60000); }
 }
 
 // ── Бараа (Sheet-ийн "Бараа" хуудаснаас шинэчлэгдэнэ) ──
@@ -127,6 +128,8 @@ function submitSale() {
       return;
     }
     r.ddtd = res.id;
+    r.ebDate = res.date;
+    if (tin) r.buyerTin = tin;
     r.note = 'ДДТД ' + res.id + (tin ? ' · ТТД ' + tin : '');
     finishSale(r);
     ebShowReceipt(res, r);
@@ -279,7 +282,9 @@ function renderToday() {
   $('todayList').innerHTML = recs.map(function (r) {
     if (r.type === 'sale') {
       return '<li><span>' + esc(r.item) + ' · ' + r.qty + ' ' + esc(r.unit) +
-        '<small>' + r.time + ' · ' + esc(r.pay) + (r.ddtd ? ' · 🧾 баримттай' : '') + '</small></span><span class="amt g">+' + fmt(r.amount) + '</span></li>';
+        '<small>' + r.time + ' · ' + esc(r.pay) + (r.ddtd ? ' · 🧾 баримттай' : '') + (r.returned ? ' · ↩ буцаагдсан' : '') + '</small>' +
+        (r.ddtd && !r.returned && r.amount > 0 ? '<button class="mini" onclick="ebReturn(\'' + r.id + '\')">↩ Буцаах</button>' : '') +
+        '</span><span class="amt ' + (r.amount < 0 ? 'r' : 'g') + '">' + (r.amount < 0 ? '−' + fmt(-r.amount) : '+' + fmt(r.amount)) + '</span></li>';
     }
     if (r.type === 'expense') {
       return '<li><span>' + esc(r.category) + (r.note ? ' · ' + esc(r.note) : '') +
