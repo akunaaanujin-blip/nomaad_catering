@@ -4,10 +4,13 @@
 var BIZ = BUSINESSES[BIZ_KEY];
 var LS_REC = 'nb_records';     // энэ төхөөрөмж дээрх бүх бичлэг (өнөөдрийн жагсаалт + туршилтын горим)
 var LS_QUEUE = 'nb_queue';     // интернэт тасарсан үед илгээгдээгүй бичлэг
-var LS_NAME = 'nb_name_' + BIZ_KEY;
+var LS_SESSION = 'nb_session_' + BIZ_KEY;   // { name, role, date } — тухайн өдөрт л хүчинтэй
 var LS_PROD = 'nb_products_' + BIZ_KEY;
 
-var staffName = load(LS_NAME, '');
+var session = load(LS_SESSION, null);
+if (!session || session.date !== todayStr()) session = null;
+var staffName = session ? session.name : '';
+var isManager = !!(session && session.role === 'manager');
 var sheetProducts = load(LS_PROD, []);   // Sheet-ийн "Бараа" хуудасны мөрүүд (үнэ давхарлах)
 var products = mergeProducts(BIZ.products, sheetProducts);
 var sale = {};
@@ -22,31 +25,65 @@ function init() {
   $('loginIcon').textContent = BIZ.icon;
   $('loginBiz').textContent = BIZ.name;
   if (!API_URL) $('demo').style.display = 'block';
-  if (staffName) showMain(); else $('login').style.display = 'block';
+  if (session) showMain(); else showLogin();
   loadProducts();
   flushQueue();
   setInterval(flushQueue, 60000);
   window.addEventListener('online', flushQueue);
 }
 
-// ── Нэвтрэх ──
+// ── Нэвтрэх (4 оронтой код, Sheet-ийн "Ажилтан" хуудсаар шалгана) ──
+function showLogin() {
+  $('login').style.display = 'block';
+  $('codeInput').value = '';
+  $('codeInput').focus();
+}
+function onCodeInput() {
+  var v = $('codeInput').value.replace(/\D/g, '').slice(0, 4);
+  $('codeInput').value = v;
+  if (v.length === 4) doLogin();
+}
 function doLogin() {
-  var n = $('nameInput').value.trim();
-  if (!n) { toast('Нэрээ бичнэ үү'); return; }
-  staffName = n;
-  save(LS_NAME, n);
+  var code = $('codeInput').value.trim();
+  if (!/^\d{4}$/.test(code)) { toast('4 оронтой кодоо оруулна уу'); return; }
+  if (!API_URL) {   // туршилтын горим
+    if (code !== '0000') { loginFail('Туршилтын горимд код: 0000'); return; }
+    return loginOk({ name: 'Туршилт', role: 'manager' });
+  }
+  $('codeInput').disabled = true;
+  $('loginMsg').textContent = 'Шалгаж байна...';
+  jsonp({ action: 'login', biz: BIZ_KEY, code: code }, function (err, data) {
+    $('codeInput').disabled = false;
+    if (err) { loginFail('Интернэт холболтоо шалгана уу'); return; }
+    if (!data || data.status !== 'ok') {
+      loginFail(data && data.error === 'locked' ? 'Олон удаа буруу оруулсан — 10 минутын дараа оролдоно уу' : 'Код буруу байна');
+      return;
+    }
+    loginOk(data);
+  });
+}
+function loginOk(d) {
+  session = { name: d.name, role: d.role, date: todayStr() };
+  save(LS_SESSION, session);
+  staffName = session.name;
+  isManager = session.role === 'manager';
+  $('loginMsg').textContent = '';
   showMain();
 }
+function loginFail(msg) {
+  $('loginMsg').textContent = msg;
+  $('codeInput').value = '';
+  $('codeInput').focus();
+}
 function logout() {
-  if (!confirm('Гарах уу?')) return;
-  staffName = '';
-  save(LS_NAME, '');
+  if (!confirm('Гарах уу? Дараагийн ажилтан өөрийн кодоор нэвтэрнэ.')) return;
+  save(LS_SESSION, null);
   location.reload();
 }
 function showMain() {
   $('login').style.display = 'none';
   $('main').style.display = 'block';
-  $('who').textContent = staffName;
+  $('who').textContent = staffName + (isManager ? ' · менежер' : '');
   $('today').textContent = todayStr();
   renderEbBadge();
   renderToday();
@@ -76,22 +113,19 @@ function loadProducts() {
   });
 }
 
-// ── Борлуулалт ──
+// ── Борлуулалт (сагс: олон бараа → нэг баримт) ──
 function openSale() {
-  sale = { item: '', unit: BIZ.unit, price: '', qty: '', pay: 'Бэлэн', cls: '' };
+  sale = { cart: [], pay: 'Бэлэн', cat: '' };
   $('saleSearch').value = '';
   $('saleSearchWrap').style.display = products.length > 12 ? 'block' : 'none';
-  sale.cat = '';
   renderCats();
   renderChips();
   $('saleItem').value = '';
-  $('saleQty').value = '';
   $('salePrice').value = '';
-  $('saleUnit').textContent = 'Тоо (' + BIZ.unit + ')';
   $('saleTin').value = '';
   $('saleTinWrap').style.display = ebEnabled() ? 'block' : 'none';
   setPay('Бэлэн');
-  calcSale();
+  renderCart();
   openSheet('saleSheet');
 }
 // Ангиллын товчнууд (Baaz-ийн ангиллаар) — ангилалгүй дэлгүүрт харагдахгүй
@@ -115,47 +149,98 @@ function renderChips() {
   });
   var more = shown.length > 24 ? shown.length - 24 : 0;
   $('saleChips').innerHTML = shown.slice(0, 24).map(function (i) {
-    return '<button class="chip' + (products[i].name === sale.item ? ' on' : '') + '" onclick="pickProduct(' + i + ')">' + esc(products[i].name) + (products[i].price ? ' <small>' + fmt(products[i].price) + '</small>' : '') + '</button>';
+    var inCart = sale.cart.some(function (l) { return l.name === products[i].name; });
+    return '<button class="chip' + (inCart ? ' on' : '') + '" onclick="pickProduct(' + i + ')">' + esc(products[i].name) + (products[i].price ? ' <small>' + fmt(products[i].price) + '</small>' : '') + '</button>';
   }).join('') + (more ? '<span class="muted" style="align-self:center">+' + more + ' бараа — хайлтаар олно уу</span>' : '') +
     (!shown.length ? '<span class="muted">Олдсонгүй — доор нэрийг нь бичнэ үү</span>' : '');
 }
+// Бараа дарахад сагсанд нэмнэ (байгаа бол тоог нь 1-ээр нэмнэ)
 function pickProduct(i) {
   var p = products[i];
-  sale.item = p.name;
-  sale.cls = p.cls || '';
+  var line = sale.cart.filter(function (l) { return l.name === p.name; })[0];
+  if (line) line.qty = Math.round((Number(line.qty) + 1) * 1000) / 1000;
+  else sale.cart.push({ name: p.name, unit: p.unit || BIZ.unit, price: p.price || '', listPrice: p.price || 0, qty: 1, cls: p.cls || '' });
   renderChips();
-  $('saleItem').value = p.name;
-  sale.unit = p.unit || BIZ.unit;
-  $('saleUnit').textContent = 'Тоо (' + sale.unit + ')';
-  $('salePrice').value = p.price ? p.price : '';
-  calcSale();
-  $(p.price ? 'saleQty' : 'salePrice').focus();
+  renderCart();
 }
+// Жагсаалтад байхгүй барааг нэрээр нь нэмнэ
+function addCustom() {
+  var name = $('saleItem').value.trim();
+  var price = parseFloat($('salePrice').value) || 0;
+  if (!name) { toast('Барааны нэрийг бичнэ үү'); return; }
+  if (price <= 0) { toast('Үнийг бичнэ үү'); return; }
+  sale.cart.push({ name: name, unit: BIZ.unit, price: price, listPrice: 0, qty: 1, cls: '' });
+  $('saleItem').value = '';
+  $('salePrice').value = '';
+  renderCart();
+}
+function renderCart() {
+  var el = $('cartList');
+  if (!sale.cart.length) {
+    el.innerHTML = '<li class="muted">Сагс хоосон — дээрээс бараа дарж нэмнэ үү</li>';
+  } else {
+    el.innerHTML = sale.cart.map(function (l, i) {
+      var lock = !isManager && l.listPrice > 0;   // худалдагч жагсаалтын үнийг сольж чадахгүй
+      return '<li class="cart-line"><div class="cl-name">' + esc(l.name) +
+        '<button class="cl-del" onclick="removeLine(' + i + ')" aria-label="Хасах">✕</button></div>' +
+        '<div class="cl-row">' +
+        '<span class="cl-qty"><button onclick="stepQty(' + i + ',-1)">−</button>' +
+        '<input type="number" inputmode="decimal" step="any" min="0" value="' + l.qty + '" oninput="setLine(' + i + ',\'qty\',this.value)">' +
+        '<button onclick="stepQty(' + i + ',1)">＋</button><small>' + esc(l.unit) + '</small></span>' +
+        '<span class="cl-x">×</span>' +
+        '<input class="cl-price" type="number" inputmode="numeric" min="0" value="' + l.price + '"' + (lock ? ' readonly title="Үнийг менежер л солино"' : '') +
+        ' oninput="setLine(' + i + ',\'price\',this.value)">' +
+        '<b class="cl-sum" id="clSum' + i + '">' + fmt((Number(l.qty) || 0) * (Number(l.price) || 0)) + '</b></div></li>';
+    }).join('');
+  }
+  calcSale();
+}
+function setLine(i, f, v) {
+  sale.cart[i][f] = v;
+  var l = sale.cart[i];
+  $('clSum' + i).textContent = fmt((Number(l.qty) || 0) * (Number(l.price) || 0));
+  calcSale();
+}
+function stepQty(i, d) {
+  var l = sale.cart[i];
+  l.qty = Math.max(0, Math.round(((Number(l.qty) || 0) + d) * 1000) / 1000);
+  if (l.qty === 0) sale.cart.splice(i, 1);
+  renderChips();
+  renderCart();
+}
+function removeLine(i) { sale.cart.splice(i, 1); renderChips(); renderCart(); }
 function setPay(v) {
   sale.pay = v;
   var b = $('paySeg').children;
   for (var k = 0; k < b.length; k++) b[k].classList.toggle('on', b[k].dataset.v === v);
 }
+function cartTotal() {
+  return sale.cart.reduce(function (a, l) { return a + Math.round((Number(l.qty) || 0) * (Number(l.price) || 0)); }, 0);
+}
 function calcSale() {
-  var q = parseFloat($('saleQty').value) || 0;
-  var p = parseFloat($('salePrice').value) || 0;
-  $('saleTotal').textContent = fmt(q * p);
+  $('saleTotal').textContent = fmt(cartTotal());
+  $('saleCount').textContent = sale.cart.length ? sale.cart.length + ' бараа' : '';
 }
 function submitSale() {
-  var item = $('saleItem').value.trim();
-  var qty = parseFloat($('saleQty').value) || 0;
-  var price = parseFloat($('salePrice').value) || 0;
-  if (!item) { toast('Бараагаа сонгоно уу'); return; }
-  if (qty <= 0) { toast('Тоо хэмжээ оруулна уу'); return; }
-  if (price <= 0) { toast('Үнэ оруулна уу'); return; }
-  var r = {
-    type: 'sale', item: item, qty: qty, unit: sale.unit, price: price,
-    amount: Math.round(qty * price), pay: sale.pay,
-  };
-  if (sale.cls && item === sale.item) r.classificationCode = sale.cls;   // БҮНА код (И-баримтад)
-  if (!ebEnabled()) { finishSale(r); return; }
-  if (!r.classificationCode && !ebConfig().classificationCode) {
-    toast('И-баримтад барааны ангилал хэрэгтэй — жагсаалтаас бараагаа сонгоно уу');
+  if (!sale.cart.length) { toast('Сагсанд бараа нэмнэ үү'); return; }
+  for (var i = 0; i < sale.cart.length; i++) {
+    var l = sale.cart[i];
+    if (!(Number(l.qty) > 0)) { toast(l.name + ' — тоо хэмжээ оруулна уу'); return; }
+    if (!(Number(l.price) > 0)) { toast(l.name + ' — үнэ оруулна уу'); return; }
+  }
+  var bill = BIZ_KEY + '-' + Date.now();
+  var lines = sale.cart.map(function (l) {
+    var r = {
+      type: 'sale', item: l.name, qty: Number(l.qty), unit: l.unit, price: Number(l.price),
+      amount: Math.round(Number(l.qty) * Number(l.price)), pay: sale.pay, bill: bill,
+    };
+    if (l.cls) r.classificationCode = l.cls;   // БҮНА код (И-баримтад)
+    return r;
+  });
+  if (!ebEnabled()) { finishSale(lines); return; }
+  var noCls = lines.filter(function (r) { return !r.classificationCode && !ebConfig().classificationCode; });
+  if (noCls.length) {
+    toast('И-баримтад ангилал хэрэгтэй: «' + noCls[0].item + '» — жагсаалтаас сонгоно уу');
     return;
   }
 
@@ -164,28 +249,30 @@ function submitSale() {
   var btn = $('saleSubmit');
   btn.disabled = true;
   btn.textContent = '🧾 Баримт гаргаж байна...';
-  ebSend(ebBuildRequest(r, { tin: tin }), function (err, res) {
+  ebSend(ebBuildRequest(lines, { tin: tin }), function (err, res) {
     btn.disabled = false;
-    btn.textContent = 'Хадгалах';
+    btn.textContent = 'Төлбөр авах';
     if (err) {
       if (confirm('И-баримт гарсангүй:\n' + err.message + '\n\nБаримтгүйгээр борлуулалтаа хадгалах уу?')) {
-        r.note = 'И-баримт гараагүй';
-        finishSale(r);
+        lines.forEach(function (r) { r.note = 'И-баримт гараагүй'; });
+        finishSale(lines);
       }
       return;
     }
-    r.ddtd = res.id;
-    r.ebDate = res.date;
-    if (tin) r.buyerTin = tin;
-    r.note = 'ДДТД ' + res.id + (tin ? ' · ТТД ' + tin : '');
-    finishSale(r);
-    ebShowReceipt(res, r);
+    lines.forEach(function (r) {
+      r.ddtd = res.id;
+      r.ebDate = res.date;
+      if (tin) r.buyerTin = tin;
+      r.note = 'ДДТД ' + res.id + (tin ? ' · ТТД ' + tin : '');
+    });
+    finishSale(lines);
+    ebShowReceipt(res, lines);
   });
 }
-function finishSale(r) {
-  addRecord(r);
+function finishSale(lines) {
+  addRecords(lines);
   closeSheet('saleSheet');
-  toast('✓ Борлуулалт бичигдлээ: ' + fmt(r.amount));
+  toast('✓ Борлуулалт бичигдлээ: ' + fmt(lines.reduce(function (a, r) { return a + r.amount; }, 0)));
 }
 
 // ── Зарлага ──
@@ -249,25 +336,26 @@ function submitClose() {
 }
 
 // ── Бичлэг хадгалах + илгээх ──
-function addRecord(r) {
+function addRecord(r) { addRecords([r]); }
+// Олон бичлэгийг нэг дор хадгална — ID бүр давтагдашгүй (сагсны мөрүүд нэг мс-д үүсдэг)
+function addRecords(list) {
   var now = new Date();
-  r.id = BIZ_KEY + '-' + now.getTime();
-  r.biz = BIZ_KEY;
-  r.date = todayStr(now);
-  r.time = timeStr(now);
-  r.staff = staffName;
   var all = load(LS_REC, []);
-  all.push(r);
+  var q = load(LS_QUEUE, []);
+  list.forEach(function (r, i) {
+    r.id = BIZ_KEY + '-' + now.getTime() + '-' + i;
+    r.biz = BIZ_KEY;
+    r.date = todayStr(now);
+    r.time = timeStr(now);
+    r.staff = staffName;
+    all.push(r);
+    q.push(r);
+  });
   // зөвхөн сүүлийн 60 хоногийг төхөөрөмжид үлдээнэ
   var cutoff = todayStr(new Date(Date.now() - 60 * 864e5));
   all = all.filter(function (x) { return x.date >= cutoff; });
   save(LS_REC, all);
-  if (API_URL) {
-    var q = load(LS_QUEUE, []);
-    q.push(r);
-    save(LS_QUEUE, q);
-    flushQueue();
-  }
+  if (API_URL) { save(LS_QUEUE, q); flushQueue(); }
   renderToday();
 }
 
@@ -326,12 +414,15 @@ function renderToday() {
     $('todayList').innerHTML = '<li class="muted">Өнөөдөр бичлэг алга байна</li>';
     return;
   }
+  var retShown = {};
   $('todayList').innerHTML = recs.map(function (r) {
     if (r.type === 'sale') {
+      var showRet = r.ddtd && !r.returned && r.amount > 0 && !retShown[r.ddtd];
+      if (showRet) retShown[r.ddtd] = 1;
       return '<li><span>' + esc(r.item) + ' · ' + r.qty + ' ' + esc(r.unit) +
         '<small>' + r.time + ' · ' + esc(r.pay) + (r.ddtd ? ' · 🧾 баримттай' : '') + (r.returned ? ' · ↩ буцаагдсан' : '') + '</small>' +
         (r.ddtd || /ДДТД/.test(r.note || '') ? '<small class="ddtd">ДДТД ' + esc(r.ddtd || (r.note.match(/ДДТД (\d+)/) || [])[1] || '') + '</small>' : '') +
-        (r.ddtd && !r.returned && r.amount > 0 ? '<button class="mini" onclick="ebReturn(\'' + r.id + '\')">↩ Буцаах</button>' : '') +
+        (showRet ? '<button class="mini" onclick="ebReturn(\'' + r.id + '\')">↩ Баримт буцаах</button>' : '') +
         '</span><span class="amt ' + (r.amount < 0 ? 'r' : 'g') + '">' + (r.amount < 0 ? '−' + fmt(-r.amount) : '+' + fmt(r.amount)) + '</span></li>';
     }
     if (r.type === 'expense') {

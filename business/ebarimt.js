@@ -19,27 +19,31 @@ function ebEnabled() {
   return !!(s.on && c && c.merchantTin);
 }
 
-// Нэг борлуулалтаас PosAPI-ийн хүсэлт үүсгэнэ
-function ebBuildRequest(r, buyer) {
+// Сагсны мөрүүдээс (нэг баримт) PosAPI-ийн хүсэлт үүсгэнэ
+function ebBuildRequest(lines, buyer) {
   var c = ebConfig();
-  var amount = Math.round(r.amount);
-  var vat = c.taxType === 'VAT_ABLE' ? Math.round(amount / 11 * 100) / 100 : 0;
-  var cls = r.classificationCode || c.classificationCode || '';
-  var item = {
-    name: r.item,
-    barCode: r.barCode || cls,
-    barCodeType: r.barCode ? 'GS1' : 'UNDEFINED',
-    classificationCode: cls,
-    measureUnit: r.unit,
-    qty: r.qty,
-    unitPrice: r.price,
-    totalVAT: vat,
-    totalCityTax: 0,
-    totalAmount: amount,
-  };
+  var vatOf = function (amt) { return c.taxType === 'VAT_ABLE' ? Math.round(amt / 11 * 100) / 100 : 0; };
+  var items = lines.map(function (r) {
+    var amount = Math.round(r.amount);
+    var cls = r.classificationCode || c.classificationCode || '';
+    return {
+      name: r.item,
+      barCode: r.barCode || cls,
+      barCodeType: r.barCode ? 'GS1' : 'UNDEFINED',
+      classificationCode: cls,
+      measureUnit: r.unit,
+      qty: r.qty,
+      unitPrice: r.price,
+      totalVAT: vatOf(amount),
+      totalCityTax: 0,
+      totalAmount: amount,
+    };
+  });
+  var total = items.reduce(function (a, it) { return a + it.totalAmount; }, 0);
+  var vat = Math.round(items.reduce(function (a, it) { return a + it.totalVAT; }, 0) * 100) / 100;
   var req = {
     branchNo: c.branchNo || '001',
-    totalAmount: amount,
+    totalAmount: total,
     totalVAT: vat,
     totalCityTax: 0,
     merchantTin: c.merchantTin,
@@ -47,14 +51,14 @@ function ebBuildRequest(r, buyer) {
     type: buyer && buyer.tin ? 'B2B_RECEIPT' : 'B2C_RECEIPT',
     billIdSuffix: String(Date.now()).slice(-6),
     receipts: [{
-      totalAmount: amount,
+      totalAmount: total,
       totalVAT: vat,
       totalCityTax: 0,
       taxType: c.taxType,
       merchantTin: c.merchantTin,
-      items: [item],
+      items: items,
     }],
-    payments: [{ code: EBARIMT_PAY[r.pay] || 'CASH', status: 'PAID', paidAmount: amount }],
+    payments: [{ code: EBARIMT_PAY[lines[0].pay] || 'CASH', status: 'PAID', paidAmount: total }],
   };
   var dc = ebSettings().district || c.districtCode || (ebSettings().test ? '2501' : '');
   if (dc) req.districtCode = dc;
@@ -88,7 +92,7 @@ function ebSend(req, cb) {
 }
 
 // ── Баримт харуулах / хэвлэх ──
-function ebShowReceipt(res, r) {
+function ebShowReceipt(res, lines) {
   var qr = '';
   if (res.qrData && window.qrcode) {
     var q = qrcode(0, 'M');
@@ -96,18 +100,22 @@ function ebShowReceipt(res, r) {
     q.make();
     qr = q.createSvgTag({ cellSize: 3, margin: 2, scalable: true });
   }
+  var first = lines[0];
   $('rcBody').innerHTML =
     '<div class="rc-biz">' + esc(ebConfig().legalName || BIZ.name) + '</div>' +
     '<div class="rc-sub">' + esc(BIZ.name) + '</div>' +
     '<div class="rc-row"><span>ТТД</span><span>' + esc(res.merchantTin || '') + '</span></div>' +
     '<div class="rc-row"><span>Огноо</span><span>' + esc(res.date || '') + '</span></div>' +
-    (r.buyerTin ? '<div class="rc-row"><span>Худалдан авагч ТТД</span><span>' + esc(r.buyerTin) + '</span></div>' : '') +
+    '<div class="rc-row"><span>Худалдагч</span><span>' + esc(staffName) + '</span></div>' +
+    (first.buyerTin ? '<div class="rc-row"><span>Худалдан авагч ТТД</span><span>' + esc(first.buyerTin) + '</span></div>' : '') +
     '<div class="rc-line"></div>' +
-    '<div class="rc-row"><span>' + esc(r.item) + '<br><small>' + r.qty + ' ' + esc(r.unit) + ' × ' + fmt(r.price) + '</small></span><span>' + fmt(r.amount) + '</span></div>' +
+    lines.map(function (r) {
+      return '<div class="rc-row"><span>' + esc(r.item) + '<br><small>' + r.qty + ' ' + esc(r.unit) + ' × ' + fmt(r.price) + '</small></span><span>' + fmt(r.amount) + '</span></div>';
+    }).join('') +
     '<div class="rc-line"></div>' +
     '<div class="rc-row rc-total"><span>НИЙТ</span><span>' + fmt(res.totalAmount) + '</span></div>' +
     (res.totalVAT ? '<div class="rc-row"><span>НӨАТ</span><span>' + fmt(res.totalVAT) + '</span></div>' : '') +
-    '<div class="rc-row"><span>Төлбөр</span><span>' + esc(r.pay) + '</span></div>' +
+    '<div class="rc-row"><span>Төлбөр</span><span>' + esc(first.pay) + '</span></div>' +
     '<div class="rc-line"></div>' +
     (res.lottery ? '<div class="rc-lottery">Сугалаа: <b>' + esc(res.lottery) + '</b></div>' : '') +
     '<div class="rc-qr">' + qr + '</div>' +
@@ -169,7 +177,10 @@ function ebReturn(id) {
   var all = load(LS_REC, []);
   var r = all.filter(function (x) { return x.id === id; })[0];
   if (!r || !r.ddtd) return;
-  if (!confirm('Энэ баримтыг буцаах уу?\n\n' + r.item + ' · ' + fmt(r.amount) + '\nДДТД ' + r.ddtd)) return;
+  var lines = all.filter(function (x) { return x.ddtd === r.ddtd && x.amount > 0 && !x.returned; });
+  var total = lines.reduce(function (a, x) { return a + x.amount; }, 0);
+  if (!confirm('Энэ баримтыг бүхэлд нь буцаах уу?\n\n' + lines.map(function (x) { return '• ' + x.item + ' · ' + fmt(x.amount); }).join('\n') +
+    '\nНийт: ' + fmt(total) + '\nДДТД ' + r.ddtd)) return;
   var url = ebSettings().url.replace(/\/+$/, '') + '/rest/receipt';
   fetch(url, {
     method: 'DELETE',
@@ -186,14 +197,16 @@ function ebReturn(id) {
       }
       // PosAPI-ийн хариуг ажилтанд харуулна (хоосон бол амжилттай)
       if (x.text && x.text.trim() && x.text.trim() !== '{}') alert('PosAPI хариу:\n' + x.text.slice(0, 300));
-      // эх бичлэгийг тэмдэглээд, хасах дүнтэй буцаалтын бичлэг нэмнэ (тайланд цэвэр дүн зөв гарна)
+      // эх мөрүүдийг тэмдэглээд, хасах дүнтэй буцаалтын мөрүүд нэмнэ (тайланд цэвэр дүн зөв гарна)
       all = load(LS_REC, []);
-      all.forEach(function (y) { if (y.id === id) y.returned = true; });
+      all.forEach(function (y) { if (y.ddtd === r.ddtd) y.returned = true; });
       save(LS_REC, all);
-      addRecord({
-        type: 'sale', item: r.item + ' (буцаалт)', qty: -r.qty, unit: r.unit, price: r.price,
-        amount: -r.amount, pay: r.pay, note: 'Буцаалт · ДДТД ' + r.ddtd,
-      });
+      addRecords(lines.map(function (y) {
+        return {
+          type: 'sale', item: y.item + ' (буцаалт)', qty: -y.qty, unit: y.unit, price: y.price,
+          amount: -y.amount, pay: y.pay, note: 'Буцаалт · ДДТД ' + r.ddtd,
+        };
+      }));
       toast('✓ Баримт буцаагдлаа');
     })
     .catch(function (e) { toast('PosAPI-д холбогдож чадсангүй: ' + e.message); });

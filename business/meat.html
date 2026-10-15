@@ -16,9 +16,11 @@
   <h1 id="loginBiz"></h1>
   <p class="muted">Ажилтны хуудас</p>
   <div class="card" style="text-align:left">
-    <label for="nameInput">Таны нэр</label>
-    <input id="nameInput" placeholder="Жишээ: Болд" autocomplete="name" onkeydown="if(event.key==='Enter')doLogin()">
+    <label for="codeInput">Өөрийн 4 оронтой код</label>
+    <input id="codeInput" class="code-input" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••" oninput="onCodeInput()">
+    <p class="muted" id="loginMsg" style="margin-top:8px;min-height:20px;color:var(--red)"></p>
     <button class="btn" onclick="doLogin()">Нэвтрэх</button>
+    <p class="muted" style="margin-top:10px;font-size:13px">Код мэдэхгүй бол менежерээсээ асууна уу.</p>
   </div>
 </div>
 
@@ -64,12 +66,16 @@
     </div>
     <div class="chips cats" id="saleCats" style="display:none"></div>
     <div class="chips" id="saleChips"></div>
-    <label for="saleItem">Эсвэл бараагаа бичих</label>
-    <input id="saleItem" placeholder="Барааны нэр">
-    <div class="row2">
-      <div><label for="saleQty" id="saleUnit">Тоо</label><input id="saleQty" type="number" inputmode="decimal" step="any" min="0" oninput="calcSale()"></div>
-      <div><label for="salePrice">Нэгжийн үнэ (₮)</label><input id="salePrice" type="number" inputmode="numeric" min="0" oninput="calcSale()"></div>
-    </div>
+    <details class="custom-item">
+      <summary>Жагсаалтад байхгүй бараа нэмэх</summary>
+      <div class="row2" style="margin-top:8px">
+        <input id="saleItem" placeholder="Барааны нэр">
+        <input id="salePrice" type="number" inputmode="numeric" min="0" placeholder="Үнэ (₮)">
+      </div>
+      <button class="btn ghost" style="color:var(--accent);margin-top:4px" onclick="addCustom()">＋ Сагсанд нэмэх</button>
+    </details>
+    <label>🛒 Сагс <span class="muted" id="saleCount"></span></label>
+    <ul class="list cart" id="cartList"></ul>
     <label>Төлбөр</label>
     <div class="seg" id="paySeg">
       <button data-v="Бэлэн" onclick="setPay('Бэлэн')">💵 Бэлэн</button>
@@ -80,9 +86,11 @@
       <label for="saleTin">Байгууллагын ТТД (байгууллагад баримт өгөх бол)</label>
       <input id="saleTin" inputmode="numeric" placeholder="Хувь хүн бол хоосон орхино">
     </div>
-    <div class="total" id="saleTotal">₮0</div>
-    <button class="btn" id="saleSubmit" style="background:var(--green)" onclick="submitSale()">Хадгалах</button>
-    <button class="btn ghost" onclick="closeSheet('saleSheet')">Болих</button>
+    <div class="sale-foot">
+      <div class="total" id="saleTotal">₮0</div>
+      <button class="btn" id="saleSubmit" style="background:var(--green)" onclick="submitSale()">Төлбөр авах</button>
+      <button class="btn ghost" onclick="closeSheet('saleSheet')">Болих</button>
+    </div>
   </div>
 </div>
 

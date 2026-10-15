@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v1.0
+// NOMAAD Бизнесүүд — Google Apps Script v1.1 (ажилтны 4 оронтой код)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -8,6 +8,7 @@
 const ADMIN_PIN   = '0000';          // ← удирдагчийн PIN-ээ ЗААВАЛ сольно уу
 const SHEET_LOG   = 'Бүртгэл';
 const SHEET_PROD  = 'Бараа';
+const SHEET_STAFF = 'Ажилтан';
 const TZ          = 'Asia/Ulaanbaatar';
 const SHEET_ID    = '1Hkmo9ttsHfm6xfr49W0BpjkE2nnPPCL0dt2fP6rGyKI';   // NOMAAD Бизнесүүд — Бүртгэл
 
@@ -55,6 +56,7 @@ function doGet(e) {
   const p = e.parameter || {};
   let out;
   if (p.action === 'products') out = products(p.biz);
+  else if (p.action === 'login') out = login(p.biz, p.code);
   else if (p.action === 'data') out = String(p.pin) === ADMIN_PIN ? data(p.from) : { status: 'error', error: 'pin' };
   else out = { status: 'ok', app: 'NOMAAD Бизнесүүд' };
   const body = JSON.stringify(out);
@@ -62,6 +64,50 @@ function doGet(e) {
     return ContentService.createTextOutput(p.callback + '(' + body + ')').setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
   return ContentService.createTextOutput(body).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── Ажилтны нэвтрэлт: "Ажилтан" хуудас: Бизнес (meat/cozy/travel/all) | Нэр | Код | Эрх (Худалдагч/Менежер) | Идэвхтэй ──
+// Кодын жагсаалтыг хэзээ ч буцаахгүй — зөвхөн тохирсон эсэх, нэр, эрхийг өгнө. Олон удаа буруу бол 10 минут түгжинэ.
+function login(biz, code) {
+  code = String(code || '').trim();
+  if (!BIZ_NAMES[biz] || !/^\d{4}$/.test(code)) return { status: 'error', error: 'code' };
+  const cache = CacheService.getScriptCache();
+  const key = 'fail_' + biz;
+  const fails = Number(cache.get(key) || 0);
+  if (fails >= 15) return { status: 'error', error: 'locked' };
+  const sh = staffSheet();
+  const last = sh.getLastRow();
+  const vals = last >= 2 ? sh.getRange(2, 1, last - 1, 5).getValues() : [];
+  for (let i = 0; i < vals.length; i++) {
+    const v = vals[i];
+    const b = String(v[0]).trim(), active = String(v[4]).trim().toLowerCase();
+    if ((b === biz || b === 'all') && String(v[2]).trim().padStart(4, '0') === code && active !== 'үгүй') {
+      cache.remove(key);
+      const role = /менежер|manager/i.test(String(v[3])) ? 'manager' : 'seller';
+      return { status: 'ok', name: String(v[1]).trim(), role: role };
+    }
+  }
+  cache.put(key, String(fails + 1), 600);
+  return { status: 'error', error: 'code' };
+}
+function staffSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_STAFF);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_STAFF);
+    sh.appendRow(['Бизнес (meat / cozy / travel / all)', 'Нэр', 'Код (4 орон)', 'Эрх (Худалдагч / Менежер)', 'Идэвхтэй (Тийм / Үгүй)']);
+    styleHead(sh, 5, '#2C5A8F');
+    sh.getRange('C:C').setNumberFormat('@');
+    const used = {};
+    const rnd = function () { let c; do { c = String(1000 + Math.floor(Math.random() * 9000)); } while (used[c]); used[c] = 1; return c; };
+    sh.getRange(2, 1, 3, 5).setValues([
+      ['meat', 'Менежер (Мах)', rnd(), 'Менежер', 'Тийм'],
+      ['cozy', 'Менежер (Cozy)', rnd(), 'Менежер', 'Тийм'],
+      ['travel', 'Менежер (Аялал)', rnd(), 'Менежер', 'Тийм'],
+    ]);
+    [220, 160, 110, 190, 150].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
+  }
+  return sh;
 }
 
 function data(from) {
@@ -146,4 +192,4 @@ function json(o) {
 }
 
 // Нэг удаа гараар ажиллуулж хуудсуудыг үүсгэнэ (заавал биш)
-function setup() { logSheet(); prodSheet(); }
+function setup() { logSheet(); prodSheet(); staffSheet(); }
