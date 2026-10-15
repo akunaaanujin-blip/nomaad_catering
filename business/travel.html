@@ -29,6 +29,7 @@
     <div><h1 id="bizName"></h1><small id="today"></small></div>
     <div class="right"><div id="who"></div><button onclick="logout()">Гарах</button></div>
   </div>
+  <button class="eb-badge" id="ebBadge" onclick="openEbSettings()"></button>
   <div class="wrap">
     <div class="big-btns">
       <button class="big sale" onclick="openSale()"><span>＋</span>Борлуулалт</button>
@@ -70,8 +71,12 @@
       <button data-v="Карт" onclick="setPay('Карт')">💳 Карт</button>
       <button data-v="Шилжүүлэг" onclick="setPay('Шилжүүлэг')">📱 Шилжүүлэг</button>
     </div>
+    <div id="saleTinWrap" style="display:none">
+      <label for="saleTin">Байгууллагын ТТД (байгууллагад баримт өгөх бол)</label>
+      <input id="saleTin" inputmode="numeric" placeholder="Хувь хүн бол хоосон орхино">
+    </div>
     <div class="total" id="saleTotal">₮0</div>
-    <button class="btn" style="background:var(--green)" onclick="submitSale()">Хадгалах</button>
+    <button class="btn" id="saleSubmit" style="background:var(--green)" onclick="submitSale()">Хадгалах</button>
     <button class="btn ghost" onclick="closeSheet('saleSheet')">Болих</button>
   </div>
 </div>
@@ -108,10 +113,37 @@
   </div>
 </div>
 
+<!-- И-баримт -->
+<div class="sheet" id="receiptSheet">
+  <div class="panel">
+    <div class="receipt" id="rcBody"></div>
+    <button class="btn no-print" onclick="ebPrint()">🖨 Хэвлэх</button>
+    <button class="btn ghost no-print" onclick="ebCloseReceipt()">Хаах</button>
+  </div>
+</div>
+
+<!-- И-баримтын тохиргоо (компьютер бүрт) -->
+<div class="sheet" id="ebSheet" onclick="if(event.target===this)closeSheet('ebSheet')">
+  <div class="panel">
+    <h2>🧾 И-баримтын тохиргоо</h2>
+    <p class="muted" id="ebInfo"></p>
+    <label class="check"><input type="checkbox" id="ebOn"> Борлуулалт бүрт И-баримт гаргах</label>
+    <label for="ebUrl">PosAPI хаяг</label>
+    <input id="ebUrl" placeholder="http://localhost:7080">
+    <label class="check"><input type="checkbox" id="ebTest"> Туршилтын горим (туршилтын мерчант)</label>
+    <button class="btn ghost" style="color:var(--accent)" onclick="testEbConnection()">Холболт шалгах</button>
+    <p class="muted" id="ebTestResult"></p>
+    <button class="btn" onclick="saveEbSettings()">Хадгалах</button>
+    <button class="btn ghost" onclick="closeSheet('ebSheet')">Болих</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script src="config.js"></script>
 <script src="common.js"></script>
 <script>var BIZ_KEY = 'travel';</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="staff.js"></script>
+<script src="ebarimt.js"></script>
 </body>
 </html>

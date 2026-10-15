@@ -47,6 +47,7 @@ function showMain() {
   $('main').style.display = 'block';
   $('who').textContent = staffName;
   $('today').textContent = todayStr();
+  renderEbBadge();
   renderToday();
 }
 
@@ -70,6 +71,8 @@ function openSale() {
   $('saleQty').value = '';
   $('salePrice').value = '';
   $('saleUnit').textContent = 'Тоо (' + BIZ.unit + ')';
+  $('saleTin').value = '';
+  $('saleTinWrap').style.display = ebEnabled() ? 'block' : 'none';
   setPay('Бэлэн');
   calcSale();
   openSheet('saleSheet');
@@ -102,12 +105,37 @@ function submitSale() {
   if (!item) { toast('Бараагаа сонгоно уу'); return; }
   if (qty <= 0) { toast('Тоо хэмжээ оруулна уу'); return; }
   if (price <= 0) { toast('Үнэ оруулна уу'); return; }
-  addRecord({
+  var r = {
     type: 'sale', item: item, qty: qty, unit: sale.unit, price: price,
     amount: Math.round(qty * price), pay: sale.pay,
+  };
+  if (!ebEnabled()) { finishSale(r); return; }
+
+  // И-баримт гаргаад дараа нь хадгална
+  var tin = $('saleTin').value.trim();
+  var btn = $('saleSubmit');
+  btn.disabled = true;
+  btn.textContent = '🧾 Баримт гаргаж байна...';
+  ebSend(ebBuildRequest(r, { tin: tin }), function (err, res) {
+    btn.disabled = false;
+    btn.textContent = 'Хадгалах';
+    if (err) {
+      if (confirm('И-баримт гарсангүй:\n' + err.message + '\n\nБаримтгүйгээр борлуулалтаа хадгалах уу?')) {
+        r.note = 'И-баримт гараагүй';
+        finishSale(r);
+      }
+      return;
+    }
+    r.ddtd = res.id;
+    r.note = 'ДДТД ' + res.id + (tin ? ' · ТТД ' + tin : '');
+    finishSale(r);
+    ebShowReceipt(res, r);
   });
+}
+function finishSale(r) {
+  addRecord(r);
   closeSheet('saleSheet');
-  toast('✓ Борлуулалт бичигдлээ: ' + fmt(qty * price));
+  toast('✓ Борлуулалт бичигдлээ: ' + fmt(r.amount));
 }
 
 // ── Зарлага ──
@@ -251,7 +279,7 @@ function renderToday() {
   $('todayList').innerHTML = recs.map(function (r) {
     if (r.type === 'sale') {
       return '<li><span>' + esc(r.item) + ' · ' + r.qty + ' ' + esc(r.unit) +
-        '<small>' + r.time + ' · ' + esc(r.pay) + '</small></span><span class="amt g">+' + fmt(r.amount) + '</span></li>';
+        '<small>' + r.time + ' · ' + esc(r.pay) + (r.ddtd ? ' · 🧾 баримттай' : '') + '</small></span><span class="amt g">+' + fmt(r.amount) + '</span></li>';
     }
     if (r.type === 'expense') {
       return '<li><span>' + esc(r.category) + (r.note ? ' · ' + esc(r.note) : '') +

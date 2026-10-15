@@ -115,3 +115,28 @@ td.n,th.n{text-align:right;white-space:nowrap}
 .scroll{overflow-x:auto}
 .bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:4px}
 .bar i{display:block;height:100%;background:var(--green)}
+
+/* И-баримт */
+.eb-badge{display:block;margin:10px auto 0;border:0;border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;font-weight:600;background:#ECE7DC;color:var(--muted);cursor:pointer}
+.eb-badge.on{background:var(--green-soft);color:var(--green)}
+.eb-badge.test{background:#FFF4D6;color:#7A5A00}
+label.check{display:flex;align-items:center;gap:10px;color:var(--ink);font-size:16px;margin-top:14px}
+label.check input{width:22px;height:22px}
+.receipt{background:#fff;border-radius:12px;padding:16px;font-family:ui-monospace,Menlo,monospace;font-size:14px;color:#000}
+.rc-biz{text-align:center;font-weight:700;font-size:16px;margin-bottom:8px}
+.rc-row{display:flex;justify-content:space-between;gap:8px;padding:2px 0}
+.rc-row small{color:#555}
+.rc-total{font-weight:800;font-size:17px}
+.rc-line{border-top:1px dashed #999;margin:6px 0}
+.rc-lottery{text-align:center;font-size:16px;margin:8px 0}
+.rc-qr{display:flex;justify-content:center}
+.rc-qr svg{width:180px;height:180px}
+.rc-ddtd{text-align:center;font-size:11px;word-break:break-all;margin-top:6px}
+@media print{
+  body *{visibility:hidden}
+  #receiptSheet,#receiptSheet *{visibility:visible}
+  #receiptSheet{position:absolute;inset:0;background:#fff;display:block}
+  #receiptSheet .panel{max-height:none;padding:0;background:#fff}
+  .receipt{width:72mm;padding:0;border-radius:0}
+  .no-print{display:none!important}
+}

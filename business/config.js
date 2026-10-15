@@ -48,3 +48,20 @@ var BUSINESSES = {
     expenses: ['Бараа татан авалт', 'Тээвэр', 'Цалин', 'Түрээс', 'Засвар', 'Бусад'],
   },
 };
+
+// ── И-БАРИМТ (PosAPI 3.0) ──
+// Дэлгүүрийн компьютер дээр PosAPI 3.0 ажиллаж байх ёстой (http://localhost:7080).
+// merchantTin хоосон бол тухайн бизнест И-баримт унтраалттай байна.
+// taxType: VAT_ABLE (НӨАТ төлөгч) · NO_VAT (НӨАТ төлөгч биш) — туршилтын орчинд шалгаж баталгаажуулна.
+// classificationCode: БҮНА ангиллын код (бараанд тусгайлан заагаагүй үед ашиглана).
+var EBARIMT = {
+  meat:   { merchantTin: '', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
+  cozy:   { merchantTin: '', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
+  travel: { merchantTin: '', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
+};
+
+// Туршилтын орчны мерчант (developer.itc.gov.mn-ийн заавраас). Тохиргоо цонхонд "Туршилт" асаахад ашиглана.
+var EBARIMT_TEST = { merchantTin: '37900846788', branchNo: '001', posNo: '', districtCode: '', taxType: 'VAT_ABLE', classificationCode: '2349010' };
+
+// Төлбөрийн хэлбэр → PosAPI код
+var EBARIMT_PAY = { 'Бэлэн': 'CASH', 'Карт': 'PAYMENT_CARD', 'Шилжүүлэг': 'PAYMENT_CARD' };
