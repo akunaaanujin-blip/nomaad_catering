@@ -176,13 +176,16 @@ function ebReturn(id) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id: r.ddtd, date: r.ebDate }),
   })
-    .then(function (res) { return res.text().then(function (t) { return { ok: res.ok, text: t }; }); })
+    .then(function (res) { return res.text().then(function (t) { return { ok: res.ok, status: res.status, text: t }; }); })
     .then(function (x) {
       var data; try { data = JSON.parse(x.text); } catch (e) { data = null; }
-      if (!x.ok || (data && data.status && data.status !== 'SUCCESS' && data.status !== 200)) {
-        toast('Буцааж чадсангүй: ' + ((data && (data.message || data.msg)) || x.text.slice(0, 120)));
+      var msg = data && (data.message || data.msg || data.error);
+      if (!x.ok || msg || (data && data.status && data.status !== 'SUCCESS' && data.status !== 200)) {
+        alert('Буцааж чадсангүй:\n' + (msg || x.text.slice(0, 300) || ('HTTP ' + x.status)));
         return;
       }
+      // PosAPI-ийн хариуг ажилтанд харуулна (хоосон бол амжилттай)
+      if (x.text && x.text.trim() && x.text.trim() !== '{}') alert('PosAPI хариу:\n' + x.text.slice(0, 300));
       // эх бичлэгийг тэмдэглээд, хасах дүнтэй буцаалтын бичлэг нэмнэ (тайланд цэвэр дүн зөв гарна)
       all = load(LS_REC, []);
       all.forEach(function (y) { if (y.id === id) y.returned = true; });
