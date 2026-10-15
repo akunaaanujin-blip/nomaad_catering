@@ -56,7 +56,8 @@ function ebBuildRequest(r, buyer) {
     }],
     payments: [{ code: EBARIMT_PAY[r.pay] || 'CASH', status: 'PAID', paidAmount: amount }],
   };
-  if (c.districtCode) req.districtCode = c.districtCode;
+  var dc = ebSettings().district || c.districtCode || (ebSettings().test ? '2501' : '');
+  if (dc) req.districtCode = dc;
   if (buyer && buyer.tin) req.customerTin = buyer.tin;
   return req;
 }
@@ -123,6 +124,9 @@ function openEbSettings() {
   $('ebUrl').value = s.url;
   $('ebOn').checked = !!s.on;
   $('ebTest').checked = !!s.test;
+  var d = s.district || '';
+  $('ebDistrict').value = d.slice(0, 2);
+  $('ebKhoroo').value = d ? String(parseInt(d.slice(2), 10)) : '';
   var c = EBARIMT[BIZ_KEY];
   $('ebInfo').textContent = c && c.merchantTin
     ? 'ТТД: ' + c.merchantTin + ' · ' + c.taxType
@@ -130,7 +134,12 @@ function openEbSettings() {
   openSheet('ebSheet');
 }
 function saveEbSettings() {
-  save(LS_EB, { url: $('ebUrl').value.trim() || 'http://localhost:7080', on: $('ebOn').checked, test: $('ebTest').checked });
+  var dist = $('ebDistrict').value, kh = parseInt($('ebKhoroo').value, 10);
+  if ($('ebOn').checked && !$('ebTest').checked && (!dist || !kh)) { toast('Дэлгүүрийн дүүрэг, хороог сонгоно уу'); return; }
+  save(LS_EB, {
+    url: $('ebUrl').value.trim() || 'http://localhost:7080', on: $('ebOn').checked, test: $('ebTest').checked,
+    district: dist && kh ? dist + (kh < 10 ? '0' : '') + kh : '',
+  });
   closeSheet('ebSheet');
   renderEbBadge();
   toast('✓ Хадгалагдлаа');

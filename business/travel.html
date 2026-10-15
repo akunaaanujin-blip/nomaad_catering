@@ -130,6 +130,22 @@
     <label class="check"><input type="checkbox" id="ebOn"> Борлуулалт бүрт И-баримт гаргах</label>
     <label for="ebUrl">PosAPI хаяг</label>
     <input id="ebUrl" placeholder="http://localhost:7080">
+    <label>Дэлгүүрийн байршил (баримтад заавал)</label>
+    <div class="row2">
+      <select id="ebDistrict">
+        <option value="">Дүүрэг сонгох</option>
+        <option value="24">Баянзүрх</option>
+        <option value="25">Сүхбаатар</option>
+        <option value="23">Хан-Уул</option>
+        <option value="26">Баянгол</option>
+        <option value="34">Сонгинохайрхан</option>
+        <option value="35">Чингэлтэй</option>
+        <option value="29">Налайх</option>
+        <option value="27">Багануур</option>
+        <option value="28">Багахангай</option>
+      </select>
+      <input id="ebKhoroo" type="number" inputmode="numeric" min="1" max="45" placeholder="Хороо (жишээ: 12)">
+    </div>
     <label class="check"><input type="checkbox" id="ebTest"> Туршилтын горим (туршилтын мерчант)</label>
     <button class="btn ghost" style="color:var(--accent)" onclick="testEbConnection()">Холболт шалгах</button>
     <p class="muted" id="ebTestResult"></p>
