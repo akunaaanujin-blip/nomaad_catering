@@ -5,6 +5,7 @@
 
 // Дансны төлөвлөгөө (Baaz-ийн стандарт кодтой нийцүүлсэн). type: asset | liab | equity | rev | contra | cogs | exp
 var ACCOUNTS = [
+  ['0000', 'Он нээлтийн нэгтгэл (үргэлж 0)', 'equity'],
   ['10003', 'Касс дахь мөнгө', 'asset', 'cash'],
   ['110106', 'Пос-н данс (карт)', 'asset', 'cash'],
   ['1101', 'Байгууллагын харилцах', 'asset', 'cash'],
@@ -66,8 +67,9 @@ function expenseAcc(cat, biz, tracked) {
 // ── Өртгийн хөдөлгүүр: бараа тус бүрийн ХӨДӨЛГӨӨНТ ДУНДАЖ өртөг (Baaz-тай адил) ──
 // Үйл явдлыг цаг хугацааны дарааллаар явуулж, борлуулалт/хасалт бүрийг тухайн үеийн дундаж өртгөөр үнэлнэ.
 // Ингэснээр 1404 «Бараа» дансны үлдэгдэл = барааны үлдэгдлийн өртөг үргэлж таарна.
-function costEngine(biz, R) {
-  var key = biz + '|' + R.records.length + '|' + R.moves.length;
+// until (заавал биш): тухайн өдрийн эцэс хүртэлх байдлыг тооцно (он хаахад)
+function costEngine(biz, R, until) {
+  var key = biz + '|' + R.records.length + '|' + R.moves.length + '|' + (until || '');
   if (R._ce && R._ce[key]) return R._ce[key];
   var since = '';
   R.moves.forEach(function (m) { if (m.biz === biz) { var d = String(m.date).slice(0, 16); if (!since || d < since) since = d; } });
@@ -78,6 +80,7 @@ function costEngine(biz, R) {
     var t = x.date + ' ' + (x.time || '00:00');
     if (t >= since) ev.push({ t: t, x: x });
   });
+  if (until) ev = ev.filter(function (e) { return e.t.slice(0, 10) <= until; });
   ev.sort(function (a, b) { return a.t < b.t ? -1 : a.t > b.t ? 1 : (a.m ? -1 : 1); });   // ижил минутад хөдөлгөөн түрүүлнэ
   var it = {}, rec = {}, mv = {}, noCost = {};
   var get = function (k) { return it[k] = it[k] || { q: 0, v: 0, avg: 0 }; };
@@ -85,7 +88,7 @@ function costEngine(biz, R) {
   ev.forEach(function (e) {
     if (e.m) {
       var m = e.m, o = get(m.item), q = Number(m.qty) || 0;
-      if (q > 0 && (m.kind === 'Орлого' || m.kind === 'Эхний үлдэгдэл')) {
+      if (q > 0 && (m.kind === 'Орлого' || m.kind === 'Эхний үлдэгдэл' || m.kind === 'Он нээлт')) {
         var c = m.cost || (o.q > 0 ? o.v / o.q : o.avg);
         o.q += q; o.v += q * c; o.avg = o.q ? o.v / o.q : c; mv[m.id] = q * c;
       } else if (q > 0) { var a = o.q > 0 ? o.v / o.q : o.avg; o.q += q; o.v += q * a; mv[m.id] = q * a; }   // тооллогын илүүдэл
@@ -114,6 +117,7 @@ function buildJournal(biz, R) {
   };
   R.records.forEach(function (x) {
     if (x.biz !== biz) return;
+    if (R.closed && x.date <= R.closed) return;   // хаагдсан онд хамаарах хоцорч ирсэн бичлэг — он нээлтэд аль хэдийн тусгагдсан тул давхар бичихгүй
     var a = Number(x.amount) || 0, d = x.date;
     if (x.type === 'sale') {
       var cash = SALE_ACC[x.pay] || '10003', cust = x.pay === 'Зээлээр' ? (x.customer || '(нэргүй харилцагч)') : '';
@@ -140,6 +144,7 @@ function buildJournal(biz, R) {
     if (m.biz !== biz) return;
     var d = String(m.date).slice(0, 10);
     var v = Math.abs(ce.mv[m.id] || 0);
+    if (m.kind === 'Он нээлт') return;   // барааны үнэлгээ журналын «Он нээлт» (1404) мөрөнд орсон
     if (m.kind === 'Эхний үлдэгдэл') add(d, 'Барааны эхний үлдэгдэл', m.id, '1404', '4201', v, m.item + ' × ' + m.qty);
     else if (m.kind === 'Орлого') add(d, 'Бараа орлого', m.id, '1404', PAY_ACC[m.pay] || '3101', v, m.item + ' × ' + m.qty + (m.pay ? ' (' + m.pay + ')' : ''), m.partner);
     else if (m.kind === 'Тооллого' || m.kind === 'Хасалт') {
@@ -153,7 +158,7 @@ function buildJournal(biz, R) {
   });
   R.journal.forEach(function (j) {
     if (j.biz !== biz) return;
-    add(j.date, j.no ? VOUCHER_NAMES[j.no.slice(0, 2)] + ' ' + j.no : 'Журналын бичилт', j.id, j.dr, j.cr, j.amount, j.desc, j.partner);
+    add(j.date, j.no ? VOUCHER_NAMES[j.no.slice(0, 2)] + ' ' + j.no : /^Он нээлт/.test(j.desc) ? 'Он нээлт' : 'Журналын бичилт', j.id, j.dr, j.cr, j.amount, j.desc, j.partner);
   });
   E.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
   return E;
@@ -420,3 +425,46 @@ function repReceiptsIn(R, biz, from, to) {
 function c(k, label) { return { k: k, label: label }; }
 function m(k, label) { return { k: k, label: label, num: true }; }
 function sum(rows, k) { return r0(rows.reduce(function (s, r) { return s + (Number(r[k]) || 0); }, 0)); }
+
+// ═══════════ ОН ХААХ: оны эцсийн үлдэгдлийг шинэ оны «Он нээлт» болгох ═══════════
+// Орлого/зардлын дансууд хаагдаж 4601 «Хуримтлагдсан ашиг»-т нэмэгдэнэ. Хөрөнгө, өр, өмчийн данс бүрийн үлдэгдэл
+// 0000 нэгтгэлийн данстай хос бичилтээр шилжинэ (0000-ын нийлбэр үргэлж 0). Авлага, өглөгийг харилцагч тус бүрээр.
+function yearClosePayload(biz, R, year) {
+  var end = year + '-12-31', E = buildJournal(biz, R), b = balances(E, end), open = [];
+  var line = function (acc, bal, partner, desc) {
+    bal = r0(bal);
+    if (Math.abs(bal) < 0.01) return;
+    open.push(bal > 0 ? { biz: biz, dr: acc, cr: '0000', amount: bal, partner: partner || '', desc: desc } : { biz: biz, dr: '0000', cr: acc, amount: -bal, partner: partner || '', desc: desc });
+  };
+  var pl = 0;
+  ACCOUNTS.forEach(function (a) { if (/^(rev|contra|cogs|exp)$/.test(a[2])) pl += b[a[0]] || 0; });
+  var byPartner = { '1201': {}, '3101': {}, '1503': {} };
+  E.forEach(function (e) {
+    if (e.date > end) return;
+    [e.dr, e.cr].forEach(function (k, i) { if (byPartner[k]) { var p = e.partner || ''; byPartner[k][p] = (byPartner[k][p] || 0) + (i === 0 ? e.amount : -e.amount); } });
+  });
+  ACCOUNTS.forEach(function (a) {
+    var k = a[0];
+    if (k === '0000' || !/^(asset|liab|equity)$/.test(a[2])) return;
+    if (byPartner[k]) { Object.keys(byPartner[k]).forEach(function (p) { line(k, byPartner[k][p], p, a[1]); }); return; }
+    line(k, (b[k] || 0) + (k === '4601' ? pl : 0), '', k === '4601' ? a[1] + ' (' + year + ' оны ашиг нэмэгдсэн)' : a[1]);
+  });
+  // Бараа: байршил тус бүрийн тоо, дундаж өртөг
+  var ce = costEngine(biz, R, end), loc = {};
+  R.moves.forEach(function (m) {
+    if (m.biz !== biz || String(m.date).slice(0, 10) > end) return;
+    var o = loc[m.item] = loc[m.item] || { wh: 0 };
+    if (m.loc === 'Агуулах') o.wh += Number(m.qty) || 0;
+  });
+  var stock = [];
+  Object.keys(ce.items).forEach(function (k) {
+    var o = ce.items[k], q = r0(o.q), avg = o.q > 0 ? o.v / o.q : o.avg, wh = r0((loc[k] || {}).wh || 0), shop = r0(q - wh);
+    avg = Math.round(avg * 100) / 100;   // бүхэлчилбэл 1404-тэй хэдэн ₮ зөрнө
+    if (wh) stock.push({ biz: biz, loc: 'Агуулах', item: k, qty: wh, cost: avg });
+    if (shop) stock.push({ biz: biz, loc: 'Дэлгүүр', item: k, qty: shop, cost: avg });
+  });
+  var sum = function (arr, f) { return r0(arr.reduce(function (a, x) { return a + f(x); }, 0)); };
+  return { open: open, stock: stock, profit: r0(-pl),
+    check: { dr: sum(open, function (x) { return x.dr === '0000' ? 0 : x.amount; }) - sum(open, function (x) { return x.cr === '0000' ? 0 : x.amount; }),
+             inv1404: r0(b['1404'] || 0), invItems: sum(stock, function (x) { return x.qty * x.cost; }) } };
+}

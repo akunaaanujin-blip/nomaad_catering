@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v2.5 (барааны бүртгэл, зээлээр борлуулалт, кассын баримт)
+// NOMAAD Бизнесүүд — Google Apps Script v2.6 (автомат нөөц, он хаах / архив)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -34,7 +34,10 @@ const SALARY_HEAD = ['ID', 'Огноо', 'Сар', 'Ажилтны ID', 'Нэр'
 const SALARY_KINDS = { 'Урьдчилгаа': 1, 'Шагнал': 1, 'Суутгал': 1, 'Олгосон': 1 };
 // Үлдэгдлийн хөдөлгөөн: тоо + (нэмэгдэх) / − (хасагдах). Борлуулалт «Бүртгэл»-ээс автоматаар хасагдана.
 const STOCK_HEAD = ['ID', 'Огноо', 'Бизнес', 'Байршил', 'Бараа', 'Төрөл', 'Тоо', 'Нэгж өртөг', 'Хэн', 'Тайлбар', 'biz', 'Төлбөр', 'Харилцагч', 'Төлөв'];
-const STOCK_KINDS = { 'Эхний үлдэгдэл': 1, 'Орлого': 1, 'Шилжүүлэг': 1, 'Тооллого': 1, 'Хасалт': 1 };
+// «Он нээлт» — он хаахад өмнөх оны эцсийн үлдэгдлийг шинэ оны эхэнд шилжүүлсэн мөр (санхүүд дахин бичигдэхгүй)
+const STOCK_KINDS = { 'Эхний үлдэгдэл': 1, 'Орлого': 1, 'Шилжүүлэг': 1, 'Тооллого': 1, 'Хасалт': 1, 'Он нээлт': 1 };
+const BACKUP_FOLDER = 'NOMAAD Бизнесүүд — нөөц';
+const BACKUP_KEEP = 12;   // автомат нөөцийн сүүлийн 12 хуулбарыг хадгална (архивыг хэзээ ч устгахгүй)
 const STOCK_LOCS = { 'Дэлгүүр': 1, 'Агуулах': 1 };
 
 // ── Бичих ──
@@ -50,6 +53,8 @@ function doPost(e) {
     if (data.type === 'admin_salary') return json(isAdmin(data) ? adminSalary(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_stock') return json(isAdmin(data) ? adminStock(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_journal') return json(isAdmin(data) ? adminJournal(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_backup') return json(isAdmin(data) ? adminBackup() : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_close') return json(isAdmin(data) ? adminClose(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_product') return json(isAdmin(data) ? adminProduct(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_record') return json(isAdmin(data) ? adminRecord(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_partner') return json(isAdmin(data) ? adminPartner(data) : { status: 'error', error: 'auth' });
@@ -84,6 +89,8 @@ function adminRead(d) {
   a.moves = stockMoves();
   a.journal = journalRows();
   a.partners = partnerRows();
+  const pr = PropertiesService.getScriptProperties();
+  a.meta = { closed: pr.getProperty('CLOSED') || '', lastBackup: pr.getProperty('LAST_BACKUP') || '', backupUrl: pr.getProperty('BACKUP_FOLDER_URL') || '' };
   a.products = productRows().map(function (p) { const o = Object.assign({}, p); delete o.row; return o; });
   return a;
 }
@@ -260,7 +267,7 @@ function stockAll(withCost) {
     const b = out[m.biz] = out[m.biz] || {};
     const it = b[m.item] = b[m.item] || { shop: 0, wh: 0 };
     if (m.loc === 'Агуулах') it.wh += m.qty; else it.shop += m.qty;
-    if (withCost && m.qty > 0 && m.cost > 0 && (m.kind === 'Орлого' || m.kind === 'Эхний үлдэгдэл')) {
+    if (withCost && m.qty > 0 && m.cost > 0 && (m.kind === 'Орлого' || m.kind === 'Эхний үлдэгдэл' || m.kind === 'Он нээлт')) {
       const k = m.biz + '|' + m.item;
       cq[k] = cq[k] || { q: 0, v: 0 };
       cq[k].q += m.qty; cq[k].v += m.qty * m.cost;
@@ -408,6 +415,98 @@ function cancelRow(sh, id, col) {
   const ids = last >= 2 ? sh.getRange(2, 1, last - 1, 1).getValues() : [];
   for (let i = 0; i < ids.length; i++) if (String(ids[i][0]) === String(id)) { sh.getRange(i + 2, col).setValue('Устгасан'); return { status: 'ok' }; }
   return { status: 'error', error: 'not_found' };
+}
+
+// ═══════════ НӨӨЦ ХУУЛБАР (AI-гүйгээр өөрөө ажиллана) ═══════════
+// installBackup()-ийг редактороос НЭГ удаа ажиллуулахад долоо хоног бүрийн Даваа гарагт Sheet-ийг бүтнээр нь хуулна.
+function installBackup() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'weeklyBackup') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('weeklyBackup').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(3).create();
+  return weeklyBackup();
+}
+function weeklyBackup() { return backupCopy('NOMAAD нөөц ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), true); }
+function backupFolder() {
+  const it = DriveApp.getFoldersByName(BACKUP_FOLDER);
+  const f = it.hasNext() ? it.next() : DriveApp.createFolder(BACKUP_FOLDER);
+  PropertiesService.getScriptProperties().setProperty('BACKUP_FOLDER_URL', f.getUrl());
+  return f;
+}
+// rotate = true бол хуучин автомат нөөцийг (сүүлийн BACKUP_KEEP-ээс бусдыг) хогийн сав руу (30 хоног сэргээх боломжтой)
+function backupCopy(name, rotate) {
+  const folder = backupFolder();
+  const copy = DriveApp.getFileById(SHEET_ID).makeCopy(name, folder);
+  PropertiesService.getScriptProperties().setProperty('LAST_BACKUP', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'));
+  if (rotate) {
+    const files = [], it = folder.getFiles();
+    while (it.hasNext()) { const f = it.next(); if (f.getName().indexOf('NOMAAD нөөц ') === 0) files.push(f); }
+    files.sort(function (a, b) { return b.getDateCreated() - a.getDateCreated(); });
+    files.slice(BACKUP_KEEP).forEach(function (f) { f.setTrashed(true); });
+  }
+  return copy;
+}
+function adminBackup() {
+  const c = backupCopy('NOMAAD нөөц ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + ' (гараар)', true);
+  return { status: 'ok', url: c.getUrl(), name: c.getName() };
+}
+
+// ═══════════ ОН ХААХ / АРХИВ ═══════════
+// 1) Бүтэн хуулбарыг архив болгон хадгална  2) хаасан оны мөрүүдийг үндсэн Sheet-ээс хасна
+// 3) оны эцсийн дансны үлдэгдэл, барааны үлдэгдлийг шинэ оны 1-р сарын 1-нд «Он нээлт» болгон бичнэ.
+// Үлдэгдлийн тооцоог удирдлагын самбар (reports.js) гаргаж ирүүлнэ; энд зөвхөн шалгаж бичнэ.
+function adminClose(d) {
+  const y = String(d.year || '');
+  if (!/^\d{4}$/.test(y)) return { status: 'error', error: 'year' };
+  if (y >= Utilities.formatDate(new Date(), TZ, 'yyyy')) return { status: 'error', error: 'year' };   // зөвхөн өнгөрсөн он
+  const props = PropertiesService.getScriptProperties();
+  const end = y + '-12-31', start = (Number(y) + 1) + '-01-01';
+  if ((props.getProperty('CLOSED') || '') >= end) return { status: 'error', error: 'closed' };
+  const open = d.open || [], stock = d.stock || [];
+  for (let i = 0; i < open.length; i++) {
+    const e = open[i];
+    if (!BIZ_NAMES[e.biz] || !/^\d{4,6}$/.test(String(e.dr)) || !/^\d{4,6}$/.test(String(e.cr)) || !(Number(e.amount) > 0)) return { status: 'error', error: 'fields', index: i };
+  }
+  for (let i = 0; i < stock.length; i++) {
+    const m = stock[i];
+    if (!BIZ_NAMES[m.biz] || !STOCK_LOCS[m.loc] || !String(m.item || '').trim() || !isFinite(Number(m.qty)) || !Number(m.qty)) return { status: 'error', error: 'fields', index: i };
+  }
+  const copy = backupCopy('NOMAAD архив ' + y + ' (он хаахаас өмнөх бүрэн хуулбар)', false);
+  const removed = {
+    records: pruneSheet(logSheet(), LOG_HEAD.length, end),
+    moves: pruneSheet(stockSheet(), STOCK_HEAD.length, end),
+    journal: pruneSheet(journalSheet(), JOURNAL_HEAD.length, end),
+    salary: pruneSheet(salarySheet(), SALARY_HEAD.length, end),
+  };
+  const by = String(d.by || '').slice(0, 40), now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
+  if (open.length) {
+    const rows = open.map(function (e, i) {
+      return ['J' + Date.now() + '-' + i, start, BIZ_NAMES[e.biz], String(e.dr), String(e.cr), Number(e.amount), String(e.partner || '').slice(0, 80),
+        ('Он нээлт ' + start.slice(0, 4) + ' · ' + String(e.desc || '')).slice(0, 200), by, now, e.biz, '', ''];
+    });
+    const sh = journalSheet();
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, JOURNAL_HEAD.length).setValues(rows);
+  }
+  if (stock.length) {
+    const rows = stock.map(function (m, i) {
+      return ['M' + Date.now() + '-o' + i, start + ' 00:00', BIZ_NAMES[m.biz], m.loc, String(m.item).trim().slice(0, 80), 'Он нээлт', Number(m.qty),
+        Math.max(0, Math.round((Number(m.cost) || 0) * 100) / 100) || '', by, y + ' оны эцсийн үлдэгдэл', m.biz, '', '', ''];
+    });
+    const sh = stockSheet();
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, STOCK_HEAD.length).setValues(rows);
+  }
+  props.setProperty('CLOSED', end);
+  return { status: 'ok', archive: copy.getUrl(), removed: removed, opened: { journal: open.length, stock: stock.length } };
+}
+// Огноо (2-р багана) нь «end»-ээс хойшхи мөрүүдийг л үлдээнэ (нэг дор дахин бичнэ — мөр мөрөөр устгахаас хурдан)
+function pruneSheet(sh, width, end) {
+  const last = sh.getLastRow();
+  if (last < 2) return 0;
+  const rng = sh.getRange(2, 1, last - 1, width), vals = rng.getValues();
+  const keep = vals.filter(function (v) { return fmtDate(v[1], 'yyyy-MM-dd').slice(0, 10) > end; });
+  const n = vals.length - keep.length;
+  if (!n) return 0;
+  rng.clearContent();
+  if (keep.length) sh.getRange(2, 1, keep.length, width).setValues(keep);
+  return n;
 }
 
 // ── Туслах ──
