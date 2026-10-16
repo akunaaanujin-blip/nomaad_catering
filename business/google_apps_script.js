@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v2.3 (санхүү: журнал, харилцагч)
+// NOMAAD Бизнесүүд — Google Apps Script v2.4 (баримтын дугаар, цуцлалт, цалингийн компани)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -21,7 +21,7 @@ const SHEET_ID     = '1Hkmo9ttsHfm6xfr49W0BpjkE2nnPPCL0dt2fP6rGyKI';   // NOMAAD
 const BIZ_NAMES = { meat: 'Махны дэлгүүр', cozy: 'Cozy Home Ulaanbaatar', travel: 'NOMAAD аяллын дэлгүүр' };
 const TYPE_NAMES = { sale: 'Борлуулалт', expense: 'Зарлага', close: 'Касс хаалт' };
 const LOG_HEAD = ['ID', 'Огноо', 'Цаг', 'Бизнес', 'Төрөл', 'Ажилтан', 'Бараа / Ангилал', 'Тоо', 'Нэгж',
-                  'Нэгжийн үнэ', 'Дүн', 'Төлбөр', 'Тоолсон бэлэн', 'Зөрүү', 'Тайлбар', 'biz', 'type'];
+                  'Нэгжийн үнэ', 'Дүн', 'Төлбөр', 'Тоолсон бэлэн', 'Зөрүү', 'Тайлбар', 'biz', 'type', 'Баримт', 'Төлөв'];
 // "Ажилтан" хуудасны баганууд (эхний 5 нь v1.1-ээс хэвээр)
 const STAFF_HEAD = ['Бизнес (meat / cozy / travel / all)', 'Нэр', 'Код (4 орон)', 'Эрх (Худалдагч / Менежер)', 'Идэвхтэй (Тийм / Хүлээгдэж / Үгүй)',
                     'Овог', 'Утас', 'Регистр', 'Албан тушаал', 'Үндсэн цалин', 'Банкны данс', 'Бүртгүүлсэн', 'ID', 'Нэвтрэх нэр'];
@@ -30,7 +30,7 @@ const TOKEN_TTL = 8 * 3600;   // удирдагчийн нэвтрэлт 8 ца�
 const SALARY_HEAD = ['ID', 'Огноо', 'Сар', 'Ажилтны ID', 'Нэр', 'Бизнес', 'Төрөл', 'Дүн', 'Тайлбар'];
 const SALARY_KINDS = { 'Урьдчилгаа': 1, 'Шагнал': 1, 'Суутгал': 1, 'Олгосон': 1 };
 // Үлдэгдлийн хөдөлгөөн: тоо + (нэмэгдэх) / − (хасагдах). Борлуулалт «Бүртгэл»-ээс автоматаар хасагдана.
-const STOCK_HEAD = ['ID', 'Огноо', 'Бизнес', 'Байршил', 'Бараа', 'Төрөл', 'Тоо', 'Нэгж өртөг', 'Хэн', 'Тайлбар', 'biz', 'Төлбөр', 'Харилцагч'];
+const STOCK_HEAD = ['ID', 'Огноо', 'Бизнес', 'Байршил', 'Бараа', 'Төрөл', 'Тоо', 'Нэгж өртөг', 'Хэн', 'Тайлбар', 'biz', 'Төлбөр', 'Харилцагч', 'Төлөв'];
 const STOCK_KINDS = { 'Эхний үлдэгдэл': 1, 'Орлого': 1, 'Шилжүүлэг': 1, 'Тооллого': 1, 'Хасалт': 1 };
 const STOCK_LOCS = { 'Дэлгүүр': 1, 'Агуулах': 1 };
 
@@ -47,6 +47,7 @@ function doPost(e) {
     if (data.type === 'admin_salary') return json(isAdmin(data) ? adminSalary(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_stock') return json(isAdmin(data) ? adminStock(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_journal') return json(isAdmin(data) ? adminJournal(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_record') return json(isAdmin(data) ? adminRecord(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_partner') return json(isAdmin(data) ? adminPartner(data) : { status: 'error', error: 'auth' });
     return json(saveRecords(data));
   } catch (err) {
@@ -100,7 +101,7 @@ function saveRecords(data) {
       r.type === 'sale' ? r.pay : '',
       r.type === 'close' ? Number(r.counted) : '',
       r.type === 'close' ? Number(r.diff) : '',
-      r.note || '', r.biz, r.type,
+      r.note || '', r.biz, r.type, String(r.bill || '').slice(0, 40), '',
     ]);
   });
   if (rows.length) sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, LOG_HEAD.length).setValues(rows);
@@ -210,8 +211,11 @@ function adminSalary(d) {
   if (!SALARY_KINDS[e.kind] || !(Number(e.amount) > 0) || !/^\d{4}-\d{2}$/.test(String(e.month))) return { status: 'error', error: 'fields' };
   const s = staffRows().filter(function (x) { return x.id === e.staffId; })[0];
   if (!s) return { status: 'error', error: 'not_found' };
+  // «Бүх дэлгүүр»-ийн ажилтны цалинг аль компанийн зардал болохыг заана
+  const biz = s.biz === 'all' ? String(e.biz || '') : s.biz;
+  if (!BIZ_NAMES[biz]) return { status: 'error', error: 'biz' };
   const id = 'S' + Date.now();
-  salarySheet().appendRow([id, Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), e.month, s.id, s.name, s.biz,
+  salarySheet().appendRow([id, Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), e.month, s.id, s.name, biz,
     e.kind, Number(e.amount), String(e.note || '').slice(0, 120)]);
   return { status: 'ok', id: id };
 }
@@ -228,7 +232,7 @@ function stockSheet() {
     sh.hideColumns(11);
     [120, 140, 170, 90, 220, 120, 70, 110, 120, 220].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
   }
-  if (sh.getRange(1, 13).getValue() !== 'Харилцагч') sh.getRange(1, 1, 1, STOCK_HEAD.length).setValues([STOCK_HEAD]);
+  if (sh.getRange(1, 14).getValue() !== 'Төлөв') sh.getRange(1, 1, 1, STOCK_HEAD.length).setValues([STOCK_HEAD]);
   return sh;
 }
 function stockMoves() {
@@ -238,8 +242,8 @@ function stockMoves() {
   return sh.getRange(2, 1, last - 1, STOCK_HEAD.length).getValues().map(function (v) {
     return { id: String(v[0]), date: fmtDate(v[1], 'yyyy-MM-dd HH:mm'), loc: String(v[3]), item: String(v[4]).trim(),
              kind: String(v[5]), qty: Number(v[6]) || 0, cost: Number(v[7]) || 0, by: String(v[8]), note: String(v[9]), biz: String(v[10]),
-             pay: String(v[11] || ''), partner: String(v[12] || '') };
-  });
+             pay: String(v[11] || ''), partner: String(v[12] || ''), status: String(v[13] || '') };
+  }).filter(function (m) { return m.status !== 'Устгасан'; });
 }
 // Бизнес бүрийн бараа тус бүрийн үлдэгдэл: { biz: { item: { shop, wh, cost? } } }.
 // Борлуулалтыг тухайн бизнесийн анхны хөдөлгөөний огнооноос хойш л хасна.
@@ -264,7 +268,7 @@ function stockAll(withCost) {
   if (last >= 2) {
     sheet.getRange(2, 1, last - 1, LOG_HEAD.length).getValues().forEach(function (v) {
       const biz = String(v[15]);
-      if (String(v[16]) !== 'sale' || !out[biz]) return;
+      if (String(v[16]) !== 'sale' || !out[biz] || String(v[18]) === 'Устгасан') return;
       const when = fmtDate(v[1], 'yyyy-MM-dd') + ' ' + fmtDate(v[2], 'HH:mm');
       if (when < since[biz]) return;
       const item = String(v[6]).replace(/ \(буцаалт\)$/, '').trim();
@@ -281,6 +285,7 @@ function stockAll(withCost) {
 }
 // Удирдагч: хөдөлгөөн бүртгэх (олноор). Шилжүүлэг = хоёр мөр (−гарах, +орох).
 function adminStock(d) {
+  if (d.cancelId) return cancelRow(stockSheet(), d.cancelId, 14);   // буруу хөдөлгөөнийг цуцлах (мөр үлдэнэ)
   const moves = d.moves || [];
   if (!moves.length || moves.length > 1000) return { status: 'error', error: 'fields' };
   const rows = [], now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
@@ -295,7 +300,7 @@ function adminStock(d) {
     const cost = Math.max(0, Number(m.cost) || 0);
     const pay = /^(Бэлэн|Харилцах|Зээлээр)$/.test(String(m.pay || '')) ? m.pay : '';
     rows.push(['M' + Date.now() + '-' + (n++), now, BIZ_NAMES[m.biz], m.loc, String(m.item).trim().slice(0, 80), m.kind, qty, cost || '', by,
-               String(m.note || '').slice(0, 120), m.biz, pay, String(m.partner || '').slice(0, 80)]);
+               String(m.note || '').slice(0, 120), m.biz, pay, String(m.partner || '').slice(0, 80), '']);
   }
   const sh = stockSheet();
   sh.getRange(sh.getLastRow() + 1, 1, rows.length, STOCK_HEAD.length).setValues(rows);
@@ -369,6 +374,27 @@ function adminPartner(d) {
   partnerSheet().appendRow([id, BIZ_NAMES[p.biz], p.kind, String(p.name).trim().slice(0, 80), String(p.tin || '').slice(0, 20),
     String(p.phone || '').slice(0, 20), String(p.note || '').slice(0, 120), p.biz]);
   return { status: 'ok', id: id };
+}
+
+// Удирдагч: ажилтны буруу бичлэгийг цуцлах. И-баримттай борлуулалтыг энд цуцлахгүй — дэлгүүрээс «Баримт буцаах»-аар.
+function adminRecord(d) {
+  const sh = logSheet(), last = sh.getLastRow();
+  if (last < 2 || !d.cancelId) return { status: 'error', error: 'not_found' };
+  const vals = sh.getRange(2, 1, last - 1, LOG_HEAD.length).getValues();
+  for (let i = 0; i < vals.length; i++) {
+    if (String(vals[i][0]) !== String(d.cancelId)) continue;
+    if (String(vals[i][16]) === 'sale' && /ДДТД/.test(String(vals[i][14]))) return { status: 'error', error: 'ebarimt' };
+    sh.getRange(i + 2, 19).setValue('Устгасан');
+    sh.getRange(i + 2, 15).setValue(String(vals[i][14] || '') + ' [цуцалсан: ' + String(d.by || '').slice(0, 30) + ']');
+    return { status: 'ok' };
+  }
+  return { status: 'error', error: 'not_found' };
+}
+function cancelRow(sh, id, col) {
+  const last = sh.getLastRow();
+  const ids = last >= 2 ? sh.getRange(2, 1, last - 1, 1).getValues() : [];
+  for (let i = 0; i < ids.length; i++) if (String(ids[i][0]) === String(id)) { sh.getRange(i + 2, col).setValue('Устгасан'); return { status: 'ok' }; }
+  return { status: 'error', error: 'not_found' };
 }
 
 // ── Туслах ──
@@ -454,9 +480,10 @@ function data(from) {
   vals.forEach(function (v) {
     const date = fmtDate(v[1], 'yyyy-MM-dd');
     if (from && date < from) return;
+    if (String(v[18]) === 'Устгасан') return;
     const time = fmtDate(v[2], 'HH:mm');
     const r = { id: v[0], date: date, time: time, biz: v[15], type: v[16], staff: v[5], amount: Number(v[10]) || 0, note: v[14] };
-    if (r.type === 'sale') { r.item = v[6]; r.qty = Number(v[7]) || 0; r.unit = v[8]; r.price = Number(v[9]) || 0; r.pay = v[11]; }
+    if (r.type === 'sale') { r.item = v[6]; r.qty = Number(v[7]) || 0; r.unit = v[8]; r.price = Number(v[9]) || 0; r.pay = v[11]; r.bill = String(v[17] || ''); }
     else if (r.type === 'expense') { r.category = v[6]; }
     else { r.counted = Number(v[12]) || 0; r.diff = Number(v[13]) || 0; }
     records.push(r);
@@ -489,6 +516,7 @@ function logSheet() {
     sh.setColumnWidths(1, 15, 110);
     sh.setColumnWidth(4, 180); sh.setColumnWidth(7, 180); sh.setColumnWidth(15, 200);
   }
+  if (sh.getRange(1, 19).getValue() !== 'Төлөв') sh.getRange(1, 1, 1, LOG_HEAD.length).setValues([LOG_HEAD]);   // v2.4: Баримт, Төлөв
   return sh;
 }
 function prodSheet() {

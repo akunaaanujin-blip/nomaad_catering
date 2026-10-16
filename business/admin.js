@@ -168,7 +168,7 @@ function railHtml(pend) {
 var MENU = {
   sales: [['Борлуулалт', ['overview', 'receipts']], ['Борлуулалтын тайлан', ['item', 'cat', 'staff', 'day', 'pay']], ['И-баримт', ['ebarimt']]],
   products: [['Бараа материал', ['stock', 'in']], ['Тайлан', ['move', 'card']], ['Харилцагч', ['suppliers']]],
-  finance: [['Хянах самбар', ['dash']], ['Журнал', ['entry', 'journal', 'trial', 'ledger']], ['Мөнгөн хөрөнгө', ['cash', 'cashflow']],
+  finance: [['Хянах самбар', ['dash']], ['Журнал', ['entry', 'journal', 'trial', 'ledger']], ['Мөнгөн хөрөнгө', ['expenses', 'cash', 'cashflow']],
             ['Авлага өглөг', ['partners']], ['Санхүүгийн тайлан', ['balance', 'pl']], ['Дансны удирдлага', ['accounts']]],
 };
 function subLabel(mod, k) { var x = (SUBS[mod] || []).filter(function (s) { return s[0] === k; })[0]; return x ? x[1] : k; }
@@ -261,7 +261,7 @@ function salesModule() {
   var list = inRange(state.biz), s = sums(list);
   var sales = list.filter(function (x) { return x.type === 'sale'; });
   var bills = {};
-  sales.forEach(function (x) { var k = (String(x.note || '').match(/ДДТД (\d+)/) || [])[1] || x.id; if (x.amount > 0) bills[k] = 1; });
+  sales.forEach(function (x) { var k = x.bill || (String(x.note || '').match(/ДДТД (\d+)/) || [])[1] || x.id; if (x.amount > 0) bills[k] = 1; });
   var byStaff = {};
   sales.forEach(function (x) { var k = x.staff || '—'; byStaff[k] = (byStaff[k] || 0) + (Number(x.amount) || 0); });
   var staffRows = Object.keys(byStaff).sort(function (a, b) { return byStaff[b] - byStaff[a]; });
@@ -294,7 +294,7 @@ function topProducts(sales, n) {
   }).join('') : '<tr><td class="muted">Борлуулалт алга</td></tr>';
 }
 function recordRows(list) {
-  return list.length ? '<tr><th>Огноо</th><th>Төрөл</th><th>Дэлгэрэнгүй</th><th>Ажилтан</th><th class="n">Дүн</th></tr>' + list.map(function (x) {
+  return list.length ? '<tr><th>Огноо</th><th>Төрөл</th><th>Дэлгэрэнгүй</th><th>Ажилтан</th><th class="n">Дүн</th><th></th></tr>' + list.map(function (x) {
     var tag, detail, amt;
     if (x.type === 'sale') {
       tag = '<span class="tag' + (x.amount < 0 ? ' r' : '') + '">' + (x.amount < 0 ? 'Буцаалт' : 'Борлуулалт') + '</span>';
@@ -305,7 +305,10 @@ function recordRows(list) {
     } else {
       tag = '<span class="tag b">Касс</span>'; detail = 'Тоолсон ' + fmt(x.counted) + (x.diff ? ' · зөрүү ' + fmt(x.diff) : ''); amt = fmt(x.amount);
     }
-    return '<tr><td>' + esc(x.date) + ' ' + esc(x.time) + '</td><td>' + tag + '</td><td>' + detail + '</td><td>' + esc(x.staff) + '</td><td class="n">' + amt + '</td></tr>';
+    // И-баримттай борлуулалтыг зөвхөн дэлгүүрээс «Баримт буцаах»-аар; бусдыг удирдагч цуцалж болно
+    var canCancel = !(x.type === 'sale' && /ДДТД/.test(x.note || ''));
+    return '<tr><td>' + esc(x.date) + ' ' + esc(x.time) + '</td><td>' + tag + '</td><td>' + detail + '</td><td>' + esc(x.staff) + '</td><td class="n">' + amt + '</td>' +
+      '<td class="n">' + (canCancel ? '<button class="mini" onclick="cancelRecord(\'' + esc(x.id) + '\')">Цуцлах</button>' : '') + '</td></tr>';
   }).join('') : '<tr><td class="muted">Бичлэг алга</td></tr>';
 }
 
@@ -379,10 +382,11 @@ function productsModule() {
     }).join('') + '</table></div></div>' +
     '<div class="card"><div class="bar-row"><h2 style="margin:0">Хөдөлгөөний түүх</h2>' +
     '<button class="link" onclick="state.showMoves=!state.showMoves;render()">' + (state.showMoves ? 'Нуух' : 'Харах') + '</button></div>' +
-    (state.showMoves ? '<div class="scroll" style="margin-top:8px"><table><tr><th>Огноо</th><th>Төрөл</th><th>Бараа</th><th>Байршил</th><th class="n">Тоо</th><th class="n">Нэгж өртөг</th><th>Хэн</th><th>Тайлбар</th></tr>' +
+    (state.showMoves ? '<div class="scroll" style="margin-top:8px"><table><tr><th>Огноо</th><th>Төрөл</th><th>Бараа</th><th>Байршил</th><th class="n">Тоо</th><th class="n">Нэгж өртөг</th><th>Хэн</th><th>Тайлбар</th><th></th></tr>' +
       moves.filter(function (m) { return m.biz === biz; }).slice().reverse().slice(0, 200).map(function (m) {
         return '<tr><td>' + esc(m.date) + '</td><td>' + esc(m.kind) + '</td><td>' + esc(m.item) + '</td><td>' + esc(m.loc) + '</td><td class="n">' +
-          (m.qty > 0 ? '+' : '') + round2(m.qty) + '</td><td class="n">' + (m.cost ? fmt(m.cost) : '') + '</td><td>' + esc(m.by) + '</td><td class="muted">' + esc(m.note) + '</td></tr>';
+          (m.qty > 0 ? '+' : '') + round2(m.qty) + '</td><td class="n">' + (m.cost ? fmt(m.cost) : '') + '</td><td>' + esc(m.by) + '</td><td class="muted">' + esc(m.note) + '</td>' +
+          '<td class="n">' + (m.id ? '<button class="mini" onclick="cancelMove(\'' + esc(m.id) + '\')">Цуцлах</button>' : '') + '</td></tr>';
       }).join('') + '</table></div>' : '') + '</div>';
 }
 
@@ -615,6 +619,9 @@ function openSalary(id) {
   $('slTitle').textContent = 'Цалин · ' + s.name;
   $('slAmount').value = ''; $('slNote').value = ''; $('slMonth').value = state.month;
   setKind($('slKind').children[0]);
+  // «Бүх дэлгүүр»-ийн ажилтан бол цалин аль компанийн зардал болохыг сонгоно
+  $('slBizWrap').style.display = s.biz === 'all' ? 'block' : 'none';
+  $('slBiz').innerHTML = KEYS.map(function (k) { return '<option value="' + k + '"' + (k === state.biz ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('');
   var hist = salary.filter(function (e) { return e.staffId === id; }).slice().reverse().slice(0, 20);
   $('slHistory').innerHTML = hist.length ? hist.map(function (e) {
     var minus = e.kind !== 'Шагнал';
@@ -626,7 +633,7 @@ function openSalary(id) {
 function saveSalary() {
   var amt = Number($('slAmount').value) || 0;
   if (amt <= 0) { toast('Дүнгээ оруулна уу'); return; }
-  post({ type: 'admin_salary', entry: { staffId: salId, kind: salKind, amount: amt, month: $('slMonth').value, note: $('slNote').value.trim() } }, function (err) {
+  post({ type: 'admin_salary', entry: { staffId: salId, kind: salKind, amount: amt, month: $('slMonth').value, note: $('slNote').value.trim(), biz: $('slBiz').value } }, function (err) {
     if (err) { toast('Алдаа: ' + err); return; }
     closeSheet('salSheet'); toast('✓ ' + salKind + ' бүртгэгдлээ'); refresh();
   });
@@ -641,7 +648,7 @@ var SUBS = {
           ['receipts', 'Баримтын жагсаалт'], ['ebarimt', 'И-баримт тулгалт']],
   products: [['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['card', 'Барааны карт'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
   finance: [['dash', 'Хянах самбар'], ['entry', 'Журналын бичилт'], ['journal', 'Ерөнхий журнал'], ['trial', 'Гүйлгээ баланс'], ['ledger', 'Дансны хуулга'],
-            ['cash', 'Касс, харилцах'], ['pl', 'Орлогын тайлан'], ['balance', 'Санхүүгийн байдал'], ['cashflow', 'Мөнгөн гүйлгээ'],
+            ['expenses', 'Зарлага, касс хаалт'], ['cash', 'Касс, харилцах'], ['pl', 'Орлогын тайлан'], ['balance', 'Санхүүгийн байдал'], ['cashflow', 'Мөнгөн гүйлгээ'],
             ['partners', 'Авлага, өглөг'], ['accounts', 'Дансны төлөвлөгөө']],
 };
 function subTabs() {
@@ -679,6 +686,7 @@ function makeReport(mod, sub) {
   if (sub === 'partners') return repPartners(E, t);
   if (sub === 'accounts') return repAccounts();
   if (sub === 'entry') return repManual(biz, f, t);
+  if (sub === 'expenses') return repExpenses(biz, f, t);
 }
 function repStockNow(biz) {
   var rows = stockRows(biz).map(function (r) {
@@ -693,6 +701,16 @@ function repStockNow(biz) {
 function repPartnerList(biz) {
   var rows = partners.filter(function (p) { return p.biz === biz; }).map(function (p) { return { kind: p.kind, name: p.name, tin: p.tin, phone: p.phone, note: p.note }; });
   return { title: 'Харилцагчид', cols: [c('kind', 'Төрөл'), c('name', 'Нэр'), c('tin', 'ТТД / Регистр'), c('phone', 'Утас'), c('note', 'Тайлбар')], rows: rows };
+}
+function repExpenses(biz, f, t) {   // дэлгүүрээс бичсэн зарлага, касс хаалт (Baaz-ийн «Кассын зарлага»)
+  var rows = records.filter(function (x) { return x.biz === biz && (x.type === 'expense' || x.type === 'close') && x.date >= f && x.date <= t; }).slice().reverse().map(function (x) {
+    var ex = x.type === 'expense';
+    return { date: x.date + ' ' + x.time, kind: ex ? 'Зарлага' : 'Касс хаалт', cat: ex ? x.category : (x.diff ? 'Зөрүү ' + (x.diff > 0 ? '+' : '−') + fmt(Math.abs(x.diff)).slice(1) : 'Зөрүүгүй'),
+             acc: ex ? (function (a) { return a + ' ' + accName(a); })(expenseAcc(x.category, biz, costEngine(biz, R()).since !== '')) : (x.diff ? (x.diff < 0 ? '7303 ' + accName('7303') : '5201 ' + accName('5201')) : ''),
+             note: ex ? x.note : 'Тоолсон ' + fmt(x.counted), staff: x.staff, amount: ex ? x.amount : '', _id: x.id };
+  });
+  return { title: 'Зарлага, касс хаалт', cols: [c('date', 'Огноо'), c('kind', 'Төрөл'), c('cat', 'Ангилал'), c('acc', 'Дебет данс'), c('note', 'Тайлбар'), c('staff', 'Ажилтан'), m('amount', 'Дүн')],
+    rows: rows, total: { date: 'Нийт', amount: sum(rows, 'amount') } };
 }
 function repManual(biz, f, t) {
   var rows = journal.filter(function (j) { return j.biz === biz && j.date >= f && j.date <= t; }).slice().reverse().map(function (j) {
@@ -716,7 +734,7 @@ function subBody() {
     if (!state.item) return pre + '<div class="card muted">Бараагаа сонгоно уу.</div>';
   }
   if (mod === 'finance' && sub === 'entry') pre = '<p class="hint">Борлуулалт, зарлага, бараа, цалин санхүүд <b>автоматаар</b> бичигддэг. Энд зөвхөн бусад гүйлгээг (эхний үлдэгдэл, хөрөнгө оруулалт, зээл, банкинд тушаах, нийлүүлэгчид төлөх г.м) оруулна.</p>';
-  return pre + reportCard(rep, mod === 'finance' && sub === 'entry');
+  return pre + reportCard(rep, { entry: 'cancelEntry', in: 'cancelMove', expenses: 'cancelRecord' }[sub]);
 }
 
 function cellVal(col, v) {
@@ -728,7 +746,7 @@ function reportCard(rep, cancellable) {
   var head = '<tr>' + rep.cols.map(function (cl) { return '<th' + (cl.num ? ' class="n"' : '') + '>' + cl.label + '</th>'; }).join('') + (cancellable ? '<th></th>' : '') + '</tr>';
   var body = rep.rows.length ? rep.rows.map(function (r) {
     return '<tr' + (r._b ? ' class="b"' : '') + '>' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n' + (r[cl.k] < 0 ? ' neg' : '') + '"' : '') + '>' + cellVal(cl, r[cl.k]) + '</td>'; }).join('') +
-      (cancellable ? '<td class="n"><button class="mini" onclick="cancelEntry(\'' + r._id + '\')">Цуцлах</button></td>' : '') + '</tr>';
+      (cancellable ? '<td class="n">' + (r._id ? '<button class="mini" onclick="' + cancellable + '(\'' + esc(r._id) + '\')">Цуцлах</button>' : '') + '</td>' : '') + '</tr>';
   }).join('') : '<tr><td colspan="' + rep.cols.length + '" class="muted">Мэдээлэл алга</td></tr>';
   var foot = rep.total ? '<tr class="tot">' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n"' : '') + '>' + cellVal(cl, rep.total[cl.k]) + '</td>'; }).join('') + (cancellable ? '<td></td>' : '') + '</tr>' : '';
   var r = range();
@@ -749,13 +767,16 @@ function journalCheck(E, f, t) {
   var exps = records.filter(function (x) { return x.biz === state.biz && x.type === 'expense' && x.date >= f && x.date <= t && Number(x.amount); });
   var eMiss = exps.filter(function (x) { return !E.some(function (e) { return e.ref === x.id; }); });
   var tb = repTrial(E, f, t), bs = repBalance(E, t);
-  return { n: sales.length, miss: miss, sAmt: sAmt, rev: rev, revOk: Math.abs(sAmt - rev) < 0.5, eN: exps.length, eMiss: eMiss, tb: tb.check, bs: bs.check };
+  var ce = costEngine(state.biz, R()), noCost = Object.keys(ce.noCost);
+  var salAll = salary.filter(function (e) { return e.biz === 'all' && (e.kind === 'Олгосон' || e.kind === 'Урьдчилгаа'); });
+  var invVal = Object.keys(ce.items).reduce(function (a, k) { return a + ce.items[k].v; }, 0), inv1404 = balances(E)['1404'] || 0;
+  return { invVal: invVal, invOk: !ce.since || Math.abs(invVal - inv1404) < 1, noCost: noCost, salAll: salAll, n: sales.length, miss: miss, sAmt: sAmt, rev: rev, revOk: Math.abs(sAmt - rev) < 0.5, eN: exps.length, eMiss: eMiss, tb: tb.check, bs: bs.check };
 }
 function financeDash() {
   var r = range(), E = J(), p = plData(E, r[0], r[1]), b = balances(E, r[1]);
   var g = function (k) { return b[k] || 0; };
   var ck = journalCheck(E, r[0], r[1]);
-  var okAll = !ck.miss.length && ck.revOk && !ck.eMiss.length && ck.tb && ck.bs;
+  var okAll = !ck.miss.length && ck.revOk && !ck.eMiss.length && ck.tb && ck.bs && ck.invOk && !ck.noCost.length && !ck.salAll.length;
   var line = function (ok, text) { return '<li><span class="ck ' + (ok ? 'ok' : 'bad') + '">' + (ok ? '✓' : '!') + '</span>' + text + '</li>'; };
   return '<div class="kpis">' +
     kpi('Цэвэр борлуулалт', fmt(p.net)) + kpi('Нийт ашиг', fmt(p.gross), p.net ? Math.round(p.gross / p.net * 100) + '%' : '') +
@@ -769,7 +790,10 @@ function financeDash() {
     line(!ck.miss.length, '<b>' + ck.n + '</b> борлуулалт/буцаалтын мөрөөс <b>' + (ck.n - ck.miss.length) + '</b> нь журналд бичигдсэн' + (ck.miss.length ? ' — ' + ck.miss.length + ' мөр дутуу' : '')) +
     line(ck.revOk, 'Борлуулалтын дүн ' + fmt(ck.sAmt) + ' = санхүүгийн цэвэр орлого ' + fmt(ck.rev)) +
     line(!ck.eMiss.length, '<b>' + ck.eN + '</b> зарлагын мөр бүгд журналд' + (ck.eMiss.length ? ' — ' + ck.eMiss.length + ' дутуу' : '')) +
-    line(ck.tb, 'Гүйлгээ баланс: дебет = кредит') + line(ck.bs, 'Санхүүгийн байдал: хөрөнгө = өр төлбөр + өмч') + '</ul>' +
+    line(ck.tb, 'Гүйлгээ баланс: дебет = кредит') + line(ck.bs, 'Санхүүгийн байдал: хөрөнгө = өр төлбөр + өмч') +
+    (ck.invVal || !ck.invOk ? line(ck.invOk, 'Барааны данс (1404) = барааны үлдэгдлийн өртөг ' + fmt(ck.invVal)) : '') +
+    (ck.noCost.length ? line(false, '<b>' + ck.noCost.length + '</b> бараа өртөггүйгээр зарагдсан — нийт ашиг хэт өндөр гарна. Орлого авахдаа өртгийг оруулна уу: ' + esc(ck.noCost.slice(0, 5).join(', ')) + (ck.noCost.length > 5 ? '…' : '')) : '') +
+    (ck.salAll.length ? line(false, '<b>' + ck.salAll.length + '</b> цалингийн гүйлгээ компани заагаагүй (Бүх дэлгүүр) тул санхүүд ороогүй') : '') + '</ul>' +
     '<p class="muted" style="margin-top:8px">Борлуулалт: Дт касс/пос/харилцах — Кт 5101 орлого, мөн Дт 6101 өртөг — Кт 1404 бараа. Буцаалт: Дт 6001 — Кт касс. Зарлага: Дт зардлын данс — Кт 10003 касс.</p></div>' +
     '<div class="grid2"><div class="card"><h2>Орлогын тайлан (товч)</h2>' + miniTable(repPL(E, r[0], r[1])) + '</div>' +
     '<div class="card"><h2>Касс хаалт</h2><div class="scroll"><table>' + closesTable(r) + '</table></div></div></div>';
@@ -911,5 +935,26 @@ function savePartner() {
   post({ type: 'admin_partner', partner: p }, function (err) {
     if (err) { toast('Алдаа: ' + err); return; }
     closeSheet('partnerSheet'); toast('Нэмэгдлээ'); refresh();
+  });
+}
+
+// ── Цуцлах (мөр устахгүй, «Устгасан» төлөвтэй болж тайлангаас хасагдана) ──
+function cancelRecord(id) {
+  var x = records.filter(function (r) { return r.id === id; })[0]; if (!x) return;
+  var what = x.type === 'sale' ? x.item + ' · ' + fmt(x.amount) : x.type === 'expense' ? x.category + ' · ' + fmt(x.amount) : 'Касс хаалт';
+  if (!confirm('Энэ бичлэгийг цуцлах уу?\n' + x.date + ' ' + x.time + ' · ' + what + '\n\nСанхүү, үлдэгдлээс хасагдана.')) return;
+  if (!API_URL) { records = records.filter(function (r) { return r.id !== id; }); save('nb_records', records); render(); return; }
+  post({ type: 'admin_record', cancelId: id, by: ownerName }, function (err) {
+    if (err) { toast(err === 'ebarimt' ? 'И-баримттай борлуулалтыг дэлгүүрээс «Баримт буцаах»-аар буцаана' : 'Алдаа: ' + err); return; }
+    toast('Цуцлагдлаа'); refresh();
+  });
+}
+function cancelMove(id) {
+  var m = moves.filter(function (x) { return x.id === id; })[0]; if (!m) return;
+  if (!confirm('Энэ хөдөлгөөнийг цуцлах уу?\n' + m.date + ' · ' + m.kind + ' · ' + m.item + ' ' + m.qty + '\n\nҮлдэгдэл, санхүүгээс хасагдана.')) return;
+  if (!API_URL) { moves = moves.filter(function (x) { return x.id !== id; }); save('nb_demo_moves', moves); render(); return; }
+  post({ type: 'admin_stock', cancelId: id }, function (err) {
+    if (err) { toast('Алдаа: ' + err); return; }
+    toast('Цуцлагдлаа'); refresh();
   });
 }
