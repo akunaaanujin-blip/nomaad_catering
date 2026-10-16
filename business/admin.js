@@ -1133,9 +1133,9 @@ function closeView() {
   var info = '<div class="kpis">' + kpi('Хаагдсан он', meta.closed ? meta.closed.slice(0, 4) + ' он хүртэл' : 'Хаагаагүй') +
     kpi('Сүүлийн нөөц хуулбар', meta.lastBackup || '<span style="color:var(--red)">Аваагүй</span>') +
     kpi('Үндсэн Sheet дэх мөр', fmt(records.length + moves.length + journal.length + salary.length).slice(1)) + '</div>';
-  var backup = '<div class="card"><h2>Нөөц хуулбар</h2><p class="muted">Долоо хоног бүрийн Даваа гарагт Google Drive-ийн «NOMAAD Бизнесүүд — нөөц» хавтаст Sheet бүтнээрээ автоматаар хуулагдана (сүүлийн 12 хуулбар хадгалагдана). ' +
+  var backup = '<div class="card"><h2>Нөөц хуулбар</h2><p class="muted">Долоо хоног бүрийн Даваа гарагт Sheet бүтнээрээ Google Drive-д «NOMAAD нөөц огноо» нэрээр автоматаар хуулагдана. ' +
     'Том өөрчлөлтийн өмнө гараар ч авч болно.</p><div class="pg-act" style="margin-top:10px"><button class="b-btn primary" onclick="doBackup()">Одоо нөөц авах</button>' +
-    (meta.backupUrl ? '<a class="b-btn" href="' + esc(meta.backupUrl) + '" target="_blank" rel="noopener">Нөөцийн хавтас нээх</a>' : '') + '</div></div>';
+    (meta.backupUrl ? '<a class="b-btn" href="' + esc(meta.backupUrl) + '" target="_blank" rel="noopener">Drive-д нөөцүүдийг харах</a>' : '') + '</div></div>';
   var close = '<div class="card"><h2>Он хаах</h2>';
   if (!y) close += '<p class="muted">Хаах өнгөрсөн он алга. ' + (todayStr().slice(0, 4)) + ' оныг ' + (Number(todayStr().slice(0, 4)) + 1) + ' оны 1-р сард хаана.</p></div>';
   else {

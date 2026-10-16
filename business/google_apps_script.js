@@ -36,8 +36,6 @@ const SALARY_KINDS = { 'Урьдчилгаа': 1, 'Шагнал': 1, 'Суутг
 const STOCK_HEAD = ['ID', 'Огноо', 'Бизнес', 'Байршил', 'Бараа', 'Төрөл', 'Тоо', 'Нэгж өртөг', 'Хэн', 'Тайлбар', 'biz', 'Төлбөр', 'Харилцагч', 'Төлөв'];
 // «Он нээлт» — он хаахад өмнөх оны эцсийн үлдэгдлийг шинэ оны эхэнд шилжүүлсэн мөр (санхүүд дахин бичигдэхгүй)
 const STOCK_KINDS = { 'Эхний үлдэгдэл': 1, 'Орлого': 1, 'Шилжүүлэг': 1, 'Тооллого': 1, 'Хасалт': 1, 'Он нээлт': 1 };
-const BACKUP_FOLDER = 'NOMAAD Бизнесүүд — нөөц';
-const BACKUP_KEEP = 12;   // автомат нөөцийн сүүлийн 12 хуулбарыг хадгална (архивыг хэзээ ч устгахгүй)
 const STOCK_LOCS = { 'Дэлгүүр': 1, 'Агуулах': 1 };
 
 // ── Бичих ──
@@ -456,28 +454,18 @@ function installBackup() {
   ScriptApp.newTrigger('weeklyBackup').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(3).create();
   return weeklyBackup();
 }
-function weeklyBackup() { return backupCopy('NOMAAD нөөц ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), true); }
-function backupFolder() {
-  const it = DriveApp.getFoldersByName(BACKUP_FOLDER);
-  const f = it.hasNext() ? it.next() : DriveApp.createFolder(BACKUP_FOLDER);
-  PropertiesService.getScriptProperties().setProperty('BACKUP_FOLDER_URL', f.getUrl());
-  return f;
-}
-// rotate = true бол хуучин автомат нөөцийг (сүүлийн BACKUP_KEEP-ээс бусдыг) хогийн сав руу (30 хоног сэргээх боломжтой)
-function backupCopy(name, rotate) {
-  const folder = backupFolder();
-  const copy = DriveApp.getFileById(SHEET_ID).makeCopy(name, folder);
-  PropertiesService.getScriptProperties().setProperty('LAST_BACKUP', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'));
-  if (rotate) {
-    const files = [], it = folder.getFiles();
-    while (it.hasNext()) { const f = it.next(); if (f.getName().indexOf('NOMAAD нөөц ') === 0) files.push(f); }
-    files.sort(function (a, b) { return b.getDateCreated() - a.getDateCreated(); });
-    files.slice(BACKUP_KEEP).forEach(function (f) { f.setTrashed(true); });
-  }
+function weeklyBackup() { return backupCopy('NOMAAD нөөц ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')); }
+// Drive-ын нэмэлт эрх шаардахгүйн тулд Sheet-ийн өөрийн хуулах функцийг ашиглана (хуулбар Drive-ийн «Миний Drive»-д үүснэ).
+// Хуучин нөөцийг Drive дээрээс «NOMAAD нөөц» гэж хайгаад гараар устгаж болно (жилд ~52 жижиг файл).
+function backupCopy(name) {
+  const copy = SpreadsheetApp.openById(SHEET_ID).copy(name);
+  const pr = PropertiesService.getScriptProperties();
+  pr.setProperty('LAST_BACKUP', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'));
+  pr.setProperty('BACKUP_FOLDER_URL', 'https://drive.google.com/drive/search?q=NOMAAD%20%D0%BD%D3%A9%D3%A9%D1%86');
   return copy;
 }
 function adminBackup() {
-  const c = backupCopy('NOMAAD нөөц ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + ' (гараар)', true);
+  const c = backupCopy('NOMAAD нөөц ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + ' (гараар)');
   return { status: 'ok', url: c.getUrl(), name: c.getName() };
 }
 
@@ -501,7 +489,7 @@ function adminClose(d) {
     const m = stock[i];
     if (!BIZ_NAMES[m.biz] || !STOCK_LOCS[m.loc] || !String(m.item || '').trim() || !isFinite(Number(m.qty)) || !Number(m.qty)) return { status: 'error', error: 'fields', index: i };
   }
-  const copy = backupCopy('NOMAAD архив ' + y + ' (он хаахаас өмнөх бүрэн хуулбар)', false);
+  const copy = backupCopy('NOMAAD архив ' + y + ' (он хаахаас өмнөх бүрэн хуулбар)');
   const removed = {
     records: pruneSheet(logSheet(), LOG_HEAD.length, end),
     moves: pruneSheet(stockSheet(), STOCK_HEAD.length, end),
