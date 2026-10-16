@@ -326,3 +326,24 @@ tr.st-out td{background:#FEF2F2;color:#991B1B}
 td.neg{color:var(--red);font-weight:600}
 table.stock td:first-child{min-width:150px}
 @media (max-width:760px){.hide-sm{display:none}}
+
+/* ── Тайлан, дэд цэс ── */
+.subtabs{display:flex;gap:4px;flex-wrap:wrap;margin:12px 0 0}
+.subtabs button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 11px;font:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+.subtabs button.on{background:#EEF3F9;border-color:var(--accent);color:var(--accent)}
+.dates{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.dates input{padding:6px 8px;font-size:13px;width:auto}
+table.rep-t td,table.rep-t th{white-space:nowrap}
+table.rep-t tr.b td{font-weight:700}
+table.rep-t tr.tot td{font-weight:700;border-top:2px solid var(--ink);background:#F7F9FC}
+td.neg{color:var(--red)}
+.rep-note{margin:8px 0 0;padding:8px 12px;border-radius:8px;background:#F1F5F9;font-size:13.5px}
+.rep-note.ok{background:#E8F5EE;color:#14663A}
+.rep-note.bad{background:#FDECEC;color:#9B1C1C}
+.cklist{list-style:none;padding:0;margin:10px 0 0}
+.cklist li{display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.ck{display:inline-flex;width:22px;height:22px;border-radius:50%;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex:none}
+.ck.ok{background:var(--green)}.ck.bad{background:var(--red)}
+.rep-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.rep-links{list-style:none;padding:0;margin:0}
+.rep-links li{padding:6px 0;border-bottom:1px solid var(--line)}

@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v2.2 (барааны үлдэгдэл)
+// NOMAAD Бизнесүүд — Google Apps Script v2.3 (санхүү: журнал, харилцагч)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -11,6 +11,10 @@ const SHEET_PROD   = 'Бараа';
 const SHEET_STAFF  = 'Ажилтан';
 const SHEET_SALARY = 'Цалин';
 const SHEET_STOCK  = 'Үлдэгдэл';
+const SHEET_JOURNAL = 'Журнал';
+const SHEET_PARTNER = 'Харилцагч';
+const JOURNAL_HEAD = ['ID', 'Огноо', 'Бизнес', 'Дебет', 'Кредит', 'Дүн', 'Харилцагч', 'Гүйлгээний утга', 'Хэн', 'Бүртгэсэн', 'biz', 'Төлөв'];
+const PARTNER_HEAD = ['ID', 'Бизнес', 'Төрөл', 'Нэр', 'ТТД / Регистр', 'Утас', 'Тайлбар', 'biz'];
 const TZ           = 'Asia/Ulaanbaatar';
 const SHEET_ID     = '1Hkmo9ttsHfm6xfr49W0BpjkE2nnPPCL0dt2fP6rGyKI';   // NOMAAD Бизнесүүд — Бүртгэл
 
@@ -26,7 +30,7 @@ const TOKEN_TTL = 8 * 3600;   // удирдагчийн нэвтрэлт 8 ца�
 const SALARY_HEAD = ['ID', 'Огноо', 'Сар', 'Ажилтны ID', 'Нэр', 'Бизнес', 'Төрөл', 'Дүн', 'Тайлбар'];
 const SALARY_KINDS = { 'Урьдчилгаа': 1, 'Шагнал': 1, 'Суутгал': 1, 'Олгосон': 1 };
 // Үлдэгдлийн хөдөлгөөн: тоо + (нэмэгдэх) / − (хасагдах). Борлуулалт «Бүртгэл»-ээс автоматаар хасагдана.
-const STOCK_HEAD = ['ID', 'Огноо', 'Бизнес', 'Байршил', 'Бараа', 'Төрөл', 'Тоо', 'Нэгж өртөг', 'Хэн', 'Тайлбар', 'biz'];
+const STOCK_HEAD = ['ID', 'Огноо', 'Бизнес', 'Байршил', 'Бараа', 'Төрөл', 'Тоо', 'Нэгж өртөг', 'Хэн', 'Тайлбар', 'biz', 'Төлбөр', 'Харилцагч'];
 const STOCK_KINDS = { 'Эхний үлдэгдэл': 1, 'Орлого': 1, 'Шилжүүлэг': 1, 'Тооллого': 1, 'Хасалт': 1 };
 const STOCK_LOCS = { 'Дэлгүүр': 1, 'Агуулах': 1 };
 
@@ -42,6 +46,8 @@ function doPost(e) {
     if (data.type === 'admin_staff') return json(isAdmin(data) ? adminStaff(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_salary') return json(isAdmin(data) ? adminSalary(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_stock') return json(isAdmin(data) ? adminStock(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_journal') return json(isAdmin(data) ? adminJournal(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_partner') return json(isAdmin(data) ? adminPartner(data) : { status: 'error', error: 'auth' });
     return json(saveRecords(data));
   } catch (err) {
     return json({ status: 'error', error: err.message });
@@ -70,7 +76,9 @@ function adminRead(d) {
   const a = adminData();
   a.records = data(d.from).records;
   a.stock = stockAll(true);
-  a.moves = stockMoves().slice(-500);
+  a.moves = stockMoves();
+  a.journal = journalRows();
+  a.partners = partnerRows();
   return a;
 }
 
@@ -220,6 +228,7 @@ function stockSheet() {
     sh.hideColumns(11);
     [120, 140, 170, 90, 220, 120, 70, 110, 120, 220].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
   }
+  if (sh.getRange(1, 13).getValue() !== 'Харилцагч') sh.getRange(1, 1, 1, STOCK_HEAD.length).setValues([STOCK_HEAD]);
   return sh;
 }
 function stockMoves() {
@@ -228,7 +237,8 @@ function stockMoves() {
   if (last < 2) return [];
   return sh.getRange(2, 1, last - 1, STOCK_HEAD.length).getValues().map(function (v) {
     return { id: String(v[0]), date: fmtDate(v[1], 'yyyy-MM-dd HH:mm'), loc: String(v[3]), item: String(v[4]).trim(),
-             kind: String(v[5]), qty: Number(v[6]) || 0, cost: Number(v[7]) || 0, by: String(v[8]), note: String(v[9]), biz: String(v[10]) };
+             kind: String(v[5]), qty: Number(v[6]) || 0, cost: Number(v[7]) || 0, by: String(v[8]), note: String(v[9]), biz: String(v[10]),
+             pay: String(v[11] || ''), partner: String(v[12] || '') };
   });
 }
 // Бизнес бүрийн бараа тус бүрийн үлдэгдэл: { biz: { item: { shop, wh, cost? } } }.
@@ -283,12 +293,82 @@ function adminStock(d) {
       return { status: 'error', error: 'fields', index: i };
     }
     const cost = Math.max(0, Number(m.cost) || 0);
+    const pay = /^(Бэлэн|Харилцах|Зээлээр)$/.test(String(m.pay || '')) ? m.pay : '';
     rows.push(['M' + Date.now() + '-' + (n++), now, BIZ_NAMES[m.biz], m.loc, String(m.item).trim().slice(0, 80), m.kind, qty, cost || '', by,
-               String(m.note || '').slice(0, 120), m.biz]);
+               String(m.note || '').slice(0, 120), m.biz, pay, String(m.partner || '').slice(0, 80)]);
   }
   const sh = stockSheet();
   sh.getRange(sh.getLastRow() + 1, 1, rows.length, STOCK_HEAD.length).setValues(rows);
   return { status: 'ok', saved: rows.length };
+}
+
+// ── Санхүү: гар журналын бичилт (эхний үлдэгдэл, хөрөнгө оруулалт, зээл, төлбөр төлөх г.м) ──
+// Борлуулалт/зарлага/бараа/цалингийн журналыг баримтаас автоматаар тооцдог тул энд хадгалахгүй.
+function journalSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_JOURNAL);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_JOURNAL);
+    sh.appendRow(JOURNAL_HEAD);
+    styleHead(sh, JOURNAL_HEAD.length, '#1E3A5F');
+    sh.getRange('B:B').setNumberFormat('@'); sh.getRange('D:E').setNumberFormat('@');
+    sh.hideColumns(11);
+    [120, 100, 170, 90, 90, 120, 160, 260, 110, 140, 60, 80].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
+  }
+  return sh;
+}
+function journalRows() {
+  const sh = journalSheet();
+  const last = sh.getLastRow();
+  if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, JOURNAL_HEAD.length).getValues().map(function (v) {
+    return { id: String(v[0]), date: fmtDate(v[1], 'yyyy-MM-dd'), dr: String(v[3]), cr: String(v[4]), amount: Number(v[5]) || 0,
+             partner: String(v[6]), desc: String(v[7]), by: String(v[8]), biz: String(v[10]), status: String(v[11] || '') };
+  }).filter(function (j) { return j.status !== 'Устгасан'; });
+}
+function adminJournal(d) {
+  const e = d.entry || {};
+  if (d.cancelId) {   // буруу бичилтийг «Устгасан» төлөвтэй болгоно (мөр устгахгүй)
+    const sh = journalSheet(), last = sh.getLastRow();
+    const ids = last >= 2 ? sh.getRange(2, 1, last - 1, 1).getValues() : [];
+    for (let i = 0; i < ids.length; i++) if (String(ids[i][0]) === String(d.cancelId)) { sh.getRange(i + 2, 12).setValue('Устгасан'); return { status: 'ok' }; }
+    return { status: 'error', error: 'not_found' };
+  }
+  const amt = Number(e.amount);
+  if (!BIZ_NAMES[e.biz] || !/^\d{4}-\d{2}-\d{2}$/.test(String(e.date)) || !/^\d{4,6}$/.test(String(e.dr)) || !/^\d{4,6}$/.test(String(e.cr)) ||
+      e.dr === e.cr || !(amt > 0)) return { status: 'error', error: 'fields' };
+  const id = 'J' + Date.now();
+  journalSheet().appendRow([id, e.date, BIZ_NAMES[e.biz], String(e.dr), String(e.cr), amt, String(e.partner || '').slice(0, 80),
+    String(e.desc || '').slice(0, 200), String(d.by || '').slice(0, 40), Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), e.biz, '']);
+  return { status: 'ok', id: id };
+}
+function partnerSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_PARTNER);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_PARTNER);
+    sh.appendRow(PARTNER_HEAD);
+    styleHead(sh, PARTNER_HEAD.length, '#475569');
+    sh.hideColumns(8);
+    [120, 170, 120, 220, 130, 110, 240].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
+  }
+  return sh;
+}
+function partnerRows() {
+  const sh = partnerSheet();
+  const last = sh.getLastRow();
+  if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, PARTNER_HEAD.length).getValues().map(function (v) {
+    return { id: String(v[0]), kind: String(v[2]), name: String(v[3]), tin: String(v[4]), phone: String(v[5]), note: String(v[6]), biz: String(v[7]) };
+  });
+}
+function adminPartner(d) {
+  const p = d.partner || {};
+  if (!BIZ_NAMES[p.biz] || !/^(Нийлүүлэгч|Худалдан авагч)$/.test(String(p.kind)) || !String(p.name || '').trim()) return { status: 'error', error: 'fields' };
+  const id = 'P' + Date.now();
+  partnerSheet().appendRow([id, BIZ_NAMES[p.biz], p.kind, String(p.name).trim().slice(0, 80), String(p.tin || '').slice(0, 20),
+    String(p.phone || '').slice(0, 20), String(p.note || '').slice(0, 120), p.biz]);
+  return { status: 'ok', id: id };
 }
 
 // ── Туслах ──
@@ -439,4 +519,4 @@ function json(o) {
 }
 
 // Нэг удаа гараар ажиллуулж хуудсуудыг үүсгэнэ (заавал биш)
-function setup() { logSheet(); prodSheet(); staffSheet(); salarySheet(); stockSheet(); }
+function setup() { logSheet(); prodSheet(); staffSheet(); salarySheet(); stockSheet(); journalSheet(); partnerSheet(); }

@@ -107,10 +107,52 @@
       <div id="mvCostWrap"><label for="mvCost">Нэгж өртөг (₮)</label>
         <input id="mvCost" type="number" inputmode="numeric" min="0" placeholder="Авсан үнэ"></div>
     </div>
+    <div id="mvPayWrap"><div class="row2">
+      <div><label for="mvPay">Төлбөр</label>
+        <select id="mvPay"><option value="Зээлээр">Зээлээр (дараа төлнө)</option><option>Бэлэн</option><option>Харилцах</option></select></div>
+      <div><label for="mvPartner">Нийлүүлэгч</label><input id="mvPartner" list="mvPartners" placeholder="Нэр"><datalist id="mvPartners"></datalist></div>
+    </div>
+    <p class="muted" style="font-size:12.5px;margin-top:6px">Дэлгүүрийн кассаас «Бараа татан авалт» зарлагаар төлөх бол «Зээлээр» сонгоно — касс зарлага нь өглөгийг хаана.</p></div>
     <label for="mvNote">Тайлбар</label>
-    <input id="mvNote" placeholder="Нийлүүлэгч, баримтын дугаар…">
+    <input id="mvNote" placeholder="Баримтын дугаар, шалтгаан…">
     <button class="btn" onclick="saveMove()">Хадгалах</button>
     <button class="btn ghost" onclick="closeSheet('moveSheet')">Болих</button>
+  </div>
+</div>
+
+<!-- Журналын бичилт -->
+<div class="sheet" id="entrySheet" onclick="if(event.target===this)closeSheet('entrySheet')">
+  <div class="panel">
+    <h2>Журналын бичилт</h2>
+    <label for="jePreset">Түгээмэл гүйлгээ</label>
+    <select id="jePreset" onchange="jePreset(this.value)"></select>
+    <div class="row2">
+      <div><label for="jeDate">Огноо</label><input id="jeDate" type="date"></div>
+      <div><label for="jeAmount">Дүн (₮)</label><input id="jeAmount" type="number" inputmode="numeric" min="0"></div>
+    </div>
+    <label for="jeDr">Дебет данс</label><select id="jeDr"></select>
+    <label for="jeCr">Кредит данс</label><select id="jeCr"></select>
+    <label for="jePartner">Харилцагч</label><input id="jePartner" list="jePartners" placeholder="Заавал биш"><datalist id="jePartners"></datalist>
+    <label for="jeDesc">Гүйлгээний утга</label><input id="jeDesc">
+    <button class="btn" onclick="saveEntry()">Бичих</button>
+    <button class="btn ghost" onclick="closeSheet('entrySheet')">Болих</button>
+  </div>
+</div>
+
+<!-- Харилцагч -->
+<div class="sheet" id="partnerSheet" onclick="if(event.target===this)closeSheet('partnerSheet')">
+  <div class="panel">
+    <h2>Харилцагч нэмэх</h2>
+    <label for="ptKind">Төрөл</label>
+    <select id="ptKind"><option>Нийлүүлэгч</option><option>Худалдан авагч</option></select>
+    <label for="ptName">Нэр</label><input id="ptName">
+    <div class="row2">
+      <div><label for="ptTin">ТТД / Регистр</label><input id="ptTin" inputmode="numeric"></div>
+      <div><label for="ptPhone">Утас</label><input id="ptPhone" inputmode="tel"></div>
+    </div>
+    <label for="ptNote">Тайлбар</label><input id="ptNote">
+    <button class="btn" onclick="savePartner()">Хадгалах</button>
+    <button class="btn ghost" onclick="closeSheet('partnerSheet')">Болих</button>
   </div>
 </div>
 
@@ -120,6 +162,7 @@
 <script src="products.js"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
+<script src="reports.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>
