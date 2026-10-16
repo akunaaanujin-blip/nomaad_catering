@@ -9,7 +9,7 @@
 </head>
 <body>
 <div class="login" style="margin-top:4vh;max-width:460px">
-  <div class="ico">📝</div>
+  <div class="ico mono">N</div>
   <h1>Ажилтны бүртгэл</h1>
   <p class="muted">Бүртгүүлсний дараа менежер баталгаажуулна. Баталгаажмагц өөрийн кодоор нэвтэрнэ.</p>
 
@@ -24,6 +24,8 @@
       <div><label for="rPhone">Утас *</label><input id="rPhone" inputmode="tel" autocomplete="tel" placeholder="99112233"></div>
       <div><label for="rReg">Регистр</label><input id="rReg" placeholder="УБ90010101"></div>
     </div>
+    <label for="rUser">Нэвтрэх нэр * <span class="muted" style="font-weight:400">(латин жижиг үсэг, тоо, цэг — 3-20 тэмдэгт)</span></label>
+    <input id="rUser" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="жишээ: bold.b">
     <label for="rPos">Албан тушаал</label>
     <input id="rPos" placeholder="Худалдагч, кассчин…">
     <label for="rBank">Цалингийн данс (банк, дансны дугаар)</label>
@@ -38,9 +40,9 @@
   </div>
 
   <div class="card" id="done" style="display:none">
-    <div style="font-size:48px">✅</div>
+    <div class="done-mark">✓</div>
     <h2 style="margin:8px 0">Бүртгэл илгээгдлээ</h2>
-    <p class="muted">Менежер баталгаажуулсны дараа өөрийн дэлгүүрийн хуудсанд <b>өөрийн кодоор</b> нэвтэрнэ.</p>
+    <p class="muted">Менежер баталгаажуулсны дараа өөрийн дэлгүүрийн хуудсанд <b>нэвтрэх нэр, кодоороо</b> нэвтэрнэ.</p>
     <a class="btn" id="doneLink" href="index.html" style="text-decoration:none;text-align:center">Нэвтрэх хуудас руу</a>
   </div>
 </div>
@@ -61,10 +63,12 @@ function submitRegister() {
     surname: $('rSurname').value.trim(), name: $('rName').value.trim(),
     phone: $('rPhone').value.replace(/[^\d+]/g, ''), regno: $('rReg').value.trim(),
     position: $('rPos').value.trim(), bank: $('rBank').value.trim(), code: $('rCode').value.trim(),
+    username: $('rUser').value.trim().toLowerCase(),
   };
   var msg = '';
   if (!d.name) msg = 'Нэрээ бичнэ үү';
   else if (!/^\+?\d{8,12}$/.test(d.phone)) msg = 'Утасны дугаараа зөв бичнэ үү';
+  else if (!/^[a-z0-9._]{3,20}$/.test(d.username)) msg = 'Нэвтрэх нэр: латин жижиг үсэг, тоо, цэг (3-20 тэмдэгт)';
   else if (!/^\d{4}$/.test(d.code)) msg = 'Нэвтрэх код 4 оронтой тоо байна';
   else if (d.code !== $('rCode2').value.trim()) msg = 'Код хоорондоо таарахгүй байна';
   else if (/^(\d)\1{3}$|^1234$|^4321$/.test(d.code)) msg = 'Илүү хэцүү код сонгоно уу';
@@ -85,7 +89,8 @@ function submitRegister() {
         return;
       }
       $('rMsg').textContent = {
-        code_taken: 'Энэ код өөр ажилтанд ашиглагдаж байна — өөр код сонгоно уу',
+        user_taken: 'Энэ нэвтрэх нэр бүртгэгдсэн байна — өөр нэр сонгоно уу',
+        user: 'Нэвтрэх нэр буруу байна (латин жижиг үсэг, тоо, цэг)',
         fields: 'Нэр, утсаа зөв бөглөнө үү', code: 'Код 4 оронтой тоо байна',
         busy: 'Олон бүртгэл ирсэн байна — түр хүлээгээд дахин оролдоно уу',
       }[res.error] || 'Алдаа гарлаа: ' + (res.error || '');

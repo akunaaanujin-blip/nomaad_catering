@@ -12,12 +12,14 @@
 
 <!-- Нэвтрэх -->
 <div class="login" id="login" style="display:none">
-  <div class="ico" id="loginIcon"></div>
+  <div class="ico mono" id="loginIcon"></div>
   <h1 id="loginBiz"></h1>
   <p class="muted">Ажилтны хуудас</p>
   <div class="card" style="text-align:left">
-    <label for="codeInput">Өөрийн 4 оронтой код</label>
-    <input id="codeInput" class="code-input" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••" oninput="onCodeInput()">
+    <label for="userInput">Нэвтрэх нэр</label>
+    <input id="userInput" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="жишээ: bold.b" onkeydown="if(event.key==='Enter')$('codeInput').focus()">
+    <label for="codeInput">Нууц код</label>
+    <input id="codeInput" class="code-input" type="password" inputmode="numeric" maxlength="8" autocomplete="current-password" placeholder="••••" oninput="onCodeInput()" onkeydown="if(event.key==='Enter')doLogin()">
     <p class="muted" id="loginMsg" style="margin-top:8px;min-height:20px;color:var(--red)"></p>
     <button class="btn" onclick="doLogin()">Нэвтрэх</button>
     <p class="muted" style="margin-top:10px;font-size:13px">Шинэ ажилтан уу? <a href="register.html?biz=cozy">Энд бүртгүүлнэ үү</a></p>
@@ -27,7 +29,7 @@
 <!-- Үндсэн -->
 <div id="main" style="display:none">
   <div class="top">
-    <div class="ico" id="bizIcon"></div>
+    <div class="ico mono" id="bizIcon"></div>
     <div><h1 id="bizName"></h1><small id="today"></small></div>
     <div class="right"><div id="who"></div><button onclick="logout()">Гарах</button></div>
   </div>
@@ -36,7 +38,7 @@
     <div class="big-btns">
       <button class="big sale" onclick="openSale()"><span>＋</span>Борлуулалт</button>
       <button class="big exp" onclick="openExpense()"><span>−</span>Зарлага</button>
-      <button class="big close" onclick="openClose()"><span>🔒</span>Өдрийн касс хаах</button>
+      <button class="big close" onclick="openClose()"><span></span>Өдрийн касс хаах</button>
     </div>
     <div class="pending" id="pending"></div>
     <div class="pending" id="ebWarn"></div>
@@ -62,7 +64,7 @@
     <h2>＋ Борлуулалт</h2>
     <label>Бараа сонгох</label>
     <div id="saleSearchWrap" style="display:none;margin-bottom:8px">
-      <input id="saleSearch" placeholder="🔍 Бараа хайх (жишээ: майхан, titan)" oninput="renderChips()">
+      <input id="saleSearch" placeholder="Бараа хайх (жишээ: майхан, titan)" oninput="renderChips()">
     </div>
     <div class="chips cats" id="saleCats" style="display:none"></div>
     <div class="chips" id="saleChips"></div>
@@ -74,13 +76,13 @@
       </div>
       <button class="btn ghost" style="color:var(--accent);margin-top:4px" onclick="addCustom()">＋ Сагсанд нэмэх</button>
     </details>
-    <label>🛒 Сагс <span class="muted" id="saleCount"></span></label>
+    <label>Сагс <span class="muted" id="saleCount"></span></label>
     <ul class="list cart" id="cartList"></ul>
     <label>Төлбөр</label>
     <div class="seg" id="paySeg">
-      <button data-v="Бэлэн" onclick="setPay('Бэлэн')">💵 Бэлэн</button>
-      <button data-v="Карт" onclick="setPay('Карт')">💳 Карт</button>
-      <button data-v="Шилжүүлэг" onclick="setPay('Шилжүүлэг')">📱 Шилжүүлэг</button>
+      <button data-v="Бэлэн" onclick="setPay('Бэлэн')">Бэлэн</button>
+      <button data-v="Карт" onclick="setPay('Карт')">Карт</button>
+      <button data-v="Шилжүүлэг" onclick="setPay('Шилжүүлэг')">Шилжүүлэг</button>
     </div>
     <div id="saleTinWrap" style="display:none">
       <label for="saleTin">Байгууллагын ТТД (байгууллагад баримт өгөх бол)</label>
@@ -113,7 +115,7 @@
 <!-- Касс хаах -->
 <div class="sheet" id="closeSheet" onclick="if(event.target===this)closeSheet('closeSheet')">
   <div class="panel">
-    <h2>🔒 Өдрийн касс хаах</h2>
+    <h2>Өдрийн касс хаах</h2>
     <p class="muted">Өнөөдрийн бичлэгээр тооцоолсон дүн:</p>
     <ul class="list card" id="closeSys" style="margin-top:8px"></ul>
     <label for="closeCash">Касст байгаа бэлэн мөнгийг тоолоод бичнэ үү (₮)</label>
@@ -130,7 +132,7 @@
 <div class="sheet" id="receiptSheet">
   <div class="panel">
     <div class="receipt" id="rcBody"></div>
-    <button class="btn no-print" onclick="ebPrint()">🖨 Хэвлэх</button>
+    <button class="btn no-print" onclick="ebPrint()">Хэвлэх</button>
     <button class="btn ghost no-print" onclick="ebCloseReceipt()">Хаах</button>
   </div>
 </div>
@@ -138,7 +140,7 @@
 <!-- И-баримтын тохиргоо (компьютер бүрт) -->
 <div class="sheet" id="ebSheet" onclick="if(event.target===this)closeSheet('ebSheet')">
   <div class="panel">
-    <h2>🧾 И-баримтын тохиргоо</h2>
+    <h2>И-баримтын тохиргоо</h2>
     <p class="muted" id="ebInfo"></p>
     <label class="check"><input type="checkbox" id="ebOn"> Борлуулалт бүрт И-баримт гаргах</label>
     <label for="ebUrl">PosAPI хаяг</label>

@@ -7,8 +7,8 @@ var BUSINESSES = {
   meat: {
     key: 'meat',
     name: 'Махны дэлгүүр',
-    icon: '🥩',
-    color: '#9B2C2C',
+    icon: 'М',
+    color: '#8B1E2D',
     unit: 'кг',
     products: [
       { name: 'Үхрийн мах', unit: 'кг', price: 22000, cls: '2111100' },
@@ -23,8 +23,8 @@ var BUSINESSES = {
   cozy: {
     key: 'cozy',
     name: 'Cozy Home Ulaanbaatar',
-    icon: '🏠',
-    color: '#8A6A3B',
+    icon: 'C',
+    color: '#7A5A2E',
     unit: 'ш',
     products: [
       { name: 'Бараа 1', unit: 'ш', price: 0 },
@@ -36,8 +36,8 @@ var BUSINESSES = {
   travel: {
     key: 'travel',
     name: 'NOMAAD аяллын дэлгүүр',
-    icon: '🎒',
-    color: '#1F4A38',
+    icon: 'N',
+    color: '#1E4D3B',
     unit: 'ш',
     products: (typeof TRAVEL_PRODUCTS !== 'undefined') ? TRAVEL_PRODUCTS : [],   // products.js
     expenses: ['Бараа татан авалт', 'Тээвэр', 'Цалин', 'Түрээс', 'Засвар', 'Бусад'],

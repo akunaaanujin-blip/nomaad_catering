@@ -1,11 +1,11 @@
-// NOMAAD Бизнесүүд — Google Apps Script v2.0 (ажилчдын бүртгэл, цалин)
+// NOMAAD Бизнесүүд — Google Apps Script v2.1 (нэвтрэх нэр, эзний бүртгэл, токен)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
 // ADMIN_PIN-ээ сольно → Deploy → New deployment → Web app
 // (Execute as: Me, Who has access: Anyone) → гарсан /exec холбоосыг config.js-ийн API_URL-д тавина.
 
-const ADMIN_PIN    = '0000';          // ← удирдагчийн PIN-ээ ЗААВАЛ сольно уу
+const ADMIN_PIN    = '0000';          // ← анхны «admin» эзний нууц код (зөвхөн анх үүсгэхэд). Дараа нь «Ажилтан» хуудсаас солино.
 const SHEET_LOG    = 'Бүртгэл';
 const SHEET_PROD   = 'Бараа';
 const SHEET_STAFF  = 'Ажилтан';
@@ -19,7 +19,9 @@ const LOG_HEAD = ['ID', 'Огноо', 'Цаг', 'Бизнес', 'Төрөл', '�
                   'Нэгжийн үнэ', 'Дүн', 'Төлбөр', 'Тоолсон бэлэн', 'Зөрүү', 'Тайлбар', 'biz', 'type'];
 // "Ажилтан" хуудасны баганууд (эхний 5 нь v1.1-ээс хэвээр)
 const STAFF_HEAD = ['Бизнес (meat / cozy / travel / all)', 'Нэр', 'Код (4 орон)', 'Эрх (Худалдагч / Менежер)', 'Идэвхтэй (Тийм / Хүлээгдэж / Үгүй)',
-                    'Овог', 'Утас', 'Регистр', 'Албан тушаал', 'Үндсэн цалин', 'Банкны данс', 'Бүртгүүлсэн', 'ID'];
+                    'Овог', 'Утас', 'Регистр', 'Албан тушаал', 'Үндсэн цалин', 'Банкны данс', 'Бүртгүүлсэн', 'ID', 'Нэвтрэх нэр'];
+const USER_RE = /^[a-z0-9._]{3,20}$/;
+const TOKEN_TTL = 8 * 3600;   // удирдагчийн нэвтрэлт 8 цаг
 const SALARY_HEAD = ['ID', 'Огноо', 'Сар', 'Ажилтны ID', 'Нэр', 'Бизнес', 'Төрөл', 'Дүн', 'Тайлбар'];
 const SALARY_KINDS = { 'Урьдчилгаа': 1, 'Шагнал': 1, 'Суутгал': 1, 'Олгосон': 1 };
 
@@ -30,8 +32,10 @@ function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     if (data.type === 'register') return json(register(data));
-    if (data.type === 'admin_staff') return json(isAdmin(data) ? adminStaff(data) : { status: 'error', error: 'pin' });
-    if (data.type === 'admin_salary') return json(isAdmin(data) ? adminSalary(data) : { status: 'error', error: 'pin' });
+    if (data.type === 'admin_login') return json(adminLogin(data));
+    if (data.type === 'admin_read') return json(isAdmin(data) ? adminRead(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_staff') return json(isAdmin(data) ? adminStaff(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_salary') return json(isAdmin(data) ? adminSalary(data) : { status: 'error', error: 'auth' });
     return json(saveRecords(data));
   } catch (err) {
     return json({ status: 'error', error: err.message });
@@ -39,7 +43,28 @@ function doPost(e) {
     lock.releaseLock();
   }
 }
-function isAdmin(data) { return String(data.pin) === ADMIN_PIN; }
+// Удирдагчийн токен (admin_login-оор олгоно, 8 цаг хүчинтэй)
+function isAdmin(data) {
+  return !!(data.token && /^[0-9a-f-]{36}$/.test(String(data.token)) && CacheService.getScriptCache().get('tok_' + data.token));
+}
+function adminLogin(d) {
+  const user = String(d.user || '').trim().toLowerCase(), pass = String(d.pass || '').trim();
+  const cache = CacheService.getScriptCache();
+  const key = 'afail_' + user;
+  const fails = Number(cache.get(key) || 0);
+  if (fails >= 10) return { status: 'error', error: 'locked' };
+  const s = staffRows().filter(function (x) { return x.username === user && x.role === 'Эзэн' && x.status === 'Тийм'; })[0];
+  if (!s || s.code !== pass.padStart(4, '0')) { cache.put(key, String(fails + 1), 900); return { status: 'error', error: 'auth' }; }
+  cache.remove(key);
+  const token = Utilities.getUuid();
+  cache.put('tok_' + token, s.id, TOKEN_TTL);
+  return { status: 'ok', token: token, name: s.name };
+}
+function adminRead(d) {
+  const a = adminData();
+  a.records = data(d.from).records;
+  return a;
+}
 
 // Ажилтны хуудаснаас ирсэн борлуулалт / зарлага / касс хаалт
 function saveRecords(data) {
@@ -71,9 +96,7 @@ function doGet(e) {
   const p = e.parameter || {};
   let out;
   if (p.action === 'products') out = products(p.biz);
-  else if (p.action === 'login') out = login(p.biz, p.code);
-  else if (p.action === 'data') out = String(p.pin) === ADMIN_PIN ? data(p.from) : { status: 'error', error: 'pin' };
-  else if (p.action === 'admin') out = String(p.pin) === ADMIN_PIN ? adminData() : { status: 'error', error: 'pin' };
+  else if (p.action === 'login') out = login(p.biz, p.user, p.code);
   else out = { status: 'ok', app: 'NOMAAD' };
   const body = JSON.stringify(out);
   if (p.callback) {
@@ -83,21 +106,20 @@ function doGet(e) {
 }
 
 // ── Ажилтны нэвтрэлт ── Кодын жагсаалтыг хэзээ ч буцаахгүй. Зөвхөн "Тийм" төлөвтэй ажилтан нэвтэрнэ.
-function login(biz, code) {
+function login(biz, user, code) {
   code = String(code || '').trim();
-  if (!BIZ_NAMES[biz] || !/^\d{4}$/.test(code)) return { status: 'error', error: 'code' };
+  user = String(user || '').trim().toLowerCase();
+  if (!BIZ_NAMES[biz] || !USER_RE.test(user) || !/^\d{4,8}$/.test(code)) return { status: 'error', error: 'code' };
   const cache = CacheService.getScriptCache();
-  const key = 'fail_' + biz;
+  const key = 'fail_' + biz + '_' + user;
   const fails = Number(cache.get(key) || 0);
-  if (fails >= 15) return { status: 'error', error: 'locked' };
-  const rows = staffRows();
-  for (let i = 0; i < rows.length; i++) {
-    const s = rows[i];
-    if ((s.biz === biz || s.biz === 'all') && s.code === code) {
-      if (s.status === 'Хүлээгдэж') return { status: 'error', error: 'pending' };
-      if (s.status !== 'Тийм') continue;
+  if (fails >= 10) return { status: 'error', error: 'locked' };
+  const s = staffRows().filter(function (x) { return x.username === user && (x.biz === biz || x.biz === 'all'); })[0];
+  if (s && s.code === code.padStart(4, '0')) {
+    if (s.status === 'Хүлээгдэж') return { status: 'error', error: 'pending' };
+    if (s.status === 'Тийм') {
       cache.remove(key);
-      return { status: 'ok', name: s.name, role: s.role === 'Менежер' ? 'manager' : 'seller' };
+      return { status: 'ok', name: s.name, role: s.role === 'Худалдагч' ? 'seller' : 'manager' };
     }
   }
   cache.put(key, String(fails + 1), 600);
@@ -113,19 +135,19 @@ function register(d) {
   const name = String(d.name || '').trim().slice(0, 60);
   const phone = String(d.phone || '').replace(/[^\d+]/g, '').slice(0, 15);
   const code = String(d.code || '').trim();
+  const username = String(d.username || '').trim().toLowerCase();
   if (!BIZ_NAMES[biz]) return { status: 'error', error: 'biz' };
+  if (!USER_RE.test(username)) return { status: 'error', error: 'user' };
   if (!name || !/^\+?\d{8,12}$/.test(phone)) return { status: 'error', error: 'fields' };
   if (!/^\d{4}$/.test(code)) return { status: 'error', error: 'code' };
   const rows = staffRows();
-  if (rows.some(function (s) { return s.code === code && (s.biz === biz || s.biz === 'all' || biz === 'all') && s.status !== 'Үгүй'; })) {
-    return { status: 'error', error: 'code_taken' };
-  }
+  if (rows.some(function (s) { return s.username === username; })) return { status: 'error', error: 'user_taken' };
   const sh = staffSheet();
   const id = 'E' + Date.now();
   sh.appendRow([biz, name, code, 'Худалдагч', 'Хүлээгдэж',
     String(d.surname || '').trim().slice(0, 60), phone, String(d.regno || '').trim().slice(0, 12),
     String(d.position || '').trim().slice(0, 40), '', String(d.bank || '').trim().slice(0, 40),
-    Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), id]);
+    Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), id, username]);
   cache.put('reg_count', String(n + 1), 3600);
   return { status: 'ok', id: id };
 }
@@ -150,18 +172,20 @@ function adminStaff(d) {
   const f = d.fields || {};
   const set = function (col, v) { sh.getRange(s.row, col).setValue(v); };
   if (f.status && /^(Тийм|Хүлээгдэж|Үгүй)$/.test(f.status)) set(5, f.status);
-  if (f.role && /^(Худалдагч|Менежер)$/.test(f.role)) set(4, f.role);
+  if (f.role && /^(Худалдагч|Менежер|Эзэн)$/.test(f.role)) set(4, f.role);
+  if (f.username !== undefined && f.username !== s.username) {
+    const u = String(f.username).trim().toLowerCase();
+    if (!USER_RE.test(u)) return { status: 'error', error: 'user' };
+    if (staffRows().some(function (x) { return x.username === u; })) return { status: 'error', error: 'user_taken' };
+    set(14, u);
+  }
   if (f.biz && (BIZ_NAMES[f.biz] || f.biz === 'all')) set(1, f.biz);
   if (f.position !== undefined) set(9, String(f.position).slice(0, 40));
   if (f.salary !== undefined) set(10, Number(f.salary) || 0);
   if (f.phone !== undefined) set(7, String(f.phone).slice(0, 15));
   if (f.bank !== undefined) set(11, String(f.bank).slice(0, 40));
   if (f.name) set(2, String(f.name).slice(0, 60));
-  if (f.code && /^\d{4}$/.test(f.code)) {
-    const taken = staffRows().some(function (x) { return x.id !== s.id && x.code === f.code && (x.biz === s.biz || x.biz === 'all' || s.biz === 'all') && x.status !== 'Үгүй'; });
-    if (taken) return { status: 'error', error: 'code_taken' };
-    set(3, f.code);
-  }
+  if (f.code && /^\d{4,8}$/.test(f.code)) set(3, String(f.code));
   return { status: 'ok' };
 }
 function adminSalary(d) {
@@ -184,10 +208,11 @@ function staffRows() {
   return sh.getRange(2, 1, last - 1, STAFF_HEAD.length).getValues().map(function (v, i) {
     return {
       row: i + 2, biz: String(v[0]).trim(), name: String(v[1]).trim(), code: String(v[2]).trim().padStart(4, '0'),
-      role: /менежер|manager/i.test(String(v[3])) ? 'Менежер' : 'Худалдагч',
+      role: /эзэн|owner/i.test(String(v[3])) ? 'Эзэн' : (/менежер|manager/i.test(String(v[3])) ? 'Менежер' : 'Худалдагч'),
       status: /^тийм$/i.test(String(v[4]).trim()) ? 'Тийм' : (/хүлээ/i.test(String(v[4])) ? 'Хүлээгдэж' : 'Үгүй'),
       surname: String(v[5]), phone: String(v[6]), regno: String(v[7]), position: String(v[8]),
       salary: Number(v[9]) || 0, bank: String(v[10]), created: fmtDate(v[11], 'yyyy-MM-dd HH:mm'), id: String(v[12]),
+      username: String(v[13] || '').trim().toLowerCase(),
     };
   }).filter(function (s) { return s.name || s.code !== '0000'; });
 }
@@ -206,12 +231,12 @@ function staffSheet() {
       ['travel', 'Менежер (Аялал)', rnd(), 'Менежер', 'Тийм'],
     ]);
   }
-  // v1.1 → v2.0: нэмэлт баганууд + ажилтан бүрт ID
-  if (sh.getRange(1, 13).getValue() !== 'ID') {
+  // v1.1 → v2.x: нэмэлт баганууд + ажилтан бүрт ID, нэвтрэх нэр
+  if (sh.getRange(1, 14).getValue() !== 'Нэвтрэх нэр') {
     sh.getRange(1, 1, 1, STAFF_HEAD.length).setValues([STAFF_HEAD]);
     styleHead(sh, STAFF_HEAD.length, '#2C5A8F');
     sh.getRange('C:C').setNumberFormat('@');
-    [200, 160, 110, 170, 190, 140, 110, 110, 140, 120, 160, 140, 130].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
+    [200, 160, 110, 170, 190, 140, 110, 110, 140, 120, 160, 140, 130, 140].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
   }
   const last = sh.getLastRow();
   if (last >= 2) {
@@ -219,6 +244,19 @@ function staffSheet() {
     let changed = false;
     ids.forEach(function (r, i) { if (!r[0]) { r[0] = 'E' + (Date.now() + i); changed = true; } });
     if (changed) sh.getRange(2, 13, last - 1, 1).setValues(ids);
+    // нэвтрэх нэргүй мөрүүдэд нэр олгоно
+    const known = { 'Менежер (Мах)': 'menejer.mah', 'Менежер (Cozy)': 'menejer.cozy', 'Менежер (Аялал)': 'menejer.ayal' };
+    const vals = sh.getRange(2, 1, last - 1, 14).getValues();
+    if (vals.some(function (v) { return !String(v[13] || '').trim(); })) {
+      const usernames = vals.map(function (v, i) { return [String(v[13] || '').trim() || known[String(v[1]).trim()] || ('ajiltan' + (i + 2))]; });
+      sh.getRange(2, 14, last - 1, 1).setValues(usernames);
+    }
+  }
+  // Эзэн (удирдагч) байхгүй бол анхны «admin» эзнийг үүсгэнэ
+  const hasOwner = sh.getLastRow() >= 2 && sh.getRange(2, 4, sh.getLastRow() - 1, 1).getValues().some(function (r) { return /эзэн/i.test(String(r[0])); });
+  if (!hasOwner) {
+    sh.appendRow(['all', 'Эзэн', ADMIN_PIN, 'Эзэн', 'Тийм', '', '', '', 'Удирдагч', '', '',
+      Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), 'E' + Date.now(), 'admin']);
   }
   return sh;
 }

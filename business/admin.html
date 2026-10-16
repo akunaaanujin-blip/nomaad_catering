@@ -8,28 +8,31 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="demo" id="demo" style="display:none">Туршилтын горим — зөвхөн энэ төхөөрөмж дээр бичигдсэн мэдээлэл харагдана (PIN: 0000)</div>
+<div class="demo" id="demo" style="display:none">Туршилтын горим — зөвхөн энэ төхөөрөмж дээр бичигдсэн мэдээлэл харагдана (код: 0000)</div>
 
 <div class="login" id="login">
-  <div class="ico">📊</div>
+  <div class="ico mono">N</div>
   <h1>Удирдлагын самбар</h1>
   <p class="muted">Миний компаниуд · Санхүү · Бараа материал · Ажилчид</p>
   <div class="card" style="text-align:left">
-    <label for="pinInput">PIN код</label>
-    <input id="pinInput" type="password" inputmode="numeric" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()">
+    <label for="userInput">Нэвтрэх нэр</label>
+    <input id="userInput" autocomplete="username" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter')$('passInput').focus()">
+    <label for="passInput">Нууц код</label>
+    <input id="passInput" type="password" inputmode="numeric" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <p class="muted" id="loginMsg" style="margin-top:8px;min-height:20px;color:var(--red)"></p>
     <button class="btn" id="loginBtn" onclick="doLogin()">Нэвтрэх</button>
   </div>
 </div>
 
 <div id="main" style="display:none">
   <div class="top">
-    <div class="ico">📊</div>
+    <div class="ico mono">N</div>
     <div><h1>Удирдлагын самбар</h1><small id="updated"></small></div>
-    <div class="right"><button onclick="refresh()">↻</button> <button onclick="logout()">Гарах</button></div>
+    <div class="right"><div id="ownerName"></div><button onclick="refresh()">Шинэчлэх</button> <button onclick="logout()">Гарах</button></div>
   </div>
   <nav class="topnav">
-    <button data-v="companies" onclick="go('companies')">🏢 Миний компаниуд</button>
-    <button data-v="staff" onclick="go('staff')">👥 Ажилчид <span class="badge" id="pendingBadge"></span></button>
+    <button data-v="companies" onclick="go('companies')">Миний компаниуд</button>
+    <button data-v="staff" onclick="go('staff')">Ажилчид <span class="badge" id="pendingBadge"></span></button>
   </nav>
   <div class="wrap wide" id="view"></div>
 </div>
@@ -43,7 +46,7 @@
       <div><label for="sfStatus">Төлөв</label>
         <select id="sfStatus"><option>Тийм</option><option>Хүлээгдэж</option><option>Үгүй</option></select></div>
       <div><label for="sfRole">Эрх</label>
-        <select id="sfRole"><option>Худалдагч</option><option>Менежер</option></select></div>
+        <select id="sfRole"><option>Худалдагч</option><option>Менежер</option><option>Эзэн</option></select></div>
     </div>
     <div class="row2">
       <div><label for="sfBiz">Дэлгүүр</label><select id="sfBiz"></select></div>
@@ -54,8 +57,11 @@
       <div><label for="sfPhone">Утас</label><input id="sfPhone" inputmode="tel"></div>
     </div>
     <label for="sfBank">Цалингийн данс</label><input id="sfBank">
-    <label for="sfCode">Шинэ нэвтрэх код (солих бол л бөглөнө)</label>
-    <input id="sfCode" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="••••">
+    <div class="row2">
+      <div><label for="sfUser">Нэвтрэх нэр</label><input id="sfUser" autocapitalize="none" spellcheck="false"></div>
+      <div><label for="sfCode">Шинэ нууц код (солих бол)</label>
+        <input id="sfCode" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="••••"></div>
+    </div>
     <button class="btn" onclick="saveStaff()">Хадгалах</button>
     <button class="btn ghost" onclick="closeSheet('staffSheet')">Болих</button>
   </div>

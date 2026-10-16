@@ -33,38 +33,43 @@ function init() {
 }
 
 // ── Нэвтрэх (4 оронтой код, Sheet-ийн "Ажилтан" хуудсаар шалгана) ──
+var LS_USER = 'nb_user_' + BIZ_KEY;   // энэ төхөөрөмж дээр сүүлд нэвтэрсэн нэр (тав тухтай байлгах)
 function showLogin() {
   $('login').style.display = 'block';
+  $('userInput').value = load(LS_USER, '') || '';
   $('codeInput').value = '';
-  $('codeInput').focus();
+  ($('userInput').value ? $('codeInput') : $('userInput')).focus();
 }
 function onCodeInput() {
-  var v = $('codeInput').value.replace(/\D/g, '').slice(0, 4);
+  var v = $('codeInput').value.replace(/\D/g, '').slice(0, 8);
   $('codeInput').value = v;
-  if (v.length === 4) doLogin();
+  if (v.length === 4 && $('userInput').value.trim()) doLogin();
 }
 function doLogin() {
+  var user = $('userInput').value.trim().toLowerCase();
   var code = $('codeInput').value.trim();
-  if (!/^\d{4}$/.test(code)) { toast('4 оронтой кодоо оруулна уу'); return; }
+  if (!user) { loginFail('Нэвтрэх нэрээ бичнэ үү'); $('userInput').focus(); return; }
+  if (!/^\d{4,8}$/.test(code)) { loginFail('Кодоо оруулна уу'); return; }
   if (!API_URL) {   // туршилтын горим
     if (code !== '0000') { loginFail('Туршилтын горимд код: 0000'); return; }
-    return loginOk({ name: 'Туршилт', role: 'manager' });
+    return loginOk({ name: user, role: 'manager' });
   }
   $('codeInput').disabled = true;
   $('loginMsg').textContent = 'Шалгаж байна...';
-  jsonp({ action: 'login', biz: BIZ_KEY, code: code }, function (err, data) {
+  jsonp({ action: 'login', biz: BIZ_KEY, user: user, code: code }, function (err, data) {
     $('codeInput').disabled = false;
     if (err) { loginFail('Интернэт холболтоо шалгана уу'); return; }
     if (!data || data.status !== 'ok') {
       loginFail(data && data.error === 'locked' ? 'Олон удаа буруу оруулсан — 10 минутын дараа оролдоно уу'
         : data && data.error === 'pending' ? 'Таны бүртгэл менежерийн баталгаажуулалт хүлээж байна'
-        : 'Код буруу байна');
+        : 'Нэвтрэх нэр эсвэл код буруу байна');
       return;
     }
     loginOk(data);
   });
 }
 function loginOk(d) {
+  save(LS_USER, $('userInput').value.trim().toLowerCase());
   session = { name: d.name, role: d.role, date: todayStr() };
   save(LS_SESSION, session);
   staffName = session.name;
@@ -250,7 +255,7 @@ function submitSale() {
   var tin = $('saleTin').value.trim();
   var btn = $('saleSubmit');
   btn.disabled = true;
-  btn.textContent = '🧾 Баримт гаргаж байна...';
+  btn.textContent = 'Баримт гаргаж байна...';
   ebSend(ebBuildRequest(lines, { tin: tin }), function (err, res) {
     btn.disabled = false;
     btn.textContent = 'Төлбөр авах';
@@ -386,7 +391,7 @@ function updatePending(n) {
   var el = $('pending');
   if (!el) return;
   el.style.display = n ? 'block' : 'none';
-  el.textContent = '⏳ ' + n + ' бичлэг илгээгдээгүй байна. Интернэт орохоор автоматаар илгээгдэнэ.';
+  el.textContent = n + ' бичлэг илгээгдээгүй байна. Интернэт орохоор автоматаар илгээгдэнэ.';
 }
 
 // ── Өнөөдрийн жагсаалт ──
@@ -422,16 +427,16 @@ function renderToday() {
       var showRet = r.ddtd && !r.returned && r.amount > 0 && !retShown[r.ddtd];
       if (showRet) retShown[r.ddtd] = 1;
       return '<li><span>' + esc(r.item) + ' · ' + r.qty + ' ' + esc(r.unit) +
-        '<small>' + r.time + ' · ' + esc(r.pay) + (r.ddtd ? ' · 🧾 баримттай' : '') + (r.returned ? ' · ↩ буцаагдсан' : '') + '</small>' +
+        '<small>' + r.time + ' · ' + esc(r.pay) + (r.ddtd ? ' · баримттай' : '') + (r.returned ? ' · буцаагдсан' : '') + '</small>' +
         (r.ddtd || /ДДТД/.test(r.note || '') ? '<small class="ddtd">ДДТД ' + esc(r.ddtd || (r.note.match(/ДДТД (\d+)/) || [])[1] || '') + '</small>' : '') +
-        (showRet ? '<button class="mini" onclick="ebReturn(\'' + r.id + '\')">↩ Баримт буцаах</button>' : '') +
+        (showRet ? '<button class="mini" onclick="ebReturn(\'' + r.id + '\')">Баримт буцаах</button>' : '') +
         '</span><span class="amt ' + (r.amount < 0 ? 'r' : 'g') + '">' + (r.amount < 0 ? '−' + fmt(-r.amount) : '+' + fmt(r.amount)) + '</span></li>';
     }
     if (r.type === 'expense') {
       return '<li><span>' + esc(r.category) + (r.note ? ' · ' + esc(r.note) : '') +
         '<small>' + r.time + ' · Зарлага</small></span><span class="amt r">−' + fmt(r.amount) + '</span></li>';
     }
-    return '<li><span>🔒 Касс хаасан<small>' + r.time + ' · Тоолсон ' + fmt(r.counted) +
+    return '<li><span>Касс хаасан<small>' + r.time + ' · Тоолсон ' + fmt(r.counted) +
       '</small></span><span class="amt">' + (r.diff ? (r.diff > 0 ? '+' : '−') + fmt(Math.abs(r.diff)) : '✓') + '</span></li>';
   }).join('');
 }

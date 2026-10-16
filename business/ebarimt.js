@@ -167,7 +167,7 @@ function renderEbBadge() {
   var el = $('ebBadge');
   if (!el) return;
   var s = ebSettings();
-  el.textContent = ebEnabled() ? (s.test ? '🧾 И-баримт (туршилт)' : '🧾 И-баримт') : '🧾 И-баримт унтраалттай';
+  el.textContent = ebEnabled() ? (s.test ? 'И-баримт · туршилт' : 'И-баримт идэвхтэй') : 'И-баримт унтраалттай';
   el.className = 'eb-badge' + (ebEnabled() ? (s.test ? ' test' : ' on') : '');
 }
 
@@ -230,19 +230,19 @@ function ebCheckInfo() {
       var w = [];
       if (typeof info.leftLotteries === 'number' && info.leftLotteries < 1000) {
         w.push(info.leftLotteries <= 0
-          ? '⚠️ Сугалаа дууссан — баримт сугалаагүй хэвлэгдэнэ. 🧾 → "Одоо илгээх" дарна уу.'
-          : '⚠️ Сугалаа дуусах дөхлөө (' + info.leftLotteries + ' үлдсэн). 🧾 → "Одоо илгээх" дарна уу.');
+          ? 'Сугалаа дууссан — баримт сугалаагүй хэвлэгдэнэ. → "Одоо илгээх" дарна уу.'
+          : 'Сугалаа дуусах дөхлөө (' + info.leftLotteries + ' үлдсэн). → "Одоо илгээх" дарна уу.');
       }
       var last = info.lastSentDate ? new Date(String(info.lastSentDate).replace(' ', 'T')) : null;
       if (last && last.getFullYear() > 2000) {
         var days = (Date.now() - last.getTime()) / 864e5;
-        if (days >= 2) w.push('⚠️ Борлуулалтын мэдээг ' + Math.floor(days) + ' хоног илгээгээгүй (хуулиар 3 хоногт). 🧾 → "Одоо илгээх" дарна уу.');
+        if (days >= 2) w.push('Борлуулалтын мэдээг ' + Math.floor(days) + ' хоног илгээгээгүй (хуулиар 3 хоногт). → "Одоо илгээх" дарна уу.');
       }
       el.innerHTML = w.map(esc).join('<br>');
       el.style.display = w.length ? 'block' : 'none';
     })
     .catch(function () {
-      el.textContent = '⚠️ PosAPI-д холбогдохгүй байна. Энэ компьютер дээр PosAPI асаалттай эсэхийг шалгана уу.';
+      el.textContent = 'PosAPI-д холбогдохгүй байна. Энэ компьютер дээр PosAPI асаалттай эсэхийг шалгана уу.';
       el.style.display = 'block';
     });
 }
