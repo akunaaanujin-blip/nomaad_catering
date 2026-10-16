@@ -456,3 +456,5 @@ table.rep-t tr.tot td{background:#F1F5F9;border-top:1px solid #CBD5E1}
 .bz-admin .co-stats div{background:#F8FAFC;border-radius:6px}
 .bz-admin ol.steps{margin:8px 0 12px 18px;font-size:13.5px;line-height:1.7}
 .bz-admin a.b-btn{text-decoration:none;display:inline-block}
+.bz-admin .alert{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:#FFFBEB;border:1px solid #FDE68A;color:#78350F;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:13.5px}
+.bz-admin .alert.bad{background:#FEF2F2;border-color:#FECACA;color:#991B1B}

@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v2.6 (автомат нөөц, он хаах / архив)
+// NOMAAD Бизнесүүд — Google Apps Script v2.6 (автомат нөөц, он хаах / архив, ажилтны токен)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -96,15 +96,23 @@ function adminRead(d) {
 }
 
 // Ажилтны хуудаснаас ирсэн борлуулалт / зарлага / касс хаалт
+// Бичлэг бүрийг ажилтны токеноор шалгана: бичлэгийн өөрийн токен (r.tok) эсвэл одоо нэвтэрсэн ажилтны токен (data.token).
+// Токенгүй, хуурамч, хугацаа дууссан, эсвэл идэвхгүй ажилтны бичлэгийг хүлээж авахгүй (rejected-д буцаана — дэлгүүр дахин илгээнэ).
 function saveRecords(data) {
+  const cur = checkStaff(data.token), memo = {};
+  const verify = function (t) { if (!t) return null; if (!(t in memo)) memo[t] = checkStaff(t); return memo[t]; };
   const sheet = logSheet();
   const seen = existingIds(sheet);
-  const rows = [];
+  const rows = [], rejected = [];
   (data.records || []).forEach(function (r) {
     if (!r.id || seen[r.id] || !BIZ_NAMES[r.biz] || !TYPE_NAMES[r.type]) return;
+    const own = verify(r.tok);
+    const who = own && own.biz === r.biz ? own : (cur && cur.biz === r.biz ? cur : null);
+    if (!who) { rejected.push(r.id); return; }
+    const staffName = own && own.biz === r.biz ? own.staff.name : (r.staff || who.staff.name);   // өөрийн токентой бол нэрийг сервер бичнэ
     seen[r.id] = 1;
     rows.push([
-      r.id, r.date, r.time, BIZ_NAMES[r.biz], TYPE_NAMES[r.type], r.staff || '',
+      r.id, r.date, r.time, BIZ_NAMES[r.biz], TYPE_NAMES[r.type], staffName,
       r.type === 'sale' ? r.item : (r.type === 'expense' ? r.category : ''),
       r.type === 'sale' ? Number(r.qty) : '',
       r.type === 'sale' ? r.unit : '',
@@ -117,7 +125,31 @@ function saveRecords(data) {
     ]);
   });
   if (rows.length) sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, LOG_HEAD.length).setValues(rows);
-  return { status: 'ok', saved: rows.length };
+  if (data.token && !cur) return { status: 'error', error: 'auth', saved: rows.length, rejected: rejected };   // одоогийн нэвтрэлт хүчингүй
+  return { status: 'ok', saved: rows.length, rejected: rejected };
+}
+
+// ── Ажилтны токен: «ажилтны ID | дэлгүүр | дуусах хугацаа | гарын үсэг» ──
+// Гарын үсгийг зөвхөн серверт (Script Properties) хадгалагдах нууц түлхүүрээр зурна — GitHub-д байхгүй тул хуурамчаар хийх боломжгүй.
+const STAFF_TOKEN_DAYS = 7;
+function staffSecret() {
+  const p = PropertiesService.getScriptProperties();
+  let k = p.getProperty('STAFF_SECRET');
+  if (!k) { k = Utilities.getUuid() + Utilities.getUuid(); p.setProperty('STAFF_SECRET', k); }
+  return k;
+}
+function staffSig(body) { return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(body, staffSecret())); }
+function signStaff(id, biz) {
+  const body = id + '|' + biz + '|' + (Date.now() + STAFF_TOKEN_DAYS * 864e5);
+  return body + '|' + staffSig(body);
+}
+function checkStaff(tok) {
+  const p = String(tok || '').split('|');
+  if (p.length !== 4 || !BIZ_NAMES[p[1]] || !(Number(p[2]) > Date.now())) return null;
+  if (staffSig(p.slice(0, 3).join('|')) !== p[3]) return null;
+  const s = staffRows().filter(function (x) { return x.id === p[0]; })[0];
+  if (!s || s.status !== 'Тийм' || (s.biz !== p[1] && s.biz !== 'all')) return null;   // идэвхгүй болгомогц шууд хүчингүй
+  return { staff: s, biz: p[1] };
 }
 
 // ── Унших ──
@@ -149,7 +181,7 @@ function login(biz, user, code) {
     if (s.status === 'Хүлээгдэж') return { status: 'error', error: 'pending' };
     if (s.status === 'Тийм') {
       cache.remove(key);
-      return { status: 'ok', name: s.name, role: s.role === 'Худалдагч' ? 'seller' : 'manager' };
+      return { status: 'ok', name: s.name, role: s.role === 'Худалдагч' ? 'seller' : 'manager', token: signStaff(s.id, biz) };
     }
   }
   cache.put(key, String(fails + 1), 600);
@@ -679,4 +711,12 @@ function json(o) {
 }
 
 // Нэг удаа гараар ажиллуулж хуудсуудыг үүсгэнэ (заавал биш)
+// Редактороос ажиллуулж шалгах: токен зөв зурагдаж/шалгагдаж байгаа эсэх (өгөгдөл өөрчлөхгүй)
+function selfTest() {
+  const s = staffRows().filter(function (x) { return x.status === 'Тийм'; })[0];
+  if (!s) return Logger.log('Идэвхтэй ажилтан алга');
+  const biz = s.biz === 'all' ? 'meat' : s.biz, t = signStaff(s.id, biz);
+  const ok = !!checkStaff(t), fake = !!checkStaff(t.slice(0, -3) + 'abc'), none = !!checkStaff('');
+  Logger.log('ТОКЕН ' + (ok && !fake && !none ? 'OK' : 'АЛДАА') + ' (зөв=' + ok + ', хуурамч=' + fake + ', хоосон=' + none + ')');
+}
 function setup() { logSheet(); prodSheet(); staffSheet(); salarySheet(); stockSheet(); journalSheet(); partnerSheet(); }

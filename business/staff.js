@@ -9,6 +9,7 @@ var LS_PROD = 'nb_products_' + BIZ_KEY;
 
 var session = load(LS_SESSION, null);
 if (!session || session.date !== todayStr()) session = null;
+if (session && API_URL && !session.token) session = null;   // v2.6-аас өмнөх (токенгүй) нэвтрэлт — дахин нэвтэрнэ
 var staffName = session ? session.name : '';
 var isManager = !!(session && session.role === 'manager');
 var sheetProducts = load(LS_PROD, []);   // Sheet-ийн "Бараа" хуудасны мөрүүд (үнэ давхарлах)
@@ -72,12 +73,13 @@ function doLogin() {
 }
 function loginOk(d) {
   save(LS_USER, $('userInput').value.trim().toLowerCase());
-  session = { name: d.name, role: d.role, date: todayStr() };
+  session = { name: d.name, role: d.role, date: todayStr(), token: d.token || '' };
   save(LS_SESSION, session);
   staffName = session.name;
   isManager = session.role === 'manager';
   $('loginMsg').textContent = '';
   showMain();
+  flushQueue();
 }
 function loginFail(msg) {
   $('loginMsg').textContent = msg;
@@ -391,6 +393,7 @@ function addRecords(list) {
     r.date = todayStr(now);
     r.time = timeStr(now);
     r.staff = staffName;
+    if (session && session.token) r.tok = session.token;   // бичлэг бүр бичсэн ажилтныхаа токентой явна
     all.push(r);
     q.push(r);
   });
@@ -409,12 +412,21 @@ function flushQueue() {
   updatePending(q.length);
   if (!q.length) return;
   flushing = true;
-  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ records: q }) })
+  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ records: q, token: session ? session.token : '' }) })
     .then(function (res) { return res.json(); })
     .then(function (data) {
+      if (data && data.error === 'auth' && data.saved) {   // зарим нь (өөрийн токентой) хадгалагдсан
+        var ok = {}, rj = {}; (data.rejected || []).forEach(function (id) { rj[id] = 1; }); q.forEach(function (r) { if (!rj[r.id]) ok[r.id] = 1; });
+        save(LS_QUEUE, load(LS_QUEUE, []).filter(function (r) { return !ok[r.id]; }));
+      }
+      if (data && data.error === 'auth') {   // токен дууссан / ажилтан идэвхгүй — бичлэгүүд хадгалагдсан хэвээр, нэвтэрмэгц илгээгдэнэ
+        if (session) { session = null; save(LS_SESSION, null); toast('Дахин нэвтэрнэ үү — илгээгдээгүй бичлэг хадгалагдсан байгаа'); $('main').style.display = 'none'; showLogin(); }
+        return;
+      }
       if (data && data.status === 'ok') {
-        var sent = {};
-        q.forEach(function (r) { sent[r.id] = 1; });
+        var sent = {}, rej = {};
+        (data.rejected || []).forEach(function (id) { rej[id] = 1; });
+        q.forEach(function (r) { if (!rej[r.id]) sent[r.id] = 1; });
         var rest = load(LS_QUEUE, []).filter(function (r) { return !sent[r.id]; });
         save(LS_QUEUE, rest);
         updatePending(rest.length);

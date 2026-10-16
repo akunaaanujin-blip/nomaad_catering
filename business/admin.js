@@ -214,7 +214,7 @@ function pageHead(title, actions, withPeriod) {
 // ── Миний компаниуд ──
 function companiesView() {
   var t = todayStr(), m = t.slice(0, 8) + '01';
-  return '<h2 class="sec-title">Миний компаниуд</h2><div class="co-grid">' + KEYS.map(function (k) {
+  return archiveAlerts() + '<h2 class="sec-title">Миний компаниуд</h2><div class="co-grid">' + KEYS.map(function (k) {
     var B = BUSINESSES[k], E = (window.EBARIMT || {})[k] || {};
     var today = sums(records.filter(function (x) { return x.biz === k && x.date === t; }));
     var month = sums(records.filter(function (x) { return x.biz === k && x.date >= m; }));
@@ -791,7 +791,7 @@ function financeDash() {
   var ck = journalCheck(E, r[0], r[1]);
   var okAll = !ck.miss.length && ck.revOk && !ck.eMiss.length && ck.tb && ck.bs && ck.invOk && !ck.noCost.length && !ck.salAll.length && !ck.late;
   var line = function (ok, text) { return '<li><span class="ck ' + (ok ? 'ok' : 'bad') + '">' + (ok ? '✓' : '!') + '</span>' + text + '</li>'; };
-  return '<div class="kpis">' +
+  return archiveAlerts() + '<div class="kpis">' +
     kpi('Цэвэр борлуулалт', fmt(p.net)) + kpi('Нийт ашиг', fmt(p.gross), p.net ? Math.round(p.gross / p.net * 100) + '%' : '') +
     kpi('Цэвэр ашиг', '<span style="color:' + (p.profit >= 0 ? 'var(--green)' : 'var(--red)') + '">' + (p.profit < 0 ? '−' : '') + fmt(Math.abs(p.profit)) + '</span>') +
     kpi('Үйл ажиллагааны зардал', fmt(p.expT)) + '</div>' +
@@ -1195,3 +1195,31 @@ function doCloseYear(y) {
     refresh();
   });
 }
+
+// ── Сануулга: он хаах, нөөц, Sheet дүүрэх ── (Миний компаниуд болон Хянах самбарын дээд талд)
+var SHEET_ROW_WARN = 300000;   // Google Sheet ~500,000 мөр хүртэл хурдан ажиллана
+function archiveAlerts() {
+  if (!API_URL && !meta.lastBackup && !records.length) return '';
+  var out = [], today = todayStr(), y = today.slice(0, 4), prev = String(Number(y) - 1);
+  var go = '<button class="b-btn primary" onclick="openClose()">Он хаах, нөөц рүү</button>';
+  // 1) Шинэ он гарсан ч өмнөх он хаагдаагүй (1-р сараас эхлэн)
+  var open = closableYears();
+  if (open.length) {
+    var late = today > y + '-02-15';
+    out.push('<div class="alert' + (late ? ' bad' : '') + '"><div><b>' + open.join(', ') + ' оныг хаах хугацаа болсон.</b> ' +
+      (late ? 'Хоцорч байна — ' : '') + 'Он хаавал тайлангууд архивлагдаж, Sheet хөнгөрнө. 1-р сарын эхний 7 хоногт хийхийг зөвлөж байна.</div>' + go + '</div>');
+  } else if (today >= y + '-12-20') {
+    out.push('<div class="alert"><div><b>' + y + ' он дуусах дөхлөө.</b> ' + (Number(y) + 1) + ' оны 1-р сарын эхээр «Он хаах»-ыг хийнэ. Түүний өмнө 12-р сарын тооллогоо хийгээрэй.</div></div>');
+  }
+  // 2) Нөөц хуулбар хоцорсон
+  var days = meta.lastBackup ? Math.floor((new Date(today) - new Date(meta.lastBackup.slice(0, 10))) / 864e5) : null;
+  if (API_URL && (days === null || days > 10)) {
+    out.push('<div class="alert bad"><div><b>Нөөц хуулбар ' + (days === null ? 'хараахан аваагүй' : days + ' хоногийн өмнө авсан') + '.</b> ' +
+      'Автомат нөөц ажиллахгүй байж магадгүй — «Одоо нөөц авах» дарж шалгана уу.</div>' + go + '</div>');
+  }
+  // 3) Sheet дүүрч байна
+  var rows = records.length + moves.length + journal.length + salary.length;
+  if (rows > SHEET_ROW_WARN) out.push('<div class="alert bad"><div><b>Google Sheet-д ' + fmt(rows).slice(1) + ' мөр байна.</b> Удахгүй удааширна — он хаах, эсвэл өгөгдлийн сан руу шилжих тухай бодох хэрэгтэй.</div>' + go + '</div>');
+  return out.join('');
+}
+function openClose() { if (!state.biz) state.biz = KEYS[0]; state.view = 'company'; state.module = 'finance'; state.sub.finance = 'close'; render(); window.scrollTo(0, 0); }
