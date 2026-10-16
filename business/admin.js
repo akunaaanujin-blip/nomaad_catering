@@ -149,13 +149,14 @@ var ICONS = {
   finance: '<path d="M4 20V11M10 20V5M16 20v-6M2 20h20"/>',
   staff: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M16 4.5a3 3 0 010 6M21 20c0-2.6-1.4-4.4-3.6-5.1"/>',
   reports: '<path d="M6 2.5h9l5 5V21.5H6z"/><path d="M14.5 2.5V8H20M9 13h8M9 17h8"/>',
+  docs: '<path d="M4 4h10v16H4z"/><path d="M14 8h6v12H8"/><path d="M7 8h4M7 11h4M7 14h3"/>',
   people: '<circle cx="12" cy="8" r="3.5"/><path d="M4.5 20.5c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"/>',
   refresh: '<path d="M20 11a8 8 0 10-2.3 5.7"/><path d="M20 4v7h-7"/>',
   logout: '<path d="M15 4h4a1 1 0 011 1v14a1 1 0 01-1 1h-4"/><path d="M10 17l-5-5 5-5M5 12h11"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4"/><circle cx="12" cy="17" r=".6"/>',
 };
 function ico(k) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + ICONS[k] + '</svg>'; }
-var MODULES = [['sales', 'Борлуулалт'], ['products', 'Бараа материал'], ['finance', 'Санхүү'], ['staff', 'Ажилчид'], ['reports', 'Бүх тайлан']];
+var MODULES = [['sales', 'Борлуулалт'], ['products', 'Бараа материал'], ['finance', 'Санхүү'], ['staff', 'Ажилчид'], ['docs', 'Маягт, загвар'], ['reports', 'Бүх тайлан']];
 function railHtml(pend) {
   var item = function (on, onclick, icon, label, extra) {
     return '<button class="' + (on ? 'on' : '') + '" onclick="' + onclick + '" title="' + label + '">' + ico(icon) + '<span>' + label + '</span>' + (extra || '') + '</button>';
@@ -184,7 +185,7 @@ function subnavHtml() {
     '<select onchange="go(\'company\',this.value)">' + KEYS.map(function (k) { return '<option value="' + k + '"' + (k === state.biz ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('') + '</select></div></div>' +
     '<div class="sub-title">' + MODULES.filter(function (m) { return m[0] === mod; })[0][1] + '</div>';
   if (!MENU[mod]) {
-    var one = mod === 'staff' ? [['Ажилчид', 'Ажилчид, цалин']] : [['reports', 'Бүх тайлан']];
+    var one = mod === 'staff' ? [['Ажилчид', 'Ажилчид, цалин']] : mod === 'docs' ? [['docs', 'Маягт, загвар']] : [['reports', 'Бүх тайлан']];
     return head + '<ul class="sub-list"><li><button class="on">' + one[0][1] + '</button></li></ul>' + moduleSwitch();
   }
   return head + MENU[mod].map(function (g) {
@@ -240,6 +241,7 @@ function companiesView() {
 function companyView() {
   var mod = state.module;
   if (mod === 'staff') return pageHead('Ажилчид', '') + staffView(state.biz);
+  if (mod === 'docs') return pageHead('Маягт, загвар', '') + docsModule();
   if (mod === 'reports') return pageHead('Бүх тайлан', '<button class="b-btn primary" onclick="exportAll()">Бүх тайланг Excel-ээр татах</button>', true) + reportsModule();
   var sub = state.sub[mod], noPeriod = /^(accounts|stock|suppliers|catalog|close)$/.test(sub);
   var acts = /^(overview|dash|stock|close)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
@@ -563,8 +565,9 @@ function staffCard(s, m) {
   var r = salaryOf(s, m), sales = staffSales(s, m);
   return '<div class="st-card"><div class="st-head"><div><b>' + esc(s.surname ? s.surname + ' ' : '') + esc(s.name) + '</b>' +
     '<small>@' + esc(s.username || '—') + ' · ' + bizLabel(s.biz) + ' · ' + (s.role === 'Худалдагч' ? 'Худалдагч' : '<span class="tag b">' + esc(s.role) + '</span>') + (s.position ? ' · ' + esc(s.position) : '') + '</small>' +
-    '<small>' + (s.phone ? 'Утас: ' + esc(s.phone) : '') + (s.bank ? ' · Данс: ' + esc(s.bank) : '') + '</small></div>' +
-    '<button class="mini" onclick="openStaff(\'' + s.id + '\')">Засах</button></div>' +
+    '<small>' + (s.phone ? 'Утас: ' + esc(s.phone) : '') + (s.bank ? ' · Данс: ' + esc(s.bank) : '') + '</small>' +
+    '<small>' + contractBadge(s) + '</small></div>' +
+    '<div><button class="mini" onclick="openStaff(\'' + s.id + '\')">Засах</button> <button class="mini" style="color:var(--accent)" onclick="openContract(\'' + s.id + '\')">Гэрээ</button></div></div>' +
     '<div class="st-sal">' +
     '<div><span>Үндсэн</span><b>' + (r.base ? fmt(r.base) : '<span class="muted">тохируулаагүй</span>') + '</b></div>' +
     '<div><span>Шагнал</span><b>' + fmt(r.bonus) + '</b></div>' +
@@ -580,8 +583,8 @@ function staffCard(s, m) {
 function approve(id, role) {
   post({ type: 'admin_staff', id: id, fields: { status: 'Тийм', role: role } }, function (err) {
     if (err) { toast('Алдаа: ' + err); return; }
-    toast('✓ Баталгаажлаа — ажилтан одоо өөрийн кодоор нэвтэрнэ');
-    refresh();
+    toast('✓ Баталгаажлаа — одоо хөдөлмөрийн гэрээгээ бөглөнө үү');
+    fetchAll(function (ok) { if (ok) { render(); openContract(id); } });   // батлангуут гэрээ шууд нээгдэнэ
   });
 }
 function reject(id) {
@@ -1217,9 +1220,251 @@ function archiveAlerts() {
     out.push('<div class="alert bad"><div><b>Нөөц хуулбар ' + (days === null ? 'хараахан аваагүй' : days + ' хоногийн өмнө авсан') + '.</b> ' +
       'Автомат нөөц ажиллахгүй байж магадгүй — «Одоо нөөц авах» дарж шалгана уу.</div>' + go + '</div>');
   }
-  // 3) Sheet дүүрч байна
+  // 3) Хөдөлмөрийн гэрээ: байхгүй, эсвэл 30 хоногийн дотор дуусах
+  var act = staff.filter(function (x) { return x.status === 'Тийм' && x.role !== 'Эзэн'; });
+  var noC = act.filter(function (x) { return !x.contractNo; });
+  var soon = act.filter(function (x) { return x.contractEnd && x.contractEnd <= todayStr(new Date(Date.now() + 30 * 864e5)); });
+  if (noC.length) out.push('<div class="alert"><div><b>' + noC.length + ' ажилтан хөдөлмөрийн гэрээгүй:</b> ' + esc(noC.slice(0, 4).map(function (x) { return x.name; }).join(', ')) + (noC.length > 4 ? '…' : '') + '</div><button class="b-btn primary" onclick="go(\'staff\')">Ажилчид руу</button></div>');
+  soon.forEach(function (x) { out.push('<div class="alert' + (x.contractEnd < today ? ' bad' : '') + '"><div><b>' + esc(x.name) + '</b> — гэрээ ' + x.contractEnd + (x.contractEnd < today ? ' дууссан' : ' дуусна') + '. Сунгах эсвэл шинэ гэрээ байгуулна.</div><button class="b-btn" onclick="openContract(\'' + x.id + '\')">Гэрээ</button></div>'); });
+  // 4) Sheet дүүрч байна
   var rows = records.length + moves.length + journal.length + salary.length;
   if (rows > SHEET_ROW_WARN) out.push('<div class="alert bad"><div><b>Google Sheet-д ' + fmt(rows).slice(1) + ' мөр байна.</b> Удахгүй удааширна — он хаах, эсвэл өгөгдлийн сан руу шилжих тухай бодох хэрэгтэй.</div>' + go + '</div>');
   return out.join('');
 }
 function openClose() { if (!state.biz) state.biz = KEYS[0]; state.view = 'company'; state.module = 'finance'; state.sub.finance = 'close'; render(); window.scrollTo(0, 0); }
+
+// ═══════════ ХӨДӨЛМӨРИЙН ГЭРЭЭ ═══════════
+// Ажилтныг батлангуут бөглөнө → дугаар (ХГ-2026-001) серверт олгогдож, хэвлэхэд бэлэн гэрээ гарна.
+function contractBadge(s) {
+  if (!s.contractNo) return '<span class="tag r">Гэрээгүй</span>';
+  var end = s.contractEnd ? ' · ' + s.contractEnd + ' хүртэл' : ' · хугацаагүй';
+  return '<span class="tag">Гэрээ ' + esc(s.contractNo) + end + '</span>';
+}
+function parseTerms(s) { try { return JSON.parse(s.terms || '{}'); } catch (e) { return {}; } }
+var ctId = '';
+function openContract(id) {
+  var s = staff.filter(function (x) { return x.id === id; })[0]; if (!s) return;
+  ctId = id;
+  var t = parseTerms(s), biz = s.biz === 'all' ? (state.biz || KEYS[0]) : s.biz;
+  var co = load('nb_company', {});
+  $('ctTitle').textContent = 'Хөдөлмөрийн гэрээ · ' + (s.surname ? s.surname + ' ' : '') + s.name;
+  $('ctSub').textContent = s.contractNo ? s.contractNo + ' · ' + s.contractDate + '-нд байгуулсан' : 'Шинэ гэрээ';
+  $('ctPos').value = t.position || s.position || ''; $('ctSalary').value = t.salary || s.salary || '';
+  $('ctStart').value = t.start || s.start || todayStr(); $('ctType').value = t.end ? 'fixed' : 'open';
+  $('ctEnd').value = t.end || ''; $('ctEndWrap').style.display = t.end ? 'block' : 'none';
+  $('ctProb').value = String(t.probation != null ? t.probation : (s.contractNo ? 0 : 1));
+  $('ctHours').value = t.hours || '09:00–18:00, долоо хоногт 5 өдөр (40 цаг)';
+  $('ctPay').value = t.payDays || 'Сар бүрийн 5, 20-ны өдөр хоёр хуваан';
+  $('ctPlace').value = t.place || BUSINESSES[biz].name;
+  $('ctAddr').value = t.address || s.address || '';
+  $('ctBoss').value = t.boss || co.boss || ''; $('ctCo').value = t.coAddr || co.addr || '';
+  $('ctExtra').value = t.extra || '';
+  openSheet('contractSheet');
+}
+function saveContract() {
+  var s = staff.filter(function (x) { return x.id === ctId; })[0]; if (!s) return;
+  var biz = s.biz === 'all' ? (state.biz || KEYS[0]) : s.biz;
+  var t = { position: $('ctPos').value.trim(), salary: Number($('ctSalary').value), start: $('ctStart').value,
+            end: $('ctType').value === 'fixed' ? $('ctEnd').value : '', probation: Number($('ctProb').value), hours: $('ctHours').value.trim(),
+            payDays: $('ctPay').value.trim(), place: $('ctPlace').value.trim(), address: $('ctAddr').value.trim(),
+            boss: $('ctBoss').value.trim(), coAddr: $('ctCo').value.trim(), extra: $('ctExtra').value.trim(), biz: biz };
+  if (!t.position || !(t.salary > 0) || !t.start) { toast('Албан тушаал, цалин, огноог бөглөнө үү'); return; }
+  if ($('ctType').value === 'fixed' && (!t.end || t.end <= t.start)) { toast('Дуусах огноог зөв оруулна уу'); return; }
+  save('nb_company', { boss: t.boss, addr: t.coAddr });   // дараагийн гэрээнд санана (зөвхөн энэ төхөөрөмжид)
+  var done = function (no, date) {
+    s.contractNo = no; s.contractDate = date; s.contractEnd = t.end; s.terms = JSON.stringify(t); s.position = t.position; s.salary = t.salary; s.address = t.address; s.start = t.start;
+    closeSheet('contractSheet'); render(); printContract(s);
+  };
+  if (!API_URL) { var n = staff.filter(function (x) { return x.contractNo; }).length + 1; done('ХГ-' + todayStr().slice(0, 4) + '-' + ('00' + n).slice(-3), todayStr()); return; }
+  post({ type: 'admin_contract', id: ctId, terms: t }, function (err, d) {
+    if (err || !d.no) { toast('Алдаа: ' + (err || 'шинэ хувилбар суугаагүй')); return; }
+    done(d.no, d.date); refresh();
+  });
+}
+function printContract(s) {
+  var t = parseTerms(s), biz = t.biz || (s.biz === 'all' ? KEYS[0] : s.biz), E = (window.EBARIMT || {})[biz] || {};
+  var coName = E.legalName || BUSINESSES[biz].name, reg = E.regNo ? '(регистр ' + esc(E.regNo) + ')' : '';
+  var full = (s.surname ? s.surname + ' овогтой ' : '') + s.name;
+  var w = window.open('', '_blank', 'width=820,height=900');
+  if (!w) { toast('Хэвлэх цонх нээгдсэнгүй — popup зөвшөөрнө үү'); return; }
+  var li = function (x) { return '<li>' + x + '</li>'; };
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(s.contractNo) + '</title><style>' +
+    'body{font-family:"Times New Roman",serif;font-size:13.5px;line-height:1.55;margin:36px 48px;color:#000}h1{text-align:center;font-size:16px;margin:0}' +
+    '.c{text-align:center}.row{display:flex;justify-content:space-between;margin:14px 0}h3{font-size:14px;margin:14px 0 4px}ol{margin:0;padding-left:20px}' +
+    '.sig{display:flex;justify-content:space-between;margin-top:36px}.sig div{width:46%}.line{border-bottom:1px solid #000;height:28px}</style></head><body>' +
+    '<h1>ХӨДӨЛМӨРИЙН ГЭРЭЭ</h1><div class="c">№ ' + esc(s.contractNo) + '</div>' +
+    '<div class="row"><span>' + esc(s.contractDate || todayStr()) + '</span><span>Улаанбаатар хот</span></div>' +
+    '<p>Нэг талаас <b>' + esc(coName) + '</b> ' + reg + ' (цаашид «Ажил олгогч» гэх)-ийг төлөөлж ' + esc(t.boss || '____________________') +
+    ', нөгөө талаас <b>' + esc(full) + '</b> (регистр ' + esc(s.regno || '__________') + ', хаяг: ' + esc(t.address || '____________________') +
+    ', утас ' + esc(s.phone || '') + ') (цаашид «Ажилтан» гэх) нар Монгол Улсын Хөдөлмөрийн тухай хуульд нийцүүлэн энэхүү гэрээг байгуулав.</p>' +
+    '<h3>1. Ажлын байр, үүрэг</h3><ol>' + li('Ажилтан нь <b>' + esc(t.position) + '</b> албан тушаалд ' + esc(t.place) + '-д ажиллана.') +
+    li('Ажил олгогчийн баталсан ажлын байрны тодорхойлолт, дотоод журмыг мөрдөж, хариуцсан ажлаа чанартай гүйцэтгэнэ.') + '</ol>' +
+    '<h3>2. Гэрээний хугацаа</h3><ol>' + li('Ажил эхлэх өдөр: <b>' + esc(t.start) + '</b>.') +
+    li(t.end ? 'Гэрээ <b>' + esc(t.end) + '</b>-ны өдөр хүртэл тодорхой хугацаатай.' : 'Гэрээ <b>хугацаагүй</b>.') +
+    (t.probation ? li('Туршилтын хугацаа <b>' + t.probation + ' сар</b>. Туршилтын хугацаанд цалинг гэрээнд заасан хэмжээгээр олгоно.') : '') + '</ol>' +
+    '<h3>3. Цалин хөлс</h3><ol>' + li('Үндсэн цалин сарын <b>' + fmt(t.salary) + '</b> (' + esc(numWords(t.salary)) + ' төгрөг).') +
+    li('Цалинг ' + esc(t.payDays) + ' ажилтны ' + esc(s.bank || '__________') + ' дансанд шилжүүлнэ.') +
+    li('Хууль тогтоомжийн дагуу нийгмийн даатгалын шимтгэл, хувь хүний орлогын албан татварыг цалингаас суутгаж, холбогдох байгууллагад төлнө.') + '</ol>' +
+    '<h3>4. Ажлын болон амрах цаг</h3><ol>' + li('Ажлын цаг: ' + esc(t.hours) + '.') +
+    li('Ажилтан ээлжийн амралтыг Хөдөлмөрийн тухай хуульд заасан хугацаагаар эдэлнэ.') + '</ol>' +
+    '<h3>5. Талуудын үүрэг</h3><ol>' + li('Ажил олгогч нь хөдөлмөрийн аюулгүй нөхцөлөөр хангаж, цалинг хугацаанд нь олгоно.') +
+    li('Ажилтан нь ажил олгогчийн эд хөрөнгө, мөнгөн хөрөнгө, бараа материалыг хариуцан хамгаалж, учруулсан хохирлыг хуулийн дагуу барагдуулна.') +
+    li('Ажилтан нь ажлын явцад мэдсэн байгууллагын нууцыг задруулахгүй.') + (t.extra ? li(esc(t.extra)) : '') + '</ol>' +
+    '<h3>6. Гэрээг өөрчлөх, цуцлах</h3><ol>' + li('Гэрээг талуудын харилцан тохиролцоогоор бичгээр өөрчилнө.') +
+    li('Гэрээг Хөдөлмөрийн тухай хуульд заасан үндэслэл, журмын дагуу цуцална.') +
+    li('Маргааныг талууд харилцан зөвшилцөж, эс зөвшилцвөл хуульд заасан журмаар шийдвэрлэнэ.') + '</ol>' +
+    '<p>Гэрээг 2 хувь үйлдэж, тал бүр нэг хувийг хадгална.</p>' +
+    '<div class="sig"><div><b>АЖИЛ ОЛГОГЧ</b><br>' + esc(coName) + '<br>' + esc(t.coAddr || '') + '<br><br>Төлөөлж: ' + esc(t.boss || '') + '<div class="line"></div>(гарын үсэг, тамга)</div>' +
+    '<div><b>АЖИЛТАН</b><br>' + esc(full) + '<br>Регистр: ' + esc(s.regno || '') + '<br><br><div class="line"></div>(гарын үсэг)</div></div>' +
+    '<script>window.onload=function(){window.print()}<\/script></body></html>');
+  w.document.close();
+}
+// Тоог үсгээр (гэрээнд «нэг сая хоёр зуун мянган» гэх мэт)
+function numWords(n) {
+  n = Math.round(Number(n) || 0); if (!n) return 'тэг';
+  var u = ['', 'нэг', 'хоёр', 'гурав', 'дөрөв', 'тав', 'зургаа', 'долоо', 'найм', 'ес'], uA = ['', 'нэгэн', 'хоёр', 'гурван', 'дөрвөн', 'таван', 'зургаан', 'долоон', 'найман', 'есөн'];
+  var t = ['', 'арав', 'хорь', 'гуч', 'дөч', 'тавь', 'жар', 'дал', 'ная', 'ер'], tA = ['', 'арван', 'хорин', 'гучин', 'дөчин', 'тавин', 'жаран', 'далан', 'наян', 'ерэн'];
+  var tri = function (x, attr) {   // 0..999; attr = араас нь үг залгах эсэх
+    var h = Math.floor(x / 100), r = x % 100, d = Math.floor(r / 10), o = r % 10, w = [];
+    if (h) w.push((h === 1 ? 'нэг' : uA[h]) + (r || attr ? ' зуун' : ' зуу'));
+    if (d) w.push(o || attr ? tA[d] : t[d]);
+    if (o) w.push(attr ? uA[o] : u[o]);
+    return w.join(' ');
+  };
+  var parts = [], b = Math.floor(n / 1e9), mil = Math.floor(n / 1e6) % 1000, th = Math.floor(n / 1000) % 1000, r = n % 1000;
+  if (b) parts.push(tri(b, true) + ' тэрбум');
+  if (mil) parts.push(tri(mil, true) + ' сая');
+  if (th) parts.push(tri(th, true) + ' мянга');
+  if (r) parts.push(tri(r, false));
+  var str = parts.join(' ');
+  return str.replace(/ мянга$/, ' мянга').replace(/^нэгэн /, 'нэг ');
+}
+
+// ═══════════ МАЯГТ, ЗАГВАР (анхан шатны маягт, тодорхойлолт, тушаал, анкет) ═══════════
+// Ажилтан сонгоход нэр, регистр, албан тушаал, цалин, огноо автоматаар бөглөгдөж, хэвлэхэд бэлэн гарна.
+function coInfo(biz) {
+  var E = (window.EBARIMT || {})[biz] || {}, co = load('nb_company', {});
+  return { name: E.legalName || BUSINESSES[biz].name, reg: E.regNo || '', shop: BUSINESSES[biz].name, addr: co.addr || '', boss: co.boss || '' };
+}
+var BLANK = '____________________';
+function blankRows(n, cols) { var r = ''; for (var i = 0; i < n; i++) r += '<tr>' + cols.map(function (c, j) { return '<td>' + (j === 0 ? i + 1 : '') + '</td>'; }).join('') + '</tr>'; return r; }
+function tbl(cols, body) { return '<table class="t"><tr>' + cols.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr>' + body + '</table>'; }
+function full(s) { return s ? (s.surname ? s.surname + ' ' : '') + s.name : BLANK; }
+var DOCS = [
+  { k: 'anket', g: 'Хүний нөөц', name: 'Ажилтны анкет', emp: 1, f: [],
+    body: function (s, f, c) { var row = function (k, v) { return '<tr><th style="width:38%">' + k + '</th><td>' + (v ? esc(v) : '') + '</td></tr>'; };
+      return '<h1>АЖИЛТНЫ АНКЕТ</h1><div class="c">' + esc(c.name) + '</div><table class="t">' +
+        row('Овог', s && s.surname) + row('Нэр', s && s.name) + row('Регистрийн дугаар', s && s.regno) + row('Төрсөн огноо', '') + row('Хүйс', '') +
+        row('Гэрийн хаяг', s && s.address) + row('Утас', s && s.phone) + row('И-мэйл', '') + row('Боловсрол, мэргэжил', '') + row('Гэр бүлийн байдал', '') +
+        row('Яаралтай үед холбоо барих хүн, утас', '') + row('Банкны данс', s && s.bank) + row('Албан тушаал', s && s.position) + row('Ажилд орсон огноо', s && s.start) + '</table>' +
+        '<h3>Ажлын туршлага</h3>' + tbl(['№', 'Байгууллага', 'Албан тушаал', 'Хугацаа'], blankRows(4, [1, 2, 3, 4])) +
+        '<p style="margin-top:24px">Дээрх мэдээлэл үнэн зөв болохыг баталж гарын үсэг зурсан: ' + BLANK + ' / ' + esc(full(s)) + ' /</p>'; } },
+  { k: 'workcert', g: 'Хүний нөөц', name: 'Ажлын тодорхойлолт', emp: 1, f: [['to', 'Хаана өгөх', 'Холбогдох байгууллагад']],
+    body: function (s, f, c) { return '<h1>ТОДОРХОЙЛОЛТ</h1><div class="c">' + todayStr() + '</div><p style="margin-top:20px"><b>' + esc(f.to) + '</b></p>' +
+      '<p>' + esc(full(s)) + ' (регистр ' + esc(s.regno || BLANK) + ') нь ' + esc(c.name) + '-д ' + esc(s.start || BLANK) + '-ны өдрөөс эхлэн ' +
+      esc(s.position || BLANK) + ' албан тушаалд үндсэн ажилтнаар ажиллаж байгаа нь үнэн болно.</p>' + sigBoss(c); } },
+  { k: 'salcert', g: 'Хүний нөөц', name: 'Цалингийн тодорхойлолт', emp: 1, f: [['to', 'Хаана өгөх', 'Банкинд'], ['months', 'Хэдэн сараар', '6']],
+    body: function (s, f, c) {
+      var n = Math.max(1, Math.min(12, Number(f.months) || 6)), rows = '', tot = 0;
+      for (var i = n; i >= 1; i--) { var d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); var m = todayStr(d).slice(0, 7), r = salaryOf(s, m), gross = r.base + r.bonus;
+        tot += gross; rows += '<tr><td>' + m + '</td><td class="n">' + fmt(gross) + '</td></tr>'; }
+      return '<h1>ЦАЛИНГИЙН ТОДОРХОЙЛОЛТ</h1><div class="c">' + todayStr() + '</div><p style="margin-top:20px"><b>' + esc(f.to) + '</b></p>' +
+        '<p>' + esc(full(s)) + ' (регистр ' + esc(s.regno || BLANK) + ') нь ' + esc(c.name) + '-д ' + esc(s.position || '') + ' албан тушаалд ажилладаг бөгөөд сүүлийн ' + n + ' сарын цалин дараах байдалтай байна:</p>' +
+        tbl(['Сар', 'Нийт цалин (суутгалаас өмнө)'], rows + '<tr><th>Дундаж</th><th class="n">' + fmt(tot / n) + '</th></tr>') + sigBoss(c); } },
+  { k: 'hire', g: 'Хүний нөөц', name: 'Ажилд авах тушаал', emp: 1, f: [['no', 'Тушаалын дугаар', ''], ['date', 'Огноо', todayStr(), 'date']],
+    body: function (s, f, c) { return order(c, f, 'Ажилтан томилох тухай', 'Хөдөлмөрийн тухай хууль, ' + (s.contractNo ? s.contractNo + ' дугаар хөдөлмөрийн гэрээг' : 'хөдөлмөрийн гэрээг') + ' үндэслэн ТУШААХ нь:',
+      '<ol><li>' + esc(full(s)) + ' (регистр ' + esc(s.regno || BLANK) + ')-г ' + esc(s.start || f.date) + '-ны өдрөөс ' + esc(s.position || BLANK) + ' албан тушаалд үндсэн цалин ' + fmt(s.salary) + '-өөр томилсугай.</li>' +
+      '<li>Ажилтныг нийгмийн даатгалд бүртгүүлэх, ажлын байраар хангахыг ' + BLANK + '-д үүрэг болгосугай.</li></ol>'); } },
+  { k: 'fire', g: 'Хүний нөөц', name: 'Ажлаас чөлөөлөх тушаал', emp: 1, f: [['no', 'Тушаалын дугаар', ''], ['date', 'Чөлөөлөх огноо', todayStr(), 'date'],
+      ['why', 'Үндэслэл', 'Ажилтны өөрийн хүсэлтээр', 'sel:Ажилтны өөрийн хүсэлтээр|Талуудын харилцан тохиролцоогоор|Хөдөлмөрийн гэрээний хугацаа дууссан тул|Туршилтын хугацаанд тэнцээгүй тул']],
+    body: function (s, f, c) { return order(c, f, 'Ажлаас чөлөөлөх тухай', 'Хөдөлмөрийн тухай хуулийг үндэслэн ТУШААХ нь:',
+      '<ol><li>' + esc(s.position || '') + ' ' + esc(full(s)) + ' (регистр ' + esc(s.regno || BLANK) + ')-г ' + esc(f.why) + ' ' + esc(f.date) + '-ны өдрөөс ажлаас чөлөөлсүгэй.</li>' +
+      '<li>Хариуцсан эд хөрөнгө, бараа материал, баримт бичгийг хүлээлцэх акт үйлдэн хүлээлгэн өгч, тооцоог дуусгахыг үүрэг болгосугай.</li>' +
+      '<li>Ажилтны цалин, нөхөн олговрыг хуулийн дагуу олгож, нийгмийн даатгалын дэвтрийг бөглөхийг ' + BLANK + '-д даалгасугай.</li></ol>'); } },
+  { k: 'leave', g: 'Хүний нөөц', name: 'Ээлжийн амралт / чөлөөний хүсэлт', emp: 1,
+    f: [['type', 'Төрөл', 'Ээлжийн амралт', 'sel:Ээлжийн амралт|Цалинтай чөлөө|Цалингүй чөлөө|Өвчний чөлөө'], ['from', 'Эхлэх', todayStr(), 'date'], ['to', 'Дуусах', todayStr(), 'date'], ['why', 'Шалтгаан', '']],
+    body: function (s, f, c) { return '<p style="text-align:right">' + esc(c.name) + '-ийн захирал ' + esc(c.boss || BLANK) + ' танаа</p><h1>ӨРГӨДӨЛ</h1>' +
+      '<p style="margin-top:20px">Би ' + esc(f.from) + '-ны өдрөөс ' + esc(f.to) + '-ны өдөр хүртэл <b>' + esc(f.type.toLowerCase()) + '</b> авахыг хүсэж байна.' + (f.why ? ' Шалтгаан: ' + esc(f.why) + '.' : '') + '</p>' +
+      '<p>Хүсэлт гаргасан: ' + esc(s.position || '') + ' ' + esc(full(s)) + ' ' + BLANK + ' ' + todayStr() + '</p>' +
+      '<p style="margin-top:30px">Зөвшөөрсөн: ' + BLANK + ' / ' + esc(c.boss || BLANK) + ' /</p>'; } },
+  { k: 'liability', g: 'Хүний нөөц', name: 'Эд хөрөнгийн бүрэн хариуцлагын гэрээ', emp: 1, f: [],
+    body: function (s, f, c) { return '<h1>ЭД ХӨРӨНГИЙН БҮРЭН ХАРИУЦЛАГЫН ГЭРЭЭ</h1><div class="c">' + todayStr() + '</div>' +
+      '<p style="margin-top:16px">' + esc(c.name) + ' (цаашид «Байгууллага»)-ыг төлөөлж ' + esc(c.boss || BLANK) + ', нөгөө талаас ' + esc(s.position || '') + ' ' + esc(full(s)) +
+      ' (цаашид «Ажилтан») нар дараах гэрээг байгуулав.</p><ol><li>Ажилтан нь ' + esc(c.shop) + '-ийн бараа материал, бэлэн мөнгө, тоног төхөөрөмжийг хүлээн авч, бүрэн бүтэн хадгалах үүргийг хүлээнэ.</li>' +
+      '<li>Тооллогоор илэрсэн дутагдал, ажилтны буруутай үйлдлээс учирсан хохирлыг Ажилтан Хөдөлмөрийн тухай хууль болон Иргэний хуульд заасны дагуу барагдуулна.</li>' +
+      '<li>Байгууллага нь эд хөрөнгийг хадгалах нөхцөлөөр хангаж, тооллогыг ажилтныг байлцуулан хийнэ.</li><li>Ажилтан хүлээн авсан эд хөрөнгийг ажлаас чөлөөлөгдөхдөө хүлээлцэх актаар хүлээлгэн өгнө.</li></ol>' +
+      sig2(c, s); } },
+  { k: 'cashreq', g: 'Санхүү', name: 'Бэлэн мөнгө олгохыг хүссэн өргөдөл', emp: 1, f: [['amt', 'Дүн (₮)', '', 'num'], ['why', 'Зориулалт', '']],
+    body: function (s, f, c) { return '<h1>БЭЛЭН МӨНГӨ ОЛГОХЫГ ХҮССЭН ӨРГӨДӨЛ</h1><div class="c">' + todayStr() + '</div><table class="t" style="margin-top:16px">' +
+      '<tr><th>Хүсэгч</th><td>' + esc(s.position || '') + ' ' + esc(full(s)) + '</td></tr><tr><th>Дүн</th><td><b>' + fmt(f.amt) + '</b> (' + esc(numWords(f.amt)) + ' төгрөг)</td></tr>' +
+      '<tr><th>Зориулалт</th><td>' + esc(f.why) + '</td></tr><tr><th>Тайлагнах хугацаа</th><td>' + BLANK + '</td></tr></table>' +
+      '<div class="sig"><div>Хүсэгч<div class="line"></div></div><div>Зөвшөөрсөн (захирал)<div class="line"></div></div></div><div class="sig"><div>Нягтлан бодогч<div class="line"></div></div><div>Олгосон (кассчин)<div class="line"></div></div></div>'; } },
+  { k: 'advance', g: 'Санхүү', name: 'Мөнгөн урьдчилгааны тайлан', emp: 1, f: [['amt', 'Авсан урьдчилгаа (₮)', '', 'num']],
+    body: function (s, f, c) { return '<h1>МӨНГӨН УРЬДЧИЛГААНЫ ТАЙЛАН</h1><div class="c">' + todayStr() + '</div><p>Тайлагнагч: ' + esc(s.position || '') + ' ' + esc(full(s)) + ' · Авсан урьдчилгаа: <b>' + fmt(f.amt) + '</b></p>' +
+      tbl(['№', 'Огноо', 'Баримтын №', 'Зарцуулсан зүйл', 'Дүн'], blankRows(8, [1, 2, 3, 4, 5])) +
+      '<p>Нийт зарцуулсан: ' + BLANK + ' · Үлдэгдэл (буцаан тушаах) / хэтрэлт: ' + BLANK + '</p><div class="sig"><div>Тайлагнагч<div class="line"></div></div><div>Хянасан (нягтлан)<div class="line"></div></div></div>'; } },
+  { k: 'cashcount', g: 'Санхүү', name: 'Бэлэн мөнгөний тооллогын баталгаа', emp: 0, f: [],
+    body: function (s, f, c) { var bal = balances(J(), todayStr())['10003'] || 0, rows = '';
+      [20000, 10000, 5000, 1000, 500, 100, 50, 20, 10].forEach(function (d) { rows += '<tr><td class="n">' + fmt(d) + '</td><td></td><td></td></tr>'; });
+      return '<h1>БЭЛЭН МӨНГӨНИЙ ТООЛЛОГЫН БАТАЛГАА</h1><div class="c">' + esc(c.shop) + ' · ' + todayStr() + '</div>' + tbl(['Дэвсгэрт', 'Тоо ширхэг', 'Дүн'], rows + '<tr><th colspan="2">Нийт тоолсон</th><th></th></tr>') +
+        '<p>Бүртгэлээрх кассын үлдэгдэл (10003): <b>' + fmt(bal) + '</b> · Зөрүү: ' + BLANK + '</p>' +
+        '<div class="sig"><div>Тооллого хийсэн<div class="line"></div></div><div>Кассчин (хариуцагч)<div class="line"></div></div></div>'; } },
+  { k: 'handover', g: 'Бараа материал', name: 'Хүлээлцэх акт', emp: 1, f: [['to', 'Хүлээн авагч', ''], ['what', 'Хүлээлцэх зүйл', 'Бараа материал, касс', 'sel:Бараа материал, касс|Бараа материал|Бэлэн мөнгө (касс)|Тоног төхөөрөмж, эд хөрөнгө']],
+    body: function (s, f, c) { return '<h1>ХҮЛЭЭЛЦЭХ АКТ</h1><div class="c">' + esc(c.shop) + ' · ' + todayStr() + '</div><p>Хүлээлгэн өгсөн: ' + esc(full(s)) + ' · Хүлээн авсан: ' + esc(f.to || BLANK) + ' · Хүлээлцсэн зүйл: ' + esc(f.what) + '</p>' +
+      tbl(['№', 'Нэр', 'Нэгж', 'Тоо', 'Үнэ', 'Дүн', 'Тайлбар'], blankRows(12, [1, 2, 3, 4, 5, 6, 7])) +
+      '<div class="sig"><div>Хүлээлгэн өгсөн<div class="line"></div></div><div>Хүлээн авсан<div class="line"></div></div></div><div class="sig"><div>Гэрчилсэн<div class="line"></div></div><div>Баталсан (захирал)<div class="line"></div></div></div>'; } },
+  { k: 'requisition', g: 'Бараа материал', name: 'Бараа материалын шаардах хуудас', emp: 1, f: [['no', 'Дугаар', '']],
+    body: function (s, f, c) { return '<h1>БАРАА МАТЕРИАЛЫН ШААРДАХ ХУУДАС № ' + esc(f.no || '____') + '</h1><div class="c">' + esc(c.shop) + ' · ' + todayStr() + '</div><p>Шаардсан: ' + esc(full(s)) + '</p>' +
+      tbl(['№', 'Барааны нэр', 'Нэгж', 'Шаардсан тоо', 'Олгосон тоо', 'Тайлбар'], blankRows(10, [1, 2, 3, 4, 5, 6])) +
+      '<div class="sig"><div>Шаардсан<div class="line"></div></div><div>Зөвшөөрсөн<div class="line"></div></div></div><div class="sig"><div>Олгосон (нярав)<div class="line"></div></div><div>Хүлээн авсан<div class="line"></div></div></div>'; } },
+];
+function sigBoss(c) { return '<div class="sig" style="margin-top:50px"><div>' + esc(c.name) + (c.reg ? '<br>Регистр ' + esc(c.reg) : '') + '</div><div>Захирал ' + BLANK + ' / ' + esc(c.boss || BLANK) + ' /<br><small>(тамга)</small></div></div>'; }
+function sig2(c, s) { return '<div class="sig"><div><b>Байгууллага</b><br>' + esc(c.boss || '') + '<div class="line"></div></div><div><b>Ажилтан</b><br>' + esc(full(s)) + '<div class="line"></div></div></div>'; }
+function order(c, f, title, basis, body) {
+  return '<div class="c"><b>' + esc(c.name.toUpperCase()) + '</b><br>ЗАХИРЛЫН ТУШААЛ</div><div class="row"><span>' + esc(f.date || todayStr()) + '</span><span>Дугаар ' + esc(f.no || '____') + '</span><span>Улаанбаатар хот</span></div>' +
+    '<div class="c"><b>' + title + '</b></div><p>' + basis + '</p>' + body + '<p style="margin-top:40px">ЗАХИРАЛ ' + BLANK + ' ' + esc(c.boss || '') + '</p>';
+}
+function docsModule() {
+  var groups = {};
+  DOCS.forEach(function (d) { (groups[d.g] = groups[d.g] || []).push(d); });
+  return '<p class="hint">Ажилтан сонгоход нэр, регистр, албан тушаал, цалин, гэрээний мэдээлэл автоматаар бөглөгдөнө. Захирлын нэр, компанийн хаягийг гэрээ бөглөхдөө нэг удаа оруулахад бүх маягтад орно. ' +
+    'Эдгээр нь нийтлэг жишиг загвар — нягтлан, хуульчаараа нэг удаа хянуулаарай.</p><div class="rep-grid">' + Object.keys(groups).map(function (g) {
+      return '<div class="card"><h2>' + g + '</h2><ul class="rep-links">' + groups[g].map(function (d) {
+        return '<li><button class="link" onclick="openDoc(\'' + d.k + '\')">' + d.name + '</button></li>'; }).join('') + '</ul></div>';
+    }).join('') + '</div>';
+}
+var docK = '';
+function openDoc(k) {
+  var d = DOCS.filter(function (x) { return x.k === k; })[0]; docK = k;
+  $('dcTitle').textContent = d.name;
+  $('dcSub').textContent = BUSINESSES[state.biz].name;
+  var emps = bizStaff(state.biz).filter(function (s) { return s.status === 'Тийм' && s.role !== 'Эзэн'; });
+  var html = d.emp ? '<label for="dcEmp">Ажилтан</label><select id="dcEmp"><option value="">— Хоосон (гараар бөглөх) —</option>' +
+    emps.map(function (s) { return '<option value="' + s.id + '">' + esc(full(s)) + (s.position ? ' · ' + esc(s.position) : '') + '</option>'; }).join('') + '</select>' : '';
+  html += d.f.map(function (x) {
+    var id = 'dc_' + x[0], t = x[3] || '';
+    if (t.indexOf('sel:') === 0) return '<label for="' + id + '">' + x[1] + '</label><select id="' + id + '">' + t.slice(4).split('|').map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + '</select>';
+    return '<label for="' + id + '">' + x[1] + '</label><input id="' + id + '" type="' + (t === 'date' ? 'date' : t === 'num' ? 'number' : 'text') + '" value="' + esc(x[2] || '') + '">';
+  }).join('');
+  $('dcFields').innerHTML = html;
+  openSheet('docSheet');
+}
+function printDocForm() {
+  var d = DOCS.filter(function (x) { return x.k === docK; })[0], f = {};
+  d.f.forEach(function (x) { f[x[0]] = $('dc_' + x[0]).value.trim(); });
+  var s = d.emp && $('dcEmp').value ? staff.filter(function (x) { return x.id === $('dcEmp').value; })[0] : null;
+  if (d.emp && !s && /^(workcert|salcert|hire|fire)$/.test(d.k)) { toast('Ажилтнаа сонгоно уу'); return; }
+  var emptyS = { name: BLANK, surname: '', regno: '', position: '', start: '', salary: 0, phone: '', address: '', bank: '' };
+  var html = d.body(s || (d.emp ? emptyS : null), f, coInfo(state.biz));
+  printHtml(d.name, html);
+}
+function printHtml(title, body) {
+  var w = window.open('', '_blank', 'width=820,height=900');
+  if (!w) { toast('Хэвлэх цонх нээгдсэнгүй — popup зөвшөөрнө үү'); return; }
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' +
+    'body{font-family:"Times New Roman",serif;font-size:13.5px;line-height:1.55;margin:36px 48px;color:#000}h1{text-align:center;font-size:16px;margin:0 0 4px}h3{font-size:14px;margin:14px 0 4px}' +
+    '.c{text-align:center}.row{display:flex;justify-content:space-between;margin:12px 0}table.t{width:100%;border-collapse:collapse;margin:10px 0}.t th,.t td{border:1px solid #000;padding:6px 8px;text-align:left;height:18px}' +
+    '.t th{background:#f2f2f2}.n{text-align:right}.sig{display:flex;justify-content:space-between;margin-top:30px}.sig div{width:45%}.line{border-bottom:1px solid #000;height:26px}' +
+    '</style></head><body>' + body + '<script>window.onload=function(){window.print()}<\/script></body></html>');
+  w.document.close();
+}

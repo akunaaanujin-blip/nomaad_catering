@@ -52,9 +52,9 @@ var BUSINESSES = {
 // taxType: VAT_ABLE (НӨАТ төлөгч) · NO_VAT (НӨАТ төлөгч биш) — туршилтын орчинд шалгаж баталгаажуулна.
 // classificationCode: БҮНА ангиллын код (бараанд тусгайлан заагаагүй үед ашиглана).
 var EBARIMT = {
-  meat:   { legalName: 'Вайс бротерс', merchantTin: '93202187027', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
+  meat:   { legalName: 'Вайс бротерс', regNo: '8330042', merchantTin: '93202187027', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
   cozy:   { legalName: '', merchantTin: '', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
-  travel: { legalName: 'Вайс бротерс', merchantTin: '93202187027', branchNo: '002', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
+  travel: { legalName: 'Вайс бротерс', regNo: '8330042', merchantTin: '93202187027', branchNo: '002', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
 };
 
 // Туршилтын орчны мерчант (developer.itc.gov.mn-ийн заавраас). Тохиргоо цонхонд "Туршилт" асаахад ашиглана.

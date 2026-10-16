@@ -142,6 +142,51 @@
   </div>
 </div>
 
+<!-- Хөдөлмөрийн гэрээ -->
+<div class="sheet" id="contractSheet" onclick="if(event.target===this)closeSheet('contractSheet')">
+  <div class="panel">
+    <h2 id="ctTitle">Хөдөлмөрийн гэрээ</h2>
+    <p class="muted" id="ctSub"></p>
+    <div class="row2">
+      <div><label for="ctPos">Албан тушаал *</label><input id="ctPos"></div>
+      <div><label for="ctSalary">Үндсэн цалин (₮/сар) *</label><input id="ctSalary" type="number" inputmode="numeric" min="0"></div>
+    </div>
+    <div class="row2">
+      <div><label for="ctStart">Ажилд орох огноо *</label><input id="ctStart" type="date"></div>
+      <div><label for="ctType">Гэрээний хугацаа</label>
+        <select id="ctType" onchange="$('ctEndWrap').style.display=this.value==='fixed'?'block':'none'"><option value="open">Хугацаагүй</option><option value="fixed">Тодорхой хугацаатай</option></select></div>
+    </div>
+    <div id="ctEndWrap" style="display:none"><label for="ctEnd">Гэрээ дуусах огноо</label><input id="ctEnd" type="date"></div>
+    <div class="row2">
+      <div><label for="ctProb">Туршилтын хугацаа</label>
+        <select id="ctProb"><option value="0">Байхгүй</option><option value="1">1 сар</option><option value="2">2 сар</option><option value="3">3 сар</option></select></div>
+      <div><label for="ctHours">Ажлын цаг</label><input id="ctHours" placeholder="09:00–18:00, 7 хоногт 5 өдөр"></div>
+    </div>
+    <label for="ctPay">Цалин олгох өдөр</label><input id="ctPay" placeholder="Сар бүрийн 5, 20-нд">
+    <label for="ctPlace">Ажлын байр (хаяг)</label><input id="ctPlace">
+    <label for="ctAddr">Ажилтны гэрийн хаяг</label><input id="ctAddr">
+    <div class="row2">
+      <div><label for="ctBoss">Ажил олгогчийг төлөөлж (захирал)</label><input id="ctBoss" placeholder="Овог нэр"></div>
+      <div><label for="ctCo">Компанийн хаяг</label><input id="ctCo"></div>
+    </div>
+    <label for="ctExtra">Нэмэлт нөхцөл</label><textarea id="ctExtra" rows="2" placeholder="Жишээ: Бараа материалын эд хөрөнгийн хариуцлага хүлээнэ"></textarea>
+    <p class="muted" style="font-size:12.5px;margin-top:8px">Гэрээ Хөдөлмөрийн тухай хуулийн (2021) шаардлагын дагуу бөглөгдөнө. Загварыг хуульчаар нэг удаа хянуулахыг зөвлөж байна.</p>
+    <button class="btn" onclick="saveContract()">Хадгалаад хэвлэх</button>
+    <button class="btn ghost" onclick="closeSheet('contractSheet')">Болих</button>
+  </div>
+</div>
+
+<!-- Маягт, загвар -->
+<div class="sheet" id="docSheet" onclick="if(event.target===this)closeSheet('docSheet')">
+  <div class="panel">
+    <h2 id="dcTitle">Маягт</h2>
+    <p class="muted" id="dcSub"></p>
+    <div id="dcFields"></div>
+    <button class="btn" onclick="printDocForm()">Хэвлэх</button>
+    <button class="btn ghost" onclick="closeSheet('docSheet')">Болих</button>
+  </div>
+</div>
+
 <!-- Барааны бүртгэл -->
 <div class="sheet" id="productSheet" onclick="if(event.target===this)closeSheet('productSheet')">
   <div class="panel">

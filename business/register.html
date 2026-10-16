@@ -26,6 +26,10 @@
     </div>
     <label for="rUser">Нэвтрэх нэр * <span class="muted" style="font-weight:400">(латин жижиг үсэг, тоо, цэг — 3-20 тэмдэгт)</span></label>
     <input id="rUser" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="жишээ: bold.b">
+    <label for="rAddr">Гэрийн хаяг (гэрээнд бичигдэнэ)</label>
+    <input id="rAddr" placeholder="Дүүрэг, хороо, байр, тоот">
+    <label for="rStart">Ажилд орох огноо</label>
+    <input id="rStart" type="date">
     <label for="rPos">Албан тушаал</label>
     <input id="rPos" placeholder="Худалдагч, кассчин…">
     <label for="rBank">Цалингийн данс (банк, дансны дугаар)</label>
@@ -64,6 +68,7 @@ function submitRegister() {
     phone: $('rPhone').value.replace(/[^\d+]/g, ''), regno: $('rReg').value.trim(),
     position: $('rPos').value.trim(), bank: $('rBank').value.trim(), code: $('rCode').value.trim(),
     username: $('rUser').value.trim().toLowerCase(),
+    address: $('rAddr').value.trim(), start: $('rStart').value,
   };
   var msg = '';
   if (!d.name) msg = 'Нэрээ бичнэ үү';
