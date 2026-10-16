@@ -313,3 +313,16 @@ td,th{border-bottom:1px solid var(--line)}
 .mono.sm{width:28px;height:28px;font-size:14px;border-radius:7px;vertical-align:middle;margin-right:4px}
 .crumb h2{display:flex;align-items:center;gap:6px}
 .crumb .link{white-space:nowrap}
+
+/* Үлдэгдэл */
+tr.st-low td{background:#FFFBEB}
+tr.st-out td{background:#FEF2F2;color:#991B1B}
+.notice{background:#EFF6FF;border-color:#BFDBFE}
+.notice .btn{margin-left:6px}
+.chip em.left{font-style:normal;font-size:11px;margin-left:6px;padding:1px 6px;border-radius:5px;background:#F1F5F9;color:var(--muted)}
+.chip em.left.low{background:#FEF3C7;color:#92400E}
+.chip em.left.out{background:#FEE2E2;color:#991B1B}
+.chip.on em.left{background:rgba(255,255,255,.2);color:#fff}
+td.neg{color:var(--red);font-weight:600}
+table.stock td:first-child{min-width:150px}
+@media (max-width:760px){.hide-sm{display:none}}

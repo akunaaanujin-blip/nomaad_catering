@@ -4,8 +4,8 @@
 var KEYS = ['meat', 'travel', 'cozy'];
 var token = sessionStorage.getItem('nb_tok') || '';   // удирдагчийн токен (8 цаг)
 var ownerName = sessionStorage.getItem('nb_owner') || '';
-var records = [], staff = [], salary = [];
-var state = { view: 'companies', biz: '', module: 'sales', period: 'month', staffBiz: 'all', month: todayStr().slice(0, 7), q: '' };
+var records = [], staff = [], salary = [], stockData = {}, moves = [];
+var state = { view: 'companies', biz: '', module: 'sales', period: 'month', staffBiz: 'all', month: todayStr().slice(0, 7), q: '', stockF: 'all', showMoves: false };
 var editId = '', salId = '', salKind = 'Урьдчилгаа';
 
 if (!API_URL) $('demo').style.display = 'block';
@@ -56,13 +56,13 @@ function authLost() {
 
 function fetchAll(cb) {
   if (!API_URL) {
-    records = load('nb_records', []); staff = []; salary = [];
+    records = load('nb_records', []); staff = []; salary = []; stockData = load('nb_demo_stock', {}); moves = [];
     stamp(); cb(true); return;
   }
   var from = todayStr(new Date(Date.now() - 100 * 864e5));
   post({ type: 'admin_read', from: from }, function (err, d) {
     if (err) { if (err !== 'auth') toast('Холбогдож чадсангүй'); cb(false); return; }
-    records = d.records || []; staff = d.staff || []; salary = d.salary || [];
+    records = d.records || []; staff = d.staff || []; salary = d.salary || []; stockData = d.stock || {}; moves = d.moves || [];
     stamp(); cb(true);
   });
 }
@@ -233,26 +233,184 @@ function recordRows(list) {
 }
 
 // Бараа материал
+var LOW_STOCK = 2;   // ийм ба түүнээс бага бол «цөөн»
+function hasWarehouse(biz) {
+  if (biz === 'travel') return true;
+  var st = stockData[biz] || {};
+  return Object.keys(st).some(function (k) { return st[k].wh; });
+}
+function stockRows(biz) {
+  var B = BUSINESSES[biz], st = stockData[biz] || {};
+  var rows = B.products.map(function (p) {
+    var s = st[p.name] || { shop: 0, wh: 0 };
+    return { name: p.name, cat: p.cat || '', price: p.price, cls: p.cls, unit: p.unit, shop: s.shop, wh: s.wh, cost: s.cost || 0 };
+  });
+  var known = {};
+  rows.forEach(function (r) { known[r.name] = 1; });
+  Object.keys(st).forEach(function (k) { if (!known[k]) rows.push({ name: k, cat: '', price: 0, cls: '', unit: B.unit, shop: st[k].shop, wh: st[k].wh, cost: st[k].cost || 0 }); });
+  return rows;
+}
 function productsModule() {
-  var B = BUSINESSES[state.biz];
+  var biz = state.biz, B = BUSINESSES[biz];
+  var tracked = moves.some(function (m) { return m.biz === biz; }) || Object.keys(stockData[biz] || {}).length > 0;
+  var wh = hasWarehouse(biz);
   var sold = {};
-  inRange(state.biz).forEach(function (x) {
+  inRange(biz).forEach(function (x) {
     if (x.type !== 'sale') return;
     var k = String(x.item).replace(/ \(буцаалт\)$/, '');
     if (!sold[k]) sold[k] = { qty: 0, amount: 0 };
     sold[k].qty += Number(x.qty) || 0; sold[k].amount += Number(x.amount) || 0;
   });
+  var rows = stockRows(biz);
   var q = state.q.toLowerCase();
-  var list = B.products.filter(function (p) { return !q || p.name.toLowerCase().indexOf(q) >= 0 || String(p.cat || '').toLowerCase().indexOf(q) >= 0; });
-  return '<div class="card"><div class="bar-row"><h2 style="margin:0">Барааны жагсаалт (' + B.products.length + ')</h2>' +
-    '<input class="search" placeholder="Бараа хайх…" value="' + esc(state.q) + '" oninput="state.q=this.value;render();this.focus();this.setSelectionRange(this.value.length,this.value.length)"></div>' +
-    '<p class="muted" style="margin:6px 0 10px">Үнийг Google Sheet-ийн «Бараа» хуудсаар сольж болно. Үлдэгдлийн бүртгэл дараагийн шатанд нэмэгдэнэ.</p>' +
-    '<div class="scroll"><table><tr><th>Бараа</th><th>Ангилал</th><th class="n">Үнэ</th><th>БҮНА</th><th class="n">Зарагдсан</th><th class="n">Дүн</th></tr>' +
-    list.map(function (p) {
-      var s = sold[p.name] || { qty: 0, amount: 0 };
-      return '<tr><td>' + esc(p.name) + '</td><td class="muted">' + esc(p.cat || '') + '</td><td class="n">' + (p.price ? fmt(p.price) : '—') +
-        '</td><td class="muted">' + esc(p.cls || '') + '</td><td class="n">' + (s.qty ? round2(s.qty) + ' ' + esc(p.unit) : '') + '</td><td class="n">' + (s.amount ? fmt(s.amount) : '') + '</td></tr>';
-    }).join('') + '</table></div></div>';
+  var total = function (r) { return round2(r.shop + r.wh); };
+  var cntLow = rows.filter(function (r) { return total(r) > 0 && total(r) <= LOW_STOCK; }).length;
+  var cntOut = rows.filter(function (r) { return total(r) <= 0; }).length;
+  var list = rows.filter(function (r) {
+    if (q && r.name.toLowerCase().indexOf(q) < 0 && r.cat.toLowerCase().indexOf(q) < 0) return false;
+    if (state.stockF === 'low') return total(r) > 0 && total(r) <= LOW_STOCK;
+    if (state.stockF === 'out') return total(r) <= 0;
+    if (state.stockF === 'in') return total(r) > 0;
+    return true;
+  });
+  var banner = !tracked ? '<div class="card notice"><b>Үлдэгдлийн бүртгэл эхлээгүй байна.</b> ' +
+    'Baaz-ийн «Бараа материалын үлдэгдэл (өртгөөр, байршлаар)» Excel тайлангаар эхний үлдэгдэл, өртгийг нэг дор оруулж болно. ' +
+    '<button class="btn sm" onclick="$(\'baazFile\').click()">Baaz Excel оруулах</button></div>' : '';
+  var stockVal = rows.reduce(function (a, r) { return a + Math.max(0, total(r)) * (r.price || 0); }, 0);
+  var costVal = rows.reduce(function (a, r) { return a + Math.max(0, total(r)) * (r.cost || 0); }, 0);
+  return banner +
+    '<div class="kpis">' + kpi('Бараа', rows.length) + kpi('Үлдэгдэл · өртгөөр', fmt(costVal)) + kpi('Үлдэгдэл · зарах үнээр', fmt(stockVal)) +
+    kpi('Цөөн үлдсэн (≤' + LOW_STOCK + ')', cntLow) + kpi('Дууссан', cntOut) + '</div>' +
+    '<div class="card"><div class="bar-row"><div class="tabs">' +
+    [['all', 'Бүгд'], ['in', 'Үлдэгдэлтэй'], ['low', 'Цөөн'], ['out', 'Дууссан']].map(function (t) {
+      return '<button class="' + (state.stockF === t[0] ? 'on' : '') + '" onclick="state.stockF=\'' + t[0] + '\';render()">' + t[1] + '</button>';
+    }).join('') + '</div>' +
+    '<div class="bar-row" style="gap:6px"><input class="search" placeholder="Бараа хайх…" value="' + esc(state.q) + '" oninput="state.q=this.value;render();this.focus();this.setSelectionRange(this.value.length,this.value.length)">' +
+    '<button class="btn sm" onclick="openMove(\'Орлого\')">+ Орлого авах</button>' +
+    (wh ? '<button class="btn sm ghost" style="color:var(--accent)" onclick="openMove(\'Шилжүүлэг\')">Шилжүүлэг</button>' : '') +
+    '<button class="btn sm ghost" style="color:var(--accent)" onclick="openMove(\'Тооллого\')">Тооллого</button></div></div>' +
+    '<div class="scroll" style="margin-top:10px"><table class="stock"><tr><th>Бараа</th><th class="hide-sm">Ангилал</th><th class="n">Үнэ</th>' +
+    '<th class="n">Өртөг</th><th class="n">Ашиг</th><th class="n">Дэлгүүр</th>' + (wh ? '<th class="n">Агуулах</th><th class="n">Нийт</th>' : '') +
+    '<th class="n">Зарагдсан</th><th></th></tr>' +
+    list.map(function (r) {
+      var t = total(r), s = sold[r.name] || { qty: 0 };
+      var cls = t <= 0 ? 'st-out' : (t <= LOW_STOCK ? 'st-low' : '');
+      var margin = r.price && r.cost ? Math.round((r.price - r.cost) / r.price * 100) : null;
+      return '<tr class="' + cls + '"><td>' + esc(r.name) + '</td><td class="muted hide-sm">' + esc(r.cat) + '</td><td class="n">' + (r.price ? fmt(r.price) : '—') + '</td>' +
+        '<td class="n">' + (r.cost ? fmt(r.cost) : '—') + '</td><td class="n' + (margin !== null && margin < 0 ? ' neg' : '') + '">' + (margin === null ? '' : margin + '%') + '</td>' +
+        '<td class="n">' + round2(r.shop) + '</td>' + (wh ? '<td class="n">' + round2(r.wh) + '</td><td class="n"><b>' + t + '</b></td>' : '') +
+        '<td class="n">' + (s.qty ? round2(s.qty) : '') + '</td>' +
+        '<td class="n"><button class="mini" onclick="openMove(\'Орлого\',' + esc(JSON.stringify(r.name)) + ')">+ Орлого</button></td></tr>';
+    }).join('') + '</table></div></div>' +
+    '<div class="card"><div class="bar-row"><h2 style="margin:0">Хөдөлгөөний түүх</h2>' +
+    '<button class="link" onclick="state.showMoves=!state.showMoves;render()">' + (state.showMoves ? 'Нуух' : 'Харах') + '</button></div>' +
+    (state.showMoves ? '<div class="scroll" style="margin-top:8px"><table><tr><th>Огноо</th><th>Төрөл</th><th>Бараа</th><th>Байршил</th><th class="n">Тоо</th><th class="n">Нэгж өртөг</th><th>Хэн</th><th>Тайлбар</th></tr>' +
+      moves.filter(function (m) { return m.biz === biz; }).slice().reverse().slice(0, 200).map(function (m) {
+        return '<tr><td>' + esc(m.date) + '</td><td>' + esc(m.kind) + '</td><td>' + esc(m.item) + '</td><td>' + esc(m.loc) + '</td><td class="n">' +
+          (m.qty > 0 ? '+' : '') + round2(m.qty) + '</td><td class="n">' + (m.cost ? fmt(m.cost) : '') + '</td><td>' + esc(m.by) + '</td><td class="muted">' + esc(m.note) + '</td></tr>';
+      }).join('') + '</table></div>' : '') + '</div>';
+}
+
+// ── Үлдэгдлийн хөдөлгөөн бүртгэх ──
+var moveKind = 'Орлого';
+function openMove(kind, item) {
+  moveKind = kind;
+  var biz = state.biz, wh = hasWarehouse(biz);
+  $('mvTitle').textContent = kind === 'Орлого' ? 'Орлого авах' : (kind === 'Шилжүүлэг' ? 'Агуулахаас дэлгүүр рүү шилжүүлэх' : 'Тооллого (бодит тоо оруулах)');
+  $('mvItems').innerHTML = stockRows(biz).map(function (r) { return '<option value="' + esc(r.name) + '">'; }).join('');
+  $('mvItem').value = item || '';
+  $('mvQty').value = '';
+  $('mvNote').value = '';
+  $('mvLocWrap').style.display = wh && kind !== 'Шилжүүлэг' ? 'block' : 'none';
+  $('mvLoc').value = 'Дэлгүүр';
+  $('mvDirWrap').style.display = kind === 'Шилжүүлэг' ? 'block' : 'none';
+  $('mvQtyLabel').textContent = kind === 'Тооллого' ? 'Тоолсон бодит тоо' : 'Тоо хэмжээ';
+  $('mvCostWrap').style.display = kind === 'Орлого' ? 'block' : 'none';
+  $('mvCost').value = '';
+  mvInfo();
+  openSheet('moveSheet');
+}
+function mvCurrent() {
+  var st = (stockData[state.biz] || {})[$('mvItem').value.trim()] || { shop: 0, wh: 0 };
+  return st;
+}
+function mvInfo() {
+  var st = mvCurrent();
+  var wh = hasWarehouse(state.biz);
+  $('mvCur').textContent = $('mvItem').value.trim() ? 'Одоогийн үлдэгдэл: дэлгүүр ' + round2(st.shop) + (wh ? ', агуулах ' + round2(st.wh) : '') + (st.cost ? ' · дундаж өртөг ' + fmt(st.cost) : '') : '';
+}
+function saveMove() {
+  var biz = state.biz, item = $('mvItem').value.trim(), qty = Number($('mvQty').value), note = $('mvNote').value.trim();
+  if (!item) { toast('Бараагаа сонгоно уу'); return; }
+  if (!isFinite(qty) || $('mvQty').value === '' || (moveKind !== 'Тооллого' && qty <= 0) || qty < 0) { toast('Тоо хэмжээ зөв оруулна уу'); return; }
+  var ms = [];
+  if (moveKind === 'Орлого') ms.push({ biz: biz, loc: $('mvLoc').value, item: item, kind: 'Орлого', qty: qty, cost: Number($('mvCost').value) || 0, note: note });
+  else if (moveKind === 'Шилжүүлэг') {
+    var from = $('mvDir').value === 'w2s' ? 'Агуулах' : 'Дэлгүүр', to = from === 'Агуулах' ? 'Дэлгүүр' : 'Агуулах';
+    ms.push({ biz: biz, loc: from, item: item, kind: 'Шилжүүлэг', qty: -qty, note: note || (from + ' → ' + to) });
+    ms.push({ biz: biz, loc: to, item: item, kind: 'Шилжүүлэг', qty: qty, note: note || (from + ' → ' + to) });
+  } else {
+    var loc = $('mvLoc').value, cur = mvCurrent()[loc === 'Агуулах' ? 'wh' : 'shop'];
+    var diff = round2(qty - cur);
+    if (!diff) { toast('Зөрүүгүй — үлдэгдэл таарч байна'); closeSheet('moveSheet'); return; }
+    ms.push({ biz: biz, loc: loc, item: item, kind: 'Тооллого', qty: diff, note: note || ('Тоолсон ' + qty + ', бүртгэлд ' + round2(cur)) });
+  }
+  sendMoves(ms, function () { closeSheet('moveSheet'); toast('Бүртгэгдлээ'); });
+}
+function sendMoves(ms, done) {
+  if (!API_URL) {   // туршилтын горим
+    ms.forEach(function (m) {
+      var b = stockData[m.biz] = stockData[m.biz] || {};
+      var it = b[m.item] = b[m.item] || { shop: 0, wh: 0 };
+      if (m.loc === 'Агуулах') it.wh += m.qty; else it.shop += m.qty;
+      if (m.cost && m.qty > 0) it.cost = it.cost ? Math.round((it.cost + m.cost) / 2) : m.cost;
+      moves.push({ date: todayStr() + ' ' + timeStr(), biz: m.biz, loc: m.loc, item: m.item, kind: m.kind, qty: m.qty, cost: m.cost || 0, by: ownerName, note: m.note || '' });
+    });
+    save('nb_demo_stock', stockData); render(); done(); return;
+  }
+  post({ type: 'admin_stock', by: ownerName, moves: ms }, function (err) {
+    if (err) { toast('Алдаа: ' + err); return; }
+    done(); refresh();
+  });
+}
+// ── Baaz «Бараа материалын үлдэгдэл (өртгөөр, байршлаар)» Excel → эхний үлдэгдэл + өртөг ──
+// Файлыг зөвхөн хөтөч дотор уншина; өртөг зөвхөн таны хувийн Sheet-д хадгалагдана.
+function num(v) { var n = Number(String(v == null ? '' : v).replace(/[,\s₮]/g, '')); return isFinite(n) ? n : 0; }
+function importBaaz(input) {
+  var f = input.files && input.files[0];
+  input.value = '';
+  if (!f) return;
+  if (!window.XLSX) { toast('Excel уншигч ачаалагдаагүй — интернэтээ шалгана уу'); return; }
+  var reader = new FileReader();
+  reader.onload = function (e) {
+    var wb; try { wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' }); } catch (err) { toast('Файлыг уншиж чадсангүй'); return; }
+    var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: '' });
+    if (!rows.some(function (r) { return r.join(' ').indexOf('Эцсийн үлдэгдэл') >= 0; })) { toast('Энэ нь Baaz-ийн үлдэгдлийн тайлан биш байна'); return; }
+    var loc = 'Дэлгүүр', items = [];
+    rows.forEach(function (r) {
+      var a = String(r[0] || '').trim();
+      if (a && !/^\d+$/.test(a) && !String(r[3] || '').trim()) {
+        if (/агуулах/i.test(a)) loc = 'Агуулах'; else if (/дэлгүүр/i.test(a)) loc = 'Дэлгүүр';
+        return;
+      }
+      if (/^\d+$/.test(a) && String(r[3] || '').trim()) {
+        var qty = num(r[18]), cost = num(r[19]);
+        if (qty > 0) items.push({ item: String(r[3]).trim(), loc: loc, qty: qty, cost: cost > 0 && cost < 1e12 ? Math.round(cost) : 0 });
+      }
+    });
+    if (!items.length) { toast('Үлдэгдэлтэй бараа олдсонгүй'); return; }
+    var names = {}; BUSINESSES[state.biz].products.forEach(function (p) { names[p.name] = 1; });
+    var unknown = items.filter(function (x) { return !names[x.item]; }).length;
+    var val = items.reduce(function (s, x) { return s + x.qty * x.cost; }, 0);
+    if (!confirm('Baaz тайлангаас ' + items.length + ' мөр олдлоо (дэлгүүр ' + items.filter(function (x) { return x.loc === 'Дэлгүүр'; }).length +
+      ', агуулах ' + items.filter(function (x) { return x.loc === 'Агуулах'; }).length + ').\nНийт өртөг: ' + fmt(val) +
+      (unknown ? '\nЖагсаалтад байхгүй ' + unknown + ' бараа шинээр нэмэгдэнэ.' : '') +
+      '\n\n«' + BUSINESSES[state.biz].name + '»-д эхний үлдэгдэл болгон оруулах уу?')) return;
+    sendMoves(items.map(function (x) {
+      return { biz: state.biz, loc: x.loc, item: x.item, kind: 'Эхний үлдэгдэл', qty: x.qty, cost: x.cost, note: 'Baaz тайлан ' + f.name.slice(0, 40) };
+    }), function () { toast(items.length + ' мөр орлоо'); });
+  };
+  reader.readAsArrayBuffer(f);
 }
 
 // Санхүү

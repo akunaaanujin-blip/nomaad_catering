@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v2.1 (нэвтрэх нэр, эзний бүртгэл, токен)
+// NOMAAD Бизнесүүд — Google Apps Script v2.2 (барааны үлдэгдэл)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -10,6 +10,7 @@ const SHEET_LOG    = 'Бүртгэл';
 const SHEET_PROD   = 'Бараа';
 const SHEET_STAFF  = 'Ажилтан';
 const SHEET_SALARY = 'Цалин';
+const SHEET_STOCK  = 'Үлдэгдэл';
 const TZ           = 'Asia/Ulaanbaatar';
 const SHEET_ID     = '1Hkmo9ttsHfm6xfr49W0BpjkE2nnPPCL0dt2fP6rGyKI';   // NOMAAD Бизнесүүд — Бүртгэл
 
@@ -24,6 +25,10 @@ const USER_RE = /^[a-z0-9._]{3,20}$/;
 const TOKEN_TTL = 8 * 3600;   // удирдагчийн нэвтрэлт 8 цаг
 const SALARY_HEAD = ['ID', 'Огноо', 'Сар', 'Ажилтны ID', 'Нэр', 'Бизнес', 'Төрөл', 'Дүн', 'Тайлбар'];
 const SALARY_KINDS = { 'Урьдчилгаа': 1, 'Шагнал': 1, 'Суутгал': 1, 'Олгосон': 1 };
+// Үлдэгдлийн хөдөлгөөн: тоо + (нэмэгдэх) / − (хасагдах). Борлуулалт «Бүртгэл»-ээс автоматаар хасагдана.
+const STOCK_HEAD = ['ID', 'Огноо', 'Бизнес', 'Байршил', 'Бараа', 'Төрөл', 'Тоо', 'Нэгж өртөг', 'Хэн', 'Тайлбар', 'biz'];
+const STOCK_KINDS = { 'Эхний үлдэгдэл': 1, 'Орлого': 1, 'Шилжүүлэг': 1, 'Тооллого': 1, 'Хасалт': 1 };
+const STOCK_LOCS = { 'Дэлгүүр': 1, 'Агуулах': 1 };
 
 // ── Бичих ──
 function doPost(e) {
@@ -36,6 +41,7 @@ function doPost(e) {
     if (data.type === 'admin_read') return json(isAdmin(data) ? adminRead(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_staff') return json(isAdmin(data) ? adminStaff(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_salary') return json(isAdmin(data) ? adminSalary(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_stock') return json(isAdmin(data) ? adminStock(data) : { status: 'error', error: 'auth' });
     return json(saveRecords(data));
   } catch (err) {
     return json({ status: 'error', error: err.message });
@@ -63,6 +69,8 @@ function adminLogin(d) {
 function adminRead(d) {
   const a = adminData();
   a.records = data(d.from).records;
+  a.stock = stockAll(true);
+  a.moves = stockMoves().slice(-500);
   return a;
 }
 
@@ -97,6 +105,7 @@ function doGet(e) {
   let out;
   if (p.action === 'products') out = products(p.biz);
   else if (p.action === 'login') out = login(p.biz, p.user, p.code);
+  else if (p.action === 'stock') out = BIZ_NAMES[p.biz] ? { status: 'ok', stock: stockAll()[p.biz] || {} } : { status: 'error', error: 'biz' };
   else out = { status: 'ok', app: 'NOMAAD' };
   const body = JSON.stringify(out);
   if (p.callback) {
@@ -197,6 +206,89 @@ function adminSalary(d) {
   salarySheet().appendRow([id, Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), e.month, s.id, s.name, s.biz,
     e.kind, Number(e.amount), String(e.note || '').slice(0, 120)]);
   return { status: 'ok', id: id };
+}
+
+// ── Барааны үлдэгдэл ──
+function stockSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_STOCK);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_STOCK);
+    sh.appendRow(STOCK_HEAD);
+    styleHead(sh, STOCK_HEAD.length, '#334155');
+    sh.getRange('B:B').setNumberFormat('@');
+    sh.hideColumns(11);
+    [120, 140, 170, 90, 220, 120, 70, 110, 120, 220].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
+  }
+  return sh;
+}
+function stockMoves() {
+  const sh = stockSheet();
+  const last = sh.getLastRow();
+  if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, STOCK_HEAD.length).getValues().map(function (v) {
+    return { id: String(v[0]), date: fmtDate(v[1], 'yyyy-MM-dd HH:mm'), loc: String(v[3]), item: String(v[4]).trim(),
+             kind: String(v[5]), qty: Number(v[6]) || 0, cost: Number(v[7]) || 0, by: String(v[8]), note: String(v[9]), biz: String(v[10]) };
+  });
+}
+// Бизнес бүрийн бараа тус бүрийн үлдэгдэл: { biz: { item: { shop, wh, cost? } } }.
+// Борлуулалтыг тухайн бизнесийн анхны хөдөлгөөний огнооноос хойш л хасна.
+// withCost: удирдагчид л жигнэсэн дундаж өртгийг (орлого + эхний үлдэгдлээс) буцаана.
+function stockAll(withCost) {
+  const out = {}, since = {}, cq = {};
+  stockMoves().forEach(function (m) {
+    if (!BIZ_NAMES[m.biz] || !m.item) return;
+    const b = out[m.biz] = out[m.biz] || {};
+    const it = b[m.item] = b[m.item] || { shop: 0, wh: 0 };
+    if (m.loc === 'Агуулах') it.wh += m.qty; else it.shop += m.qty;
+    if (withCost && m.qty > 0 && m.cost > 0 && (m.kind === 'Орлого' || m.kind === 'Эхний үлдэгдэл')) {
+      const k = m.biz + '|' + m.item;
+      cq[k] = cq[k] || { q: 0, v: 0 };
+      cq[k].q += m.qty; cq[k].v += m.qty * m.cost;
+    }
+    const d = m.date.slice(0, 16);
+    if (!since[m.biz] || d < since[m.biz]) since[m.biz] = d;
+  });
+  const sheet = logSheet();
+  const last = sheet.getLastRow();
+  if (last >= 2) {
+    sheet.getRange(2, 1, last - 1, LOG_HEAD.length).getValues().forEach(function (v) {
+      const biz = String(v[15]);
+      if (String(v[16]) !== 'sale' || !out[biz]) return;
+      const when = fmtDate(v[1], 'yyyy-MM-dd') + ' ' + fmtDate(v[2], 'HH:mm');
+      if (when < since[biz]) return;
+      const item = String(v[6]).replace(/ \(буцаалт\)$/, '').trim();
+      const it = out[biz][item] = out[biz][item] || { shop: 0, wh: 0 };
+      it.shop -= Number(v[7]) || 0;   // буцаалтын тоо сөрөг тул буцааж нэмэгдэнэ
+    });
+  }
+  Object.keys(out).forEach(function (b) { Object.keys(out[b]).forEach(function (k) {
+    out[b][k].shop = Math.round(out[b][k].shop * 1000) / 1000; out[b][k].wh = Math.round(out[b][k].wh * 1000) / 1000;
+    const c = cq[b + '|' + k];
+    if (withCost && c && c.q) out[b][k].cost = Math.round(c.v / c.q);
+  }); });
+  return out;
+}
+// Удирдагч: хөдөлгөөн бүртгэх (олноор). Шилжүүлэг = хоёр мөр (−гарах, +орох).
+function adminStock(d) {
+  const moves = d.moves || [];
+  if (!moves.length || moves.length > 1000) return { status: 'error', error: 'fields' };
+  const rows = [], now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
+  const by = String(d.by || '').slice(0, 40);
+  let n = 0;
+  for (let i = 0; i < moves.length; i++) {
+    const m = moves[i];
+    const qty = Number(m.qty);
+    if (!BIZ_NAMES[m.biz] || !STOCK_KINDS[m.kind] || !STOCK_LOCS[m.loc] || !String(m.item || '').trim() || !isFinite(qty) || qty === 0) {
+      return { status: 'error', error: 'fields', index: i };
+    }
+    const cost = Math.max(0, Number(m.cost) || 0);
+    rows.push(['M' + Date.now() + '-' + (n++), now, BIZ_NAMES[m.biz], m.loc, String(m.item).trim().slice(0, 80), m.kind, qty, cost || '', by,
+               String(m.note || '').slice(0, 120), m.biz]);
+  }
+  const sh = stockSheet();
+  sh.getRange(sh.getLastRow() + 1, 1, rows.length, STOCK_HEAD.length).setValues(rows);
+  return { status: 'ok', saved: rows.length };
 }
 
 // ── Туслах ──
@@ -347,4 +439,4 @@ function json(o) {
 }
 
 // Нэг удаа гараар ажиллуулж хуудсуудыг үүсгэнэ (заавал биш)
-function setup() { logSheet(); prodSheet(); staffSheet(); salarySheet(); }
+function setup() { logSheet(); prodSheet(); staffSheet(); salarySheet(); stockSheet(); }

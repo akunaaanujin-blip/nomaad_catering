@@ -89,7 +89,34 @@
   </div>
 </div>
 
+<!-- Үлдэгдлийн хөдөлгөөн -->
+<div class="sheet" id="moveSheet" onclick="if(event.target===this)closeSheet('moveSheet')">
+  <div class="panel">
+    <h2 id="mvTitle">Орлого авах</h2>
+    <label for="mvItem">Бараа</label>
+    <input id="mvItem" list="mvItems" placeholder="Барааны нэрээр хайх…" oninput="mvInfo()" onchange="mvInfo()">
+    <datalist id="mvItems"></datalist>
+    <p class="muted" id="mvCur" style="margin-top:6px;min-height:18px"></p>
+    <div id="mvLocWrap"><label for="mvLoc">Байршил</label>
+      <select id="mvLoc" onchange="mvInfo()"><option>Дэлгүүр</option><option>Агуулах</option></select></div>
+    <div id="mvDirWrap" style="display:none"><label for="mvDir">Чиглэл</label>
+      <select id="mvDir"><option value="w2s">Агуулах → Дэлгүүр</option><option value="s2w">Дэлгүүр → Агуулах</option></select></div>
+    <div class="row2">
+      <div><label for="mvQty" id="mvQtyLabel">Тоо хэмжээ</label>
+        <input id="mvQty" type="number" inputmode="decimal" step="any" min="0"></div>
+      <div id="mvCostWrap"><label for="mvCost">Нэгж өртөг (₮)</label>
+        <input id="mvCost" type="number" inputmode="numeric" min="0" placeholder="Авсан үнэ"></div>
+    </div>
+    <label for="mvNote">Тайлбар</label>
+    <input id="mvNote" placeholder="Нийлүүлэгч, баримтын дугаар…">
+    <button class="btn" onclick="saveMove()">Хадгалах</button>
+    <button class="btn ghost" onclick="closeSheet('moveSheet')">Болих</button>
+  </div>
+</div>
+
+<input type="file" id="baazFile" accept=".xlsx,.xls" style="display:none" onchange="importBaaz(this)">
 <div class="toast" id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="products.js"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
