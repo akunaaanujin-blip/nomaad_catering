@@ -17,6 +17,8 @@ var ACCOUNTS = [
   ['3101', 'Дансны өглөг', 'liab'],
   ['3301', 'Цалингийн өглөг', 'liab'],
   ['3402', 'НӨАТ-ын өр', 'liab'],
+  ['3403', 'Нийгмийн даатгалын шимтгэлийн өглөг', 'liab'],
+  ['3404', 'ХХОАТ-ын өглөг (цалингаас суутгасан)', 'liab'],
   ['3501', 'Богино хугацаат зээл', 'liab'],
   ['3801', 'Бусад богино хугацаат өр төлбөр', 'liab'],
   ['4101', 'Өмч (эздийн оруулсан)', 'equity'],
@@ -154,7 +156,9 @@ function buildJournal(biz, R) {
   });
   R.salary.forEach(function (e) {
     if (e.biz !== biz) return;   // «Бүх дэлгүүр»-ийн ажилтны цалинг олгохдоо компани сонгоно
-    if (e.kind === 'Олгосон' || e.kind === 'Урьдчилгаа') add(e.date, 'Цалин · ' + e.kind, e.id, '7101', '1101', e.amount, e.name + ' · ' + e.month + (e.note ? ' · ' + e.note : ''));
+    // Тухайн сарын цалин бодогдсон (журналд «Цалин бодолт ГГГГ-СС») бол олголт нь цалингийн өглөгийг (3301) хаана, үгүй бол шууд зардал
+    var accrued = R.journal.some(function (j) { return j.biz === biz && String(j.desc).indexOf('Цалин бодолт ' + e.month) === 0; });
+    if (e.kind === 'Олгосон' || e.kind === 'Урьдчилгаа') add(e.date, 'Цалин · ' + e.kind, e.id, accrued ? '3301' : '7101', '1101', e.amount, e.name + ' · ' + e.month + (e.note ? ' · ' + e.note : ''));
   });
   R.journal.forEach(function (j) {
     if (j.biz !== biz) return;

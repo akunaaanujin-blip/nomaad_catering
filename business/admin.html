@@ -59,6 +59,12 @@
       <div><label for="sfPhone">Утас</label><input id="sfPhone" inputmode="tel"></div>
     </div>
     <label for="sfBank">Цалингийн данс</label><input id="sfBank">
+    <label for="sfAddr">Гэрийн хаяг</label><input id="sfAddr">
+    <div class="row2">
+      <div><label for="sfNdJob">НД мэргэжлийн код</label><input id="sfNdJob" list="sfJobs" placeholder="Хайх: худалдаа, касс…" oninput="sfJobInfo()"><datalist id="sfJobs"></datalist></div>
+      <div><label for="sfNdType">Даатгуулагчийн төрөл</label><select id="sfNdType"><option value="01001">01001 Хөдөлмөрийн гэрээтэй үндсэн ажилтан</option><option value="02001">02001 Хөлсөөр / ажил гүйцэтгэх гэрээ</option><option value="40001">40001 Зэрэгцсэн (гадуур) гэрээ</option><option value="22001">22001 Тэтгэвэр тогтоолгосон ажилтан</option></select></div>
+    </div>
+    <p class="muted" id="sfJobInfo" style="font-size:12.5px;margin-top:4px"></p>
     <div class="row2">
       <div><label for="sfUser">Нэвтрэх нэр</label><input id="sfUser" autocapitalize="none" spellcheck="false"></div>
       <div><label for="sfCode">Шинэ нууц код (солих бол)</label>
@@ -248,6 +254,7 @@
 <script src="config.js"></script>
 <script src="common.js"></script>
 <script src="reports.js"></script>
+<script src="tax.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>

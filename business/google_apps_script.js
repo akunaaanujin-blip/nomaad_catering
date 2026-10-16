@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v2.7 (хөдөлмөрийн гэрээ)
+// NOMAAD Бизнесүүд — Google Apps Script v2.8 (цалин бодолт: НДШ, ХХОАТ; татварын тайлан)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -28,7 +28,8 @@ const LOG_HEAD = ['ID', 'Огноо', 'Цаг', 'Бизнес', 'Төрөл', '�
 // "Ажилтан" хуудасны баганууд (эхний 5 нь v1.1-ээс хэвээр)
 const STAFF_HEAD = ['Бизнес (meat / cozy / travel / all)', 'Нэр', 'Код (4 орон)', 'Эрх (Худалдагч / Менежер)', 'Идэвхтэй (Тийм / Хүлээгдэж / Үгүй)',
                     'Овог', 'Утас', 'Регистр', 'Албан тушаал', 'Үндсэн цалин', 'Банкны данс', 'Бүртгүүлсэн', 'ID', 'Нэвтрэх нэр',
-                    'Гэрийн хаяг', 'Ажилд орох огноо', 'Гэрээний №', 'Гэрээ байгуулсан', 'Гэрээ дуусах', 'Гэрээний нөхцөл'];
+                    'Гэрийн хаяг', 'Ажилд орох огноо', 'Гэрээний №', 'Гэрээ байгуулсан', 'Гэрээ дуусах', 'Гэрээний нөхцөл',
+                    'НД мэргэжлийн код', 'Даатгуулагчийн төрөл'];
 const USER_RE = /^[a-z0-9._]{3,20}$/;
 const TOKEN_TTL = 8 * 3600;   // удирдагчийн нэвтрэлт 8 цаг
 const SALARY_HEAD = ['ID', 'Огноо', 'Сар', 'Ажилтны ID', 'Нэр', 'Бизнес', 'Төрөл', 'Дүн', 'Тайлбар'];
@@ -250,6 +251,8 @@ function adminStaff(d) {
   if (f.name) set(2, String(f.name).slice(0, 60));
   if (f.code && /^\d{4,8}$/.test(f.code)) set(3, String(f.code));
   if (f.address !== undefined) set(15, String(f.address).slice(0, 150));
+  if (f.ndJob !== undefined && /^(\d{4}-\d{2})?$/.test(String(f.ndJob))) set(21, String(f.ndJob));
+  if (f.ndType !== undefined && /^\d{5}$/.test(String(f.ndType))) set(22, String(f.ndType));
   return { status: 'ok' };
 }
 // Удирдагч: хөдөлмөрийн гэрээ байгуулах / шинэчлэх. Дугаар ХГ-2026-001 гэх мэт он бүр шинээр дараална.
@@ -398,6 +401,19 @@ function journalRows() {
   }).filter(function (j) { return j.status !== 'Устгасан'; });
 }
 function adminJournal(d) {
+  if (d.entries) {   // олон мөр нэг дор (цалин бодолт г.м); бүгд зөв байж байж л бичнэ
+    const list = d.entries;
+    if (!list.length || list.length > 300) return { status: 'error', error: 'fields' };
+    for (let i = 0; i < list.length; i++) {
+      const x = list[i];
+      if (!BIZ_NAMES[x.biz] || !/^\d{4}-\d{2}-\d{2}$/.test(String(x.date)) || !/^\d{4,6}$/.test(String(x.dr)) || !/^\d{4,6}$/.test(String(x.cr)) || x.dr === x.cr || !(Number(x.amount) > 0)) return { status: 'error', error: 'fields', index: i };
+    }
+    const now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), by = String(d.by || '').slice(0, 40), sh = journalSheet();
+    const rows = list.map(function (x, i) { return ['J' + Date.now() + '-' + i, x.date, BIZ_NAMES[x.biz], String(x.dr), String(x.cr), Number(x.amount), String(x.partner || '').slice(0, 80),
+      String(x.desc || '').slice(0, 200), by, now, x.biz, '', '']; });
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, JOURNAL_HEAD.length).setValues(rows);
+    return { status: 'ok', saved: rows.length };
+  }
   const e = d.entry || {};
   if (d.cancelId) {   // буруу бичилтийг «Устгасан» төлөвтэй болгоно (мөр устгахгүй)
     const sh = journalSheet(), last = sh.getLastRow();
@@ -568,6 +584,7 @@ function staffRows() {
       username: String(v[13] || '').trim().toLowerCase(),
       address: String(v[14] || ''), start: fmtDate(v[15], 'yyyy-MM-dd'), contractNo: String(v[16] || ''),
       contractDate: fmtDate(v[17], 'yyyy-MM-dd'), contractEnd: fmtDate(v[18], 'yyyy-MM-dd'), terms: String(v[19] || ''),
+      ndJob: String(v[20] || ''), ndType: String(v[21] || '01001'),
     };
   }).filter(function (s) { return s.name || s.code !== '0000'; });
 }
@@ -587,7 +604,7 @@ function staffSheet() {
     ]);
   }
   // v1.1 → v2.x: нэмэлт баганууд + ажилтан бүрт ID, нэвтрэх нэр
-  if (sh.getRange(1, 20).getValue() !== 'Гэрээний нөхцөл') {   // v2.x → v2.7: гэрээний баганууд
+  if (sh.getRange(1, 22).getValue() !== 'Даатгуулагчийн төрөл') {   // v2.x → v2.8: гэрээ, НДШ-ийн баганууд
     sh.getRange(1, 1, 1, STAFF_HEAD.length).setValues([STAFF_HEAD]);
     styleHead(sh, STAFF_HEAD.length, '#2C5A8F');
     sh.getRange('C:C').setNumberFormat('@');

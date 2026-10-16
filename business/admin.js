@@ -132,11 +132,12 @@ function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
 function render() {
   var pend = staff.filter(function (s) { return s.status === 'Хүлээгдэж'; }).length;
   $('rail').innerHTML = railHtml(pend);
-  $('subnav').innerHTML = subnavHtml();
-  $('main').classList.toggle('has-sub', state.view === 'company');
+  $('subnav').innerHTML = state.view === 'tax' ? taxSubnav() : subnavHtml();
+  $('main').classList.toggle('has-sub', state.view === 'company' || state.view === 'tax');
   $('crumb').innerHTML = crumbHtml();
   toggleNav(false);
-  if (state.view === 'staff') $('view').innerHTML = pageHead('Бүх ажилчид', '') + staffView('');
+  if (state.view === 'tax') $('view').innerHTML = taxView();
+  else if (state.view === 'staff') $('view').innerHTML = pageHead('Бүх ажилчид', '') + staffView('');
   else if (state.view === 'company') $('view').innerHTML = companyView();
   else $('view').innerHTML = companiesView();
 }
@@ -153,6 +154,7 @@ var ICONS = {
   people: '<circle cx="12" cy="8" r="3.5"/><path d="M4.5 20.5c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"/>',
   refresh: '<path d="M20 11a8 8 0 10-2.3 5.7"/><path d="M20 4v7h-7"/>',
   logout: '<path d="M15 4h4a1 1 0 011 1v14a1 1 0 01-1 1h-4"/><path d="M10 17l-5-5 5-5M5 12h11"/>',
+  tax: '<path d="M7 3h10v18l-2.5-1.5L12 21l-2.5-1.5L7 21z"/><path d="M9.5 8h5M9.5 11.5h5M9.5 15h3"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4"/><circle cx="12" cy="17" r=".6"/>',
 };
 function ico(k) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + ICONS[k] + '</svg>'; }
@@ -167,6 +169,7 @@ function railHtml(pend) {
     (state.biz ? MODULES.map(function (m) { return item(inCo && state.module === m[0], "openModule('" + m[0] + "')", m[0], m[1]); }).join('') : '') +
     '<div class="rail-sep"></div>' +
     item(state.view === 'staff', "go('staff')", 'people', 'Бүх ажилчид', pend ? '<i class="dot">' + pend + '</i>' : '') +
+    item(state.view === 'tax', 'openTax()', 'tax', 'Татвар, тайлан') +
     '<div class="rail-foot">' + item(false, "window.open('guide.html','_blank')", 'help', 'Гарын авлага') + item(false, 'refresh()', 'refresh', 'Шинэчлэх') + item(false, 'logout()', 'logout', 'Гарах') + '</div>';
 }
 // Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
@@ -204,6 +207,7 @@ function toggleNav(on) { $('main').classList.toggle('nav-open', !!on); }
 function crumbHtml() {
   if (state.view === 'companies') return '<b>Миний компаниуд</b>';
   if (state.view === 'staff') return '<b>Бүх ажилчид</b>';
+  if (state.view === 'tax') return '<span>' + esc(ENTITIES[taxState.ent].name) + '</span><i>/</i><b>Татвар, тайлан</b>';
   var mod = state.module, parts = [esc(BUSINESSES[state.biz].name), MODULES.filter(function (m) { return m[0] === mod; })[0][1]];
   if (MENU[mod]) { parts.push(subGroup(mod, state.sub[mod])); }
   return parts.map(function (p, i) { return i === parts.length - 1 ? '<b>' + p + '</b>' : '<span>' + p + '</span>'; }).join('<i>/</i>');
@@ -215,7 +219,7 @@ function pageHead(title, actions, withPeriod) {
 // ── Миний компаниуд ──
 function companiesView() {
   var t = todayStr(), m = t.slice(0, 8) + '01';
-  return archiveAlerts() + '<h2 class="sec-title">Миний компаниуд</h2><div class="co-grid">' + KEYS.map(function (k) {
+  return taxAlerts() + archiveAlerts() + '<h2 class="sec-title">Миний компаниуд</h2><div class="co-grid">' + KEYS.map(function (k) {
     var B = BUSINESSES[k], E = (window.EBARIMT || {})[k] || {};
     var today = sums(records.filter(function (x) { return x.biz === k && x.date === t; }));
     var month = sums(records.filter(function (x) { return x.biz === k && x.date >= m; }));
@@ -603,12 +607,15 @@ function openStaff(id) {
   $('sfStatus').value = s.status; $('sfRole').value = s.role; $('sfBiz').value = s.biz;
   $('sfPos').value = s.position || ''; $('sfSalary').value = s.salary || ''; $('sfPhone').value = s.phone || '';
   $('sfBank').value = s.bank || ''; $('sfCode').value = ''; $('sfUser').value = s.username || '';
+  $('sfAddr').value = s.address || ''; $('sfNdType').value = s.ndType || '01001'; $('sfNdJob').value = s.ndJob || ''; sfJobInfo();
+  loadJobs(function () { $('sfJobs').innerHTML = ND_JOBS.map(function (j) { return '<option value="' + j[0] + '">' + esc(j[1]) + ' · ҮОМШӨ ' + j[2] + '%</option>'; }).join(''); sfJobInfo(); });
   openSheet('staffSheet');
 }
 function saveStaff() {
   var f = { status: $('sfStatus').value, role: $('sfRole').value, biz: $('sfBiz').value, position: $('sfPos').value.trim(),
             salary: Number($('sfSalary').value) || 0, phone: $('sfPhone').value.trim(), bank: $('sfBank').value.trim(),
-            username: $('sfUser').value.trim().toLowerCase() };
+            username: $('sfUser').value.trim().toLowerCase(), address: $('sfAddr').value.trim(), ndType: $('sfNdType').value, ndJob: $('sfNdJob').value.trim() };
+  if (f.ndJob && !/^\d{4}-\d{2}$/.test(f.ndJob)) { toast('НД мэргэжлийн кодыг жагсаалтаас сонгоно уу (жишээ 5223-11)'); return; }
   if (!/^[a-z0-9._]{3,20}$/.test(f.username)) { toast('Нэвтрэх нэр: латин жижиг үсэг, тоо, цэг (3-20)'); return; }
   var code = $('sfCode').value.trim();
   if (code) { if (!/^\d{4,8}$/.test(code)) { toast('Код 4-8 оронтой тоо байна'); return; } f.code = code; }
@@ -1046,6 +1053,7 @@ var V_PURPOSE = {
        ['3501', 'Зээл авсан'], ['5201', 'Бусад орлого'], ['10003', 'Кассаас шилжүүлсэн'], ['1101', 'Харилцахаас бэлэн мөнгө авсан'], ['110106', 'Картын (пос) мөнгө орсон'], ['1503', 'Урьдчилгаа буцаан авсан', 1]],
   out: [['3101', 'Нийлүүлэгчид өглөг төлсөн', 1], ['1503', 'Нийлүүлэгчид урьдчилгаа өгсөн', 1], ['7101', 'Цалин'], ['7102', 'НДШ'], ['7201', 'Түрээс'],
         ['7202', 'Цахилгаан, ус, дулаан'], ['7203', 'Тээвэр'], ['7204', 'Сав, баглаа'], ['7205', 'Зар сурталчилгаа'], ['7206', 'Засвар'], ['7207', 'Хүргэлт'],
+        ['3403', 'НДШ төлсөн (нийгмийн даатгалд)'], ['3404', 'ХХОАТ төлсөн (татварт)'], ['3301', 'Цалин олгосон (бодогдсон цалингаас)'],
         ['7301', 'Бусад зардал'], ['2001', 'Үндсэн хөрөнгө худалдаж авсан'], ['3501', 'Зээл төлсөн'], ['4101', 'Эзэн мөнгө авсан'],
         ['1101', 'Банкинд тушаасан (харилцах руу)'], ['10003', 'Касс руу бэлэн мөнгө гаргасан'], ['1207', 'Ажилтанд өгсөн (авлага)'], ['6001', 'Худалдан авагчид мөнгө буцаасан']],
 };
@@ -1467,4 +1475,9 @@ function printHtml(title, body) {
     '.t th{background:#f2f2f2}.n{text-align:right}.sig{display:flex;justify-content:space-between;margin-top:30px}.sig div{width:45%}.line{border-bottom:1px solid #000;height:26px}' +
     '</style></head><body>' + body + '<script>window.onload=function(){window.print()}<\/script></body></html>');
   w.document.close();
+}
+
+function sfJobInfo() {
+  var v = $('sfNdJob').value.trim(), j = window.ND_JOBS ? ND_JOBS.filter(function (x) { return x[0] === v; })[0] : null;
+  $('sfJobInfo').textContent = j ? j[1] + ' · ҮОМШӨ ' + j[2] + '%' : (v ? 'Код олдсонгүй' : 'Жишээ: 5223-11 худалдаачин, 5230-11 кассчин, 4321-12 нярав');
 }
