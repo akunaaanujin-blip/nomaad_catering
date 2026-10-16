@@ -5,7 +5,7 @@ var KEYS = ['meat', 'travel', 'cozy'];
 var token = sessionStorage.getItem('nb_tok') || '';   // удирдагчийн токен (8 цаг)
 var ownerName = sessionStorage.getItem('nb_owner') || '';
 var records = [], staff = [], salary = [], stockData = {}, moves = [], journal = [], partners = [];
-var state = { view: 'companies', biz: '', module: 'sales', period: 'month', staffBiz: 'all', month: todayStr().slice(0, 7), q: '', stockF: 'all', showMoves: false,
+var state = { view: 'companies', biz: '', module: 'sales', period: 'month', staffBiz: 'all', month: todayStr().slice(0, 7), q: '', stockF: 'in', showMoves: false,
   sub: { sales: 'overview', products: 'stock', finance: 'dash' }, from: todayStr().slice(0, 8) + '01', to: todayStr(), acc: '10003', item: '' };
 var editId = '', salId = '', salKind = 'Урьдчилгаа';
 
@@ -43,7 +43,7 @@ function enter() {
   fetchAll(function (ok) {
     if (!ok) return;
     $('login').style.display = 'none';
-    $('main').style.display = 'block';
+    $('main').style.display = '';
     $('ownerName').textContent = ownerName;
     render();
   });
@@ -85,12 +85,12 @@ function post(body, cb) {
 // ── Навигаци ──
 function go(view, biz) {
   state.view = view;
-  if (biz) { state.biz = biz; state.module = 'sales'; }
+  if (biz) state.biz = biz;
   render();
   window.scrollTo(0, 0);
 }
 function setModule(m) { state.module = m; render(); }
-function setPeriod(p) { state.period = p; var r = range(); state.from = r[0]; state.to = r[1]; render(); }
+function setPeriod(p) { if (p === 'custom') { state.period = 'custom'; render(); return; } state.period = p; var r = range(); state.from = r[0]; state.to = r[1]; render(); }
 function setDates() { state.period = 'custom'; state.from = $('pFrom').value || state.from; state.to = $('pTo').value || state.to; if (state.from > state.to) state.to = state.from; render(); }
 function setSub(s) { state.sub[state.module] = s; render(); window.scrollTo(0, 0); }
 function setStaffBiz(b) { state.staffBiz = b; render(); }
@@ -127,15 +127,84 @@ function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
 
 // ── Үндсэн зураглал ──
 function render() {
-  [].forEach.call(document.querySelectorAll('.topnav button'), function (b) {
-    b.classList.toggle('on', b.dataset.v === state.view || (state.view === 'company' && b.dataset.v === 'companies'));
-  });
   var pend = staff.filter(function (s) { return s.status === 'Хүлээгдэж'; }).length;
-  $('pendingBadge').textContent = pend || '';
-  $('pendingBadge').style.display = pend ? 'inline-block' : 'none';
-  if (state.view === 'staff') $('view').innerHTML = staffView('');
+  $('rail').innerHTML = railHtml(pend);
+  $('subnav').innerHTML = subnavHtml();
+  $('main').classList.toggle('has-sub', state.view === 'company');
+  $('crumb').innerHTML = crumbHtml();
+  toggleNav(false);
+  if (state.view === 'staff') $('view').innerHTML = pageHead('Бүх ажилчид', '') + staffView('');
   else if (state.view === 'company') $('view').innerHTML = companyView();
   else $('view').innerHTML = companiesView();
+}
+
+// ── Baaz маягийн цэс: зүүн цэнхэр зурвас + бүлэглэсэн дэд цэс ──
+var ICONS = {
+  home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
+  sales: '<path d="M3 4h2l2.4 11h11.2L21 7H6"/><circle cx="9" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/>',
+  products: '<path d="M3 7.5L12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5l9 4.5 9-4.5M12 12v9"/>',
+  finance: '<path d="M4 20V11M10 20V5M16 20v-6M2 20h20"/>',
+  staff: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M16 4.5a3 3 0 010 6M21 20c0-2.6-1.4-4.4-3.6-5.1"/>',
+  reports: '<path d="M6 2.5h9l5 5V21.5H6z"/><path d="M14.5 2.5V8H20M9 13h8M9 17h8"/>',
+  people: '<circle cx="12" cy="8" r="3.5"/><path d="M4.5 20.5c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"/>',
+  refresh: '<path d="M20 11a8 8 0 10-2.3 5.7"/><path d="M20 4v7h-7"/>',
+  logout: '<path d="M15 4h4a1 1 0 011 1v14a1 1 0 01-1 1h-4"/><path d="M10 17l-5-5 5-5M5 12h11"/>',
+};
+function ico(k) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + ICONS[k] + '</svg>'; }
+var MODULES = [['sales', 'Борлуулалт'], ['products', 'Бараа материал'], ['finance', 'Санхүү'], ['staff', 'Ажилчид'], ['reports', 'Бүх тайлан']];
+function railHtml(pend) {
+  var item = function (on, onclick, icon, label, extra) {
+    return '<button class="' + (on ? 'on' : '') + '" onclick="' + onclick + '" title="' + label + '">' + ico(icon) + '<span>' + label + '</span>' + (extra || '') + '</button>';
+  };
+  var inCo = state.view === 'company';
+  return '<div class="rail-logo">N</div>' +
+    item(state.view === 'companies', "go('companies')", 'home', 'Компаниуд') +
+    (state.biz ? MODULES.map(function (m) { return item(inCo && state.module === m[0], "openModule('" + m[0] + "')", m[0], m[1]); }).join('') : '') +
+    '<div class="rail-sep"></div>' +
+    item(state.view === 'staff', "go('staff')", 'people', 'Бүх ажилчид', pend ? '<i class="dot">' + pend + '</i>' : '') +
+    '<div class="rail-foot">' + item(false, 'refresh()', 'refresh', 'Шинэчлэх') + item(false, 'logout()', 'logout', 'Гарах') + '</div>';
+}
+// Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
+var MENU = {
+  sales: [['Борлуулалт', ['overview', 'receipts']], ['Борлуулалтын тайлан', ['item', 'cat', 'staff', 'day', 'pay']], ['И-баримт', ['ebarimt']]],
+  products: [['Бараа материал', ['stock', 'in']], ['Тайлан', ['move', 'card']], ['Харилцагч', ['suppliers']]],
+  finance: [['Хянах самбар', ['dash']], ['Журнал', ['entry', 'journal', 'trial', 'ledger']], ['Мөнгөн хөрөнгө', ['cash', 'cashflow']],
+            ['Авлага өглөг', ['partners']], ['Санхүүгийн тайлан', ['balance', 'pl']], ['Дансны удирдлага', ['accounts']]],
+};
+function subLabel(mod, k) { var x = (SUBS[mod] || []).filter(function (s) { return s[0] === k; })[0]; return x ? x[1] : k; }
+function subGroup(mod, k) { var g = (MENU[mod] || []).filter(function (g) { return g[1].indexOf(k) >= 0; })[0]; return g ? g[0] : ''; }
+function subnavHtml() {
+  if (state.view !== 'company') return '';
+  var B = BUSINESSES[state.biz], mod = state.module;
+  var head = '<div class="sub-co"><span class="mono" style="background:' + B.color + '">' + B.icon + '</span><div><b>' + esc(B.name) + '</b>' +
+    '<select onchange="go(\'company\',this.value)">' + KEYS.map(function (k) { return '<option value="' + k + '"' + (k === state.biz ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('') + '</select></div></div>' +
+    '<div class="sub-title">' + MODULES.filter(function (m) { return m[0] === mod; })[0][1] + '</div>';
+  if (!MENU[mod]) {
+    var one = mod === 'staff' ? [['Ажилчид', 'Ажилчид, цалин']] : [['reports', 'Бүх тайлан']];
+    return head + '<ul class="sub-list"><li><button class="on">' + one[0][1] + '</button></li></ul>' + moduleSwitch();
+  }
+  return head + MENU[mod].map(function (g) {
+    return '<div class="sub-group">' + g[0] + '</div><ul class="sub-list">' + g[1].map(function (k) {
+      return '<li><button class="' + (state.sub[mod] === k ? 'on' : '') + '" onclick="setSub(\'' + k + '\')">' + subLabel(mod, k) + '</button></li>';
+    }).join('') + '</ul>';
+  }).join('') + moduleSwitch();
+}
+function moduleSwitch() {   // утсан дээр зүүн зурвас нуугдах тул модуль солих товчнууд
+  return '<div class="sub-mods">' + MODULES.map(function (m) {
+    return '<button class="' + (state.module === m[0] ? 'on' : '') + '" onclick="openModule(\'' + m[0] + '\')">' + m[1] + '</button>';
+  }).join('') + '<button onclick="go(\'companies\')">← Компаниуд</button></div>';
+}
+function openModule(m) { if (!state.biz) return go('companies'); state.view = 'company'; state.module = m; render(); window.scrollTo(0, 0); }
+function toggleNav(on) { $('main').classList.toggle('nav-open', !!on); }
+function crumbHtml() {
+  if (state.view === 'companies') return '<b>Миний компаниуд</b>';
+  if (state.view === 'staff') return '<b>Бүх ажилчид</b>';
+  var mod = state.module, parts = [esc(BUSINESSES[state.biz].name), MODULES.filter(function (m) { return m[0] === mod; })[0][1]];
+  if (MENU[mod]) { parts.push(subGroup(mod, state.sub[mod])); }
+  return parts.map(function (p, i) { return i === parts.length - 1 ? '<b>' + p + '</b>' : '<span>' + p + '</span>'; }).join('<i>/</i>');
+}
+function pageHead(title, actions, withPeriod) {
+  return '<div class="pg-head"><h1>' + title + '</h1><div class="pg-act">' + (actions || '') + '</div></div>' + (withPeriod ? periodBar() : '');
 }
 
 // ── Миний компаниуд ──
@@ -163,27 +232,28 @@ function companiesView() {
   }).join('') + '</div>';
 }
 
-// ── Компанийн дотор: модулиуд ──
-var MODULES = [['sales', 'Борлуулалт'], ['products', 'Бараа материал'], ['finance', 'Санхүү'], ['staff', 'Ажилчид'], ['reports', 'Бүх тайлан']];
+// ── Компанийн дотор: модуль → дэд цэс → хуудас ──
 function companyView() {
-  var B = BUSINESSES[state.biz];
-  var head = '<div class="crumb"><button class="link" onclick="go(\'companies\')">← Компаниуд</button>' +
-    '<h2><span class="mono sm" style="background:' + B.color + '">' + B.icon + '</span> ' + esc(B.name) + '</h2></div>' +
-    '<div class="modtabs">' + MODULES.map(function (m) {
-      return '<button class="' + (state.module === m[0] ? 'on' : '') + '" onclick="setModule(\'' + m[0] + '\')">' + m[1] + '</button>';
-    }).join('') + '</div>';
-  var body;
-  if (state.module === 'staff') body = staffView(state.biz);
-  else if (state.module === 'reports') body = periodBar() + reportsModule();
-  else body = subTabs() + periodBar() + subBody();
-  return head + body;
+  var mod = state.module;
+  if (mod === 'staff') return pageHead('Ажилчид', '') + staffView(state.biz);
+  if (mod === 'reports') return pageHead('Бүх тайлан', '<button class="b-btn primary" onclick="exportAll()">Бүх тайланг Excel-ээр татах</button>', true) + reportsModule();
+  var sub = state.sub[mod], noPeriod = /^(accounts|stock|suppliers)$/.test(sub);
+  var acts = /^(overview|dash|stock)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
+  if (sub === 'entry') acts = '<button class="b-btn primary" onclick="openEntry()">+ Журналын бичилт</button>' + acts;
+  if (sub === 'partners' || sub === 'suppliers') acts = '<button class="b-btn primary" onclick="openPartner()">+ Харилцагч</button>' + acts;
+  if (sub === 'stock') acts = '<button class="b-btn primary" onclick="openMove(\'Орлого\')">+ Орлого</button>' +
+    (hasWarehouse(state.biz) ? '<button class="b-btn" onclick="openMove(\'Шилжүүлэг\')">Шилжүүлэг</button>' : '') +
+    '<button class="b-btn" onclick="openMove(\'Тооллого\')">Тооллого</button><button class="b-btn" onclick="openMove(\'Хасалт\')">Хасалт</button>' +
+    '<button class="b-btn" onclick="exportCurrent()">Excel</button>';
+  return pageHead(subLabel(mod, sub), acts, !noPeriod) + subBody();
 }
+var PERIODS = [['today', 'Өнөөдөр'], ['yesterday', 'Өчигдөр'], ['week', 'Сүүлийн 7 хоног'], ['month', 'Энэ сар'], ['last30', 'Сүүлийн 30 хоног'], ['year', 'Энэ он'], ['all', 'Бүх хугацаа'], ['custom', 'Огноо сонгох']];
 function periodBar() {
   var r = range();
-  return '<div class="card bar-row"><div class="tabs">' + [['today', 'Өнөөдөр'], ['yesterday', 'Өчигдөр'], ['week', '7 хоног'], ['month', 'Энэ сар'], ['last30', '30 хоног'], ['year', 'Энэ он'], ['all', 'Бүх хугацаа']].map(function (p) {
-    return '<button class="' + (state.period === p[0] ? 'on' : '') + '" onclick="setPeriod(\'' + p[0] + '\')">' + p[1] + '</button>';
-  }).join('') + '</div><span class="dates"><input type="date" id="pFrom" value="' + (state.period === 'all' ? '' : r[0]) + '" onchange="setDates()"> — ' +
-    '<input type="date" id="pTo" value="' + r[1] + '" onchange="setDates()"></span></div>';
+  return '<div class="filter"><label>Хугацаа<select onchange="setPeriod(this.value)">' + PERIODS.map(function (p) {
+    return '<option value="' + p[0] + '"' + (state.period === p[0] ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + '</select></label>' +
+    '<label>Эхлэх<input type="date" id="pFrom" value="' + (state.period === 'all' ? '' : r[0]) + '" onchange="setDates()"></label>' +
+    '<label>Дуусах<input type="date" id="pTo" value="' + r[1] + '" onchange="setDates()"></label></div>';
 }
 
 // Борлуулалт
@@ -293,10 +363,7 @@ function productsModule() {
       return '<button class="' + (state.stockF === t[0] ? 'on' : '') + '" onclick="state.stockF=\'' + t[0] + '\';render()">' + t[1] + '</button>';
     }).join('') + '</div>' +
     '<div class="bar-row" style="gap:6px"><input class="search" placeholder="Бараа хайх…" value="' + esc(state.q) + '" oninput="state.q=this.value;render();this.focus();this.setSelectionRange(this.value.length,this.value.length)">' +
-    '<button class="btn sm" onclick="openMove(\'Орлого\')">+ Орлого авах</button>' +
-    (wh ? '<button class="btn sm ghost" style="color:var(--accent)" onclick="openMove(\'Шилжүүлэг\')">Шилжүүлэг</button>' : '') +
-    '<button class="btn sm ghost" style="color:var(--accent)" onclick="openMove(\'Тооллого\')">Тооллого</button>' +
-    '<button class="btn sm ghost" style="color:var(--red)" onclick="openMove(\'Хасалт\')">Хасалт</button></div></div>' +
+    '</div></div>' +
     '<div class="scroll" style="margin-top:10px"><table class="stock"><tr><th>Бараа</th><th class="hide-sm">Ангилал</th><th class="n">Үнэ</th>' +
     '<th class="n">Өртөг</th><th class="n">Ашиг</th><th class="n">Дэлгүүр</th>' + (wh ? '<th class="n">Агуулах</th><th class="n">Нийт</th>' : '') +
     '<th class="n">Зарагдсан</th><th></th></tr>' +
@@ -641,18 +708,14 @@ function subBody() {
   if (mod === 'products' && sub === 'stock') return productsModule();
   if (mod === 'finance' && sub === 'dash') return financeDash();
   var rep = makeReport(mod, sub), pre = '';
-  if (mod === 'finance' && sub === 'ledger') pre = '<div class="card bar-row"><label class="month">Данс <select onchange="state.acc=this.value;render()">' +
+  if (mod === 'finance' && sub === 'ledger') pre = '<div class="filter"><label>Данс<select onchange="state.acc=this.value;render()">' +
     ACCOUNTS.map(function (a) { return '<option value="' + a[0] + '"' + (state.acc === a[0] ? ' selected' : '') + '>' + a[0] + ' ' + esc(a[1]) + '</option>'; }).join('') + '</select></label></div>';
   if (mod === 'products' && sub === 'card') {
-    pre = '<div class="card bar-row"><label class="month">Бараа <input list="cardItems" value="' + esc(state.item) + '" placeholder="Барааны нэр…" onchange="state.item=this.value;render()" style="min-width:260px"></label>' +
+    pre = '<div class="filter"><label>Бараа<input list="cardItems" value="' + esc(state.item) + '" placeholder="Барааны нэр…" onchange="state.item=this.value;render()" style="min-width:260px"></label>' +
       '<datalist id="cardItems">' + stockRows(state.biz).map(function (r) { return '<option value="' + esc(r.name) + '">'; }).join('') + '</datalist></div>';
     if (!state.item) return pre + '<div class="card muted">Бараагаа сонгоно уу.</div>';
   }
-  if (mod === 'finance' && sub === 'entry') pre = '<div class="card bar-row"><div><b>Гараар журнал бичих</b><div class="muted">Борлуулалт, зарлага, бараа, цалин автоматаар бичигддэг. ' +
-    'Эндээс зөвхөн бусад гүйлгээг (хөрөнгө оруулалт, зээл, банкинд тушаах, нийлүүлэгчид төлөх г.м) оруулна.</div></div>' +
-    '<button class="btn sm" onclick="openEntry()">+ Журналын бичилт</button></div>';
-  if ((mod === 'finance' && sub === 'partners') || (mod === 'products' && sub === 'suppliers')) pre = '<div class="card bar-row"><b>Харилцагч (нийлүүлэгч, худалдан авагч)</b>' +
-    '<button class="btn sm" onclick="openPartner()">+ Харилцагч нэмэх</button></div>';
+  if (mod === 'finance' && sub === 'entry') pre = '<p class="hint">Борлуулалт, зарлага, бараа, цалин санхүүд <b>автоматаар</b> бичигддэг. Энд зөвхөн бусад гүйлгээг (эхний үлдэгдэл, хөрөнгө оруулалт, зээл, банкинд тушаах, нийлүүлэгчид төлөх г.м) оруулна.</p>';
   return pre + reportCard(rep, mod === 'finance' && sub === 'entry');
 }
 
@@ -669,10 +732,9 @@ function reportCard(rep, cancellable) {
   }).join('') : '<tr><td colspan="' + rep.cols.length + '" class="muted">Мэдээлэл алга</td></tr>';
   var foot = rep.total ? '<tr class="tot">' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n"' : '') + '>' + cellVal(cl, rep.total[cl.k]) + '</td>'; }).join('') + (cancellable ? '<td></td>' : '') + '</tr>' : '';
   var r = range();
-  return '<div class="card rep"><div class="bar-row"><div><h2 style="margin:0">' + esc(rep.title) + '</h2><div class="muted">' + esc(BUSINESSES[state.biz].name) + ' · ' + r[0] + ' — ' + r[1] + '</div></div>' +
-    '<button class="btn sm ghost" style="color:var(--accent)" onclick="exportCurrent()">Excel татах</button></div>' +
+  return '<div class="card rep"><div class="rep-cap"><b>' + esc(rep.title) + '</b><span>' + esc(BUSINESSES[state.biz].name) + ' · ' + r[0] + ' — ' + r[1] + ' · ' + rep.rows.length + ' мөр</span></div>' +
     (rep.note ? '<p class="rep-note' + (rep.check === false ? ' bad' : rep.check ? ' ok' : '') + '">' + esc(rep.note) + '</p>' : '') +
-    '<div class="scroll" style="margin-top:10px"><table class="rep-t">' + head + body + foot + '</table></div></div>';
+    '<div class="scroll"><table class="rep-t">' + head + body + foot + '</table></div></div>';
 }
 
 // ── Хянах самбар + «нэг ч алдагдалгүй» шалгалт ──
@@ -737,9 +799,7 @@ function allReportList() {   // [модуль, тайлан, нэр] — той�
 function reportsModule() {
   var groups = {};
   allReportList().forEach(function (x) { (groups[x[0]] = groups[x[0]] || []).push(x); });
-  return '<div class="card bar-row"><div><h2 style="margin:0">Бүх тайлан · ' + esc(BUSINESSES[state.biz].name) + '</h2>' +
-    '<div class="muted">Сонгосон хугацааны бүх тайланг нэг Excel файлд (тайлан бүр тусдаа хуудас) татна.</div></div>' +
-    '<button class="btn sm" onclick="exportAll()">Бүх тайланг Excel-ээр татах</button></div>' +
+  return '<p class="hint">Сонгосон хугацааны бүх тайланг нэг Excel файлд (тайлан бүр тусдаа хуудас) татна. Тайлан нээх бол нэр дээр нь дарна.</p>' +
     '<div class="rep-grid">' + ['sales', 'products', 'finance'].map(function (mod) {
       return '<div class="card"><h2>' + MODULES.filter(function (x) { return x[0] === mod; })[0][1] + '</h2><ul class="rep-links">' +
         SUBS[mod].map(function (s) {

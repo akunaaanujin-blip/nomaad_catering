@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Удирдлагын самбар</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="bz-admin">
 <div class="demo" id="demo" style="display:none">Туршилтын горим — зөвхөн энэ төхөөрөмж дээр бичигдсэн мэдээлэл харагдана (код: 0000)</div>
 
 <div class="login" id="login">
@@ -24,17 +24,19 @@
   </div>
 </div>
 
-<div id="main" style="display:none">
-  <div class="top">
-    <div class="ico mono">N</div>
-    <div><h1>Удирдлагын самбар</h1><small id="updated"></small></div>
-    <div class="right"><div id="ownerName"></div><button onclick="refresh()">Шинэчлэх</button> <button onclick="logout()">Гарах</button></div>
+<div id="main" class="bz" style="display:none">
+  <aside class="rail" id="rail"></aside>
+  <aside class="subnav" id="subnav"></aside>
+  <div class="bz-scrim" onclick="toggleNav(false)"></div>
+  <div class="bz-body">
+    <header class="bz-head">
+      <button class="bz-menu" onclick="toggleNav(true)" aria-label="Цэс">☰ Цэс</button>
+      <div class="bz-crumb" id="crumb"></div>
+      <div class="bz-user"><small id="updated"></small><span id="ownerName"></span></div>
+    </header>
+    <main class="bz-content" id="view"></main>
   </div>
-  <nav class="topnav">
-    <button data-v="companies" onclick="go('companies')">Миний компаниуд</button>
-    <button data-v="staff" onclick="go('staff')">Ажилчид <span class="badge" id="pendingBadge"></span></button>
-  </nav>
-  <div class="wrap wide" id="view"></div>
+  <span id="pendingBadge" style="display:none"></span>
 </div>
 
 <!-- Ажилтан засах -->
