@@ -44,7 +44,9 @@ ACCOUNTS.forEach(function (a) { ACC[a[0]] = { code: a[0], name: a[1], type: a[2]
 function accName(c) { return ACC[c] ? ACC[c].name : c; }
 function debitNormal(c) { var t = ACC[c] && ACC[c].type; return t === 'asset' || t === 'contra' || t === 'cogs' || t === 'exp'; }
 
-var PAY_ACC = { 'Бэлэн': '10003', 'Карт': '110106', 'Шилжүүлэг': '1101', 'Харилцах': '1101', 'Зээлээр': '3101' };
+var PAY_ACC = { 'Бэлэн': '10003', 'Карт': '110106', 'Шилжүүлэг': '1101', 'Харилцах': '1101', 'Зээлээр': '3101' };   // бараа орлого (худалдан авалт)
+var SALE_ACC = { 'Бэлэн': '10003', 'Карт': '110106', 'Шилжүүлэг': '1101', 'Зээлээр': '1201' };                       // борлуулалт: зээлээр = авлага
+var VOUCHER_NAMES = { 'КО': 'Кассын орлого', 'КЗ': 'Кассын зарлага', 'ХО': 'Харилцахын орлого', 'ХЗ': 'Харилцахын зарлага' };
 function expenseAcc(cat, biz, tracked) {
   var c = String(cat || '');
   // Үлдэгдэл хөтөлдөг бол бараа «Орлого»-оор (1404 / 3101 өглөг) орсон тул кассаас төлсөн нь өглөг хаана; үгүй бол шууд өртөгт
@@ -114,14 +116,14 @@ function buildJournal(biz, R) {
     if (x.biz !== biz) return;
     var a = Number(x.amount) || 0, d = x.date;
     if (x.type === 'sale') {
-      var cash = PAY_ACC[x.pay] || '10003';
+      var cash = SALE_ACC[x.pay] || '10003', cust = x.pay === 'Зээлээр' ? (x.customer || '(нэргүй харилцагч)') : '';
       var item = String(x.item).replace(/ \(буцаалт\)$/, '');
       var c = Math.abs(ce.rec[x.id] || 0);
       if (a >= 0) {
-        add(d, 'Борлуулалт', x.id, cash, '5101', a, item + ' × ' + x.qty + ' (' + (x.pay || 'Бэлэн') + ')');
+        add(d, 'Борлуулалт', x.id, cash, '5101', a, item + ' × ' + x.qty + ' (' + (x.pay || 'Бэлэн') + ')', cust);
         if (c) add(d, 'Борлуулалт · өртөг', x.id, '6101', '1404', c, item + ' × ' + x.qty);
       } else {
-        add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty));
+        add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty), cust);
         if (c) add(d, 'Буцаалт · өртөг', x.id, '1404', '6101', c, item);
       }
     } else if (x.type === 'expense') {
@@ -151,7 +153,7 @@ function buildJournal(biz, R) {
   });
   R.journal.forEach(function (j) {
     if (j.biz !== biz) return;
-    add(j.date, 'Журналын бичилт', j.id, j.dr, j.cr, j.amount, j.desc, j.partner);
+    add(j.date, j.no ? VOUCHER_NAMES[j.no.slice(0, 2)] + ' ' + j.no : 'Журналын бичилт', j.id, j.dr, j.cr, j.amount, j.desc, j.partner);
   });
   E.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
   return E;

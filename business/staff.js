@@ -101,16 +101,21 @@ function showMain() {
 
 // ── Бараа ──
 // Үндсэн жагсаалт config.js / products.js-д (БҮНА кодтой), Sheet-ийн "Бараа" хуудас үнэ/нэгжийг давхарлаж, шинэ бараа нэмнэ.
+// Удирдлагаас засварласан үнэ, нэгж, ангилал, БҮНА давхарлана; «Идэвхгүй» болгосон бараа жагсаалтаас нуугдана.
 function mergeProducts(base, extra) {
   var list = base.map(function (p) { return { name: p.name, unit: p.unit, price: p.price, cls: p.cls, cat: p.cat || '' }; });
   var byName = {};
   list.forEach(function (p) { byName[p.name.toLowerCase()] = p; });
   (extra || []).forEach(function (x) {
     var p = byName[String(x.name).toLowerCase()];
-    if (p) { if (x.price) p.price = x.price; if (x.unit) p.unit = x.unit; }
-    else list.push({ name: x.name, unit: x.unit || BIZ.unit, price: x.price || 0, cls: '' });
+    if (!p) { p = { name: x.name, unit: BIZ.unit, price: 0, cls: '', cat: '' }; list.push(p); byName[String(x.name).toLowerCase()] = p; }
+    if (x.price) p.price = x.price;
+    if (x.unit) p.unit = x.unit;
+    if (x.cls) p.cls = x.cls;
+    if (x.cat) p.cat = x.cat;
+    p.off = !!x.off;
   });
-  return list;
+  return list.filter(function (p) { return !p.off; });
 }
 function loadProducts() {
   if (!API_URL) return;
@@ -149,6 +154,7 @@ function openSale() {
   $('saleItem').value = '';
   $('salePrice').value = '';
   $('saleTin').value = '';
+  $('saleCust').value = '';
   $('saleTinWrap').style.display = ebEnabled() ? 'block' : 'none';
   setPay('Бэлэн');
   renderCart();
@@ -245,6 +251,7 @@ function setPay(v) {
   sale.pay = v;
   var b = $('paySeg').children;
   for (var k = 0; k < b.length; k++) b[k].classList.toggle('on', b[k].dataset.v === v);
+  $('saleCustWrap').style.display = v === 'Зээлээр' ? 'block' : 'none';   // зээлээр бол хэнд өгснийг заавал бичнэ
 }
 function cartTotal() {
   return sale.cart.reduce(function (a, l) { return a + Math.round((Number(l.qty) || 0) * (Number(l.price) || 0)); }, 0);
@@ -260,12 +267,15 @@ function submitSale() {
     if (!(Number(l.qty) > 0)) { toast(l.name + ' — тоо хэмжээ оруулна уу'); return; }
     if (!(Number(l.price) > 0)) { toast(l.name + ' — үнэ оруулна уу'); return; }
   }
+  var cust = $('saleCust').value.trim();
+  if (sale.pay === 'Зээлээр' && cust.length < 2) { toast('Зээлээр авсан хүн / байгууллагын нэрийг бичнэ үү'); $('saleCust').focus(); return; }
   var bill = BIZ_KEY + '-' + Date.now();
   var lines = sale.cart.map(function (l) {
     var r = {
       type: 'sale', item: l.name, qty: Number(l.qty), unit: l.unit, price: Number(l.price),
       amount: Math.round(Number(l.qty) * Number(l.price)), pay: sale.pay, bill: bill,
     };
+    if (sale.pay === 'Зээлээр') r.customer = cust;
     if (l.cls) r.classificationCode = l.cls;   // БҮНА код (И-баримтад)
     return r;
   });
@@ -426,12 +436,13 @@ function todayRecords() {
   return load(LS_REC, []).filter(function (r) { return r.biz === BIZ_KEY && r.date === d; });
 }
 function todayTotals() {
-  var t = { cash: 0, card: 0, transfer: 0, exp: 0, sales: 0 };
+  var t = { cash: 0, card: 0, transfer: 0, credit: 0, exp: 0, sales: 0 };
   todayRecords().forEach(function (r) {
     if (r.type === 'sale') {
       t.sales += r.amount;
       if (r.pay === 'Карт') t.card += r.amount;
       else if (r.pay === 'Шилжүүлэг') t.transfer += r.amount;
+      else if (r.pay === 'Зээлээр') t.credit += r.amount;   // кассанд мөнгө ороогүй
       else t.cash += r.amount;
     } else if (r.type === 'expense') t.exp += r.amount;
   });
@@ -453,7 +464,7 @@ function renderToday() {
       var showRet = r.ddtd && !r.returned && r.amount > 0 && !retShown[r.ddtd];
       if (showRet) retShown[r.ddtd] = 1;
       return '<li><span>' + esc(r.item) + ' · ' + r.qty + ' ' + esc(r.unit) +
-        '<small>' + r.time + ' · ' + esc(r.pay) + (r.ddtd ? ' · баримттай' : '') + (r.returned ? ' · буцаагдсан' : '') + '</small>' +
+        '<small>' + r.time + ' · ' + esc(r.pay) + (r.customer ? ' · ' + esc(r.customer) : '') + (r.ddtd ? ' · баримттай' : '') + (r.returned ? ' · буцаагдсан' : '') + '</small>' +
         (r.ddtd || /ДДТД/.test(r.note || '') ? '<small class="ddtd">ДДТД ' + esc(r.ddtd || (r.note.match(/ДДТД (\d+)/) || [])[1] || '') + '</small>' : '') +
         (showRet ? '<button class="mini" onclick="ebReturn(\'' + r.id + '\')">Баримт буцаах</button>' : '') +
         '</span><span class="amt ' + (r.amount < 0 ? 'r' : 'g') + '">' + (r.amount < 0 ? '−' + fmt(-r.amount) : '+' + fmt(r.amount)) + '</span></li>';

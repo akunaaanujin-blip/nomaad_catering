@@ -79,10 +79,15 @@
     <label>Сагс <span class="muted" id="saleCount"></span></label>
     <ul class="list cart" id="cartList"></ul>
     <label>Төлбөр</label>
-    <div class="seg" id="paySeg">
+    <div class="seg seg4" id="paySeg">
       <button data-v="Бэлэн" onclick="setPay('Бэлэн')">Бэлэн</button>
       <button data-v="Карт" onclick="setPay('Карт')">Карт</button>
       <button data-v="Шилжүүлэг" onclick="setPay('Шилжүүлэг')">Шилжүүлэг</button>
+      <button data-v="Зээлээр" onclick="setPay('Зээлээр')">Зээлээр</button>
+    </div>
+    <div id="saleCustWrap" style="display:none">
+      <label for="saleCust">Хэнд зээлээр өгсөн (нэр, утас) *</label>
+      <input id="saleCust" placeholder="Жишээ: Бат-Эрдэнэ 99112233 / ХХК-ийн нэр">
     </div>
     <div id="saleTinWrap" style="display:none">
       <label for="saleTin">Байгууллагын ТТД (байгууллагад баримт өгөх бол)</label>

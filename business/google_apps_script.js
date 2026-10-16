@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v2.4 (баримтын дугаар, цуцлалт, цалингийн компани)
+// NOMAAD Бизнесүүд — Google Apps Script v2.5 (барааны бүртгэл, зээлээр борлуулалт, кассын баримт)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -13,7 +13,10 @@ const SHEET_SALARY = 'Цалин';
 const SHEET_STOCK  = 'Үлдэгдэл';
 const SHEET_JOURNAL = 'Журнал';
 const SHEET_PARTNER = 'Харилцагч';
-const JOURNAL_HEAD = ['ID', 'Огноо', 'Бизнес', 'Дебет', 'Кредит', 'Дүн', 'Харилцагч', 'Гүйлгээний утга', 'Хэн', 'Бүртгэсэн', 'biz', 'Төлөв'];
+const JOURNAL_HEAD = ['ID', 'Огноо', 'Бизнес', 'Дебет', 'Кредит', 'Дүн', 'Харилцагч', 'Гүйлгээний утга', 'Хэн', 'Бүртгэсэн', 'biz', 'Төлөв', 'Баримтын №'];
+// Кассын / харилцахын орлого, зарлагын баримт — дугаар компани бүрт тусдаа дараалалтай
+const VOUCHERS = { 'КО': 1, 'КЗ': 1, 'ХО': 1, 'ХЗ': 1 };
+const PROD_HEAD = ['Бизнес (meat / cozy / travel)', 'Барааны нэр', 'Нэгж', 'Үнэ', 'БҮНА код', 'Ангилал', 'Төлөв'];
 const PARTNER_HEAD = ['ID', 'Бизнес', 'Төрөл', 'Нэр', 'ТТД / Регистр', 'Утас', 'Тайлбар', 'biz'];
 const TZ           = 'Asia/Ulaanbaatar';
 const SHEET_ID     = '1Hkmo9ttsHfm6xfr49W0BpjkE2nnPPCL0dt2fP6rGyKI';   // NOMAAD Бизнесүүд — Бүртгэл
@@ -21,7 +24,7 @@ const SHEET_ID     = '1Hkmo9ttsHfm6xfr49W0BpjkE2nnPPCL0dt2fP6rGyKI';   // NOMAAD
 const BIZ_NAMES = { meat: 'Махны дэлгүүр', cozy: 'Cozy Home Ulaanbaatar', travel: 'NOMAAD аяллын дэлгүүр' };
 const TYPE_NAMES = { sale: 'Борлуулалт', expense: 'Зарлага', close: 'Касс хаалт' };
 const LOG_HEAD = ['ID', 'Огноо', 'Цаг', 'Бизнес', 'Төрөл', 'Ажилтан', 'Бараа / Ангилал', 'Тоо', 'Нэгж',
-                  'Нэгжийн үнэ', 'Дүн', 'Төлбөр', 'Тоолсон бэлэн', 'Зөрүү', 'Тайлбар', 'biz', 'type', 'Баримт', 'Төлөв'];
+                  'Нэгжийн үнэ', 'Дүн', 'Төлбөр', 'Тоолсон бэлэн', 'Зөрүү', 'Тайлбар', 'biz', 'type', 'Баримт', 'Төлөв', 'Харилцагч'];
 // "Ажилтан" хуудасны баганууд (эхний 5 нь v1.1-ээс хэвээр)
 const STAFF_HEAD = ['Бизнес (meat / cozy / travel / all)', 'Нэр', 'Код (4 орон)', 'Эрх (Худалдагч / Менежер)', 'Идэвхтэй (Тийм / Хүлээгдэж / Үгүй)',
                     'Овог', 'Утас', 'Регистр', 'Албан тушаал', 'Үндсэн цалин', 'Банкны данс', 'Бүртгүүлсэн', 'ID', 'Нэвтрэх нэр'];
@@ -47,6 +50,7 @@ function doPost(e) {
     if (data.type === 'admin_salary') return json(isAdmin(data) ? adminSalary(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_stock') return json(isAdmin(data) ? adminStock(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_journal') return json(isAdmin(data) ? adminJournal(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_product') return json(isAdmin(data) ? adminProduct(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_record') return json(isAdmin(data) ? adminRecord(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_partner') return json(isAdmin(data) ? adminPartner(data) : { status: 'error', error: 'auth' });
     return json(saveRecords(data));
@@ -80,6 +84,7 @@ function adminRead(d) {
   a.moves = stockMoves();
   a.journal = journalRows();
   a.partners = partnerRows();
+  a.products = productRows().map(function (p) { const o = Object.assign({}, p); delete o.row; return o; });
   return a;
 }
 
@@ -101,7 +106,7 @@ function saveRecords(data) {
       r.type === 'sale' ? r.pay : '',
       r.type === 'close' ? Number(r.counted) : '',
       r.type === 'close' ? Number(r.diff) : '',
-      r.note || '', r.biz, r.type, String(r.bill || '').slice(0, 40), '',
+      r.note || '', r.biz, r.type, String(r.bill || '').slice(0, 40), '', String(r.customer || '').slice(0, 80),
     ]);
   });
   if (rows.length) sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, LOG_HEAD.length).setValues(rows);
@@ -320,6 +325,7 @@ function journalSheet() {
     sh.hideColumns(11);
     [120, 100, 170, 90, 90, 120, 160, 260, 110, 140, 60, 80].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
   }
+  if (sh.getRange(1, 13).getValue() !== 'Баримтын №') sh.getRange(1, 1, 1, JOURNAL_HEAD.length).setValues([JOURNAL_HEAD]);
   return sh;
 }
 function journalRows() {
@@ -328,7 +334,7 @@ function journalRows() {
   if (last < 2) return [];
   return sh.getRange(2, 1, last - 1, JOURNAL_HEAD.length).getValues().map(function (v) {
     return { id: String(v[0]), date: fmtDate(v[1], 'yyyy-MM-dd'), dr: String(v[3]), cr: String(v[4]), amount: Number(v[5]) || 0,
-             partner: String(v[6]), desc: String(v[7]), by: String(v[8]), biz: String(v[10]), status: String(v[11] || '') };
+             partner: String(v[6]), desc: String(v[7]), by: String(v[8]), biz: String(v[10]), status: String(v[11] || ''), no: String(v[12] || '') };
   }).filter(function (j) { return j.status !== 'Устгасан'; });
 }
 function adminJournal(d) {
@@ -342,10 +348,17 @@ function adminJournal(d) {
   const amt = Number(e.amount);
   if (!BIZ_NAMES[e.biz] || !/^\d{4}-\d{2}-\d{2}$/.test(String(e.date)) || !/^\d{4,6}$/.test(String(e.dr)) || !/^\d{4,6}$/.test(String(e.cr)) ||
       e.dr === e.cr || !(amt > 0)) return { status: 'error', error: 'fields' };
-  const id = 'J' + Date.now();
-  journalSheet().appendRow([id, e.date, BIZ_NAMES[e.biz], String(e.dr), String(e.cr), amt, String(e.partner || '').slice(0, 80),
-    String(e.desc || '').slice(0, 200), String(d.by || '').slice(0, 40), Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), e.biz, '']);
-  return { status: 'ok', id: id };
+  const id = 'J' + Date.now(), sh = journalSheet();
+  let no = '';
+  if (VOUCHERS[e.vkind]) {   // КО-0001 гэх мэт дараалсан дугаар (цуцалсан баримтын дугаар дахин олгогдохгүй)
+    const last = sh.getLastRow();
+    const rows = last >= 2 ? sh.getRange(2, 1, last - 1, JOURNAL_HEAD.length).getValues() : [];
+    const n = rows.filter(function (v) { return String(v[10]) === e.biz && String(v[12]).indexOf(e.vkind + '-') === 0; }).length + 1;
+    no = e.vkind + '-' + ('000' + n).slice(-4);
+  }
+  sh.appendRow([id, e.date, BIZ_NAMES[e.biz], String(e.dr), String(e.cr), amt, String(e.partner || '').slice(0, 80),
+    String(e.desc || '').slice(0, 200), String(d.by || '').slice(0, 40), Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), e.biz, '', no]);
+  return { status: 'ok', id: id, no: no };
 }
 function partnerSheet() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
@@ -483,7 +496,7 @@ function data(from) {
     if (String(v[18]) === 'Устгасан') return;
     const time = fmtDate(v[2], 'HH:mm');
     const r = { id: v[0], date: date, time: time, biz: v[15], type: v[16], staff: v[5], amount: Number(v[10]) || 0, note: v[14] };
-    if (r.type === 'sale') { r.item = v[6]; r.qty = Number(v[7]) || 0; r.unit = v[8]; r.price = Number(v[9]) || 0; r.pay = v[11]; r.bill = String(v[17] || ''); }
+    if (r.type === 'sale') { r.item = v[6]; r.qty = Number(v[7]) || 0; r.unit = v[8]; r.price = Number(v[9]) || 0; r.pay = v[11]; r.bill = String(v[17] || ''); r.customer = String(v[19] || ''); }
     else if (r.type === 'expense') { r.category = v[6]; }
     else { r.counted = Number(v[12]) || 0; r.diff = Number(v[13]) || 0; }
     records.push(r);
@@ -497,10 +510,29 @@ function products(biz) {
   const sheet = prodSheet();
   const last = sheet.getLastRow();
   if (last < 2) return { status: 'ok', products: [] };
-  const list = sheet.getRange(2, 1, last - 1, 4).getValues()
-    .filter(function (v) { return String(v[0]).trim() === biz && String(v[1]).trim(); })
-    .map(function (v) { return { name: String(v[1]).trim(), unit: String(v[2]).trim(), price: Number(v[3]) || 0 }; });
+  const list = productRows().filter(function (p) { return p.biz === biz; })
+    .map(function (p) { return { name: p.name, unit: p.unit, price: p.price, cls: p.cls, cat: p.cat, off: p.off }; });
   return { status: 'ok', products: list };
+}
+function productRows() {
+  const sh = prodSheet(), last = sh.getLastRow();
+  if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, PROD_HEAD.length).getValues().map(function (v, i) {
+    return { row: i + 2, biz: String(v[0]).trim(), name: String(v[1]).trim(), unit: String(v[2]).trim(), price: Number(v[3]) || 0,
+             cls: String(v[4] || '').trim(), cat: String(v[5] || '').trim(), off: String(v[6]).trim() === 'Идэвхгүй' };
+  }).filter(function (p) { return p.name; });
+}
+// Удирдагч: бараа нэмэх / засах (нэрээр нь олно). Үнэ, нэгж, ангилал, БҮНА, идэвхтэй эсэх.
+function adminProduct(d) {
+  const p = d.product || {};
+  const name = String(p.name || '').trim().slice(0, 80);
+  if (!BIZ_NAMES[p.biz] || !name || !(Number(p.price) >= 0) || (p.cls && !/^\d{7}$/.test(String(p.cls)))) return { status: 'error', error: 'fields' };
+  const row = [p.biz, name, String(p.unit || '').slice(0, 10), Number(p.price) || 0, String(p.cls || ''), String(p.cat || '').slice(0, 40), p.off ? 'Идэвхгүй' : 'Идэвхтэй'];
+  const sh = prodSheet();
+  const cur = productRows().filter(function (x) { return x.biz === p.biz && x.name.toLowerCase() === name.toLowerCase(); })[0];
+  if (cur) sh.getRange(cur.row, 1, 1, PROD_HEAD.length).setValues([row]);
+  else sh.appendRow(row);
+  return { status: 'ok' };
 }
 
 // ── Хуудас үүсгэх ──
@@ -516,7 +548,7 @@ function logSheet() {
     sh.setColumnWidths(1, 15, 110);
     sh.setColumnWidth(4, 180); sh.setColumnWidth(7, 180); sh.setColumnWidth(15, 200);
   }
-  if (sh.getRange(1, 19).getValue() !== 'Төлөв') sh.getRange(1, 1, 1, LOG_HEAD.length).setValues([LOG_HEAD]);   // v2.4: Баримт, Төлөв
+  if (sh.getRange(1, 20).getValue() !== 'Харилцагч') sh.getRange(1, 1, 1, LOG_HEAD.length).setValues([LOG_HEAD]);   // v2.4–2.5: Баримт, Төлөв, Харилцагч
   return sh;
 }
 function prodSheet() {
@@ -524,10 +556,11 @@ function prodSheet() {
   let sh = ss.getSheetByName(SHEET_PROD);
   if (!sh) {
     sh = ss.insertSheet(SHEET_PROD);
-    sh.appendRow(['Бизнес (meat / cozy / travel)', 'Барааны нэр', 'Нэгж', 'Үнэ']);
-    styleHead(sh, 4, '#C8743F');
+    sh.appendRow(PROD_HEAD);
+    styleHead(sh, PROD_HEAD.length, '#C8743F');
     [200, 220, 80, 100].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
   }
+  if (sh.getRange(1, 7).getValue() !== 'Төлөв') { sh.getRange(1, 1, 1, PROD_HEAD.length).setValues([PROD_HEAD]); styleHead(sh, PROD_HEAD.length, '#C8743F'); }
   return sh;
 }
 function styleHead(sh, n, color) {

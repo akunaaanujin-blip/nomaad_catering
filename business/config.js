@@ -61,4 +61,5 @@ var EBARIMT = {
 var EBARIMT_TEST = { legalName: 'ТЕСТИЙН ХЭРЭГЛЭГЧ 1', merchantTin: '37900846788', branchNo: '001', posNo: '', districtCode: '', taxType: 'VAT_ABLE', classificationCode: '2349010' };
 
 // Төлбөрийн хэлбэр → PosAPI код
-var EBARIMT_PAY = { 'Бэлэн': 'CASH', 'Карт': 'PAYMENT_CARD', 'Шилжүүлэг': 'PAYMENT_CARD' };
+// «Зээлээр» — бараа өгөхөд баримт гаргана (төлбөрийн хэлбэр CASH), мөнгө нь дараа «Кассын орлого»-оор авлагаас хаагдана
+var EBARIMT_PAY = { 'Бэлэн': 'CASH', 'Карт': 'PAYMENT_CARD', 'Шилжүүлэг': 'PAYMENT_CARD', 'Зээлээр': 'CASH' };

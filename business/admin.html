@@ -142,6 +142,43 @@
   </div>
 </div>
 
+<!-- Барааны бүртгэл -->
+<div class="sheet" id="productSheet" onclick="if(event.target===this)closeSheet('productSheet')">
+  <div class="panel">
+    <h2 id="pdTitle">Бараа</h2>
+    <label for="pdName">Барааны нэр</label><input id="pdName">
+    <div class="row2">
+      <div><label for="pdPrice">Зарах үнэ (₮)</label><input id="pdPrice" type="number" inputmode="numeric" min="0"></div>
+      <div><label for="pdUnit">Нэгж</label><input id="pdUnit" placeholder="ш, кг, багц…"></div>
+    </div>
+    <div class="row2">
+      <div><label for="pdCat">Ангилал</label><input id="pdCat" list="pdCats"><datalist id="pdCats"></datalist></div>
+      <div><label for="pdCls">БҮНА код (И-баримт)</label><input id="pdCls" inputmode="numeric" maxlength="7" placeholder="7 оронтой"></div>
+    </div>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:14px"><input type="checkbox" id="pdOff" style="width:auto"> Идэвхгүй (дэлгүүрт зарахгүй, жагсаалтаас нуух)</label>
+    <p class="muted" style="font-size:12.5px;margin-top:8px">Өртөг нь «Орлого авах»-аар орсон үнээс автоматаар (хөдөлгөөнт дундаж) тооцогдоно.</p>
+    <button class="btn" onclick="saveProduct()">Хадгалах</button>
+    <button class="btn ghost" onclick="closeSheet('productSheet')">Болих</button>
+  </div>
+</div>
+
+<!-- Кассын / харилцахын баримт -->
+<div class="sheet" id="voucherSheet" onclick="if(event.target===this)closeSheet('voucherSheet')">
+  <div class="panel">
+    <h2 id="vcTitle">Кассын баримт</h2>
+    <label for="vcPurpose">Гүйлгээ</label><select id="vcPurpose" onchange="vcPurpose()"></select>
+    <div class="row2">
+      <div><label for="vcDate">Огноо</label><input id="vcDate" type="date"></div>
+      <div><label for="vcAmount">Дүн (₮)</label><input id="vcAmount" type="number" inputmode="numeric" min="0"></div>
+    </div>
+    <label for="vcPartner" id="vcPartnerLabel">Харилцагч</label><input id="vcPartner" list="vcPartners" placeholder="Нэр"><datalist id="vcPartners"></datalist>
+    <label for="vcDesc">Гүйлгээний утга</label><input id="vcDesc" placeholder="Хоосон бол гүйлгээний нэрээр">
+    <p class="muted" style="font-size:12.5px;margin-top:8px">Баримтын дугаар (КО-0001 г.м) автоматаар олгогдож, санхүүгийн журналд шууд бичигдэнэ.</p>
+    <button class="btn" onclick="saveVoucher()">Бүртгэх</button>
+    <button class="btn ghost" onclick="closeSheet('voucherSheet')">Болих</button>
+  </div>
+</div>
+
 <!-- Харилцагч -->
 <div class="sheet" id="partnerSheet" onclick="if(event.target===this)closeSheet('partnerSheet')">
   <div class="panel">

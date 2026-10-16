@@ -204,7 +204,7 @@ function ebReturn(id) {
       addRecords(lines.map(function (y) {
         return {
           type: 'sale', item: y.item + ' (буцаалт)', qty: -y.qty, unit: y.unit, price: y.price,
-          amount: -y.amount, pay: y.pay, note: 'Буцаалт · ДДТД ' + r.ddtd,
+          amount: -y.amount, pay: y.pay, customer: y.customer || '', bill: y.bill ? y.bill + '-r' : '', note: 'Буцаалт · ДДТД ' + r.ddtd,
         };
       }));
       toast('✓ Баримт буцаагдлаа');

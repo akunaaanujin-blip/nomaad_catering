@@ -4,7 +4,10 @@
 var KEYS = ['meat', 'travel', 'cozy'];
 var token = sessionStorage.getItem('nb_tok') || '';   // удирдагчийн токен (8 цаг)
 var ownerName = sessionStorage.getItem('nb_owner') || '';
-var records = [], staff = [], salary = [], stockData = {}, moves = [], journal = [], partners = [];
+var records = [], staff = [], salary = [], stockData = {}, moves = [], journal = [], partners = [], sheetProducts = [];
+// config.js / products.js-ийн үндсэн жагсаалтыг хадгалж, «Бараа» хуудасны засварыг дээр нь давхарлана
+var BASE_PRODUCTS = {};
+Object.keys(BUSINESSES).forEach(function (k) { BASE_PRODUCTS[k] = BUSINESSES[k].products.slice(); });
 var state = { view: 'companies', biz: '', module: 'sales', period: 'month', staffBiz: 'all', month: todayStr().slice(0, 7), q: '', stockF: 'in', showMoves: false,
   sub: { sales: 'overview', products: 'stock', finance: 'dash' }, from: todayStr().slice(0, 8) + '01', to: todayStr(), acc: '10003', item: '' };
 var editId = '', salId = '', salKind = 'Урьдчилгаа';
@@ -58,13 +61,13 @@ function authLost() {
 function fetchAll(cb) {
   if (!API_URL) {
     records = load('nb_records', []); staff = []; salary = []; stockData = load('nb_demo_stock', {}); moves = load('nb_demo_moves', []);
-    journal = load('nb_demo_journal', []); partners = load('nb_demo_partners', []);
+    journal = load('nb_demo_journal', []); partners = load('nb_demo_partners', []); sheetProducts = load('nb_demo_products', []); applyProducts();
     stamp(); cb(true); return;
   }
   post({ type: 'admin_read', from: '' }, function (err, d) {   // санхүүгийн тайланд бүх түүх хэрэгтэй
     if (err) { if (err !== 'auth') toast('Холбогдож чадсангүй'); cb(false); return; }
     records = d.records || []; staff = d.staff || []; salary = d.salary || []; stockData = d.stock || {}; moves = d.moves || [];
-    journal = d.journal || []; partners = d.partners || [];
+    journal = d.journal || []; partners = d.partners || []; sheetProducts = d.products || []; applyProducts();
     stamp(); cb(true);
   });
 }
@@ -112,12 +115,12 @@ function inRange(biz) {
   return records.filter(function (x) { return x.date >= r[0] && x.date <= r[1] && (!biz || x.biz === biz); });
 }
 function sums(list) {
-  var s = { sales: 0, cash: 0, card: 0, transfer: 0, exp: 0, n: 0 };
+  var s = { sales: 0, cash: 0, card: 0, transfer: 0, credit: 0, exp: 0, n: 0 };
   list.forEach(function (x) {
     var a = Number(x.amount) || 0;
     if (x.type === 'sale') {
       s.sales += a; if (a > 0) s.n++;
-      if (x.pay === 'Карт') s.card += a; else if (x.pay === 'Шилжүүлэг') s.transfer += a; else s.cash += a;
+      if (x.pay === 'Карт') s.card += a; else if (x.pay === 'Шилжүүлэг') s.transfer += a; else if (x.pay === 'Зээлээр') s.credit += a; else s.cash += a;
     } else if (x.type === 'expense') s.exp += a;
   });
   return s;
@@ -167,8 +170,8 @@ function railHtml(pend) {
 // Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
 var MENU = {
   sales: [['Борлуулалт', ['overview', 'receipts']], ['Борлуулалтын тайлан', ['item', 'cat', 'staff', 'day', 'pay']], ['И-баримт', ['ebarimt']]],
-  products: [['Бараа материал', ['stock', 'in']], ['Тайлан', ['move', 'card']], ['Харилцагч', ['suppliers']]],
-  finance: [['Хянах самбар', ['dash']], ['Журнал', ['entry', 'journal', 'trial', 'ledger']], ['Мөнгөн хөрөнгө', ['expenses', 'cash', 'cashflow']],
+  products: [['Бараа материал', ['catalog', 'stock', 'in']], ['Тайлан', ['move', 'card']], ['Харилцагч', ['suppliers']]],
+  finance: [['Хянах самбар', ['dash']], ['Журнал', ['entry', 'journal', 'trial', 'ledger']], ['Мөнгөн хөрөнгө', ['vouchers', 'expenses', 'cash', 'cashflow']],
             ['Авлага өглөг', ['partners']], ['Санхүүгийн тайлан', ['balance', 'pl']], ['Дансны удирдлага', ['accounts']]],
 };
 function subLabel(mod, k) { var x = (SUBS[mod] || []).filter(function (s) { return s[0] === k; })[0]; return x ? x[1] : k; }
@@ -237,9 +240,12 @@ function companyView() {
   var mod = state.module;
   if (mod === 'staff') return pageHead('Ажилчид', '') + staffView(state.biz);
   if (mod === 'reports') return pageHead('Бүх тайлан', '<button class="b-btn primary" onclick="exportAll()">Бүх тайланг Excel-ээр татах</button>', true) + reportsModule();
-  var sub = state.sub[mod], noPeriod = /^(accounts|stock|suppliers)$/.test(sub);
+  var sub = state.sub[mod], noPeriod = /^(accounts|stock|suppliers|catalog)$/.test(sub);
   var acts = /^(overview|dash|stock)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
   if (sub === 'entry') acts = '<button class="b-btn primary" onclick="openEntry()">+ Журналын бичилт</button>' + acts;
+  if (sub === 'vouchers') acts = '<button class="b-btn primary" onclick="openVoucher(\'КО\')">+ Кассын орлого</button><button class="b-btn primary" onclick="openVoucher(\'КЗ\')">+ Кассын зарлага</button>' +
+    '<button class="b-btn" onclick="openVoucher(\'ХО\')">+ Харилцахын орлого</button><button class="b-btn" onclick="openVoucher(\'ХЗ\')">+ Харилцахын зарлага</button>' + acts;
+  if (sub === 'catalog') acts = '<button class="b-btn primary" onclick="openProduct()">+ Шинэ бараа</button>' + acts;
   if (sub === 'partners' || sub === 'suppliers') acts = '<button class="b-btn primary" onclick="openPartner()">+ Харилцагч</button>' + acts;
   if (sub === 'stock') acts = '<button class="b-btn primary" onclick="openMove(\'Орлого\')">+ Орлого</button>' +
     (hasWarehouse(state.biz) ? '<button class="b-btn" onclick="openMove(\'Шилжүүлэг\')">Шилжүүлэг</button>' : '') +
@@ -267,7 +273,7 @@ function salesModule() {
   var staffRows = Object.keys(byStaff).sort(function (a, b) { return byStaff[b] - byStaff[a]; });
   return '<div class="kpis">' +
     kpi('Борлуулалт', fmt(s.sales), Object.keys(bills).length + ' баримт / гүйлгээ') +
-    kpi('Бэлэн', fmt(s.cash)) + kpi('Карт', fmt(s.card)) + kpi('Шилжүүлэг', fmt(s.transfer)) +
+    kpi('Бэлэн', fmt(s.cash)) + kpi('Карт', fmt(s.card)) + kpi('Шилжүүлэг', fmt(s.transfer)) + (s.credit ? kpi('Зээлээр (авлага)', fmt(s.credit)) : '') +
     '</div><div class="grid2"><div class="card"><h2>Худалдагчаар</h2><div class="scroll"><table>' +
     (staffRows.length ? '<tr><th>Ажилтан</th><th class="n">Дүн</th></tr>' + staffRows.map(function (k) {
       return '<tr><td>' + esc(k) + '</td><td class="n">' + fmt(byStaff[k]) + '</td></tr>';
@@ -646,9 +652,9 @@ function closeSheet(id) { $(id).classList.remove('show'); }
 var SUBS = {
   sales: [['overview', 'Тойм'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'], ['pay', 'Төлбөрийн хэлбэрээр'],
           ['receipts', 'Баримтын жагсаалт'], ['ebarimt', 'И-баримт тулгалт']],
-  products: [['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['card', 'Барааны карт'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
+  products: [['catalog', 'Барааны бүртгэл, үнэ'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['card', 'Барааны карт'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
   finance: [['dash', 'Хянах самбар'], ['entry', 'Журналын бичилт'], ['journal', 'Ерөнхий журнал'], ['trial', 'Гүйлгээ баланс'], ['ledger', 'Дансны хуулга'],
-            ['expenses', 'Зарлага, касс хаалт'], ['cash', 'Касс, харилцах'], ['pl', 'Орлогын тайлан'], ['balance', 'Санхүүгийн байдал'], ['cashflow', 'Мөнгөн гүйлгээ'],
+            ['vouchers', 'Кассын баримт'], ['expenses', 'Зарлага, касс хаалт'], ['cash', 'Касс, харилцах'], ['pl', 'Орлогын тайлан'], ['balance', 'Санхүүгийн байдал'], ['cashflow', 'Мөнгөн гүйлгээ'],
             ['partners', 'Авлага, өглөг'], ['accounts', 'Дансны төлөвлөгөө']],
 };
 function subTabs() {
@@ -673,6 +679,7 @@ function makeReport(mod, sub) {
     if (sub === 'card') return repItemCard(R(), biz, state.item, f, t);
     if (sub === 'in') return repReceiptsIn(R(), biz, f, t);
     if (sub === 'stock') return repStockNow(biz);
+    if (sub === 'catalog') return repCatalog(biz);
     if (sub === 'suppliers') return repPartnerList(biz);
   }
   var E = J();
@@ -687,6 +694,8 @@ function makeReport(mod, sub) {
   if (sub === 'accounts') return repAccounts();
   if (sub === 'entry') return repManual(biz, f, t);
   if (sub === 'expenses') return repExpenses(biz, f, t);
+  if (sub === 'vouchers') return repVouchers(biz, f, t);
+  if (sub === 'catalog') return repCatalog(biz);
 }
 function repStockNow(biz) {
   var rows = stockRows(biz).map(function (r) {
@@ -734,7 +743,7 @@ function subBody() {
     if (!state.item) return pre + '<div class="card muted">Бараагаа сонгоно уу.</div>';
   }
   if (mod === 'finance' && sub === 'entry') pre = '<p class="hint">Борлуулалт, зарлага, бараа, цалин санхүүд <b>автоматаар</b> бичигддэг. Энд зөвхөн бусад гүйлгээг (эхний үлдэгдэл, хөрөнгө оруулалт, зээл, банкинд тушаах, нийлүүлэгчид төлөх г.м) оруулна.</p>';
-  return pre + reportCard(rep, { entry: 'cancelEntry', in: 'cancelMove', expenses: 'cancelRecord' }[sub]);
+  return pre + reportCard(rep, { entry: 'cancelEntry', in: 'cancelMove', expenses: 'cancelRecord', vouchers: 'cancelEntry', catalog: 'openProduct' }[sub]);
 }
 
 function cellVal(col, v) {
@@ -743,12 +752,13 @@ function cellVal(col, v) {
   return esc(v);
 }
 function reportCard(rep, cancellable) {
-  var head = '<tr>' + rep.cols.map(function (cl) { return '<th' + (cl.num ? ' class="n"' : '') + '>' + cl.label + '</th>'; }).join('') + (cancellable ? '<th></th>' : '') + '</tr>';
+  var head = '<tr>' + rep.cols.map(function (cl) { return '<th' + (cl.num ? ' class="n"' : '') + '>' + cl.label + '</th>'; }).join('') + (rep.print ? '<th></th>' : '') + (cancellable ? '<th></th>' : '') + '</tr>';
   var body = rep.rows.length ? rep.rows.map(function (r) {
     return '<tr' + (r._b ? ' class="b"' : '') + '>' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n' + (r[cl.k] < 0 ? ' neg' : '') + '"' : '') + '>' + cellVal(cl, r[cl.k]) + '</td>'; }).join('') +
-      (cancellable ? '<td class="n">' + (r._id ? '<button class="mini" onclick="' + cancellable + '(\'' + esc(r._id) + '\')">Цуцлах</button>' : '') + '</td>' : '') + '</tr>';
+      (rep.print ? '<td class="n">' + (r._id ? '<button class="mini" style="color:var(--accent)" onclick="printVoucherId(' + esc(JSON.stringify(r._id)) + ')">Хэвлэх</button>' : '') + '</td>' : '') +
+      (cancellable ? '<td class="n">' + (r._id ? '<button class="mini" onclick="' + cancellable + '(' + esc(JSON.stringify(r._id)) + ')">' + (cancellable === 'openProduct' ? 'Засах' : 'Цуцлах') + '</button>' : '') + '</td>' : '') + '</tr>';
   }).join('') : '<tr><td colspan="' + rep.cols.length + '" class="muted">Мэдээлэл алга</td></tr>';
-  var foot = rep.total ? '<tr class="tot">' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n"' : '') + '>' + cellVal(cl, rep.total[cl.k]) + '</td>'; }).join('') + (cancellable ? '<td></td>' : '') + '</tr>' : '';
+  var foot = rep.total ? '<tr class="tot">' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n"' : '') + '>' + cellVal(cl, rep.total[cl.k]) + '</td>'; }).join('') + (rep.print ? '<td></td>' : '') + (cancellable ? '<td></td>' : '') + '</tr>' : '';
   var r = range();
   return '<div class="card rep"><div class="rep-cap"><b>' + esc(rep.title) + '</b><span>' + esc(BUSINESSES[state.biz].name) + ' · ' + r[0] + ' — ' + r[1] + ' · ' + rep.rows.length + ' мөр</span></div>' +
     (rep.note ? '<p class="rep-note' + (rep.check === false ? ' bad' : rep.check ? ' ok' : '') + '">' + esc(rep.note) + '</p>' : '') +
@@ -957,4 +967,149 @@ function cancelMove(id) {
     if (err) { toast('Алдаа: ' + err); return; }
     toast('Цуцлагдлаа'); refresh();
   });
+}
+
+// ═══════════ БАРААНЫ БҮРТГЭЛ (үнэ, нэгж, ангилал, БҮНА, идэвхтэй эсэх) ═══════════
+// Засвар нь «Бараа» хуудсанд хадгалагдаж, дэлгүүрийн хуудсанд дараагийн нээлтэд шууд хэрэгжинэ.
+function applyProducts() {
+  Object.keys(BUSINESSES).forEach(function (k) {
+    var list = BASE_PRODUCTS[k].map(function (p) { return { name: p.name, unit: p.unit, price: p.price, cls: p.cls || '', cat: p.cat || '', base: true }; });
+    var by = {};
+    list.forEach(function (p) { by[p.name.toLowerCase()] = p; });
+    sheetProducts.filter(function (x) { return x.biz === k; }).forEach(function (x) {
+      var p = by[x.name.toLowerCase()];
+      if (!p) { p = { name: x.name, unit: BUSINESSES[k].unit, price: 0, cls: '', cat: '' }; list.push(p); by[x.name.toLowerCase()] = p; }
+      if (x.price) p.price = x.price; if (x.unit) p.unit = x.unit; if (x.cls) p.cls = x.cls; if (x.cat) p.cat = x.cat;
+      p.off = !!x.off; p.edited = true;
+    });
+    BUSINESSES[k].products = list;
+  });
+}
+function repCatalog(biz) {
+  var ce = costEngine(biz, R());
+  var rows = BUSINESSES[biz].products.map(function (p) {
+    var cost = Math.round(avgCost(ce, p.name));
+    return { name: p.name, cat: p.cat, unit: p.unit, price: p.price || '', cost: cost || '', margin: cost && p.price ? Math.round((p.price - cost) / p.price * 100) + '%' : '',
+             cls: p.cls, st: p.off ? 'Идэвхгүй' : 'Идэвхтэй', _id: p.name };
+  });
+  var off = rows.filter(function (r) { return r.st === 'Идэвхгүй'; }).length;
+  return { title: 'Барааны бүртгэл', cols: [c('name', 'Бараа'), c('cat', 'Ангилал'), c('unit', 'Нэгж'), m('price', 'Зарах үнэ'), m('cost', 'Дундаж өртөг'),
+    c('margin', 'Ашиг %'), c('cls', 'БҮНА код'), c('st', 'Төлөв')], rows: rows,
+    note: rows.length + ' бараа' + (off ? ' · ' + off + ' идэвхгүй (дэлгүүрт харагдахгүй)' : '') + '. Үнэ, нэгж, ангиллыг засахад дэлгүүрийн хуудсанд шууд хэрэгжинэ.' };
+}
+var prodEdit = '';
+function openProduct(name) {
+  var biz = state.biz, p = name ? BUSINESSES[biz].products.filter(function (x) { return x.name === name; })[0] : null;
+  prodEdit = p ? p.name : '';
+  $('pdTitle').textContent = p ? 'Бараа засах' : 'Шинэ бараа';
+  $('pdName').value = p ? p.name : ''; $('pdName').readOnly = !!p;   // нэр солиход үлдэгдэл, түүх тасрах тул солихгүй
+  $('pdUnit').value = p ? p.unit : BUSINESSES[biz].unit; $('pdPrice').value = p ? p.price : '';
+  $('pdCat').value = p ? p.cat : ''; $('pdCls').value = p ? p.cls : ''; $('pdOff').checked = p ? !!p.off : false;
+  var cats = {}; BUSINESSES[biz].products.forEach(function (x) { if (x.cat) cats[x.cat] = 1; });
+  $('pdCats').innerHTML = Object.keys(cats).sort().map(function (k) { return '<option value="' + esc(k) + '">'; }).join('');
+  openSheet('productSheet');
+}
+function saveProduct() {
+  var p = { biz: state.biz, name: $('pdName').value.trim(), unit: $('pdUnit').value.trim(), price: Number($('pdPrice').value), cat: $('pdCat').value.trim(),
+            cls: $('pdCls').value.trim(), off: $('pdOff').checked };
+  if (!p.name) { toast('Барааны нэрээ оруулна уу'); return; }
+  if (!prodEdit && BUSINESSES[state.biz].products.some(function (x) { return x.name.toLowerCase() === p.name.toLowerCase(); })) { toast('Ийм нэртэй бараа байна'); return; }
+  if (!(p.price > 0)) { toast('Зарах үнээ оруулна уу'); return; }
+  if (p.cls && !/^\d{7}$/.test(p.cls)) { toast('БҮНА код 7 оронтой тоо байна'); return; }
+  if (!API_URL) {
+    sheetProducts = sheetProducts.filter(function (x) { return !(x.biz === p.biz && x.name.toLowerCase() === p.name.toLowerCase()); }).concat([p]);
+    save('nb_demo_products', sheetProducts); applyProducts(); closeSheet('productSheet'); render(); return;
+  }
+  post({ type: 'admin_product', product: p }, function (err) {
+    if (err) { toast('Алдаа: ' + err); return; }
+    closeSheet('productSheet'); toast('Хадгалагдлаа'); refresh();
+  });
+}
+
+// ═══════════ КАССЫН / ХАРИЛЦАХЫН ОРЛОГО, ЗАРЛАГЫН БАРИМТ ═══════════
+// Дугаар нь серверт КО-0001, КЗ-0001… гэж компани бүрт дараалан олгогдоно. Журналд автоматаар бичигдэнэ.
+var VOUCHER = {
+  'КО': { name: 'Кассын орлогын баримт', acc: '10003', dir: 'in' }, 'КЗ': { name: 'Кассын зарлагын баримт', acc: '10003', dir: 'out' },
+  'ХО': { name: 'Харилцахын орлогын баримт', acc: '1101', dir: 'in' }, 'ХЗ': { name: 'Харилцахын зарлагын баримт', acc: '1101', dir: 'out' },
+};
+// Гүйлгээний зорилго → харьцах данс. p = харилцагч заавал
+var V_PURPOSE = {
+  in: [['1201', 'Авлага төлөгдсөн (зээлээр авсан хүн төлсөн)', 1], ['5101', 'Бараа борлуулсан (дэлгүүрийн бүртгэлээс гадуур)'], ['4101', 'Эзэн мөнгө оруулсан'],
+       ['3501', 'Зээл авсан'], ['5201', 'Бусад орлого'], ['10003', 'Кассаас шилжүүлсэн'], ['1101', 'Харилцахаас бэлэн мөнгө авсан'], ['110106', 'Картын (пос) мөнгө орсон'], ['1503', 'Урьдчилгаа буцаан авсан', 1]],
+  out: [['3101', 'Нийлүүлэгчид өглөг төлсөн', 1], ['1503', 'Нийлүүлэгчид урьдчилгаа өгсөн', 1], ['7101', 'Цалин'], ['7102', 'НДШ'], ['7201', 'Түрээс'],
+        ['7202', 'Цахилгаан, ус, дулаан'], ['7203', 'Тээвэр'], ['7204', 'Сав, баглаа'], ['7205', 'Зар сурталчилгаа'], ['7206', 'Засвар'], ['7207', 'Хүргэлт'],
+        ['7301', 'Бусад зардал'], ['2001', 'Үндсэн хөрөнгө худалдаж авсан'], ['3501', 'Зээл төлсөн'], ['4101', 'Эзэн мөнгө авсан'],
+        ['1101', 'Банкинд тушаасан (харилцах руу)'], ['10003', 'Касс руу бэлэн мөнгө гаргасан'], ['1207', 'Ажилтанд өгсөн (авлага)'], ['6001', 'Худалдан авагчид мөнгө буцаасан']],
+};
+var vKind = 'КО';
+function openVoucher(kind) {
+  vKind = kind; var V = VOUCHER[kind];
+  $('vcTitle').textContent = V.name;
+  $('vcPurpose').innerHTML = V_PURPOSE[V.dir].filter(function (x) { return x[0] !== V.acc; }).map(function (x) {
+    return '<option value="' + x[0] + '">' + esc(x[1]) + ' — ' + x[0] + '</option>'; }).join('');
+  $('vcDate').value = todayStr(); $('vcAmount').value = ''; $('vcPartner').value = ''; $('vcDesc').value = '';
+  $('vcPartners').innerHTML = partnerOptions() + receivableOptions();
+  vcPurpose();
+  openSheet('voucherSheet');
+}
+function receivableOptions() {   // зээлээр авсан хүмүүсийн нэрс (авлагатай)
+  var b = {};
+  J().forEach(function (e) { if (e.partner && (e.dr === '1201' || e.cr === '1201')) b[e.partner] = (b[e.partner] || 0) + (e.dr === '1201' ? e.amount : -e.amount); });
+  return Object.keys(b).filter(function (k) { return b[k] > 0.5; }).map(function (k) { return '<option value="' + esc(k) + '">Авлага ' + fmt(b[k]) + '</option>'; }).join('');
+}
+function vcPurpose() {
+  var dir = VOUCHER[vKind].dir, x = V_PURPOSE[dir].filter(function (y) { return y[0] === $('vcPurpose').value; })[0];
+  $('vcPartnerLabel').textContent = x && x[2] ? 'Харилцагч *' : 'Харилцагч';
+}
+function saveVoucher() {
+  var V = VOUCHER[vKind], other = $('vcPurpose').value, amt = Number($('vcAmount').value), partner = $('vcPartner').value.trim();
+  var purpose = V_PURPOSE[V.dir].filter(function (y) { return y[0] === other; })[0];
+  if (!(amt > 0)) { toast('Дүнгээ оруулна уу'); return; }
+  if (purpose[2] && !partner) { toast('Харилцагчийн нэрийг бичнэ үү'); return; }
+  var e = { biz: state.biz, date: $('vcDate').value, dr: V.dir === 'in' ? V.acc : other, cr: V.dir === 'in' ? other : V.acc, amount: amt,
+            partner: partner, desc: $('vcDesc').value.trim() || purpose[1], vkind: vKind };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date)) { toast('Огноо оруулна уу'); return; }
+  var done = function (no) { closeSheet('voucherSheet'); toast(no + ' бүртгэгдлээ'); if (confirm(no + ' баримтыг хэвлэх үү?')) printVoucher(e, no); };
+  if (!API_URL) {
+    var n = journal.filter(function (j) { return j.biz === e.biz && String(j.no || '').indexOf(vKind + '-') === 0; }).length + 1;
+    e.id = 'J' + Date.now(); e.by = ownerName; e.no = vKind + '-' + ('000' + n).slice(-4);
+    journal.push(e); save('nb_demo_journal', journal); render(); done(e.no); return;
+  }
+  post({ type: 'admin_journal', by: ownerName, entry: e }, function (err, d) {
+    if (err) { toast('Алдаа: ' + err); return; }
+    refresh(); done(d.no);
+  });
+}
+function repVouchers(biz, f, t) {
+  var rows = journal.filter(function (j) { return j.biz === biz && j.no && j.date >= f && j.date <= t; }).slice().reverse().map(function (j) {
+    var V = VOUCHER[j.no.slice(0, 2)], inn = V.dir === 'in';
+    return { no: j.no, date: j.date, kind: V.name.replace(' баримт', ''), corr: (inn ? j.cr : j.dr) + ' ' + accName(inn ? j.cr : j.dr), partner: j.partner, desc: j.desc,
+             inA: inn ? j.amount : '', outA: inn ? '' : j.amount, _id: j.id };
+  });
+  return { title: 'Кассын баримт', cols: [c('no', 'Дугаар'), c('date', 'Огноо'), c('kind', 'Төрөл'), c('corr', 'Харьцсан данс'), c('partner', 'Харилцагч'),
+    c('desc', 'Гүйлгээний утга'), m('inA', 'Орлого'), m('outA', 'Зарлага')], rows: rows,
+    total: { no: 'Нийт', inA: sum(rows, 'inA'), outA: sum(rows, 'outA') }, print: true };
+}
+function printVoucherId(id) {
+  var j = journal.filter(function (x) { return x.id === id; })[0]; if (j) printVoucher(j, j.no);
+}
+function printVoucher(e, no) {
+  var V = VOUCHER[no.slice(0, 2)], inn = V.dir === 'in', B = BUSINESSES[e.biz], E = (window.EBARIMT || {})[e.biz] || {};
+  var other = inn ? e.cr : e.dr;
+  var w = window.open('', '_blank', 'width=720,height=640');
+  if (!w) { toast('Хэвлэх цонх нээгдсэнгүй — popup зөвшөөрнө үү'); return; }
+  var row = function (k, v) { return '<tr><th>' + k + '</th><td>' + v + '</td></tr>'; };
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(no) + '</title><style>body{font-family:Arial,sans-serif;font-size:13px;margin:28px;color:#111}' +
+    'h1{font-size:17px;text-align:center;margin:6px 0 2px}.c{text-align:center;color:#444}table{width:100%;border-collapse:collapse;margin-top:16px}' +
+    'th,td{border:1px solid #999;padding:8px;text-align:left}th{width:34%;background:#f3f4f6}.amt{font-size:16px;font-weight:700}.sig{display:flex;justify-content:space-between;margin-top:40px}' +
+    '.sig div{width:45%;border-top:1px solid #333;padding-top:4px;text-align:center}</style></head><body>' +
+    '<div class="c">' + esc(E.legalName || B.name) + (E.merchantTin ? ' · ТТД ' + esc(E.merchantTin) : '') + '</div>' +
+    '<h1>' + esc(V.name.toUpperCase()) + ' № ' + esc(no) + '</h1><div class="c">' + esc(e.date) + '</div><table>' +
+    row('Компани / дэлгүүр', esc(B.name)) + row(inn ? 'Хэнээс хүлээн авсан' : 'Хэнд олгосон', esc(e.partner || '')) +
+    row('Гүйлгээний утга', esc(e.desc || '')) + row('Харьцсан данс', esc(other + ' ' + accName(other))) +
+    row(inn ? 'Орлогын данс' : 'Зарлагын данс', esc(V.acc + ' ' + accName(V.acc))) + row('Дүн', '<span class="amt">' + fmt(e.amount) + '</span>') +
+    '</table><div class="sig"><div>' + (inn ? 'Тушаасан' : 'Хүлээн авсан') + '</div><div>' + (inn ? 'Хүлээн авсан (кассчин)' : 'Олгосон (кассчин)') + '</div></div>' +
+    '<div class="sig"><div>Нягтлан бодогч</div><div>Захирал</div></div>' +
+    '<script>window.onload=function(){window.print()}<\/script></body></html>');
+  w.document.close();
 }
