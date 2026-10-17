@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ажилтан</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20261018b">
 </head>
 <body>
 <div class="demo" id="demo" style="display:none">Туршилтын горим — мэдээлэл зөвхөн энэ төхөөрөмжид хадгалагдаж байна</div>
@@ -42,7 +42,7 @@
     </div>
     <div class="big-btns" style="margin-top:10px">
       <button class="big ord-btn" onclick="openOrder()"><span>＋</span>Захиалга</button>
-      <button class="big buu-btn" onclick="buuhiaExport()"><span>⇩</span>Буухиа Excel</button>
+      <button class="big buu-btn" onclick="openBuuhia()"><span>⇩</span>Буухиа Excel</button>
     </div>
     <div class="card">
       <div class="bar-row"><h2 style="margin:0">Захиалгууд</h2><button class="link" onclick="loadOrders()">Шинэчлэх</button></div>
@@ -64,6 +64,19 @@
       <h2>Өнөөдрийн бичлэгүүд</h2>
       <ul class="list" id="todayList"></ul>
     </div>
+  </div>
+</div>
+
+<!-- Буухиа Excel -->
+<div class="sheet" id="buuSheet" onclick="if(event.target===this)closeSheet('buuSheet')">
+  <div class="panel">
+    <h2>Буухиа Excel</h2>
+    <p class="muted"><b id="buN">0</b> илгээх захиалга байна.</p>
+    <button class="btn" onclick="buuhiaExport(true)">Үнийн дүнтэй</button>
+    <p class="muted" style="font-size:13px;margin-top:6px">Буухиа хүлээн авагчаас мөнгийг авч дансанд шилжүүлнэ. Төлбөр нь орсон захиалгад дүн бичигдэхгүй.</p>
+    <button class="btn" style="background:#4B5563" onclick="buuhiaExport(false)">Үнийн дүнгүй</button>
+    <p class="muted" style="font-size:13px;margin-top:6px">Зөвхөн хүргэнэ, мөнгө авахгүй.</p>
+    <button class="btn ghost" onclick="closeSheet('buuSheet')">Болих</button>
   </div>
 </div>
 

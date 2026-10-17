@@ -1,7 +1,7 @@
 // ── БАНКНЫ ХУУЛГА: Хаан банкны Excel хуулгыг оруулж захиалга, авлага, зардалтай тулгах ──
 // 1) Хуулга оруулах → мөрүүд «Банк» хуудсанд давхардалгүй хадгалагдана
 // 2) Орлого бүрийг гүйлгээний утган дахь утасны дугаар / «EB-утас» (буухиа) / дүнгээр захиалгатай тааруулна
-// 3) «Тулгах» → захиалга «Төлбөр орсон», санхүүд бичилт; бусад мөрийг данс сонгож кассын баримт болгоно
+// 3) Систем зөвхөн САНАЛ болгоно — мөр бүрийг хэрэглэгч өөрөө шалгаж «Тулгах» дарна (автоматаар юу ч бичихгүй)
 // 4) Хуулгын эцсийн үлдэгдэл = санхүүгийн харилцах дансны үлдэгдэл эсэхийг шалгана
 
 var bankLines = [], bankTab = 'todo', bankPick = {};
@@ -82,7 +82,7 @@ function bankView() {
   var ledger = balances(J(), todayStr())[acc] || 0;
   var sure = todo.filter(function (l) { var s = bankSuggest(l); return (s.kind === 'order' && s.sure) || s.kind === 'paid'; }).length;
   var pay = (window.payInfoAll || {})[biz] || '';
-  var head = '<div class="kpis">' + kpi('Тулгах гүйлгээ', todo.length + (sure ? ' <span class="tag">' + sure + ' таарсан</span>' : '')) +
+  var head = '<div class="kpis">' + kpi('Тулгах гүйлгээ', todo.length) +
     (last ? kpi('Хуулгын үлдэгдэл (' + last.date.slice(0, 10) + ')', fmt(last.bal)) + kpi('Санхүүгийн ' + acc + ' үлдэгдэл', fmt(ledger), Math.abs(last.bal - ledger) < 1 ? '<span style="color:var(--green)">Таарч байна</span>' : '<span style="color:var(--red)">Зөрүү ' + fmt(last.bal - ledger) + '</span>') : '') + '</div>';
   var tabs = '<div class="tabs" style="margin-bottom:10px">' + [['todo', 'Тулгах'], ['done', 'Тулгасан'], ['all', 'Бүгд']].map(function (t) {
     return '<button class="' + (bankTab === t[0] ? 'on' : '') + '" onclick="bankTab=\'' + t[0] + '\';render()">' + t[1] + '</button>'; }).join('') + '</div>';
@@ -100,7 +100,7 @@ function bankView() {
       bankPick[l.id] = def;
       sel = '<select onchange="bankPick[\'' + esc(l.id) + '\']=this.value" style="max-width:260px"><option value="">— Сонгох —</option>' + opts.map(function (o) {
         return '<option value="' + esc(o[0]) + '"' + (o[0] === def ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>' +
-        (s.kind === 'order' ? ' <span class="tag' + (s.sure ? '' : ' b') + '">' + (s.sure ? 'Таарсан' : 'Магадгүй') + (s.fee > 0 ? ' · хүргэлт ' + fmt(s.fee) : '') + '</span>' : '');
+        (s.kind === 'order' ? ' <small class="muted">санал: ' + (s.sure ? 'утас, дүн таарсан' : 'шалгаж сонгоно уу') + (s.fee > 0 ? ' · буухиагийн хөлс ' + fmt(s.fee) : '') + '</small>' : '');
     }
     return '<tr><td>' + esc(l.date) + '</td><td>' + esc(l.desc) + '</td><td class="n" style="color:var(--green)">' + (l.credit ? '+' + fmt(l.credit).slice(1) : '') + '</td>' +
       '<td class="n neg">' + (l.debit ? '−' + fmt(l.debit).slice(1) : '') + '</td><td>' + (s ? sel : '<span class="tag">' + esc(l.status) + '</span> <small class="muted">' + esc(l.link) + '</small>') + '</td>' +
@@ -125,6 +125,14 @@ function bankApplyAll() {
 }
 // Сонголтын дагуу: захиалга → «Төлбөр орсон» + журнал; данс → кассын/харилцахын баримт; алгасах → тэмдэглэнэ
 function bankApply(ids, quiet) {
+  if (!quiet && ids.length === 1) {   // хэрэглэгчээс баталгаажуулна
+    var l0 = bankLines.filter(function (x) { return x.id === ids[0]; })[0], p0 = bankPick[ids[0]] || '';
+    if (l0 && p0 && p0 !== 'skip') {
+      var what = p0.indexOf('O:') === 0 ? 'захиалга ' + (((window.adminOrders || []).filter(function (o) { return o.id === p0.slice(2); })[0]) || {}).phone + ' — «Төлбөр орсон»' :
+                 p0.indexOf('P:') === 0 ? 'өмнө бүртгэгдсэн захиалга (давхар бичихгүй)' : p0.slice(2) + ' ' + accName(p0.slice(2));
+      if (!confirm(l0.date + ' · ' + (l0.credit ? '+' + fmt(l0.credit) : '−' + fmt(l0.debit)) + '\n«' + l0.desc + '»\n\n→ ' + what + '\n\nТулгах уу?')) return;
+    }
+  }
   var entries = [], orderUpd = [], updates = [], biz = state.biz;
   ids.forEach(function (id) {
     var l = bankLines.filter(function (x) { return x.id === id; })[0]; if (!l) return;

@@ -262,7 +262,7 @@ function companyView() {
   if (sub === 'entry') acts = '<button class="b-btn primary" onclick="openEntry()">+ Журналын бичилт</button>' + acts;
   if (sub === 'vouchers') acts = '<button class="b-btn primary" onclick="openVoucher(\'КО\')">+ Кассын орлого</button><button class="b-btn primary" onclick="openVoucher(\'КЗ\')">+ Кассын зарлага</button>' +
     '<button class="b-btn" onclick="openVoucher(\'ХО\')">+ Харилцахын орлого</button><button class="b-btn" onclick="openVoucher(\'ХЗ\')">+ Харилцахын зарлага</button>' + acts;
-  if (sub === 'bank') acts = '<button class="b-btn primary" onclick="$(\'bankFile\').click()">Хуулга оруулах (Excel)</button><button class="b-btn" onclick="bankApplyAll()">Таарсныг бүгдийг тулгах</button>';
+  if (sub === 'bank') acts = '<button class="b-btn primary" onclick="$(\'bankFile\').click()">Хуулга оруулах (Excel)</button>';
   if (sub === 'catalog') acts = '<button class="b-btn primary" onclick="openProduct()">+ Шинэ бараа</button>' + acts;
   if (sub === 'partners' || sub === 'suppliers') acts = '<button class="b-btn primary" onclick="openPartner()">+ Харилцагч</button>' + (sub === 'partners' ? '<button class="b-btn" onclick="openRem(null,{kind:\'Өглөг төлөх\'})">+ Сануулга</button>' : '') + acts;
   if (sub === 'orders') acts = '<button class="b-btn" onclick="importCozyOld()">Хуучин хүснэгтээс шилжүүлэх</button>' + acts;
@@ -1243,25 +1243,11 @@ function archiveAlerts() {
   var go = '<button class="b-btn primary" onclick="openClose()">Он хаах, нөөц рүү</button>';
   // 1) Шинэ он гарсан ч өмнөх он хаагдаагүй (1-р сараас эхлэн)
   var open = closableYears();
-  if (open.length) {
+  if (open.length && today.slice(5, 7) <= '03') {   // зөвхөн 1–3-р сард сануулна
     var late = today > y + '-02-15';
     out.push('<div class="alert' + (late ? ' bad' : '') + '"><div><b>' + open.join(', ') + ' оныг хаах хугацаа болсон.</b> ' +
       (late ? 'Хоцорч байна — ' : '') + 'Он хаавал тайлангууд архивлагдаж, Sheet хөнгөрнө. 1-р сарын эхний 7 хоногт хийхийг зөвлөж байна.</div>' + go + '</div>');
-  } else if (today >= y + '-12-20') {
-    out.push('<div class="alert"><div><b>' + y + ' он дуусах дөхлөө.</b> ' + (Number(y) + 1) + ' оны 1-р сарын эхээр «Он хаах»-ыг хийнэ. Түүний өмнө 12-р сарын тооллогоо хийгээрэй.</div></div>');
   }
-  // 2) Нөөц хуулбар хоцорсон
-  var days = meta.lastBackup ? Math.floor((new Date(today) - new Date(meta.lastBackup.slice(0, 10))) / 864e5) : null;
-  if (API_URL && (days === null || days > 10)) {
-    out.push('<div class="alert bad"><div><b>Нөөц хуулбар ' + (days === null ? 'хараахан аваагүй' : days + ' хоногийн өмнө авсан') + '.</b> ' +
-      'Автомат нөөц ажиллахгүй байж магадгүй — «Одоо нөөц авах» дарж шалгана уу.</div>' + go + '</div>');
-  }
-  // 3) Хөдөлмөрийн гэрээ: байхгүй, эсвэл 30 хоногийн дотор дуусах
-  var act = staff.filter(function (x) { return x.status === 'Тийм' && x.role !== 'Эзэн'; });
-  var noC = act.filter(function (x) { return !x.contractNo; });
-  var soon = act.filter(function (x) { return x.contractEnd && x.contractEnd <= todayStr(new Date(Date.now() + 30 * 864e5)); });
-  if (noC.length) out.push('<div class="alert"><div><b>' + noC.length + ' ажилтан хөдөлмөрийн гэрээгүй:</b> ' + esc(noC.slice(0, 4).map(function (x) { return x.name; }).join(', ')) + (noC.length > 4 ? '…' : '') + '</div><button class="b-btn primary" onclick="go(\'staff\')">Ажилчид руу</button></div>');
-  soon.forEach(function (x) { out.push('<div class="alert' + (x.contractEnd < today ? ' bad' : '') + '"><div><b>' + esc(x.name) + '</b> — гэрээ ' + x.contractEnd + (x.contractEnd < today ? ' дууссан' : ' дуусна') + '. Сунгах эсвэл шинэ гэрээ байгуулна.</div><button class="b-btn" onclick="openContract(\'' + x.id + '\')">Гэрээ</button></div>'); });
   // 4) Sheet дүүрч байна
   var rows = records.length + moves.length + journal.length + salary.length;
   if (rows > SHEET_ROW_WARN) out.push('<div class="alert bad"><div><b>Google Sheet-д ' + fmt(rows).slice(1) + ' мөр байна.</b> Удахгүй удааширна — он хаах, эсвэл өгөгдлийн сан руу шилжих тухай бодох хэрэгтэй.</div>' + go + '</div>');
@@ -1272,7 +1258,7 @@ function openClose() { if (!state.biz) state.biz = KEYS[0]; state.view = 'compan
 // ═══════════ ХӨДӨЛМӨРИЙН ГЭРЭЭ ═══════════
 // Ажилтныг батлангуут бөглөнө → дугаар (ХГ-2026-001) серверт олгогдож, хэвлэхэд бэлэн гэрээ гарна.
 function contractBadge(s) {
-  if (!s.contractNo) return '<span class="tag r">Гэрээгүй</span>';
+  if (!s.contractNo) return '<span class="muted">Гэрээ бүртгээгүй</span>';
   var end = s.contractEnd ? ' · ' + s.contractEnd + ' хүртэл' : ' · хугацаагүй';
   return '<span class="tag">Гэрээ ' + esc(s.contractNo) + end + '</span>';
 }
@@ -1479,8 +1465,10 @@ function openDoc(k) {
   var emps = bizStaff(cb).filter(function (s) { return s.status === 'Тийм' && s.role !== 'Эзэн'; });
   var html = '<label for="dcBiz">Компани / дэлгүүр</label><select id="dcBiz" onchange="state.docBiz=this.value;openDoc(\'' + k + '\')">' +
     KEYS.map(function (b) { return '<option value="' + b + '"' + (b === cb ? ' selected' : '') + '>' + esc(BUSINESSES[b].name) + '</option>'; }).join('') + '</select>';
-  html += d.emp ? '<label for="dcEmp">Ажилтан</label><select id="dcEmp"><option value="">— Хоосон (гараар бөглөх) —</option>' +
-    emps.map(function (s) { return '<option value="' + s.id + '">' + esc(full(s)) + (s.position ? ' · ' + esc(s.position) : '') + '</option>'; }).join('') + '</select>' : '';
+  var MF = [['surname', 'Овог'], ['name', 'Нэр'], ['regno', 'Регистр'], ['position', 'Албан тушаал'], ['start', 'Ажилд орсон огноо'], ['salary', 'Цалин (₮)'], ['phone', 'Утас'], ['address', 'Гэрийн хаяг'], ['bank', 'Данс']];
+  html += d.emp ? '<label for="dcEmp">Ажилтан</label><select id="dcEmp" onchange="$(\'dcManual\').style.display=this.value?\'none\':\'block\'"><option value="">Гараар бөглөх</option>' +
+    emps.map(function (s) { return '<option value="' + s.id + '">' + esc(full(s)) + (s.position ? ' · ' + esc(s.position) : '') + '</option>'; }).join('') + '</select>' +
+    '<div id="dcManual"><div class="row2">' + MF.map(function (x) { return '<div><label for="dcm_' + x[0] + '">' + x[1] + '</label><input id="dcm_' + x[0] + '"' + (x[0] === 'salary' ? ' type="number" inputmode="numeric"' : x[0] === 'start' ? ' type="date"' : '') + '></div>'; }).join('') + '</div></div>' : '';
   html += d.f.map(function (x) {
     var id = 'dc_' + x[0], t = x[3] || '';
     if (t.indexOf('sel:') === 0) return '<label for="' + id + '">' + x[1] + '</label><select id="' + id + '">' + t.slice(4).split('|').map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + '</select>';
@@ -1493,7 +1481,11 @@ function printDocForm() {
   var d = allDocs().filter(function (x) { return x.k === docK; })[0], f = {};
   d.f.forEach(function (x) { f[x[0]] = $('dc_' + x[0]).value.trim(); });
   var s = d.emp && $('dcEmp').value ? staff.filter(function (x) { return x.id === $('dcEmp').value; })[0] : null;
-  if (d.emp && !s && /^(workcert|salcert|hire|fire)$/.test(d.k)) { toast('Ажилтнаа сонгоно уу'); return; }
+  if (d.emp && !s) {   // гараар бөглөсөн ажилтны мэдээлэл (хоосон талбар хэвлэхэд зураас болно)
+    var g = function (k) { return $('dcm_' + k) ? $('dcm_' + k).value.trim() : ''; };
+    if (g('name') || g('surname') || g('regno')) s = { id: '_manual', status: 'Тийм', name: g('name') || BLANK, surname: g('surname'), regno: g('regno'), position: g('position'), start: g('start'),
+      salary: Number(g('salary')) || 0, phone: g('phone'), address: g('address'), bank: g('bank') };
+  }
   var emptyS = { name: BLANK, surname: '', regno: '', position: '', start: '', salary: 0, phone: '', address: '', bank: '' };
   var cb = $('dcBiz').value, keep = state.biz; state.biz = cb;   // кассын тооллого г.м тухайн компанийн санхүүгээс уншина
   var html = d.body(s || (d.emp ? emptyS : null), f, coInfo(cb));

@@ -491,3 +491,86 @@ a.mini{text-decoration:none}
 .de-body{min-height:340px;max-height:56vh;overflow:auto;border:1px solid var(--b-line);border-radius:6px;padding:20px 28px;background:#fff;font-family:"Times New Roman",serif;font-size:14px;line-height:1.55}
 .de-body h1{font-size:17px;text-align:center}.de-body table.t{width:100%;border-collapse:collapse}.de-body .t th,.de-body .t td{border:1px solid #333;padding:5px}
 .doc-li{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.doc-act{margin-left:auto;display:flex;gap:4px}
+
+/* ═══════════ v5 · Албан, даруу харагдац (удирдлага) ═══════════ */
+.bz-admin{--b-blue:#1F4E8C;--b-blue-d:#173C6C;--b-bg:#F4F5F7;--b-line:#E2E5E9;--b-ink:#1F2933;--b-mut:#6B7280;--accent:#1F4E8C;--green:#2F6B3F;--red:#A23B2A;
+  font-family:'Inter',-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13.5px;letter-spacing:0;background:var(--b-bg)}
+/* зүүн зурвас: хар саарал */
+.bz-admin .rail{background:#1F2933}
+.bz-admin .rail-logo{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:3px;font-size:15px;width:34px;height:34px}
+.bz-admin .rail button{color:#AAB2BD;font-weight:500;font-size:10.5px}
+.bz-admin .rail button:hover{background:#2A3542;color:#fff}
+.bz-admin .rail button.on{background:#2F3B4A;color:#fff;box-shadow:inset 3px 0 0 #8FB3E0}
+.bz-admin .rail .dot{background:#B4533F}
+.bz-admin .rail-sep{background:rgba(255,255,255,.12)}
+/* дэд цэс, толгой */
+.bz-admin .subnav{background:#FBFBFC}
+.bz-admin .sub-title{font-size:14px;font-weight:700;color:#1F2933}
+.bz-admin .sub-group{font-size:10.5px;letter-spacing:.06em;color:#8A929C}
+.bz-admin .sub-list button{font-size:13px;border-radius:3px;color:#374151}
+.bz-admin .sub-list button.on{background:#E8EDF4;color:#1F2933;font-weight:600;box-shadow:inset 2px 0 0 var(--b-blue)}
+.bz-admin .sub-co .mono{border-radius:3px}
+.bz-admin .bz-head{height:48px;box-shadow:none}
+.bz-admin .pg-head h1{font-size:18px;font-weight:600}
+/* карт, KPI — сүүдэр, өнгөт хүрээгүй */
+.bz-admin .card,.bz-admin .co-card,.bz-admin .st-card{border-radius:4px;box-shadow:none;border:1px solid var(--b-line)}
+.bz-admin .card h2{font-size:13.5px;font-weight:600;color:#1F2933}
+.bz-admin .kpis{gap:0;border:1px solid var(--b-line);border-radius:4px;background:#fff;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.bz-admin .kpis .biz{border:0;border-right:1px solid var(--b-line);border-radius:0;border-top:0;padding:10px 14px;background:transparent}
+.bz-admin .kpis .biz:last-child{border-right:0}
+.bz-admin .kpis .biz .muted:first-child{font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.bz-admin .kpis .biz .rev{font-size:17px;font-weight:600;margin-top:2px}
+.bz-admin .co-card{border-top:1px solid var(--b-line)!important}
+.bz-admin .co-card .btn{background:var(--b-blue)!important;border-radius:3px;font-weight:600}
+.bz-admin .co-stats div{background:#F7F8FA;border-radius:3px}
+/* товч */
+.bz-admin .b-btn{border-radius:3px;font-weight:500;padding:6px 12px}
+.bz-admin .b-btn.primary{background:var(--b-blue);border-color:var(--b-blue)}
+.bz-admin .btn{border-radius:3px;font-weight:600;font-size:14px}
+.bz-admin .mini{border-radius:3px;color:#374151;border-color:var(--b-line)}
+/* шошго, анхааруулга, тайлбар — даруу */
+.bz-admin .tag{background:#F1F3F5;color:#4B5563;border-radius:3px;font-weight:500}
+.bz-admin .tag.r{background:#F1F3F5;color:var(--red)}
+.bz-admin .tag.b{background:#F1F3F5;color:var(--b-blue)}
+.bz-admin .alert{background:#fff;border:1px solid var(--b-line);border-left:3px solid #C9A227;color:#1F2933;border-radius:3px}
+.bz-admin .alert.bad{background:#fff;border-left-color:var(--red);color:#1F2933}
+.bz-admin .hint{background:transparent;border:0;color:var(--b-mut);padding:0 0 8px;font-size:12.5px}
+.bz-admin .rep-note{background:#F7F8FA;border-radius:3px;color:#374151}
+.bz-admin .rep-note.ok{background:#F7F8FA;color:var(--green)}
+.bz-admin .rep-note.bad{background:#F7F8FA;color:var(--red)}
+.bz-admin .ck{width:18px;height:18px;font-size:11px;border-radius:2px}
+.bz-admin .ck.ok{background:#4A7A57}.bz-admin .ck.bad{background:var(--red)}
+.bz-admin .filter{border-radius:4px}
+/* хүснэгт */
+.bz-admin th{background:#F7F8FA;color:#4B5563;font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em}
+.bz-admin td{border-bottom:1px solid #EEF0F2}
+.bz-admin tr:hover td{background:#FAFBFC}
+.bz-admin td.neg{color:var(--red)}
+/* календарь — даруу өнгө */
+.bz-admin .ev.rem{background:#F6EFD9;color:#6B5212}.bz-admin .ev.tax{background:#E4EBF5;color:#1F4E8C}
+.bz-admin .ev.contract{background:#F3E3DF;color:#8A3324}.bz-admin .ev.task{background:#ECE8F3;color:#4B3B7A}
+.bz-admin .cal-d{border-radius:3px}
+.bz-admin .sheet .panel{border-radius:6px 6px 0 0}
+@media(min-width:761px){.bz-admin .sheet .panel{border-radius:6px}}
+@media(max-width:760px){.bz-admin .kpis .biz{border-right:0;border-bottom:1px solid var(--b-line)}}
+
+/* ═══════════ v5 · Дэлгүүрийн хуудас — даруу ═══════════ */
+body:not(.bz-admin){font-family:'Inter',-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#F4F5F7}
+body:not(.bz-admin) .card{border-radius:6px;box-shadow:none;border:1px solid #E2E5E9}
+body:not(.bz-admin) .big{border-radius:6px;box-shadow:none;font-weight:600;font-size:15px;padding:16px 10px;border:1px solid #D5DAE0;background:#fff;color:#1F2933}
+body:not(.bz-admin) .big span{font-size:20px;font-weight:400;color:#6B7280}
+body:not(.bz-admin) .big.sale{background:#1F4E8C;border-color:#1F4E8C;color:#fff}
+body:not(.bz-admin) .big.sale span{color:#C9D7EA}
+body:not(.bz-admin) .big.exp{background:#fff;color:#1F2933}
+body:not(.bz-admin) .big.close{background:#fff;color:#1F2933}
+body:not(.bz-admin) .big.ord-btn{background:#fff;color:#1F2933;border-color:#1F4E8C;box-shadow:inset 0 0 0 1px #1F4E8C}
+body:not(.bz-admin) .big.buu-btn{background:#fff;color:#1F2933}
+body:not(.bz-admin) .btn{border-radius:4px;font-weight:600}
+body:not(.bz-admin) .tag{background:#F1F3F5;color:#4B5563;border-radius:3px;font-weight:500}
+body:not(.bz-admin) .tag.r{background:#F1F3F5;color:#A23B2A}
+body:not(.bz-admin) .tag.b{background:#F1F3F5;color:#1F4E8C}
+body:not(.bz-admin) .tabs button,body:not(.bz-admin) .chip,body:not(.bz-admin) .seg button{border-radius:4px}
+body:not(.bz-admin) .sheet .panel{border-radius:8px 8px 0 0;background:#fff}
+body:not(.bz-admin) .eb-badge{border-radius:3px}
+body:not(.bz-admin) .top{box-shadow:none;border-bottom:1px solid #E2E5E9}
+body:not(.bz-admin) .mono{border-radius:4px}

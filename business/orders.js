@@ -169,14 +169,22 @@ function renderOrders() {
 
 // ── Буухиа Excel (ebuuhia.com → «Хүргэлт» импортын албан загвар, 12 багана) ──
 var BUUHIA_COLS = ['Дэлгүүрийн нэр *', 'Хүлээн авагчийн нэр', 'Утас *', 'Нэмэлт утас', 'Хот / аймаг *', 'Дүүрэг / сум *', 'Хороо', 'Нэмэлт хаяг', 'Барааны нэр', 'Тоо ширхэг', 'Авах дүн (₮)', 'Хүргэлтийн тайлбар'];
-function buuhiaExport() {
+// withAmount: true бол «Авах дүн»-д төлбөр ороогүй захиалгын үнийг бичнэ — буухиа хүлээн авагчаас мөнгийг авч дансанд шилжүүлнэ.
+// false бол дүнгүй (мөнгийг өөрсдөө авсан / дараа авна) — буухиа мөнгө шилжүүлэхгүй.
+function openBuuhia() {
+  var n = orders.filter(function (o) { return o.status === 'Шинэ'; }).length;
+  if (!n) { toast('Илгээх (Шинэ) захиалга алга'); return; }
+  $('buN').textContent = n; openSheet('buuSheet');
+}
+function buuhiaExport(withAmount) {
+  closeSheet('buuSheet');
   var list = orders.filter(function (o) { return o.status === 'Шинэ'; });
   if (!list.length) { toast('Илгээх (Шинэ) захиалга алга'); return; }
   if (!window.XLSX) { toast('Excel сан ачаалагдаагүй — интернэтээ шалгана уу'); return; }
   var noDist = list.filter(function (o) { return !o.district; }).length;
   var rows = list.map(function (o) {
     var qty = ordItems(o).reduce(function (a, i) { return a + (Number(i.qty) || 1); }, 0);
-    var cod = o.paid === 'Орсон' ? '' : o.amount;   // төлбөр ороогүй бол хүргэлтийн ажилтан авна
+    var cod = withAmount && o.paid !== 'Орсон' ? o.amount : '';   // төлбөр орсон захиалгаас дахин авахгүй
     return [BIZ.buuhiaStore || BIZ.name, (o.customer || '').slice(0, 50), o.phone, o.phone2 || '', o.city || 'Улаанбаатар', o.district || '', o.khoroo || '',
             String(o.address || '').slice(0, 255), ordItemsText(o), qty, cod, String(o.note || '').slice(0, 200)];
   });
@@ -185,7 +193,7 @@ function buuhiaExport() {
   ws['!cols'] = [22, 18, 12, 12, 14, 16, 12, 50, 30, 8, 12, 30].map(function (w) { return { wch: w }; });
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Хүргэлт');
-  XLSX.writeFile(wb, 'buuhia-hurgelt-' + BIZ_KEY + '-' + todayStr() + '.xlsx');
+  XLSX.writeFile(wb, 'buuhia-hurgelt-' + BIZ_KEY + '-' + todayStr() + (withAmount ? '-dun' : '-dungui') + '.xlsx');
   if (noDist) toast(noDist + ' захиалгын дүүрэг хоосон — буухиа анхааруулга өгнө, хаягаа шалгаарай');
   setTimeout(function () {
     if (!confirm(list.length + ' захиалгыг ebuuhia.com-д оруулсны дараа «Буухиад өгсөн» болгох уу?\n(Борлуулалт санхүүд бичигдэнэ)')) return;
