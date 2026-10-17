@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v3.0 (банкны хуулга тулгалт, ажилчдад даалгавар, төлбөрийн мэдээлэл)
+// NOMAAD Бизнесүүд — Google Apps Script v3.1 (маягт засах / шинээр нэмэх)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -35,6 +35,8 @@ const SHEET_BANK = 'Банк';
 const BANK_HEAD = ['ID', 'Данс', 'Огноо', 'Орлого', 'Зарлага', 'Үлдэгдэл', 'Гүйлгээний утга', 'Харьцсан данс', 'biz', 'Төлөв', 'Холбоос', 'Хэн', 'Оруулсан'];
 const SHEET_TASK = 'Даалгавар';
 const TASK_HEAD = ['ID', 'Үүсгэсэн', 'biz', 'Ажилтан ID', 'Ажилтан', 'Даалгавар', 'Хугацаа', 'Төлөв', 'Хийсэн', 'Хийсэн огноо', 'Хэнээс', 'Тайлбар'];
+const SHEET_DOC = 'Маягт';
+const DOC_HEAD = ['ID', 'Нэр', 'Бүлэг', 'Агуулга (HTML)', 'Үндсэн маягт', 'Шинэчилсэн', 'Төлөв'];
 const COZY_OLD_SHEET = '1KUXN7wrApwDSwQQZnzYgPigfRkzkiG3Xbt4VSihQd9c';   // хуучин «Cozy хүргэлт» хүснэгт (шилжүүлэхэд л уншина)
 const LOG_HEAD = ['ID', 'Огноо', 'Цаг', 'Бизнес', 'Төрөл', 'Ажилтан', 'Бараа / Ангилал', 'Тоо', 'Нэгж',
                   'Нэгжийн үнэ', 'Дүн', 'Төлбөр', 'Тоолсон бэлэн', 'Зөрүү', 'Тайлбар', 'biz', 'type', 'Баримт', 'Төлөв', 'Харилцагч'];
@@ -66,6 +68,7 @@ function doPost(e) {
     if (data.type === 'admin_salary') return json(isAdmin(data) ? adminSalary(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_stock') return json(isAdmin(data) ? adminStock(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_journal') return json(isAdmin(data) ? adminJournal(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_doc') return json(isAdmin(data) ? adminDoc(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_bank') return json(isAdmin(data) ? adminBank(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_order') return json(isAdmin(data) ? adminOrder(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_task') return json(isAdmin(data) ? adminTask(data) : { status: 'error', error: 'auth' });
@@ -118,6 +121,7 @@ function adminRead(d) {
   a.meta = { closed: pr.getProperty('CLOSED') || '', lastBackup: pr.getProperty('LAST_BACKUP') || '', backupUrl: pr.getProperty('BACKUP_FOLDER_URL') || '' };
   a.reminders = reminderRows();
   a.bank = bankRows();
+  a.docs = docRows();
   a.tasks = taskRows();
   a.payInfo = payInfoAll();
   a.orders = orderRows().map(function (o) { delete o.row; return o; });
@@ -641,6 +645,33 @@ function adminReminder(d) {
   sh.appendRow([id, x.date, String(x.title).slice(0, 120), String(x.kind || 'Бусад').slice(0, 30), Number(x.amount) || 0, String(x.partner || '').slice(0, 80),
     String(x.co || '').slice(0, 20), x.repeat === 'Сар бүр' ? 'Сар бүр' : 'Нэг удаа', x.status === 'Хийгдсэн' ? 'Хийгдсэн' : 'Хүлээгдэж', String(x.note || '').slice(0, 200), Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')]);
   return { status: 'ok', id: id };
+}
+
+// ═══════════ МАЯГТ (удирдагч засварласан / шинээр нэмсэн загвар) ═══════════
+function docSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_DOC);
+  if (!sh) { sh = ss.insertSheet(SHEET_DOC); sh.appendRow(DOC_HEAD); styleHead(sh, DOC_HEAD.length, '#374151'); }
+  return sh;
+}
+function docRows() {
+  const sh = docSheet(), last = sh.getLastRow();
+  if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, DOC_HEAD.length).getValues().map(function (v, i) {
+    return { row: i + 2, id: String(v[0]), name: String(v[1]), group: String(v[2]), html: String(v[3]), base: String(v[4]), updated: fmtDate(v[5], 'yyyy-MM-dd HH:mm'), status: String(v[6]) };
+  }).filter(function (d) { return d.id && d.status !== 'Устгасан'; }).map(function (d) { const o = Object.assign({}, d); delete o.row; return o; });
+}
+function adminDoc(d) {
+  const sh = docSheet(), last = sh.getLastRow();
+  const ids = last >= 2 ? sh.getRange(2, 1, last - 1, 1).getValues().map(function (r) { return String(r[0]); }) : [];
+  if (d.cancelId) { const i = ids.indexOf(String(d.cancelId)); if (i < 0) return { status: 'error', error: 'not_found' }; sh.getRange(i + 2, 7).setValue('Устгасан'); return { status: 'ok' }; }
+  const x = d.doc || {};
+  if (!String(x.name || '').trim() || !String(x.html || '').trim()) return { status: 'error', error: 'fields' };
+  const now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
+  const row = [x.id || 'D' + Date.now(), String(x.name).slice(0, 80), String(x.group || 'Бусад').slice(0, 30), String(x.html).slice(0, 45000), String(x.base || '').slice(0, 30), now, ''];
+  const i = x.id ? ids.indexOf(String(x.id)) : -1;
+  if (i >= 0) sh.getRange(i + 2, 1, 1, DOC_HEAD.length).setValues([row]); else sh.appendRow(row);
+  return { status: 'ok', id: row[0] };
 }
 
 // ═══════════ БАНКНЫ ХУУЛГА ═══════════

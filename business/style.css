@@ -484,3 +484,10 @@ a.mini{text-decoration:none}
 .ev.task{background:#EDE9FE;color:#5B21B6}.dot-k.task{background:#7C3AED}
 .task-card{border-left:4px solid #7C3AED}
 .task-card .list li small{display:block;color:var(--muted);font-size:12.5px}
+
+/* ── Маягт засах ── */
+.bz-admin .sheet .panel.wide-panel{max-width:900px}
+.de-bar{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:12px 0 6px}
+.de-body{min-height:340px;max-height:56vh;overflow:auto;border:1px solid var(--b-line);border-radius:6px;padding:20px 28px;background:#fff;font-family:"Times New Roman",serif;font-size:14px;line-height:1.55}
+.de-body h1{font-size:17px;text-align:center}.de-body table.t{width:100%;border-collapse:collapse}.de-body .t th,.de-body .t td{border:1px solid #333;padding:5px}
+.doc-li{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.doc-act{margin-left:auto;display:flex;gap:4px}

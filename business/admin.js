@@ -63,7 +63,7 @@ function fetchAll(cb) {
     records = load('nb_records', []); staff = []; salary = []; stockData = load('nb_demo_stock', {}); moves = load('nb_demo_moves', []);
     journal = load('nb_demo_journal', []); partners = load('nb_demo_partners', []); sheetProducts = load('nb_demo_products', []); applyProducts(); meta = load('nb_demo_meta', {});
     reminders = load('nb_demo_rem', []); window.adminOrders = load('nb_orders_cozy', []);
-    bankLines = load('nb_demo_bank', []); window.payInfoAll = load('nb_demo_payinfo', {}); tasks = load('nb_demo_tasks', []); taxCfg = load('nb_demo_taxcfg', {});
+    bankLines = load('nb_demo_bank', []); window.payInfoAll = load('nb_demo_payinfo', {}); tasks = load('nb_demo_tasks', []); taxCfg = load('nb_demo_taxcfg', {}); customDocs = load('nb_demo_docs', []);
     stamp(); cb(true); return;
   }
   post({ type: 'admin_read', from: '' }, function (err, d) {   // санхүүгийн тайланд бүх түүх хэрэгтэй
@@ -71,7 +71,7 @@ function fetchAll(cb) {
     records = d.records || []; staff = d.staff || []; salary = d.salary || []; stockData = d.stock || {}; moves = d.moves || [];
     journal = d.journal || []; partners = d.partners || []; sheetProducts = d.products || []; applyProducts(); meta = d.meta || {};
     reminders = d.reminders || []; window.adminOrders = d.orders || [];
-    bankLines = d.bank || []; window.payInfoAll = d.payInfo || {}; tasks = d.tasks || []; taxCfg = d.taxcfg || {};
+    bankLines = d.bank || []; window.payInfoAll = d.payInfo || {}; tasks = d.tasks || []; taxCfg = d.taxcfg || {}; customDocs = d.docs || [];
     stamp(); cb(true);
   });
 }
@@ -142,7 +142,7 @@ function render() {
   toggleNav(false);
   if (state.view === 'tax') $('view').innerHTML = taxView();
   else if (state.view === 'cal') $('view').innerHTML = calView();
-  else if (state.view === 'docs') $('view').innerHTML = pageHead('Маягт, загвар', '') + docsModule();
+  else if (state.view === 'docs') $('view').innerHTML = pageHead('Маягт, загвар', '<button class="b-btn primary" onclick="editDoc()">+ Шинэ маягт</button>') + docsModule();
   else if (state.view === 'staff') $('view').innerHTML = pageHead('Ажилчид', '<button class="b-btn primary" onclick="openTask()">+ Даалгавар илгээх</button><a class="b-btn" href="register.html" target="_blank">+ Бүртгүүлэх хуудас</a>') + tasksCard() + staffView('');
   else if (state.view === 'company') $('view').innerHTML = companyView();
   else $('view').innerHTML = companiesView();
@@ -1461,17 +1461,18 @@ function order(c, f, title, basis, body) {
     '<div class="c"><b>' + title + '</b></div><p>' + basis + '</p>' + body + '<p style="margin-top:40px">ЗАХИРАЛ ' + BLANK + ' ' + esc(c.boss || '') + '</p>';
 }
 function docsModule() {
-  var groups = {};
-  DOCS.forEach(function (d) { (groups[d.g] = groups[d.g] || []).push(d); });
-  return '<p class="hint">Ажилтан сонгоход нэр, регистр, албан тушаал, цалин, гэрээний мэдээлэл автоматаар бөглөгдөнө. Захирлын нэр, компанийн хаягийг гэрээ бөглөхдөө нэг удаа оруулахад бүх маягтад орно. ' +
+  var groups = {}, list = allDocs();
+  list.forEach(function (d) { (groups[d.g] = groups[d.g] || []).push(d); });
+  return '<p class="hint">Ажилтан сонгоход нэр, регистр, албан тушаал, цалин, гэрээний мэдээлэл автоматаар бөглөгдөнө. «Засах» дарж маягт бүрийн текстийг өөрчилж, «+ Шинэ маягт»-аар өөрийн маягтыг нэмнэ. ' +
     'Эдгээр нь нийтлэг жишиг загвар — нягтлан, хуульчаараа нэг удаа хянуулаарай.</p><div class="rep-grid">' + Object.keys(groups).map(function (g) {
-      return '<div class="card"><h2>' + g + '</h2><ul class="rep-links">' + groups[g].map(function (d) {
-        return '<li><button class="link" onclick="openDoc(\'' + d.k + '\')">' + d.name + '</button></li>'; }).join('') + '</ul></div>';
+      return '<div class="card"><h2>' + esc(g) + '</h2><ul class="rep-links">' + groups[g].map(function (d) {
+        return '<li class="doc-li"><button class="link" onclick="openDoc(\'' + d.k + '\')">' + esc(d.name) + '</button>' + (d.custom ? ' <span class="tag b">' + (d.base ? 'засварласан' : 'шинэ') + '</span>' : '') +
+          '<span class="doc-act"><button class="mini" onclick="editDoc(\'' + d.k + '\')">Засах</button>' + (d.custom ? '<button class="mini" onclick="deleteDoc(\'' + d.id + '\')">' + (d.base ? 'Анхных руу буцаах' : 'Устгах') + '</button>' : '') + '</span></li>'; }).join('') + '</ul></div>';
     }).join('') + '</div>';
 }
 var docK = '';
 function openDoc(k) {
-  var d = DOCS.filter(function (x) { return x.k === k; })[0]; docK = k;
+  var d = allDocs().filter(function (x) { return x.k === k; })[0]; docK = k;
   $('dcTitle').textContent = d.name;
   $('dcSub').textContent = '';
   var cb = state.docBiz || state.biz || KEYS[0];
@@ -1489,7 +1490,7 @@ function openDoc(k) {
   openSheet('docSheet');
 }
 function printDocForm() {
-  var d = DOCS.filter(function (x) { return x.k === docK; })[0], f = {};
+  var d = allDocs().filter(function (x) { return x.k === docK; })[0], f = {};
   d.f.forEach(function (x) { f[x[0]] = $('dc_' + x[0]).value.trim(); });
   var s = d.emp && $('dcEmp').value ? staff.filter(function (x) { return x.id === $('dcEmp').value; })[0] : null;
   if (d.emp && !s && /^(workcert|salcert|hire|fire)$/.test(d.k)) { toast('Ажилтнаа сонгоно уу'); return; }
@@ -1551,3 +1552,80 @@ function cancelTask(id) {
   if (!API_URL) { tasks = tasks.filter(function (t) { return t.id !== id; }); save('nb_demo_tasks', tasks); render(); return; }
   post({ type: 'admin_task', cancelId: id }, function (err) { if (err) { toast('Алдаа: ' + err); return; } refresh(); });
 }
+
+// ═══════════ МАЯГТ ЗАСАХ / ШИНЭЭР НЭМЭХ ═══════════
+// Загварт {{түлхүүр}} бичихэд хэвлэхэд автоматаар бөглөгдөнө; {{?Талбарын нэр}} бол хэвлэхийн өмнө асуух талбар болно.
+var customDocs = [];
+var DOC_TOKENS = [
+  ['компани', function (s, c) { return c.name; }], ['регистр (компани)', function (s, c) { return c.reg; }], ['захирал', function (s, c) { return c.boss; }],
+  ['компанийн хаяг', function (s, c) { return c.addr; }], ['дэлгүүр', function (s, c) { return c.shop; }], ['огноо', function () { return todayStr(); }],
+  ['овог нэр', function (s) { return s ? full(s) : BLANK; }], ['нэр', function (s) { return s ? s.name : BLANK; }], ['овог', function (s) { return s ? s.surname || '' : ''; }],
+  ['ажилтны регистр', function (s) { return s && s.regno || BLANK; }], ['албан тушаал', function (s) { return s && s.position || BLANK; }],
+  ['цалин', function (s) { return s && s.salary ? fmt(s.salary) : BLANK; }], ['цалин үсгээр', function (s) { return s && s.salary ? numWords(s.salary) + ' төгрөг' : BLANK; }],
+  ['утас', function (s) { return s && s.phone || ''; }], ['гэрийн хаяг', function (s) { return s && s.address || BLANK; }], ['данс', function (s) { return s && s.bank || BLANK; }],
+  ['ажилд орсон', function (s) { return s && s.start || BLANK; }], ['гэрээний №', function (s) { return s && s.contractNo || BLANK; }],
+];
+var EMP_TOKENS = /\{\{(овог нэр|нэр|овог|ажилтны регистр|албан тушаал|цалин|цалин үсгээр|утас|гэрийн хаяг|данс|ажилд орсон|гэрээний №)\}\}/;
+function docFieldsOf(html) { var f = [], re = /\{\{\?([^}]{1,60})\}\}/g, m; while ((m = re.exec(html))) if (f.indexOf(m[1]) < 0) f.push(m[1]); return f; }
+function customToDoc(c) {
+  var fields = docFieldsOf(c.html);
+  return { k: c.base || c.id, id: c.id, base: c.base, custom: true, g: c.group || 'Бусад', name: c.name, emp: EMP_TOKENS.test(c.html) ? 1 : 0,
+    f: fields.map(function (x, i) { return ['c' + i, x, '']; }),
+    body: function (s, f, co) {
+      var h = c.html;
+      DOC_TOKENS.forEach(function (t) { h = h.split('{{' + t[0] + '}}').join(esc(t[1](s && s.name !== BLANK ? s : null, co) || '')); });
+      fields.forEach(function (x, i) { h = h.split('{{?' + x + '}}').join(esc(f['c' + i] || BLANK)); });
+      return h;
+    } };
+}
+// Анхны маягтуудыг засварласан хувилбараар нь солиод, шинэ маягтуудыг нэмнэ
+function allDocs() {
+  var byBase = {};
+  customDocs.forEach(function (c) { if (c.base) byBase[c.base] = c; });
+  return DOCS.map(function (d) { return byBase[d.k] ? customToDoc(byBase[d.k]) : d; }).concat(customDocs.filter(function (c) { return !c.base; }).map(customToDoc));
+}
+// Анхны маягтыг засахад түүний текстийг {{түлхүүр}}-тэйгээр гаргаж редакторт ачаална
+function builtinTemplate(d) {
+  var tok = function (k) { return '{{' + k + '}}'; };
+  var s = { name: tok('нэр'), surname: tok('овог'), regno: tok('ажилтны регистр'), position: tok('албан тушаал'), start: tok('ажилд орсон'), salary: 0, phone: tok('утас'),
+            address: tok('гэрийн хаяг'), bank: tok('данс'), contractNo: tok('гэрээний №'), id: '_tpl' };
+  var f = {}; d.f.forEach(function (x) { f[x[0]] = '{{?' + x[1] + '}}'; });
+  var c = { name: tok('компани'), reg: tok('регистр (компани)'), shop: tok('дэлгүүр'), addr: tok('компанийн хаяг'), boss: tok('захирал') };
+  var keepBiz = state.biz; state.biz = state.biz || KEYS[0];
+  var h; try { h = d.body(d.emp ? s : null, f, c); } catch (e) { h = '<p>' + esc(d.name) + '</p>'; }
+  state.biz = keepBiz;
+  return h.split(todayStr()).join('{{огноо}}').replace(/\{\{овог\}\} \{\{нэр\}\}/g, '{{овог нэр}}').replace(/₮0/g, '{{цалин}}');
+}
+var docEditId = '', docEditBase = '';
+function editDoc(k) {
+  var d = k ? allDocs().filter(function (x) { return x.k === k; })[0] : null;
+  docEditId = d && d.custom ? d.id : ''; docEditBase = d ? (d.custom ? d.base || '' : d.k) : '';
+  var c = d && d.custom ? customDocs.filter(function (x) { return x.id === d.id; })[0] : null;
+  $('deName').value = d ? d.name : ''; $('deGroup').value = d ? d.g : 'Бусад';
+  $('deBody').innerHTML = c ? c.html : d ? builtinTemplate(d) : '<h1>МАЯГТЫН НЭР</h1><p style="text-align:center">{{огноо}}</p><p>{{компани}}-ийн ... {{овог нэр}} (регистр {{ажилтны регистр}}) ...</p><p>Тайлбар: {{?Тайлбар}}</p>';
+  $('deTok').innerHTML = '<option value="">+ Автомат талбар оруулах…</option>' + DOC_TOKENS.map(function (t) { return '<option>' + t[0] + '</option>'; }).join('') + '<option value="?">+ Асуух талбар (өөрөө нэрлэх)…</option>';
+  openSheet('docEditSheet');
+}
+function deCmd(cmd, val) { $('deBody').focus(); document.execCommand(cmd, false, val || null); }
+function deInsertTok(sel) {
+  var v = sel.value; sel.value = ''; if (!v) return;
+  if (v === '?') { var n = prompt('Хэвлэхийн өмнө асуух талбарын нэр (жишээ: Хаана өгөх):'); if (!n) return; v = '?' + n.replace(/[{}]/g, ''); }
+  deCmd('insertText', '{{' + v + '}}');
+}
+function deTable() { deCmd('insertHTML', '<table class="t"><tr><th>Багана 1</th><th>Багана 2</th><th>Багана 3</th></tr><tr><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td></tr></table><p></p>'); }
+function saveDoc() {
+  var x = { id: docEditId, name: $('deName').value.trim(), group: $('deGroup').value, html: $('deBody').innerHTML.trim(), base: docEditBase };
+  if (!x.name) { toast('Маягтын нэрийг бичнэ үү'); return; }
+  if (!API_URL) {
+    if (!x.id) { x.id = 'D' + Date.now(); customDocs.push(x); } else customDocs = customDocs.map(function (c) { return c.id === x.id ? x : c; });
+    save('nb_demo_docs', customDocs); closeSheet('docEditSheet'); render(); toast('Хадгалагдлаа'); return;
+  }
+  post({ type: 'admin_doc', doc: x }, function (err) { if (err) { toast('Алдаа: ' + err); return; } closeSheet('docEditSheet'); toast('Хадгалагдлаа'); refresh(); });
+}
+function deleteDoc(id) {
+  var c = customDocs.filter(function (x) { return x.id === id; })[0]; if (!c) return;
+  if (!confirm(c.base ? 'Засварыг устгаж анхны маягт руу буцаах уу?' : '«' + c.name + '» маягтыг устгах уу?')) return;
+  if (!API_URL) { customDocs = customDocs.filter(function (x) { return x.id !== id; }); save('nb_demo_docs', customDocs); render(); return; }
+  post({ type: 'admin_doc', cancelId: id }, function (err) { if (err) { toast('Алдаа: ' + err); return; } refresh(); });
+}
+function previewDoc() { printHtml($('deName').value || 'Маягт', $('deBody').innerHTML); }

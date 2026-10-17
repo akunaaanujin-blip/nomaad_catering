@@ -222,6 +222,32 @@
   </div>
 </div>
 
+<!-- Маягт засах -->
+<div class="sheet" id="docEditSheet" onclick="if(event.target===this)closeSheet('docEditSheet')">
+  <div class="panel wide-panel">
+    <h2>Маягт засах</h2>
+    <div class="row2">
+      <div><label for="deName">Маягтын нэр</label><input id="deName"></div>
+      <div><label for="deGroup">Бүлэг</label><select id="deGroup"><option>Хүний нөөц</option><option>Санхүү</option><option>Бараа материал</option><option>Бусад</option></select></div>
+    </div>
+    <div class="de-bar">
+      <button class="mini" onclick="deCmd('bold')"><b>B</b></button>
+      <button class="mini" onclick="deCmd('italic')"><i>I</i></button>
+      <button class="mini" onclick="deCmd('formatBlock','h1')">Гарчиг</button>
+      <button class="mini" onclick="deCmd('formatBlock','p')">Текст</button>
+      <button class="mini" onclick="deCmd('insertOrderedList')">1. Жагсаалт</button>
+      <button class="mini" onclick="deCmd('justifyCenter')">Голлох</button>
+      <button class="mini" onclick="deTable()">Хүснэгт</button>
+      <select id="deTok" onchange="deInsertTok(this)" style="width:auto;padding:4px 8px;font-size:13px"></select>
+    </div>
+    <div id="deBody" class="de-body" contenteditable="true"></div>
+    <p class="muted" style="font-size:12.5px;margin-top:6px">{{овог нэр}}, {{албан тушаал}}, {{компани}} г.м нь хэвлэхэд автоматаар бөглөгдөнө. {{?Нэр}} — хэвлэхийн өмнө асуух талбар.</p>
+    <button class="btn" onclick="saveDoc()">Хадгалах</button>
+    <button class="btn ghost" style="color:var(--accent)" onclick="previewDoc()">Урьдчилан харах</button>
+    <button class="btn ghost" onclick="closeSheet('docEditSheet')">Болих</button>
+  </div>
+</div>
+
 <!-- Маягт, загвар -->
 <div class="sheet" id="docSheet" onclick="if(event.target===this)closeSheet('docSheet')">
   <div class="panel">
