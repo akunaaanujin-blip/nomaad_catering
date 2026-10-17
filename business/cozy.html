@@ -40,6 +40,15 @@
       <button class="big exp" onclick="openExpense()"><span>−</span>Зарлага</button>
       <button class="big close" onclick="openClose()"><span></span>Өдрийн касс хаах</button>
     </div>
+    <div class="big-btns" style="margin-top:10px">
+      <button class="big ord-btn" onclick="openOrder()"><span>＋</span>Захиалга</button>
+      <button class="big buu-btn" onclick="buuhiaExport()"><span>⇩</span>Буухиа Excel</button>
+    </div>
+    <div class="card">
+      <div class="bar-row"><h2 style="margin:0">Захиалгууд</h2><button class="link" onclick="loadOrders()">Шинэчлэх</button></div>
+      <div class="tabs ord-tabs" id="orderTabs" style="margin-top:8px"></div>
+      <ul class="list" id="orderList" style="margin-top:8px"></ul>
+    </div>
     <div class="pending" id="pending"></div>
     <div class="pending" id="ebWarn"></div>
 
@@ -55,6 +64,44 @@
       <h2>Өнөөдрийн бичлэгүүд</h2>
       <ul class="list" id="todayList"></ul>
     </div>
+  </div>
+</div>
+
+<!-- Захиалга -->
+<div class="sheet" id="orderSheet" onclick="if(event.target===this)closeSheet('orderSheet')">
+  <div class="panel">
+    <h2 id="orTitle">＋ Шинэ захиалга</h2>
+    <div class="row2">
+      <div><label for="orPhone">Утас *</label><input id="orPhone" inputmode="tel" placeholder="99112233"></div>
+      <div><label for="orPhone2">Нэмэлт утас</label><input id="orPhone2" inputmode="tel"></div>
+    </div>
+    <label for="orCustomer">Захиалагч (Facebook нэр)</label><input id="orCustomer">
+    <label>Бараа</label>
+    <div class="chips" id="orChips"></div>
+    <details class="custom-item"><summary>Жагсаалтад байхгүй бараа</summary>
+      <div class="row2" style="margin-top:8px"><input id="orItem" placeholder="Барааны нэр"><input id="orItemPrice" type="number" inputmode="numeric" placeholder="Үнэ (₮)"></div>
+      <button class="btn ghost" style="color:var(--accent);margin-top:4px" onclick="ordAddCustom()">＋ Нэмэх</button></details>
+    <ul class="list cart" id="orCart"></ul>
+    <p style="text-align:right;margin-top:6px">Нийт: <b id="orTotal">₮0</b></p>
+    <label for="orAddress">Хаяг * <span class="muted" style="font-weight:400">(хороолол, байр, тоот, орц, код)</span></label>
+    <textarea id="orAddress" rows="2" oninput="ordAddrInput()"></textarea>
+    <p class="muted" id="orProvince" style="display:none;font-size:13px">Орон нутаг руу унаанд тавих захиалга — тайлбарт унааны мэдээллээ бичнэ үү.</p>
+    <div class="row2">
+      <div><label for="orDistrict">Дүүрэг</label><select id="orDistrict"><option value="">— Сонгох —</option><option>Баянзүрх</option><option>Баянгол</option><option>Сүхбаатар</option><option>Чингэлтэй</option><option>Хан-Уул</option><option>Сонгинохайрхан</option><option>Налайх</option><option>Багануур</option><option>Багахангай</option></select></div>
+      <div><label for="orKhoroo">Хороо</label><input id="orKhoroo" placeholder="11-р хороо"></div>
+    </div>
+    <div class="row2">
+      <div><label for="orCity">Хот / аймаг</label><input id="orCity" value="Улаанбаатар"></div>
+      <div><label for="orDate">Хүргэх өдөр</label><input id="orDate" type="date"></div>
+    </div>
+    <div class="row2">
+      <div><label for="orPayType">Төлбөрийн хэлбэр</label><select id="orPayType"><option>Шилжүүлэг</option><option>Хүргэлтээр бэлэн</option><option>Дансаар дараа</option></select></div>
+      <div><label for="orPaid">Төлбөр</label><select id="orPaid"><option>Ороогүй</option><option>Орсон</option></select></div>
+    </div>
+    <div id="orStatusWrap"><label for="orStatus">Хүргэлтийн төлөв</label><select id="orStatus"><option>Шинэ</option><option>Буухиад өгсөн</option><option>Хүргэгдсэн</option><option>Цуцалсан</option></select></div>
+    <label for="orNote">Тэмдэглэл (хүргэлтийн тайлбар)</label><input id="orNote" placeholder="Жишээ: ажлын цагаар залгаад хүргэх">
+    <button class="btn" onclick="submitOrder()">Хадгалах</button>
+    <button class="btn ghost" onclick="closeSheet('orderSheet')">Болих</button>
   </div>
 </div>
 
@@ -185,5 +232,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="staff.js"></script>
 <script src="ebarimt.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="orders.js"></script>
 </body>
 </html>

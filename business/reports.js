@@ -132,6 +132,8 @@ function buildJournal(biz, R) {
         add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty), cust);
         if (c) add(d, 'Буцаалт · өртөг', x.id, '1404', '6101', c, item);
       }
+    } else if (x.type === 'collect') {   // зээлээр (захиалга) зарсны мөнгө орсон → авлага хаагдана
+      add(d, 'Авлага төлөгдсөн', x.id, SALE_ACC[x.pay] || '1101', '1201', a, 'Захиалгын төлбөр · ' + (x.customer || ''), x.customer || '(нэргүй харилцагч)');
     } else if (x.type === 'expense') {
       var ea = expenseAcc(x.category, biz, tracked);
       // нийлүүлэгчид төлсөн бол тайлбарт нэр нь байвал тэр харилцагчийн өглөгөөс хасна

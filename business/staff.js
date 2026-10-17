@@ -99,6 +99,7 @@ function showMain() {
   renderEbBadge();
   renderToday();
   if (typeof ebCheckInfo === 'function') { ebCheckInfo(); setInterval(ebCheckInfo, 30 * 60000); }
+  if (BIZ.orders && typeof loadOrders === 'function') loadOrders();   // Cozy: захиалгууд
 }
 
 // ── Бараа ──
@@ -480,6 +481,9 @@ function renderToday() {
         (r.ddtd || /ДДТД/.test(r.note || '') ? '<small class="ddtd">ДДТД ' + esc(r.ddtd || (r.note.match(/ДДТД (\d+)/) || [])[1] || '') + '</small>' : '') +
         (showRet ? '<button class="mini" onclick="ebReturn(\'' + r.id + '\')">Баримт буцаах</button>' : '') +
         '</span><span class="amt ' + (r.amount < 0 ? 'r' : 'g') + '">' + (r.amount < 0 ? '−' + fmt(-r.amount) : '+' + fmt(r.amount)) + '</span></li>';
+    }
+    if (r.type === 'collect') {
+      return '<li><span>Төлбөр орсон · ' + esc(r.customer || '') + '<small>' + r.time + ' · ' + esc(r.pay) + '</small></span><span class="amt g">+' + fmt(r.amount) + '</span></li>';
     }
     if (r.type === 'expense') {
       return '<li><span>' + esc(r.category) + (r.note ? ' · ' + esc(r.note) : '') +

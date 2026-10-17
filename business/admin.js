@@ -62,12 +62,14 @@ function fetchAll(cb) {
   if (!API_URL) {
     records = load('nb_records', []); staff = []; salary = []; stockData = load('nb_demo_stock', {}); moves = load('nb_demo_moves', []);
     journal = load('nb_demo_journal', []); partners = load('nb_demo_partners', []); sheetProducts = load('nb_demo_products', []); applyProducts(); meta = load('nb_demo_meta', {});
+    reminders = load('nb_demo_rem', []); window.adminOrders = load('nb_orders_cozy', []);
     stamp(); cb(true); return;
   }
   post({ type: 'admin_read', from: '' }, function (err, d) {   // санхүүгийн тайланд бүх түүх хэрэгтэй
     if (err) { if (err !== 'auth') toast('Холбогдож чадсангүй'); cb(false); return; }
     records = d.records || []; staff = d.staff || []; salary = d.salary || []; stockData = d.stock || {}; moves = d.moves || [];
     journal = d.journal || []; partners = d.partners || []; sheetProducts = d.products || []; applyProducts(); meta = d.meta || {};
+    reminders = d.reminders || []; window.adminOrders = d.orders || [];
     stamp(); cb(true);
   });
 }
@@ -137,6 +139,7 @@ function render() {
   $('crumb').innerHTML = crumbHtml();
   toggleNav(false);
   if (state.view === 'tax') $('view').innerHTML = taxView();
+  else if (state.view === 'cal') $('view').innerHTML = calView();
   else if (state.view === 'staff') $('view').innerHTML = pageHead('Бүх ажилчид', '') + staffView('');
   else if (state.view === 'company') $('view').innerHTML = companyView();
   else $('view').innerHTML = companiesView();
@@ -154,6 +157,7 @@ var ICONS = {
   people: '<circle cx="12" cy="8" r="3.5"/><path d="M4.5 20.5c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"/>',
   refresh: '<path d="M20 11a8 8 0 10-2.3 5.7"/><path d="M20 4v7h-7"/>',
   logout: '<path d="M15 4h4a1 1 0 011 1v14a1 1 0 01-1 1h-4"/><path d="M10 17l-5-5 5-5M5 12h11"/>',
+  cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   tax: '<path d="M7 3h10v18l-2.5-1.5L12 21l-2.5-1.5L7 21z"/><path d="M9.5 8h5M9.5 11.5h5M9.5 15h3"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4"/><circle cx="12" cy="17" r=".6"/>',
 };
@@ -170,11 +174,12 @@ function railHtml(pend) {
     '<div class="rail-sep"></div>' +
     item(state.view === 'staff', "go('staff')", 'people', 'Бүх ажилчид', pend ? '<i class="dot">' + pend + '</i>' : '') +
     item(state.view === 'tax', 'openTax()', 'tax', 'Татвар, тайлан') +
+    item(state.view === 'cal', 'openCal()', 'cal', 'Календарь', reminders.some(function (r) { return r.status === 'Хүлээгдэж' && r.date <= todayStr(); }) ? '<i class="dot">!</i>' : '') +
     '<div class="rail-foot">' + item(false, "window.open('guide.html','_blank')", 'help', 'Гарын авлага') + item(false, 'refresh()', 'refresh', 'Шинэчлэх') + item(false, 'logout()', 'logout', 'Гарах') + '</div>';
 }
 // Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
 var MENU = {
-  sales: [['Борлуулалт', ['overview', 'receipts']], ['Борлуулалтын тайлан', ['item', 'cat', 'staff', 'day', 'pay']], ['И-баримт', ['ebarimt']]],
+  sales: [['Борлуулалт', ['overview', 'orders', 'receipts']], ['Борлуулалтын тайлан', ['item', 'cat', 'staff', 'day', 'pay']], ['И-баримт', ['ebarimt']]],
   products: [['Бараа материал', ['catalog', 'stock', 'in']], ['Тайлан', ['move', 'card']], ['Харилцагч', ['suppliers']]],
   finance: [['Хянах самбар', ['dash']], ['Журнал', ['entry', 'journal', 'trial', 'ledger']], ['Мөнгөн хөрөнгө', ['vouchers', 'expenses', 'cash', 'cashflow']],
             ['Авлага өглөг', ['partners']], ['Санхүүгийн тайлан', ['balance', 'pl']], ['Дансны удирдлага', ['accounts', 'close']]],
@@ -192,7 +197,7 @@ function subnavHtml() {
     return head + '<ul class="sub-list"><li><button class="on">' + one[0][1] + '</button></li></ul>' + moduleSwitch();
   }
   return head + MENU[mod].map(function (g) {
-    return '<div class="sub-group">' + g[0] + '</div><ul class="sub-list">' + g[1].map(function (k) {
+    return '<div class="sub-group">' + g[0] + '</div><ul class="sub-list">' + g[1].filter(function (k) { return k !== 'orders' || BUSINESSES[state.biz].orders; }).map(function (k) {
       return '<li><button class="' + (state.sub[mod] === k ? 'on' : '') + '" onclick="setSub(\'' + k + '\')">' + subLabel(mod, k) + '</button></li>';
     }).join('') + '</ul>';
   }).join('') + moduleSwitch();
@@ -207,6 +212,7 @@ function toggleNav(on) { $('main').classList.toggle('nav-open', !!on); }
 function crumbHtml() {
   if (state.view === 'companies') return '<b>Миний компаниуд</b>';
   if (state.view === 'staff') return '<b>Бүх ажилчид</b>';
+  if (state.view === 'cal') return '<b>Календарь</b>';
   if (state.view === 'tax') return '<span>' + esc(ENTITIES[taxState.ent].name) + '</span><i>/</i><b>Татвар, тайлан</b>';
   var mod = state.module, parts = [esc(BUSINESSES[state.biz].name), MODULES.filter(function (m) { return m[0] === mod; })[0][1]];
   if (MENU[mod]) { parts.push(subGroup(mod, state.sub[mod])); }
@@ -219,7 +225,7 @@ function pageHead(title, actions, withPeriod) {
 // ── Миний компаниуд ──
 function companiesView() {
   var t = todayStr(), m = t.slice(0, 8) + '01';
-  return taxAlerts() + archiveAlerts() + '<h2 class="sec-title">Миний компаниуд</h2><div class="co-grid">' + KEYS.map(function (k) {
+  return remAlerts() + taxAlerts() + archiveAlerts() + '<h2 class="sec-title">Миний компаниуд</h2><div class="co-grid">' + KEYS.map(function (k) {
     var B = BUSINESSES[k], E = (window.EBARIMT || {})[k] || {};
     var today = sums(records.filter(function (x) { return x.biz === k && x.date === t; }));
     var month = sums(records.filter(function (x) { return x.biz === k && x.date >= m; }));
@@ -253,7 +259,8 @@ function companyView() {
   if (sub === 'vouchers') acts = '<button class="b-btn primary" onclick="openVoucher(\'КО\')">+ Кассын орлого</button><button class="b-btn primary" onclick="openVoucher(\'КЗ\')">+ Кассын зарлага</button>' +
     '<button class="b-btn" onclick="openVoucher(\'ХО\')">+ Харилцахын орлого</button><button class="b-btn" onclick="openVoucher(\'ХЗ\')">+ Харилцахын зарлага</button>' + acts;
   if (sub === 'catalog') acts = '<button class="b-btn primary" onclick="openProduct()">+ Шинэ бараа</button>' + acts;
-  if (sub === 'partners' || sub === 'suppliers') acts = '<button class="b-btn primary" onclick="openPartner()">+ Харилцагч</button>' + acts;
+  if (sub === 'partners' || sub === 'suppliers') acts = '<button class="b-btn primary" onclick="openPartner()">+ Харилцагч</button>' + (sub === 'partners' ? '<button class="b-btn" onclick="openRem(null,{kind:\'Өглөг төлөх\'})">+ Сануулга</button>' : '') + acts;
+  if (sub === 'orders') acts = '<button class="b-btn" onclick="importCozyOld()">Хуучин хүснэгтээс шилжүүлэх</button>' + acts;
   if (sub === 'stock') acts = '<button class="b-btn primary" onclick="openMove(\'Орлого\')">+ Орлого</button>' +
     (hasWarehouse(state.biz) ? '<button class="b-btn" onclick="openMove(\'Шилжүүлэг\')">Шилжүүлэг</button>' : '') +
     '<button class="b-btn" onclick="openMove(\'Тооллого\')">Тооллого</button><button class="b-btn" onclick="openMove(\'Хасалт\')">Хасалт</button>' +
@@ -313,6 +320,8 @@ function recordRows(list) {
       tag = '<span class="tag' + (x.amount < 0 ? ' r' : '') + '">' + (x.amount < 0 ? 'Буцаалт' : 'Борлуулалт') + '</span>';
       detail = esc(x.item) + ' · ' + round2(x.qty) + ' ' + esc(x.unit) + ' · ' + esc(x.pay) + (/ДДТД/.test(x.note || '') ? ' · И-баримт' : '');
       amt = (x.amount < 0 ? '−' + fmt(-x.amount) : '+' + fmt(x.amount));
+    } else if (x.type === 'collect') {
+      tag = '<span class="tag">Төлбөр орсон</span>'; detail = esc(x.customer || '') + ' · ' + esc(x.pay); amt = '+' + fmt(x.amount);
     } else if (x.type === 'expense') {
       tag = '<span class="tag r">Зарлага</span>'; detail = esc(x.category) + (x.note ? ' · ' + esc(x.note) : ''); amt = '−' + fmt(x.amount);
     } else {
@@ -661,7 +670,7 @@ function closeSheet(id) { $(id).classList.remove('show'); }
 
 // ═══════════ ДЭД ЦЭС, ТАЙЛАН (reports.js-ийн хөдөлгүүрээр) ═══════════
 var SUBS = {
-  sales: [['overview', 'Тойм'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'], ['pay', 'Төлбөрийн хэлбэрээр'],
+  sales: [['overview', 'Тойм'], ['orders', 'Захиалга'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'], ['pay', 'Төлбөрийн хэлбэрээр'],
           ['receipts', 'Баримтын жагсаалт'], ['ebarimt', 'И-баримт тулгалт']],
   products: [['catalog', 'Барааны бүртгэл, үнэ'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['card', 'Барааны карт'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
   finance: [['dash', 'Хянах самбар'], ['entry', 'Журналын бичилт'], ['journal', 'Ерөнхий журнал'], ['trial', 'Гүйлгээ баланс'], ['ledger', 'Дансны хуулга'],
@@ -682,6 +691,7 @@ function makeReport(mod, sub) {
   var biz = state.biz, r = range(), f = r[0], t = r[1];
   if (mod === 'sales') {
     if (sub === 'receipts') return repReceipts(R(), biz, f, t);
+    if (sub === 'orders') return repOrders(biz);
     if (sub === 'ebarimt') return repEbarimt(R(), biz, f, t);
     return repSalesBy(R(), biz, f, t, sub);
   }
@@ -801,7 +811,7 @@ function financeDash() {
   var ck = journalCheck(E, r[0], r[1]);
   var okAll = !ck.miss.length && ck.revOk && !ck.eMiss.length && ck.tb && ck.bs && ck.invOk && !ck.noCost.length && !ck.salAll.length && !ck.late;
   var line = function (ok, text) { return '<li><span class="ck ' + (ok ? 'ok' : 'bad') + '">' + (ok ? '✓' : '!') + '</span>' + text + '</li>'; };
-  return archiveAlerts() + '<div class="kpis">' +
+  return remAlerts() + archiveAlerts() + '<div class="kpis">' +
     kpi('Цэвэр борлуулалт', fmt(p.net)) + kpi('Нийт ашиг', fmt(p.gross), p.net ? Math.round(p.gross / p.net * 100) + '%' : '') +
     kpi('Цэвэр ашиг', '<span style="color:' + (p.profit >= 0 ? 'var(--green)' : 'var(--red)') + '">' + (p.profit < 0 ? '−' : '') + fmt(Math.abs(p.profit)) + '</span>') +
     kpi('Үйл ажиллагааны зардал', fmt(p.expT)) + '</div>' +

@@ -148,6 +148,29 @@
   </div>
 </div>
 
+<!-- Сануулга -->
+<div class="sheet" id="remSheet" onclick="if(event.target===this)closeSheet('remSheet')">
+  <div class="panel">
+    <h2>Сануулга нэмэх</h2>
+    <div class="row2">
+      <div><label for="rmDate">Огноо</label><input id="rmDate" type="date"></div>
+      <div><label for="rmKind">Төрөл</label><select id="rmKind"></select></div>
+    </div>
+    <label for="rmTitle">Юу хийх</label><input id="rmTitle" placeholder="Жишээ: Хаан банкны зээлийн төлөлт">
+    <div class="row2">
+      <div><label for="rmAmount">Дүн (₮)</label><input id="rmAmount" type="number" inputmode="numeric" min="0"></div>
+      <div><label for="rmPartner">Харилцагч</label><input id="rmPartner" list="rmPartners" placeholder="Банк, нийлүүлэгч…"><datalist id="rmPartners"></datalist></div>
+    </div>
+    <div class="row2">
+      <div><label for="rmCo">Компани</label><select id="rmCo"></select></div>
+      <div><label for="rmRepeat">Давтамж</label><select id="rmRepeat"><option>Нэг удаа</option><option>Сар бүр</option></select></div>
+    </div>
+    <label for="rmNote">Тэмдэглэл</label><input id="rmNote">
+    <button class="btn" onclick="saveRem()">Хадгалах</button>
+    <button class="btn ghost" onclick="closeSheet('remSheet')">Болих</button>
+  </div>
+</div>
+
 <!-- Хөдөлмөрийн гэрээ -->
 <div class="sheet" id="contractSheet" onclick="if(event.target===this)closeSheet('contractSheet')">
   <div class="panel">
@@ -255,6 +278,7 @@
 <script src="common.js"></script>
 <script src="reports.js"></script>
 <script src="tax.js"></script>
+<script src="calendar.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>
