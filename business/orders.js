@@ -119,6 +119,15 @@ function ordAddrInput() {
   $('orProvince').style.display = isProvince(t) ? 'block' : 'none';
 }
 function submitOrder() {
+  if (ordEdit) { var cur = orders.filter(function (x) { return x.id === ordEdit.id; })[0]; withFresh(function () {
+    var fresh = orders.filter(function (x) { return x.id === ordEdit.id; })[0];
+    if (fresh && fresh.paid === 'Орсон' && $('orPaid').value !== 'Орсон') $('orPaid').value = 'Орсон';
+    if (fresh) { ordEdit.paid = fresh.paid; ordEdit.saleDone = fresh.saleDone; ordEdit.status = fresh.status; }
+    submitOrder2();
+  }); return; }
+  submitOrder2();
+}
+function submitOrder2() {
   var phone = $('orPhone').value.replace(/\D/g, '');
   if (!/^\d{8}$/.test(phone)) { toast('Утасны дугаар 8 оронтой байна'); return; }
   if (!ordCart.length) { toast('Бараа сонгоно уу'); return; }
@@ -133,8 +142,15 @@ function submitOrder() {
   ordBook(o, prev);
   saveOrder(o, function (saved) { closeSheet('orderSheet'); toast(prev.id ? 'Хадгалагдлаа' : 'Захиалга бүртгэгдлээ'); if (!prev.id && saved.paid !== 'Орсон') copyPayMsg(saved.id); });
 }
-function quickOrd(id, field, val) {   // жагсаалтаас нэг товчоор төлөв солих
+// Төлөв солихын өмнө серверээс хамгийн сүүлийн захиалгыг татна — удирдлага банкаар «Төлбөр орсон» болгосныг давхар бичихгүй
+function withFresh(cb) {
+  if (!API_URL) { cb(); return; }
+  ordPost({ type: 'orders' }, function (err, d) { if (!err) { orders = d.orders; save(LS_ORD, orders); } cb(); });
+}
+function quickOrd(id, field, val) { withFresh(function () { quickOrd2(id, field, val); }); }
+function quickOrd2(id, field, val) {   // жагсаалтаас нэг товчоор төлөв солих
   var o = orders.filter(function (x) { return x.id === id; })[0]; if (!o) return;
+  if (field === 'paid' && o.paid === 'Орсон') { renderOrders(); toast('Төлбөр нь аль хэдийн орсон гэж бүртгэгдсэн байна'); return; }
   var prev = JSON.parse(JSON.stringify(o)), n = Object.assign({}, o); n[field] = val;
   if (field === 'status' && val === 'Цуцалсан' && !confirm('Захиалгыг цуцлах уу?')) return;
   ordBook(n, prev);
@@ -171,7 +187,8 @@ function renderOrders() {
 var BUUHIA_COLS = ['Дэлгүүрийн нэр *', 'Хүлээн авагчийн нэр', 'Утас *', 'Нэмэлт утас', 'Хот / аймаг *', 'Дүүрэг / сум *', 'Хороо', 'Нэмэлт хаяг', 'Барааны нэр', 'Тоо ширхэг', 'Авах дүн (₮)', 'Хүргэлтийн тайлбар'];
 // withAmount: true бол «Авах дүн»-д төлбөр ороогүй захиалгын үнийг бичнэ — буухиа хүлээн авагчаас мөнгийг авч дансанд шилжүүлнэ.
 // false бол дүнгүй (мөнгийг өөрсдөө авсан / дараа авна) — буухиа мөнгө шилжүүлэхгүй.
-function openBuuhia() {
+function openBuuhia() { withFresh(openBuuhia2); }
+function openBuuhia2() {
   var n = orders.filter(function (o) { return o.status === 'Шинэ'; }).length;
   if (!n) { toast('Илгээх (Шинэ) захиалга алга'); return; }
   $('buN').textContent = n; openSheet('buuSheet');

@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v3.1 (маягт засах / шинээр нэмэх)
+// NOMAAD Бизнесүүд — Google Apps Script v3.2 (нэмэлт данс, гүйлгээ түгжих)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -118,6 +118,8 @@ function adminRead(d) {
   a.partners = partnerRows();
   const pr = PropertiesService.getScriptProperties();
   a.taxcfg = JSON.parse(pr.getProperty('TAXCFG') || '{}');
+  a.accountsX = JSON.parse(pr.getProperty('ACCOUNTS_X') || '[]');
+  a.lock = pr.getProperty('LOCK') || '';
   a.meta = { closed: pr.getProperty('CLOSED') || '', lastBackup: pr.getProperty('LAST_BACKUP') || '', backupUrl: pr.getProperty('BACKUP_FOLDER_URL') || '' };
   a.reminders = reminderRows();
   a.bank = bankRows();
@@ -434,7 +436,12 @@ function journalRows() {
              partner: String(v[6]), desc: String(v[7]), by: String(v[8]), biz: String(v[10]), status: String(v[11] || ''), no: String(v[12] || '') };
   }).filter(function (j) { return j.status !== 'Устгасан'; });
 }
+// Түгжсэн хугацааны (LOCK огноо хүртэл) гүйлгээг нэмэх, цуцлахыг хориглоно
+function lockedDate(dt) { const l = PropertiesService.getScriptProperties().getProperty('LOCK') || ''; return l && String(dt).slice(0, 10) <= l; }
 function adminJournal(d) {
+  if (d.entries && d.entries.some(function (x) { return lockedDate(x.date); })) return { status: 'error', error: 'locked' };
+  if (d.entry && d.entry.date && lockedDate(d.entry.date)) return { status: 'error', error: 'locked' };
+  if (d.cancelId) { const jr = journalRows().filter(function (j) { return j.id === String(d.cancelId); })[0]; if (jr && lockedDate(jr.date)) return { status: 'error', error: 'locked' }; }
   if (d.entries) {   // олон мөр нэг дор (цалин бодолт г.м); бүгд зөв байж байж л бичнэ
     const list = d.entries;
     if (!list.length || list.length > 300) return { status: 'error', error: 'fields' };
@@ -507,6 +514,7 @@ function adminRecord(d) {
   for (let i = 0; i < vals.length; i++) {
     if (String(vals[i][0]) !== String(d.cancelId)) continue;
     if (String(vals[i][16]) === 'sale' && /ДДТД/.test(String(vals[i][14]))) return { status: 'error', error: 'ebarimt' };
+    if (lockedDate(fmtDate(vals[i][1], 'yyyy-MM-dd'))) return { status: 'error', error: 'locked' };
     sh.getRange(i + 2, 19).setValue('Устгасан');
     sh.getRange(i + 2, 15).setValue(String(vals[i][14] || '') + ' [цуцалсан: ' + String(d.by || '').slice(0, 30) + ']');
     return { status: 'ok' };
@@ -726,6 +734,8 @@ function adminOrder(d) {
 }
 // Дэлгүүрийн төлбөрийн мэдээлэл (данс, эзэмшигч) — GitHub-д бичихгүй, Script Properties-д
 function adminSetting(d) {
+  if (d.key === 'accounts') { PropertiesService.getScriptProperties().setProperty('ACCOUNTS_X', JSON.stringify(d.value || []).slice(0, 8000)); return { status: 'ok' }; }
+  if (d.key === 'lock') { const v = String(d.value || ''); if (v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) return { status: 'error', error: 'fields' }; PropertiesService.getScriptProperties().setProperty('LOCK', v); return { status: 'ok' }; }
   if (d.key === 'taxcfg') { PropertiesService.getScriptProperties().setProperty('TAXCFG', JSON.stringify(d.value || {}).slice(0, 8000)); return { status: 'ok' }; }
   if (!BIZ_NAMES[d.biz]) return { status: 'error', error: 'biz' };
   PropertiesService.getScriptProperties().setProperty('PAYINFO_' + d.biz, String(d.payInfo || '').slice(0, 300));
@@ -813,6 +823,11 @@ function orderSave(d) {
   ['customer', 'phone', 'phone2', 'city', 'district', 'khoroo', 'address', 'items', 'amount', 'deliverDate', 'payType', 'status', 'paid', 'note', 'saleDone'].forEach(function (k) {
     if (o[k] !== undefined) merged[k] = typeof o[k] === 'string' ? o[k].slice(0, k === 'items' ? 2000 : 300) : o[k];
   });
+  if (cur) {
+    if (cur.paid === 'Орсон' && merged.paid !== 'Орсон' && !o.unpay) merged.paid = 'Орсон';   // удирдлага/банкаар «орсон» болсныг буцаахгүй
+    const sd = String(cur.saleDone || '');
+    if ((/^yes:/.test(sd) || sd === 'returned') && !/^yes:|^returned$/.test(String(merged.saleDone || ''))) merged.saleDone = sd;
+  }
   merged.updated = now + ' ' + who.staff.name;
   const row = ORDER_KEYS.map(function (k) { return merged[k]; });
   if (cur) sh.getRange(cur.row, 1, 1, ORDER_HEAD.length).setValues([row]); else sh.appendRow(row);

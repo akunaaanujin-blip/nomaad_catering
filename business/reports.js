@@ -44,6 +44,15 @@ var ACCOUNTS = [
 ];
 var ACC = {};
 ACCOUNTS.forEach(function (a) { ACC[a[0]] = { code: a[0], name: a[1], type: a[2], cash: a[3] === 'cash' }; });
+// Удирдагчийн нэмсэн данс (жишээ: өөр банкны харилцах, тодорхой зээл) — Дансны төлөвлөгөө → «+ Данс нэмэх»
+var BASE_ACC_N = ACCOUNTS.length;
+function applyCustomAccounts(list) {
+  ACCOUNTS.splice(BASE_ACC_N);
+  (list || []).forEach(function (a) { if (!ACC[a.code] || ACC[a.code].custom) ACCOUNTS.push([a.code, a.name, a.type, a.cash ? 'cash' : '']); });
+  ACCOUNTS.sort(function (x, y) { return x[0] === '0000' ? -1 : y[0] === '0000' ? 1 : x[0] < y[0] ? -1 : 1; });
+  ACCOUNTS.forEach(function (a) { var was = ACC[a[0]]; ACC[a[0]] = { code: a[0], name: a[1], type: a[2], cash: a[3] === 'cash', custom: was ? was.custom : false }; });
+  (list || []).forEach(function (a) { if (ACC[a.code]) ACC[a.code].custom = true; });
+}
 function accName(c) { return ACC[c] ? ACC[c].name : c; }
 function debitNormal(c) { var t = ACC[c] && ACC[c].type; return t === 'asset' || t === 'contra' || t === 'cogs' || t === 'exp'; }
 
@@ -473,4 +482,76 @@ function yearClosePayload(biz, R, year) {
   return { open: open, stock: stock, profit: r0(-pl),
     check: { dr: sum(open, function (x) { return x.dr === '0000' ? 0 : x.amount; }) - sum(open, function (x) { return x.cr === '0000' ? 0 : x.amount; }),
              inv1404: r0(b['1404'] || 0), invItems: sum(stock, function (x) { return x.qty * x.cost; }) } };
+}
+
+
+// ═══════════ НЭМЭЛТ САНХҮҮГИЙН ТАЙЛАН ═══════════
+// Ерөнхий дэвтэр — гүйлгээтэй данс бүрийн эхний үлдэгдэл, гүйлгээ, эцсийн үлдэгдэл
+function repGL(E, from, to) {
+  var open = balances(E, prevDay(from)), rows = [];
+  ACCOUNTS.forEach(function (a) {
+    var k = a[0], lines = E.filter(function (e) { return e.date >= from && e.date <= to && (e.dr === k || e.cr === k); });
+    var o = open[k] || 0; if (!lines.length && Math.abs(o) < 0.5) return;
+    var sign = debitNormal(k) ? 1 : -1, bal = o;
+    rows.push({ date: '', doc: k + ' ' + a[1], desc: 'Эхний үлдэгдэл', corr: '', d: '', c: '', bal: r0(o * sign), _b: 1 });
+    lines.forEach(function (e) { var isD = e.dr === k; bal += isD ? e.amount : -e.amount;
+      rows.push({ date: e.date, doc: e.doc, desc: e.desc, corr: isD ? e.cr : e.dr, d: isD ? e.amount : '', c: isD ? '' : e.amount, bal: r0(bal * sign) }); });
+  });
+  return { title: 'Ерөнхий дэвтэр', cols: [c('date', 'Огноо'), c('doc', 'Данс / баримт'), c('desc', 'Гүйлгээний утга'), c('corr', 'Харьцсан'), m('d', 'Дебет'), m('c', 'Кредит'), m('bal', 'Үлдэгдэл')], rows: rows };
+}
+// Авлага / өглөгийн насжилт — харилцагч бүрийн үлдэгдлийг үүссэн огноогоор нь (эхэлж үүссэнээс нь хааж) ангилна
+function repAging(E, to, acc) {
+  var p = {}, recv = acc === '1201';
+  E.forEach(function (e) {
+    if (e.date > to || (e.dr !== acc && e.cr !== acc)) return;
+    var name = e.partner || '(харилцагч заагаагүй)', o = p[name] = p[name] || { open: [], pay: 0 };
+    var inc = recv ? e.dr === acc : e.cr === acc;   // авлага: дебет нэмэгдэнэ; өглөг: кредит нэмэгдэнэ
+    if (inc) o.open.push({ date: e.date, left: e.amount }); else o.pay += e.amount;
+  });
+  var rows = Object.keys(p).sort().map(function (n) {
+    var o = p[n], pay = o.pay, r = { name: n, b0: 0, b30: 0, b60: 0, b90: 0, tot: 0 };
+    o.open.forEach(function (x) { var use = Math.min(pay, x.left); x.left -= use; pay -= use; });
+    o.open.forEach(function (x) {
+      if (x.left < 0.5) return;
+      var days = Math.round((new Date(to) - new Date(x.date)) / 864e5);
+      r[days <= 30 ? 'b0' : days <= 60 ? 'b30' : days <= 90 ? 'b60' : 'b90'] += x.left; r.tot += x.left;
+    });
+    if (pay > 0.5) r.tot -= pay;   // илүү төлөлт
+    ['b0', 'b30', 'b60', 'b90', 'tot'].forEach(function (k) { r[k] = r0(r[k]); });
+    return r;
+  }).filter(function (r) { return Math.abs(r.tot) >= 0.5; });
+  return { title: (recv ? 'Авлагын' : 'Өглөгийн') + ' насжилтын тайлан (' + to + ')', rows: rows,
+    cols: [c('name', 'Харилцагч'), m('b0', '0–30 хоног'), m('b30', '31–60'), m('b60', '61–90'), m('b90', '90+ хоног'), m('tot', 'Нийт')],
+    total: { name: 'Нийт', b0: sum(rows, 'b0'), b30: sum(rows, 'b30'), b60: sum(rows, 'b60'), b90: sum(rows, 'b90'), tot: sum(rows, 'tot') } };
+}
+// Харилцагчийн хуулга — сонгосон харилцагчтай хийсэн бүх гүйлгээ, үлдэгдэлтэй
+function repPartnerStmt(E, from, to, name) {
+  var accs = { '1201': 1, '1503': 1, '3101': -1 }, open = 0, rows = [];
+  E.forEach(function (e) {
+    if ((e.partner || '') !== name || e.date > to) return;
+    var k = accs[e.dr] ? e.dr : accs[e.cr] ? e.cr : null; if (!k) return;
+    var v = (e.dr === k ? e.amount : -e.amount);   // + = бидэнд өгөх (авлага), − = бидний өгөх (өглөг)
+    if (e.date < from) { open += v; return; }
+    rows.push({ date: e.date, doc: e.doc, desc: e.desc, acc: k + ' ' + accName(k), inc: v > 0 ? v : '', dec: v < 0 ? -v : '' });
+  });
+  var bal = open;
+  rows.forEach(function (r) { bal += (Number(r.inc) || 0) - (Number(r.dec) || 0); r.bal = r0(bal); });
+  rows.unshift({ date: from, doc: '', desc: 'Эхний үлдэгдэл', acc: '', inc: '', dec: '', bal: r0(open), _b: 1 });
+  return { title: 'Харилцагчийн хуулга · ' + name, rows: rows,
+    cols: [c('date', 'Огноо'), c('doc', 'Баримт'), c('desc', 'Гүйлгээний утга'), c('acc', 'Данс'), m('inc', 'Нэмэгдсэн'), m('dec', 'Хасагдсан'), m('bal', 'Үлдэгдэл')],
+    note: 'Эерэг үлдэгдэл — харилцагч бидэнд өгөх (авлага), сөрөг — бид харилцагчид өгөх (өглөг).' };
+}
+// Өмчийн өөрчлөлтийн тайлан
+function repEquity(E, from, to) {
+  var plOf = function (b) { var p = 0; ACCOUNTS.forEach(function (a) { if (/^(rev|contra|cogs|exp)$/.test(a[2])) p -= b[a[0]] || 0; }); return p; };
+  var bo = balances(E, prevDay(from)), bc = balances(E, to), mv = balances(E, to, from);
+  var g = function (b, k) { return -(b[k] || 0); };
+  var rows = [], L = function (n, cap, oth, re, bold) { rows.push({ name: n, cap: r0(cap), oth: r0(oth), re: r0(re), tot: r0(cap + oth + re), _b: bold }); };
+  var re0 = g(bo, '4601') + plOf(bo);
+  L('Эхний үлдэгдэл (' + from + ')', g(bo, '4101'), g(bo, '4201') + g(bo, '0000'), re0, 1);
+  L('Эзэн оруулсан / (авсан) хөрөнгө', g(mv, '4101'), 0, 0);
+  L('Эхний үлдэгдлийн тохируулга', 0, g(mv, '4201') + g(mv, '0000'), g(mv, '4601'));
+  L('Тайлант үеийн цэвэр ашиг (алдагдал)', 0, 0, plOf(mv));
+  L('Эцсийн үлдэгдэл (' + to + ')', g(bc, '4101'), g(bc, '4201') + g(bc, '0000'), g(bc, '4601') + plOf(bc), 1);
+  return { title: 'Өмчийн өөрчлөлтийн тайлан', rows: rows, cols: [c('name', 'Үзүүлэлт'), m('cap', 'Өмч (эзний)'), m('oth', 'Бусад өмч'), m('re', 'Хуримтлагдсан ашиг'), m('tot', 'Нийт')] };
 }
