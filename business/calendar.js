@@ -8,8 +8,9 @@ var REM_KINDS = ['Зээл төлөх', 'Өглөг төлөх', 'Авлага �
 
 function calEvents() {
   var ev = [];
-  reminders.forEach(function (r) { if (r.status !== 'Цуцалсан') ev.push({ date: r.date, kind: 'rem', done: r.status === 'Хийгдсэн', r: r, text: r.title + (r.amount ? ' · ' + fmt(r.amount) : '') }); });
-  Object.keys(ENTITIES).forEach(function (k) { taxDeadlines(k).forEach(function (x) { ev.push({ date: x.date, kind: 'tax', text: x.name + ' (' + ENTITIES[k].name + ')', k: k, go: x.go }); }); });
+  reminders.forEach(function (r) { if (r.status !== 'Цуцалсан' && r.kind !== 'Тайлан илгээсэн') ev.push({ date: r.date, kind: 'rem', done: r.status === 'Хийгдсэн', r: r, text: r.title + (r.amount ? ' · ' + fmt(r.amount) : '') }); });
+  Object.keys(ENTITIES).forEach(function (k) { taxDeadlines(k).forEach(function (x) { ev.push({ date: x.date, kind: 'tax', text: x.name + ' (' + ENTITIES[k].name + ')', k: k, go: x.go, key: x.key }); }); });
+  (typeof tasks !== 'undefined' ? tasks : []).forEach(function (t) { if (t.due && t.status === 'Шинэ') ev.push({ date: t.due, kind: 'task', text: 'Даалгавар: ' + t.title + ' (' + t.staffName + ')' }); });
   staff.forEach(function (s) { if (s.status === 'Тийм' && s.contractEnd) ev.push({ date: s.contractEnd, kind: 'contract', text: 'Гэрээ дуусна: ' + s.name, id: s.id }); });
   return ev;
 }
@@ -42,12 +43,12 @@ function calView() {
     'Утсандаа дуудлага/мэдэгдэл авах бол «Google Календарь» товчоор нэмээрэй.</p>' +
     '<div class="card"><div class="bar-row"><button class="b-btn" onclick="calShift(-1)">‹</button><h2 style="margin:0">' + first.getFullYear() + ' оны ' + MN[first.getMonth()] + '</h2><button class="b-btn" onclick="calShift(1)">›</button></div>' +
     '<div class="cal-g">' + ['Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя', 'Ня'].map(function (w) { return '<div class="cal-h">' + w + '</div>'; }).join('') + cells + '</div>' +
-    '<div class="cal-legend"><i class="ev rem">Миний сануулга</i><i class="ev tax">Татвар, тайлан</i><i class="ev contract">Гэрээ дуусах</i></div></div>' +
+    '<div class="cal-legend"><i class="ev rem">Миний сануулга</i><i class="ev tax">Татвар, тайлан</i><i class="ev contract">Гэрээ дуусах</i><i class="ev task">Ажилчдын даалгавар</i></div></div>' +
     '<div class="card rep"><div class="rep-cap"><b>Ойрын 45 хоног</b></div><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Юу</th><th class="n">Дүн</th><th></th></tr>' +
     (up.length ? up.map(function (e) {
       var r = e.r, late = e.date < todayStr();
-      var acts = e.kind === 'rem' ? '<button class="mini" style="color:var(--green)" onclick="remDone(\'' + r.id + '\')">Хийгдсэн</button> <a class="mini" target="_blank" rel="noopener" href="' + gcalLink(r) + '">Google Календарь</a> <button class="mini" onclick="remCancel(\'' + r.id + '\')">Устгах</button>'
-        : e.kind === 'tax' ? '<button class="mini" style="color:var(--accent)" onclick="openTax(\'' + e.k + '\',\'' + e.go + '\')">Бэлтгэх</button>' : '<button class="mini" onclick="openContract(\'' + e.id + '\')">Гэрээ</button>';
+      var acts = e.kind === 'rem' ? '<button class="mini" onclick="editRem(\'' + r.id + '\')">Засах</button> <button class="mini" style="color:var(--green)" onclick="remDone(\'' + r.id + '\')">Хийгдсэн</button> <a class="mini" target="_blank" rel="noopener" href="' + gcalLink(r) + '">Google Календарь</a> <button class="mini" onclick="remCancel(\'' + r.id + '\')">Устгах</button>'
+        : e.kind === 'task' ? '<button class="mini" onclick="go(\'staff\')">Ажилчид</button>' : e.kind === 'tax' ? '<button class="mini" style="color:var(--accent)" onclick="openTax(\'' + e.k + '\',\'' + e.go + '\')">Бэлтгэх</button> <button class="mini" style="color:var(--green)" onclick="markTaxSent(\'' + e.k + '\',' + esc(JSON.stringify(e.key)) + ',\'' + e.date + '\')">Илгээсэн</button>' : '<button class="mini" onclick="openContract(\'' + e.id + '\')">Гэрээ</button>';
       return '<tr' + (late ? ' class="b"' : '') + '><td>' + e.date + (late ? ' <span class="tag r">хэтэрсэн</span>' : '') + '</td><td><i class="dot-k ' + e.kind + '"></i>' + esc(e.kind === 'rem' ? r.kind + ': ' + r.title : e.text) +
         (r && r.partner ? ' · ' + esc(r.partner) : '') + (r && r.repeat === 'Сар бүр' ? ' <span class="tag b">сар бүр</span>' : '') + '</td><td class="n">' + (r && r.amount ? fmt(r.amount) : '') + '</td><td class="n">' + acts + '</td></tr>';
     }).join('') : '<tr><td colspan="4" class="muted">Ойрын хугацаанд юу ч алга</td></tr>') + '</table></div></div>';
@@ -59,12 +60,14 @@ function gcalLink(r) {
   if (r.repeat === 'Сар бүр') p.recur = 'RRULE:FREQ=MONTHLY';
   return 'https://calendar.google.com/calendar/render?' + Object.keys(p).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&');
 }
+var remEditId = '';
+function editRem(id) { var r = reminders.filter(function (x) { return x.id === id; })[0]; if (!r) return; openRem(r.date, { kind: r.kind, title: r.title, amount: r.amount, partner: r.partner, biz: r.co, repeat: r.repeat, note: r.note }); remEditId = id; }
 function openRem(date, preset) {
-  preset = preset || {};
+  preset = preset || {}; remEditId = '';
   $('rmDate').value = date || todayStr(new Date(Date.now() + 864e5));
   $('rmKind').innerHTML = REM_KINDS.map(function (k) { return '<option' + (preset.kind === k ? ' selected' : '') + '>' + k + '</option>'; }).join('');
   $('rmTitle').value = preset.title || ''; $('rmAmount').value = preset.amount || ''; $('rmPartner').value = preset.partner || ''; $('rmNote').value = '';
-  $('rmRepeat').value = 'Нэг удаа';
+  $('rmRepeat').value = preset.repeat || 'Нэг удаа'; if (preset.note) $('rmNote').value = preset.note;
   $('rmCo').innerHTML = KEYS.map(function (k) { return '<option value="' + k + '"' + (k === (preset.biz || state.biz) ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('');
   $('rmPartners').innerHTML = partners.map(function (p) { return '<option value="' + esc(p.name) + '">'; }).join('');
   openSheet('remSheet');
@@ -74,6 +77,12 @@ function saveRem() {
             partner: $('rmPartner').value.trim(), co: $('rmCo').value, repeat: $('rmRepeat').value, note: $('rmNote').value.trim() };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) { toast('Огноо сонгоно уу'); return; }
   var done = function () { closeSheet('remSheet'); toast('Сануулга нэмэгдлээ'); if (confirm('Утсандаа мэдэгдэл авахын тулд Google Календарьт нэмэх үү?')) window.open(gcalLink(r), '_blank'); };
+  if (remEditId) {
+    var id = remEditId; remEditId = '';
+    if (!API_URL) { reminders = reminders.map(function (x) { return x.id === id ? Object.assign(x, r) : x; }); save('nb_demo_rem', reminders); closeSheet('remSheet'); render(); return; }
+    post({ type: 'admin_reminder', updateId: id, reminder: r }, function (err) { if (err) { toast('Алдаа: ' + err); return; } closeSheet('remSheet'); toast('Засагдлаа'); refresh(); });
+    return;
+  }
   if (!API_URL) { r.id = 'R' + Date.now(); r.status = 'Хүлээгдэж'; reminders.push(r); save('nb_demo_rem', reminders); render(); done(); return; }
   post({ type: 'admin_reminder', reminder: r }, function (err) { if (err) { toast('Алдаа: ' + err); return; } refresh(); done(); });
 }

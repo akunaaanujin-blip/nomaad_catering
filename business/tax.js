@@ -171,25 +171,66 @@ function ebalanceReport(k, y) {
 function entPlReport(k) { var r = range(), rep = repPL(entJournal(k), r[0], r[1]); rep.title = 'Нэгтгэсэн орлогын тайлан · ' + ENTITIES[k].name; return rep; }
 
 // ═══════════ ТАЙЛАНГИЙН ХУАНЛИ ═══════════
-function taxDeadlines(k) {
-  var out = [], now = new Date(), y = now.getFullYear(), D = TAX.due, ind = ENTITIES[k].type === 'Хувь хүн';
-  for (var i = -1; i <= 2; i++) {   // сар бүрийн НДШ
+// Тайлан бүрийн давтамж, өдрийг компани бүрээр гараар тохируулна (Календарь → «Тайлангийн тохиргоо»).
+// Анхны утга нь e-TAX-ийн «Тайлан тушаах хуулийн хугацаа»-аас: ТТ-11 улирал бүр, ТТ-02 зөвхөн жилийн, НДШ сар бүр.
+var TAX_DEFAULT = {
+  weiss: { nd: 'month', ndDay: 10, tt11: 'quarter', tt11Day: 20, tt02: 'year', tt02Day: 20, ebalance: 'year' },
+  cozy:  { nd: 'month', ndDay: 10, tt11: 'quarter', tt11Day: 20, tt02: 'none', tt02Day: 20, ebalance: 'none' },
+};
+var taxCfg = {};
+function tcfg(k) { return Object.assign({}, TAX_DEFAULT[k] || TAX_DEFAULT.weiss, taxCfg[k] || {}); }
+function taxKey(k, x) { return 'TAX|' + k + '|' + x.name; }
+function taxDone(k, x) { return (typeof reminders !== 'undefined' ? reminders : []).some(function (r) { return r.kind === 'Тайлан илгээсэн' && r.title === taxKey(k, x); }); }
+function taxDeadlines(k, all) {
+  var cf = tcfg(k), out = [], now = new Date(), y = now.getFullYear(), D = TAX.due, ind = ENTITIES[k].type === 'Хувь хүн';
+  var hasStaff = entStaff(k).some(function (st) { return Number(st.salary) > 0; });
+  if (cf.nd === 'month' && hasStaff) for (var i = -1; i <= 3; i++) {
     var d = new Date(y, now.getMonth() + i, 1), prev = new Date(d.getFullYear(), d.getMonth() - 1, 1);
-    out.push({ date: todayStr(new Date(d.getFullYear(), d.getMonth(), D.nd)), name: 'НДШ тайлан, шимтгэл · ' + todayStr(prev).slice(0, 7), site: 'portal.ndaatgal.mn', go: 'nd8' });
+    out.push({ date: todayStr(new Date(d.getFullYear(), d.getMonth(), Number(cf.ndDay) || 10)), name: 'НДШ тайлан, шимтгэл · ' + todayStr(prev).slice(0, 7), site: 'portal.ndaatgal.mn', go: 'nd8' });
   }
-  [y - 1, y].forEach(function (yy) {
-    [1, 2, 3].forEach(function (q) {
-      var mth = q * 3 + 1, dd = function (day) { return todayStr(new Date(yy, mth - 1, day)); };
-      out.push({ date: dd(D.tt11q), name: 'ТТ-11 · ' + yy + ' оны ' + q + '-р улирал', site: 'etax.mta.mn', go: 'tt11' });
-      if (!ind) out.push({ date: dd(D.tt02q), name: 'ТТ-02 ААНОАТ · ' + yy + ' оны ' + q + '-р улирал', site: 'etax.mta.mn', go: 'tt02' });
+  var periodic = function (code, freq, day, label, go, site) {
+    [y - 1, y].forEach(function (yy) {
+      var parts = freq === 'quarter' ? [1, 2, 3] : freq === 'half' ? [2] : [];
+      parts.forEach(function (q) { out.push({ date: todayStr(new Date(yy, q * 3, Number(day) || 20)), name: label + ' · ' + yy + (freq === 'half' ? ' оны хагас жил' : ' оны ' + q + '-р улирал'), site: site, go: go }); });
+      if (freq !== 'none') out.push({ date: (yy + 1) + '-' + (code === 'tt11' ? D.tt11year : D.tt02year), name: label + ' · ' + yy + ' оны жилийн', site: site, go: go });
     });
-    out.push({ date: (yy + 1) + '-' + D.tt11year, name: 'ТТ-11 · ' + yy + ' оны 4-р улирал (жилийн)', site: 'etax.mta.mn', go: 'tt11' });
-    if (!ind) out.push({ date: (yy + 1) + '-' + D.tt02year, name: 'ТТ-02 ААНОАТ · ' + yy + ' оны жилийн', site: 'etax.mta.mn', go: 'tt02' });
-    out.push({ date: (yy + 1) + '-' + D.ebalance, name: (ind ? 'Хувь хүний орлогын мэдүүлэг (нягтлантай тулгах) · ' : 'e-Balance санхүүгийн тайлан · ') + yy + ' он', site: ind ? 'etax.mta.mn' : 'ebalance.mof.gov.mn', go: ind ? 'tt02' : 'ebalance' });
-  });
+  };
+  if (hasStaff || !ind) periodic('tt11', cf.tt11, cf.tt11Day, 'ТТ-11 ХХОАТ суутгал', 'tt11', 'etax.mta.mn');
+  if (!ind) periodic('tt02', cf.tt02, cf.tt02Day, 'ТТ-02 ААНОАТ', 'tt02', 'etax.mta.mn');
+  if (cf.ebalance === 'year') [y - 1, y].forEach(function (yy) { out.push({ date: (yy + 1) + '-' + D.ebalance, name: 'e-Balance санхүүгийн тайлан · ' + yy + ' он', site: 'ebalance.mof.gov.mn', go: 'ebalance' }); });
   var t = todayStr(), lim = todayStr(new Date(Date.now() + 120 * 864e5));
   return out.filter(function (x) { return x.date >= todayStr(new Date(Date.now() - 20 * 864e5)) && x.date <= lim; })
-    .sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(function (x) { x.days = Math.round((new Date(x.date) - new Date(t)) / 864e5); return x; });
+    .map(function (x) { x.days = Math.round((new Date(x.date) - new Date(t)) / 864e5); x.done = taxDone(k, x); x.key = taxKey(k, x); return x; })
+    .filter(function (x) { return all || !x.done; })
+    .sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+}
+// «Илгээсэн» — тухайн тайланг дахин сануулахгүй (буцаах боломжтой)
+function markTaxSent(k, key, date) {
+  var r = { date: date || todayStr(), title: key, kind: 'Тайлан илгээсэн', amount: 0, partner: '', co: '', repeat: 'Нэг удаа', note: 'Илгээсэн ' + todayStr(), status: 'Хийгдсэн' };
+  if (!API_URL) { r.id = 'R' + Date.now(); reminders.push(r); save('nb_demo_rem', reminders); render(); return; }
+  post({ type: 'admin_reminder', reminder: r }, function (err) { if (err) { toast('Алдаа: ' + err); return; } toast('Илгээсэн гэж тэмдэглэгдлээ'); refresh(); });
+}
+function unmarkTaxSent(key) {
+  var r = reminders.filter(function (x) { return x.kind === 'Тайлан илгээсэн' && x.title === key; })[0]; if (!r) return;
+  if (!API_URL) { reminders = reminders.filter(function (x) { return x !== r; }); save('nb_demo_rem', reminders); render(); return; }
+  post({ type: 'admin_reminder', cancelId: r.id }, function () { refresh(); });
+}
+function taxCfgCard(k) {
+  var cf = tcfg(k), sel = function (id, val, opts) { return '<select id="' + id + '">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === val ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>'; };
+  var F = [['none', 'Тушаадаггүй'], ['quarter', 'Улирал бүр + жилийн'], ['half', 'Хагас жил + жилийн'], ['year', 'Зөвхөн жилийн']];
+  return '<div class="card"><h2>Тайлангийн тохиргоо · ' + esc(ENTITIES[k].name) + '</h2><p class="muted" style="font-size:13px">e-TAX-ийн «Тайлан тушаах» жагсаалттайгаа тулгаж тохируулна. Буруу бол энд засаад хадгална уу.</p>' +
+    '<div class="filter" style="margin-top:8px"><label>НДШ' + sel('tcNd', cf.nd, [['month', 'Сар бүр'], ['none', 'Тушаадаггүй']]) + '</label><label>НДШ өдөр<input id="tcNdDay" type="number" min="1" max="31" value="' + cf.ndDay + '"></label>' +
+    '<label>ТТ-11' + sel('tcTt11', cf.tt11, F) + '</label><label>ТТ-11 өдөр<input id="tcTt11Day" type="number" min="1" max="31" value="' + cf.tt11Day + '"></label>' +
+    '<label>ТТ-02' + sel('tcTt02', cf.tt02, F) + '</label><label>ТТ-02 өдөр<input id="tcTt02Day" type="number" min="1" max="31" value="' + cf.tt02Day + '"></label>' +
+    '<label>e-Balance' + sel('tcEb', cf.ebalance, [['year', 'Жил бүр'], ['none', 'Тушаадаггүй']]) + '</label>' +
+    '<label>&nbsp;<button class="b-btn primary" onclick="saveTaxCfg(\'' + k + '\')">Хадгалах</button></label></div>' +
+    '<p class="muted" style="font-size:12.5px">Өөр тайлан, хугацаа нэмэх бол Календарь → «+ Сануулга» (төрөл «Татвар, НДШ төлөх»).</p></div>';
+}
+function saveTaxCfg(k) {
+  taxCfg[k] = { nd: $('tcNd').value, ndDay: Number($('tcNdDay').value) || 10, tt11: $('tcTt11').value, tt11Day: Number($('tcTt11Day').value) || 20,
+                tt02: $('tcTt02').value, tt02Day: Number($('tcTt02Day').value) || 20, ebalance: $('tcEb').value };
+  if (!API_URL) { save('nb_demo_taxcfg', taxCfg); render(); toast('Хадгалагдлаа'); return; }
+  post({ type: 'admin_setting', key: 'taxcfg', value: taxCfg }, function (err) { if (err) { toast('Алдаа: ' + err); return; } toast('Хадгалагдлаа'); refresh(); });
 }
 function taxAlerts() {   // Миний компаниуд дээрх сануулга: 7 хоногийн дотор хугацаа нь дуусах тайлан
   var out = [];
@@ -197,7 +238,7 @@ function taxAlerts() {   // Миний компаниуд дээрх сануу�
     var hasStaff = entStaff(k).some(function (st) { return Number(st.salary) > 0; });   // ажилтангүй бол НДШ/ТТ-11 сануулахгүй
     taxDeadlines(k).filter(function (x) { return x.days >= 0 && x.days <= 7 && (hasStaff || !/^(nd8|tt11)$/.test(x.go)); }).forEach(function (x) {
       out.push('<div class="alert' + (x.days <= 2 ? ' bad' : '') + '"><div><b>' + esc(x.name) + '</b> — ' + esc(ENTITIES[k].name) + ', ' + x.date + ' (' + (x.days ? x.days + ' хоног үлдлээ' : 'өнөөдөр') + ')</div>' +
-        '<button class="b-btn primary" onclick="openTax(\'' + k + '\',\'' + x.go + '\')">Бэлтгэх</button></div>');
+        '<div class="pg-act"><button class="b-btn primary" onclick="openTax(\'' + k + '\',\'' + x.go + '\')">Бэлтгэх</button><button class="b-btn" onclick="markTaxSent(\'' + k + '\',' + esc(JSON.stringify(x.key)) + ',\'' + x.date + '\')">Илгээсэн</button></div></div>');
     });
   });
   return out.join('');
@@ -228,11 +269,14 @@ function taxView() {
     return '<option' + (String(y) === taxState.year ? ' selected' : '') + '>' + y + '</option>'; }).join('') + '</select></label></div>';
   var xl = '<button class="b-btn" onclick="exportTax()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
   if (sub === 'calendar') {
-    var list = taxDeadlines(k);
+    var list = taxDeadlines(k, true);
     return pageHead(label, '') + info + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th>Хугацаа</th><th>Тайлан</th><th>Хаана</th><th class="n">Үлдсэн</th><th></th></tr>' +
-      list.map(function (x) { return '<tr' + (x.days < 0 ? ' style="color:#9CA3AF"' : '') + '><td>' + x.date + '</td><td>' + esc(x.name) + '</td><td>' + esc(x.site) + '</td><td class="n' + (x.days >= 0 && x.days <= 7 ? ' neg' : '') + '">' +
-        (x.days < 0 ? 'өнгөрсөн' : x.days + ' хоног') + '</td><td class="n"><button class="mini" style="color:var(--accent)" onclick="openTax(null,\'' + x.go + '\')">Бэлтгэх</button></td></tr>'; }).join('') +
-      '</table></div></div><p class="muted">Хугацааг e-TAX-ийн «Тайлан тушаах хуулийн хугацаа»-тай тулгасан. НДШ-ийн хугацаа (сар бүрийн ' + TAX.due.nd + '-ны дотор) өөрчлөгдвөл config.js-ийн TAX.due-д засна.</p>';
+      (list.map(function (x) { var dim = x.done || x.days < 0;
+        return '<tr' + (dim ? ' style="color:#9CA3AF"' : '') + '><td>' + x.date + '</td><td>' + esc(x.name) + (x.done ? ' <span class="tag">Илгээсэн</span>' : '') + '</td><td>' + esc(x.site) + '</td><td class="n' + (!x.done && x.days >= 0 && x.days <= 7 ? ' neg' : '') + '">' +
+          (x.done ? '' : x.days < 0 ? 'өнгөрсөн' : x.days + ' хоног') + '</td><td class="n">' +
+          (x.done ? '<button class="mini" onclick="unmarkTaxSent(' + esc(JSON.stringify(x.key)) + ')">Буцаах</button>' : '<button class="mini" style="color:var(--accent)" onclick="openTax(null,\'' + x.go + '\')">Бэлтгэх</button> <button class="mini" style="color:var(--green)" onclick="markTaxSent(\'' + k + '\',' + esc(JSON.stringify(x.key)) + ',\'' + x.date + '\')">Илгээсэн</button>') + '</td></tr>'; }).join('') ||
+       '<tr><td colspan="5" class="muted">Ойрын 4 сард тушаах тайлан алга</td></tr>') +
+      '</table></div></div>' + taxCfgCard(k);
   }
   if (sub === 'payroll') {
     var rep = payrollReport(k, taxState.month), posted = payrollPosted(k, taxState.month).length;

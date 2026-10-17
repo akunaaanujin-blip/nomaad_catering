@@ -131,7 +131,7 @@ function submitOrder() {
     amount: ordCart.reduce(function (a, l) { return a + Math.round(l.qty * l.price); }, 0), deliverDate: $('orDate').value,
     payType: $('orPayType').value, paid: $('orPaid').value, status: ordEdit ? $('orStatus').value : 'Шинэ', note: $('orNote').value.trim() });
   ordBook(o, prev);
-  saveOrder(o, function () { closeSheet('orderSheet'); toast(prev.id ? 'Хадгалагдлаа' : 'Захиалга бүртгэгдлээ'); });
+  saveOrder(o, function (saved) { closeSheet('orderSheet'); toast(prev.id ? 'Хадгалагдлаа' : 'Захиалга бүртгэгдлээ'); if (!prev.id && saved.paid !== 'Орсон') copyPayMsg(saved.id); });
 }
 function quickOrd(id, field, val) {   // жагсаалтаас нэг товчоор төлөв солих
   var o = orders.filter(function (x) { return x.id === id; })[0]; if (!o) return;
@@ -161,6 +161,7 @@ function renderOrders() {
       '<small><span class="tag ' + st + '">' + esc(o.status) + '</span> <span class="tag ' + (o.paid === 'Орсон' ? '' : 'r') + '">Төлбөр ' + esc((o.paid || 'Ороогүй').toLowerCase()) + '</span>' +
       (o.deliverDate ? ' · ' + esc(o.deliverDate) : '') + '</small></div>' +
       '<div class="ord-r"><b>' + fmt(o.amount) + '</b>' +
+      '<button class="mini" style="color:var(--accent)" onclick="copyPayMsg(\'' + o.id + '\')">Төлбөрийн мессеж</button>' +
       (o.status === 'Буухиад өгсөн' ? '<button class="mini" onclick="quickOrd(\'' + o.id + '\',\'status\',\'Хүргэгдсэн\')">Хүргэгдсэн</button>' : '') +
       (o.paid !== 'Орсон' && o.status !== 'Цуцалсан' ? '<button class="mini" style="color:var(--green)" onclick="quickOrd(\'' + o.id + '\',\'paid\',\'Орсон\')">Төлбөр орсон</button>' : '') + '</div></li>';
   }).join('') : '<li class="muted">Захиалга алга</li>';
@@ -190,4 +191,18 @@ function buuhiaExport() {
     if (!confirm(list.length + ' захиалгыг ebuuhia.com-д оруулсны дараа «Буухиад өгсөн» болгох уу?\n(Борлуулалт санхүүд бичигдэнэ)')) return;
     list.forEach(function (o) { var prev = JSON.parse(JSON.stringify(o)), n = Object.assign({}, o, { status: 'Буухиад өгсөн' }); ordBook(n, prev); saveOrder(n); });
   }, 600);
+}
+
+// ── Хэрэглэгчид илгээх төлбөрийн мессеж (гүйлгээний утгад утасны дугаар → банкны хуулгаар автоматаар таарна) ──
+function payMsg(o) {
+  var pay = load('nb_payinfo_' + BIZ_KEY, '') || '[данс тохируулаагүй — удирдлагад хэлнэ үү]';
+  return 'Сайн байна уу! Таны захиалга:\n' + ordItems(o).map(function (i) { return '• ' + i.name + (i.qty > 1 ? ' x' + i.qty : '') + ' — ' + fmt(i.price * (i.qty || 1)); }).join('\n') +
+    '\nНийт: ' + fmt(o.amount) + '\n\nТөлбөр: ' + pay + '\nГүйлгээний утга: ' + o.phone + '\n\nТөлбөр орсны дараа хүргэлтэд гаргана. Баярлалаа!';
+}
+function copyPayMsg(id) {
+  var o = orders.filter(function (x) { return x.id === id; })[0]; if (!o) return;
+  var t = payMsg(o);
+  var done = function () { toast('Төлбөрийн мессеж хуулагдлаа — Facebook чатад буулгана уу'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, function () { prompt('Хуулж аваарай:', t); });
+  else prompt('Хуулж аваарай:', t);
 }

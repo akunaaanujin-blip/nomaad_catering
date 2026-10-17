@@ -481,3 +481,6 @@ table.rep-t tr.tot td{background:#F1F5F9;border-top:1px solid #CBD5E1}
 .dot-k{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}.dot-k.rem{background:#F59E0B}.dot-k.tax{background:#3B82F6}.dot-k.contract{background:#EF4444}
 a.mini{text-decoration:none}
 @media(max-width:760px){.cal-d{min-height:54px}.ev{font-size:0;height:6px;padding:0}.cal-legend .ev{font-size:11px;height:auto;padding:1px 4px}}
+.ev.task{background:#EDE9FE;color:#5B21B6}.dot-k.task{background:#7C3AED}
+.task-card{border-left:4px solid #7C3AED}
+.task-card .list li small{display:block;color:var(--muted);font-size:12.5px}

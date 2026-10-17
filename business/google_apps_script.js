@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v2.9 (Cozy захиалга, буухиа, төлбөр орсон, календарь/сануулга)
+// NOMAAD Бизнесүүд — Google Apps Script v3.0 (банкны хуулга тулгалт, ажилчдад даалгавар, төлбөрийн мэдээлэл)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -31,6 +31,10 @@ const ORDER_KEYS = ['id', 'date', 'time', 'biz', 'staff', 'customer', 'phone', '
   'items', 'amount', 'deliverDate', 'payType', 'status', 'paid', 'note', 'updated', 'saleDone'];
 const SHEET_REMIND = 'Сануулга';
 const REMIND_HEAD = ['ID', 'Огноо', 'Гарчиг', 'Төрөл', 'Дүн', 'Харилцагч', 'Компани', 'Давтамж', 'Төлөв', 'Тэмдэглэл', 'Үүсгэсэн'];
+const SHEET_BANK = 'Банк';
+const BANK_HEAD = ['ID', 'Данс', 'Огноо', 'Орлого', 'Зарлага', 'Үлдэгдэл', 'Гүйлгээний утга', 'Харьцсан данс', 'biz', 'Төлөв', 'Холбоос', 'Хэн', 'Оруулсан'];
+const SHEET_TASK = 'Даалгавар';
+const TASK_HEAD = ['ID', 'Үүсгэсэн', 'biz', 'Ажилтан ID', 'Ажилтан', 'Даалгавар', 'Хугацаа', 'Төлөв', 'Хийсэн', 'Хийсэн огноо', 'Хэнээс', 'Тайлбар'];
 const COZY_OLD_SHEET = '1KUXN7wrApwDSwQQZnzYgPigfRkzkiG3Xbt4VSihQd9c';   // хуучин «Cozy хүргэлт» хүснэгт (шилжүүлэхэд л уншина)
 const LOG_HEAD = ['ID', 'Огноо', 'Цаг', 'Бизнес', 'Төрөл', 'Ажилтан', 'Бараа / Ангилал', 'Тоо', 'Нэгж',
                   'Нэгжийн үнэ', 'Дүн', 'Төлбөр', 'Тоолсон бэлэн', 'Зөрүү', 'Тайлбар', 'biz', 'type', 'Баримт', 'Төлөв', 'Харилцагч'];
@@ -62,6 +66,12 @@ function doPost(e) {
     if (data.type === 'admin_salary') return json(isAdmin(data) ? adminSalary(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_stock') return json(isAdmin(data) ? adminStock(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_journal') return json(isAdmin(data) ? adminJournal(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_bank') return json(isAdmin(data) ? adminBank(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_order') return json(isAdmin(data) ? adminOrder(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_task') return json(isAdmin(data) ? adminTask(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_setting') return json(isAdmin(data) ? adminSetting(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'tasks') return json(staffTasks(data));
+    if (data.type === 'task_done') return json(staffTaskDone(data));
     if (data.type === 'admin_reminder') return json(isAdmin(data) ? adminReminder(data) : { status: 'error', error: 'auth' });
     if (data.type === 'order_save') return json(orderSave(data));
     if (data.type === 'orders') return json(ordersFor(data));
@@ -104,9 +114,14 @@ function adminRead(d) {
   a.journal = journalRows();
   a.partners = partnerRows();
   const pr = PropertiesService.getScriptProperties();
+  a.taxcfg = JSON.parse(pr.getProperty('TAXCFG') || '{}');
   a.meta = { closed: pr.getProperty('CLOSED') || '', lastBackup: pr.getProperty('LAST_BACKUP') || '', backupUrl: pr.getProperty('BACKUP_FOLDER_URL') || '' };
   a.reminders = reminderRows();
+  a.bank = bankRows();
+  a.tasks = taskRows();
+  a.payInfo = payInfoAll();
   a.orders = orderRows().map(function (o) { delete o.row; return o; });
+  a.tasks = a.tasks.map(function (t) { delete t.row; return t; });
   a.products = productRows().map(function (p) { const o = Object.assign({}, p); delete o.row; return o; });
   return a;
 }
@@ -615,10 +630,119 @@ function adminReminder(d) {
   }
   const x = d.reminder || {};
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(x.date)) || !String(x.title || '').trim()) return { status: 'error', error: 'fields' };
+  if (d.updateId) {   // засах
+    const r = find(d.updateId); if (!r) return { status: 'error', error: 'not_found' };
+    sh.getRange(r, 2, 1, 7).setValues([[x.date, String(x.title).slice(0, 120), String(x.kind || 'Бусад').slice(0, 30), Number(x.amount) || 0, String(x.partner || '').slice(0, 80),
+      String(x.co || '').slice(0, 20), x.repeat === 'Сар бүр' ? 'Сар бүр' : 'Нэг удаа']]);
+    sh.getRange(r, 10).setValue(String(x.note || '').slice(0, 200));
+    return { status: 'ok', id: d.updateId };
+  }
   const id = 'R' + Date.now();
   sh.appendRow([id, x.date, String(x.title).slice(0, 120), String(x.kind || 'Бусад').slice(0, 30), Number(x.amount) || 0, String(x.partner || '').slice(0, 80),
-    String(x.co || '').slice(0, 20), x.repeat === 'Сар бүр' ? 'Сар бүр' : 'Нэг удаа', 'Хүлээгдэж', String(x.note || '').slice(0, 200), Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')]);
+    String(x.co || '').slice(0, 20), x.repeat === 'Сар бүр' ? 'Сар бүр' : 'Нэг удаа', x.status === 'Хийгдсэн' ? 'Хийгдсэн' : 'Хүлээгдэж', String(x.note || '').slice(0, 200), Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')]);
   return { status: 'ok', id: id };
+}
+
+// ═══════════ БАНКНЫ ХУУЛГА ═══════════
+// Хуулгын мөрүүдийг ID-аар (данс+огноо+дүн+утга) давхардалгүй хадгалж, тулгасан эсэх (Төлөв) ба юутай холбосныг (Холбоос) тэмдэглэнэ.
+function bankSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_BANK);
+  if (!sh) { sh = ss.insertSheet(SHEET_BANK); sh.appendRow(BANK_HEAD); styleHead(sh, BANK_HEAD.length, '#0F766E'); sh.getRange('A:C').setNumberFormat('@'); sh.getRange('H:H').setNumberFormat('@'); }
+  return sh;
+}
+function bankRows() {
+  const sh = bankSheet(), last = sh.getLastRow();
+  if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, BANK_HEAD.length).getValues().map(function (v) {
+    return { id: String(v[0]), acct: String(v[1]), date: String(v[2]), credit: Number(v[3]) || 0, debit: Number(v[4]) || 0, bal: Number(v[5]) || 0, desc: String(v[6]),
+             party: String(v[7]), biz: String(v[8]), status: String(v[9]), link: String(v[10]) };
+  });
+}
+// lines: шинэ мөрүүд (давхардсаныг алгасна); updates: [{id, status, link}] — тулгалтын үр дүн
+function adminBank(d) {
+  const sh = bankSheet(), have = {}, rows = [];
+  const cur = bankRows();
+  cur.forEach(function (r, i) { have[r.id] = i + 2; });
+  const now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), by = String(d.by || '').slice(0, 40);
+  (d.lines || []).forEach(function (l) {
+    const id = String(l.id || '').slice(0, 120);
+    if (!id || have[id] || !BIZ_NAMES[l.biz]) return;
+    have[id] = -1;
+    rows.push([id, String(l.acct).slice(0, 20), String(l.date).slice(0, 19), Number(l.credit) || 0, Number(l.debit) || 0, Number(l.bal) || 0, String(l.desc || '').slice(0, 250),
+               String(l.party || '').slice(0, 30), l.biz, 'Шинэ', '', by, now]);
+  });
+  if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, BANK_HEAD.length).setValues(rows);
+  let upd = 0;
+  const pos = {};
+  bankRows().forEach(function (r, i) { pos[r.id] = i + 2; });
+  (d.updates || []).forEach(function (u) {
+    const r = pos[String(u.id)]; if (!r) return;
+    sh.getRange(r, 10, 1, 3).setValues([[String(u.status || '').slice(0, 20), String(u.link || '').slice(0, 120), by]]); upd++;
+  });
+  return { status: 'ok', added: rows.length, updated: upd };
+}
+// Удирдагч захиалгын төлбөрийг «Орсон» болгох (банкны хуулгаар тулгахад)
+function adminOrder(d) {
+  const o = orderRows().filter(function (x) { return x.id === String(d.id); })[0];
+  if (!o) return { status: 'error', error: 'not_found' };
+  const sh = orderSheet(), f = d.fields || {};
+  if (f.paid) sh.getRange(o.row, 18).setValue(f.paid === 'Орсон' ? 'Орсон' : 'Ороогүй');
+  if (f.saleDone !== undefined) sh.getRange(o.row, 21).setValue(String(f.saleDone).slice(0, 30));
+  if (f.note) sh.getRange(o.row, 19).setValue(String(o.note || '') + ' ' + String(f.note).slice(0, 100));
+  sh.getRange(o.row, 20).setValue(Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + ' ' + String(d.by || 'Удирдлага'));
+  return { status: 'ok' };
+}
+// Дэлгүүрийн төлбөрийн мэдээлэл (данс, эзэмшигч) — GitHub-д бичихгүй, Script Properties-д
+function adminSetting(d) {
+  if (d.key === 'taxcfg') { PropertiesService.getScriptProperties().setProperty('TAXCFG', JSON.stringify(d.value || {}).slice(0, 8000)); return { status: 'ok' }; }
+  if (!BIZ_NAMES[d.biz]) return { status: 'error', error: 'biz' };
+  PropertiesService.getScriptProperties().setProperty('PAYINFO_' + d.biz, String(d.payInfo || '').slice(0, 300));
+  return { status: 'ok' };
+}
+function payInfoAll() { const p = PropertiesService.getScriptProperties(), o = {}; Object.keys(BIZ_NAMES).forEach(function (b) { o[b] = p.getProperty('PAYINFO_' + b) || ''; }); return o; }
+
+// ═══════════ АЖИЛЧДАД ДААЛГАВАР ═══════════
+function taskSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_TASK);
+  if (!sh) { sh = ss.insertSheet(SHEET_TASK); sh.appendRow(TASK_HEAD); styleHead(sh, TASK_HEAD.length, '#6D28D9'); sh.getRange('B:B').setNumberFormat('@'); sh.getRange('G:G').setNumberFormat('@'); }
+  return sh;
+}
+function taskRows() {
+  const sh = taskSheet(), last = sh.getLastRow();
+  if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, TASK_HEAD.length).getValues().map(function (v, i) {
+    return { row: i + 2, id: String(v[0]), created: fmtDate(v[1], 'yyyy-MM-dd HH:mm'), biz: String(v[2]), staffId: String(v[3]), staffName: String(v[4]), title: String(v[5]),
+             due: fmtDate(v[6], 'yyyy-MM-dd'), status: String(v[7]), doneBy: String(v[8]), doneAt: fmtDate(v[9], 'yyyy-MM-dd HH:mm'), from: String(v[10]), note: String(v[11]) };
+  }).filter(function (t) { return t.id && t.status !== 'Цуцалсан'; });
+}
+function adminTask(d) {
+  const sh = taskSheet();
+  if (d.cancelId) { const t = taskRows().filter(function (x) { return x.id === String(d.cancelId); })[0]; if (!t) return { status: 'error', error: 'not_found' }; sh.getRange(t.row, 8).setValue('Цуцалсан'); return { status: 'ok' }; }
+  const t = d.task || {};
+  if (!BIZ_NAMES[t.biz] || !String(t.title || '').trim()) return { status: 'error', error: 'fields' };
+  const s = t.staffId && t.staffId !== 'all' ? staffRows().filter(function (x) { return x.id === t.staffId; })[0] : null;
+  const id = 'T' + Date.now();
+  sh.appendRow([id, Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), t.biz, s ? s.id : 'all', s ? s.name : 'Бүх ажилтан', String(t.title).slice(0, 200),
+    /^\d{4}-\d{2}-\d{2}$/.test(String(t.due)) ? t.due : '', 'Шинэ', '', '', String(d.by || '').slice(0, 40), String(t.note || '').slice(0, 300)]);
+  return { status: 'ok', id: id };
+}
+function staffTasks(d) {
+  const who = checkStaff(d.token);
+  if (!who) return { status: 'error', error: 'auth' };
+  const since = Utilities.formatDate(new Date(Date.now() - 7 * 864e5), TZ, 'yyyy-MM-dd');
+  return { status: 'ok', tasks: taskRows().filter(function (t) {
+    return t.biz === who.biz && (t.staffId === 'all' || t.staffId === who.staff.id) && (t.status === 'Шинэ' || t.doneAt.slice(0, 10) >= since);
+  }).map(function (t) { delete t.row; return t; }) };
+}
+function staffTaskDone(d) {
+  const who = checkStaff(d.token);
+  if (!who) return { status: 'error', error: 'auth' };
+  const t = taskRows().filter(function (x) { return x.id === String(d.id) && x.biz === who.biz && (x.staffId === 'all' || x.staffId === who.staff.id); })[0];
+  if (!t) return { status: 'error', error: 'not_found' };
+  taskSheet().getRange(t.row, 8, 1, 3).setValues([['Хийсэн', who.staff.name, Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')]]);
+  return { status: 'ok' };
 }
 
 // ═══════════ ЗАХИАЛГА ═══════════
@@ -801,7 +925,7 @@ function products(biz) {
   if (last < 2) return { status: 'ok', products: [] };
   const list = productRows().filter(function (p) { return p.biz === biz; })
     .map(function (p) { return { name: p.name, unit: p.unit, price: p.price, cls: p.cls, cat: p.cat, off: p.off }; });
-  return { status: 'ok', products: list };
+  return { status: 'ok', products: list, payInfo: PropertiesService.getScriptProperties().getProperty('PAYINFO_' + biz) || '' };
 }
 function productRows() {
   const sh = prodSheet(), last = sh.getLastRow();
@@ -877,4 +1001,4 @@ function selfTest() {
   const ok = !!checkStaff(t), fake = !!checkStaff(t.slice(0, -3) + 'abc'), none = !!checkStaff('');
   Logger.log('ТОКЕН ' + (ok && !fake && !none ? 'OK' : 'АЛДАА') + ' (зөв=' + ok + ', хуурамч=' + fake + ', хоосон=' + none + ')');
 }
-function setup() { logSheet(); prodSheet(); staffSheet(); salarySheet(); stockSheet(); journalSheet(); partnerSheet(); orderSheet(); }
+function setup() { logSheet(); prodSheet(); staffSheet(); salarySheet(); stockSheet(); journalSheet(); partnerSheet(); orderSheet(); bankSheet(); taskSheet(); remindSheet(); }

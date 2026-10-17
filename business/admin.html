@@ -148,6 +148,23 @@
   </div>
 </div>
 
+<!-- Ажилчдад даалгавар -->
+<div class="sheet" id="taskSheet" onclick="if(event.target===this)closeSheet('taskSheet')">
+  <div class="panel">
+    <h2>Ажилчдад даалгавар илгээх</h2>
+    <div class="row2">
+      <div><label for="tkBiz">Дэлгүүр</label><select id="tkBiz" onchange="tkStaffOpts()"></select></div>
+      <div><label for="tkStaff">Хэнд</label><select id="tkStaff"></select></div>
+    </div>
+    <label for="tkTitle">Даалгавар</label><input id="tkTitle" placeholder="Жишээ: Сарын тооллого хийх, агуулахаас 32см 10ш авчрах">
+    <label for="tkDue">Хугацаа</label><input id="tkDue" type="date">
+    <label for="tkNote">Тайлбар</label><input id="tkNote">
+    <p class="muted" style="font-size:12.5px;margin-top:6px">Ажилтан өөрийн хуудсанд нэвтэрмэгц дээд хэсэгт харагдана, «Хийсэн» дарахад энд тэмдэглэгдэнэ.</p>
+    <button class="btn" onclick="saveTask()">Илгээх</button>
+    <button class="btn ghost" onclick="closeSheet('taskSheet')">Болих</button>
+  </div>
+</div>
+
 <!-- Сануулга -->
 <div class="sheet" id="remSheet" onclick="if(event.target===this)closeSheet('remSheet')">
   <div class="panel">
@@ -270,6 +287,7 @@
   </div>
 </div>
 
+<input type="file" id="bankFile" accept=".xlsx,.xls" style="display:none" onchange="importBank(this)">
 <input type="file" id="baazFile" accept=".xlsx,.xls" style="display:none" onchange="importBaaz(this)">
 <div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -279,6 +297,7 @@
 <script src="reports.js"></script>
 <script src="tax.js"></script>
 <script src="calendar.js"></script>
+<script src="bank.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>
