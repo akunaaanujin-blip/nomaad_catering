@@ -9,7 +9,7 @@ var records = [], staff = [], salary = [], stockData = {}, moves = [], journal =
 var BASE_PRODUCTS = {};
 Object.keys(BUSINESSES).forEach(function (k) { BASE_PRODUCTS[k] = BUSINESSES[k].products.slice(); });
 var state = { view: 'companies', biz: '', module: 'sales', period: 'month', staffBiz: 'all', month: todayStr().slice(0, 7), q: '', stockF: 'in', showMoves: false,
-  sub: { sales: 'overview', products: 'stock', finance: 'dash' }, from: todayStr().slice(0, 8) + '01', to: todayStr(), acc: '10003', item: '' };
+  sub: { sales: 'overview', products: 'stock', finance: 'simple' }, from: todayStr().slice(0, 8) + '01', to: todayStr(), acc: '10003', item: '' };
 var editId = '', salId = '', salKind = 'Урьдчилгаа';
 
 if (!API_URL) $('demo').style.display = 'block';
@@ -188,7 +188,7 @@ function railHtml(pend) {
 var MENU = {
   sales: [['Борлуулалт', ['overview', 'orders', 'receipts']], ['Борлуулалтын тайлан', ['item', 'cat', 'staff', 'day', 'pay']], ['И-баримт', ['ebarimt']]],
   products: [['Бараа материал', ['catalog', 'stock', 'in']], ['Тайлан', ['move', 'card']], ['Харилцагч', ['suppliers']]],
-  finance: [['Хянах самбар', ['dash']], ['Журнал', ['entry', 'journal', 'trial', 'ledger', 'gl']], ['Мөнгөн хөрөнгө', ['bank', 'vouchers', 'expenses', 'cash', 'cashflow']],
+  finance: [['Энгийн', ['simple', 'monthly', 'glossary']], ['Нягтлангийн тайлан · шалгалт', ['dash']], ['Журнал', ['entry', 'journal', 'trial', 'ledger', 'gl']], ['Мөнгөн хөрөнгө', ['bank', 'vouchers', 'expenses', 'cash', 'cashflow']],
             ['Авлага өглөг', ['partners', 'aging_r', 'aging_p', 'pstmt']], ['Санхүүгийн тайлан', ['balance', 'pl', 'equity']], ['Дансны удирдлага', ['accounts', 'opening', 'lock', 'close']]],
 };
 function subLabel(mod, k) { var x = (SUBS[mod] || []).filter(function (s) { return s[0] === k; })[0]; return x ? x[1] : k; }
@@ -260,8 +260,8 @@ function companyView() {
   var mod = state.module;
   if (mod === 'staff') return pageHead('Ажилчид', '') + staffView(state.biz);
   if (mod === 'reports') return pageHead('Бүх тайлан', '<button class="b-btn primary" onclick="exportAll()">Бүх тайланг Excel-ээр татах</button>', true) + reportsModule();
-  var sub = state.sub[mod], noPeriod = /^(accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p)$/.test(sub);
-  var acts = /^(overview|dash|stock|close|bank|opening|lock)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
+  var sub = state.sub[mod], noPeriod = /^(accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary)$/.test(sub);
+  var acts = /^(overview|dash|stock|close|bank|opening|lock|simple|monthly|glossary)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
   if (sub === 'entry') acts = '<button class="b-btn primary" onclick="openEntry()">+ Журналын бичилт</button>' + acts;
   if (sub === 'vouchers') acts = '<button class="b-btn primary" onclick="openVoucher(\'КО\')">+ Кассын орлого</button><button class="b-btn primary" onclick="openVoucher(\'КЗ\')">+ Кассын зарлага</button>' +
     '<button class="b-btn" onclick="openVoucher(\'ХО\')">+ Харилцахын орлого</button><button class="b-btn" onclick="openVoucher(\'ХЗ\')">+ Харилцахын зарлага</button>' + acts;
@@ -274,7 +274,8 @@ function companyView() {
     (hasWarehouse(state.biz) ? '<button class="b-btn" onclick="openMove(\'Шилжүүлэг\')">Шилжүүлэг</button>' : '') +
     '<button class="b-btn" onclick="openMove(\'Тооллого\')">Тооллого</button><button class="b-btn" onclick="openMove(\'Хасалт\')">Хасалт</button>' +
     '<button class="b-btn" onclick="exportCurrent()">Excel</button>';
-  return pageHead(subLabel(mod, sub), acts, !noPeriod) + subBody();
+  var help = mod === 'finance' && REP_HELP[sub] ? '<p class="rep-help">' + REP_HELP[sub] + '</p>' : '';
+  return pageHead(subLabel(mod, sub), acts, false) + help + (!noPeriod ? periodBar() : '') + subBody();
 }
 var PERIODS = [['today', 'Өнөөдөр'], ['yesterday', 'Өчигдөр'], ['week', 'Сүүлийн 7 хоног'], ['month', 'Энэ сар'], ['last30', 'Сүүлийн 30 хоног'], ['year', 'Энэ он'], ['all', 'Бүх хугацаа'], ['custom', 'Огноо сонгох']];
 function periodBar() {
@@ -682,7 +683,7 @@ var SUBS = {
   sales: [['overview', 'Тойм'], ['orders', 'Захиалга'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'], ['pay', 'Төлбөрийн хэлбэрээр'],
           ['receipts', 'Баримтын жагсаалт'], ['ebarimt', 'И-баримт тулгалт']],
   products: [['catalog', 'Барааны бүртгэл, үнэ'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['card', 'Барааны карт'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
-  finance: [['dash', 'Хянах самбар'], ['entry', 'Журналын бичилт'], ['journal', 'Ерөнхий журнал'], ['trial', 'Гүйлгээ баланс'], ['ledger', 'Дансны хуулга'], ['gl', 'Ерөнхий дэвтэр'],
+  finance: [['simple', 'Энгийн тойм'], ['monthly', 'Сар бүрийн ажил'], ['glossary', 'Нэр томьёо'], ['dash', 'Бүртгэлийн шалгалт'], ['entry', 'Журналын бичилт'], ['journal', 'Ерөнхий журнал'], ['trial', 'Гүйлгээ баланс'], ['ledger', 'Дансны хуулга'], ['gl', 'Ерөнхий дэвтэр'],
             ['aging_r', 'Авлагын насжилт'], ['aging_p', 'Өглөгийн насжилт'], ['pstmt', 'Харилцагчийн хуулга'], ['equity', 'Өмчийн өөрчлөлт'], ['opening', 'Эхний үлдэгдэл'], ['lock', 'Гүйлгээ түгжих'],
             ['bank', 'Банкны хуулга'], ['vouchers', 'Кассын баримт'], ['expenses', 'Зарлага, касс хаалт'], ['cash', 'Касс, харилцах'], ['pl', 'Орлогын тайлан'], ['balance', 'Санхүүгийн байдал'], ['cashflow', 'Мөнгөн гүйлгээ'],
             ['partners', 'Авлага, өглөг'], ['accounts', 'Дансны төлөвлөгөө'], ['close', 'Он хаах, нөөц']],
@@ -770,6 +771,9 @@ function subBody() {
   if (mod === 'sales' && sub === 'overview') return salesModule();
   if (mod === 'products' && sub === 'stock') return productsModule();
   if (mod === 'finance' && sub === 'dash') return financeDash();
+  if (mod === 'finance' && sub === 'simple') return simpleView();
+  if (mod === 'finance' && sub === 'monthly') return monthlyView();
+  if (mod === 'finance' && sub === 'glossary') return glossaryView();
   if (mod === 'finance' && sub === 'close') return closeView();
   if (mod === 'finance' && sub === 'bank') return bankView();
   if (mod === 'finance' && sub === 'opening') return openingView();
@@ -878,7 +882,7 @@ function closesTable(r) {
 function allReportList() {   // [модуль, тайлан, нэр] — тойм/самбар/карт/гар бичилтээс бусад бүх тайлан
   var out = [];
   ['sales', 'products', 'finance'].forEach(function (mod) {
-    SUBS[mod].forEach(function (s) { if (!/^(overview|dash|card|entry|close|bank|opening|lock|pstmt)$/.test(s[0])) out.push([mod, s[0], s[1]]); });
+    SUBS[mod].forEach(function (s) { if (!/^(overview|dash|card|entry|close|bank|opening|lock|pstmt|simple|monthly|glossary)$/.test(s[0])) out.push([mod, s[0], s[1]]); });
   });
   return out;
 }
