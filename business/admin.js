@@ -102,7 +102,15 @@ function go(view, biz) {
 function setModule(m) { state.module = m; render(); }
 function setPeriod(p) { if (p === 'custom') { state.period = 'custom'; render(); return; } state.period = p; var r = range(); state.from = r[0]; state.to = r[1]; render(); }
 function setDates() { state.period = 'custom'; state.from = $('pFrom').value || state.from; state.to = $('pTo').value || state.to; if (state.from > state.to) state.to = state.from; render(); }
-function setSub(s) { state.sub[state.module] = s; render(); window.scrollTo(0, 0); }
+function setSub(s) {
+  // тухайн модульд байхгүй дэд хуудсыг (жишээ нь Санхүүгийн хуудсыг Борлуулалтад) нээвэл тохирох модульд шилжүүлнэ
+  if (SUBS[state.module] && !SUBS[state.module].some(function (x) { return x[0] === s; })) {
+    var mod = Object.keys(SUBS).filter(function (k) { return SUBS[k].some(function (x) { return x[0] === s; }); })[0];
+    if (!mod) return;
+    state.module = mod;
+  }
+  state.sub[state.module] = s; render(); window.scrollTo(0, 0);
+}
 function setStaffBiz(b) { state.staffBiz = b; render(); }
 function setMonth(m) { state.month = m; render(); }
 
@@ -127,7 +135,7 @@ function sums(list) {
     var a = Number(x.amount) || 0;
     if (x.type === 'sale') {
       s.sales += a; if (a > 0) s.n++;
-      if (x.pay === 'Карт') s.card += a; else if (x.pay === 'Шилжүүлэг') s.transfer += a; else if (x.pay === 'Зээлээр') s.credit += a; else s.cash += a;
+      if (x.pay === 'Карт') s.card += a; else if (x.pay === 'Шилжүүлэг') s.transfer += a; else if (x.pay === 'Зээлээр' || x.pay === 'Урьдчилгаа') s.credit += a; else s.cash += a;
     } else if (x.type === 'expense') s.exp += a;
   });
   return s;
@@ -297,7 +305,7 @@ function salesModule() {
   var staffRows = Object.keys(byStaff).sort(function (a, b) { return byStaff[b] - byStaff[a]; });
   return '<div class="kpis">' +
     kpi('Борлуулалт', fmt(s.sales), Object.keys(bills).length + ' баримт / гүйлгээ') +
-    kpi('Бэлэн', fmt(s.cash)) + kpi('Карт', fmt(s.card)) + kpi('Шилжүүлэг', fmt(s.transfer)) + (s.credit ? kpi('Зээлээр (авлага)', fmt(s.credit)) : '') +
+    kpi('Бэлэн', fmt(s.cash)) + kpi('Карт', fmt(s.card)) + kpi('Шилжүүлэг', fmt(s.transfer)) + (s.credit ? kpi('Захиалга (урьдчилгаа, зээл)', fmt(s.credit)) : '') +
     '</div><div class="grid2"><div class="card"><h2>Худалдагчаар</h2><div class="scroll"><table>' +
     (staffRows.length ? '<tr><th>Ажилтан</th><th class="n">Дүн</th></tr>' + staffRows.map(function (k) {
       return '<tr><td>' + esc(k) + '</td><td class="n">' + fmt(byStaff[k]) + '</td></tr>';
@@ -779,6 +787,8 @@ function subBody() {
   if (mod === 'finance' && sub === 'opening') return openingView();
   if (mod === 'finance' && sub === 'lock') return lockView();
   var rep = makeReport(mod, sub), pre = '';
+  if (mod === 'sales' && sub === 'orders') pre = '<div class="tabs" style="margin-bottom:10px">' + [['unpaid', 'Төлбөр хүлээгдэж'], ['paid', 'Төлбөр орсон'], ['all', 'Бүгд']].map(function (t) {
+    return '<button class="' + ((state.ordF || 'unpaid') === t[0] ? 'on' : '') + '" onclick="state.ordF=\'' + t[0] + '\';render()">' + t[1] + '</button>'; }).join('') + '</div>';
   if (mod === 'finance' && sub === 'pstmt') {
     var names = {}; J().forEach(function (e) { if (e.partner && /^(1201|1503|3101)$/.test(e.dr + '') || e.partner && /^(1201|1503|3101)$/.test(e.cr + '')) names[e.partner] = 1; });
     partners.filter(function (p) { return p.biz === state.biz; }).forEach(function (p) { names[p.name] = 1; });
@@ -804,14 +814,15 @@ function cellVal(col, v) {
   return esc(v);
 }
 function reportCard(rep, cancellable) {
-  var head = '<tr>' + rep.cols.map(function (cl) { return '<th' + (cl.num ? ' class="n"' : '') + '>' + cl.label + '</th>'; }).join('') + (rep.edit ? '<th></th>' : '') + (rep.print ? '<th></th>' : '') + (cancellable ? '<th></th>' : '') + '</tr>';
+  var head = '<tr>' + rep.cols.map(function (cl) { return '<th' + (cl.num ? ' class="n"' : '') + '>' + cl.label + '</th>'; }).join('') + (rep.actions ? '<th></th>' : '') + (rep.edit ? '<th></th>' : '') + (rep.print ? '<th></th>' : '') + (cancellable ? '<th></th>' : '') + '</tr>';
   var body = rep.rows.length ? rep.rows.map(function (r) {
     return '<tr' + (r._b ? ' class="b"' : '') + '>' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n' + (r[cl.k] < 0 ? ' neg' : '') + '"' : '') + '>' + cellVal(cl, r[cl.k]) + '</td>'; }).join('') +
+      (rep.actions ? '<td class="n">' + (r._act || '') + '</td>' : '') +
       (rep.edit ? '<td class="n">' + (r._id ? '<button class="mini" onclick="' + rep.edit + '(' + esc(JSON.stringify(r._id)) + ')">Засах</button>' : '') + '</td>' : '') +
       (rep.print ? '<td class="n">' + (r._id ? '<button class="mini" style="color:var(--accent)" onclick="printVoucherId(' + esc(JSON.stringify(r._id)) + ')">Хэвлэх</button>' : '') + '</td>' : '') +
       (cancellable ? '<td class="n">' + (r._id ? '<button class="mini" onclick="' + cancellable + '(' + esc(JSON.stringify(r._id)) + ')">' + (cancellable === 'openProduct' ? 'Засах' : 'Цуцлах') + '</button>' : '') + '</td>' : '') + '</tr>';
   }).join('') : '<tr><td colspan="' + rep.cols.length + '" class="muted">Мэдээлэл алга</td></tr>';
-  var foot = rep.total ? '<tr class="tot">' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n"' : '') + '>' + cellVal(cl, rep.total[cl.k]) + '</td>'; }).join('') + (rep.edit ? '<td></td>' : '') + (rep.print ? '<td></td>' : '') + (cancellable ? '<td></td>' : '') + '</tr>' : '';
+  var foot = rep.total ? '<tr class="tot">' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n"' : '') + '>' + cellVal(cl, rep.total[cl.k]) + '</td>'; }).join('') + (rep.actions ? '<td></td>' : '') + (rep.edit ? '<td></td>' : '') + (rep.print ? '<td></td>' : '') + (cancellable ? '<td></td>' : '') + '</tr>' : '';
   var r = range();
   return '<div class="card rep"><div class="rep-cap"><b>' + esc(rep.title) + '</b><span>' + esc(BUSINESSES[state.biz].name) + ' · ' + r[0] + ' — ' + r[1] + ' · ' + rep.rows.length + ' мөр</span></div>' +
     (rep.note ? '<p class="rep-note' + (rep.check === false ? ' bad' : rep.check ? ' ok' : '') + '">' + esc(rep.note) + '</p>' : '') +

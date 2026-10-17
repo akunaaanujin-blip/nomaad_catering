@@ -21,6 +21,7 @@ var ACCOUNTS = [
   ['3404', 'ХХОАТ-ын өглөг (цалингаас суутгасан)', 'liab'],
   ['3501', 'Богино хугацаат зээл', 'liab'],
   ['3801', 'Бусад богино хугацаат өр төлбөр', 'liab'],
+  ['3802', 'Хэрэглэгчээс авсан урьдчилгаа (захиалга)', 'liab'],
   ['4101', 'Өмч (эздийн оруулсан)', 'equity'],
   ['4201', 'Эздийн өмчийн бусад хэсэг (эхний үлдэгдэл)', 'equity'],
   ['4601', 'Хуримтлагдсан ашиг', 'equity'],
@@ -57,7 +58,8 @@ function accName(c) { return ACC[c] ? ACC[c].name : c; }
 function debitNormal(c) { var t = ACC[c] && ACC[c].type; return t === 'asset' || t === 'contra' || t === 'cogs' || t === 'exp'; }
 
 var PAY_ACC = { 'Бэлэн': '10003', 'Карт': '110106', 'Шилжүүлэг': '1101', 'Харилцах': '1101', 'Зээлээр': '3101' };   // бараа орлого (худалдан авалт)
-var SALE_ACC = { 'Бэлэн': '10003', 'Карт': '110106', 'Шилжүүлэг': '1101', 'Зээлээр': '1201' };                       // борлуулалт: зээлээр = авлага
+// Урьдчилгаа: хүргэлтээс өмнө төлсөн захиалга — мөнгө ирэхэд 3802-т, бараа өгөхөд 3802 → орлого
+var SALE_ACC = { 'Бэлэн': '10003', 'Карт': '110106', 'Шилжүүлэг': '1101', 'Зээлээр': '1201', 'Урьдчилгаа': '3802' };                       // борлуулалт: зээлээр = авлага
 var VOUCHER_NAMES = { 'КО': 'Кассын орлого', 'КЗ': 'Кассын зарлага', 'ХО': 'Харилцахын орлого', 'ХЗ': 'Харилцахын зарлага' };
 function expenseAcc(cat, biz, tracked) {
   var c = String(cat || '');
@@ -131,7 +133,7 @@ function buildJournal(biz, R) {
     if (R.closed && x.date <= R.closed) return;   // хаагдсан онд хамаарах хоцорч ирсэн бичлэг — он нээлтэд аль хэдийн тусгагдсан тул давхар бичихгүй
     var a = Number(x.amount) || 0, d = x.date;
     if (x.type === 'sale') {
-      var cash = SALE_ACC[x.pay] || '10003', cust = x.pay === 'Зээлээр' ? (x.customer || '(нэргүй харилцагч)') : '';
+      var cash = SALE_ACC[x.pay] || '10003', cust = x.pay === 'Зээлээр' || x.pay === 'Урьдчилгаа' ? (x.customer || '(нэргүй харилцагч)') : '';
       var item = String(x.item).replace(/ \(буцаалт\)$/, '');
       var c = Math.abs(ce.rec[x.id] || 0);
       if (a >= 0) {
@@ -314,13 +316,13 @@ function repPartners(E, to) {
   var p = {};
   E.forEach(function (e) {
     if (e.date > to) return;
-    [['1201', 1], ['3101', -1], ['1503', 1]].forEach(function (x) {
+    [['1201', 1], ['3101', -1], ['1503', 1], ['3802', -1]].forEach(function (x) {
       var k = x[0];
       if (e.dr !== k && e.cr !== k) return;
       var nm = e.partner || '(харилцагч заагаагүй)';   // кассаас «татан авалт» төлсөн г.м — нийт дүн дансны үлдэгдэлтэй таарна
       var o = p[nm] = p[nm] || { rec: 0, pay: 0 };
       var v = e.dr === k ? e.amount : -e.amount;
-      if (k === '3101') o.pay -= v; else o.rec += v;
+      if (k === '3101' || k === '3802') o.pay -= v; else o.rec += v;
     });
   });
   var rows = Object.keys(p).sort().map(function (k) { return { name: k, rec: r0(p[k].rec), pay: r0(p[k].pay), net: r0(p[k].rec - p[k].pay) }; })
@@ -453,7 +455,7 @@ function yearClosePayload(biz, R, year) {
   };
   var pl = 0;
   ACCOUNTS.forEach(function (a) { if (/^(rev|contra|cogs|exp)$/.test(a[2])) pl += b[a[0]] || 0; });
-  var byPartner = { '1201': {}, '3101': {}, '1503': {} };
+  var byPartner = { '1201': {}, '3101': {}, '1503': {}, '3802': {} };
   E.forEach(function (e) {
     if (e.date > end) return;
     [e.dr, e.cr].forEach(function (k, i) { if (byPartner[k]) { var p = e.partner || ''; byPartner[k][p] = (byPartner[k][p] || 0) + (i === 0 ? e.amount : -e.amount); } });

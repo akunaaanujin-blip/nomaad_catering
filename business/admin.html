@@ -148,6 +148,24 @@
   </div>
 </div>
 
+<!-- Захиалгын төлбөр (зөвхөн удирдлага) -->
+<div class="sheet" id="payOrderSheet" onclick="if(event.target===this)closeSheet('payOrderSheet')">
+  <div class="panel">
+    <h2>Захиалгын төлбөр орсон</h2>
+    <p class="muted" id="poInfo"></p>
+    <div class="row2">
+      <div><label for="poDate">Огноо</label><input id="poDate" type="date"></div>
+      <div><label for="poAcc">Хаана орсон</label><select id="poAcc"></select></div>
+    </div>
+    <label for="poAmount">Орж ирсэн дүн (₮)</label><input id="poAmount" type="number" inputmode="numeric" oninput="poCalc()">
+    <div id="poDiffWrap" style="display:none"><label for="poDiff">Зөрүү <b id="poDiffAmt"></b> юу вэ</label>
+      <select id="poDiff"><option value="7207">Буухиагийн хөлс (хүргэлтийн зардал)</option><option value="6001">Хөнгөлөлт</option></select></div>
+    <p class="muted" style="font-size:12.5px;margin-top:8px">Банкны хуулга оруулдаг бол «Банкны хуулга» хуудаснаас тулгавал илүү зөв. Энэ товчийг бэлэн мөнгө, өөр дансаар орсон төлбөрт ашиглана.</p>
+    <button class="btn" onclick="savePayOrder()">Бүртгэх</button>
+    <button class="btn ghost" onclick="closeSheet('payOrderSheet')">Болих</button>
+  </div>
+</div>
+
 <!-- Ажилчдад даалгавар -->
 <div class="sheet" id="taskSheet" onclick="if(event.target===this)closeSheet('taskSheet')">
   <div class="panel">

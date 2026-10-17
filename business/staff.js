@@ -386,12 +386,14 @@ function submitClose() {
 // ── Бичлэг хадгалах + илгээх ──
 function addRecord(r) { addRecords([r]); }
 // Олон бичлэгийг нэг дор хадгална — ID бүр давтагдашгүй (сагсны мөрүүд нэг мс-д үүсдэг)
+var recSeq = 0;
 function addRecords(list) {
   var now = new Date();
   var all = load(LS_REC, []);
   var q = load(LS_QUEUE, []);
   list.forEach(function (r, i) {
-    r.id = BIZ_KEY + '-' + now.getTime() + '-' + i;
+    // ID давтагдашгүй байх ёстой (сервер ижил ID-тайг давхар гэж үзээд хаядаг): цаг + дараалал + санамсаргүй
+    r.id = BIZ_KEY + '-' + now.getTime() + '-' + (recSeq++) + '-' + Math.random().toString(36).slice(2, 7);
     r.biz = BIZ_KEY;
     r.date = todayStr(now);
     r.time = timeStr(now);
@@ -457,7 +459,7 @@ function todayTotals() {
       t.sales += r.amount;
       if (r.pay === 'Карт') t.card += r.amount;
       else if (r.pay === 'Шилжүүлэг') t.transfer += r.amount;
-      else if (r.pay === 'Зээлээр') t.credit += r.amount;   // кассанд мөнгө ороогүй
+      else if (r.pay === 'Зээлээр' || r.pay === 'Урьдчилгаа') t.credit += r.amount;   // кассанд мөнгө ороогүй
       else t.cash += r.amount;
     } else if (r.type === 'expense') t.exp += r.amount;
   });

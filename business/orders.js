@@ -55,24 +55,22 @@ function saveOrder(o, done) {
 // ── Санхүү: төлөв өөрчлөгдөхөд борлуулалт / төлбөр / буцаалт бичих ──
 function ordCustomer(o) { return (o.customer ? o.customer + ' ' : '') + o.phone; }
 // Буухиагаар хүргэсэн мөнгө (бэлнээр авсан ч) дансанд шилжиж ирдэг тул «Шилжүүлэг» (харилцах) гэж бичнэ — дэлгүүрийн кассыг хөндөхгүй
-function ordSalePay(o) { return o.paid === 'Орсон' ? 'Шилжүүлэг' : 'Зээлээр'; }
+// Төлбөрийг ЗӨВХӨН удирдлага тэмдэглэнэ. Удирдлага «орсон» гэж баталсан бол мөнгө нь урьдчилгаа (3802)-д байгаа → бараа өгөхөд орлого болно;
+// баталгаагүй бол авлага (1201) болж, удирдлага төлбөрийг тулгахад хаагдана.
+function ordSalePay(o) { return o.paid === 'Орсон' ? 'Урьдчилгаа' : 'Зээлээр'; }
 function ordBook(o, prev) {
   var sold = /^yes:/.test(o.saleDone || ''), salePay = sold ? o.saleDone.slice(4) : '';
   var lines = function (sign, pay) {
     return ordItems(o).map(function (i) {
       return { type: 'sale', item: i.name + (sign < 0 ? ' (буцаалт)' : ''), qty: sign * (Number(i.qty) || 1), unit: 'ш', price: Number(i.price) || 0,
-               amount: sign * Math.round((Number(i.qty) || 1) * (Number(i.price) || 0)), pay: pay, bill: o.id, customer: pay === 'Зээлээр' ? ordCustomer(o) : '', note: 'Захиалга ' + o.phone };
+               amount: sign * Math.round((Number(i.qty) || 1) * (Number(i.price) || 0)), pay: pay, bill: o.id, customer: pay === 'Зээлээр' || pay === 'Урьдчилгаа' ? ordCustomer(o) : '', note: 'Захиалга ' + o.phone };
     }).filter(function (r) { return r.amount; });
   };
   // 1) Буухиад өгсөн / Хүргэгдсэн болмогц борлуулалт (хуучин хүснэгтээс орж ирсэнд — төлбөр ормогц л)
   if (!sold && o.status !== 'Цуцалсан' && /Буухиад өгсөн|Хүргэгдсэн/.test(o.status) && o.saleDone !== 'imported') {
     var pay = ordSalePay(o); addRecords(lines(1, pay)); o.saleDone = 'yes:' + pay; return;
   }
-  if (o.saleDone === 'imported' && o.paid === 'Орсон' && prev.paid !== 'Орсон') { addRecords(lines(1, 'Шилжүүлэг')); o.saleDone = 'yes:Шилжүүлэг'; return; }
-  // 2) Зээлээр зарсан захиалгын мөнгө орвол авлага хаагдана
-  if (sold && salePay === 'Зээлээр' && o.paid === 'Орсон' && prev.paid !== 'Орсон') {
-    addRecords([{ type: 'collect', amount: o.amount, pay: 'Шилжүүлэг', customer: ordCustomer(o), bill: o.id, note: 'Захиалгын төлбөр ' + o.phone }]);
-  }
+  // 2) Төлбөр орсныг удирдлага (банкны хуулга / «Төлбөр орсон») бүртгэнэ — энд юу ч бичихгүй
   // 3) Борлуулалт бичигдсэний дараа цуцалбал буцаалт
   if (sold && o.status === 'Цуцалсан' && prev.status !== 'Цуцалсан') { addRecords(lines(-1, salePay)); o.saleDone = 'returned'; }
 }
@@ -121,7 +119,7 @@ function ordAddrInput() {
 function submitOrder() {
   if (ordEdit) { var cur = orders.filter(function (x) { return x.id === ordEdit.id; })[0]; withFresh(function () {
     var fresh = orders.filter(function (x) { return x.id === ordEdit.id; })[0];
-    if (fresh && fresh.paid === 'Орсон' && $('orPaid').value !== 'Орсон') $('orPaid').value = 'Орсон';
+    if (fresh) $('orPaid').value = fresh.paid || 'Ороогүй';   // төлбөрийн төлөвийг зөвхөн удирдлага өөрчилнө
     if (fresh) { ordEdit.paid = fresh.paid; ordEdit.saleDone = fresh.saleDone; ordEdit.status = fresh.status; }
     submitOrder2();
   }); return; }
@@ -179,7 +177,7 @@ function renderOrders() {
       '<div class="ord-r"><b>' + fmt(o.amount) + '</b>' +
       '<button class="mini" style="color:var(--accent)" onclick="copyPayMsg(\'' + o.id + '\')">Төлбөрийн мессеж</button>' +
       (o.status === 'Буухиад өгсөн' ? '<button class="mini" onclick="quickOrd(\'' + o.id + '\',\'status\',\'Хүргэгдсэн\')">Хүргэгдсэн</button>' : '') +
-      (o.paid !== 'Орсон' && o.status !== 'Цуцалсан' ? '<button class="mini" style="color:var(--green)" onclick="quickOrd(\'' + o.id + '\',\'paid\',\'Орсон\')">Төлбөр орсон</button>' : '') + '</div></li>';
+      '</div></li>';
   }).join('') : '<li class="muted">Захиалга алга</li>';
 }
 

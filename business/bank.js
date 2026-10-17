@@ -143,19 +143,11 @@ function bankApply(ids, quiet) {
     if (pick.indexOf('O:') === 0) {
       var o = (window.adminOrders || []).filter(function (x) { return x.id === pick.slice(2); })[0]; if (!o) return;
       var fee = /EB-?\s?\d{8}/i.test(l.desc) && o.amount > l.credit ? o.amount - l.credit : 0;
-      var sold = String(o.saleDone || '');
-      if (sold === 'yes:Зээлээр') {   // авлага хаана (+ буухиагийн хөлс)
-        entries.push({ biz: biz, date: d, dr: acc, cr: '1201', amount: l.credit, partner: ordCust(o), desc: 'Захиалгын төлбөр (банк) · ' + o.phone });
-        if (fee) entries.push({ biz: biz, date: d, dr: '7207', cr: '1201', amount: fee, partner: ordCust(o), desc: 'Буухиагийн хөлс · ' + o.phone });
-      } else if (sold === 'imported' || sold === '') {
-        if (sold === 'imported') {   // хуучин хүснэгтийн захиалга — борлуулалтыг энд бичнэ
-          entries.push({ biz: biz, date: d, dr: acc, cr: '5101', amount: l.credit + fee, partner: '', desc: 'Захиалгын борлуулалт (хуучин) · ' + o.phone });
-          if (fee) entries.push({ biz: biz, date: d, dr: '7207', cr: acc, amount: fee, partner: '', desc: 'Буухиагийн хөлс · ' + o.phone });
-        }   // «Шинэ» (урьдчилж төлсөн) — борлуулалт буухиад өгөхөд бичигдэнэ
-      }
-      orderUpd.push({ id: o.id, fields: { paid: 'Орсон', saleDone: sold === 'imported' ? 'yes:bank' : undefined, note: 'Банк ' + d } });
-      o.paid = 'Орсон'; if (sold === 'imported') o.saleDone = 'yes:bank';
-      updates.push({ id: id, status: 'Тулгасан', link: 'Захиалга ' + o.phone });
+      var pe = orderPayEntries(o, biz, acc, d, l.credit, fee, '7207', 'банк');
+      entries = entries.concat(pe.entries);
+      orderUpd.push({ id: o.id, fields: { paid: 'Орсон', saleDone: pe.saleDone, note: 'Банк ' + d } });
+      o.paid = 'Орсон'; if (pe.saleDone) o.saleDone = pe.saleDone;
+      updates.push({ id: id, status: 'Тулгасан', link: 'Захиалга ' + o.phone + ' #' + o.id });
       return;
     }
     var a2 = pick.slice(2);
@@ -173,4 +165,66 @@ function bankApply(ids, quiet) {
   if (entries.length) post({ type: 'admin_journal', by: ownerName, entries: entries }, function (err) { if (err) toast('Журнал: ' + err); fin(); });
   orderUpd.forEach(function (u) { post({ type: 'admin_order', id: u.id, by: ownerName, fields: u.fields }, function () { fin(); }); });
   post({ type: 'admin_bank', by: ownerName, updates: updates }, function (err) { if (err) toast('Алдаа: ' + err); fin(); });
+}
+
+// ═══════════ ЗАХИАЛГЫН ТӨЛБӨР (зөвхөн удирдлага) ═══════════
+// received — орж ирсэн мөнгө; diff — зөрүү (буухиагийн хөлс 7207 эсвэл хөнгөлөлт 6001); бичилт бүрийн утганд «#захиалгын ID» — буцаахад олдоно.
+function orderPayEntries(o, biz, acc, d, received, diff, diffAcc, how) {
+  var sold = String(o.saleDone || ''), E = [], sd, tag = ' · ' + o.phone + ' #' + o.id, cust = ordCust(o);
+  if (sold === 'yes:Зээлээр') {   // бараа өгсөн, мөнгө нь авлага → авлага хаагдана
+    E.push({ biz: biz, date: d, dr: acc, cr: '1201', amount: received, partner: cust, desc: 'Захиалгын төлбөр (' + how + ')' + tag });
+    if (diff) E.push({ biz: biz, date: d, dr: diffAcc, cr: '1201', amount: diff, partner: cust, desc: (diffAcc === '7207' ? 'Буухиагийн хөлс' : 'Хөнгөлөлт') + tag });
+  } else if (sold === 'imported') {   // хуучин хүснэгтийн захиалга — борлуулалт энд бичигдэнэ
+    E.push({ biz: biz, date: d, dr: acc, cr: '5101', amount: received, partner: '', desc: 'Захиалгын борлуулалт (хуучин)' + tag });
+    if (diff) E.push({ biz: biz, date: d, dr: diffAcc, cr: '5101', amount: diff, partner: '', desc: (diffAcc === '7207' ? 'Буухиагийн хөлс' : 'Хөнгөлөлт') + tag });
+    sd = 'yes:bank';
+  } else if (!/^yes:|^returned$/.test(sold)) {   // бараа хараахан өгөөгүй — урьдчилгаа; бараа өгөхөд орлого болно
+    E.push({ biz: biz, date: d, dr: acc, cr: '3802', amount: received, partner: cust, desc: 'Захиалгын урьдчилгаа (' + how + ')' + tag });
+    if (diff) E.push({ biz: biz, date: d, dr: diffAcc, cr: '3802', amount: diff, partner: cust, desc: (diffAcc === '7207' ? 'Буухиагийн хөлс' : 'Хөнгөлөлт') + tag });
+  }
+  return { entries: E.filter(function (e) { return e.amount > 0; }), saleDone: sd };
+}
+var payOrd = null;
+function openPayOrder(id) {
+  payOrd = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!payOrd) return;
+  $('poInfo').textContent = payOrd.phone + (payOrd.customer ? ' · ' + payOrd.customer : '') + ' · ' + fmt(payOrd.amount) + ' · ' + payOrd.status;
+  $('poDate').value = todayStr();
+  $('poAcc').innerHTML = ACCOUNTS.filter(function (a) { return a[3] === 'cash'; }).map(function (a) { return '<option value="' + a[0] + '"' + (a[0] === '1101' ? ' selected' : '') + '>' + a[0] + ' ' + esc(a[1]) + '</option>'; }).join('');
+  $('poAmount').value = payOrd.amount; $('poDiff').value = '7207'; poCalc();
+  openSheet('payOrderSheet');
+}
+function poCalc() { var diff = payOrd ? payOrd.amount - (Number($('poAmount').value) || 0) : 0; $('poDiffWrap').style.display = diff > 0 ? 'block' : 'none'; $('poDiffAmt').textContent = fmt(diff); }
+function savePayOrder() {
+  var o = payOrd, received = Number($('poAmount').value) || 0, diff = o.amount - received, d = $('poDate').value, acc = $('poAcc').value;
+  if (!(received > 0)) { toast('Орж ирсэн дүнг оруулна уу'); return; }
+  if (diff < 0) { toast('Орсон дүн захиалгын дүнгээс их байна — илүү мөнгийг «Кассын баримт»-аар бүртгэнэ үү'); return; }
+  var pe = orderPayEntries(o, state.biz, acc, d, received, diff, $('poDiff').value, 'гараар');
+  if (!confirm('Захиалга ' + o.phone + ' — ' + fmt(received) + ' орсон гэж бүртгэх үү?' + (diff ? '\nЗөрүү ' + fmt(diff) + ': ' + accName($('poDiff').value) : ''))) return;
+  var fields = { paid: 'Орсон', saleDone: pe.saleDone, note: 'Төлбөр ' + d };
+  if (!API_URL) {
+    pe.entries.forEach(function (e, i) { e.id = 'J' + Date.now() + '-' + i; e.by = ownerName; journal.push(e); });
+    o.paid = 'Орсон'; if (pe.saleDone) o.saleDone = pe.saleDone;
+    save('nb_demo_journal', journal); save('nb_orders_cozy', window.adminOrders); closeSheet('payOrderSheet'); render(); toast('Бүртгэгдлээ'); return;
+  }
+  var go2 = function () { post({ type: 'admin_order', id: o.id, by: ownerName, fields: fields }, function (err) { if (err) { toast('Алдаа: ' + err); return; } closeSheet('payOrderSheet'); toast('Төлбөр бүртгэгдлээ'); refresh(); }); };
+  if (pe.entries.length) post({ type: 'admin_journal', by: ownerName, entries: pe.entries }, function (err) { if (err) { if (err !== 'locked') toast('Алдаа: ' + err); return; } go2(); });
+  else go2();
+}
+// Буруу тэмдэглэсэн төлбөрийг буцаах: холбоотой бичилтүүдийг цуцалж, банкны мөрийг дахин «Тулгах» болгоно
+function undoPayOrder(id) {
+  var o = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!o) return;
+  var js = journal.filter(function (j) { return String(j.desc).indexOf('#' + id) >= 0; });
+  var bl = (typeof bankLines !== 'undefined' ? bankLines : []).filter(function (l) { return String(l.link).indexOf('#' + id) >= 0; });
+  if (!confirm('Захиалга ' + o.phone + '-ийн төлбөрийг «ороогүй» болгох уу?\n\n' + (js.length ? js.length + ' санхүүгийн бичилт цуцлагдана.\n' : '') + (bl.length ? bl.length + ' банкны гүйлгээ дахин тулгах жагсаалтад орно.' : ''))) return;
+  var fields = { paid: 'Ороогүй', saleDone: o.saleDone === 'yes:bank' ? 'imported' : undefined, note: 'Төлбөр буцаасан ' + todayStr() };
+  if (!API_URL) {
+    var ids = {}; js.forEach(function (j) { ids[j.id] = 1; }); journal = journal.filter(function (j) { return !ids[j.id]; });
+    bl.forEach(function (l) { l.status = 'Шинэ'; l.link = ''; });
+    o.paid = 'Ороогүй'; if (o.saleDone === 'yes:bank') o.saleDone = 'imported';
+    save('nb_demo_journal', journal); save('nb_demo_bank', bankLines); save('nb_orders_cozy', window.adminOrders); render(); return;
+  }
+  var n = js.length + 1 + (bl.length ? 1 : 0), fin = function () { if (--n === 0) { toast('Буцаагдлаа'); refresh(); } };
+  js.forEach(function (j) { post({ type: 'admin_journal', cancelId: j.id }, function () { fin(); }); });
+  if (bl.length) post({ type: 'admin_bank', by: ownerName, updates: bl.map(function (l) { return { id: l.id, status: 'Шинэ', link: '' }; }) }, function () { fin(); });
+  post({ type: 'admin_order', id: o.id, by: ownerName, fields: fields }, function () { fin(); });
 }

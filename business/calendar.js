@@ -105,12 +105,21 @@ function remCancel(id) {
 
 // ── Cozy захиалгын тойм (удирдлага) ──
 function repOrders(biz) {
-  var list = (window.adminOrders || []).filter(function (o) { return o.biz === biz; }).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
-  var items = function (o) { try { return JSON.parse(o.items).map(function (i) { return i.name + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); } catch (e) { return String(o.items); } };
-  var rows = list.map(function (o) { return { date: o.date + ' ' + o.time, phone: o.phone, customer: o.customer, items: items(o), district: o.district, status: o.status, paid: o.paid, amount: o.amount, staff: o.staff }; });
-  var unpaid = list.filter(function (o) { return o.paid !== 'Орсон' && o.status !== 'Цуцалсан'; }).reduce(function (a, o) { return a + o.amount; }, 0);
-  return { title: 'Захиалга', rows: rows, cols: [c('date', 'Огноо'), c('phone', 'Утас'), c('customer', 'Захиалагч'), c('items', 'Бараа'), c('district', 'Дүүрэг'), c('status', 'Төлөв'), c('paid', 'Төлбөр'), m('amount', 'Дүн'), c('staff', 'Ажилтан')],
-    total: { date: rows.length + ' захиалга', amount: sum(rows, 'amount') }, note: 'Төлбөр ороогүй (цуцлаагүй): ' + fmt(unpaid) + '. Захиалгыг дэлгүүрийн хуудаснаас шивж, төлөвийг тэндээс солино.' };
+  var all = (window.adminOrders || []).filter(function (o) { return o.biz === biz; }).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
+  var f = state.ordF || 'unpaid';
+  var list = f === 'unpaid' ? all.filter(function (o) { return o.paid !== 'Орсон' && o.status !== 'Цуцалсан'; }) : f === 'paid' ? all.filter(function (o) { return o.paid === 'Орсон'; }) : all;
+  var items = function (o) { try { var arr = typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []); return arr.map(function (i) { return i.name + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); } catch (e) { return String(o.items); } };
+  var rows = list.map(function (o) {
+    var act = o.status === 'Цуцалсан' ? '' : o.paid === 'Орсон'
+      ? '<button class="mini" onclick="undoPayOrder(\'' + o.id + '\')">Буцаах</button>'
+      : '<button class="mini" style="color:var(--green)" onclick="openPayOrder(\'' + o.id + '\')">Төлбөр орсон</button>';
+    return { date: o.date + ' ' + o.time, phone: o.phone, customer: o.customer, items: items(o), status: o.status, payType: o.payType, paid: o.paid, amount: o.amount, staff: o.staff, _act: act };
+  });
+  var unpaid = all.filter(function (o) { return o.paid !== 'Орсон' && o.status !== 'Цуцалсан'; }).reduce(function (a, o) { return a + o.amount; }, 0);
+  return { title: 'Захиалга', rows: rows, actions: true,
+    cols: [c('date', 'Огноо'), c('phone', 'Утас'), c('customer', 'Захиалагч'), c('items', 'Бараа'), c('status', 'Хүргэлт'), c('payType', 'Төлбөрийн хэлбэр'), c('paid', 'Төлбөр'), m('amount', 'Дүн'), c('staff', 'Ажилтан')],
+    total: { date: rows.length + ' захиалга', amount: sum(rows, 'amount') },
+    note: 'Төлбөр хүлээгдэж буй нийт: ' + fmt(unpaid) + '. Төлбөр орсныг зөвхөн удирдлага тэмдэглэнэ — «Банкны хуулга»-аар эсвэл энд «Төлбөр орсон» дарж.' };
 }
 function importCozyOld() {
   if (!API_URL) { toast('Google Sheet-тэй холбогдсон үед ажиллана'); return; }

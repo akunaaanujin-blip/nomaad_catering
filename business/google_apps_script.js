@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v3.2 (нэмэлт данс, гүйлгээ түгжих)
+// NOMAAD Бизнесүүд — Google Apps Script v3.3 (захиалгын төлбөрийг зөвхөн удирдлага тэмдэглэнэ)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -143,6 +143,7 @@ function saveRecords(data) {
   const rows = [], rejected = [];
   (data.records || []).forEach(function (r) {
     if (!r.id || seen[r.id] || !BIZ_NAMES[r.biz] || !TYPE_NAMES[r.type]) return;
+    if (r.type === 'collect') return;   // «Төлбөр орсон»-ыг зөвхөн удирдлага бүртгэнэ (хуучин хуудаснаас ирсэнийг алгасна)
     const own = verify(r.tok);
     const who = own && own.biz === r.biz ? own : (cur && cur.biz === r.biz ? cur : null);
     if (!who) { rejected.push(r.id); return; }
@@ -823,8 +824,8 @@ function orderSave(d) {
   ['customer', 'phone', 'phone2', 'city', 'district', 'khoroo', 'address', 'items', 'amount', 'deliverDate', 'payType', 'status', 'paid', 'note', 'saleDone'].forEach(function (k) {
     if (o[k] !== undefined) merged[k] = typeof o[k] === 'string' ? o[k].slice(0, k === 'items' ? 2000 : 300) : o[k];
   });
+  merged.paid = cur ? (cur.paid || 'Ороогүй') : 'Ороогүй';   // төлбөрийн төлөвийг ЗӨВХӨН удирдлага (admin_order) өөрчилнө
   if (cur) {
-    if (cur.paid === 'Орсон' && merged.paid !== 'Орсон' && !o.unpay) merged.paid = 'Орсон';   // удирдлага/банкаар «орсон» болсныг буцаахгүй
     const sd = String(cur.saleDone || '');
     if ((/^yes:/.test(sd) || sd === 'returned') && !/^yes:|^returned$/.test(String(merged.saleDone || ''))) merged.saleDone = sd;
   }
