@@ -532,6 +532,7 @@ a.mini{text-decoration:none}
 .bz-admin .tag{background:#F1F3F5;color:#4B5563;border-radius:3px;font-weight:500}
 .bz-admin .tag.r{background:#F1F3F5;color:var(--red)}
 .bz-admin .tag.b{background:#F1F3F5;color:var(--b-blue)}
+.bz-admin .tag.g{background:#F1F3F5;color:var(--green)}
 .bz-admin .alert{background:#fff;border:1px solid var(--b-line);border-left:3px solid #C9A227;color:#1F2933;border-radius:3px}
 .bz-admin .alert.bad{background:#fff;border-left-color:var(--red);color:#1F2933}
 .bz-admin .hint{background:transparent;border:0;color:var(--b-mut);padding:0 0 8px;font-size:12.5px}
@@ -568,6 +569,7 @@ body:not(.bz-admin) .big.buu-btn{background:#fff;color:#1F2933}
 body:not(.bz-admin) .btn{border-radius:4px;font-weight:600}
 body:not(.bz-admin) .tag{background:#F1F3F5;color:#4B5563;border-radius:3px;font-weight:500}
 body:not(.bz-admin) .tag.r{background:#F1F3F5;color:#A23B2A}
+body:not(.bz-admin) .tag.g{background:#EAF3EC;color:#2F6B3A}
 body:not(.bz-admin) .tag.b{background:#F1F3F5;color:#1F4E8C}
 body:not(.bz-admin) .tabs button,body:not(.bz-admin) .chip,body:not(.bz-admin) .seg button{border-radius:4px}
 body:not(.bz-admin) .sheet .panel{border-radius:8px 8px 0 0;background:#fff}
@@ -575,4 +577,12 @@ body:not(.bz-admin) .eb-badge{border-radius:3px}
 body:not(.bz-admin) .top{box-shadow:none;border-bottom:1px solid #E2E5E9}
 body:not(.bz-admin) .mono{border-radius:4px}
 
+.bz-admin a.dl{color:inherit;text-decoration:underline dotted #94A3B8;text-underline-offset:3px;cursor:pointer}
+.bz-admin a.dl:hover{color:var(--b-blue);text-decoration-color:var(--b-blue)}
+.bz-admin .hubbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:-4px 0 12px}
+.bz-admin .hubbar select{min-width:240px}
+.bz-admin .dr-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:1px solid var(--b-line);padding-bottom:10px;margin-bottom:8px}
+.bz-admin .dr-top h2{margin:2px 0 0}
+.bz-admin .dr-tot{text-align:right}.bz-admin .dr-tot b{display:block;font-size:20px;font-weight:600}
+.bz-admin .dr-h{font-size:13px;font-weight:600;color:#4B5563;margin:14px 0 6px;text-transform:uppercase;letter-spacing:.03em}
 .bz-admin .rep-help{color:#4B5563;font-size:13px;margin:-4px 0 10px}

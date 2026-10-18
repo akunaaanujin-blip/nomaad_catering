@@ -1,6 +1,7 @@
 // ── ЗАХИАЛГА (Cozy: Facebook-ээр ирсэн захиалга → буухиа хүргэлт) ──
 // Ажилтан захиалгаа шивнэ → өдөр бүр «Буухиа Excel» товчоор буухиа.mn-ийн импортын загвараар файл гарна →
-// «Буухиад өгсөн» болгоход борлуулалт санхүүд бичигдэнэ (төлбөр ороогүй бол авлага) → мөнгө ормогц «Төлбөр орсон».
+// «Буухиад өгсөн» болгоход борлуулалт санхүүд бичигдэнэ (баталгаажаагүй бол авлага).
+// Ажилтны «Төлбөр орсон/ороогүй» нь зөвхөн тэмдэглэл — санхүүд бичигдэхгүй. Удирдлага банкны хуулгаар тулгаж баталгаажуулахад л санхүүд орно.
 
 var ORD_STATUS = ['Шинэ', 'Буухиад өгсөн', 'Хүргэгдсэн', 'Цуцалсан'];
 var ORD_PAYTYPE = ['Шилжүүлэг', 'Хүргэлтээр бэлэн', 'Дансаар дараа'];
@@ -55,9 +56,9 @@ function saveOrder(o, done) {
 // ── Санхүү: төлөв өөрчлөгдөхөд борлуулалт / төлбөр / буцаалт бичих ──
 function ordCustomer(o) { return (o.customer ? o.customer + ' ' : '') + o.phone; }
 // Буухиагаар хүргэсэн мөнгө (бэлнээр авсан ч) дансанд шилжиж ирдэг тул «Шилжүүлэг» (харилцах) гэж бичнэ — дэлгүүрийн кассыг хөндөхгүй
-// Төлбөрийг ЗӨВХӨН удирдлага тэмдэглэнэ. Удирдлага «орсон» гэж баталсан бол мөнгө нь урьдчилгаа (3802)-д байгаа → бараа өгөхөд орлого болно;
-// баталгаагүй бол авлага (1201) болж, удирдлага төлбөрийг тулгахад хаагдана.
-function ordSalePay(o) { return o.paid === 'Орсон' ? 'Урьдчилгаа' : 'Зээлээр'; }
+// Удирдлага баталгаажуулсан (o.confirmed) бол мөнгө нь урьдчилгаа (3802)-д байгаа → бараа өгөхөд орлого болно;
+// баталгаагүй бол (ажилтан «орсон» гэсэн ч) авлага (1201) болж, удирдлага банкны хуулгаар тулгахад хаагдана.
+function ordSalePay(o) { return o.confirmed ? 'Урьдчилгаа' : 'Зээлээр'; }
 function ordBook(o, prev) {
   var sold = /^yes:/.test(o.saleDone || ''), salePay = sold ? o.saleDone.slice(4) : '';
   var lines = function (sign, pay) {
@@ -86,6 +87,7 @@ function openOrder(id) {
   $('orCity').value = o ? o.city || 'Улаанбаатар' : 'Улаанбаатар';
   $('orDate').value = o ? o.deliverDate || '' : todayStr(new Date(Date.now() + 864e5));
   $('orPayType').value = o ? o.payType || 'Шилжүүлэг' : 'Шилжүүлэг'; $('orPaid').value = o ? o.paid || 'Ороогүй' : 'Ороогүй';
+  $('orPaid').disabled = !!(o && o.confirmed); $('orPaidHint').textContent = o && o.confirmed ? '(удирдлага баталгаажуулсан)' : '';
   $('orStatus').value = o ? o.status || 'Шинэ' : 'Шинэ'; $('orNote').value = o ? o.note || '' : '';
   $('orStatusWrap').style.display = o ? 'block' : 'none';
   $('orChips').innerHTML = products.map(function (p, i) { return '<button class="chip" onclick="ordAdd(' + i + ')">' + esc(p.name) + (p.price ? ' <small>' + fmt(p.price) + '</small>' : '') + '</button>'; }).join('');
@@ -119,8 +121,8 @@ function ordAddrInput() {
 function submitOrder() {
   if (ordEdit) { var cur = orders.filter(function (x) { return x.id === ordEdit.id; })[0]; withFresh(function () {
     var fresh = orders.filter(function (x) { return x.id === ordEdit.id; })[0];
-    if (fresh) $('orPaid').value = fresh.paid || 'Ороогүй';   // төлбөрийн төлөвийг зөвхөн удирдлага өөрчилнө
-    if (fresh) { ordEdit.paid = fresh.paid; ordEdit.saleDone = fresh.saleDone; ordEdit.status = fresh.status; }
+    if (fresh && fresh.confirmed) $('orPaid').value = 'Орсон';   // удирдлага баталгаажуулсныг буцаахгүй
+    if (fresh) { ordEdit.confirmed = fresh.confirmed; ordEdit.saleDone = fresh.saleDone; ordEdit.status = fresh.status; }
     submitOrder2();
   }); return; }
   submitOrder2();
@@ -148,7 +150,7 @@ function withFresh(cb) {
 function quickOrd(id, field, val) { withFresh(function () { quickOrd2(id, field, val); }); }
 function quickOrd2(id, field, val) {   // жагсаалтаас нэг товчоор төлөв солих
   var o = orders.filter(function (x) { return x.id === id; })[0]; if (!o) return;
-  if (field === 'paid' && o.paid === 'Орсон') { renderOrders(); toast('Төлбөр нь аль хэдийн орсон гэж бүртгэгдсэн байна'); return; }
+  if (field === 'paid' && o.confirmed) { renderOrders(); toast('Удирдлага баталгаажуулсан — өөрчлөх боломжгүй'); return; }
   var prev = JSON.parse(JSON.stringify(o)), n = Object.assign({}, o); n[field] = val;
   if (field === 'status' && val === 'Цуцалсан' && !confirm('Захиалгыг цуцлах уу?')) return;
   ordBook(n, prev);
@@ -172,11 +174,15 @@ function renderOrders() {
     var st = o.status === 'Цуцалсан' ? 'r' : o.status === 'Хүргэгдсэн' ? '' : 'b';
     return '<li class="ord"><div onclick="openOrder(\'' + o.id + '\')"><b>' + esc(o.phone) + (o.customer ? ' · ' + esc(o.customer) : '') + '</b>' +
       '<small>' + esc(ordItemsText(o)) + '</small><small>' + esc((o.district ? o.district + ', ' : '') + (o.address || '')).slice(0, 90) + '</small>' +
-      '<small><span class="tag ' + st + '">' + esc(o.status) + '</span> <span class="tag ' + (o.paid === 'Орсон' ? '' : 'r') + '">Төлбөр ' + esc((o.paid || 'Ороогүй').toLowerCase()) + '</span>' +
+      '<small><span class="tag ' + st + '">' + esc(o.status) + '</span> <span class="tag ' + (o.confirmed ? 'g' : o.paid === 'Орсон' ? '' : 'r') + '">' +
+      (o.confirmed ? 'Төлбөр баталгаажсан' : 'Төлбөр ' + esc((o.paid || 'Ороогүй').toLowerCase())) + '</span>' +
       (o.deliverDate ? ' · ' + esc(o.deliverDate) : '') + '</small></div>' +
       '<div class="ord-r"><b>' + fmt(o.amount) + '</b>' +
       '<button class="mini" style="color:var(--accent)" onclick="copyPayMsg(\'' + o.id + '\')">Төлбөрийн мессеж</button>' +
       (o.status === 'Буухиад өгсөн' ? '<button class="mini" onclick="quickOrd(\'' + o.id + '\',\'status\',\'Хүргэгдсэн\')">Хүргэгдсэн</button>' : '') +
+      (o.confirmed || o.status === 'Цуцалсан' ? '' : o.paid !== 'Орсон'
+        ? '<button class="mini" style="color:var(--green)" onclick="quickOrd(\'' + o.id + '\',\'paid\',\'Орсон\')">Төлбөр орсон</button>'
+        : '<button class="mini" onclick="quickOrd(\'' + o.id + '\',\'paid\',\'Ороогүй\')">Ороогүй</button>') +
       '</div></li>';
   }).join('') : '<li class="muted">Захиалга алга</li>';
 }

@@ -56,13 +56,14 @@ function bankMatch(l) {
   var phones = (l.desc.replace(/(\d{4})\s(\d{4})/g, '$1$2').match(/\d{8}/g) || []), eb = /EB-?\s?\d{8}/i.test(l.desc);
   var list = (window.adminOrders || []).filter(function (o) { return o.biz === l.biz && o.status !== 'Цуцалсан'; });
   var byPhone = list.filter(function (o) { return phones.indexOf(String(o.phone).replace(/\D/g, '')) >= 0 || phones.indexOf(String(o.phone2 || '').replace(/\D/g, '')) >= 0; });
-  var unpaid = byPhone.filter(function (o) { return o.paid !== 'Орсон'; });
+  // баталгаажаагүй захиалгууд; ажилтан «орсон» гэж тэмдэглэснийг эхэнд
+  var unpaid = byPhone.filter(function (o) { return !o.confirmed; }).sort(function (a, b) { return (b.paid === 'Орсон') - (a.paid === 'Орсон'); });
   var exact = unpaid.filter(function (o) { return Math.abs(o.amount - l.credit) < 1; });
   if (exact.length) return { kind: 'order', o: exact[0], sure: true, eb: eb };
   if (eb && unpaid.length) { var o2 = unpaid.filter(function (o) { return o.amount > l.credit; })[0]; if (o2) return { kind: 'order', o: o2, sure: true, eb: true, fee: o2.amount - l.credit }; }
   if (unpaid.length) return { kind: 'order', o: unpaid[0], sure: false, eb: eb, fee: eb ? unpaid[0].amount - l.credit : 0 };
-  if (byPhone.length) return { kind: 'paid', o: byPhone[0] };   // аль хэдийн «орсон» гэж тэмдэглэгдсэн
-  var amt = list.filter(function (o) { return o.paid !== 'Орсон' && Math.abs(o.amount - l.credit) < 1; });
+  if (byPhone.length) return { kind: 'paid', o: byPhone[0] };   // аль хэдийн баталгаажсан
+  var amt = list.filter(function (o) { return !o.confirmed && Math.abs(o.amount - l.credit) < 1; });
   if (amt.length === 1) return { kind: 'order', o: amt[0], sure: false };
   return null;
 }
@@ -91,10 +92,10 @@ function bankView() {
     if (s) {
       var opts = [], cur = bankPick[l.id];
       if (l.credit) {
-        (window.adminOrders || []).filter(function (o) { return o.biz === biz && o.paid !== 'Орсон' && o.status !== 'Цуцалсан'; }).forEach(function (o) {
-          opts.push(['O:' + o.id, 'Захиалга ' + o.phone + ' · ' + fmt(o.amount) + ' · ' + o.status]); });
+        (window.adminOrders || []).filter(function (o) { return o.biz === biz && !o.confirmed && o.status !== 'Цуцалсан'; }).forEach(function (o) {
+          opts.push(['O:' + o.id, 'Захиалга ' + o.phone + ' · ' + fmt(o.amount) + ' · ' + o.status + (o.paid === 'Орсон' ? ' · ажилтан: орсон' : '')]); });
         BANK_IN.forEach(function (a) { opts.push([a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1]]); });
-        if (s.kind === 'paid') opts.unshift(['P:' + s.o.id, 'Аль хэдийн бүртгэгдсэн: ' + s.o.phone + ' (давхар бичихгүй)']);
+        if (s.kind === 'paid') opts.unshift(['P:' + s.o.id, 'Аль хэдийн баталгаажсан: ' + s.o.phone + ' (давхар бичихгүй)']);
       } else BANK_OUT.forEach(function (a) { opts.push([a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1]]); });
       var def = cur || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id : s.acc ? 'A:' + s.acc : '');
       bankPick[l.id] = def;
@@ -128,8 +129,8 @@ function bankApply(ids, quiet) {
   if (!quiet && ids.length === 1) {   // хэрэглэгчээс баталгаажуулна
     var l0 = bankLines.filter(function (x) { return x.id === ids[0]; })[0], p0 = bankPick[ids[0]] || '';
     if (l0 && p0 && p0 !== 'skip') {
-      var what = p0.indexOf('O:') === 0 ? 'захиалга ' + (((window.adminOrders || []).filter(function (o) { return o.id === p0.slice(2); })[0]) || {}).phone + ' — «Төлбөр орсон»' :
-                 p0.indexOf('P:') === 0 ? 'өмнө бүртгэгдсэн захиалга (давхар бичихгүй)' : p0.slice(2) + ' ' + accName(p0.slice(2));
+      var what = p0.indexOf('O:') === 0 ? 'захиалга ' + (((window.adminOrders || []).filter(function (o) { return o.id === p0.slice(2); })[0]) || {}).phone + ' — төлбөрийг баталгаажуулж санхүүд бичнэ' :
+                 p0.indexOf('P:') === 0 ? 'өмнө баталгаажсан захиалга (давхар бичихгүй)' : p0.slice(2) + ' ' + accName(p0.slice(2));
       if (!confirm(l0.date + ' · ' + (l0.credit ? '+' + fmt(l0.credit) : '−' + fmt(l0.debit)) + '\n«' + l0.desc + '»\n\n→ ' + what + '\n\nТулгах уу?')) return;
     }
   }
@@ -145,8 +146,8 @@ function bankApply(ids, quiet) {
       var fee = /EB-?\s?\d{8}/i.test(l.desc) && o.amount > l.credit ? o.amount - l.credit : 0;
       var pe = orderPayEntries(o, biz, acc, d, l.credit, fee, '7207', 'банк');
       entries = entries.concat(pe.entries);
-      orderUpd.push({ id: o.id, fields: { paid: 'Орсон', saleDone: pe.saleDone, note: 'Банк ' + d } });
-      o.paid = 'Орсон'; if (pe.saleDone) o.saleDone = pe.saleDone;
+      orderUpd.push({ id: o.id, fields: { confirmed: d + ' банк', saleDone: pe.saleDone, note: 'Банк ' + d } });
+      o.paid = 'Орсон'; o.confirmed = d + ' банк'; if (pe.saleDone) o.saleDone = pe.saleDone;
       updates.push({ id: id, status: 'Тулгасан', link: 'Захиалга ' + o.phone + ' #' + o.id });
       return;
     }
@@ -199,12 +200,12 @@ function savePayOrder() {
   if (!(received > 0)) { toast('Орж ирсэн дүнг оруулна уу'); return; }
   if (diff < 0) { toast('Орсон дүн захиалгын дүнгээс их байна — илүү мөнгийг «Кассын баримт»-аар бүртгэнэ үү'); return; }
   var pe = orderPayEntries(o, state.biz, acc, d, received, diff, $('poDiff').value, 'гараар');
-  if (!confirm('Захиалга ' + o.phone + ' — ' + fmt(received) + ' орсон гэж бүртгэх үү?' + (diff ? '\nЗөрүү ' + fmt(diff) + ': ' + accName($('poDiff').value) : ''))) return;
-  var fields = { paid: 'Орсон', saleDone: pe.saleDone, note: 'Төлбөр ' + d };
+  if (!confirm('Захиалга ' + o.phone + ' — ' + fmt(received) + ' орсныг баталгаажуулж санхүүд бичих үү?' + (diff ? '\nЗөрүү ' + fmt(diff) + ': ' + accName($('poDiff').value) : ''))) return;
+  var fields = { confirmed: d + ' гараар', saleDone: pe.saleDone, note: 'Төлбөр ' + d };
   if (!API_URL) {
     pe.entries.forEach(function (e, i) { e.id = 'J' + Date.now() + '-' + i; e.by = ownerName; journal.push(e); });
-    o.paid = 'Орсон'; if (pe.saleDone) o.saleDone = pe.saleDone;
-    save('nb_demo_journal', journal); save('nb_orders_cozy', window.adminOrders); closeSheet('payOrderSheet'); render(); toast('Бүртгэгдлээ'); return;
+    o.paid = 'Орсон'; o.confirmed = fields.confirmed; if (pe.saleDone) o.saleDone = pe.saleDone;
+    save('nb_demo_journal', journal); save('nb_orders_cozy', window.adminOrders); closeSheet('payOrderSheet'); render(); toast('Баталгаажлаа'); return;
   }
   var go2 = function () { post({ type: 'admin_order', id: o.id, by: ownerName, fields: fields }, function (err) { if (err) { toast('Алдаа: ' + err); return; } closeSheet('payOrderSheet'); toast('Төлбөр бүртгэгдлээ'); refresh(); }); };
   if (pe.entries.length) post({ type: 'admin_journal', by: ownerName, entries: pe.entries }, function (err) { if (err) { if (err !== 'locked') toast('Алдаа: ' + err); return; } go2(); });
@@ -215,12 +216,12 @@ function undoPayOrder(id) {
   var o = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!o) return;
   var js = journal.filter(function (j) { return String(j.desc).indexOf('#' + id) >= 0; });
   var bl = (typeof bankLines !== 'undefined' ? bankLines : []).filter(function (l) { return String(l.link).indexOf('#' + id) >= 0; });
-  if (!confirm('Захиалга ' + o.phone + '-ийн төлбөрийг «ороогүй» болгох уу?\n\n' + (js.length ? js.length + ' санхүүгийн бичилт цуцлагдана.\n' : '') + (bl.length ? bl.length + ' банкны гүйлгээ дахин тулгах жагсаалтад орно.' : ''))) return;
-  var fields = { paid: 'Ороогүй', saleDone: o.saleDone === 'yes:bank' ? 'imported' : undefined, note: 'Төлбөр буцаасан ' + todayStr() };
+  if (!confirm('Захиалга ' + o.phone + '-ийн төлбөрийн баталгааг цуцлах уу?\n\n' + (js.length ? js.length + ' санхүүгийн бичилт цуцлагдана.\n' : '') + (bl.length ? bl.length + ' банкны гүйлгээ дахин тулгах жагсаалтад орно.' : ''))) return;
+  var fields = { confirmed: '', saleDone: o.saleDone === 'yes:bank' ? 'imported' : undefined, note: 'Баталгаа цуцалсан ' + todayStr() };
   if (!API_URL) {
     var ids = {}; js.forEach(function (j) { ids[j.id] = 1; }); journal = journal.filter(function (j) { return !ids[j.id]; });
     bl.forEach(function (l) { l.status = 'Шинэ'; l.link = ''; });
-    o.paid = 'Ороогүй'; if (o.saleDone === 'yes:bank') o.saleDone = 'imported';
+    o.confirmed = ''; if (o.saleDone === 'yes:bank') o.saleDone = 'imported';
     save('nb_demo_journal', journal); save('nb_demo_bank', bankLines); save('nb_orders_cozy', window.adminOrders); render(); return;
   }
   var n = js.length + 1 + (bl.length ? 1 : 0), fin = function () { if (--n === 0) { toast('Буцаагдлаа'); refresh(); } };

@@ -3,6 +3,14 @@
 
 // Тайлан бүрийн дээр гарах энгийн тайлбар
 var REP_HELP = {
+  simple: 'Сонгосон хугацаанд хэд зарж, хэд зарцуулж, хэдэн төгрөгийн ашиг олсон, мөнгө хаана байна — нэг дор. Дүн дээр дарвал задарна.',
+  months: 'Сар бүрийн борлуулалт, ашиг, орсон/гарсан мөнгө. Доод хүснэгтэд мөнгө хаанаас орж, хаашаа гарсныг төрлөөр.',
+  profit: 'Бараа бүрийг хэдээр зарж, хэдээр авсан, хэдэн төгрөг (хувь) ашиг өгсөн бэ.',
+  money: 'Касс, банкны данс бүрийн орлого, зарлага төрлөөрөө, өдөр бүрийн үлдэгдэлтэй — банкны хуулга шиг.',
+  debts: 'Хэн танд хэд өртэй, та хэнд хэд өртэй — нэг бүрчлэн, хэзээ үүсч, хэзээ хаагдсан.',
+  payroll: 'Сар бүрийн цалин, НДШ, ХХОАТ: хэд бодогдож, хэд олгогдож, хэд тушаах үлдсэн.',
+  acct: 'Нягтлан бодогчийн стандарт тайлангууд (журнал, гүйлгээ баланс, баланс г.м). Өдөр тутам хэрэглэх шаардлагагүй.',
+  setup: 'Эхний үлдэгдэл, данс нэмэх, сар түгжих, он хаах.',
   dash: 'Санхүүгийн бүртгэл зөв эсэхийг автоматаар шалгадаг хуудас.',
   entry: 'Дэлгүүрийн хуудаснаас автоматаар ордоггүй гүйлгээг (зээл авах, эзэн мөнгө оруулах г.м) энд гараар бичнэ.',
   journal: 'Бүх гүйлгээ огноо дарааллаар: юунаас (кредит) юу руу (дебет) мөнгө шилжсэн.',
@@ -53,43 +61,6 @@ var GLOSSARY = [
   ['Гүйлгээ түгжих', 'Шалгаж дууссан хугацааны бүртгэлийг өөрчлөгдөхөөс хамгаалах.'],
 ];
 
-// ═══════════ ЭНГИЙН ТОЙМ ═══════════
-function simpleView() {
-  var r = range(), E = J(), p = plData(E, r[0], r[1]), b = balances(E, todayStr());
-  var g = function (k) { return b[k] || 0; };
-  var cashAccs = ACCOUNTS.filter(function (a) { return a[3] === 'cash'; });
-  var money = cashAccs.map(function (a) { return [a[1], g(a[0])]; }).filter(function (x) { return Math.abs(x[1]) >= 1; });
-  var moneyTot = money.reduce(function (s, x) { return s + x[1]; }, 0);
-  var row = function (label, v, cls) { return '<tr><td>' + esc(label) + '</td><td class="n' + (cls ? ' ' + cls : '') + '">' + (v < 0 ? '−' : '') + fmt(Math.abs(v)) + '</td></tr>'; };
-  // Хугацааны зардал ангиллаар
-  var expRows = p.exps.slice().sort(function (a, c2) { return c2.v - a.v; }).slice(0, 6);
-  // Авлага, өглөг харилцагчаар
-  var ar = repPartners(E, todayStr()).rows;
-  var recv = ar.filter(function (x) { return x.rec > 0.5; }).sort(function (a, c2) { return c2.rec - a.rec; });
-  var pays = ar.filter(function (x) { return x.pay > 0.5; }).sort(function (a, c2) { return c2.pay - a.pay; });
-  var loans = -(g('3501')) + ACCOUNTS.filter(function (a) { return a[0] !== '3501' && /^35/.test(a[0]); }).reduce(function (s, a) { return s - g(a[0]); }, 0);
-  var sentence = 'Энэ хугацаанд <b>' + fmt(p.net) + '</b>-ийн бараа зарж, түүнээс <b>' + fmt(p.cogs) + '</b> нь барааны өртөг, <b>' + fmt(p.expT) + '</b> нь бусад зардал байлаа. ' +
-    (p.profit >= 0 ? 'Үр дүнд нь <b style="color:var(--green)">' + fmt(p.profit) + '</b> ашигтай ажилласан.' : '<b style="color:var(--red)">' + fmt(-p.profit) + '</b> алдагдалтай ажилласан.');
-  return '<p class="hint">Санхүүгийн гол мэдээлэл энгийн үгээр. Дэлгэрэнгүйг зүүн цэсний «Нягтлангийн тайлан» хэсгээс харна.</p>' +
-    '<div class="card"><h2>Энэ хугацааны үр дүн</h2><p style="font-size:14.5px;line-height:1.7">' + sentence + '</p>' +
-    '<div class="grid2" style="margin-top:8px"><table class="rep-t">' + row('Борлуулалт (буцаалт хассан)', p.net) + row('Барааны өртөг', -p.cogs) + '<tr class="b"><td>Нийт ашиг</td><td class="n">' + fmt(p.gross) + '</td></tr>' +
-    row('Бусад зардал', -p.expT) + (p.other ? row('Бусад орлого', p.other) : '') + '<tr class="tot"><td>Цэвэр ашиг</td><td class="n' + (p.profit < 0 ? ' neg' : '') + '">' + (p.profit < 0 ? '−' : '') + fmt(Math.abs(p.profit)) + '</td></tr></table>' +
-    '<table class="rep-t"><tr><th>Зардал юунд гарсан</th><th class="n">Дүн</th></tr>' + (expRows.length ? expRows.map(function (x) { return row(x.name, x.v); }).join('') : '<tr><td class="muted">Зардал алга</td><td></td></tr>') + '</table></div>' +
-    '<div class="pg-act" style="margin-top:8px"><button class="b-btn" onclick="setSub(\'pl\')">Орлогын тайлан (дэлгэрэнгүй)</button></div></div>' +
-    '<div class="grid2"><div class="card"><h2>Мөнгө хаана байна (өнөөдөр)</h2><table class="rep-t">' + (money.length ? money.map(function (x) { return row(x[0], x[1], x[1] < 0 ? 'neg' : ''); }).join('') : '<tr><td class="muted">Мөнгөн хөрөнгийн бүртгэл алга</td><td></td></tr>') +
-      '<tr class="tot"><td>Нийт мөнгө</td><td class="n">' + fmt(moneyTot) + '</td></tr></table>' +
-      (money.some(function (x) { return x[1] < 0; }) ? '<p class="muted" style="font-size:12.5px;margin-top:6px">Хасах дүн гарвал эхний үлдэгдлийг оруулаагүй байж магадгүй — «Эхний үлдэгдэл».</p>' : '') +
-      '<div class="pg-act" style="margin-top:8px"><button class="b-btn" onclick="setSub(\'cash\')">Касс, банкны хөдөлгөөн</button></div></div>' +
-    '<div class="card"><h2>Бараа</h2><table class="rep-t">' + row('Үлдэгдэл бараа (авсан үнээр)', g('1404')) + '</table>' +
-      '<p class="muted" style="font-size:12.5px;margin-top:6px">Дэлгүүр, агуулахад байгаа барааг та хэдээр авсан бэ.</p></div></div>' +
-    '<div class="grid2"><div class="card"><h2>Танд өртэй хүмүүс (авлага)</h2><table class="rep-t">' + (recv.length ? recv.slice(0, 8).map(function (x) { return row(x.name, x.rec); }).join('') +
-      '<tr class="tot"><td>Нийт</td><td class="n">' + fmt(sum(recv, 'rec')) + '</td></tr>' : '<tr><td class="muted">Авлага алга</td><td></td></tr>') + '</table>' +
-      '<div class="pg-act" style="margin-top:8px"><button class="b-btn" onclick="setSub(\'aging_r\')">Хэр удсаныг харах</button></div></div>' +
-    '<div class="card"><h2>Таны өр (өглөг, зээл)</h2><table class="rep-t">' + (pays.length ? pays.slice(0, 8).map(function (x) { return row(x.name, x.pay); }).join('') : '') +
-      (loans > 0.5 ? row('Банкны зээл', loans) : '') + ((pays.length || loans > 0.5) ? '<tr class="tot"><td>Нийт</td><td class="n">' + fmt(sum(pays, 'pay') + Math.max(0, loans)) + '</td></tr>' : '<tr><td class="muted">Өр алга</td><td></td></tr>') + '</table>' +
-      '<div class="pg-act" style="margin-top:8px"><button class="b-btn" onclick="openRem(null,{kind:\'Өглөг төлөх\'})">Төлөх өдрөө сануулах</button></div></div></div>' +
-    simpleTodo();
-}
 // «Анхаарах зүйл» — энгийн үгээр
 function simpleTodo() {
   var out = [], biz = state.biz, b = balances(J(), todayStr());

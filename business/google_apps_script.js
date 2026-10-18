@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v3.3 (захиалгын төлбөрийг зөвхөн удирдлага тэмдэглэнэ)
+// NOMAAD Бизнесүүд — Google Apps Script v3.4 (ажилтан «Төлбөр орсон» тэмдэглэнэ, санхүүд зөвхөн удирдлагын баталгаагаар)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -26,9 +26,9 @@ const TYPE_NAMES = { sale: 'Борлуулалт', expense: 'Зарлага', cl
 // Захиалга (Cozy: Facebook захиалга → буухиа хүргэлт)
 const SHEET_ORDER = 'Захиалга';
 const ORDER_HEAD = ['ID', 'Огноо', 'Цаг', 'biz', 'Ажилтан', 'Захиалагч', 'Утас', 'Нэмэлт утас', 'Хот/аймаг', 'Дүүрэг/сум', 'Хороо', 'Хаяг',
-  'Бараа', 'Дүн', 'Хүргэх огноо', 'Төлбөрийн хэлбэр', 'Хүргэлтийн төлөв', 'Төлбөр', 'Тэмдэглэл', 'Шинэчилсэн', 'Борлуулалт'];
+  'Бараа', 'Дүн', 'Хүргэх огноо', 'Төлбөрийн хэлбэр', 'Хүргэлтийн төлөв', 'Төлбөр', 'Тэмдэглэл', 'Шинэчилсэн', 'Борлуулалт', 'Баталгаа'];
 const ORDER_KEYS = ['id', 'date', 'time', 'biz', 'staff', 'customer', 'phone', 'phone2', 'city', 'district', 'khoroo', 'address',
-  'items', 'amount', 'deliverDate', 'payType', 'status', 'paid', 'note', 'updated', 'saleDone'];
+  'items', 'amount', 'deliverDate', 'payType', 'status', 'paid', 'note', 'updated', 'saleDone', 'confirmed'];
 const SHEET_REMIND = 'Сануулга';
 const REMIND_HEAD = ['ID', 'Огноо', 'Гарчиг', 'Төрөл', 'Дүн', 'Харилцагч', 'Компани', 'Давтамж', 'Төлөв', 'Тэмдэглэл', 'Үүсгэсэн'];
 const SHEET_BANK = 'Банк';
@@ -728,6 +728,10 @@ function adminOrder(d) {
   if (!o) return { status: 'error', error: 'not_found' };
   const sh = orderSheet(), f = d.fields || {};
   if (f.paid) sh.getRange(o.row, 18).setValue(f.paid === 'Орсон' ? 'Орсон' : 'Ороогүй');
+  if (f.confirmed !== undefined) {   // удирдлагын баталгаа (банкны хуулгаар / гараар). Хоосон бол цуцлагдана.
+    sh.getRange(o.row, 22).setValue(String(f.confirmed).slice(0, 40));
+    if (f.confirmed) sh.getRange(o.row, 18).setValue('Орсон');
+  }
   if (f.saleDone !== undefined) sh.getRange(o.row, 21).setValue(String(f.saleDone).slice(0, 30));
   if (f.note) sh.getRange(o.row, 19).setValue(String(o.note || '') + ' ' + String(f.note).slice(0, 100));
   sh.getRange(o.row, 20).setValue(Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + ' ' + String(d.by || 'Удирдлага'));
@@ -797,6 +801,13 @@ function orderSheet() {
     styleHead(sh, ORDER_HEAD.length, '#7A5A2E');
     sh.getRange('B:C').setNumberFormat('@'); sh.getRange('G:H').setNumberFormat('@'); sh.getRange('O:O').setNumberFormat('@');
     sh.hideColumns(4);
+  } else if (String(sh.getRange(1, ORDER_HEAD.length).getValue()) !== 'Баталгаа') {
+    // v3.4: «Баталгаа» багана нэмнэ. Өмнө нь «Орсон»-ыг зөвхөн удирдлага тавьдаг байсан тул тэдгээрийг баталгаажсан гэж тооцно.
+    if (sh.getMaxColumns() < ORDER_HEAD.length) sh.insertColumnsAfter(sh.getMaxColumns(), ORDER_HEAD.length - sh.getMaxColumns());
+    sh.getRange(1, ORDER_HEAD.length).setValue('Баталгаа');
+    const last = sh.getLastRow();
+    if (last > 1) sh.getRange(2, ORDER_HEAD.length, last - 1, 1).setValues(sh.getRange(2, 18, last - 1, 1).getValues().map(function (r) { return [r[0] === 'Орсон' ? 'Удирдлага' : '']; }));
+    styleHead(sh, ORDER_HEAD.length, '#7A5A2E');
   }
   return sh;
 }
@@ -824,7 +835,10 @@ function orderSave(d) {
   ['customer', 'phone', 'phone2', 'city', 'district', 'khoroo', 'address', 'items', 'amount', 'deliverDate', 'payType', 'status', 'paid', 'note', 'saleDone'].forEach(function (k) {
     if (o[k] !== undefined) merged[k] = typeof o[k] === 'string' ? o[k].slice(0, k === 'items' ? 2000 : 300) : o[k];
   });
-  merged.paid = cur ? (cur.paid || 'Ороогүй') : 'Ороогүй';   // төлбөрийн төлөвийг ЗӨВХӨН удирдлага (admin_order) өөрчилнө
+  // Ажилтан «Орсон/Ороогүй» гэж тэмдэглэж болно (санхүүд бичигдэхгүй). Баталгааг ЗӨВХӨН удирдлага (банкны тулгалт) тавина.
+  merged.paid = merged.paid === 'Орсон' ? 'Орсон' : 'Ороогүй';
+  merged.confirmed = cur ? (cur.confirmed || '') : '';
+  if (merged.confirmed) merged.paid = 'Орсон';   // баталгаажсан төлбөрийг ажилтан буцааж чадахгүй
   if (cur) {
     const sd = String(cur.saleDone || '');
     if ((/^yes:/.test(sd) || sd === 'returned') && !/^yes:|^returned$/.test(String(merged.saleDone || ''))) merged.saleDone = sd;
@@ -839,7 +853,7 @@ function ordersFor(d) {
   if (!who) return { status: 'error', error: 'auth' };
   const since = Utilities.formatDate(new Date(Date.now() - 45 * 864e5), TZ, 'yyyy-MM-dd');
   return { status: 'ok', orders: orderRows().filter(function (o) {
-    return o.biz === who.biz && (o.date >= since || !/^(Хүргэгдсэн|Цуцалсан)$/.test(o.status) || o.paid !== 'Орсон');
+    return o.biz === who.biz && (o.date >= since || !/^(Хүргэгдсэн|Цуцалсан)$/.test(o.status) || (!o.confirmed && o.status !== 'Цуцалсан'));
   }).map(function (o) { delete o.row; return o; }) };
 }
 // Хуучин «Cozy хүргэлт» хүснэгтийн эхний хуудаснаас захиалгуудыг нэг удаа шилжүүлнэ (давхардсаныг алгасна).
@@ -859,7 +873,7 @@ function importCozy(d) {
     const status = /хүргэгдсэн/.test(st) ? 'Хүргэгдсэн' : /өгсөн/.test(st) ? 'Буухиад өгсөн' : 'Шинэ';
     const paid = /^орсон/.test(String(v[5] || '').trim().toLowerCase()) ? 'Орсон' : 'Ороогүй';
     rows.push(['O' + Date.now() + '-' + i, today, '00:00', 'cozy', 'Хуучин хүснэгт', '', phone, '', 'Улаанбаатар', '', '', String(v[2] || '').trim(),
-      items, amount, '', paid === 'Орсон' ? 'Шилжүүлэг' : 'Хүргэлтээр бэлэн', status, paid, String(v[6] || '').trim(), 'Хуучин хүснэгтээс шилжүүлсэн', 'imported']);
+      items, amount, '', paid === 'Орсон' ? 'Шилжүүлэг' : 'Хүргэлтээр бэлэн', status, paid, String(v[6] || '').trim(), 'Хуучин хүснэгтээс шилжүүлсэн', 'imported', paid === 'Орсон' ? 'Хуучин' : '']);
   });
   if (d.dryRun) return { status: 'ok', count: rows.length };
   if (rows.length) { const sh = orderSheet(); sh.getRange(sh.getLastRow() + 1, 1, rows.length, ORDER_HEAD.length).setValues(rows); }
