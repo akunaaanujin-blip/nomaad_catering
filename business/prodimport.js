@@ -135,13 +135,14 @@ function piSave() {
     sendMoves(moves, function () { $('piSave').disabled = false; done(); });
   };
   if (!API_URL) {
+    logPriceDemo(prods);
     prods.forEach(function (p) { sheetProducts = sheetProducts.filter(function (x) { return !(x.biz === p.biz && x.name.toLowerCase() === p.name.toLowerCase()); }).concat([p]); });
     save('nb_demo_products', sheetProducts); applyProducts();
     if (moves.length) sendMoves(moves, function () { $('piSave').disabled = false; done(); }); else { $('piSave').disabled = false; done(); render(); }
     return;
   }
   if (!prods.length) { step2(); return; }
-  post({ type: 'admin_product', products: prods }, function (err) {
+  post({ type: 'admin_product', products: prods, by: ownerName }, function (err) {
     if (err) { $('piSave').disabled = false; toast('Бараа хадгалахад алдаа: ' + err); return; }
     step2();
   });

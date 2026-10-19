@@ -389,7 +389,7 @@ function debtsPre(E) {
         (x.left < 0 ? ' <small class="muted">' + (k === 'c' ? 'тэднээс ирсэн' : 'илүү төлсөн') + '</small>' : '') + '</td><td class="n">' + (x.old ? x.old + ' хоног' : '') + '</td></tr>'; }).join('') +
       '<tr class="tot"><td>Нийт</td><td class="n">' + dl({ acc: accs, to: td, sign: T[3], grp: k === 'l' ? 'acc' : 'partner', t: T[0] }, mny(tot)) + '</td><td></td></tr>' : '<tr><td class="muted" colspan="3">' + T[0] + ' алга</td></tr>') + '</table></div>';
   var chk = '<label style="display:inline-flex;gap:6px;align-items:center;font-size:13px;margin:4px 0 8px"><input type="checkbox"' + (state.dclosed ? ' checked' : '') + ' onchange="state.dclosed=this.checked;render()"> Хаагдсаныг (бүрэн төлөгдсөн) харуулах</label>';
-  return tabs + card + (k === 'c' ? icReconCard() : '') + chk;
+  return tabs + card + (k === 'c' && isOwner() ? icReconCard() : '') + chk;
 }
 
 // ═══════════ ЦАЛИН, НДШ (хуучин «НДШ Цалин», «ХХОАТ/НДШ тайлан») ═══════════
@@ -429,7 +429,7 @@ function repPayroll(E, y) {
 var HUBS = {
   acct: ['Нягтлангийн тайлан', [['Шалгалт', ['dash']], ['Журнал', ['entry', 'journal', 'trial', 'ledger', 'gl']], ['Мөнгө', ['cash', 'cashflow', 'expenses']],
     ['Авлага, өглөг', ['partners', 'aging_r', 'aging_p', 'pstmt']], ['Санхүүгийн тайлан', ['balance', 'pl', 'equity']]]],
-  setup: ['Тохиргоо', [['Эхлэх', ['opening', 'accounts', 'banklink']], ['Хамгаалалт', ['lock', 'close']], ['Тусламж', ['glossary']]]],
+  setup: ['Тохиргоо', [['Эхлэх', ['opening', 'accounts', 'banklink']], ['Мэдэгдэл', ['digest']], ['Хамгаалалт', ['lock', 'close']], ['Тусламж', ['glossary']]]],
 };
 function hubOf(sub) { var h = ''; Object.keys(HUBS).forEach(function (k) { HUBS[k][1].forEach(function (g) { if (g[1].indexOf(sub) >= 0) h = k; }); }); return h; }
 function hubView(h) {

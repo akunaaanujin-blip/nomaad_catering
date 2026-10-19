@@ -9,7 +9,7 @@ var REM_KINDS = ['Зээл төлөх', 'Өглөг төлөх', 'Авлага �
 function calEvents() {
   var ev = [];
   reminders.forEach(function (r) { if (r.status !== 'Цуцалсан' && r.kind !== 'Тайлан илгээсэн') ev.push({ date: r.date, kind: 'rem', done: r.status === 'Хийгдсэн', r: r, text: r.title + (r.amount ? ' · ' + fmt(r.amount) : '') }); });
-  Object.keys(ENTITIES).forEach(function (k) { taxDeadlines(k).forEach(function (x) { ev.push({ date: x.date, kind: 'tax', text: x.name + ' (' + ENTITIES[k].name + ')', k: k, go: x.go, key: x.key }); }); });
+  if (isOwner()) Object.keys(ENTITIES).forEach(function (k) { taxDeadlines(k).forEach(function (x) { ev.push({ date: x.date, kind: 'tax', text: x.name + ' (' + ENTITIES[k].name + ')', k: k, go: x.go, key: x.key }); }); });
   (typeof tasks !== 'undefined' ? tasks : []).forEach(function (t) { if (t.due && t.status === 'Шинэ') ev.push({ date: t.due, kind: 'task', text: 'Даалгавар: ' + t.title + ' (' + t.staffName + ')' }); });
   staff.forEach(function (s) { if (s.status === 'Тийм' && s.contractEnd) ev.push({ date: s.contractEnd, kind: 'contract', text: 'Гэрээ дуусна: ' + s.name, id: s.id }); });
   loanEvents().forEach(function (e) { ev.push(e); });
@@ -142,6 +142,43 @@ function repOrders(biz) {
     cols: [c('date', 'Огноо'), c('phone', 'Утас'), c('customer', 'Захиалагч'), c('items', 'Бараа'), c('status', 'Хүргэлт'), c('payType', 'Төлбөрийн хэлбэр'), c('paid', 'Ажилтан: төлбөр'), c('conf', 'Удирдлага'), m('amount', 'Дүн'), c('staff', 'Ажилтан')],
     total: { date: rows.length + ' захиалга', amount: sum(rows, 'amount') },
     note: 'Баталгаажаагүй нийт: ' + fmt(unpaid) + '. Ажилтны «Төлбөр орсон» нь зөвхөн тэмдэглэл — санхүүд бичигдэхгүй. «Банкны хуулга»-аар тулгах (эсвэл энд «Баталгаажуулах») үед л санхүүд орно.' };
+}
+// ── Харилцагчид (утасны дугаараар): хэдэн удаа, хэдийг захиалсан ──
+function phoneKey(p) { return String(p || '').replace(/\D/g, '').slice(-8); }
+function admOrdItems(o) { try { var arr = typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []); return arr.map(function (i) { return i.name + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); } catch (e) { return String(o.items); } }
+function custGroups(biz) {
+  var g = {};
+  (window.adminOrders || []).filter(function (o) { return o.biz === biz && phoneKey(o.phone).length === 8; }).forEach(function (o) {
+    var k = phoneKey(o.phone), x = g[k] || (g[k] = { k: k, phone: o.phone, name: '', n: 0, canc: 0, total: 0, wait: 0, first: o.date, last: '', list: [] });
+    x.list.push(o);
+    if (o.date < x.first) x.first = o.date;
+    if (o.date >= x.last) { x.last = o.date; x.phone = o.phone; if (o.customer) x.name = o.customer; }
+    if (o.status === 'Цуцалсан') { x.canc++; return; }
+    x.n++; x.total += Number(o.amount) || 0;
+    if (!o.confirmed) x.wait += Number(o.amount) || 0;
+  });
+  return Object.keys(g).map(function (k) { return g[k]; });
+}
+function repCustomers(biz) {
+  var q = String(state.cq || '').toLowerCase().trim(), qd = q.replace(/\D/g, '');
+  var rows = custGroups(biz).filter(function (x) { return !q || (qd && x.k.indexOf(qd) >= 0) || String(x.name).toLowerCase().indexOf(q) >= 0; })
+    .sort(function (a, b) { return b.total - a.total; }).map(function (x) {
+      return { phone: x.phone, name: x.name, n: x.n, canc: x.canc || '', total: x.total, avg: x.n ? Math.round(x.total / x.n) : '', wait: x.wait || '', first: x.first, last: x.last,
+               _act: '<button class="mini" onclick="openCust(\'' + x.k + '\')">Захиалгууд</button>' };
+    });
+  return { title: 'Харилцагчид (утасны дугаараар)', rows: rows, actions: true, noRange: true,
+    cols: [c('phone', 'Утас'), c('name', 'Нэр (сүүлийн)'), m('n', 'Захиалга'), m('canc', 'Цуцалсан'), m('total', 'Нийт дүн'), m('avg', 'Дундаж'), m('wait', 'Баталгаажаагүй'), c('first', 'Анх'), c('last', 'Сүүлд')],
+    total: { phone: rows.length + ' харилцагч', total: sum(rows, 'total'), wait: sum(rows, 'wait') },
+    note: '2 ба түүнээс олон удаа захиалсан: ' + rows.filter(function (r) { return r.n >= 2; }).length + ' харилцагч. Цуцалсан захиалга нийт дүнд орохгүй.' };
+}
+function openCust(k) {
+  var x = custGroups(state.biz).filter(function (g) { return g.k === k; })[0]; if (!x) return;
+  gOpen('<h2>' + esc(x.name || x.phone) + '</h2><p class="muted">' + esc(x.phone) + ' · ' + x.n + ' захиалга · нийт ' + fmt(x.total) + (x.canc ? ' · ' + x.canc + ' цуцалсан' : '') + '</p>' +
+    '<div class="scroll" style="max-height:60vh"><table class="rep-t"><tr><th>Огноо</th><th>Бараа</th><th>Хаяг</th><th>Төлөв</th><th class="n">Дүн</th></tr>' +
+    x.list.slice().sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; }).map(function (o) {
+      return '<tr><td>' + esc(o.date) + '</td><td>' + esc(admOrdItems(o)) + '</td><td>' + esc(((o.district ? o.district + ', ' : '') + (o.address || '')).slice(0, 70)) + '</td>' +
+        '<td>' + esc(o.status) + (o.confirmed ? ' · баталгаажсан' : '') + '</td><td class="n">' + fmt(o.amount) + '</td></tr>';
+    }).join('') + '</table></div><button class="btn ghost" onclick="gClose()">Хаах</button>');
 }
 // Захиалгын шүүлтүүр: check — ажилтан «орсон» гэсэн ч баталгаажаагүй; wait — баталгаажаагүй бүгд; conf — баталгаажсан
 function ordFilt(f) {

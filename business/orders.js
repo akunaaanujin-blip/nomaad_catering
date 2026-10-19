@@ -81,11 +81,41 @@ function ordBook(o, prev) {
 function ordShort(o) { return typeof stockShort === 'function' ? stockShort(ordItems(o).map(function (i) { return { item: i.name, qty: Number(i.qty) || 1 }; })) : []; }
 
 // ── Захиалга нэмэх / засах цонх ──
+// ── Утасны дугаараар өмнөх захиалга (шинэ захиалга бичихэд) ──
+var ordHistQ = '', ordHistLast = null;
+function ordPhoneHint() {
+  var el = $('orPhoneHint'); if (!el || ordEdit) return;
+  var k = String($('orPhone').value).replace(/\D/g, '').slice(-8); ordHistQ = k; ordHistLast = null;
+  if (k.length < 8) { el.innerHTML = ''; return; }
+  var show = function (h) {
+    if (ordHistQ !== k) return;
+    if (!h || (!h.n && !h.canc)) { el.textContent = 'Шинэ харилцагч'; return; }
+    ordHistLast = h.last;
+    el.innerHTML = 'Өмнө ' + h.n + ' захиалга · нийт ' + fmt(h.total) + (h.last ? ' · сүүлд ' + esc(h.last.date) : '') + (h.canc ? ' · ' + h.canc + ' удаа цуцалсан' : '') +
+      (h.last && h.last.address && !$('orAddress').value.trim() ? ' <button class="mini" onclick="ordFillLast()">Өмнөх хаягаар бөглөх</button>' : '');
+  };
+  if (!API_URL) { show(ordLocalHist(k)); return; }
+  el.textContent = 'Шалгаж байна…';
+  ordPost({ type: 'order_hist', phone: k }, function (err, d) { show(err ? ordLocalHist(k) : d); });
+}
+function ordLocalHist(k) {   // сүүлийн 45 хоногийн (төхөөрөмж дээрх) захиалгаас
+  var L = orders.filter(function (o) { return String(o.phone).replace(/\D/g, '').slice(-8) === k; }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
+  var ok = L.filter(function (o) { return o.status !== 'Цуцалсан'; });
+  return { n: ok.length, canc: L.length - ok.length, total: ok.reduce(function (a, o) { return a + (Number(o.amount) || 0); }, 0), last: L[L.length - 1] || null };
+}
+function ordFillLast() {
+  var l = ordHistLast; if (!l) return;
+  if (!$('orCustomer').value.trim()) $('orCustomer').value = l.customer || '';
+  $('orAddress').value = l.address || ''; $('orDistrict').value = l.district || ''; $('orKhoroo').value = l.khoroo || ''; $('orCity').value = l.city || 'Улаанбаатар';
+  if (!$('orPhone2').value.trim()) $('orPhone2').value = l.phone2 || '';
+  $('orPhoneHint').textContent = 'Өмнөх хаягаар бөглөлөө — шалгаад засаарай';
+}
 function openOrder(id) {
   var o = id ? orders.filter(function (x) { return x.id === id; })[0] : null;
   ordEdit = o ? JSON.parse(JSON.stringify(o)) : null;
   ordCart = o ? ordItems(o) : [];
   $('orTitle').textContent = o ? 'Захиалга · ' + o.phone : '＋ Шинэ захиалга';
+  if ($('orPhoneHint')) $('orPhoneHint').innerHTML = '';
   $('orCustomer').value = o ? o.customer || '' : ''; $('orPhone').value = o ? o.phone : ''; $('orPhone2').value = o ? o.phone2 || '' : '';
   $('orAddress').value = o ? o.address || '' : ''; $('orDistrict').value = o ? o.district || '' : ''; $('orKhoroo').value = o ? o.khoroo || '' : '';
   $('orCity').value = o ? o.city || 'Улаанбаатар' : 'Улаанбаатар';

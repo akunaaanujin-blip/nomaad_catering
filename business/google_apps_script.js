@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v4.2 (И-баримт нөхөж олгох record_receipt; ТТД лавлагаа; зээлийн хуваарь)
+// NOMAAD Бизнесүүд — Google Apps Script v4.3 (менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -22,7 +22,9 @@ const TZ           = 'Asia/Ulaanbaatar';
 const SHEET_ID     = '1Hkmo9ttsHfm6xfr49W0BpjkE2nnPPCL0dt2fP6rGyKI';   // NOMAAD Бизнесүүд — Бүртгэл
 
 const BIZ_NAMES = { meat: 'Махны дэлгүүр', cozy: 'Cozy Home Ulaanbaatar', travel: 'NOMAAD аяллын дэлгүүр', mgmt: 'Удирдлага' };   // mgmt — зөвхөн санхүү (удирдлагын данс)
-const TYPE_NAMES = { sale: 'Борлуулалт', expense: 'Зарлага', close: 'Касс хаалт', collect: 'Төлбөр орсон' };
+const TYPE_NAMES = { sale: 'Борлуулалт', expense: 'Зарлага', close: 'Касс хаалт', collect: 'Төлбөр орсон', attend: 'Ирц' };
+const SHEET_PRICE = 'Үнийн түүх';
+const PRICE_HEAD = ['Огноо', 'biz', 'Бараа', 'Хуучин үнэ', 'Шинэ үнэ', 'Хэн'];
 // Захиалга (Cozy: Facebook захиалга → буухиа хүргэлт)
 const SHEET_ORDER = 'Захиалга';
 const ORDER_HEAD = ['ID', 'Огноо', 'Цаг', 'biz', 'Ажилтан', 'Захиалагч', 'Утас', 'Нэмэлт утас', 'Хот/аймаг', 'Дүүрэг/сум', 'Хороо', 'Хаяг',
@@ -74,6 +76,12 @@ function doPost(e) {
   lock.waitLock(20000);
   try {
     const data = JSON.parse(e.postData.contents);
+    if (/^admin_/.test(String(data.type)) && data.type !== 'admin_login') {   // удирдлагын эрх: Эзэн — бүгд, Менежер — өөрийн дэлгүүр
+      const who = adminWho(data);
+      if (!who) return json({ status: 'error', error: 'auth' });
+      if (who.role !== 'Эзэн') { const g = mgrGuard(data, who); if (g) return json({ status: 'error', error: g }); }
+      data._who = who;
+    }
     if (data.type === 'register') return json(register(data));
     if (data.type === 'admin_login') return json(adminLogin(data));
     if (data.type === 'admin_read') return json(isAdmin(data) ? adminRead(data) : { status: 'error', error: 'auth' });
@@ -92,6 +100,7 @@ function doPost(e) {
     if (data.type === 'admin_reminder') return json(isAdmin(data) ? adminReminder(data) : { status: 'error', error: 'auth' });
     if (data.type === 'order_save') return json(orderSave(data));
     if (data.type === 'orders') return json(ordersFor(data));
+    if (data.type === 'order_hist') return json(orderHist(data));
     if (data.type === 'admin_import_cozy') return json(isAdmin(data) ? importCozy(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_contract') return json(isAdmin(data) ? adminContract(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_backup') return json(isAdmin(data) ? adminBackup() : { status: 'error', error: 'auth' });
@@ -101,6 +110,7 @@ function doPost(e) {
     if (data.type === 'admin_partner') return json(isAdmin(data) ? adminPartner(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_loan') return json(isAdmin(data) ? adminLoan(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_po') return json(isAdmin(data) ? adminPo(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_digest') return json(isAdmin(data) ? adminDigest(data) : { status: 'error', error: 'auth' });
     return json(saveRecords(data));
   } catch (err) {
     return json({ status: 'error', error: err.message });
@@ -109,8 +119,63 @@ function doPost(e) {
   }
 }
 // Удирдагчийн токен (admin_login-оор олгоно, 8 цаг хүчинтэй)
-function isAdmin(data) {
-  return !!(data.token && /^[0-9a-f-]{36}$/.test(String(data.token)) && CacheService.getScriptCache().get('tok_' + data.token));
+function isAdmin(data) { return !!adminWho(data); }
+// Токен → { id, role, biz }. Хуучин токен (зөвхөн ID) = Эзэн.
+function adminWho(data) {
+  if (!(data.token && /^[0-9a-f-]{36}$/.test(String(data.token)))) return null;
+  const v = CacheService.getScriptCache().get('tok_' + data.token);
+  if (!v) return null;
+  if (v.charAt(0) !== '{') return { id: v, role: 'Эзэн', biz: 'all' };
+  try { return JSON.parse(v); } catch (e) { return null; }
+}
+// Менежер: зөвхөн өөрийн дэлгүүрийн борлуулалт, бараа, захиалга, банк, кассын баримт. Цалин, ажилчид, тохиргоо, зээл, удирдлагын санхүү — эзэнд.
+const MGR_TYPES = { admin_read: 1, admin_order: 1, admin_stock: 1, admin_product: 1, admin_bank: 1, admin_journal: 1, admin_partner: 1, admin_po: 1,
+                    admin_task: 1, admin_reminder: 1, admin_record: 1, admin_import_cozy: 1, admin_setting: 1 };
+function mgrCan(who, b) { b = String(b || ''); return who.biz === 'all' ? (!!BIZ_NAMES[b] && b !== 'mgmt') : b === who.biz; }
+function mgrGuard(d, who) {
+  if (!MGR_TYPES[d.type]) return 'role';
+  const ok = function (b) { return mgrCan(who, b); };
+  const all = function (arr, f) { return (arr || []).every(function (x) { return ok(f(x)); }); };
+  const byId = function (rows, id) { return rows.filter(function (x) { return x.id === String(id); })[0]; };
+  const t = d.type;
+  if (t === 'admin_read') return '';
+  if (t === 'admin_journal') {
+    if (d.cancelId) { const j = byId(journalRows(), d.cancelId); return j && ok(j.biz) ? '' : 'role'; }
+    return (!d.entry || ok(d.entry.biz)) && all(d.entries, function (x) { return x.biz; }) ? '' : 'role';
+  }
+  if (t === 'admin_stock') {
+    if (d.cancelId) { const m = byId(stockMoves(), d.cancelId); return m && ok(m.biz) ? '' : 'role'; }
+    return all(d.moves, function (x) { return x.biz; }) ? '' : 'role';
+  }
+  if (t === 'admin_product') return (!d.product || ok(d.product.biz)) && all(d.products, function (x) { return x.biz; }) ? '' : 'role';
+  if (t === 'admin_bank') {
+    if (!all(d.lines, function (x) { return x.biz; })) return 'role';
+    if ((d.updates || []).length) { const B = {}; bankRows().forEach(function (r) { B[r.id] = r.biz; }); if (!d.updates.every(function (u) { return ok(B[String(u.id)]); })) return 'role'; }
+    return '';
+  }
+  if (t === 'admin_order') { const o = byId(orderRows(), d.id); return o && ok(o.biz) ? '' : 'role'; }
+  if (t === 'admin_partner') return ok((d.partner || {}).biz) ? '' : 'role';
+  if (t === 'admin_po') {
+    const pid = d.statusId || d.updateId; if (pid) { const p = byId(poRows(), pid); if (!p || !ok(p.biz)) return 'role'; }
+    return !d.po || ok(d.po.biz) ? '' : 'role';
+  }
+  if (t === 'admin_task') {
+    if (d.cancelId) { const k = byId(taskRows(), d.cancelId); return k && ok(k.biz) ? '' : 'role'; }
+    return ok((d.task || {}).biz) ? '' : 'role';
+  }
+  if (t === 'admin_reminder') {
+    const rid = d.cancelId || d.doneId || d.updateId; if (rid) { const r = byId(reminderRows(), rid); if (!r || !ok(r.co)) return 'role'; }
+    return !d.reminder || ok(d.reminder.co) ? '' : 'role';
+  }
+  if (t === 'admin_record') {
+    const sh = logSheet(), last = sh.getLastRow(); if (last < 2) return 'role';
+    const v = sh.getRange(2, 1, last - 1, 16).getValues();
+    for (let i = 0; i < v.length; i++) if (String(v[i][0]) === String(d.cancelId)) return ok(v[i][15]) ? '' : 'role';
+    return 'role';
+  }
+  if (t === 'admin_import_cozy') return ok('cozy') ? '' : 'role';
+  if (t === 'admin_setting') return d.key === 'minstock' && ok(d.biz) ? '' : 'role';   // менежер зөвхөн өөрийн дэлгүүрийн доод үлдэгдлийг
+  return 'role';
 }
 function adminLogin(d) {
   const user = String(d.user || '').trim().toLowerCase(), pass = String(d.pass || '').trim();
@@ -118,12 +183,12 @@ function adminLogin(d) {
   const key = 'afail_' + user;
   const fails = Number(cache.get(key) || 0);
   if (fails >= 10) return { status: 'error', error: 'locked' };
-  const s = staffRows().filter(function (x) { return x.username === user && x.role === 'Эзэн' && x.status === 'Тийм'; })[0];
+  const s = staffRows().filter(function (x) { return x.username === user && (x.role === 'Эзэн' || x.role === 'Менежер') && x.status === 'Тийм'; })[0];
   if (!s || s.code !== pass.padStart(4, '0')) { cache.put(key, String(fails + 1), 900); return { status: 'error', error: 'auth' }; }
   cache.remove(key);
   const token = Utilities.getUuid();
-  cache.put('tok_' + token, s.id, TOKEN_TTL);
-  return { status: 'ok', token: token, name: s.name };
+  cache.put('tok_' + token, s.role === 'Эзэн' ? s.id : JSON.stringify({ id: s.id, role: 'Менежер', biz: s.biz }), TOKEN_TTL);
+  return { status: 'ok', token: token, name: s.name, role: s.role, biz: s.biz };
 }
 function adminRead(d) {
   const a = adminData();
@@ -148,6 +213,23 @@ function adminRead(d) {
   a.loans = loanRows().map(function (x) { delete x.row; return x; });
   a.pos = poRows().map(function (x) { delete x.row; return x; });
   a.bankLinks = JSON.parse(pr.getProperty('BANKLINKS') || '[]');
+  a.kpi = JSON.parse(pr.getProperty('KPI') || '{}');
+  a.assets = JSON.parse(pr.getProperty('ASSETS') || '[]');
+  a.minstock = minStockAll();
+  a.digest = { on: pr.getProperty('DIGEST') === 'on', to: pr.getProperty('DIGEST_TO') || '', mail: DIGEST_MAIL };
+  a.priceLog = priceRows();
+  const who = d._who || { role: 'Эзэн', biz: 'all' };
+  a.role = who.role; a.roleBiz = who.biz;
+  if (who.role !== 'Эзэн') {   // менежер: зөвхөн өөрийн дэлгүүр
+    const ok = function (b) { return mgrCan(who, b); }, keep = function (arr, f) { return (arr || []).filter(function (x) { return ok(f ? f(x) : x.biz); }); };
+    a.staff = keep(a.staff).map(function (s) { return { id: s.id, name: s.name, biz: s.biz, role: s.role, status: s.status, username: s.username }; });
+    a.salary = []; a.loans = []; a.docs = []; a.assets = []; a.kpi = {}; a.digest = { on: false, to: '' };
+    ['records', 'moves', 'journal', 'partners', 'bank', 'orders', 'tasks', 'products', 'pos', 'priceLog', 'bankLinks'].forEach(function (k) { a[k] = keep(a[k]); });
+    a.reminders = keep(a.reminders, function (r) { return r.co; });
+    const st = {}; Object.keys(a.stock || {}).forEach(function (b) { if (ok(b)) st[b] = a.stock[b]; }); a.stock = st;
+    const ms = {}; Object.keys(a.minstock || {}).forEach(function (b) { if (ok(b)) ms[b] = a.minstock[b]; }); a.minstock = ms;
+    const pi = {}; Object.keys(a.payInfo || {}).forEach(function (b) { if (ok(b)) pi[b] = a.payInfo[b]; }); a.payInfo = pi;
+  }
   return a;
 }
 
@@ -170,7 +252,7 @@ function saveRecords(data) {
     seen[r.id] = 1;
     rows.push([
       r.id, r.date, r.time, BIZ_NAMES[r.biz], TYPE_NAMES[r.type], staffName,
-      r.type === 'sale' ? r.item : (r.type === 'expense' ? r.category : ''),
+      r.type === 'sale' || r.type === 'attend' ? String(r.item || '').slice(0, 80) : (r.type === 'expense' ? r.category : ''),
       r.type === 'sale' ? Number(r.qty) : '',
       r.type === 'sale' ? r.unit : '',
       r.type === 'sale' ? Number(r.price) : '',
@@ -239,6 +321,69 @@ function recordReceipt(d) {
     sh.getRange(i + 2, 15).setValue(('ДДТД ' + ddtd + ' · ' + String(d.note || 'нөхөж олгосон')).slice(0, 200)); n++;
   }
   return { status: 'ok', updated: n };
+}
+
+// ═══════════ ӨДӨР БҮРИЙН И-МЭЙЛ ТОЙМ ═══════════
+// Хоцорсон зээл, сануулга, баталгаажаагүй захиалгын төлбөр, тулгаагүй банкны гүйлгээ, дуусах дөхсөн бараа.
+// Асаах: удирдлага → Тохиргоо → «И-мэйл тойм». Анх удаа редактороос digestTest-ийг ажиллуулж «и-мэйл илгээх» зөвшөөрөл өгнө.
+function digestText() {
+  const td = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), lines = [];
+  const fmtN = function (n) { return '₮' + Math.round(n).toLocaleString('en-US'); };
+  // Сануулга (өнөөдөр / хэтэрсэн / маргааш)
+  const tm = Utilities.formatDate(new Date(Date.now() + 864e5), TZ, 'yyyy-MM-dd');
+  reminderRows().filter(function (r) { return r.status === 'Хүлээгдэж' && r.date <= tm; }).forEach(function (r) {
+    lines.push((r.date < td ? '- Хэтэрсэн ' : r.date === td ? '- Өнөөдөр ' : '- Маргааш ') + r.date + ' — ' + r.title + (r.amount ? ' ' + fmtN(r.amount) : ''));
+  });
+  // Зээлийн хуваарь: журналын «#ID» бичилтээс төлсөн дүн
+  const J = journalRows();
+  loanRows().filter(function (L) { return L.status === 'Идэвхтэй' && (L.schedule || []).length; }).forEach(function (L) {
+    const la = L.kind === 'Авсан' ? '3501' : '1210', ia = L.kind === 'Авсан' ? '7401' : '5202', re = new RegExp('#' + L.id + '(?![\\w])');
+    let paid = 0;
+    J.forEach(function (j) {
+      if (!re.test(String(j.desc))) return;
+      if (L.kind === 'Авсан' ? (j.dr === la || j.dr === ia) : (j.cr === la || j.cr === ia)) paid += Number(j.amount) || 0;
+    });
+    let cum = 0, late = 0, since = '';
+    L.schedule.slice().sort(function (a, b) { return a.d < b.d ? -1 : 1; }).forEach(function (r) {
+      cum += (Number(r.p) || 0) + (Number(r.i) || 0);
+      if (r.d < td && cum - paid > 0.5) { late = cum - paid; if (!since) since = r.d; }
+    });
+    if (late > 0.5) lines.push('- Зээл хоцорсон — ' + L.partner + ' ' + fmtN(late) + ' (' + since + '-наас) · ' + (BIZ_NAMES[L.biz] || L.biz));
+  });
+  // Ажилтан «орсон» гэсэн ч баталгаажаагүй захиалга
+  const uc = orderRows().filter(function (o) { return o.paid === 'Орсон' && !o.confirmed && o.status !== 'Цуцалсан'; });
+  if (uc.length) lines.push('- Баталгаажуулах захиалгын төлбөр: ' + uc.length + ' захиалга, ' + fmtN(uc.reduce(function (a, o) { return a + o.amount; }, 0)));
+  // Тулгаагүй банкны гүйлгээ
+  const nb = bankRows().filter(function (l) { return l.status === 'Шинэ'; }).length;
+  if (nb) lines.push('- Тулгаагүй банкны гүйлгээ: ' + nb);
+  // Дуусах дөхсөн бараа
+  const mins = minStockAll(), st = stockAll(), low = [];
+  Object.keys(mins).forEach(function (b) { Object.keys(mins[b]).forEach(function (it) { const s = (st[b] || {})[it], q = s ? s.shop + s.wh : 0; if (q <= Number(mins[b][it])) low.push(it + ' (' + q + ')'); }); });
+  if (low.length) lines.push('- Дуусах дөхсөн бараа: ' + low.slice(0, 15).join(', ') + (low.length > 15 ? ' …' : ''));
+  return lines;
+}
+function dailyDigest() {
+  const pr = PropertiesService.getScriptProperties(), to = pr.getProperty('DIGEST_TO');
+  if (pr.getProperty('DIGEST') !== 'on' || !to) return 'off';
+  const lines = digestText();
+  if (!lines.length) return 'empty';
+  return digestSend(to, 'NOMAAD — өнөөдөр анхаарах ' + lines.length + ' зүйл', lines.join('\n') + '\n\nУдирдлагын самбар: https://akunaaanujin-blip.github.io/nomaad_catering/business/admin.html') ? 'sent' : 'nomail';
+}
+// И-мэйл илгээх нь шинэ зөвшөөрөл (script.send_mail) шаарддаг. Зөвшөөрөл өгөхөөс өмнө deploy хийвэл вэб апп бүхэлдээ зогсох тул
+// одоогоор илгээхгүй (самбар дээр урьдчилан харна). Эзэн зөвшөөрөхөд: DIGEST_MAIL = true, энд Mail-ийн sendEmail + редакторт ажиллуулах digestTest()-ийг нэмнэ.
+const DIGEST_MAIL = false;
+function digestSend(to, subj, body) { return false; }
+function adminDigest(d) {
+  const pr = PropertiesService.getScriptProperties();
+  if (d.to !== undefined) { const to = String(d.to || '').trim(); if (to && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return { status: 'error', error: 'email' }; pr.setProperty('DIGEST_TO', to); }
+  if (d.on && !DIGEST_MAIL) return { status: 'error', error: 'nomail' };
+  if (d.on !== undefined) {
+    ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'dailyDigest') ScriptApp.deleteTrigger(t); });
+    if (d.on) ScriptApp.newTrigger('dailyDigest').timeBased().everyDays(1).atHour(8).create();
+    pr.setProperty('DIGEST', d.on ? 'on' : 'off');
+  }
+  if (d.preview) return { status: 'ok', lines: digestText() };
+  return { status: 'ok' };
 }
 
 // ── ТТД / регистр → байгууллагын нэр ──
@@ -839,6 +984,18 @@ function adminSetting(d) {
   if (d.key === 'accounts') { PropertiesService.getScriptProperties().setProperty('ACCOUNTS_X', JSON.stringify(d.value || []).slice(0, 8000)); return { status: 'ok' }; }
   if (d.key === 'lock') { const v = String(d.value || ''); if (v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) return { status: 'error', error: 'fields' }; PropertiesService.getScriptProperties().setProperty('LOCK', v); return { status: 'ok' }; }
   if (d.key === 'taxcfg') { PropertiesService.getScriptProperties().setProperty('TAXCFG', JSON.stringify(d.value || {}).slice(0, 8000)); return { status: 'ok' }; }
+  if (d.key === 'minstock') {   // доод үлдэгдэл — дэлгүүр тус бүр тусдаа (бараа олон тул)
+    if (!BIZ_NAMES[d.biz] || d.biz === 'mgmt') return { status: 'error', error: 'biz' };
+    const ms = JSON.stringify(d.value || {});
+    if (ms.length > 8500) return { status: 'error', error: 'too_big' };
+    PropertiesService.getScriptProperties().setProperty('MINSTOCK_' + d.biz, ms); return { status: 'ok' };
+  }
+  const JSONKEYS = { kpi: 'KPI', assets: 'ASSETS' };   // KPI %, үндсэн хөрөнгө
+  if (JSONKEYS[d.key]) {
+    const s = JSON.stringify(d.value || (d.key === 'assets' ? [] : {}));
+    if (s.length > 8500) return { status: 'error', error: 'too_big' };
+    PropertiesService.getScriptProperties().setProperty(JSONKEYS[d.key], s); return { status: 'ok' };
+  }
   if (d.key === 'banklinks') {   // банкны данс ↔ компани (бүтэн дугаар зөвхөн энд, нийтийн кодонд бичихгүй)
     const v = (Array.isArray(d.value) ? d.value : []).filter(function (x) { return x && /^\d{4,20}$/.test(String(x.no || '')) && BIZ_NAMES[x.biz] && /^\d{4,6}$/.test(String(x.acc || '')); })
       .map(function (x) { return { no: String(x.no), biz: x.biz, acc: String(x.acc), name: String(x.name || '').slice(0, 60) }; });
@@ -848,6 +1005,7 @@ function adminSetting(d) {
   PropertiesService.getScriptProperties().setProperty('PAYINFO_' + d.biz, String(d.payInfo || '').slice(0, 300));
   return { status: 'ok' };
 }
+function minStockAll() { const p = PropertiesService.getScriptProperties(), o = {}; Object.keys(BIZ_NAMES).forEach(function (b) { if (b !== 'mgmt') o[b] = JSON.parse(p.getProperty('MINSTOCK_' + b) || '{}'); }); return o; }
 function payInfoAll() { const p = PropertiesService.getScriptProperties(), o = {}; Object.keys(BIZ_NAMES).forEach(function (b) { o[b] = p.getProperty('PAYINFO_' + b) || ''; }); return o; }
 
 // ═══════════ ЗЭЭЛИЙН БҮРТГЭЛ (авсан / өгсөн) ═══════════
@@ -1045,6 +1203,18 @@ function ordersFor(d) {
     return o.biz === who.biz && (o.date >= since || !/^(Хүргэгдсэн|Цуцалсан)$/.test(o.status) || (!o.confirmed && o.status !== 'Цуцалсан'));
   }).map(function (o) { delete o.row; return o; }) };
 }
+// Утасны дугаараар өмнөх захиалга (ажилтан шинэ захиалга бичихэд): тоо, нийт дүн, сүүлийн хаяг
+function orderHist(d) {
+  const who = checkStaff(d.token);
+  if (!who) return { status: 'error', error: 'auth' };
+  const ph = String(d.phone || '').replace(/\D/g, '').slice(-8);
+  if (ph.length < 8) return { status: 'error', error: 'fields' };
+  const L = orderRows().filter(function (o) { return o.biz === who.biz && String(o.phone).replace(/\D/g, '').slice(-8) === ph; })
+    .sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
+  const ok = L.filter(function (o) { return o.status !== 'Цуцалсан'; }), l = L[L.length - 1];
+  return { status: 'ok', n: ok.length, canc: L.length - ok.length, total: ok.reduce(function (a, o) { return a + (Number(o.amount) || 0); }, 0),
+           last: l ? { date: l.date, customer: l.customer, address: l.address, district: l.district, khoroo: l.khoroo, city: l.city, phone2: l.phone2 } : null };
+}
 // Хуучин «Cozy хүргэлт» хүснэгтийн эхний хуудаснаас захиалгуудыг нэг удаа шилжүүлнэ (давхардсаныг алгасна).
 function importCozy(d) {
   const src = SpreadsheetApp.openById(COZY_OLD_SHEET).getSheets()[0];
@@ -1161,6 +1331,7 @@ function data(from) {
     if (r.type === 'sale') { r.item = v[6]; r.qty = Number(v[7]) || 0; r.unit = v[8]; r.price = Number(v[9]) || 0; r.pay = v[11]; r.bill = String(v[17] || ''); r.customer = String(v[19] || ''); }
     else if (r.type === 'collect') { r.pay = v[11]; r.customer = String(v[19] || ''); r.bill = String(v[17] || ''); }
     else if (r.type === 'expense') { r.category = v[6]; }
+    else if (r.type === 'attend') { r.item = String(v[6] || ''); }
     else { r.counted = Number(v[12]) || 0; r.diff = Number(v[13]) || 0; }
     records.push(r);
   });
@@ -1186,21 +1357,42 @@ function productRows() {
   }).filter(function (p) { return p.name; });
 }
 // Удирдагч: бараа нэмэх / засах (нэрээр нь олно). Үнэ, нэгж, ангилал, БҮНА, идэвхтэй эсэх.
+function priceSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_PRICE);
+  if (!sh) { sh = ss.insertSheet(SHEET_PRICE); sh.appendRow(PRICE_HEAD); styleHead(sh, PRICE_HEAD.length, '#C8743F'); sh.getRange('A:A').setNumberFormat('@'); }
+  return sh;
+}
+function priceRows() {   // сүүлийн 1000
+  const sh = priceSheet(), last = sh.getLastRow(); if (last < 2) return [];
+  const n = Math.min(1000, last - 1);
+  return sh.getRange(last - n + 1, 1, n, PRICE_HEAD.length).getValues().map(function (v) {
+    return { date: String(v[0]), biz: String(v[1]), item: String(v[2]), old: Number(v[3]) || 0, price: Number(v[4]) || 0, by: String(v[5]) };
+  });
+}
+// Үнэ өөрчлөгдсөн бол түүхэнд бичнэ
+function priceLog(rows, by) {
+  if (!rows.length) return;
+  const now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), sh = priceSheet();
+  sh.getRange(sh.getLastRow() + 1, 1, rows.length, PRICE_HEAD.length).setValues(rows.map(function (r) { return [now, r.biz, r.name, r.old, r.price, String(by || '').slice(0, 40)]; }));
+}
 function adminProduct(d) {
   if (Array.isArray(d.products)) {   // Excel-ээс олноор (нэг уншилт, нэг бичилт)
     const list = d.products;
     if (!list.length || list.length > 1000) return { status: 'error', error: 'fields' };
-    const sh = prodSheet(), idx = {}, add = [];
-    productRows().forEach(function (x) { idx[x.biz + '|' + x.name.toLowerCase()] = x.row; });
+    const sh = prodSheet(), idx = {}, add = [], oldP = {}, changed = [];
+    productRows().forEach(function (x) { idx[x.biz + '|' + x.name.toLowerCase()] = x.row; oldP[x.biz + '|' + x.name.toLowerCase()] = x.price; });
     for (let i = 0; i < list.length; i++) {
       const p = list[i], name = String(p.name || '').trim().slice(0, 80);
       if (!BIZ_NAMES[p.biz] || !name || !(Number(p.price) >= 0) || (p.cls && !/^\d{7}$/.test(String(p.cls)))) return { status: 'error', error: 'fields', index: i };
       const row = [p.biz, name, String(p.unit || '').slice(0, 10), Number(p.price) || 0, String(p.cls || ''), String(p.cat || '').slice(0, 40), p.off ? 'Идэвхгүй' : 'Идэвхтэй'];
       const k = p.biz + '|' + name.toLowerCase();
+      if (oldP[k] !== undefined && oldP[k] !== (Number(p.price) || 0)) changed.push({ biz: p.biz, name: name, old: oldP[k], price: Number(p.price) || 0 });
       if (idx[k] > 0) sh.getRange(idx[k], 1, 1, PROD_HEAD.length).setValues([row]);
       else if (!idx[k]) { add.push(row); idx[k] = -1; }
     }
     if (add.length) sh.getRange(sh.getLastRow() + 1, 1, add.length, PROD_HEAD.length).setValues(add);
+    priceLog(changed, d.by);
     return { status: 'ok', saved: list.length };
   }
   const p = d.product || {};
@@ -1209,6 +1401,7 @@ function adminProduct(d) {
   const row = [p.biz, name, String(p.unit || '').slice(0, 10), Number(p.price) || 0, String(p.cls || ''), String(p.cat || '').slice(0, 40), p.off ? 'Идэвхгүй' : 'Идэвхтэй'];
   const sh = prodSheet();
   const cur = productRows().filter(function (x) { return x.biz === p.biz && x.name.toLowerCase() === name.toLowerCase(); })[0];
+  if (cur && cur.price !== (Number(p.price) || 0)) priceLog([{ biz: p.biz, name: name, old: cur.price, price: Number(p.price) || 0 }], d.by);
   if (cur) sh.getRange(cur.row, 1, 1, PROD_HEAD.length).setValues([row]);
   else sh.appendRow(row);
   return { status: 'ok' };

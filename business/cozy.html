@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ажилтан</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261019r">
+<link rel="stylesheet" href="style.css?v=20261019s">
 </head>
 <body>
 <div class="demo" id="demo" style="display:none">Туршилтын горим — мэдээлэл зөвхөн энэ төхөөрөмжид хадгалагдаж байна</div>
@@ -85,9 +85,10 @@
   <div class="panel">
     <h2 id="orTitle">＋ Шинэ захиалга</h2>
     <div class="row2">
-      <div><label for="orPhone">Утас *</label><input id="orPhone" inputmode="tel" placeholder="99112233"></div>
+      <div><label for="orPhone">Утас *</label><input id="orPhone" inputmode="tel" placeholder="99112233" oninput="ordPhoneHint()"></div>
       <div><label for="orPhone2">Нэмэлт утас</label><input id="orPhone2" inputmode="tel"></div>
     </div>
+    <small id="orPhoneHint" class="muted" style="display:block;margin-top:-4px;min-height:16px"></small>
     <label for="orCustomer">Захиалагч (Facebook нэр)</label><input id="orCustomer">
     <label>Бараа</label>
     <div class="chips" id="orChips"></div>
@@ -240,14 +241,14 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="products.js?v=20261019r"></script>
-<script src="config.js?v=20261019r"></script>
-<script src="common.js?v=20261019r"></script>
+<script src="products.js?v=20261019s"></script>
+<script src="config.js?v=20261019s"></script>
+<script src="common.js?v=20261019s"></script>
 <script>var BIZ_KEY = 'cozy';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261019r"></script>
-<script src="ebarimt.js?v=20261019r"></script>
+<script src="staff.js?v=20261019s"></script>
+<script src="ebarimt.js?v=20261019s"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="orders.js?v=20261019r"></script>
+<script src="orders.js?v=20261019s"></script>
 </body>
 </html>

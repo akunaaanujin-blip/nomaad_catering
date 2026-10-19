@@ -3,6 +3,8 @@
 
 // Тайлан бүрийн дээр гарах энгийн тайлбар
 var REP_HELP = {
+  digest: 'Өглөө бүр анхаарах зүйлсийн (хугацаа болсон сануулга, хоцорсон зээл, баталгаажаагүй төлбөр, дуусах дөхсөн бараа) товчоог и-мэйлээр авах.',
+  assets: 'Тавилга, тоног төхөөрөмж, машин зэрэг удаан ашиглах хөрөнгө. Өртгийг ашиглах хугацаанд нь сар бүр элэгдэл болгон зардалд хуваана; актлахад данснаас хасна.',
   loans: 'Таны авсан болон өгсөн бүх зээл, өр: хэд авсан/өгсөн, хэдийг нь төлсөн, хүү хэд, хэд үлдсэн. Төлөлтийг үндсэн ба хүү гэж салгаж бүртгэнэ.',
   banklink: 'Банкны дансыг аль компанийнх (эсвэл удирдлагынх) болохыг холбоно. Хуулга оруулахад гүйлгээ тэр компанид автоматаар орно.',
   po: 'Хятадаас захиалсан бараа: урьдчилгаа, үлдэгдэл төлбөр, карго — бараа ирэхэд бүх зардал нь барааны өртөгт автоматаар хуваагдана.',
@@ -90,7 +92,7 @@ function monthlyView() {
   items.push([!!lastImp && !bl.some(function (l) { return l.status === 'Шинэ'; }), 'Банкны хуулгаа оруулж тулгах', lastImp ? 'Сүүлийн гүйлгээ: ' + lastImp + (bl.some(function (l) { return l.status === 'Шинэ'; }) ? ' · тулгаагүй гүйлгээ байна' : '') : 'Хуулга оруулаагүй', "setSub('bank')"]);
   var ent = entOf(biz), hasStaff = !BUSINESSES[biz].finOnly && entStaff(ent).some(function (s) { return Number(s.salary) > 0; });
   if (hasStaff) items.push([payrollPosted(ent, lm).length > 0, lm + ' сарын цалинг бодох', 'Цалин, НДШ, ХХОАТ санхүүд бичигдэнэ', "openTax('" + ent + "','payroll')"]);
-  var due = BUSINESSES[biz].finOnly ? [] : taxDeadlines(ent).filter(function (x) { return x.days <= 31; });
+  var due = BUSINESSES[biz].finOnly || !isOwner() ? [] : taxDeadlines(ent).filter(function (x) { return x.days <= 31; });
   due.forEach(function (x) { items.push([false, x.name + ' тушаах (' + x.date + ')', x.site, "openTax('" + ent + "','" + x.go + "')"]); });
   var tracked = moves.some(function (m) { return m.biz === biz; });
   if (tracked) { var lc = moves.filter(function (m) { return m.biz === biz && m.kind === 'Тооллого'; }).map(function (m) { return String(m.date).slice(0, 10); }).sort().pop() || '';
@@ -109,14 +111,20 @@ function monthlyView() {
     var oldest = opn.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; })[0], od = Math.round((new Date(todayStr()) - new Date(oldest.date)) / 864e5);
     items.push([od < 45, 'Бараа захиалгаа шалгах', opn.length + ' захиалга ирээгүй · хамгийн удсан ' + oldest.no + ' (' + od + ' хоног)', "openModule('products');setSub('po')"]);
   }
+  // Үндсэн хөрөнгийн элэгдэл: өнгөрсөн сарынх бичигдсэн эсэх
+  var fas = typeof faList === 'function' && isOwner() ? faList(biz).filter(function (A) { return A.status === 'Ашиглаж буй'; }) : [];
+  if (fas.length) {
+    var EJ = J(), dueFa = fas.filter(function (A) { return faDue(A, lm, EJ) > 0; });
+    items.push([!dueFa.length, lm + ' сарын элэгдэл бичих', dueFa.length ? dueFa.length + ' хөрөнгийн элэгдэл бичигдээгүй' : 'Бичигдсэн', "state.faMonth='" + lm + "';setSub('assets')"]);
+  }
   // Компани хоорондын тооцоо хоёр талаараа таарч байгаа эсэх
-  var icr = icRecon().filter(function (x) { return x.a === biz || x.b === biz; });
+  var icr = isOwner() ? icRecon().filter(function (x) { return x.a === biz || x.b === biz; }) : [];
   if (icr.length) {
     var bad = icr.filter(function (x) { return Math.abs(x.diff) >= 1; });
     items.push([!bad.length, 'Компани хоорондын тооцоог тулгах', bad.length ? bad.map(function (x) { return BUSINESSES[x.a === biz ? x.b : x.a].name + ' зөрүү ' + fmt(Math.abs(x.diff)); }).join(', ') : 'Хоёр талаараа таарч байна', "state.dtab='c';setSub('debts')"]);
   }
   items.push([!unpaidOld.length, 'Удсан авлагаа нэхэх', unpaidOld.length ? unpaidOld.length + ' хүний өр 60 хоногоос удсан' : 'Удсан авлага алга', "setSub('aging_r')"]);
-  items.push([!!meta.lock && meta.lock >= lastDayOf(lm), lm + ' сарыг шалгаад түгжих', meta.lock ? 'Одоо ' + meta.lock + ' хүртэл түгжигдсэн' : 'Түгжээгүй', "setSub('lock')"]);
+  if (isOwner()) items.push([!!meta.lock && meta.lock >= lastDayOf(lm), lm + ' сарыг шалгаад түгжих', meta.lock ? 'Одоо ' + meta.lock + ' хүртэл түгжигдсэн' : 'Түгжээгүй', "setSub('lock')"]);
   items.push([false, 'Сарын тайлангаа Excel-ээр хадгалах', 'Бүх тайлан → Excel татах', "openModule('reports')"]);
   return '<p class="hint">Сар бүрийн эхэнд энэ жагсаалтыг дарааллаар нь хийхэд санхүү тань цэгцтэй байна. Ногоон тэмдэг — хийгдсэн.</p>' +
     '<div class="card"><ul class="cklist">' + items.map(function (x, i) {

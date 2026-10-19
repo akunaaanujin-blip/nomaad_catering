@@ -40,9 +40,9 @@ function poView() {
 }
 // ── Захиалга үүсгэх / засах ──
 var pqIt = [];
-function openPo(id) {
+function openPo(id, preset) {   // preset — «Захиалах» бараанаас үүсгэсэн ноорог { items, supplier, note }
   var P = id ? poById(id) : null;
-  pqIt = P ? (P.items || []).map(function (i) { return { name: i.name, qty: i.qty, price: i.price }; }) : [{ name: '', qty: '', price: '' }];
+  pqIt = P ? (P.items || []).map(function (i) { return { name: i.name, qty: i.qty, price: i.price }; }) : preset && preset.items ? preset.items : [{ name: '', qty: '', price: '' }];
   gOpen('<h2>' + (P ? 'Захиалга засах · ' + esc(P.no) : 'Шинэ бараа захиалга') + '</h2>' +
     '<div class="row2"><div><label for="pqSup">Нийлүүлэгч</label><input id="pqSup" list="pqSups" placeholder="Жишээ: Yiwu ..."><datalist id="pqSups">' + partnerOptions() + '</datalist></div>' +
     '<div><label for="pqDate">Огноо</label><input id="pqDate" type="date"></div></div>' +
@@ -53,8 +53,8 @@ function openPo(id) {
     '<p id="pqTot" style="margin-top:8px"></p>' +
     '<label for="pqNote">Тэмдэглэл</label><input id="pqNote">' +
     '<button class="btn" onclick="savePo(' + (P ? '\'' + P.id + '\'' : '') + ')">Хадгалах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
-  $('pqSup').value = P ? P.supplier : ''; $('pqDate').value = P ? P.date : todayStr(); $('pqCur').value = P ? P.cur : load('nb_cur', 'CNY');
-  $('pqCargo').value = P ? P.cargoCo : load('nb_cargoco', ''); $('pqNote').value = P ? P.note : '';
+  $('pqSup').value = P ? P.supplier : preset ? preset.supplier || '' : ''; $('pqDate').value = P ? P.date : todayStr(); $('pqCur').value = P ? P.cur : load('nb_cur', 'CNY');
+  $('pqCargo').value = P ? P.cargoCo : load('nb_cargoco', ''); $('pqNote').value = P ? P.note : preset ? preset.note || '' : '';
   pqRender();
 }
 function pqRender() {

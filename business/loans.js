@@ -384,7 +384,7 @@ function bankPickChange(id) {
 }
 // Компани хооронд
 function icOpts(biz, isCredit) {
-  return ALL_KEYS.filter(function (k) { return k !== biz; }).map(function (k) { return ['IC:' + k, (isCredit ? 'Компани хооронд ← ' : 'Компани хооронд → ') + BUSINESSES[k].name]; });
+  return ORIG_ALL.filter(function (k) { return k !== biz; }).map(function (k) { return ['IC:' + k, (isCredit ? 'Компани хооронд ← ' : 'Компани хооронд → ') + BUSINESSES[k].name]; });
 }
 
 // ═══════════ БАНКНЫ ДАНС ХОЛБОХ ═══════════

@@ -517,12 +517,27 @@ function todayTotals() {
   });
   return t;
 }
+// ── Ирц: «Ирлээ» / «Явлаа» — ажилласан цаг удирдлагад харагдана ──
+function renderAttend() {
+  var bb = document.querySelector('.big-btns'); if (!bb || !staffName) return;
+  if (!$('attBar')) bb.insertAdjacentHTML('beforebegin', '<div class="card att-bar" id="attBar"></div>');
+  var a = todayRecords().filter(function (r) { return r.type === 'attend' && r.staff === staffName; });
+  var inn = a.filter(function (r) { return r.item === 'Ирлээ'; })[0], out = a.filter(function (r) { return r.item === 'Явлаа'; }).pop();
+  $('attBar').innerHTML = '<span>' + (inn ? 'Ирсэн <b>' + esc(inn.time) + '</b>' + (out ? ' · Явсан <b>' + esc(out.time) + '</b>' : '') : 'Ирцээ бүртгэнэ үү') + '</span>' +
+    (!inn ? '<button class="btn sm" onclick="attend(\'Ирлээ\')">Ирлээ</button>' : !out ? '<button class="btn sm ghost" onclick="attend(\'Явлаа\')">Явлаа</button>' : '');
+}
+function attend(kind) {
+  if (kind === 'Явлаа' && !confirm('Ажлаа дуусгаж явж байна уу?')) return;
+  addRecord({ type: 'attend', item: kind, amount: 0 });
+  toast(kind === 'Ирлээ' ? 'Ирц бүртгэгдлээ' : 'Явсан цаг бүртгэгдлээ');
+}
 function renderToday() {
+  renderAttend();
   var t = todayTotals();
   $('sumSales').textContent = fmt(t.sales);
   $('sumExp').textContent = fmt(t.exp);
   $('sumNet').textContent = fmt(t.sales - t.exp);
-  var recs = todayRecords().slice().reverse();
+  var recs = todayRecords().filter(function (r) { return r.type !== 'attend'; }).slice().reverse();
   var hb = $('histBtn');
   if (!hb && $('todayList')) { $('todayList').insertAdjacentHTML('afterend', '<button class="btn ghost" id="histBtn" style="margin-top:8px" onclick="openEbHist()">Баримтын түүх (өмнөх өдрүүд)</button>'); hb = $('histBtn'); }
   if (hb) hb.style.display = ebEnabled() || load(LS_REC, []).some(function (r) { return r.ddtd; }) ? '' : 'none';
