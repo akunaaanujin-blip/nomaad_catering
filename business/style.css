@@ -778,3 +778,5 @@ body:not(.bz-admin) .mono{border-radius:4px}
 .bz-admin .mini{border-color:#D3DEEC;color:#24466F!important}
 .bz-admin .filter{background:#F8FBFF;border-color:#DCE4EF}
 .bz-admin .hint{color:#4F6684}
+/* Тайлбар текст (заавар) — хуудсан дээр харуулахгүй, гарын авлагад бий */
+.bz-admin .hint,.bz-admin .rep-help{display:none!important}
