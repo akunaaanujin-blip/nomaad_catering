@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Удирдлагын самбар</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261019c">
+<link rel="stylesheet" href="style.css?v=20261019d">
 </head>
 <body class="bz-admin">
 <div class="demo" id="demo" style="display:none">Туршилтын горим — зөвхөн энэ төхөөрөмж дээр бичигдсэн мэдээлэл харагдана (код: 0000)</div>
@@ -125,10 +125,15 @@
         <div id="mvRateWrap"><label for="mvRate" id="mvRateLabel">Ханш (1 ¥ = ₮)</label><input id="mvRate" type="number" inputmode="decimal" step="any" min="0" oninput="mvCalc()"></div>
         <div><label for="mvCargo">Карго, тээвэр — энэ барааны НИЙТ (₮)</label><input id="mvCargo" type="number" inputmode="numeric" min="0" oninput="mvCalc()"></div>
       </div>
+      <div class="row2" id="mvCargoPayWrap">
+        <div><label for="mvCargoPay">Каргоны төлбөр</label>
+          <select id="mvCargoPay"><option value="Зээлээр">Дараа төлнө (өглөг)</option><option value="Харилцах">Харилцахаас төлсөн</option><option value="Бэлэн">Бэлнээр төлсөн</option></select></div>
+        <div><label for="mvCargoCo">Карго компани</label><input id="mvCargoCo" list="mvPartners" placeholder="Нэр"></div>
+      </div>
       <p class="muted" id="mvCalcInfo" style="font-size:12.5px;margin-top:6px"></p>
     </div>
     <div id="mvPayWrap"><div class="row2">
-      <div><label for="mvPay">Төлбөр</label>
+      <div><label for="mvPay">Барааны төлбөр</label>
         <select id="mvPay"><option value="Зээлээр">Зээлээр (дараа төлнө)</option><option>Бэлэн</option><option>Харилцах</option></select></div>
       <div><label for="mvPartner">Нийлүүлэгч</label><input id="mvPartner" list="mvPartners" placeholder="Нэр"><datalist id="mvPartners"></datalist></div>
     </div>
@@ -352,15 +357,15 @@
 <input type="file" id="baazFile" accept=".xlsx,.xls" style="display:none" onchange="importBaaz(this)">
 <div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="products.js?v=20261019c"></script>
-<script src="config.js?v=20261019c"></script>
-<script src="common.js?v=20261019c"></script>
-<script src="reports.js?v=20261019c"></script>
-<script src="tax.js?v=20261019c"></script>
-<script src="finhelp.js?v=20261019c"></script>
-<script src="finance.js?v=20261019c"></script>
-<script src="calendar.js?v=20261019c"></script>
-<script src="bank.js?v=20261019c"></script>
-<script src="admin.js?v=20261019c"></script>
+<script src="products.js?v=20261019d"></script>
+<script src="config.js?v=20261019d"></script>
+<script src="common.js?v=20261019d"></script>
+<script src="reports.js?v=20261019d"></script>
+<script src="tax.js?v=20261019d"></script>
+<script src="finhelp.js?v=20261019d"></script>
+<script src="finance.js?v=20261019d"></script>
+<script src="calendar.js?v=20261019d"></script>
+<script src="bank.js?v=20261019d"></script>
+<script src="admin.js?v=20261019d"></script>
 </body>
 </html>

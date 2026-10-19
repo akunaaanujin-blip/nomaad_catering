@@ -474,6 +474,7 @@ function openMove(kind, item) {
   $('mvCost').value = '';
   $('mvBuyWrap').style.display = kind === 'Орлого' ? 'block' : 'none';
   $('mvBuy').value = ''; $('mvCargo').value = ''; $('mvCurSel').value = load('nb_cur', 'CNY'); mvCurChange();
+  $('mvCargoPay').value = load('nb_cargopay', 'Зээлээр'); $('mvCargoCo').value = load('nb_cargoco', '');
   mvInfo();
   openSheet('moveSheet');
 }
@@ -496,6 +497,7 @@ function mvBuyCost() {   // { cost, info } эсвэл null (авсан үнэ о
       (qty ? ' · нийт ' + fmt(cost * qty) : '') };
 }
 function mvCalc() {
+  $('mvCargoPayWrap').style.display = Number($('mvCargo').value) > 0 ? '' : 'none';
   var b = mvBuyCost();
   if (b && (b.cur === 'MNT' || b.rate)) { $('mvCost').value = b.cost; $('mvCalcInfo').innerHTML = b.info; }
   else $('mvCalcInfo').innerHTML = $('mvBuy').value && !(Number($('mvRate').value) > 0) ? 'Ханшаа оруулна уу' : 'Авсан үнэ, ханш, каргог оруулбал нэгж өртөг өөрөө бодогдоно (гараар ч засаж болно).';
@@ -528,8 +530,11 @@ function saveMove() {
     var bc = mvBuyCost();
     if (bc && bc.cur !== 'MNT') { if (!(bc.rate > 0)) { toast('Ханшаа оруулна уу'); return; } save('nb_rate_' + bc.cur, bc.rate); }
     if (bc) save('nb_cur', bc.cur);
+    var cpay = bc && bc.cargo ? $('mvCargoPay').value : '', cco = cpay ? $('mvCargoCo').value.trim() : '';
+    if (cpay === 'Зээлээр' && !cco) { toast('Каргог дараа төлөх бол карго компанийн нэрийг бичнэ үү'); return; }
+    if (cpay) { save('nb_cargopay', cpay); save('nb_cargoco', cco); }
     ms.push({ biz: biz, loc: $('mvLoc').value, item: item, kind: 'Орлого', qty: qty, cost: cost, pay: pay, partner: partner, note: note,
-              buy: bc ? bc.buy : '', cur: bc ? bc.cur : '', rate: bc ? bc.rate : '', cargo: bc ? bc.cargo : '' });
+              buy: bc ? bc.buy : '', cur: bc ? bc.cur : '', rate: bc ? bc.rate : '', cargo: bc ? bc.cargo : '', cargoPay: cpay, cargoPartner: cco });
   } else if (moveKind === 'Хасалт') {
     if (!note) { toast('Хасах шалтгаанаа бичнэ үү'); return; }
     var hv = mvCurrent()[$('mvLoc').value === 'Агуулах' ? 'wh' : 'shop'] || 0;
@@ -559,7 +564,7 @@ function sendMoves(ms, done) {
       if (m.cost && m.qty > 0) it.cost = it.cost ? Math.round((it.cost + m.cost) / 2) : m.cost;
       moves.push({ id: 'M' + Date.now() + '-' + moves.length, date: todayStr() + ' ' + timeStr(), biz: m.biz, loc: m.loc, item: m.item, kind: m.kind, qty: m.qty,
                    cost: m.cost || 0, by: ownerName, note: m.note || '', pay: m.pay || '', partner: m.partner || '',
-                   buy: Number(m.buy) || 0, cur: m.cur || '', rate: Number(m.rate) || 0, cargo: Number(m.cargo) || 0 });
+                   buy: Number(m.buy) || 0, cur: m.cur || '', rate: Number(m.rate) || 0, cargo: Number(m.cargo) || 0, cargoPay: m.cargoPay || '', cargoPartner: m.cargoPartner || '' });
     });
     save('nb_demo_stock', stockData); save('nb_demo_moves', moves); render(); done(); return;
   }

@@ -161,7 +161,12 @@ function buildJournal(biz, R) {
     var v = Math.abs(ce.mv[m.id] || 0);
     if (m.kind === 'Он нээлт') return;   // барааны үнэлгээ журналын «Он нээлт» (1404) мөрөнд орсон
     if (m.kind === 'Эхний үлдэгдэл') add(d, 'Барааны эхний үлдэгдэл', m.id, '1404', '4201', v, m.item + ' × ' + m.qty);
-    else if (m.kind === 'Орлого') add(d, 'Бараа орлого', m.id, '1404', PAY_ACC[m.pay] || '3101', v, m.item + ' × ' + m.qty + (m.pay ? ' (' + m.pay + ')' : ''), m.partner);
+    else if (m.kind === 'Орлого') {
+      // Каргог тусдаа компанид төлдөг бол: барааны хэсэг нийлүүлэгчид, каргоны хэсэг карго компанид (өглөг / касс / харилцах)
+      var cg = m.cargo && m.cargoPay ? Math.min(v, r0(m.cargo * m.qty)) : 0;
+      add(d, 'Бараа орлого', m.id, '1404', PAY_ACC[m.pay] || '3101', v - cg, m.item + ' × ' + m.qty + (m.pay ? ' (' + m.pay + ')' : ''), m.partner);
+      if (cg) add(d, 'Бараа орлого · карго', m.id, '1404', PAY_ACC[m.cargoPay] || '3101', cg, 'Карго · ' + m.item + ' × ' + m.qty + ' (' + m.cargoPay + ')', m.cargoPartner);
+    }
     else if (m.kind === 'Тооллого' || m.kind === 'Хасалт') {
       if (m.qty < 0) add(d, m.kind, m.id, '7302', '1404', v, m.item + ' ' + m.qty);
       else add(d, m.kind, m.id, '1404', '5201', v, m.item + ' +' + m.qty);
@@ -435,10 +440,11 @@ function repReceiptsIn(R, biz, from, to) {
   var rows = R.moves.filter(function (m) { var d = String(m.date).slice(0, 10); return m.biz === biz && (m.kind === 'Орлого' || m.kind === 'Эхний үлдэгдэл') && d >= from && d <= to; })
     .map(function (m) { var sg = { CNY: '¥', USD: '$', MNT: '₮' }[m.cur] || '';
       return { date: m.date, kind: m.kind, item: m.item, loc: m.loc, qty: m.qty, buy: m.buy ? sg + m.buy : '', rate: m.rate || '', cargo: m.cargo || '',
-               cost: m.cost || '', val: m.cost ? r0(m.qty * m.cost) : '', pay: m.pay || '', partner: m.partner || '', _id: m.id }; }).reverse();
+               cost: m.cost || '', val: m.cost ? r0(m.qty * m.cost) : '', pay: m.pay || '', partner: m.partner || '',
+               cpay: m.cargo && m.cargoPay ? m.cargoPay + (m.cargoPartner ? ' · ' + m.cargoPartner : '') : '', _id: m.id }; }).reverse();
   return { title: 'Бараа орлогын жагсаалт', cols: [c('date', 'Огноо'), c('kind', 'Төрөл'), c('item', 'Бараа'), c('loc', 'Байршил'), m('qty', 'Тоо'),
     c('buy', 'Авсан үнэ'), m('rate', 'Ханш'), m('cargo', 'Карго/ш'), m('cost', 'Өртөг үнэ'),
-    m('val', 'Дүн'), c('pay', 'Төлбөр'), c('partner', 'Нийлүүлэгч')], rows: rows, total: { item: rows.length + ' мөр', val: sum(rows, 'val') } };
+    m('val', 'Дүн'), c('pay', 'Төлбөр'), c('partner', 'Нийлүүлэгч'), c('cpay', 'Каргоны төлбөр')], rows: rows, total: { item: rows.length + ' мөр', val: sum(rows, 'val') } };
 }
 
 // ── туслах ──
