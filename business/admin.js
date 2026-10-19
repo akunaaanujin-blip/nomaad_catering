@@ -1247,6 +1247,8 @@ function vcSwitch(k) {
   if ([].some.call($('vcPurpose').options, function (o) { return o.value === p; })) $('vcPurpose').value = p;
   vcPurpose(); if ($('vcPurpose').value === p) { vcSel = keep; vcOpenRender(); }
 }
+// Сервер утгыг 200 тэмдэгтээр таслана — #лавлагаа тасрахгүйн тулд текстийг богиносгоно
+function vcDescWithTags(text, tags) { return tags ? String(text).slice(0, Math.max(20, 199 - tags.length)) + ' ' + tags : text; }
 function saveVoucher() {
   var V = VOUCHER[vKind], other = $('vcPurpose').value, amt = Number($('vcAmount').value), partner = $('vcPartner').value.trim();
   var purpose = V_PURPOSE[V.dir].filter(function (y) { return y[0] === other; })[0] || [other, accName(other) + ' төлсөн', 0];
@@ -1254,7 +1256,7 @@ function saveVoucher() {
   if (!(amt > 0)) { toast('Дүнгээ оруулна уу'); return; }
   if (purpose[2] && !partner && !picked) { toast('Харилцагчийн нэрийг бичнэ үү эсвэл хаах өрөө сонгоно уу'); return; }
   var e = { biz: state.biz, date: $('vcDate').value, dr: V.dir === 'in' ? V.acc : other, cr: V.dir === 'in' ? other : V.acc, amount: amt,
-            partner: partner, desc: ($('vcDesc').value.trim() || purpose[1]) + (picked ? ' ' + vcTags() : ''), vkind: vKind };
+            partner: partner, desc: vcDescWithTags($('vcDesc').value.trim() || purpose[1], picked ? vcTags() : ''), vkind: vKind };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date)) { toast('Огноо оруулна уу'); return; }
   var done = function (no) { closeSheet('voucherSheet'); toast(no + ' бүртгэгдлээ'); if (confirm(no + ' баримтыг хэвлэх үү?')) printVoucher(e, no); };
   if (!API_URL) {
