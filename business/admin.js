@@ -145,7 +145,7 @@ function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
 
 // ── Үндсэн зураглал ──
 function render() {
-  DRILL = [];
+  DRILL = []; _debtCache = null;
   var pend = staff.filter(function (s) { return s.status === 'Хүлээгдэж'; }).length;
   $('rail').innerHTML = railHtml(pend);
   $('subnav').innerHTML = state.view === 'tax' ? taxSubnav() : subnavHtml();
@@ -1216,8 +1216,10 @@ var vKind = 'КО';
 function openVoucher(kind) {
   vKind = kind; var V = VOUCHER[kind];
   $('vcTitle').textContent = V.name;
-  $('vcPurpose').innerHTML = V_PURPOSE[V.dir].filter(function (x) { return x[0] !== V.acc; }).map(function (x) {
-    return '<option value="' + x[0] + '">' + esc(x[1]) + ' — ' + x[0] + '</option>'; }).join('');
+  $('vcPurpose').innerHTML = vcPurposeOpts(V);
+  $('vcKindLabel').textContent = V.dir === 'in' ? 'Мөнгө хаана орсон' : 'Мөнгө хаанаас гарсан';
+  $('vcKind').innerHTML = Object.keys(VOUCHER).filter(function (k) { return VOUCHER[k].dir === V.dir; }).map(function (k) {
+    return '<option value="' + k + '"' + (k === kind ? ' selected' : '') + '>' + (VOUCHER[k].acc === '10003' ? 'Касс (бэлэн)' : 'Харилцах (банк)') + '</option>'; }).join('');
   $('vcDate').value = todayStr(); $('vcAmount').value = ''; $('vcPartner').value = ''; $('vcDesc').value = '';
   $('vcPartners').innerHTML = partnerOptions() + receivableOptions();
   vcPurpose();
@@ -1228,17 +1230,31 @@ function receivableOptions() {   // зээлээр авсан хүмүүсийн
   J().forEach(function (e) { if (e.partner && (e.dr === '1201' || e.cr === '1201')) b[e.partner] = (b[e.partner] || 0) + (e.dr === '1201' ? e.amount : -e.amount); });
   return Object.keys(b).filter(function (k) { return b[k] > 0.5; }).map(function (k) { return '<option value="' + esc(k) + '">Авлага ' + fmt(b[k]) + '</option>'; }).join('');
 }
+function vcPurposeOpts(V) {
+  return V_PURPOSE[V.dir].filter(function (x) { return x[0] !== V.acc; }).map(function (x) { return '<option value="' + x[0] + '">' + esc(x[1]) + ' — ' + x[0] + '</option>'; }).join('');
+}
 function vcPurpose() {
   var dir = VOUCHER[vKind].dir, x = V_PURPOSE[dir].filter(function (y) { return y[0] === $('vcPurpose').value; })[0];
   $('vcPartnerLabel').textContent = x && x[2] ? 'Харилцагч *' : 'Харилцагч';
+  vcSel = {}; vcOpenRender();   // өглөг / авлага бол нээлттэйг жагсаана (finance.js)
+}
+// Касс ↔ харилцах солих (гүйлгээ, сонгосон өр хэвээр)
+function vcSwitch(k) {
+  var p = $('vcPurpose').value, keep = vcSel, extra = [].filter.call($('vcPurpose').options, function (o) { return o.value === p; })[0];
+  vKind = k; var V = VOUCHER[k];
+  $('vcTitle').textContent = V.name; $('vcPurpose').innerHTML = vcPurposeOpts(V);
+  if (![].some.call($('vcPurpose').options, function (o) { return o.value === p; }) && extra && p !== V.acc) $('vcPurpose').appendChild(extra);
+  if ([].some.call($('vcPurpose').options, function (o) { return o.value === p; })) $('vcPurpose').value = p;
+  vcPurpose(); if ($('vcPurpose').value === p) { vcSel = keep; vcOpenRender(); }
 }
 function saveVoucher() {
   var V = VOUCHER[vKind], other = $('vcPurpose').value, amt = Number($('vcAmount').value), partner = $('vcPartner').value.trim();
-  var purpose = V_PURPOSE[V.dir].filter(function (y) { return y[0] === other; })[0];
+  var purpose = V_PURPOSE[V.dir].filter(function (y) { return y[0] === other; })[0] || [other, accName(other) + ' төлсөн', 0];
+  var picked = Object.keys(vcSel).length;
   if (!(amt > 0)) { toast('Дүнгээ оруулна уу'); return; }
-  if (purpose[2] && !partner) { toast('Харилцагчийн нэрийг бичнэ үү'); return; }
+  if (purpose[2] && !partner && !picked) { toast('Харилцагчийн нэрийг бичнэ үү эсвэл хаах өрөө сонгоно уу'); return; }
   var e = { biz: state.biz, date: $('vcDate').value, dr: V.dir === 'in' ? V.acc : other, cr: V.dir === 'in' ? other : V.acc, amount: amt,
-            partner: partner, desc: $('vcDesc').value.trim() || purpose[1], vkind: vKind };
+            partner: partner, desc: ($('vcDesc').value.trim() || purpose[1]) + (picked ? ' ' + vcTags() : ''), vkind: vKind };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date)) { toast('Огноо оруулна уу'); return; }
   var done = function (no) { closeSheet('voucherSheet'); toast(no + ' бүртгэгдлээ'); if (confirm(no + ' баримтыг хэвлэх үү?')) printVoucher(e, no); };
   if (!API_URL) {

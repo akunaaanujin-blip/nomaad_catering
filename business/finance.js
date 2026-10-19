@@ -288,13 +288,18 @@ function openItems(E, accs, sign, to, loanKey) {
     var acc = inD ? e.dr : e.cr, v = (inD ? e.amount : -e.amount) * sign;
     var who = e.partner || (loanKey ? accName(acc) : '(харилцагч заагаагүй)'), p = P[who] = P[who] || { open: [], over: 0, acc: acc, np: !e.partner };
     if (v > 0) {
-      var it = { date: e.date, who: who, desc: e.desc, amt: v, paid: 0, closed: '', acc: acc, np: !e.partner };
+      var it = { date: e.date, who: who, desc: e.desc, amt: v, paid: 0, closed: '', acc: acc, np: !e.partner, ref: e.ref || '', bill: e.bill || '',
+                 key: (e.ref || '') + '|' + e.date + '|' + Math.round(v) };
       if (p.over > 0) { var u = Math.min(p.over, v); it.paid += u; p.over -= u; }
       if (it.paid >= it.amt - 0.5) it.closed = e.date; else p.open.push(it);
       items.push(it);
     } else {
-      var rest = -v;
-      while (rest > 0.005 && p.open.length) { var o = p.open[0], u2 = Math.min(rest, o.amt - o.paid); o.paid += u2; rest -= u2; if (o.paid >= o.amt - 0.5) { o.closed = e.date; p.open.shift(); } }
+      // Гүйлгээний утганд «#лавлагаа» байвал яг тэр өрийг түрүүлж хаана, үлдсэнийг хамгийн хуучнаас (FIFO)
+      var rest = -v, tags = (String(e.desc).match(/#[\w\-.]+/g) || []).map(function (t) { return t.slice(1); });
+      var hit = function (o) { return tags.indexOf(o.ref) >= 0 || (o.bill && tags.indexOf(o.bill) >= 0) ? 0 : 1; };
+      var order = tags.length ? p.open.slice().sort(function (a, b) { return hit(a) - hit(b); }) : p.open.slice();
+      for (var q = 0; q < order.length && rest > 0.005; q++) { var o = order[q], u2 = Math.min(rest, o.amt - o.paid); o.paid += u2; rest -= u2; if (o.paid >= o.amt - 0.5) o.closed = e.date; }
+      p.open = p.open.filter(function (o) { return !o.closed; });
       if (rest > 0.005) p.over += rest;
     }
   });
@@ -305,9 +310,10 @@ function repDebts(E, k, showClosed) {
   var rows = oi.items.filter(function (it) { return showClosed || !it.closed; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (it) {
     var days = Math.round((new Date(td) - new Date(it.date)) / 864e5);
     return { date: it.date, who: it.who, desc: it.desc, amt: r0(it.amt), paid: r0(it.paid), left: r0(it.amt - it.paid), closed: it.closed, st: it.closed ? 'Хаагдсан' : days + ' хоног',
-      _d: { left: debtSpec(k, it, td) } };
+      _d: { left: debtSpec(k, it, td) },
+      _act: !it.closed && k !== 'a' ? '<button class="mini" style="color:var(--accent)" onclick="debtPay(\'' + k + '\',\'' + esc(it.key) + '\')">' + (k === 'r' ? 'Төлбөр авах' : 'Төлөх') + '</button>' : '' };
   });
-  return { title: T[0] + ' — ' + (showClosed ? 'бүгд' : 'хаагдаагүй'), rows: rows,
+  return { title: T[0] + ' — ' + (showClosed ? 'бүгд' : 'хаагдаагүй'), rows: rows, actions: k !== 'a',
     cols: [c('date', 'Үүссэн огноо'), c('who', 'Харилцагч'), c('desc', 'Тайлбар'), m('amt', 'Дүн'), m('paid', 'Төлсөн'), m('left', 'Үлдэгдэл'), c('closed', 'Хаасан огноо'), c('st', 'Төлөв')],
     total: { date: 'Нийт', amt: sum(rows, 'amt'), paid: sum(rows, 'paid'), left: sum(rows, 'left') } };
 }
@@ -420,4 +426,64 @@ function addDrill(sub, rep, f, t) {
     r._d = { v: { acc: cash, other: [mm[2]], from: f, to: t, sign: 1, dir: mm[1] === 'Орлого' ? 1 : -1, grp: 'cat', t: r.name } };
   });
   return rep;
+}
+
+// ═══════════ ӨГЛӨГ, АВЛАГА ХААХ — аль нэгийг нь сонгоно ═══════════
+// Сонгосон өрийн лавлагаа (#...) гүйлгээний утганд бичигдэж, openItems яг тэр өрийг хаана.
+var _debtCache = null;
+function debtItems(accs, sign, loan) {
+  return openItems(J(), accs, sign, '9999-12-31', loan).items.filter(function (it) { return !it.closed; })
+    .map(function (it) { it.left = r0(it.amt - it.paid); return it; }).filter(function (it) { return it.left > 0.5; });
+}
+function debtCache() {   // render бүрт нэг удаа
+  if (!_debtCache) {
+    var ords = {}; (window.adminOrders || []).forEach(function (o) { ords[o.id] = 1; });
+    _debtCache = { rec: debtItems(['1201'], 1).filter(function (it) { return !ords[it.bill]; }),   // захиалгын авлагыг «Захиалга»-аар тулгана
+                   pay: debtItems(['3101'], -1).concat(debtItems(loanCodes(), -1, true)) };
+  }
+  return _debtCache;
+}
+function debtTag(it) { return it.bill || it.ref; }
+function debtLabel(it) { return (it.acc === '1201' ? 'Авлага' : /^35/.test(it.acc) ? 'Зээл' : 'Өглөг') + ' · ' + it.who + ' · ' + mny(it.left) + ' (' + it.date + ' · ' + String(it.desc).split(' · ')[0].slice(0, 30) + ')'; }
+function vcDebtSign(acc) { return acc === '1201' || acc === '1503' ? 1 : acc === '3101' || /^35/.test(acc) ? -1 : 0; }
+var vcItems = [], vcSel = {};
+function vcOpenRender() {
+  var acc = $('vcPurpose').value, sg = vcDebtSign(acc);
+  if (!sg) { $('vcOpenWrap').style.display = 'none'; vcItems = []; vcSel = {}; return; }
+  vcItems = debtItems([acc], sg, /^35/.test(acc));
+  var f = $('vcPartner').value.trim().toLowerCase(), word = sg > 0 ? 'авлага' : (/^35/.test(acc) ? 'зээл' : 'өглөг');
+  var list = vcItems.map(function (it, i) { return [it, i]; }).filter(function (x) { return !f || vcSel[x[1]] || x[0].who.toLowerCase().indexOf(f) >= 0; });
+  $('vcOpenWrap').style.display = '';
+  $('vcOpenTitle').textContent = 'Аль ' + word + 'ийг хаах вэ? Сонгоно уу (' + vcItems.length + ' нээлттэй)';
+  $('vcOpen').innerHTML = list.length ? list.map(function (x) {
+    var it = x[0], i = x[1];
+    return '<label class="vc-it"><input type="checkbox"' + (vcSel[i] ? ' checked' : '') + ' onchange="vcPick(' + i + ',this.checked)">' +
+      '<span class="vc-d">' + esc(it.date) + '</span><span class="vc-w"><b>' + esc(it.who) + '</b><small class="muted">' + esc(String(it.desc).slice(0, 70)) + '</small></span>' +
+      '<span class="vc-a">' + mny(it.left) + (it.paid > 0.5 ? '<small class="muted">' + mny(it.amt) + '-аас</small>' : '') + '</span></label>';
+  }).join('') : '<p class="muted" style="margin:4px 0">Нээлттэй ' + word + ' алга' + (f ? ' (харилцагчаар шүүсэн)' : '') + '</p>';
+}
+function vcPick(i, on) {
+  var it = vcItems[i]; if (!it) return;
+  if (on) Object.keys(vcSel).forEach(function (k) { if (vcItems[k].who !== it.who) delete vcSel[k]; });   // нэг баримтад нэг харилцагч
+  if (on) vcSel[i] = 1; else delete vcSel[i];
+  var sel = Object.keys(vcSel).map(function (k) { return vcItems[k]; });
+  if (sel.length) {
+    $('vcPartner').value = sel[0].np ? '' : sel[0].who;
+    $('vcAmount').value = r0(sel.reduce(function (a, x) { return a + x.left; }, 0));
+    $('vcDesc').value = (vcDebtSign($('vcPurpose').value) > 0 ? 'Авлага төлөгдсөн' : /^35/.test($('vcPurpose').value) ? 'Зээл төлсөн' : 'Өглөг төлсөн') + ' · ' +
+      sel.map(function (x) { return String(x.desc).split(' · ')[0].split(' #')[0].slice(0, 40); }).join(', ');
+  }
+  vcOpenRender();
+}
+function vcTags() { return Object.keys(vcSel).map(function (k) { return '#' + debtTag(vcItems[k]); }).join(' '); }
+// Авлага, өглөг хуудасны «Төлөх / Төлбөр авах» → кассын баримт тэр өрийг сонгосон байдлаар нээгдэнэ
+function debtPay(k, key) {
+  var it = (k === 'r' ? debtItems(['1201'], 1) : k === 'p' ? debtItems(['3101'], -1) : debtItems(loanCodes(), -1, true)).filter(function (x) { return x.key === key; })[0];
+  if (!it) { toast('Энэ өр аль хэдийн хаагдсан байна'); return; }
+  openVoucher(k === 'r' ? 'ХО' : 'ХЗ');
+  if (![].some.call($('vcPurpose').options, function (o) { return o.value === it.acc; }))
+    $('vcPurpose').insertAdjacentHTML('beforeend', '<option value="' + it.acc + '">' + esc(accName(it.acc)) + ' төлсөн — ' + it.acc + '</option>');
+  $('vcPurpose').value = it.acc; vcPurpose();
+  var i = -1; vcItems.forEach(function (x, j) { if (x.key === key) i = j; });
+  if (i >= 0) vcPick(i, true);
 }

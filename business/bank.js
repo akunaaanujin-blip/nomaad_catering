@@ -68,9 +68,16 @@ function bankMatch(l) {
   return null;
 }
 function bankSuggest(l) {
-  if (l.credit) { var m = bankMatch(l); if (m) return m; return { kind: 'acc', acc: '' }; }
+  if (l.credit) { var m = bankMatch(l); if (m) return m; var dc = debtByName(l, debtCache().rec); if (dc) return dc; return { kind: 'acc', acc: '' }; }
+  var dd = debtByName(l, debtCache().pay); if (dd) return dd;
   var r = BANK_RULES.filter(function (x) { return x[0].test(l.desc); })[0];
   return { kind: 'acc', acc: r ? r[1] : '' };
+}
+// Гүйлгээний утганд харилцагчийн нэр байвал тэр өр / авлагыг санал болгоно (хамгийн хуучныг)
+function debtByName(l, list) {
+  var d = String(l.desc || '').toLowerCase();
+  var it = list.filter(function (x) { return !x.np && x.who.length >= 3 && d.indexOf(x.who.toLowerCase()) >= 0; })[0];
+  return it ? { kind: 'debt', v: 'D:' + it.acc + '|' + it.key, it: it } : null;
 }
 
 // ── Дэлгэц ──
@@ -94,14 +101,19 @@ function bankView() {
       if (l.credit) {
         (window.adminOrders || []).filter(function (o) { return o.biz === biz && !o.confirmed && o.status !== 'Цуцалсан'; }).forEach(function (o) {
           opts.push(['O:' + o.id, 'Захиалга ' + o.phone + ' · ' + fmt(o.amount) + ' · ' + o.status + (o.paid === 'Орсон' ? ' · ажилтан: орсон' : '')]); });
+        debtCache().rec.forEach(function (it) { opts.push(['D:' + it.acc + '|' + it.key, debtLabel(it)]); });
         BANK_IN.forEach(function (a) { opts.push([a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1]]); });
         if (s.kind === 'paid') opts.unshift(['P:' + s.o.id, 'Аль хэдийн баталгаажсан: ' + s.o.phone + ' (давхар бичихгүй)']);
-      } else BANK_OUT.forEach(function (a) { opts.push([a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1]]); });
-      var def = cur || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id : s.acc ? 'A:' + s.acc : '');
+      } else {
+        debtCache().pay.forEach(function (it) { opts.push(['D:' + it.acc + '|' + it.key, debtLabel(it)]); });
+        BANK_OUT.forEach(function (a) { opts.push([a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1]]); });
+      }
+      var def = cur || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : '');
       bankPick[l.id] = def;
       sel = '<select onchange="bankPick[\'' + esc(l.id) + '\']=this.value" style="max-width:260px"><option value="">— Сонгох —</option>' + opts.map(function (o) {
         return '<option value="' + esc(o[0]) + '"' + (o[0] === def ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>' +
-        (s.kind === 'order' ? ' <small class="muted">санал: ' + (s.sure ? 'утас, дүн таарсан' : 'шалгаж сонгоно уу') + (s.fee > 0 ? ' · буухиагийн хөлс ' + fmt(s.fee) : '') + '</small>' : '');
+        (s.kind === 'order' ? ' <small class="muted">санал: ' + (s.sure ? 'утас, дүн таарсан' : 'шалгаж сонгоно уу') + (s.fee > 0 ? ' · буухиагийн хөлс ' + fmt(s.fee) : '') + '</small>' : '') +
+        (s.kind === 'debt' ? ' <small class="muted">санал: нэр таарсан — шалгаж сонгоно уу</small>' : '');
     }
     return '<tr><td>' + esc(l.date) + '</td><td>' + esc(l.desc) + '</td><td class="n" style="color:var(--green)">' + (l.credit ? '+' + fmt(l.credit).slice(1) : '') + '</td>' +
       '<td class="n neg">' + (l.debit ? '−' + fmt(l.debit).slice(1) : '') + '</td><td>' + (s ? sel : '<span class="tag">' + esc(l.status) + '</span> <small class="muted">' + esc(l.link) + '</small>') + '</td>' +
@@ -130,7 +142,8 @@ function bankApply(ids, quiet) {
     var l0 = bankLines.filter(function (x) { return x.id === ids[0]; })[0], p0 = bankPick[ids[0]] || '';
     if (l0 && p0 && p0 !== 'skip') {
       var what = p0.indexOf('O:') === 0 ? 'захиалга ' + (((window.adminOrders || []).filter(function (o) { return o.id === p0.slice(2); })[0]) || {}).phone + ' — төлбөрийг баталгаажуулж санхүүд бичнэ' :
-                 p0.indexOf('P:') === 0 ? 'өмнө баталгаажсан захиалга (давхар бичихгүй)' : p0.slice(2) + ' ' + accName(p0.slice(2));
+                 p0.indexOf('P:') === 0 ? 'өмнө баталгаажсан захиалга (давхар бичихгүй)' :
+                 p0.indexOf('D:') === 0 ? (bankDebt(p0) ? debtLabel(bankDebt(p0)) + ' — хаана' : 'өр / авлага') : p0.slice(2) + ' ' + accName(p0.slice(2));
       if (!confirm(l0.date + ' · ' + (l0.credit ? '+' + fmt(l0.credit) : '−' + fmt(l0.debit)) + '\n«' + l0.desc + '»\n\n→ ' + what + '\n\nТулгах уу?')) return;
     }
   }
@@ -151,6 +164,14 @@ function bankApply(ids, quiet) {
       updates.push({ id: id, status: 'Тулгасан', link: 'Захиалга ' + o.phone + ' #' + o.id });
       return;
     }
+    if (pick.indexOf('D:') === 0) {   // сонгосон өглөг / авлагыг хаана (#лавлагаагаар яг тэр өр)
+      var it = bankDebt(pick); if (!it) return;
+      var tag = ' #' + debtTag(it), pn = it.np ? '' : it.who;
+      entries.push(l.credit ? { biz: biz, date: d, dr: acc, cr: it.acc, amount: amt, desc: (l.desc.slice(0, 100) || 'Авлага төлөгдсөн') + tag, partner: pn }
+                            : { biz: biz, date: d, dr: it.acc, cr: acc, amount: amt, desc: (l.desc.slice(0, 100) || 'Өглөг төлсөн') + tag, partner: pn });
+      updates.push({ id: id, status: 'Тулгасан', link: (it.acc === '1201' ? 'Авлага · ' : /^35/.test(it.acc) ? 'Зээл · ' : 'Өглөг · ') + it.who });
+      return;
+    }
     var a2 = pick.slice(2);
     entries.push(l.credit ? { biz: biz, date: d, dr: acc, cr: a2, amount: amt, desc: l.desc.slice(0, 120) || 'Банкны орлого', partner: '' }
                           : { biz: biz, date: d, dr: a2, cr: acc, amount: amt, desc: l.desc.slice(0, 120) || 'Банкны зарлага', partner: '' });
@@ -168,6 +189,10 @@ function bankApply(ids, quiet) {
   post({ type: 'admin_bank', by: ownerName, updates: updates }, function (err) { if (err) toast('Алдаа: ' + err); fin(); });
 }
 
+function bankDebt(pick) {
+  var v = pick.slice(2), acc = v.split('|')[0], key = v.slice(acc.length + 1), c = debtCache();
+  return c.rec.concat(c.pay).filter(function (x) { return x.acc === acc && x.key === key; })[0] || null;
+}
 // ═══════════ ЗАХИАЛГЫН ТӨЛБӨР (зөвхөн удирдлага) ═══════════
 // received — орж ирсэн мөнгө; diff — зөрүү (буухиагийн хөлс 7207 эсвэл хөнгөлөлт 6001); бичилт бүрийн утганд «#захиалгын ID» — буцаахад олдоно.
 function orderPayEntries(o, biz, acc, d, received, diff, diffAcc, how) {

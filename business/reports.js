@@ -122,11 +122,11 @@ function avgCost(ce, item) { var o = ce.items[item]; return o ? (o.q > 0 ? o.v /
 function buildJournal(biz, R) {
   var E = [];
   var ce = costEngine(biz, R), tracked = !!ce.since;
-  var add = function (date, doc, ref, dr, cr, amount, desc, partner) {
+  var add = function (date, doc, ref, dr, cr, amount, desc, partner, bill) {
     amount = Math.round((Number(amount) || 0) * 100) / 100;
     if (!amount) return;
     if (amount < 0) { var t = dr; dr = cr; cr = t; amount = -amount; }
-    E.push({ date: date, doc: doc, ref: ref || '', dr: dr, cr: cr, amount: amount, desc: desc || '', partner: partner || '' });
+    E.push({ date: date, doc: doc, ref: ref || '', dr: dr, cr: cr, amount: amount, desc: desc || '', partner: partner || '', bill: bill || '' });
   };
   R.records.forEach(function (x) {
     if (x.biz !== biz) return;
@@ -137,7 +137,7 @@ function buildJournal(biz, R) {
       var item = String(x.item).replace(/ \(буцаалт\)$/, '');
       var c = Math.abs(ce.rec[x.id] || 0);
       if (a >= 0) {
-        add(d, 'Борлуулалт', x.id, cash, '5101', a, item + ' × ' + x.qty + ' (' + (x.pay || 'Бэлэн') + ')', cust);
+        add(d, 'Борлуулалт', x.id, cash, '5101', a, item + ' × ' + x.qty + ' (' + (x.pay || 'Бэлэн') + ')', cust, x.bill);
         if (c) add(d, 'Борлуулалт · өртөг', x.id, '6101', '1404', c, item + ' × ' + x.qty);
       } else {
         add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty), cust);

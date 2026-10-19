@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Удирдлагын самбар</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261019d">
+<link rel="stylesheet" href="style.css?v=20261019e">
 </head>
 <body class="bz-admin">
 <div class="demo" id="demo" style="display:none">Туршилтын горим — зөвхөн энэ төхөөрөмж дээр бичигдсэн мэдээлэл харагдана (код: 0000)</div>
@@ -317,12 +317,17 @@
 <div class="sheet" id="voucherSheet" onclick="if(event.target===this)closeSheet('voucherSheet')">
   <div class="panel">
     <h2 id="vcTitle">Кассын баримт</h2>
-    <label for="vcPurpose">Гүйлгээ</label><select id="vcPurpose" onchange="vcPurpose()"></select>
+    <div class="row2">
+      <div><label for="vcPurpose">Гүйлгээ</label><select id="vcPurpose" onchange="vcPurpose()"></select></div>
+      <div><label for="vcKind" id="vcKindLabel">Мөнгө хаанаас</label><select id="vcKind" onchange="vcSwitch(this.value)"></select></div>
+    </div>
     <div class="row2">
       <div><label for="vcDate">Огноо</label><input id="vcDate" type="date"></div>
       <div><label for="vcAmount">Дүн (₮)</label><input id="vcAmount" type="number" inputmode="numeric" min="0"></div>
     </div>
-    <label for="vcPartner" id="vcPartnerLabel">Харилцагч</label><input id="vcPartner" list="vcPartners" placeholder="Нэр"><datalist id="vcPartners"></datalist>
+    <label for="vcPartner" id="vcPartnerLabel">Харилцагч</label><input id="vcPartner" list="vcPartners" placeholder="Нэр" oninput="vcOpenRender()"><datalist id="vcPartners"></datalist>
+    <div id="vcOpenWrap" style="display:none"><label id="vcOpenTitle">Аль өрийг хаах вэ?</label><div id="vcOpen" class="vc-open"></div>
+      <p class="muted" style="font-size:12px;margin-top:4px">Сонгосон өр л хаагдана. Дүнг багасгавал хэсэгчлэн төлөгдөж, үлдсэн нь өр хэвээр үлдэнэ.</p></div>
     <label for="vcDesc">Гүйлгээний утга</label><input id="vcDesc" placeholder="Хоосон бол гүйлгээний нэрээр">
     <p class="muted" style="font-size:12.5px;margin-top:8px">Баримтын дугаар (КО-0001 г.м) автоматаар олгогдож, санхүүгийн журналд шууд бичигдэнэ.</p>
     <button class="btn" onclick="saveVoucher()">Бүртгэх</button>
@@ -357,15 +362,15 @@
 <input type="file" id="baazFile" accept=".xlsx,.xls" style="display:none" onchange="importBaaz(this)">
 <div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="products.js?v=20261019d"></script>
-<script src="config.js?v=20261019d"></script>
-<script src="common.js?v=20261019d"></script>
-<script src="reports.js?v=20261019d"></script>
-<script src="tax.js?v=20261019d"></script>
-<script src="finhelp.js?v=20261019d"></script>
-<script src="finance.js?v=20261019d"></script>
-<script src="calendar.js?v=20261019d"></script>
-<script src="bank.js?v=20261019d"></script>
-<script src="admin.js?v=20261019d"></script>
+<script src="products.js?v=20261019e"></script>
+<script src="config.js?v=20261019e"></script>
+<script src="common.js?v=20261019e"></script>
+<script src="reports.js?v=20261019e"></script>
+<script src="tax.js?v=20261019e"></script>
+<script src="finhelp.js?v=20261019e"></script>
+<script src="finance.js?v=20261019e"></script>
+<script src="calendar.js?v=20261019e"></script>
+<script src="bank.js?v=20261019e"></script>
+<script src="admin.js?v=20261019e"></script>
 </body>
 </html>
