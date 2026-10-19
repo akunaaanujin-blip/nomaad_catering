@@ -181,7 +181,6 @@ function render() {
   var inCo = state.view === 'company' && BUSINESSES[state.biz];
   document.querySelector('.bz-head').style.boxShadow = inCo ? 'inset 0 2px 0 ' + BUSINESSES[state.biz].color : '';
   navTrack();
-  $('backBtn').style.display = state.view !== 'companies' || NAV.idx > 0 ? '' : 'none';
 }
 
 // ── Буцах: дэлгэц бүр хөтчийн түүхэнд бичигдэнэ — «← Буцах» болон утас/хөтчийн буцах товч өмнөх дэлгэц рүү ──
@@ -227,6 +226,7 @@ var ICONS = {
   logout: '<path d="M15 4h4a1 1 0 011 1v14a1 1 0 01-1 1h-4"/><path d="M10 17l-5-5 5-5M5 12h11"/>',
   cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   tax: '<path d="M7 3h10v18l-2.5-1.5L12 21l-2.5-1.5L7 21z"/><path d="M9.5 8h5M9.5 11.5h5M9.5 15h3"/>',
+  back: '<path d="M14.5 5.5L8 12l6.5 6.5"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4"/><circle cx="12" cy="17" r=".6"/>',
 };
 function ico(k) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + ICONS[k] + '</svg>'; }
@@ -237,6 +237,7 @@ function railHtml(pend) {
   };
   var inCo = state.view === 'company';
   return '<div class="rail-logo">N</div>' +
+    (state.view !== 'companies' ? item(false, 'navBack()', 'back', 'Буцах') : '') +   // нүүр (компаниуд) хуудаснаас буцах шаардлагагүй
     item(state.view === 'companies', "go('companies')", 'home', 'Компаниуд') +
     (inCo && BUSINESSES[state.biz] ? bizModules(state.biz).map(function (m) { return item(state.module === m[0], "openModule('" + m[0] + "')", m[0], m[1]); }).join('') : '') +
     (inCo ? '' :   // компанийн дотор зөвхөн компанийн цэс; удирдлагын цэс нь «Компаниуд» түвшинд
@@ -319,7 +320,7 @@ function companiesView() {
     var st = bizStaff(k);
     var active = st.filter(function (s) { return s.status === 'Тийм'; }).length;
     var pend = st.filter(function (s) { return s.status === 'Хүлээгдэж'; }).length;
-    return '<div class="co-card" style="border-top-color:' + B.color + '">' +
+    return '<div class="co-card" style="--co:' + B.color + '">' +
       '<div class="co-head"><span class="mono" style="--co:' + B.color + '">' + B.icon + '</span><div><b>' + esc(B.name) + '</b>' +
       '<small>' + (E.merchantTin ? esc(E.legalName || '') + ' · ТТД ' + esc(E.merchantTin) : 'И-баримтгүй') + '</small></div></div>' +
       '<div class="co-stats">' +
@@ -338,7 +339,7 @@ function companiesView() {
 function mgmtCard() {
   var b = balances(buildJournal('mgmt', R()), todayStr()), cash = ACCOUNTS.filter(function (a) { return a[3] === 'cash'; }).reduce(function (s, a) { return s + (b[a[0]] || 0); }, 0);
   var links = (window.bankLinks || []).filter(function (l) { return l.biz === 'mgmt'; }).length;
-  return '<h2 class="sec-title">Удирдлага</h2><div class="co-grid"><div class="co-card" style="border-top-color:#374151">' +
+  return '<h2 class="sec-title">Удирдлага</h2><div class="co-grid"><div class="co-card" style="--co:#374151">' +
     '<div class="co-head"><span class="mono" style="--co:#374151">У</span><div><b>Удирдлагын санхүү</b><small>Удирдлагын өөрийн данс, зээл, компаниудтай тооцоо</small></div></div>' +
     '<div class="co-stats"><div><span>Мөнгө</span><b>' + fmt(cash) + '</b></div><div><span>Авсан зээл</span><b>' + fmt(-(b['3501'] || 0)) + '</b></div>' +
     '<div><span>Өгсөн зээл</span><b>' + fmt(b['1210'] || 0) + '</b></div><div><span>Холбосон данс</span><b>' + links + '</b></div></div>' +
