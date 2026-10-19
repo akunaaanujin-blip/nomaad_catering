@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v3.4 (ажилтан «Төлбөр орсон» тэмдэглэнэ, санхүүд зөвхөн удирдлагын баталгаагаар)
+// NOMAAD Бизнесүүд — Google Apps Script v3.5 (үлдэгдэл хасах руу орохгүй: дэлгүүрт дутсаныг агуулахаас, хүрэлцэхгүй хөдөлгөөнийг хориглоно)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -382,6 +382,8 @@ function stockAll(withCost) {
     });
   }
   Object.keys(out).forEach(function (b) { Object.keys(out[b]).forEach(function (k) {
+    const it = out[b][k];
+    if (it.shop < 0 && it.wh > 0) { const t = Math.min(it.wh, -it.shop); it.wh -= t; it.shop += t; }   // дэлгүүрт дутсаныг агуулахаас
     out[b][k].shop = Math.round(out[b][k].shop * 1000) / 1000; out[b][k].wh = Math.round(out[b][k].wh * 1000) / 1000;
     const c = cq[b + '|' + k];
     if (withCost && c && c.q) out[b][k].cost = Math.round(c.v / c.q);
@@ -389,10 +391,27 @@ function stockAll(withCost) {
   return out;
 }
 // Удирдагч: хөдөлгөөн бүртгэх (олноор). Шилжүүлэг = хоёр мөр (−гарах, +орох).
+// Хөдөлгөөний дараа аль нэг байршлын үлдэгдэл хасах болох эсэх (болох бол барааны нэр)
+function stockNegative(biz, list) {
+  const st = stockAll()[biz] || {};
+  for (let i = 0; i < list.length; i++) {
+    const m = list[i], it = st[m.item] = st[m.item] || { shop: 0, wh: 0 }, k = m.loc === 'Агуулах' ? 'wh' : 'shop';
+    it[k] += Number(m.qty) || 0;
+    if (Number(m.qty) < 0 && it[k] < -1e-9) return m.item + ' (' + m.loc + ')';
+  }
+  return '';
+}
 function adminStock(d) {
-  if (d.cancelId) return cancelRow(stockSheet(), d.cancelId, 14);   // буруу хөдөлгөөнийг цуцлах (мөр үлдэнэ)
+  if (d.cancelId) {   // буруу хөдөлгөөнийг цуцлах (мөр үлдэнэ) — цуцалснаар үлдэгдэл хасах болохгүй
+    const mv = stockMoves().filter(function (m) { return m.id === String(d.cancelId); })[0];
+    if (mv && mv.qty > 0) { const bad = stockNegative(mv.biz, [{ loc: mv.loc, item: mv.item, qty: -mv.qty }]); if (bad) return { status: 'error', error: 'negative', item: bad }; }
+    return cancelRow(stockSheet(), d.cancelId, 14);
+  }
   const moves = d.moves || [];
   if (!moves.length || moves.length > 1000) return { status: 'error', error: 'fields' };
+  const byBiz = {};
+  moves.forEach(function (m) { (byBiz[m.biz] = byBiz[m.biz] || []).push(m); });
+  for (const b in byBiz) { const bad = stockNegative(b, byBiz[b]); if (bad) return { status: 'error', error: 'negative', item: bad }; }
   const rows = [], now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
   const by = String(d.by || '').slice(0, 40);
   let n = 0;

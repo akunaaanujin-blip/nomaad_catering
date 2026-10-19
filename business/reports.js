@@ -476,6 +476,7 @@ function yearClosePayload(biz, R, year) {
   var stock = [];
   Object.keys(ce.items).forEach(function (k) {
     var o = ce.items[k], q = r0(o.q), avg = o.q > 0 ? o.v / o.q : o.avg, wh = r0((loc[k] || {}).wh || 0), shop = r0(q - wh);
+    if (shop < 0 && wh > 0) { var tk = Math.min(wh, -shop); wh = r0(wh - tk); shop = r0(shop + tk); }   // дэлгүүрт дутсаныг агуулахаас (stockAll-тай адил)
     avg = Math.round(avg * 100) / 100;   // бүхэлчилбэл 1404-тэй хэдэн ₮ зөрнө
     if (wh) stock.push({ biz: biz, loc: 'Агуулах', item: k, qty: wh, cost: avg });
     if (shop) stock.push({ biz: biz, loc: 'Дэлгүүр', item: k, qty: shop, cost: avg });

@@ -482,6 +482,7 @@ function mvInfo() {
   var wh = hasWarehouse(state.biz);
   $('mvCur').textContent = $('mvItem').value.trim() ? 'Одоогийн үлдэгдэл: дэлгүүр ' + round2(st.shop) + (wh ? ', агуулах ' + round2(st.wh) : '') + (st.cost ? ' · дундаж өртөг ' + fmt(st.cost) : '') : '';
 }
+function locAt(loc) { return loc === 'Агуулах' ? 'Агуулахад' : 'Дэлгүүрт'; }
 function saveMove() {
   var biz = state.biz, item = $('mvItem').value.trim(), qty = Number($('mvQty').value), note = $('mvNote').value.trim();
   if (!item) { toast('Бараагаа сонгоно уу'); return; }
@@ -494,10 +495,14 @@ function saveMove() {
     ms.push({ biz: biz, loc: $('mvLoc').value, item: item, kind: 'Орлого', qty: qty, cost: cost, pay: pay, partner: partner, note: note });
   } else if (moveKind === 'Хасалт') {
     if (!note) { toast('Хасах шалтгаанаа бичнэ үү'); return; }
+    var hv = mvCurrent()[$('mvLoc').value === 'Агуулах' ? 'wh' : 'shop'] || 0;
+    if (qty > hv + 1e-9) { toast(locAt($('mvLoc').value) + ' ' + round2(hv) + ' байна — түүнээс их хасах боломжгүй'); return; }
     ms.push({ biz: biz, loc: $('mvLoc').value, item: item, kind: 'Хасалт', qty: -qty, note: note });
   }
   else if (moveKind === 'Шилжүүлэг') {
     var from = $('mvDir').value === 'w2s' ? 'Агуулах' : 'Дэлгүүр', to = from === 'Агуулах' ? 'Дэлгүүр' : 'Агуулах';
+    var fv = mvCurrent()[from === 'Агуулах' ? 'wh' : 'shop'] || 0;
+    if (qty > fv + 1e-9) { toast(locAt(from) + ' ' + round2(fv) + ' байна — түүнээс их шилжүүлэх боломжгүй'); return; }
     ms.push({ biz: biz, loc: from, item: item, kind: 'Шилжүүлэг', qty: -qty, note: note || (from + ' → ' + to) });
     ms.push({ biz: biz, loc: to, item: item, kind: 'Шилжүүлэг', qty: qty, note: note || (from + ' → ' + to) });
   } else {
@@ -520,7 +525,8 @@ function sendMoves(ms, done) {
     });
     save('nb_demo_stock', stockData); save('nb_demo_moves', moves); render(); done(); return;
   }
-  post({ type: 'admin_stock', by: ownerName, moves: ms }, function (err) {
+  post({ type: 'admin_stock', by: ownerName, moves: ms }, function (err, d) {
+    if (err === 'negative') { toast('Үлдэгдэл хүрэлцэхгүй: ' + ((d && d.item) || '') + ' — хасах руу оруулах боломжгүй'); return; }
     if (err) { toast('Алдаа: ' + err); return; }
     done(); refresh();
   });
@@ -1076,9 +1082,14 @@ function cancelRecord(id) {
 }
 function cancelMove(id) {
   var m = moves.filter(function (x) { return x.id === id; })[0]; if (!m) return;
+  if (m.qty > 0) {   // орлогыг цуцалснаар үлдэгдэл хасах руу орохгүй
+    var cs = (stockData[m.biz] || {})[m.item] || { shop: 0, wh: 0 }, cv = m.loc === 'Агуулах' ? cs.wh : cs.shop;
+    if (cv - m.qty < -1e-9) { toast('Цуцлах боломжгүй: ' + locAt(m.loc).toLowerCase() + ' ' + round2(cv) + ' л үлдсэн — энэ орлогын ' + m.qty + '-аас зарим нь зарагдсан эсвэл шилжсэн'); return; }
+  }
   if (!confirm('Энэ хөдөлгөөнийг цуцлах уу?\n' + m.date + ' · ' + m.kind + ' · ' + m.item + ' ' + m.qty + '\n\nҮлдэгдэл, санхүүгээс хасагдана.')) return;
   if (!API_URL) { moves = moves.filter(function (x) { return x.id !== id; }); save('nb_demo_moves', moves); render(); return; }
-  post({ type: 'admin_stock', cancelId: id }, function (err) {
+  post({ type: 'admin_stock', cancelId: id }, function (err, d) {
+    if (err === 'negative') { toast('Цуцалбал үлдэгдэл хасах болно: ' + ((d && d.item) || '')); return; }
     if (err) { toast('Алдаа: ' + err); return; }
     toast('Цуцлагдлаа'); refresh();
   });
