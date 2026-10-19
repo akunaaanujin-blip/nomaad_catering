@@ -169,11 +169,16 @@ var tinLook = { q: '', res: null };
 function saleTinInput() {
   var q = $('saleTin').value.trim().replace(/\s/g, ''), el = $('saleTinName');
   tinLook = { q: q, res: null };
+  if ($('saleBuyer')) $('saleBuyer').style.display = q ? '' : 'none';
   if (!q) { el.textContent = ''; return; }
   if (!/^(\d{7}|\d{11,12})$/.test(q)) { el.textContent = q.length < 7 ? '' : tinErrText('format'); return; }
   el.textContent = 'Шалгаж байна…';
   tinLookup(q, function (err, d) {
     if (tinLook.q !== q) return;   // энэ хооронд өөрчилсөн
+    if (err === 'blocked') {   // автомат лавлагаагүй — албан хуудсаар шалгана
+      el.innerHTML = (/^\d{7}$/.test(q) ? 'Регистр — и-баримтад 11 оронтой <b>ТТД</b> хэрэгтэй. ' : '') + tinLinks(q);
+      return;
+    }
     if (err) { el.textContent = tinErrText(err); return; }
     tinLook.res = d;
     el.innerHTML = d.found ? '✓ <b>' + esc(d.name) + '</b> · ТТД ' + esc(d.tin) + (d.vatPayer ? ' · НӨАТ төлөгч' : '') : '✗ Бүртгэлгүй дугаар — шалгана уу';
@@ -190,6 +195,7 @@ function openSale() {
   $('saleItem').value = '';
   $('salePrice').value = '';
   $('saleTin').value = ''; tinLook = { q: '', res: null }; if ($('saleTinName')) $('saleTinName').textContent = '';
+  if ($('saleBuyer')) { $('saleBuyer').value = ''; $('saleBuyer').style.display = 'none'; }
   $('saleCust').value = '';
   $('saleTinWrap').style.display = ebEnabled() ? 'block' : 'none';
   setPay('Бэлэн');
@@ -328,7 +334,8 @@ function submitSale() {
     var lr = tinLook.q === tinIn ? tinLook.res : null;
     if (lr && !lr.found) { toast('Энэ ТТД / регистр бүртгэлгүй байна — шалгана уу'); return; }
     if (lr) { tin = lr.tin; buyer = lr.name; }
-    else if (!/^\d{11,12}$/.test(tinIn)) { toast('Регистрээр ТТД-г шалгаж чадсангүй — ТТД (11–12 оронтой)-г шууд бичнэ үү'); return; }
+    if (!buyer && $('saleBuyer')) buyer = $('saleBuyer').value.trim();   // гараар бичсэн нэр
+    else if (!/^\d{11,12}$/.test(tinIn)) { toast('И-баримтад 11 оронтой ТТД хэрэгтэй — «ТТД-г олох» холбоосоор олоод бичнэ үү'); return; }
   }
   var btn = $('saleSubmit');
   btn.disabled = true;

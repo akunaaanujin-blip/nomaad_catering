@@ -52,8 +52,11 @@ function jsonp(params, cb) {
     .catch(function () { clearTimeout(timer); jsonpScript(q, finish); });
 }
 // ТТД / регистр → байгууллагын нэр (сервер ebarimt.mn-ээс лавлана). cb(err, { found, tin, name, vatPayer })
+// ebarimt.mn нь Google-ийн серверийг хаадаг, хөтчөөс шууд дуудахыг CORS хаадаг — тиймээс одоохондоо гараар шалгах холбоос гаргана
+var TIN_REMOTE = false;
 function tinLookup(q, cb) {
   q = String(q || '').trim().replace(/\s/g, '');
+  if (!TIN_REMOTE) { cb('blocked'); return; }
   if (!API_URL) { cb('demo'); return; }
   jsonp({ action: 'tin', q: q }, function (err, d) {
     if (err || !d) { cb('network'); return; }
@@ -61,6 +64,13 @@ function tinLookup(q, cb) {
     if (d.found === undefined) { cb('notready'); return; }   // сервер хараахан шинэчлэгдээгүй
     cb(null, d);
   });
+}
+// ebarimt.mn-ийн албан лавлагааг шинэ таб-д нээнэ (нэр, НӨАТ төлөгч эсэх; регистрээс ТТД)
+function tinLinks(q) {
+  q = String(q || '').replace(/\D/g, '');
+  var name = /^\d{7}$/.test(q) ? 'https://info.ebarimt.mn/rest/merchant/info?regno=' + q : 'https://api.ebarimt.mn/api/info/check/getInfo?tin=' + q;
+  return '<a href="' + name + '" target="_blank" rel="noopener">Нэрийг ebarimt.mn-ээс шалгах ↗</a>' +
+    (/^\d{7}$/.test(q) ? ' · <a href="https://api.ebarimt.mn/api/info/check/getTinInfo?regNo=' + q + '" target="_blank" rel="noopener">ТТД-г олох ↗</a>' : '');
 }
 function tinErrText(err) {
   return err === 'demo' ? 'Туршилтын горимд шалгахгүй' : err === 'perm' ? 'Удирдлага ТТД шалгах зөвшөөрлийг (Apps Script) хараахан өгөөгүй байна' :

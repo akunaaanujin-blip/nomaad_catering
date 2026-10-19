@@ -62,6 +62,13 @@ const STOCK_KINDS = { 'Эхний үлдэгдэл': 1, 'Орлого': 1, 'Ши
 const STOCK_LOCS = { 'Дэлгүүр': 1, 'Агуулах': 1 };
 
 // ── Бичих ──
+// (Функцийн жагсаалтад эхэнд харагдахаар энд байрлуулсан.) Редактороос нэг удаа ажиллуулж «гадаад үйлчилгээнд холбогдох» зөвшөөрлийг өгнө (зөвшөөрлийн цонхонд тэр мөрийг чагтална)
+function tinTest() {
+  ScriptApp.requireScopes(ScriptApp.AuthMode.FULL, ['https://www.googleapis.com/auth/script.external_request']);
+  const r = tinInfo('8330042');
+  Logger.log(JSON.stringify(r));
+  return r;
+}
 function doPost(e) {
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -223,6 +230,9 @@ function doGet(e) {
 function tinInfo(q) {
   q = String(q || '').trim().toUpperCase().replace(/\s/g, '');
   if (!/^(\d{7}|\d{11,12})$/.test(q)) return { status: 'error', error: 'format' };
+  // 2026-10-19: ebarimt.mn нь Google-ийн (гадаад) серверээс ирсэн хүсэлтийг хаадаг («Address unavailable», ~100 сек) —
+  // ажилтан удаан хүлээхгүйн тулд унтраалттай. ITC нээвэл Script Properties-д TIN_LOOKUP = on болгоно.
+  if (PropertiesService.getScriptProperties().getProperty('TIN_LOOKUP') !== 'on') return { status: 'error', error: 'blocked' };
   const cache = CacheService.getScriptCache(), key = 'tin_' + q, hit = cache.get(key);
   if (hit) return JSON.parse(hit);
   const get = function (url) {
@@ -242,10 +252,9 @@ function tinInfo(q) {
     cache.put(key, JSON.stringify(out), out.found ? 21600 : 1800);
     return out;
   } catch (e) {
-    return { status: 'error', error: /permission|зөвшөөр|authoriz/i.test(String(e.message)) ? 'perm' : 'network' };
+    return { status: 'error', error: /permission|зөвшөөр|authoriz/i.test(String(e.message)) ? 'perm' : 'network', msg: String(e.message).slice(0, 160) };
   }
 }
-function tinTest() { return tinInfo('8330042'); }   // редактороос нэг удаа ажиллуулж зөвшөөрөл өгнө
 
 // ── Ажилтны нэвтрэлт ── Кодын жагсаалтыг хэзээ ч буцаахгүй. Зөвхөн "Тийм" төлөвтэй ажилтан нэвтэрнэ.
 function login(biz, user, code) {

@@ -1131,6 +1131,7 @@ function ptTinInput() {   // байгууллагын регистр / ТТД �
   el.textContent = 'Шалгаж байна…';
   tinLookup(q, function (err, d) {
     if (ptTinQ !== q) return;
+    if (err === 'blocked') { el.innerHTML = tinLinks(q); return; }
     if (err) { el.textContent = tinErrText(err); return; }
     if (!d.found) { el.textContent = '✗ Бүртгэлгүй дугаар'; return; }
     el.innerHTML = '✓ ' + esc(d.name) + ' · ТТД ' + esc(d.tin) + (d.vatPayer ? ' · НӨАТ төлөгч' : '');
