@@ -170,7 +170,8 @@ function buildJournal(biz, R) {
     else if (m.kind === 'Орлого') {
       // Каргог тусдаа компанид төлдөг бол: барааны хэсэг нийлүүлэгчид, каргоны хэсэг карго компанид (өглөг / касс / харилцах)
       var cg = m.cargo && m.cargoPay ? Math.min(v, r0(m.cargo * m.qty)) : 0;
-      add(d, 'Бараа орлого', m.id, '1404', PAY_ACC[m.pay] || '3101', v - cg, m.item + ' × ' + m.qty + (m.pay ? ' (' + m.pay + ')' : ''), m.partner);
+      var potag = m.pay === 'Захиалга' ? (String(m.note || '').match(/#PO\d+/) || [''])[0] : '';   // бараа захиалгаас ирсэн бол тэр захиалгын «#ID»
+      add(d, 'Бараа орлого', m.id, '1404', PAY_ACC[m.pay] || '3101', v - cg, m.item + ' × ' + m.qty + (m.pay ? ' (' + m.pay + ')' : '') + (potag ? ' ' + potag : ''), m.partner);
       if (cg) add(d, 'Бараа орлого · карго', m.id, '1404', PAY_ACC[m.cargoPay] || '3101', cg, 'Карго · ' + m.item + ' × ' + m.qty + ' (' + m.cargoPay + ')', m.cargoPartner);
     }
     else if (m.kind === 'Тооллого' || m.kind === 'Хасалт') {
@@ -470,15 +471,20 @@ function yearClosePayload(biz, R, year) {
   };
   var pl = 0;
   ACCOUNTS.forEach(function (a) { if (/^(rev|contra|cogs|exp)$/.test(a[2])) pl += b[a[0]] || 0; });
-  var byPartner = { '1201': {}, '3101': {}, '1503': {}, '3802': {} };
+  // Харилцагчаар (зээл, бараа захиалгыг «#ID»-аар нь) салгаж шилжүүлнэ — шинэ онд зээлийн бүртгэл, захиалга үргэлжилнэ
+  var byPartner = { '1201': {}, '3101': {}, '1503': {}, '3802': {}, '1290': {}, '1208': {}, '1210': {}, '3501': {}, '1505': {} }, TAGGED = { '1210': 1, '3501': 1, '1505': 1 };
   E.forEach(function (e) {
     if (e.date > end) return;
-    [e.dr, e.cr].forEach(function (k, i) { if (byPartner[k]) { var p = e.partner || ''; byPartner[k][p] = (byPartner[k][p] || 0) + (i === 0 ? e.amount : -e.amount); } });
+    [e.dr, e.cr].forEach(function (k, i) {
+      if (!byPartner[k]) return;
+      var tg = TAGGED[k] ? (String(e.desc).match(/#((?:L|PO)\d+)/) || [])[1] || '' : '', key = (k === '1505' ? '' : e.partner || '') + '\u0001' + tg;   // захиалгыг зөвхөн «#ID»-аар
+      byPartner[k][key] = (byPartner[k][key] || 0) + (i === 0 ? e.amount : -e.amount);
+    });
   });
   ACCOUNTS.forEach(function (a) {
     var k = a[0];
     if (k === '0000' || !/^(asset|liab|equity)$/.test(a[2])) return;
-    if (byPartner[k]) { Object.keys(byPartner[k]).forEach(function (p) { line(k, byPartner[k][p], p, a[1]); }); return; }
+    if (byPartner[k]) { Object.keys(byPartner[k]).forEach(function (key) { var pt = key.split('\u0001'); line(k, byPartner[k][key], pt[0], a[1] + (pt[1] ? ' #' + pt[1] : '')); }); return; }
     line(k, (b[k] || 0) + (k === '4601' ? pl : 0), '', k === '4601' ? a[1] + ' (' + year + ' оны ашиг нэмэгдсэн)' : a[1]);
   });
   // Бараа: байршил тус бүрийн тоо, дундаж өртөг

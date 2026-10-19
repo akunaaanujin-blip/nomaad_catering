@@ -189,12 +189,12 @@ function savePoRecv(id) {
   if (a.unC > 0) E.push({ biz: P.biz, date: d, dr: '1505', cr: '3101', amount: a.unC, partner: cco, desc: P.no + ' · карго (дараа төлнө) · ' + cco + ' #' + P.id });
   var rate = P.cur !== 'MNT' && a.value ? Math.round(a.goods / a.value * 100) / 100 : '';
   var ms = a.rows.filter(function (r) { return r.qty > 0; }).map(function (r) {
-    return { biz: P.biz, loc: loc, item: r.name, kind: 'Орлого', qty: r.qty, cost: r.unit, pay: 'Захиалга', partner: P.supplier, note: P.no,
+    return { biz: P.biz, loc: loc, item: r.name, kind: 'Орлого', qty: r.qty, cost: r.unit, pay: 'Захиалга', partner: P.supplier, note: P.no + ' #' + P.id,
              buy: r.price || '', cur: r.price ? P.cur : '', rate: rate, cargo: r.cargoU || '', cargoPay: '', cargoPartner: '' };
   });
   postEntries(E, function () {
-    poSetStatus(id, 'Ирсэн', d, function () {
-      sendMoves(ms, function () { gClose(); toast(P.no + ' — бараа үлдэгдэлд орлоо'); });
+    sendMoves(ms, function () {
+      poSetStatus(id, 'Ирсэн', d, function () { gClose(); toast(P.no + ' — бараа үлдэгдэлд орлоо'); });
     });
   });
 }

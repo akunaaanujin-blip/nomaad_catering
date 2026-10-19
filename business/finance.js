@@ -344,7 +344,7 @@ function debtsPre(E) {
   var card = '<div class="card"><h2>' + T[0] + ' — харилцагчаар <small class="muted" style="font-weight:400">' + T[1] + '</small></h2><table class="rep-t"><tr><th>Харилцагч</th><th class="n">Үлдэгдэл</th><th class="n">Хамгийн удсан</th></tr>' +
     (who.length ? who.map(function (x) {
       return '<tr><td>' + esc(x.w) + '</td><td class="n' + (x.left < 0 ? ' neg' : '') + '">' + dl(x.sp, mny(x.left)) +
-        (x.left < 0 ? ' <small class="muted">илүү төлсөн</small>' : '') + '</td><td class="n">' + (x.old ? x.old + ' хоног' : '') + '</td></tr>'; }).join('') +
+        (x.left < 0 ? ' <small class="muted">' + (k === 'c' ? 'тэднээс ирсэн' : 'илүү төлсөн') + '</small>' : '') + '</td><td class="n">' + (x.old ? x.old + ' хоног' : '') + '</td></tr>'; }).join('') +
       '<tr class="tot"><td>Нийт</td><td class="n">' + dl({ acc: accs, to: td, sign: T[3], grp: k === 'l' ? 'acc' : 'partner', t: T[0] }, mny(tot)) + '</td><td></td></tr>' : '<tr><td class="muted" colspan="3">' + T[0] + ' алга</td></tr>') + '</table></div>';
   var chk = '<label style="display:inline-flex;gap:6px;align-items:center;font-size:13px;margin:4px 0 8px"><input type="checkbox"' + (state.dclosed ? ' checked' : '') + ' onchange="state.dclosed=this.checked;render()"> Хаагдсаныг (бүрэн төлөгдсөн) харуулах</label>';
   return tabs + card + chk;
@@ -392,13 +392,13 @@ var HUBS = {
 function hubOf(sub) { var h = ''; Object.keys(HUBS).forEach(function (k) { HUBS[k][1].forEach(function (g) { if (g[1].indexOf(sub) >= 0) h = k; }); }); return h; }
 function hubView(h) {
   return '<div class="rep-grid">' + HUBS[h][1].map(function (g) {
-    return '<div class="card"><h2>' + g[0] + '</h2><ul class="rep-links">' + g[1].map(function (k) {
+    return '<div class="card"><h2>' + g[0] + '</h2><ul class="rep-links">' + g[1].filter(function (k) { return subVisible(state.biz, k); }).map(function (k) {
       return '<li><button class="link" onclick="setSub(\'' + k + '\')">' + subLabel('finance', k) + '</button>' + (REP_HELP[k] ? '<div class="muted" style="font-size:12px;margin-top:2px">' + REP_HELP[k] + '</div>' : '') + '</li>'; }).join('') + '</ul></div>';
   }).join('') + '</div>';
 }
 function hubBar(sub) {
   var h = hubOf(sub); if (!h) return '';
-  var opts = []; HUBS[h][1].forEach(function (g) { g[1].forEach(function (k) { opts.push('<option value="' + k + '"' + (k === sub ? ' selected' : '') + '>' + g[0] + ' · ' + subLabel('finance', k) + '</option>'); }); });
+  var opts = []; HUBS[h][1].forEach(function (g) { g[1].filter(function (k) { return subVisible(state.biz, k); }).forEach(function (k) { opts.push('<option value="' + k + '"' + (k === sub ? ' selected' : '') + '>' + g[0] + ' · ' + subLabel('finance', k) + '</option>'); }); });
   return '<div class="hubbar"><button class="b-btn" onclick="setSub(\'' + h + '\')">← ' + HUBS[h][0] + '</button><select onchange="setSub(this.value)">' + opts.join('') + '</select></div>';
 }
 
@@ -452,10 +452,17 @@ function debtCache() {   // render бүрт нэг удаа
 }
 function debtTag(it) { return it.bill || it.ref; }
 function debtLabel(it) { return (it.acc === '1201' ? 'Авлага' : /^35/.test(it.acc) ? 'Зээл' : 'Өглөг') + ' · ' + it.who + ' · ' + mny(it.left) + ' (' + it.date + ' · ' + String(it.desc).split(' · ')[0].slice(0, 30) + ')'; }
-function vcDebtSign(acc) { return acc === '1201' || acc === '1503' ? 1 : acc === '3101' || /^35/.test(acc) ? -1 : 0; }
+function vcDebtSign(acc) { return acc === '1201' || acc === '1503' ? 1 : acc === '3101' ? -1 : 0; }
 var vcItems = [], vcSel = {};
 function vcOpenRender() {
   var acc = $('vcPurpose').value, sg = vcDebtSign(acc);
+  if (/^35/.test(acc) && loanList(state.biz).length) {   // бүртгэсэн зээл байвал «Зээл» хуудсаар — хүү салж, үлдэгдэл зөв гарна
+    vcItems = []; vcSel = {}; $('vcOpenWrap').style.display = '';
+    $('vcOpenTitle').textContent = 'Бүртгэсэн зээл';
+    $('vcOpen').innerHTML = '<p style="margin:6px 8px">Бүртгэсэн зээлийн төлөлтийг <b>Санхүү → Зээл → «Төлөлт»</b>-өөр хийнэ үү — үндсэн, хүү салж, зээлийн үлдэгдэл зөв гарна. ' +
+      '<button class="b-btn" onclick="closeSheet(\'voucherSheet\');setSub(\'loans\')">Зээл хуудас руу</button></p>';
+    return;
+  }
   if (!sg) { $('vcOpenWrap').style.display = 'none'; vcItems = []; vcSel = {}; return; }
   vcItems = debtItems([acc], sg, /^35/.test(acc));
   var f = $('vcPartner').value.trim().toLowerCase(), word = sg > 0 ? 'авлага' : (/^35/.test(acc) ? 'зээл' : 'өглөг');

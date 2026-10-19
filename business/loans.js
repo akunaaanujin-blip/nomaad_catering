@@ -42,7 +42,7 @@ function loansView() {
       var s = loanStat(L, E), done = s.got > 0.5 && s.left <= 0.5;
       tot.amt += L.amount; tot.got += s.got; tot.paid += s.paid; tot.intr += s.intr; tot.left += s.left;
       var spec = { acc: [loanAcc(L), loanIntAcc(L)], tag: L.id, sign: taken ? -1 : 1, bal: false, t: L.partner + ' — ' + (taken ? 'авсан зээл' : 'өгсөн зээл') };
-      var acts = (s.got < L.amount - 0.5 && L.status === 'Идэвхтэй' ? '<button class="mini" onclick="openLoanPay(\'' + L.id + '\',\'disb\')">' + (taken ? 'Мөнгө орсон' : 'Мөнгө өгсөн') + '</button>' : '') +
+      var acts = (s.got < 0.5 && L.status === 'Идэвхтэй' ? '<button class="mini" onclick="openLoanPay(\'' + L.id + '\',\'disb\')">' + (taken ? 'Мөнгө орсон' : 'Мөнгө өгсөн') + '</button>' : '') +
         (s.left > 0.5 ? '<button class="mini" style="color:var(--accent)" onclick="openLoanPay(\'' + L.id + '\',\'pay\')">' + (taken ? 'Төлөлт' : 'Төлбөр авсан') + '</button>' : '') +
         '<button class="mini" onclick="openLoan(\'' + L.id + '\')">Засах</button>' +
         (done && L.status === 'Идэвхтэй' ? '<button class="mini" onclick="loanStatus(\'' + L.id + '\',\'close\')">Хаах</button>' : '') +
@@ -69,24 +69,32 @@ function loansView() {
     'Төлөлтийг <b>үндсэн</b> ба <b>хүү</b> гэж салгаснаар зээлийн үлдэгдэл зөв, хүү нь зардалд орно.</p>' +
     sec('Авсан', 'Миний авсан зээл, өр', 'Банк, хүнээс авсан — таны төлөх ёстой') + sec('Өгсөн', 'Миний өгсөн зээл', 'Бусдад өгсөн — танд буцааж өгөх ёстой');
 }
-function openLoan(id, kind) {
+var lnBank = null;   // банкны мөрөөс үүсгэж буй бол тэр мөр
+function openLoanFromBank(lineId) {
+  var l = bankLines.filter(function (x) { return x.id === lineId; })[0]; if (!l) return;
+  openLoan(null, l.credit ? 'Авсан' : 'Өгсөн', l);
+}
+function openLoan(id, kind, bankLine) {
+  lnBank = bankLine || null;
   var L = id ? loanById(id) : null; kind = L ? L.kind : kind || 'Авсан';
   var other = ACCOUNTS.filter(function (a) { return a[3] === 'cash' && a[0] !== '1101' && a[0] !== '10003'; });
   gOpen('<h2>' + (L ? 'Зээл засах' : kind === 'Авсан' ? 'Авсан зээл бүртгэх' : 'Өгсөн зээл бүртгэх') + '</h2>' +
-    '<label for="lnKind">Төрөл</label><select id="lnKind"' + (L ? ' disabled' : '') + ' onchange="lnMoneyHint()"><option value="Авсан">Би зээл авсан (миний өр)</option><option value="Өгсөн">Би зээл өгсөн (надад өгөх)</option></select>' +
+    (lnBank ? '<p class="rep-note ok">Банкны гүйлгээ: ' + esc(lnBank.date) + ' · ' + (lnBank.credit ? '+' + fmt(lnBank.credit) : '−' + fmt(lnBank.debit)) + ' · «' + esc(lnBank.desc) + '» — хадгалахад энэ гүйлгээ шинэ зээлийн мөнгө болж тулгагдана.</p>' : '') +
+    '<label for="lnKind">Төрөл</label><select id="lnKind"' + (L || lnBank ? ' disabled' : '') + ' onchange="lnMoneyHint()"><option value="Авсан">Би зээл авсан (миний өр)</option><option value="Өгсөн">Би зээл өгсөн (надад өгөх)</option></select>' +
     '<label for="lnPartner">Харилцагч (банк, хүн, байгууллага)</label><input id="lnPartner" list="lnPartners" placeholder="Жишээ: Хаан банк"><datalist id="lnPartners">' + partnerOptions() + '</datalist>' +
     '<div class="row2"><div><label for="lnDate">Огноо</label><input id="lnDate" type="date"></div><div><label for="lnAmount">Дүн (₮)</label><input id="lnAmount" type="number" min="0" inputmode="numeric"></div></div>' +
     '<div class="row2"><div><label for="lnRate">Сарын хүү (%)</label><input id="lnRate" type="number" min="0" step="any" placeholder="Жишээ: 1.8"></div><div><label for="lnDue">Дуусах огноо</label><input id="lnDue" type="date"></div></div>' +
     '<div class="row2"><div><label for="lnPayDay">Сар бүр төлөх өдөр</label><input id="lnPayDay" type="number" min="1" max="31" placeholder="1–31"></div>' +
     (L ? '<div></div>' : '<div><label style="display:flex;gap:6px;align-items:center;margin-top:26px;font-weight:400"><input type="checkbox" id="lnRemind" checked style="width:auto"> Календарьт сар бүр сануулах</label></div>') + '</div>' +
-    (L ? '' : '<label for="lnMoney" id="lnMoneyLabel">Мөнгө</label><select id="lnMoney" onchange="lnMoneyHint()">' +
+    (L || lnBank ? '' : '<label for="lnMoney" id="lnMoneyLabel">Мөнгө</label><select id="lnMoney" onchange="lnMoneyHint()">' +
       '<option value="1101">Харилцах дансаар (одоо бүртгэнэ)</option><option value="10003">Бэлнээр (касс)</option>' +
       other.map(function (a) { return '<option value="' + a[0] + '">' + esc(a[1]) + '</option>'; }).join('') +
       '<option value="later">Банкны хуулгаар дараа тулгана</option><option value="open">Өмнөөс байсан зээл (системээс өмнөх үлдэгдэл)</option></select>' +
       '<p class="muted" id="lnMoneyHint" style="font-size:12.5px;margin-top:6px"></p>') +
     '<label for="lnNote">Тэмдэглэл</label><input id="lnNote" placeholder="Гэрээний дугаар, барьцаа г.м">' +
     '<button class="btn" onclick="saveLoan(' + (L ? '\'' + L.id + '\'' : '') + ')">Хадгалах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
-  $('lnKind').value = kind; $('lnPartner').value = L ? L.partner : ''; $('lnDate').value = L ? L.date : todayStr(); $('lnAmount').value = L ? L.amount : '';
+  $('lnKind').value = kind; $('lnPartner').value = L ? L.partner : ''; $('lnDate').value = L ? L.date : lnBank ? lnBank.date.slice(0, 10) : todayStr();
+  $('lnAmount').value = L ? L.amount : lnBank ? (lnBank.credit || lnBank.debit) : '';
   $('lnRate').value = L && L.rate ? L.rate : ''; $('lnDue').value = L ? L.due : ''; $('lnPayDay').value = L && L.payDay ? L.payDay : ''; $('lnNote').value = L ? L.note : '';
   if (!L) lnMoneyHint();
 }
@@ -109,9 +117,18 @@ function saveLoan(id) {
   if (L.partner.length < 2) { toast('Харилцагчийн нэрийг бичнэ үү'); return; }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(L.date) || !(L.amount > 0)) { toast('Огноо, дүнгээ оруулна уу'); return; }
   if (L.payDay && (L.payDay < 1 || L.payDay > 31)) { toast('Төлөх өдөр 1–31'); return; }
-  var money = id ? '' : $('lnMoney').value, remind = !id && $('lnRemind') && $('lnRemind').checked && L.payDay;
+  var bl = id ? null : lnBank, money = id || bl ? '' : $('lnMoney').value, remind = !id && $('lnRemind') && $('lnRemind').checked && L.payDay;
+  if (bl && Math.abs((bl.credit || bl.debit) - L.amount) > 0.5 && !confirm('Зээлийн дүн (' + fmt(L.amount) + ') банкны гүйлгээнээс (' + fmt(bl.credit || bl.debit) + ') өөр байна. Банкны дүнгээр мөнгө нь бүртгэгдэнэ. Үргэлжлүүлэх үү?')) return;
   var after = function (lid) {
     var taken = L.kind === 'Авсан', E = [], tag = ' #' + lid;
+    if (bl) {   // банкны мөрийг энэ зээлийн мөнгө болгож тулгана
+      var info = bankAcctInfo(bl.acct), acc = info ? info.acc : '1101', amt = bl.credit || bl.debit;
+      E.push({ biz: L.biz, date: bl.date.slice(0, 10), dr: taken ? acc : '1210', cr: taken ? '3501' : acc, amount: amt, partner: L.partner,
+               desc: (bl.desc.slice(0, 80) + ' · ' + (taken ? 'Зээл авсан' : 'Зээл олгосон') + ' · ' + L.partner).slice(0, 170) + tag });
+      var upd = [{ id: bl.id, status: 'Тулгасан', link: (taken ? 'Зээл · ' : 'Өгсөн зээл · ') + L.partner + ' #' + lid }];
+      if (!API_URL) upd.forEach(function (u) { bankLines.forEach(function (x) { if (x.id === u.id) { x.status = u.status; x.link = u.link; } }); }), save('nb_demo_bank', bankLines);
+      else post({ type: 'admin_bank', by: ownerName, updates: upd }, function () {});
+    }
     if (money === 'open') E.push({ biz: L.biz, date: L.date, dr: taken ? '4201' : '1210', cr: taken ? '3501' : '4201', amount: L.amount, partner: L.partner, desc: 'Зээлийн эхний үлдэгдэл · ' + L.partner + tag });
     else if (money && money !== 'later') E.push({ biz: L.biz, date: L.date, dr: taken ? money : '1210', cr: taken ? '3501' : money, amount: L.amount, partner: L.partner, desc: (taken ? 'Зээл авсан' : 'Зээл олгосон') + ' · ' + L.partner + tag });
     postEntries(E, function () {
@@ -134,15 +151,19 @@ function saveLoan(id) {
 function loanStatus(id, what) {
   var L = loanById(id); if (!L) return;
   var js = journal.filter(function (j) { return hasTag(j.desc, id); });
-  if (what === 'cancel' && !confirm('«' + L.partner + '» зээлийг устгах уу?' + (js.length ? '\n\nХолбоотой ' + js.length + ' санхүүгийн бичилт мөн цуцлагдана.' : ''))) return;
+  var bl = (typeof bankLines !== 'undefined' ? bankLines : []).filter(function (x) { return hasTag(x.link, id); });
+  if (what === 'cancel' && !confirm('«' + L.partner + '» зээлийг устгах уу?' + (js.length ? '\n\nХолбоотой ' + js.length + ' санхүүгийн бичилт мөн цуцлагдана.' : '') +
+    (bl.length ? '\n' + bl.length + ' банкны гүйлгээ дахин «Тулгах» жагсаалтад орно.' : ''))) return;
   if (what === 'close' && !confirm('«' + L.partner + '» зээлийг төлөгдсөн гэж хаах уу?')) return;
   if (!API_URL) {
     L.status = what === 'cancel' ? 'Устгасан' : 'Хаагдсан';
-    if (what === 'cancel') { var ids = {}; js.forEach(function (j) { ids[j.id] = 1; }); journal = journal.filter(function (j) { return !ids[j.id]; }); save('nb_demo_journal', journal); }
+    if (what === 'cancel') { var ids = {}; js.forEach(function (j) { ids[j.id] = 1; }); journal = journal.filter(function (j) { return !ids[j.id]; }); save('nb_demo_journal', journal);
+      bl.forEach(function (x) { x.status = 'Шинэ'; x.link = ''; }); save('nb_demo_bank', bankLines); }
     save('nb_demo_loans', window.loans); render(); return;
   }
-  var n = 1 + (what === 'cancel' ? js.length : 0), fin = function () { if (--n === 0) { toast(what === 'cancel' ? 'Устгагдлаа' : 'Хаагдлаа'); refresh(); } };
+  var n = 1 + (what === 'cancel' ? js.length + (bl.length ? 1 : 0) : 0), fin = function () { if (--n === 0) { toast(what === 'cancel' ? 'Устгагдлаа' : 'Хаагдлаа'); refresh(); } };
   if (what === 'cancel') js.forEach(function (j) { post({ type: 'admin_journal', cancelId: j.id }, function () { fin(); }); });
+  if (what === 'cancel' && bl.length) post({ type: 'admin_bank', by: ownerName, updates: bl.map(function (x) { return { id: x.id, status: 'Шинэ', link: '' }; }) }, function () { fin(); });
   post(what === 'cancel' ? { type: 'admin_loan', cancelId: id } : { type: 'admin_loan', closeId: id }, function () { fin(); });
 }
 // mode: 'pay' — төлөлт (авсан: би төлнө, өгсөн: надад төлнө), 'disb' — зээлийн мөнгө орсон / олгосон
@@ -185,18 +206,20 @@ function loanEntries(id, dir, acc, d, amt, intr, note) {
     push(taken ? la : acc, taken ? acc : la, prin, taken ? 'Зээлийн төлөлт (үндсэн)' : 'Өгсөн зээлийн төлбөр (үндсэн)');
     push(taken ? ia : acc, taken ? acc : ia, intr, taken ? 'Зээлийн хүү' : 'Зээлийн хүүгийн орлого');
   } else push(taken ? acc : la, taken ? la : acc, amt, taken ? 'Зээл авсан' : 'Зээл олгосон');
-  return { entries: E, link: (taken ? 'Зээл · ' : 'Өгсөн зээл · ') + L.partner + (intr ? ' (хүү ' + fmt(intr) + ')' : '') };
+  return { entries: E, link: (taken ? 'Зээл · ' : 'Өгсөн зээл · ') + L.partner + (intr ? ' (хүү ' + fmt(intr) + ')' : '') + ' #' + L.id };
 }
 // Банкны хуулгын сонголт: зээлийн чиглэлээр
+// Банкны хуулгын сонголт: «Зээл хаах» — үүссэн зээлээс (төлөлт), «Зээл үүсгэх» — шинэ зээл эсвэл бүртгэсэн зээлийн мөнгө орж/гарсан
 function loanOpts(biz, isCredit) {
-  var out = [];
+  var close = [], make = [];
   loanList(biz).filter(function (L) { return L.status === 'Идэвхтэй'; }).forEach(function (L) {
     var s = loanStat(L), taken = L.kind === 'Авсан';
     var disb = taken ? isCredit : !isCredit;   // зээлийн мөнгө орж/гарч байгаа чиглэл
-    if (disb && s.got < L.amount - 0.5) out.push(['L:' + L.id, (taken ? 'Зээл орж ирсэн · ' : 'Зээл олгосон · ') + L.partner + ' (' + mny(L.amount) + ')']);
-    if (!disb && s.left > 0.5) out.push(['L:' + L.id, (taken ? 'Зээл төлөх · ' : 'Өгсөн зээлийн төлбөр · ') + L.partner + ' · үлдэгдэл ' + mny(s.left)]);
+    if (!disb && s.left > 0.5) close.push(['L:' + L.id, (taken ? 'Төлөх · ' : 'Төлбөр авах · ') + L.partner + ' · үлдэгдэл ' + mny(s.left), 'Зээл хаах (үүссэн зээлээс)']);
+    if (disb && s.got < 0.5) make.push(['L:' + L.id, (taken ? 'Бүртгэсэн зээл орж ирсэн · ' : 'Бүртгэсэн зээл олгосон · ') + L.partner + ' (' + mny(L.amount) + ')', 'Зээл үүсгэх']);
   });
-  return out;
+  make.unshift(['LN:new', isCredit ? '+ Шинэ зээл үүсгэх (би авсан)' : '+ Шинэ зээл үүсгэх (би өгсөн)', 'Зээл үүсгэх']);
+  return close.concat(make);
 }
 function loanIntSuggest(pick, l) {   // зээлийн төлөлт бол хүүгийн санал (сарын хүү × үлдэгдэл), бусад үед null
   if (!pick || pick.indexOf('L:') !== 0) return null;
