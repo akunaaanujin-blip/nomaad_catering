@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v3.5 (үлдэгдэл хасах руу орохгүй: дэлгүүрт дутсаныг агуулахаас, хүрэлцэхгүй хөдөлгөөнийг хориглоно)
+// NOMAAD Бизнесүүд — Google Apps Script v3.6 (бараа орлого: авсан үнэ × ханш + карго = өртөг үнэ; үлдэгдэл хасах руу орохгүй)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -50,7 +50,8 @@ const TOKEN_TTL = 8 * 3600;   // удирдагчийн нэвтрэлт 8 ца�
 const SALARY_HEAD = ['ID', 'Огноо', 'Сар', 'Ажилтны ID', 'Нэр', 'Бизнес', 'Төрөл', 'Дүн', 'Тайлбар'];
 const SALARY_KINDS = { 'Урьдчилгаа': 1, 'Шагнал': 1, 'Суутгал': 1, 'Олгосон': 1 };
 // Үлдэгдлийн хөдөлгөөн: тоо + (нэмэгдэх) / − (хасагдах). Борлуулалт «Бүртгэл»-ээс автоматаар хасагдана.
-const STOCK_HEAD = ['ID', 'Огноо', 'Бизнес', 'Байршил', 'Бараа', 'Төрөл', 'Тоо', 'Нэгж өртөг', 'Хэн', 'Тайлбар', 'biz', 'Төлбөр', 'Харилцагч', 'Төлөв'];
+const STOCK_HEAD = ['ID', 'Огноо', 'Бизнес', 'Байршил', 'Бараа', 'Төрөл', 'Тоо', 'Нэгж өртөг', 'Хэн', 'Тайлбар', 'biz', 'Төлбөр', 'Харилцагч', 'Төлөв',
+  'Авсан үнэ (нэгж)', 'Валют', 'Ханш', 'Карго (нэгжид ₮)'];   // Нэгж өртөг = авсан үнэ × ханш + карго
 // «Он нээлт» — он хаахад өмнөх оны эцсийн үлдэгдлийг шинэ оны эхэнд шилжүүлсэн мөр (санхүүд дахин бичигдэхгүй)
 const STOCK_KINDS = { 'Эхний үлдэгдэл': 1, 'Орлого': 1, 'Шилжүүлэг': 1, 'Тооллого': 1, 'Хасалт': 1, 'Он нээлт': 1 };
 const STOCK_LOCS = { 'Дэлгүүр': 1, 'Агуулах': 1 };
@@ -337,7 +338,11 @@ function stockSheet() {
     sh.hideColumns(11);
     [120, 140, 170, 90, 220, 120, 70, 110, 120, 220].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
   }
-  if (sh.getRange(1, 14).getValue() !== 'Төлөв') sh.getRange(1, 1, 1, STOCK_HEAD.length).setValues([STOCK_HEAD]);
+  if (sh.getRange(1, 18).getValue() !== STOCK_HEAD[17]) {
+    if (sh.getMaxColumns() < STOCK_HEAD.length) sh.insertColumnsAfter(sh.getMaxColumns(), STOCK_HEAD.length - sh.getMaxColumns());
+    sh.getRange(1, 1, 1, STOCK_HEAD.length).setValues([STOCK_HEAD]);
+    styleHead(sh, STOCK_HEAD.length, '#334155');
+  }
   return sh;
 }
 function stockMoves() {
@@ -347,7 +352,8 @@ function stockMoves() {
   return sh.getRange(2, 1, last - 1, STOCK_HEAD.length).getValues().map(function (v) {
     return { id: String(v[0]), date: fmtDate(v[1], 'yyyy-MM-dd HH:mm'), loc: String(v[3]), item: String(v[4]).trim(),
              kind: String(v[5]), qty: Number(v[6]) || 0, cost: Number(v[7]) || 0, by: String(v[8]), note: String(v[9]), biz: String(v[10]),
-             pay: String(v[11] || ''), partner: String(v[12] || ''), status: String(v[13] || '') };
+             pay: String(v[11] || ''), partner: String(v[12] || ''), status: String(v[13] || ''),
+             buy: Number(v[14]) || 0, cur: String(v[15] || ''), rate: Number(v[16]) || 0, cargo: Number(v[17]) || 0 };
   }).filter(function (m) { return m.status !== 'Устгасан'; });
 }
 // Бизнес бүрийн бараа тус бүрийн үлдэгдэл: { biz: { item: { shop, wh, cost? } } }.
@@ -423,8 +429,11 @@ function adminStock(d) {
     }
     const cost = Math.max(0, Number(m.cost) || 0);
     const pay = /^(Бэлэн|Харилцах|Зээлээр)$/.test(String(m.pay || '')) ? m.pay : '';
+    const cur = /^(CNY|USD|MNT)$/.test(String(m.cur || '')) ? m.cur : '';
+    const num = function (x) { const v = Number(x); return isFinite(v) && v > 0 ? Math.round(v * 10000) / 10000 : ''; };
     rows.push(['M' + Date.now() + '-' + (n++), now, BIZ_NAMES[m.biz], m.loc, String(m.item).trim().slice(0, 80), m.kind, qty, cost || '', by,
-               String(m.note || '').slice(0, 120), m.biz, pay, String(m.partner || '').slice(0, 80), '']);
+               String(m.note || '').slice(0, 120), m.biz, pay, String(m.partner || '').slice(0, 80), '',
+               num(m.buy), num(m.buy) ? cur : '', num(m.rate), num(m.cargo)]);
   }
   const sh = stockSheet();
   sh.getRange(sh.getLastRow() + 1, 1, rows.length, STOCK_HEAD.length).setValues(rows);
@@ -609,7 +618,7 @@ function adminClose(d) {
   if (stock.length) {
     const rows = stock.map(function (m, i) {
       return ['M' + Date.now() + '-o' + i, start + ' 00:00', BIZ_NAMES[m.biz], m.loc, String(m.item).trim().slice(0, 80), 'Он нээлт', Number(m.qty),
-        Math.max(0, Math.round((Number(m.cost) || 0) * 100) / 100) || '', by, y + ' оны эцсийн үлдэгдэл', m.biz, '', '', ''];
+        Math.max(0, Math.round((Number(m.cost) || 0) * 100) / 100) || '', by, y + ' оны эцсийн үлдэгдэл', m.biz, '', '', '', '', '', '', ''];
     });
     const sh = stockSheet();
     sh.getRange(sh.getLastRow() + 1, 1, rows.length, STOCK_HEAD.length).setValues(rows);

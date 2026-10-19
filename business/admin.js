@@ -399,7 +399,7 @@ function productsModule() {
     if (!sold[k]) sold[k] = { qty: 0, amount: 0 };
     sold[k].qty += Number(x.qty) || 0; sold[k].amount += Number(x.amount) || 0;
   });
-  var rows = stockRows(biz);
+  var rows = stockRows(biz), lb = lastBuys(biz);
   var q = state.q.toLowerCase();
   var total = function (r) { return round2(r.shop + r.wh); };
   var cntLow = rows.filter(function (r) { return total(r) > 0 && total(r) <= LOW_STOCK; }).length;
@@ -429,13 +429,15 @@ function productsModule() {
     '<div class="bar-row" style="gap:6px"><input class="search" placeholder="Бараа хайх…" value="' + esc(state.q) + '" oninput="state.q=this.value;render();this.focus();this.setSelectionRange(this.value.length,this.value.length)">' +
     '</div></div>' +
     '<div class="scroll" style="margin-top:10px"><table class="stock"><tr><th>Бараа</th><th class="hide-sm">Ангилал</th><th class="n">Үнэ</th>' +
-    '<th class="n">Өртөг</th><th class="n">Ашиг</th><th class="n">Дэлгүүр</th>' + (wh ? '<th class="n">Агуулах</th><th class="n">Нийт</th>' : '') +
+    '<th class="n hide-sm" title="Сүүлд авсан үнэ (Хятад)">Авсан үнэ</th><th class="n hide-sm">Ханш</th><th class="n hide-sm">Карго/ш</th><th class="n" title="Авсан үнэ × ханш + карго (дундаж)">Өртөг үнэ</th><th class="n">Ашиг</th><th class="n">Дэлгүүр</th>' + (wh ? '<th class="n">Агуулах</th><th class="n">Нийт</th>' : '') +
     '<th class="n">Зарагдсан</th><th></th></tr>' +
     list.map(function (r) {
       var t = total(r), s = sold[r.name] || { qty: 0 };
       var cls = t <= 0 ? 'st-out' : (t <= LOW_STOCK ? 'st-low' : '');
       var margin = r.price && r.cost ? Math.round((r.price - r.cost) / r.price * 100) : null;
       return '<tr class="' + cls + '"><td>' + esc(r.name) + '</td><td class="muted hide-sm">' + esc(r.cat) + '</td><td class="n">' + (r.price ? fmt(r.price) : '—') + '</td>' +
+        '<td class="n hide-sm">' + buyText(lb[r.name]) + '</td><td class="n hide-sm">' + (lb[r.name] && lb[r.name].rate ? round2(lb[r.name].rate) : '') + '</td>' +
+        '<td class="n hide-sm">' + (lb[r.name] && lb[r.name].cargo ? fmt(lb[r.name].cargo) : '') + '</td>' +
         '<td class="n">' + (r.cost ? fmt(r.cost) : '—') + '</td><td class="n' + (margin !== null && margin < 0 ? ' neg' : '') + '">' + (margin === null ? '' : margin + '%') + '</td>' +
         '<td class="n">' + round2(r.shop) + '</td>' + (wh ? '<td class="n">' + round2(r.wh) + '</td><td class="n"><b>' + t + '</b></td>' : '') +
         '<td class="n">' + (s.qty ? round2(s.qty) : '') + '</td>' +
@@ -470,9 +472,40 @@ function openMove(kind, item) {
   $('mvQtyLabel').textContent = kind === 'Тооллого' ? 'Тоолсон бодит тоо' : (kind === 'Хасалт' ? 'Хасах тоо' : 'Тоо хэмжээ');
   $('mvCostWrap').style.display = kind === 'Орлого' ? 'block' : 'none';
   $('mvCost').value = '';
+  $('mvBuyWrap').style.display = kind === 'Орлого' ? 'block' : 'none';
+  $('mvBuy').value = ''; $('mvCargo').value = ''; $('mvCurSel').value = load('nb_cur', 'CNY'); mvCurChange();
   mvInfo();
   openSheet('moveSheet');
 }
+// ── Өртөг үнэ = авсан үнэ × ханш + карго (нэгжид) ──
+var CUR_SIGN = { CNY: '¥', USD: '$', MNT: '₮' };
+function mvCurChange() {
+  var cur = $('mvCurSel').value;
+  $('mvRateWrap').style.visibility = cur === 'MNT' ? 'hidden' : 'visible';
+  $('mvRateLabel').textContent = 'Ханш (1 ' + CUR_SIGN[cur] + ' = ₮)';
+  $('mvRate').value = cur === 'MNT' ? '' : load('nb_rate_' + cur, '');
+  mvCalc();
+}
+function mvBuyCost() {   // { cost, info } эсвэл null (авсан үнэ оруулаагүй)
+  var buy = Number($('mvBuy').value) || 0, cur = $('mvCurSel').value, rate = cur === 'MNT' ? 1 : Number($('mvRate').value) || 0;
+  var qty = Number($('mvQty').value) || 0, cargo = Number($('mvCargo').value) || 0;
+  if (!buy) return null;
+  var base = buy * rate, cu = qty > 0 ? cargo / qty : 0, cost = Math.round((base + cu) * 100) / 100;
+  return { buy: buy, cur: cur, rate: cur === 'MNT' ? '' : rate, cargo: Math.round(cu * 100) / 100, cost: cost,
+    info: (cur === 'MNT' ? fmt(buy) : CUR_SIGN[cur] + buy + ' × ' + rate + ' = ' + fmt(base)) + (cu ? ' + карго ' + fmt(cu) + '/ш' : '') + ' = нэгж өртөг <b>' + fmt(cost) + '</b>' +
+      (qty ? ' · нийт ' + fmt(cost * qty) : '') };
+}
+function mvCalc() {
+  var b = mvBuyCost();
+  if (b && (b.cur === 'MNT' || b.rate)) { $('mvCost').value = b.cost; $('mvCalcInfo').innerHTML = b.info; }
+  else $('mvCalcInfo').innerHTML = $('mvBuy').value && !(Number($('mvRate').value) > 0) ? 'Ханшаа оруулна уу' : 'Авсан үнэ, ханш, каргог оруулбал нэгж өртөг өөрөө бодогдоно (гараар ч засаж болно).';
+}
+function lastBuys(biz) {   // бараа бүрийн сүүлийн орлого (авсан үнэ, ханш, карго)
+  var o = {};
+  moves.forEach(function (m) { if (m.biz === biz && m.kind === 'Орлого' && m.qty > 0) o[m.item] = m; });
+  return o;
+}
+function buyText(m) { return m && m.buy ? (m.cur === 'MNT' || !m.cur ? fmt(m.buy) : (CUR_SIGN[m.cur] || '') + round2(m.buy)) : ''; }
 function mvCurrent() {
   var st = (stockData[state.biz] || {})[$('mvItem').value.trim()] || { shop: 0, wh: 0 };
   return st;
@@ -492,7 +525,11 @@ function saveMove() {
     var cost = Number($('mvCost').value) || 0, pay = $('mvPay').value, partner = $('mvPartner').value.trim();
     if (!cost && !mvCurrent().cost) { toast('Нэгж өртгөө оруулна уу — санхүүд бараа өртгөөр бичигдэнэ'); return; }
     if (pay === 'Зээлээр' && !partner) { toast('Зээлээр авсан бол нийлүүлэгчээ бичнэ үү'); return; }
-    ms.push({ biz: biz, loc: $('mvLoc').value, item: item, kind: 'Орлого', qty: qty, cost: cost, pay: pay, partner: partner, note: note });
+    var bc = mvBuyCost();
+    if (bc && bc.cur !== 'MNT') { if (!(bc.rate > 0)) { toast('Ханшаа оруулна уу'); return; } save('nb_rate_' + bc.cur, bc.rate); }
+    if (bc) save('nb_cur', bc.cur);
+    ms.push({ biz: biz, loc: $('mvLoc').value, item: item, kind: 'Орлого', qty: qty, cost: cost, pay: pay, partner: partner, note: note,
+              buy: bc ? bc.buy : '', cur: bc ? bc.cur : '', rate: bc ? bc.rate : '', cargo: bc ? bc.cargo : '' });
   } else if (moveKind === 'Хасалт') {
     if (!note) { toast('Хасах шалтгаанаа бичнэ үү'); return; }
     var hv = mvCurrent()[$('mvLoc').value === 'Агуулах' ? 'wh' : 'shop'] || 0;
@@ -521,7 +558,8 @@ function sendMoves(ms, done) {
       if (m.loc === 'Агуулах') it.wh += m.qty; else it.shop += m.qty;
       if (m.cost && m.qty > 0) it.cost = it.cost ? Math.round((it.cost + m.cost) / 2) : m.cost;
       moves.push({ id: 'M' + Date.now() + '-' + moves.length, date: todayStr() + ' ' + timeStr(), biz: m.biz, loc: m.loc, item: m.item, kind: m.kind, qty: m.qty,
-                   cost: m.cost || 0, by: ownerName, note: m.note || '', pay: m.pay || '', partner: m.partner || '' });
+                   cost: m.cost || 0, by: ownerName, note: m.note || '', pay: m.pay || '', partner: m.partner || '',
+                   buy: Number(m.buy) || 0, cur: m.cur || '', rate: Number(m.rate) || 0, cargo: Number(m.cargo) || 0 });
     });
     save('nb_demo_stock', stockData); save('nb_demo_moves', moves); render(); done(); return;
   }
@@ -777,13 +815,14 @@ function makeReport(mod, sub) {
   if (sub === 'catalog') return repCatalog(biz);
 }
 function repStockNow(biz) {
+  var lb = lastBuys(biz);
   var rows = stockRows(biz).map(function (r) {
-    var q = round2(r.shop + r.wh);
-    return { name: r.name, cat: r.cat, shop: round2(r.shop), wh: round2(r.wh), q: q, cost: r.cost || '', val: r.cost ? round2(Math.max(0, q) * r.cost) : '',
+    var q = round2(r.shop + r.wh), b = lb[r.name] || {};
+    return { name: r.name, cat: r.cat, shop: round2(r.shop), wh: round2(r.wh), q: q, buy: buyText(b), rate: b.rate || '', cargo: b.cargo || '', cost: r.cost || '', val: r.cost ? round2(Math.max(0, q) * r.cost) : '',
              price: r.price || '', pval: r.price ? round2(Math.max(0, q) * r.price) : '' };
   }).filter(function (r) { return r.q || r.cost; });
   return { title: 'Барааны үлдэгдэл (' + todayStr() + ')', cols: [c('name', 'Бараа'), c('cat', 'Ангилал'), m('shop', 'Дэлгүүр'), m('wh', 'Агуулах'), m('q', 'Нийт'),
-    m('cost', 'Нэгж өртөг'), m('val', 'Өртгөөр'), m('price', 'Зарах үнэ'), m('pval', 'Зарах үнээр')], rows: rows,
+    c('buy', 'Сүүлд авсан үнэ'), m('rate', 'Ханш'), m('cargo', 'Карго/ш'), m('cost', 'Өртөг үнэ'), m('val', 'Өртгөөр'), m('price', 'Зарах үнэ'), m('pval', 'Зарах үнээр')], rows: rows,
     total: { name: 'Нийт', val: sum(rows, 'val'), pval: sum(rows, 'pval') } };
 }
 function repPartnerList(biz) {

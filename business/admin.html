@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Удирдлагын самбар</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261019b">
+<link rel="stylesheet" href="style.css?v=20261019c">
 </head>
 <body class="bz-admin">
 <div class="demo" id="demo" style="display:none">Туршилтын горим — зөвхөн энэ төхөөрөмж дээр бичигдсэн мэдээлэл харагдана (код: 0000)</div>
@@ -112,9 +112,20 @@
       <select id="mvDir"><option value="w2s">Агуулах → Дэлгүүр</option><option value="s2w">Дэлгүүр → Агуулах</option></select></div>
     <div class="row2">
       <div><label for="mvQty" id="mvQtyLabel">Тоо хэмжээ</label>
-        <input id="mvQty" type="number" inputmode="decimal" step="any" min="0"></div>
-      <div id="mvCostWrap"><label for="mvCost">Нэгж өртөг (₮)</label>
-        <input id="mvCost" type="number" inputmode="numeric" min="0" placeholder="Авсан үнэ"></div>
+        <input id="mvQty" type="number" inputmode="decimal" step="any" min="0" oninput="if(moveKind==='Орлого')mvCalc()"></div>
+      <div id="mvCostWrap"><label for="mvCost">Нэгж өртөг үнэ (₮)</label>
+        <input id="mvCost" type="number" inputmode="numeric" min="0" placeholder="Доороос бодогдоно"></div>
+    </div>
+    <div id="mvBuyWrap">
+      <div class="row2">
+        <div><label for="mvBuy">Авсан үнэ (нэг ширхэг)</label><input id="mvBuy" type="number" inputmode="decimal" step="any" min="0" oninput="mvCalc()"></div>
+        <div><label for="mvCurSel">Валют</label><select id="mvCurSel" onchange="mvCurChange()"><option value="CNY">¥ юань (Хятад)</option><option value="MNT">₮ төгрөг</option><option value="USD">$ доллар</option></select></div>
+      </div>
+      <div class="row2">
+        <div id="mvRateWrap"><label for="mvRate" id="mvRateLabel">Ханш (1 ¥ = ₮)</label><input id="mvRate" type="number" inputmode="decimal" step="any" min="0" oninput="mvCalc()"></div>
+        <div><label for="mvCargo">Карго, тээвэр — энэ барааны НИЙТ (₮)</label><input id="mvCargo" type="number" inputmode="numeric" min="0" oninput="mvCalc()"></div>
+      </div>
+      <p class="muted" id="mvCalcInfo" style="font-size:12.5px;margin-top:6px"></p>
     </div>
     <div id="mvPayWrap"><div class="row2">
       <div><label for="mvPay">Төлбөр</label>
@@ -341,15 +352,15 @@
 <input type="file" id="baazFile" accept=".xlsx,.xls" style="display:none" onchange="importBaaz(this)">
 <div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="products.js?v=20261019b"></script>
-<script src="config.js?v=20261019b"></script>
-<script src="common.js?v=20261019b"></script>
-<script src="reports.js?v=20261019b"></script>
-<script src="tax.js?v=20261019b"></script>
-<script src="finhelp.js?v=20261019b"></script>
-<script src="finance.js?v=20261019b"></script>
-<script src="calendar.js?v=20261019b"></script>
-<script src="bank.js?v=20261019b"></script>
-<script src="admin.js?v=20261019b"></script>
+<script src="products.js?v=20261019c"></script>
+<script src="config.js?v=20261019c"></script>
+<script src="common.js?v=20261019c"></script>
+<script src="reports.js?v=20261019c"></script>
+<script src="tax.js?v=20261019c"></script>
+<script src="finhelp.js?v=20261019c"></script>
+<script src="finance.js?v=20261019c"></script>
+<script src="calendar.js?v=20261019c"></script>
+<script src="bank.js?v=20261019c"></script>
+<script src="admin.js?v=20261019c"></script>
 </body>
 </html>

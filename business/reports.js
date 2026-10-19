@@ -433,8 +433,11 @@ function repItemCard(R, biz, item, from, to) {
 }
 function repReceiptsIn(R, biz, from, to) {
   var rows = R.moves.filter(function (m) { var d = String(m.date).slice(0, 10); return m.biz === biz && (m.kind === 'Орлого' || m.kind === 'Эхний үлдэгдэл') && d >= from && d <= to; })
-    .map(function (m) { return { date: m.date, kind: m.kind, item: m.item, loc: m.loc, qty: m.qty, cost: m.cost || '', val: m.cost ? r0(m.qty * m.cost) : '', pay: m.pay || '', partner: m.partner || '', _id: m.id }; }).reverse();
-  return { title: 'Бараа орлогын жагсаалт', cols: [c('date', 'Огноо'), c('kind', 'Төрөл'), c('item', 'Бараа'), c('loc', 'Байршил'), m('qty', 'Тоо'), m('cost', 'Нэгж өртөг'),
+    .map(function (m) { var sg = { CNY: '¥', USD: '$', MNT: '₮' }[m.cur] || '';
+      return { date: m.date, kind: m.kind, item: m.item, loc: m.loc, qty: m.qty, buy: m.buy ? sg + m.buy : '', rate: m.rate || '', cargo: m.cargo || '',
+               cost: m.cost || '', val: m.cost ? r0(m.qty * m.cost) : '', pay: m.pay || '', partner: m.partner || '', _id: m.id }; }).reverse();
+  return { title: 'Бараа орлогын жагсаалт', cols: [c('date', 'Огноо'), c('kind', 'Төрөл'), c('item', 'Бараа'), c('loc', 'Байршил'), m('qty', 'Тоо'),
+    c('buy', 'Авсан үнэ'), m('rate', 'Ханш'), m('cargo', 'Карго/ш'), m('cost', 'Өртөг үнэ'),
     m('val', 'Дүн'), c('pay', 'Төлбөр'), c('partner', 'Нийлүүлэгч')], rows: rows, total: { item: rows.length + ' мөр', val: sum(rows, 'val') } };
 }
 
