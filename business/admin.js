@@ -165,7 +165,7 @@ function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
 
 // ── Үндсэн зураглал ──
 function render() {
-  DRILL = []; _debtCache = null; _jCache = null;
+  window.__dash = null; DRILL = []; _debtCache = null; _jCache = null;
   var pend = staff.filter(function (s) { return s.status === 'Хүлээгдэж'; }).length;
   $('rail').innerHTML = railHtml(pend);
   $('subnav').innerHTML = state.view === 'tax' ? taxSubnav() : subnavHtml();
@@ -178,6 +178,7 @@ function render() {
   else if (state.view === 'staff') $('view').innerHTML = staffPage();
   else if (state.view === 'company') $('view').innerHTML = companyView();
   else $('view').innerHTML = companiesView();
+  if (window.__dash) setTimeout(drawDash, 0);   // хянах самбарын график
   var inCo = state.view === 'company' && BUSINESSES[state.biz];
   document.querySelector('.bz-head').style.boxShadow = inCo ? 'inset 0 2px 0 ' + BUSINESSES[state.biz].color : '';
   navTrack();
@@ -405,10 +406,8 @@ function salesModule() {
   var byStaff = {};
   sales.forEach(function (x) { var k = x.staff || '—'; byStaff[k] = (byStaff[k] || 0) + (Number(x.amount) || 0); });
   var staffRows = Object.keys(byStaff).sort(function (a, b) { return byStaff[b] - byStaff[a]; });
-  return orderReminder(state.biz) + '<div class="kpis">' +
-    kpi('Борлуулалт', fmt(s.sales), Object.keys(bills).length + ' баримт / гүйлгээ') +
-    kpi('Бэлэн', fmt(s.cash)) + kpi('Карт', fmt(s.card)) + kpi('Шилжүүлэг', fmt(s.transfer)) + (s.credit ? kpi('Захиалга (урьдчилгаа, зээл)', fmt(s.credit)) : '') +
-    '</div><div class="grid2"><div class="card"><h2>Худалдагчаар</h2><div class="scroll"><table>' +
+  return orderReminder(state.biz) + dashView(state.biz, list, s, bills) +
+    '<div class="grid2"><div class="card"><h2>Худалдагчаар</h2><div class="scroll"><table>' +
     (staffRows.length ? '<tr><th>Ажилтан</th><th class="n">Дүн</th></tr>' + staffRows.map(function (k) {
       return '<tr><td>' + esc(k) + '</td><td class="n">' + fmt(byStaff[k]) + '</td></tr>';
     }).join('') : '<tr><td class="muted">Борлуулалт алга</td></tr>') + '</table></div></div>' +

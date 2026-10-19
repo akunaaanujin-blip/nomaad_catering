@@ -780,3 +780,31 @@ body:not(.bz-admin) .mono{border-radius:4px}
 .bz-admin .hint{color:#4F6684}
 /* Тайлбар текст (заавар) — хуудсан дээр харуулахгүй, гарын авлагад бий */
 .bz-admin .hint,.bz-admin .rep-help{display:none!important}
+
+/* ═══ v7 · Хянах самбар маяг (зөөлөн сүүдэр, бөөрөнхий карт, өнгөт тэмдэгт) ═══ */
+.bz-admin{--b-bg:#F3F5FA}
+.bz-admin .rail{background:linear-gradient(180deg,#23446F 0%,#1A3253 100%)}
+.bz-admin .bz-head{box-shadow:0 1px 0 #E6EAF1,0 2px 8px rgba(16,24,40,.04)}
+.bz-admin .card,.bz-admin .co-card,.bz-admin .st-card,.bz-admin .filter,.bz-admin .kpis .biz,.dk,.ch-card{border:0!important;border-radius:14px!important;box-shadow:0 1px 2px rgba(16,24,40,.05),0 3px 10px rgba(16,24,40,.06)!important;background-color:#fff}
+.bz-admin .card.rep{overflow:hidden}
+.bz-admin .kpis{background:transparent;border:0;gap:12px;box-shadow:none}
+.bz-admin .kpis .biz{border-top:0!important;position:relative;padding:14px 16px 14px 20px}
+.bz-admin .kpis .biz::before{content:'';position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 4px 4px 0;background:#3B6FB6}
+.bz-admin .kpis .biz:nth-child(5n+2)::before{background:#14A38B}.bz-admin .kpis .biz:nth-child(5n+3)::before{background:#F2A93B}
+.bz-admin .kpis .biz:nth-child(5n+4)::before{background:#8B6CC9}.bz-admin .kpis .biz:nth-child(5n+5)::before{background:#E25D6A}
+.bz-admin .card h2{border-left:0;padding-left:0;font-size:14px}
+.bz-admin .b-btn,.bz-admin .btn,.bz-admin .tabs button,.bz-admin input,.bz-admin select{border-radius:9px}
+.bz-admin .b-btn.primary{background:linear-gradient(180deg,#3A70B4,#2C5791);border:0;box-shadow:0 1px 2px rgba(44,87,145,.3)}
+.bz-admin .co-card .btn{border-radius:10px}
+.bz-admin .sub-list button{border-radius:8px}
+.dk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:16px}
+.dk{display:flex;gap:12px;align-items:center;padding:16px}
+.dk-i{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none}
+.dk small{display:block;font-size:12.5px;color:#6B7280}
+.dk b{display:block;font-size:20px;font-weight:700;color:#111827;letter-spacing:-.01em;line-height:1.3}
+.dk em{display:block;font-style:normal;font-size:12px;color:#8A93A0}
+.ch-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:16px}
+.ch-card{padding:16px 18px;min-width:0}
+.ch-card h3{font-size:14px;font-weight:600;margin:0 0 10px;color:#111827}
+.ch-box{position:relative;height:270px}.ch-box.sm{height:230px}
+@media(max-width:900px){.ch-grid{grid-template-columns:1fr}}
