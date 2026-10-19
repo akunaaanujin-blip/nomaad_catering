@@ -214,10 +214,19 @@ function subnavHtml() {
     return head + '<ul class="sub-list"><li><button class="on">' + one[0][1] + '</button></li></ul>' + moduleSwitch();
   }
   return head + MENU[mod].map(function (g) {
-    return '<div class="sub-group">' + g[0] + '</div><ul class="sub-list">' + g[1].filter(function (k) { return k !== 'orders' || BUSINESSES[state.biz].orders; }).map(function (k) {
+    var ks = g[1].filter(function (k) { return subVisible(state.biz, k); });
+    if (!ks.length) return '';
+    return '<div class="sub-group">' + g[0] + '</div><ul class="sub-list">' + ks.map(function (k) {
       return '<li><button class="' + (state.sub[mod] === k || (mod === 'finance' && hubOf(state.sub[mod]) === k) ? 'on' : '') + '" onclick="setSub(\'' + k + '\')">' + subLabel(mod, k) + '</button></li>';
     }).join('') + '</ul>';
   }).join('') + moduleSwitch();
+}
+// Тухайн компанид хамааралгүй дэд хуудсыг нууна (захиалгагүй бол «Захиалга», И-баримтгүй бол «И-баримт тулгалт»)
+function subVisible(biz, k) {
+  var B = BUSINESSES[biz] || {};
+  if (k === 'orders') return !!B.orders;
+  if (k === 'ebarimt') return B.ebarimt !== false;
+  return true;
 }
 function moduleSwitch() {   // утсан дээр зүүн зурвас нуугдах тул модуль солих товчнууд
   return '<div class="sub-mods">' + MODULES.map(function (m) {
@@ -268,6 +277,7 @@ function companiesView() {
 // ── Компанийн дотор: модуль → дэд цэс → хуудас ──
 function companyView() {
   var mod = state.module;
+  if (MENU[mod] && !subVisible(state.biz, state.sub[mod])) state.sub[mod] = MENU[mod][0][1][0];   // компани солиход хамааралгүй хуудас үлдэхгүй
   if (mod === 'staff') return pageHead('Ажилчид', '') + staffView(state.biz);
   if (mod === 'reports') return pageHead('Бүх тайлан', '<button class="b-btn primary" onclick="exportAll()">Бүх тайланг Excel-ээр татах</button>', true) + reportsModule();
   var sub = state.sub[mod], noPeriod = /^(accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary|months|payroll|debts|acct|setup)$/.test(sub);
@@ -363,7 +373,7 @@ function recordRows(list) {
 // Бараа материал
 var LOW_STOCK = 2;   // ийм ба түүнээс бага бол «цөөн»
 function hasWarehouse(biz) {
-  if (biz === 'travel') return true;
+  if (BUSINESSES[biz] && BUSINESSES[biz].warehouse) return true;   // config.js: дэлгүүр + агуулахтай
   var st = stockData[biz] || {};
   return Object.keys(st).some(function (k) { return st[k].wh; });
 }
@@ -406,7 +416,10 @@ function productsModule() {
     '<button class="btn sm" onclick="$(\'baazFile\').click()">Baaz Excel оруулах</button></div>' : '';
   var stockVal = rows.reduce(function (a, r) { return a + Math.max(0, total(r)) * (r.price || 0); }, 0);
   var costVal = rows.reduce(function (a, r) { return a + Math.max(0, total(r)) * (r.cost || 0); }, 0);
-  return banner +
+  var how = '<p class="hint">Хөдөлгөөнийг дээд талын товчоор бүртгэнэ: <b>+ Орлого</b> — бараа авах (өртөгтэй)' + (wh ? ', <b>Шилжүүлэг</b> — агуулах ↔ дэлгүүр' : '') +
+    ', <b>Тооллого</b> — бодит тоо оруулах, <b>Хасалт</b> — гэмтэл, хорогдол. Борлуулалт (захиалга) <b>дэлгүүрийн</b> үлдэгдлээс автоматаар хасагдана' +
+    (wh ? ' — агуулахаас гаргахдаа эхлээд «Шилжүүлэг» хийнэ' : '') + '. Түүхийг доор «Хөдөлгөөний түүх», дэлгэрэнгүйг «Хөдөлгөөний тайлан»-аас харна.</p>';
+  return banner + how +
     '<div class="kpis">' + kpi('Бараа', rows.length) + kpi('Үлдэгдэл · өртгөөр', fmt(costVal)) + kpi('Үлдэгдэл · зарах үнээр', fmt(stockVal)) +
     kpi('Цөөн үлдсэн (≤' + LOW_STOCK + ')', cntLow) + kpi('Дууссан', cntOut) + '</div>' +
     '<div class="card"><div class="bar-row"><div class="tabs">' +
@@ -917,7 +930,7 @@ function closesTable(r) {
 function allReportList() {   // [модуль, тайлан, нэр] — тойм/самбар/карт/гар бичилтээс бусад бүх тайлан
   var out = [];
   ['sales', 'products', 'finance'].forEach(function (mod) {
-    SUBS[mod].forEach(function (s) { if (!/^(overview|dash|card|entry|close|bank|opening|lock|pstmt|simple|monthly|glossary|acct|setup)$/.test(s[0])) out.push([mod, s[0], s[1]]); });
+    SUBS[mod].forEach(function (s) { if (subVisible(state.biz, s[0]) && !/^(overview|dash|card|entry|close|bank|opening|lock|pstmt|simple|monthly|glossary|acct|setup)$/.test(s[0])) out.push([mod, s[0], s[1]]); });
   });
   return out;
 }
@@ -927,7 +940,7 @@ function reportsModule() {
   return '<p class="hint">Сонгосон хугацааны бүх тайланг нэг Excel файлд (тайлан бүр тусдаа хуудас) татна. Тайлан нээх бол нэр дээр нь дарна.</p>' +
     '<div class="rep-grid">' + ['sales', 'products', 'finance'].map(function (mod) {
       return '<div class="card"><h2>' + MODULES.filter(function (x) { return x[0] === mod; })[0][1] + '</h2><ul class="rep-links">' +
-        SUBS[mod].map(function (s) {
+        SUBS[mod].filter(function (s) { return subVisible(state.biz, s[0]); }).map(function (s) {
           return '<li><button class="link" onclick="state.module=\'' + mod + '\';setSub(\'' + s[0] + '\')">' + s[1] + '</button></li>';
         }).join('') + '</ul></div>';
     }).join('') + '</div>';

@@ -27,6 +27,8 @@ var BUSINESSES = {
     color: '#7A5A2E',
     unit: 'ш',
     orders: true,                          // Facebook захиалга → буухиа хүргэлт
+    warehouse: true,                       // үлдэгдэл: дэлгүүр + агуулах
+    ebarimt: false,                        // хувь хүн — И-баримт тулгалт хэрэггүй
     buuhiaStore: 'Nomaad Аяллын дэлгүүр',   // ebuuhia.com-д бүртгэлтэй дэлгүүрийн нэр (импортод ЯГ таарах ёстой)
     // «Cozy хүргэлт» хүснэгтийн үнээр. Үнэгүй барааны үнийг Удирдлага → Бараа материал → Барааны бүртгэлээс оруулна.
     products: [
@@ -55,6 +57,7 @@ var BUSINESSES = {
     icon: 'N',
     color: '#1E4D3B',
     unit: 'ш',
+    warehouse: true,
     products: (typeof TRAVEL_PRODUCTS !== 'undefined') ? TRAVEL_PRODUCTS : [],   // products.js
     expenses: ['Бараа татан авалт', 'Тээвэр', 'Цалин', 'Түрээс', 'Засвар', 'Бусад'],
   },
