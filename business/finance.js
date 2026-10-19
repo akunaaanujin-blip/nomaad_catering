@@ -49,6 +49,7 @@ function drillLines(s, E) {
     var inD = !!A[e.dr], inC = !!A[e.cr];
     if (inD === inC || e.date > to) return;
     if (s.partner !== undefined && (e.partner || '(харилцагч заагаагүй)') !== s.partner) return;
+    if (s.tag && !hasTag(e.desc, s.tag)) return;   // зээл / захиалгын «#ID»
     var raw = inD ? e.amount : -e.amount;
     var x = { date: e.date, doc: e.doc, desc: e.desc, partner: e.partner, acc: inD ? e.dr : e.cr, other: inD ? e.cr : e.dr, raw: raw, v: raw * (s.sign || 1) };
     if (s.other && s.other.indexOf(x.other) < 0) return;
@@ -149,8 +150,12 @@ function simpleView() {
       '<tr class="tot"><td>Нийт мөнгө</td><td class="n">' + dl(bl(cash, 1, 'type', 'Нийт мөнгө'), mny(moneyTot)) + '</td></tr></table>' +
       '<table class="rep-t" style="margin-top:8px">' + line('Энэ хугацаанд орсон', fin, fl(cash, 1, 'type', 'Орсон мөнгө', { dir: 1 })) + line('Энэ хугацаанд гарсан', -fout, fl(cash, -1, 'type', 'Гарсан мөнгө', { dir: 1 })) + '</table>' +
       '<div class="pg-act" style="margin-top:8px"><button class="b-btn" onclick="setSub(\'money\')">Орлого, зарлага</button><button class="b-btn" onclick="setSub(\'bank\')">Банкны хуулга</button></div></div>' +
-    '<div class="card"><h2>Бараа</h2><table class="rep-t">' + line('Үлдэгдэл бараа (авсан үнээр)', g('1404'), { acc: ['1404'], to: td, sign: 1, grp: 'item', t: 'Барааны үлдэгдэл (авсан үнээр)' }) + '</table>' +
-      '<p class="muted" style="font-size:12.5px;margin-top:6px">Дэлгүүр, агуулахад байгаа барааг та хэдээр авсан бэ.</p></div></div>' +
+    (BUSINESSES[state.biz].finOnly ? '<div class="card"><h2>Зээл</h2><table class="rep-t">' + line('Миний өгсөн зээл (авах)', g('1210'), { acc: ['1210'], to: td, sign: 1, grp: 'partner', t: 'Өгсөн зээл' }) +
+      line('Миний авсан зээл (өгөх)', -(g('3501')), { acc: loanCodes(), to: td, sign: -1, grp: 'partner', t: 'Авсан зээл' }) + '</table>' +
+      '<div class="pg-act" style="margin-top:8px"><button class="b-btn" onclick="setSub(\'loans\')">Зээл</button></div></div></div>' :
+    '<div class="card"><h2>Бараа</h2><table class="rep-t">' + line('Үлдэгдэл бараа (авсан үнээр)', g('1404'), { acc: ['1404'], to: td, sign: 1, grp: 'item', t: 'Барааны үлдэгдэл (авсан үнээр)' }) +
+      (Math.abs(g('1505')) >= 1 ? line('Захиалсан, замд яваа бараа', g('1505'), { acc: ['1505'], to: td, sign: 1, grp: 'cat', t: 'Захиалсан бараа (замд яваа)' }) : '') + '</table>' +
+      '<p class="muted" style="font-size:12.5px;margin-top:6px">Дэлгүүр, агуулахад байгаа барааг та хэдээр авсан бэ.</p></div></div>') +
     '<div class="grid2"><div class="card"><h2>Танд өртэй (авлага)</h2><table class="rep-t">' + (recv.length ? recv.slice(0, 8).map(function (x) {
         return line(esc(x.name), x.rec, { acc: ['1201'], partner: x.name, to: td, sign: 1, bal: true, t: x.name + ' — авлага' }); }).join('') +
       '<tr class="tot"><td>Нийт' + (recv.length > 8 ? ' (' + recv.length + ' харилцагч)' : '') + '</td><td class="n">' + dl({ acc: ['1201'], to: td, sign: 1, grp: 'partner', t: 'Авлага' }, mny(sum(recv, 'rec'))) + '</td></tr>' : '<tr><td class="muted">Авлага алга</td><td></td></tr>') + '</table>' +
@@ -276,8 +281,10 @@ function moneyPre(E, f, t) {
 }
 
 // ═══════════ АВЛАГА, ӨГЛӨГ, ЗЭЭЛ (хуучин хүснэгтийн «Авлага», «өглөг» жагсаалт) ═══════════
-var DEBT_TABS = { r: ['Авлага', 'Танд өгөх ёстой', ['1201'], 1], p: ['Өглөг', 'Таны өгөх ёстой (нийлүүлэгч г.м)', ['3101'], -1], l: ['Зээл', 'Банк, хүнээс авсан зээл', null, -1], a: ['Захиалгын урьдчилгаа', 'Мөнгө нь орсон, бараа нь хүргэгдээгүй', ['3802'], -1] };
-function debtAccs(k) { return DEBT_TABS[k][2] || loanCodes(); }
+var DEBT_TABS = { r: ['Авлага', 'Танд өгөх ёстой', ['1201'], 1], p: ['Өглөг', 'Таны өгөх ёстой (нийлүүлэгч, карго г.м)', ['3101'], -1],
+  c: ['Компани хооронд', 'Бусад компани руу явуулсан (+) / тэднээс ирсэн (−)', ['1290'], 1], d: ['Захирлын зарлага', 'Захирлын хувийн зарлага (компаниас гарсан)', ['1208'], 1],
+  a: ['Захиалгын урьдчилгаа', 'Мөнгө нь орсон, бараа нь хүргэгдээгүй', ['3802'], -1] };
+function debtAccs(k) { return DEBT_TABS[k][2]; }
 // Нэг бүрчлэн (FIFO): үүссэн өр бүрийг дараагийн төлөлтөөр хааж, хаасан огноог тэмдэглэнэ
 function openItems(E, accs, sign, to, loanKey) {
   var A = {}; accs.forEach(function (k) { A[k] = 1; });
@@ -311,9 +318,9 @@ function repDebts(E, k, showClosed) {
     var days = Math.round((new Date(td) - new Date(it.date)) / 864e5);
     return { date: it.date, who: it.who, desc: it.desc, amt: r0(it.amt), paid: r0(it.paid), left: r0(it.amt - it.paid), closed: it.closed, st: it.closed ? 'Хаагдсан' : days + ' хоног',
       _d: { left: debtSpec(k, it, td) },
-      _act: !it.closed && k !== 'a' ? '<button class="mini" style="color:var(--accent)" onclick="debtPay(\'' + k + '\',\'' + esc(it.key) + '\')">' + (k === 'r' ? 'Төлбөр авах' : 'Төлөх') + '</button>' : '' };
+      _act: !it.closed && /^[rp]$/.test(k) ? '<button class="mini" style="color:var(--accent)" onclick="debtPay(\'' + k + '\',\'' + esc(it.key) + '\')">' + (k === 'r' ? 'Төлбөр авах' : 'Төлөх') + '</button>' : '' };
   });
-  return { title: T[0] + ' — ' + (showClosed ? 'бүгд' : 'хаагдаагүй'), rows: rows, actions: k !== 'a',
+  return { title: T[0] + ' — ' + (showClosed ? 'бүгд' : 'хаагдаагүй'), rows: rows, actions: /^[rp]$/.test(k),
     cols: [c('date', 'Үүссэн огноо'), c('who', 'Харилцагч'), c('desc', 'Тайлбар'), m('amt', 'Дүн'), m('paid', 'Төлсөн'), m('left', 'Үлдэгдэл'), c('closed', 'Хаасан огноо'), c('st', 'Төлөв')],
     total: { date: 'Нийт', amt: sum(rows, 'amt'), paid: sum(rows, 'paid'), left: sum(rows, 'left') } };
 }
@@ -380,7 +387,7 @@ function repPayroll(E, y) {
 var HUBS = {
   acct: ['Нягтлангийн тайлан', [['Шалгалт', ['dash']], ['Журнал', ['entry', 'journal', 'trial', 'ledger', 'gl']], ['Мөнгө', ['cash', 'cashflow', 'expenses']],
     ['Авлага, өглөг', ['partners', 'aging_r', 'aging_p', 'pstmt']], ['Санхүүгийн тайлан', ['balance', 'pl', 'equity']]]],
-  setup: ['Тохиргоо', [['Эхлэх', ['opening', 'accounts']], ['Хамгаалалт', ['lock', 'close']], ['Тусламж', ['glossary']]]],
+  setup: ['Тохиргоо', [['Эхлэх', ['opening', 'accounts', 'banklink']], ['Хамгаалалт', ['lock', 'close']], ['Тусламж', ['glossary']]]],
 };
 function hubOf(sub) { var h = ''; Object.keys(HUBS).forEach(function (k) { HUBS[k][1].forEach(function (g) { if (g[1].indexOf(sub) >= 0) h = k; }); }); return h; }
 function hubView(h) {
@@ -439,7 +446,7 @@ function debtCache() {   // render бүрт нэг удаа
   if (!_debtCache) {
     var ords = {}; (window.adminOrders || []).forEach(function (o) { ords[o.id] = 1; });
     _debtCache = { rec: debtItems(['1201'], 1).filter(function (it) { return !ords[it.bill]; }),   // захиалгын авлагыг «Захиалга»-аар тулгана
-                   pay: debtItems(['3101'], -1).concat(debtItems(loanCodes(), -1, true)) };
+                   pay: debtItems(['3101'], -1) };   // зээлийг «Зээл» бүртгэлээр (L:) тулгана
   }
   return _debtCache;
 }
@@ -478,7 +485,7 @@ function vcPick(i, on) {
 function vcTags() { return Object.keys(vcSel).map(function (k) { return '#' + debtTag(vcItems[k]); }).join(' '); }
 // Авлага, өглөг хуудасны «Төлөх / Төлбөр авах» → кассын баримт тэр өрийг сонгосон байдлаар нээгдэнэ
 function debtPay(k, key) {
-  var it = (k === 'r' ? debtItems(['1201'], 1) : k === 'p' ? debtItems(['3101'], -1) : debtItems(loanCodes(), -1, true)).filter(function (x) { return x.key === key; })[0];
+  var it = (k === 'r' ? debtItems(['1201'], 1) : debtItems(['3101'], -1)).filter(function (x) { return x.key === key; })[0];
   if (!it) { toast('Энэ өр аль хэдийн хаагдсан байна'); return; }
   openVoucher(k === 'r' ? 'ХО' : 'ХЗ');
   if (![].some.call($('vcPurpose').options, function (o) { return o.value === it.acc; }))

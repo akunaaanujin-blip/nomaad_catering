@@ -68,7 +68,7 @@ function openRem(date, preset) {
   $('rmKind').innerHTML = REM_KINDS.map(function (k) { return '<option' + (preset.kind === k ? ' selected' : '') + '>' + k + '</option>'; }).join('');
   $('rmTitle').value = preset.title || ''; $('rmAmount').value = preset.amount || ''; $('rmPartner').value = preset.partner || ''; $('rmNote').value = '';
   $('rmRepeat').value = preset.repeat || 'Нэг удаа'; if (preset.note) $('rmNote').value = preset.note;
-  $('rmCo').innerHTML = KEYS.map(function (k) { return '<option value="' + k + '"' + (k === (preset.biz || state.biz) ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('');
+  $('rmCo').innerHTML = ALL_KEYS.map(function (k) { return '<option value="' + k + '"' + (k === (preset.biz || state.biz) ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('');
   $('rmPartners').innerHTML = partners.map(function (p) { return '<option value="' + esc(p.name) + '">'; }).join('');
   openSheet('remSheet');
 }

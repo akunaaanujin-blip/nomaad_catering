@@ -3,6 +3,9 @@
 
 // Тайлан бүрийн дээр гарах энгийн тайлбар
 var REP_HELP = {
+  loans: 'Таны авсан болон өгсөн бүх зээл, өр: хэд авсан/өгсөн, хэдийг нь төлсөн, хүү хэд, хэд үлдсэн. Төлөлтийг үндсэн ба хүү гэж салгаж бүртгэнэ.',
+  banklink: 'Банкны дансыг аль компанийнх (эсвэл удирдлагынх) болохыг холбоно. Хуулга оруулахад гүйлгээ тэр компанид автоматаар орно.',
+  po: 'Хятадаас захиалсан бараа: урьдчилгаа, үлдэгдэл төлбөр, карго — бараа ирэхэд бүх зардал нь барааны өртөгт автоматаар хуваагдана.',
   simple: 'Сонгосон хугацаанд хэд зарж, хэд зарцуулж, хэдэн төгрөгийн ашиг олсон, мөнгө хаана байна — нэг дор. Дүн дээр дарвал задарна.',
   months: 'Сар бүрийн борлуулалт, ашиг, орсон/гарсан мөнгө. Доод хүснэгтэд мөнгө хаанаас орж, хаашаа гарсныг төрлөөр.',
   profit: 'Бараа бүрийг хэдээр зарж, хэдээр авсан, хэдэн төгрөг (хувь) ашиг өгсөн бэ.',
@@ -85,9 +88,9 @@ function monthlyView() {
   var bl = (typeof bankLines !== 'undefined' ? bankLines : []).filter(function (l) { return l.biz === biz; });
   var lastImp = bl.map(function (l) { return l.date.slice(0, 10); }).sort().pop() || '';
   items.push([!!lastImp && !bl.some(function (l) { return l.status === 'Шинэ'; }), 'Банкны хуулгаа оруулж тулгах', lastImp ? 'Сүүлийн гүйлгээ: ' + lastImp + (bl.some(function (l) { return l.status === 'Шинэ'; }) ? ' · тулгаагүй гүйлгээ байна' : '') : 'Хуулга оруулаагүй', "setSub('bank')"]);
-  var ent = entOf(biz), hasStaff = entStaff(ent).some(function (s) { return Number(s.salary) > 0; });
+  var ent = entOf(biz), hasStaff = !BUSINESSES[biz].finOnly && entStaff(ent).some(function (s) { return Number(s.salary) > 0; });
   if (hasStaff) items.push([payrollPosted(ent, lm).length > 0, lm + ' сарын цалинг бодох', 'Цалин, НДШ, ХХОАТ санхүүд бичигдэнэ', "openTax('" + ent + "','payroll')"]);
-  var due = taxDeadlines(ent).filter(function (x) { return x.days <= 31; });
+  var due = BUSINESSES[biz].finOnly ? [] : taxDeadlines(ent).filter(function (x) { return x.days <= 31; });
   due.forEach(function (x) { items.push([false, x.name + ' тушаах (' + x.date + ')', x.site, "openTax('" + ent + "','" + x.go + "')"]); });
   var tracked = moves.some(function (m) { return m.biz === biz; });
   if (tracked) { var lc = moves.filter(function (m) { return m.biz === biz && m.kind === 'Тооллого'; }).map(function (m) { return String(m.date).slice(0, 10); }).sort().pop() || '';

@@ -11,8 +11,12 @@ var ACCOUNTS = [
   ['1101', 'Байгууллагын харилцах', 'asset', 'cash'],
   ['1201', 'Дансны авлага', 'asset'],
   ['1207', 'Ажилчдаас авах авлага', 'asset'],
+  ['1208', 'Захирлын хувийн зарлага (захирлаас авах)', 'asset'],
+  ['1210', 'Олгосон зээл (бусдад өгсөн)', 'asset'],
+  ['1290', 'Компани хоорондын тооцоо', 'asset'],
   ['1404', 'Бараа', 'asset'],
   ['1503', 'Нийлүүлэгчид төлсөн урьдчилгаа', 'asset'],
+  ['1505', 'Захиалсан бараа (замд яваа)', 'asset'],
   ['2001', 'Үндсэн хөрөнгө', 'asset'],
   ['3101', 'Дансны өглөг', 'liab'],
   ['3301', 'Цалингийн өглөг', 'liab'],
@@ -28,6 +32,7 @@ var ACCOUNTS = [
   ['5101', 'Бараа борлуулсны орлого', 'rev'],
   ['5102', 'Ажил үйлчилгээний орлого', 'rev'],
   ['5201', 'Бусад орлого', 'rev'],
+  ['5202', 'Хүүгийн орлого', 'rev'],
   ['6001', 'Борлуулалтын буцаалт', 'contra'],
   ['6101', 'Борлуулсан барааны өртөг', 'cogs'],
   ['7101', 'Цалингийн зардал', 'exp'],
@@ -42,6 +47,7 @@ var ACCOUNTS = [
   ['7301', 'Бусад зардал', 'exp'],
   ['7302', 'Бараа материалын дутагдал, хорогдол', 'exp'],
   ['7303', 'Кассын дутагдал', 'exp'],
+  ['7401', 'Зээлийн хүүгийн зардал', 'exp'],
 ];
 var ACC = {};
 ACCOUNTS.forEach(function (a) { ACC[a[0]] = { code: a[0], name: a[1], type: a[2], cash: a[3] === 'cash' }; });
@@ -57,7 +63,7 @@ function applyCustomAccounts(list) {
 function accName(c) { return ACC[c] ? ACC[c].name : c; }
 function debitNormal(c) { var t = ACC[c] && ACC[c].type; return t === 'asset' || t === 'contra' || t === 'cogs' || t === 'exp'; }
 
-var PAY_ACC = { 'Бэлэн': '10003', 'Карт': '110106', 'Шилжүүлэг': '1101', 'Харилцах': '1101', 'Зээлээр': '3101' };   // бараа орлого (худалдан авалт)
+var PAY_ACC = { 'Бэлэн': '10003', 'Карт': '110106', 'Шилжүүлэг': '1101', 'Харилцах': '1101', 'Зээлээр': '3101', 'Захиалга': '1505' };   // бараа орлого (худалдан авалт); Захиалга — урьдчилж төлсөн бараа захиалгаас
 // Урьдчилгаа: хүргэлтээс өмнө төлсөн захиалга — мөнгө ирэхэд 3802-т, бараа өгөхөд 3802 → орлого
 var SALE_ACC = { 'Бэлэн': '10003', 'Карт': '110106', 'Шилжүүлэг': '1101', 'Зээлээр': '1201', 'Урьдчилгаа': '3802' };                       // борлуулалт: зээлээр = авлага
 var VOUCHER_NAMES = { 'КО': 'Кассын орлого', 'КЗ': 'Кассын зарлага', 'ХО': 'Харилцахын орлого', 'ХЗ': 'Харилцахын зарлага' };
@@ -264,9 +270,9 @@ function repCash(E, from, to) {
 }
 function plData(E, from, to) {
   var b = balances(E, to, from), g = function (k) { return b[k] || 0; };
-  var sales = -g('5101') - g('5102'), ret = g('6001'), net = sales - ret, cogs = g('6101'), gross = net - cogs;
+  var sales = -g('5101') - g('5102'), ret = g('6001'), net = sales - ret, cogs = g('6101'), gross = net - cogs;   // 5201/5202 — «бусад орлого»
   var exps = ACCOUNTS.filter(function (a) { return a[2] === 'exp'; }).map(function (a) { return { code: a[0], name: a[1], v: g(a[0]) }; }).filter(function (x) { return x.v; });
-  var expT = exps.reduce(function (s, x) { return s + x.v; }, 0), other = -g('5201');
+  var expT = exps.reduce(function (s, x) { return s + x.v; }, 0), other = -g('5201') - g('5202');
   return { sales: sales, ret: ret, net: net, cogs: cogs, gross: gross, exps: exps, expT: expT, other: other, profit: gross - expT + other };
 }
 function repPL(E, from, to) {

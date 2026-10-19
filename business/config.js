@@ -61,6 +61,17 @@ var BUSINESSES = {
     products: (typeof TRAVEL_PRODUCTS !== 'undefined') ? TRAVEL_PRODUCTS : [],   // products.js
     expenses: ['Бараа татан авалт', 'Тээвэр', 'Цалин', 'Түрээс', 'Засвар', 'Бусад'],
   },
+  // Удирдлага — зөвхөн санхүү (удирдлагын өөрийн данс, зээл, хувийн зарлага). Ажилтны хуудасгүй, бараагүй.
+  mgmt: {
+    key: 'mgmt',
+    name: 'Удирдлага',
+    icon: 'У',
+    color: '#374151',
+    unit: 'ш',
+    finOnly: true,
+    products: [],
+    expenses: [],
+  },
 };
 
 // ── И-БАРИМТ (PosAPI 3.0) ──

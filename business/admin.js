@@ -1,7 +1,8 @@
 // ── УДИРДЛАГЫН САМБАР ──
 // Baaz-ийн бүтэцтэй: Миний компаниуд → (Борлуулалт · Бараа материал · Санхүү · Ажилчид), мөн нийт Ажилчид цэс.
 
-var KEYS = ['meat', 'travel', 'cozy'];
+var KEYS = ['meat', 'travel', 'cozy'];          // дэлгүүрүүд (ажилчид, бараатай)
+var ALL_KEYS = KEYS.concat(['mgmt']);            // + Удирдлага (зөвхөн санхүү)
 var token = sessionStorage.getItem('nb_tok') || '';   // удирдагчийн токен (8 цаг)
 var ownerName = sessionStorage.getItem('nb_owner') || '';
 var records = [], staff = [], salary = [], stockData = {}, moves = [], journal = [], partners = [], sheetProducts = [], meta = {};
@@ -65,13 +66,14 @@ function fetchAll(cb) {
     reminders = load('nb_demo_rem', []); window.adminOrders = load('nb_orders_cozy', []);
     bankLines = load('nb_demo_bank', []); window.payInfoAll = load('nb_demo_payinfo', {}); tasks = load('nb_demo_tasks', []); taxCfg = load('nb_demo_taxcfg', {}); customDocs = load('nb_demo_docs', []);
     accountsX = load('nb_demo_accx', []); applyCustomAccounts(accountsX); meta.lock = load('nb_demo_lock', '');
+    window.loans = load('nb_demo_loans', []); window.pos = load('nb_demo_pos', []); window.bankLinks = load('nb_demo_banklinks', []);
     stamp(); cb(true); return;
   }
   post({ type: 'admin_read', from: '' }, function (err, d) {   // санхүүгийн тайланд бүх түүх хэрэгтэй
     if (err) { if (err !== 'auth') toast('Холбогдож чадсангүй'); cb(false); return; }
     records = d.records || []; staff = d.staff || []; salary = d.salary || []; stockData = d.stock || {}; moves = d.moves || [];
     journal = d.journal || []; partners = d.partners || []; sheetProducts = d.products || []; applyProducts(); meta = d.meta || {};
-    reminders = d.reminders || []; window.adminOrders = d.orders || [];
+    reminders = d.reminders || []; window.adminOrders = d.orders || []; window.loans = d.loans || []; window.pos = d.pos || []; window.bankLinks = d.bankLinks || [];
     bankLines = d.bank || []; window.payInfoAll = d.payInfo || {}; tasks = d.tasks || []; taxCfg = d.taxcfg || {}; customDocs = d.docs || [];
     accountsX = d.accountsX || []; applyCustomAccounts(accountsX); meta.lock = d.lock || '';
     stamp(); cb(true);
@@ -145,7 +147,7 @@ function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
 
 // ── Үндсэн зураглал ──
 function render() {
-  DRILL = []; _debtCache = null;
+  DRILL = []; _debtCache = null; _jCache = null;
   var pend = staff.filter(function (s) { return s.status === 'Хүлээгдэж'; }).length;
   $('rail').innerHTML = railHtml(pend);
   $('subnav').innerHTML = state.view === 'tax' ? taxSubnav() : subnavHtml();
@@ -163,6 +165,7 @@ function render() {
 // ── Baaz маягийн цэс: зүүн цэнхэр зурвас + бүлэглэсэн дэд цэс ──
 var ICONS = {
   home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
+  mgmt: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',
   sales: '<path d="M3 4h2l2.4 11h11.2L21 7H6"/><circle cx="9" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/>',
   products: '<path d="M3 7.5L12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5l9 4.5 9-4.5M12 12v9"/>',
   finance: '<path d="M4 20V11M10 20V5M16 20v-6M2 20h20"/>',
@@ -185,20 +188,23 @@ function railHtml(pend) {
   var inCo = state.view === 'company';
   return '<div class="rail-logo">N</div>' +
     item(state.view === 'companies', "go('companies')", 'home', 'Компаниуд') +
-    (state.biz ? MODULES.map(function (m) { return item(inCo && state.module === m[0], "openModule('" + m[0] + "')", m[0], m[1]); }).join('') : '') +
+    (state.biz ? bizModules(state.biz).map(function (m) { return item(inCo && state.module === m[0], "openModule('" + m[0] + "')", m[0], m[1]); }).join('') : '') +
     '<div class="rail-sep"></div>' +
+    item(inCo && state.biz === 'mgmt', 'openMgmt()', 'mgmt', 'Удирдлага') +
     item(state.view === 'staff', "state.staffBiz=state.view==='company'?state.biz:state.staffBiz;go('staff')", 'people', 'Ажилчид', pend ? '<i class="dot">' + pend + '</i>' : '') +
     item(state.view === 'tax', 'openTax()', 'tax', 'Татвар, тайлан') +
     item(state.view === 'docs', "go('docs')", 'docs', 'Маягт') +
     item(state.view === 'cal', 'openCal()', 'cal', 'Календарь', reminders.some(function (r) { return r.status === 'Хүлээгдэж' && r.date <= todayStr(); }) ? '<i class="dot">!</i>' : '') +
     '<div class="rail-foot">' + item(false, "window.open('guide.html','_blank')", 'help', 'Гарын авлага') + item(false, 'refresh()', 'refresh', 'Шинэчлэх') + item(false, 'logout()', 'logout', 'Гарах') + '</div>';
 }
+function bizModules(biz) { return BUSINESSES[biz] && BUSINESSES[biz].finOnly ? MODULES.filter(function (m) { return m[0] === 'finance'; }) : MODULES; }
+function openMgmt() { state.view = 'company'; state.biz = 'mgmt'; state.module = 'finance'; render(); window.scrollTo(0, 0); }
 // Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
 var MENU = {
   sales: [['Борлуулалт', ['overview', 'orders', 'receipts']], ['Борлуулалтын тайлан', ['item', 'cat', 'staff', 'day', 'pay']], ['И-баримт', ['ebarimt']]],
-  products: [['Бараа материал', ['catalog', 'stock', 'in']], ['Тайлан', ['move', 'card']], ['Харилцагч', ['suppliers']]],
+  products: [['Бараа материал', ['catalog', 'stock', 'in', 'po']], ['Тайлан', ['move', 'card']], ['Харилцагч', ['suppliers']]],
   // Санхүү — цөөн, ойлгомжтой цэс. Нягтлангийн тайлан, тохиргоо нь тус бүр нэг хуудсанд цуглуулагдсан (finance.js HUBS)
-  finance: [['Үр дүн', ['simple', 'months', 'profit']], ['Мөнгө', ['money', 'bank', 'vouchers']], ['Өр, авлага', ['debts']], ['Цалин', ['payroll']],
+  finance: [['Үр дүн', ['simple', 'months', 'profit']], ['Мөнгө', ['money', 'bank', 'vouchers']], ['Өр, авлага', ['debts', 'loans']], ['Цалин', ['payroll']],
             ['Бусад', ['monthly', 'acct', 'setup']]],
 };
 function subLabel(mod, k) { var x = (SUBS[mod] || []).filter(function (s) { return s[0] === k; })[0]; return x ? x[1] : k; }
@@ -207,7 +213,7 @@ function subnavHtml() {
   if (state.view !== 'company') return '';
   var B = BUSINESSES[state.biz], mod = state.module;
   var head = '<div class="sub-co"><span class="mono" style="background:' + B.color + '">' + B.icon + '</span><div><b>' + esc(B.name) + '</b>' +
-    '<select onchange="go(\'company\',this.value)">' + KEYS.map(function (k) { return '<option value="' + k + '"' + (k === state.biz ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('') + '</select></div></div>' +
+    '<select onchange="go(\'company\',this.value)">' + ALL_KEYS.map(function (k) { return '<option value="' + k + '"' + (k === state.biz ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('') + '</select></div></div>' +
     '<div class="sub-title">' + MODULES.filter(function (m) { return m[0] === mod; })[0][1] + '</div>';
   if (!MENU[mod]) {
     var one = mod === 'staff' ? [['Ажилчид', 'Ажилчид, цалин']] : mod === 'docs' ? [['docs', 'Маягт, загвар']] : [['reports', 'Бүх тайлан']];
@@ -226,10 +232,11 @@ function subVisible(biz, k) {
   var B = BUSINESSES[biz] || {};
   if (k === 'orders') return !!B.orders;
   if (k === 'ebarimt') return B.ebarimt !== false;
+  if (B.finOnly && /^(profit|payroll|expenses)$/.test(k)) return false;   // Удирдлага: бараа, ажилчидгүй
   return true;
 }
 function moduleSwitch() {   // утсан дээр зүүн зурвас нуугдах тул модуль солих товчнууд
-  return '<div class="sub-mods">' + MODULES.map(function (m) {
+  return '<div class="sub-mods">' + bizModules(state.biz).map(function (m) {
     return '<button class="' + (state.module === m[0] ? 'on' : '') + '" onclick="openModule(\'' + m[0] + '\')">' + m[1] + '</button>';
   }).join('') + '<button onclick="go(\'companies\')">← Компаниуд</button></div>';
 }
@@ -271,17 +278,28 @@ function companiesView() {
       '<div class="co-meta"><span class="tag">Хэвийн</span>' + (E.merchantTin ? ' <span class="tag b">И-баримт</span>' : '') + '</div>' +
       '<button class="btn" style="background:' + B.color + '" onclick="go(\'company\',\'' + k + '\')">Нэвтрэх →</button>' +
       '</div>';
-  }).join('') + '</div>';
+  }).join('') + '</div>' + mgmtCard();
+}
+// Удирдлагын санхүү (зөвхөн удирдлага харна) — мөнгө, зээл, компаниудтай тооцоо
+function mgmtCard() {
+  var b = balances(buildJournal('mgmt', R()), todayStr()), cash = ACCOUNTS.filter(function (a) { return a[3] === 'cash'; }).reduce(function (s, a) { return s + (b[a[0]] || 0); }, 0);
+  var links = (window.bankLinks || []).filter(function (l) { return l.biz === 'mgmt'; }).length;
+  return '<h2 class="sec-title">Удирдлага</h2><div class="co-grid"><div class="co-card" style="border-top-color:#374151">' +
+    '<div class="co-head"><span class="mono" style="background:#374151">У</span><div><b>Удирдлагын санхүү</b><small>Удирдлагын өөрийн данс, зээл, компаниудтай тооцоо</small></div></div>' +
+    '<div class="co-stats"><div><span>Мөнгө</span><b>' + fmt(cash) + '</b></div><div><span>Авсан зээл</span><b>' + fmt(-(b['3501'] || 0)) + '</b></div>' +
+    '<div><span>Өгсөн зээл</span><b>' + fmt(b['1210'] || 0) + '</b></div><div><span>Холбосон данс</span><b>' + links + '</b></div></div>' +
+    '<button class="btn" style="background:#374151" onclick="openMgmt()">Нэвтрэх →</button></div></div>';
 }
 
 // ── Компанийн дотор: модуль → дэд цэс → хуудас ──
 function companyView() {
+  if (BUSINESSES[state.biz] && BUSINESSES[state.biz].finOnly && state.module !== 'finance') state.module = 'finance';
   var mod = state.module;
   if (MENU[mod] && !subVisible(state.biz, state.sub[mod])) state.sub[mod] = MENU[mod][0][1][0];   // компани солиход хамааралгүй хуудас үлдэхгүй
   if (mod === 'staff') return pageHead('Ажилчид', '') + staffView(state.biz);
   if (mod === 'reports') return pageHead('Бүх тайлан', '<button class="b-btn primary" onclick="exportAll()">Бүх тайланг Excel-ээр татах</button>', true) + reportsModule();
-  var sub = state.sub[mod], noPeriod = /^(accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary|months|payroll|debts|acct|setup)$/.test(sub);
-  var acts = /^(overview|dash|stock|close|bank|opening|lock|simple|monthly|glossary|acct|setup)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
+  var sub = state.sub[mod], noPeriod = /^(accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary|months|payroll|debts|acct|setup|loans|banklink|po)$/.test(sub);
+  var acts = /^(overview|dash|stock|close|bank|opening|lock|simple|monthly|glossary|acct|setup|loans|banklink|po)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
   if (sub === 'money') acts = '<button class="b-btn primary" onclick="openVoucher(\'ХО\')">+ Орлого (банк)</button><button class="b-btn primary" onclick="openVoucher(\'ХЗ\')">+ Зарлага (банк)</button>' +
     '<button class="b-btn" onclick="openVoucher(\'КО\')">+ Орлого (касс)</button><button class="b-btn" onclick="openVoucher(\'КЗ\')">+ Зарлага (касс)</button>' + acts;
   if (sub === 'debts') acts = '<button class="b-btn primary" onclick="openRem(null,{kind:state.dtab===\'r\'?\'Авлага нэхэх\':\'Өглөг төлөх\'})">+ Сануулга</button><button class="b-btn" onclick="openPartner()">+ Харилцагч</button>' +
@@ -292,7 +310,10 @@ function companyView() {
   if (sub === 'vouchers') acts = '<button class="b-btn primary" onclick="openVoucher(\'КО\')">+ Кассын орлого</button><button class="b-btn primary" onclick="openVoucher(\'КЗ\')">+ Кассын зарлага</button>' +
     '<button class="b-btn" onclick="openVoucher(\'ХО\')">+ Харилцахын орлого</button><button class="b-btn" onclick="openVoucher(\'ХЗ\')">+ Харилцахын зарлага</button>' + acts;
   if (sub === 'accounts') acts = '<button class="b-btn primary" onclick="addAccount()">+ Данс нэмэх</button>' + acts;
-  if (sub === 'bank') acts = '<button class="b-btn primary" onclick="$(\'bankFile\').click()">Хуулга оруулах (Excel)</button>';
+  if (sub === 'bank') acts = '<button class="b-btn primary" onclick="$(\'bankFile\').click()">Хуулга оруулах (Excel)</button><button class="b-btn" onclick="setSub(\'banklink\')">Данс холбох</button>';
+  if (sub === 'loans') acts = '<button class="b-btn primary" onclick="openLoan(null,\'Авсан\')">+ Авсан зээл</button><button class="b-btn primary" onclick="openLoan(null,\'Өгсөн\')">+ Өгсөн зээл</button>';
+  if (sub === 'banklink') acts = '<button class="b-btn primary" onclick="openBankLink()">+ Данс холбох</button>';
+  if (sub === 'po') acts = '<button class="b-btn primary" onclick="openPo()">+ Шинэ захиалга</button>';
   var xl = '<button class="b-btn" onclick="$(\'prodFile\').click()">Excel-ээр бүртгэх</button><a class="b-btn" href="templates/baraa_burtgel.xlsx" download>Загвар татах</a>';
   if (sub === 'catalog') acts = '<button class="b-btn primary" onclick="openProduct()">+ Шинэ бараа</button>' + xl + acts;
   if (sub === 'partners' || sub === 'suppliers') acts = '<button class="b-btn primary" onclick="openPartner()">+ Харилцагч</button>' + (sub === 'partners' ? '<button class="b-btn" onclick="openRem(null,{kind:\'Өглөг төлөх\'})">+ Сануулга</button>' : '') + acts;
@@ -761,9 +782,9 @@ function closeSheet(id) { $(id).classList.remove('show'); }
 var SUBS = {
   sales: [['overview', 'Тойм'], ['orders', 'Захиалга'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'], ['pay', 'Төлбөрийн хэлбэрээр'],
           ['receipts', 'Баримтын жагсаалт'], ['ebarimt', 'И-баримт тулгалт']],
-  products: [['catalog', 'Барааны бүртгэл, үнэ'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['card', 'Барааны карт'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
+  products: [['catalog', 'Барааны бүртгэл, үнэ'], ['po', 'Бараа захиалга (Хятад)'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['card', 'Барааны карт'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
   finance: [['simple', 'Үр дүн'], ['months', 'Сар бүрээр'], ['profit', 'Барааны ашиг'], ['money', 'Орлого, зарлага'], ['bank', 'Банкны хуулга'], ['vouchers', 'Кассын баримт'],
-            ['debts', 'Авлага, өглөг, зээл'], ['payroll', 'Цалин, НДШ'], ['monthly', 'Сар бүрийн ажил'], ['acct', 'Нягтлангийн тайлан'], ['setup', 'Тохиргоо'],
+            ['debts', 'Авлага, өглөг'], ['loans', 'Зээл (авсан, өгсөн)'], ['banklink', 'Банкны данс холбох'], ['payroll', 'Цалин, НДШ'], ['monthly', 'Сар бүрийн ажил'], ['acct', 'Нягтлангийн тайлан'], ['setup', 'Тохиргоо'],
             ['dash', 'Бүртгэлийн шалгалт'], ['entry', 'Журналын бичилт'], ['journal', 'Ерөнхий журнал'], ['trial', 'Гүйлгээ баланс'], ['ledger', 'Дансны хуулга'], ['gl', 'Ерөнхий дэвтэр'],
             ['cash', 'Касс, харилцах (өдрөөр)'], ['cashflow', 'Мөнгөн гүйлгээний тайлан'], ['expenses', 'Зарлага, касс хаалт'], ['partners', 'Авлага, өглөгийн товчоо'], ['aging_r', 'Авлагын насжилт'],
             ['aging_p', 'Өглөгийн насжилт'], ['pstmt', 'Харилцагчийн хуулга'], ['balance', 'Санхүүгийн байдал (баланс)'], ['pl', 'Орлогын тайлан'], ['equity', 'Өмчийн өөрчлөлт'],
@@ -866,6 +887,9 @@ function subBody() {
   if (mod === 'finance' && sub === 'opening') return openingView();
   if (mod === 'finance' && sub === 'lock') return lockView();
   if (mod === 'finance' && HUBS[sub]) return hubView(sub);
+  if (mod === 'finance' && sub === 'loans') return loansView();
+  if (mod === 'finance' && sub === 'banklink') return bankLinkView();
+  if (mod === 'products' && sub === 'po') return poView();
   var rep = makeReport(mod, sub), pre = '', post = '';
   if (mod === 'finance') { var rr = range(); addDrill(sub, rep, rr[0], rr[1]); }
   if (mod === 'finance' && (sub === 'months' || sub === 'payroll')) pre = yearBar();
@@ -1205,9 +1229,11 @@ var VOUCHER = {
 };
 // Гүйлгээний зорилго → харьцах данс. p = харилцагч заавал
 var V_PURPOSE = {
-  in: [['1201', 'Авлага төлөгдсөн (зээлээр авсан хүн төлсөн)', 1], ['5101', 'Бараа борлуулсан (дэлгүүрийн бүртгэлээс гадуур)'], ['4101', 'Эзэн мөнгө оруулсан'],
+  in: [['1201', 'Авлага төлөгдсөн (зээлээр авсан хүн төлсөн)', 1], ['5101', 'Бараа борлуулсан (дэлгүүрийн бүртгэлээс гадуур)'], ['4101', 'Хөрөнгө оруулалт (эзэн, хөрөнгө оруулагч)'],
+       ['1290', 'Компани хооронд (бусад компаниас ирсэн)', 1], ['5202', 'Хүүгийн орлого'], ['1208', 'Захирал хувийн зарлагаа буцааж төлсөн'],
        ['3501', 'Зээл авсан'], ['5201', 'Бусад орлого'], ['10003', 'Кассаас шилжүүлсэн'], ['1101', 'Харилцахаас бэлэн мөнгө авсан'], ['110106', 'Картын (пос) мөнгө орсон'], ['1503', 'Урьдчилгаа буцаан авсан', 1]],
-  out: [['3101', 'Нийлүүлэгчид өглөг төлсөн', 1], ['1503', 'Нийлүүлэгчид урьдчилгаа өгсөн', 1], ['7101', 'Цалин'], ['7102', 'НДШ'], ['7201', 'Түрээс'],
+  out: [['3101', 'Нийлүүлэгчид өглөг төлсөн', 1], ['1503', 'Нийлүүлэгчид урьдчилгаа өгсөн', 1], ['1290', 'Компани хооронд (бусад компани руу)', 1], ['1208', 'Захирлын хувийн зарлага'],
+        ['7101', 'Цалин'], ['7102', 'НДШ'], ['7201', 'Түрээс'], ['7401', 'Зээлийн хүү'],
         ['7202', 'Цахилгаан, ус, дулаан'], ['7203', 'Тээвэр'], ['7204', 'Сав, баглаа'], ['7205', 'Зар сурталчилгаа'], ['7206', 'Засвар'], ['7207', 'Хүргэлт'],
         ['3403', 'НДШ төлсөн (нийгмийн даатгалд)'], ['3404', 'ХХОАТ төлсөн (татварт)'], ['3301', 'Цалин олгосон (бодогдсон цалингаас)'],
         ['7301', 'Бусад зардал'], ['2001', 'Үндсэн хөрөнгө худалдаж авсан'], ['3501', 'Зээл төлсөн'], ['4101', 'Эзэн мөнгө авсан'],
@@ -1222,7 +1248,7 @@ function openVoucher(kind) {
   $('vcKind').innerHTML = Object.keys(VOUCHER).filter(function (k) { return VOUCHER[k].dir === V.dir; }).map(function (k) {
     return '<option value="' + k + '"' + (k === kind ? ' selected' : '') + '>' + (VOUCHER[k].acc === '10003' ? 'Касс (бэлэн)' : 'Харилцах (банк)') + '</option>'; }).join('');
   $('vcDate').value = todayStr(); $('vcAmount').value = ''; $('vcPartner').value = ''; $('vcDesc').value = '';
-  $('vcPartners').innerHTML = partnerOptions() + receivableOptions();
+  $('vcPartners').innerHTML = partnerOptions() + receivableOptions() + ALL_KEYS.filter(function (k) { return k !== state.biz; }).map(function (k) { return '<option value="' + esc(BUSINESSES[k].name) + '">Компани</option>'; }).join('');
   vcPurpose();
   openSheet('voucherSheet');
 }
