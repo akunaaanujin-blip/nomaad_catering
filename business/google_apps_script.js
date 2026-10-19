@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v4.3 (менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v4.4 (өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -64,6 +64,16 @@ const STOCK_KINDS = { 'Эхний үлдэгдэл': 1, 'Орлого': 1, 'Ши
 const STOCK_LOCS = { 'Дэлгүүр': 1, 'Агуулах': 1 };
 
 // ── Бичих ──
+// Өдрийн тойм и-мэйл: редактороос нэг удаа ажиллуулж «таны нэрээр и-мэйл илгээх» зөвшөөрлийг өгнө (зөвшөөрлийн цонхонд мөр бүрийг чагтлаад Continue).
+// Самбарт и-мэйлээ хадгалсан бол туршилтын тойм тэр хаяг руу явна.
+function digestTest() {
+  ScriptApp.requireScopes(ScriptApp.AuthMode.FULL, ['https://www.googleapis.com/auth/script.send_mail']);
+  const to = PropertiesService.getScriptProperties().getProperty('DIGEST_TO');
+  if (!to) { Logger.log('Зөвшөөрөл OK. Туршилтын и-мэйл явуулах бол самбарын Санхүү → Тохиргоо → Өдрийн тойм и-мэйлд хаягаа хадгалаад дахин ажиллуулна.'); return; }
+  const lines = digestText();
+  digestSend(to, 'NOMAAD — туршилтын тойм', (lines.length ? lines.join('\n') : 'Өнөөдөр анхаарах зүйл алга.') + '\n\n(Туршилт)');
+  Logger.log('Илгээлээ: ' + to);
+}
 // (Функцийн жагсаалтад эхэнд харагдахаар энд байрлуулсан.) Редактороос нэг удаа ажиллуулж «гадаад үйлчилгээнд холбогдох» зөвшөөрлийг өгнө (зөвшөөрлийн цонхонд тэр мөрийг чагтална)
 function tinTest() {
   ScriptApp.requireScopes(ScriptApp.AuthMode.FULL, ['https://www.googleapis.com/auth/script.external_request']);
@@ -369,10 +379,9 @@ function dailyDigest() {
   if (!lines.length) return 'empty';
   return digestSend(to, 'NOMAAD — өнөөдөр анхаарах ' + lines.length + ' зүйл', lines.join('\n') + '\n\nУдирдлагын самбар: https://akunaaanujin-blip.github.io/nomaad_catering/business/admin.html') ? 'sent' : 'nomail';
 }
-// И-мэйл илгээх нь шинэ зөвшөөрөл (script.send_mail) шаарддаг. Зөвшөөрөл өгөхөөс өмнө deploy хийвэл вэб апп бүхэлдээ зогсох тул
-// одоогоор илгээхгүй (самбар дээр урьдчилан харна). Эзэн зөвшөөрөхөд: DIGEST_MAIL = true, энд Mail-ийн sendEmail + редакторт ажиллуулах digestTest()-ийг нэмнэ.
-const DIGEST_MAIL = false;
-function digestSend(to, subj, body) { return false; }
+// И-мэйл илгээх (script.send_mail зөвшөөрөл — файлын эхэн дэх digestTest-ээр өгнө)
+const DIGEST_MAIL = true;
+function digestSend(to, subj, body) { MailApp.sendEmail(to, subj, body); return true; }
 function adminDigest(d) {
   const pr = PropertiesService.getScriptProperties();
   if (d.to !== undefined) { const to = String(d.to || '').trim(); if (to && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return { status: 'error', error: 'email' }; pr.setProperty('DIGEST_TO', to); }

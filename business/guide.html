@@ -259,7 +259,7 @@
     <li>Шинэ Google эрх (scope) хэрэгтэй код: эхлээд хадгалаад, редактороос функцийг ажиллуулж зөвшөөрөл өгсний <b>дараа</b> deploy (зөвшөөрлийн цонхонд мөр бүрийг чагтлаад «Continue»).</li>
     <li><b>Sheet:</b> Бүртгэл, Бараа, Ажилтан, Цалин, Үлдэгдэл, Журнал, Харилцагч, Захиалга, Сануулга, Банк, Даалгавар, Маягт, Зээл, Бараа захиалга, Үнийн түүх. Баганын толгойг солихгүй.</li>
     <li><b>Script Properties:</b> CLOSED, LOCK, TAXCFG, ACCOUNTS_X, BANKLINKS, PAYINFO_*, STAFF_SECRET, TIN_LOOKUP, KPI, ASSETS, MINSTOCK_*, DIGEST, DIGEST_TO.</li>
-    <li><b>Өдрийн тойм и-мэйл:</b> илгээх хэсэг (Mail) нь шинэ зөвшөөрөл шаарддаг тул одоогоор унтраалттай (<code>DIGEST_MAIL = false</code>). Идэвхжүүлэхдээ <code>digestSend</code>-д илгээх код, <code>digestTest</code> нэмж хадгалаад, редактороос digestTest-ийг ажиллуулж зөвшөөрөл өгсний дараа deploy.</li>
+    <li><b>Өдрийн тойм и-мэйл:</b> MailApp (script.send_mail) зөвшөөрөл 2026-10-19 өгсөн (v4.4). Туршилтын и-мэйл: редактороос <code>digestTest</code>. Өдөр бүр 08:00-д <code>dailyDigest</code> триггер (самбарын «Асаах»-аар үүснэ).</li>
     <li><b>Файлууд:</b> reports.js (данс, журнал, өртөг, тайлан), finance.js (санхүүгийн хуудас, задрал), loans.js (зээл, данс холбох), po.js (бараа захиалга), assets.js (үндсэн хөрөнгө), ops.js (ирц, үнийн түүх, өдрийн тойм), bank.js (хуулга), prodimport.js (Excel бүртгэл), tax.js, calendar.js (+ Cozy харилцагчид), orders.js (Cozy), staff.js + ebarimt.js (ажилтны хуудас).</li>
   </ul>
 </section>
