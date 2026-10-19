@@ -142,8 +142,7 @@ function bankView() {
       sel = '<select onchange="bankPick[\'' + jsq(l.id) + '\']=this.value;bankPickChange(\'' + jsq(l.id) + '\')" style="max-width:280px"><option value="">— Сонгох —</option>' + groups.map(function (g) {
         return '<optgroup label="' + esc(g) + '">' + byG[g].map(function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] === def ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</optgroup>';
       }).join('') + '</select>' +
-        '<input type="number" min="0" class="bk-int" id="bi_' + esc(l.id) + '" placeholder="Үүнээс хүү ₮" title="Төлөлтийн хэдэн төгрөг нь хүү вэ" value="' + (iv === null ? '' : iv) + '"' +
-        ' style="width:120px;margin-left:6px;' + (iv === null ? 'display:none' : '') + '">' +
+        '<small class="muted bk-int" id="bi_' + esc(l.id) + '" style="display:' + (iv === null ? 'none' : 'block') + '">' + esc(iv || '') + '</small>' +
         (s.kind === 'order' ? ' <small class="muted">санал: ' + (s.sure ? 'утас, дүн таарсан' : 'шалгаж сонгоно уу') + (s.fee > 0 ? ' · буухиагийн хөлс ' + fmt(s.fee) : '') + '</small>' : '') +
         (s.kind === 'debt' ? ' <small class="muted">санал: нэр таарсан — шалгаж сонгоно уу</small>' : '');
     }
@@ -208,7 +207,7 @@ function bankApply(ids, quiet) {
       return;
     }
     if (pick.indexOf('L:') === 0) {   // зээл: орсон / төлсөн (үндсэн + хүү)
-      var le = loanEntries(pick.slice(2), l.credit ? 'in' : 'out', acc, d, amt, Number(($('bi_' + id) || {}).value) || 0, l.desc.slice(0, 80));
+      var le = loanEntries(pick.slice(2), l.credit ? 'in' : 'out', acc, d, amt, null, l.desc.slice(0, 80));   // үндсэн / хүүг хуваариар автоматаар
       if (!le) return;
       entries = entries.concat(le.entries); updates.push({ id: id, status: 'Тулгасан', link: le.link });
       if (le.closes) loanCloseIds.push(pick.slice(2));

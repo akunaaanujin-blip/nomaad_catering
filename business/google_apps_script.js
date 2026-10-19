@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v3.9 (удирдлагын санхүү, зээлийн бүртгэл, бараа захиалга, банкны данс холбох)
+// NOMAAD Бизнесүүд — Google Apps Script v4.0 (зээлийн хуваарь, нийт төлөх дүн; удирдлагын санхүү, бараа захиалга, данс холбох)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -36,7 +36,8 @@ const BANK_HEAD = ['ID', 'Данс', 'Огноо', 'Орлого', 'Зарлаг
 const SHEET_TASK = 'Даалгавар';
 const TASK_HEAD = ['ID', 'Үүсгэсэн', 'biz', 'Ажилтан ID', 'Ажилтан', 'Даалгавар', 'Хугацаа', 'Төлөв', 'Хийсэн', 'Хийсэн огноо', 'Хэнээс', 'Тайлбар'];
 const SHEET_LOAN = 'Зээл';
-const LOAN_HEAD = ['ID', 'Огноо', 'biz', 'Төрөл', 'Харилцагч', 'Дүн', 'Хүү (сар %)', 'Дуусах огноо', 'Төлөх өдөр', 'Тэмдэглэл', 'Төлөв', 'Үүсгэсэн'];
+const LOAN_HEAD = ['ID', 'Огноо', 'biz', 'Төрөл', 'Харилцагч', 'Дүн', 'Хүү (сар %)', 'Дуусах огноо', 'Төлөх өдөр', 'Тэмдэглэл', 'Төлөв', 'Үүсгэсэн',
+  'Төлөх нийт (хүүтэй)', 'Төлөлтийн хуваарь'];   // хуваарь: [{d: огноо, p: үндсэн, i: хүү}]
 const SHEET_PO = 'Бараа захиалга';
 const PO_HEAD = ['ID', 'Дугаар', 'Огноо', 'biz', 'Нийлүүлэгч', 'Бараа', 'Валют', 'Нийт (валютаар)', 'Карго компани', 'Төлөв', 'Ирсэн огноо', 'Тэмдэглэл', 'Үүсгэсэн'];
 const SHEET_DOC = 'Маягт';
@@ -798,6 +799,7 @@ function loanSheet() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   let sh = ss.getSheetByName(SHEET_LOAN);
   if (!sh) { sh = ss.insertSheet(SHEET_LOAN); sh.appendRow(LOAN_HEAD); styleHead(sh, LOAN_HEAD.length, '#7C2D12'); sh.getRange('B:B').setNumberFormat('@'); sh.getRange('H:H').setNumberFormat('@'); }
+  else if (String(sh.getRange(1, LOAN_HEAD.length).getValue()) !== LOAN_HEAD[LOAN_HEAD.length - 1]) { sh.getRange(1, 1, 1, LOAN_HEAD.length).setValues([LOAN_HEAD]); styleHead(sh, LOAN_HEAD.length, '#7C2D12'); }
   return sh;
 }
 function loanRows() {
@@ -805,7 +807,8 @@ function loanRows() {
   if (last < 2) return [];
   return sh.getRange(2, 1, last - 1, LOAN_HEAD.length).getValues().map(function (v, i) {
     return { row: i + 2, id: String(v[0]), date: fmtDate(v[1], 'yyyy-MM-dd'), biz: String(v[2]), kind: String(v[3]), partner: String(v[4]), amount: Number(v[5]) || 0,
-             rate: Number(v[6]) || 0, due: v[7] ? fmtDate(v[7], 'yyyy-MM-dd') : '', payDay: Number(v[8]) || 0, note: String(v[9] || ''), status: String(v[10] || 'Идэвхтэй') };
+             rate: Number(v[6]) || 0, due: v[7] ? fmtDate(v[7], 'yyyy-MM-dd') : '', payDay: Number(v[8]) || 0, note: String(v[9] || ''), status: String(v[10] || 'Идэвхтэй'),
+             total: Number(v[12]) || 0, schedule: (function () { try { return JSON.parse(v[13] || '[]'); } catch (e) { return []; } })() };
   }).filter(function (x) { return x.id && x.status !== 'Устгасан'; });
 }
 function adminLoan(d) {
@@ -821,14 +824,17 @@ function adminLoan(d) {
       (x.due && !/^\d{4}-\d{2}-\d{2}$/.test(String(x.due)))) return { status: 'error', error: 'fields' };
   const vals = [x.date, x.biz, x.kind, String(x.partner).trim().slice(0, 80), Number(x.amount), Math.max(0, Number(x.rate) || 0), String(x.due || ''),
                 Math.min(31, Math.max(0, Math.round(Number(x.payDay) || 0))) || '', String(x.note || '').slice(0, 200)];
+  const sched = (Array.isArray(x.schedule) ? x.schedule : []).filter(function (r) { return /^\d{4}-\d{2}-\d{2}$/.test(String(r.d)); }).slice(0, 600)
+    .map(function (r) { return { d: String(r.d), p: Math.max(0, Number(r.p) || 0), i: Math.max(0, Number(r.i) || 0) }; });
+  const extra = [Math.max(0, Number(x.total) || 0) || '', sched.length ? JSON.stringify(sched).slice(0, 45000) : ''];
   if (d.updateId) {
     const cur = loanRows().filter(function (y) { return y.id === String(d.updateId); })[0];
     if (!cur) return { status: 'error', error: 'not_found' };
-    sh.getRange(cur.row, 2, 1, 9).setValues([vals]);
+    sh.getRange(cur.row, 2, 1, 9).setValues([vals]); sh.getRange(cur.row, 13, 1, 2).setValues([extra]);
     return { status: 'ok', id: cur.id };
   }
   const id = 'L' + Date.now();
-  sh.appendRow([id].concat(vals, ['Идэвхтэй', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')]));
+  sh.appendRow([id].concat(vals, ['Идэвхтэй', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')], extra));
   return { status: 'ok', id: id };
 }
 

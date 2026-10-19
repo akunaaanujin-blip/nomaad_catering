@@ -12,11 +12,32 @@ function calEvents() {
   Object.keys(ENTITIES).forEach(function (k) { taxDeadlines(k).forEach(function (x) { ev.push({ date: x.date, kind: 'tax', text: x.name + ' (' + ENTITIES[k].name + ')', k: k, go: x.go, key: x.key }); }); });
   (typeof tasks !== 'undefined' ? tasks : []).forEach(function (t) { if (t.due && t.status === 'Шинэ') ev.push({ date: t.due, kind: 'task', text: 'Даалгавар: ' + t.title + ' (' + t.staffName + ')' }); });
   staff.forEach(function (s) { if (s.status === 'Тийм' && s.contractEnd) ev.push({ date: s.contractEnd, kind: 'contract', text: 'Гэрээ дуусна: ' + s.name, id: s.id }); });
+  loanEvents().forEach(function (e) { ev.push(e); });
   return ev;
 }
-function remAlerts() {   // хугацаа хэтэрсэн эсвэл 3 хоногийн дотор болох сануулга
+// Зээлийн хуваарийн төлөлтүүд (бүх компани) — төлөгдсөн нь «хийгдсэн», төлөгдөөгүй өнгөрсөн нь хоцорсон
+function loanEvents() {
+  var EJ = {}, ev = [];
+  (window.loans || []).filter(function (L) { return L.status === 'Идэвхтэй' && (L.schedule || []).length; }).forEach(function (L) {
+    var E = EJ[L.biz] || (EJ[L.biz] = buildJournal(L.biz, R())), sc = loanSched(L, E), taken = L.kind === 'Авсан';
+    sc.rows.forEach(function (r) {
+      ev.push({ date: r.d, kind: 'loan', done: r.st === 'paid', loan: L, amt: r.st === 'paid' ? r.t : r.left,
+                text: (taken ? 'Зээл төлөх · ' : 'Зээлийн төлбөр авах · ') + L.partner + ' · ' + fmt(r.st === 'paid' ? r.t : r.left) + (r.st === 'part' ? ' (үлдсэн)' : '') });
+    });
+  });
+  return ev;
+}
+function loanAlerts() {   // хоцорсон эсвэл 3 хоногийн дотор төлөх зээл
   var t = todayStr(), lim = todayStr(new Date(Date.now() + 3 * 864e5));
-  return reminders.filter(function (r) { return r.status === 'Хүлээгдэж' && r.date <= lim; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(function (r) {
+  return loanEvents().filter(function (e) { return !e.done && e.date <= lim; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(function (e) {
+    var late = e.date < t;
+    return '<div class="alert' + (late || e.date === t ? ' bad' : '') + '"><div><b>' + esc(e.text) + '</b> — ' + e.date + (late ? ' (хоцорсон)' : e.date === t ? ' (өнөөдөр)' : '') +
+      ' · ' + esc(BUSINESSES[e.loan.biz].name) + '</div><div class="pg-act"><button class="b-btn primary" onclick="state.view=\'company\';state.biz=\'' + e.loan.biz + '\';state.module=\'finance\';setSub(\'loans\')">Зээл</button></div></div>';
+  }).join('');
+}
+function remAlerts() {   // хугацаа хэтэрсэн эсвэл 3 хоногийн дотор болох сануулга (+ зээлийн хуваарь)
+  var t = todayStr(), lim = todayStr(new Date(Date.now() + 3 * 864e5));
+  return loanAlerts() + reminders.filter(function (r) { return r.status === 'Хүлээгдэж' && r.date <= lim; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(function (r) {
     var late = r.date < t;
     return '<div class="alert' + (late || r.date === t ? ' bad' : '') + '"><div><b>' + esc(r.title) + '</b>' + (r.amount ? ' · ' + fmt(r.amount) : '') + (r.partner ? ' · ' + esc(r.partner) : '') +
       ' — ' + r.date + (late ? ' (хугацаа хэтэрсэн)' : r.date === t ? ' (өнөөдөр)' : '') + '</div><div class="pg-act"><button class="b-btn primary" onclick="remDone(\'' + r.id + '\')">Хийгдсэн</button>' +
@@ -43,11 +64,12 @@ function calView() {
     'Утсандаа дуудлага/мэдэгдэл авах бол «Google Календарь» товчоор нэмээрэй.</p>' +
     '<div class="card"><div class="bar-row"><button class="b-btn" onclick="calShift(-1)">‹</button><h2 style="margin:0">' + first.getFullYear() + ' оны ' + MN[first.getMonth()] + '</h2><button class="b-btn" onclick="calShift(1)">›</button></div>' +
     '<div class="cal-g">' + ['Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя', 'Ня'].map(function (w) { return '<div class="cal-h">' + w + '</div>'; }).join('') + cells + '</div>' +
-    '<div class="cal-legend"><i class="ev rem">Миний сануулга</i><i class="ev tax">Татвар, тайлан</i><i class="ev contract">Гэрээ дуусах</i><i class="ev task">Ажилчдын даалгавар</i></div></div>' +
+    '<div class="cal-legend"><i class="ev rem">Миний сануулга</i><i class="ev loan">Зээлийн төлөлт</i><i class="ev tax">Татвар, тайлан</i><i class="ev contract">Гэрээ дуусах</i><i class="ev task">Ажилчдын даалгавар</i></div></div>' +
     '<div class="card rep"><div class="rep-cap"><b>Ойрын 45 хоног</b></div><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Юу</th><th class="n">Дүн</th><th></th></tr>' +
     (up.length ? up.map(function (e) {
       var r = e.r, late = e.date < todayStr();
       var acts = e.kind === 'rem' ? '<button class="mini" onclick="editRem(\'' + r.id + '\')">Засах</button> <button class="mini" style="color:var(--green)" onclick="remDone(\'' + r.id + '\')">Хийгдсэн</button> <a class="mini" target="_blank" rel="noopener" href="' + gcalLink(r) + '">Google Календарь</a> <button class="mini" onclick="remCancel(\'' + r.id + '\')">Устгах</button>'
+        : e.kind === 'loan' ? '<button class="mini" style="color:var(--accent)" onclick="state.view=\'company\';state.biz=\'' + e.loan.biz + '\';state.module=\'finance\';setSub(\'loans\')">Зээл</button>'
         : e.kind === 'task' ? '<button class="mini" onclick="go(\'staff\')">Ажилчид</button>' : e.kind === 'tax' ? '<button class="mini" style="color:var(--accent)" onclick="openTax(\'' + e.k + '\',\'' + e.go + '\')">Бэлтгэх</button> <button class="mini" style="color:var(--green)" onclick="markTaxSent(\'' + e.k + '\',' + esc(JSON.stringify(e.key)) + ',\'' + e.date + '\')">Илгээсэн</button>' : '<button class="mini" onclick="openContract(\'' + e.id + '\')">Гэрээ</button>';
       return '<tr' + (late ? ' class="b"' : '') + '><td>' + e.date + (late ? ' <span class="tag r">хэтэрсэн</span>' : '') + '</td><td><i class="dot-k ' + e.kind + '"></i>' + esc(e.kind === 'rem' ? r.kind + ': ' + r.title : e.text) +
         (r && r.partner ? ' · ' + esc(r.partner) : '') + (r && r.repeat === 'Сар бүр' ? ' <span class="tag b">сар бүр</span>' : '') + '</td><td class="n">' + (r && r.amount ? fmt(r.amount) : '') + '</td><td class="n">' + acts + '</td></tr>';
