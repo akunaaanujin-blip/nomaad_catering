@@ -4,10 +4,12 @@
 var BIZ = BUSINESSES[BIZ_KEY];
 var LS_REC = 'nb_records';     // энэ төхөөрөмж дээрх бүх бичлэг (өнөөдрийн жагсаалт + туршилтын горим)
 var LS_QUEUE = 'nb_queue';     // интернэт тасарсан үед илгээгдээгүй бичлэг
-var LS_SESSION = 'nb_session_' + BIZ_KEY;   // { name, role, date } — тухайн өдөрт л хүчинтэй
+var LS_SESSION = 'nb_session_' + BIZ_KEY;   // { name, role, date } — зөвхөн энэ цонхонд (хаавал дахин код асууна)
+function sesLoad() { try { return JSON.parse(sessionStorage.getItem(LS_SESSION) || 'null'); } catch (e) { return null; } }
+function sesSave(v) { try { if (v) sessionStorage.setItem(LS_SESSION, JSON.stringify(v)); else sessionStorage.removeItem(LS_SESSION); } catch (e) {} try { localStorage.removeItem(LS_SESSION); } catch (e) {} }
 var LS_PROD = 'nb_products_' + BIZ_KEY;
 
-var session = load(LS_SESSION, null);
+var session = sesLoad();
 if (!session || session.date !== todayStr()) session = null;
 if (session && API_URL && !session.token) session = null;   // v2.6-аас өмнөх (токенгүй) нэвтрэлт — дахин нэвтэрнэ
 var staffName = session ? session.name : '';
@@ -73,7 +75,7 @@ function doLogin() {
 function loginOk(d) {
   save(LS_USER, $('userInput').value.trim().toLowerCase());
   session = { name: d.name, role: d.role, date: todayStr(), token: d.token || '' };
-  save(LS_SESSION, session);
+  sesSave(session);
   staffName = session.name;
   isManager = session.role === 'manager';
   $('loginMsg').textContent = '';
@@ -87,7 +89,7 @@ function loginFail(msg) {
 }
 function logout() {
   if (!confirm('Гарах уу? Дараагийн ажилтан өөрийн кодоор нэвтэрнэ.')) return;
-  save(LS_SESSION, null);
+  sesSave(null);
   location.reload();
 }
 function showMain() {
@@ -476,7 +478,7 @@ function flushQueue() {
         save(LS_QUEUE, load(LS_QUEUE, []).filter(function (r) { return !ok[r.id]; }));
       }
       if (data && data.error === 'auth') {   // токен дууссан / ажилтан идэвхгүй — бичлэгүүд хадгалагдсан хэвээр, нэвтэрмэгц илгээгдэнэ
-        if (session) { session = null; save(LS_SESSION, null); toast('Дахин нэвтэрнэ үү — илгээгдээгүй бичлэг хадгалагдсан байгаа'); $('main').style.display = 'none'; showLogin(); }
+        if (session) { session = null; sesSave(null); toast('Дахин нэвтэрнэ үү — илгээгдээгүй бичлэг хадгалагдсан байгаа'); $('main').style.display = 'none'; showLogin(); }
         return;
       }
       if (data && data.status === 'ok') {
