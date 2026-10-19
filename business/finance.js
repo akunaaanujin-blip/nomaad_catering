@@ -329,6 +329,48 @@ function debtSpec(k, p, td) {
   var T = DEBT_TABS[k];
   return { acc: k === 'l' ? [p.acc] : debtAccs(k), partner: p.np ? '(харилцагч заагаагүй)' : p.who, to: td, sign: T[3], bal: true, t: p.who + ' — ' + T[0].toLowerCase() };
 }
+// ═══ Компани хоорондын тооцоо — хоёр талаас тулгах ═══
+// A нь B руу явуулсан бол A-д «1290 · B» +, B-д «1290 · A» − болно. Хоёулаа бүртгэгдсэн бол нийлбэр нь 0.
+function icRecon() {
+  var J4 = {}, out = [];
+  ALL_KEYS.forEach(function (k) { J4[k] = buildJournal(k, R()); });
+  var lines = function (k, other) {   // k-ийн бүртгэл дэх other-той гүйлгээ (+ явуулсан, − ирсэн)
+    var nm = BUSINESSES[other].name;
+    return J4[k].filter(function (e) { return (e.dr === '1290' || e.cr === '1290') && (e.partner || '') === nm; })
+      .map(function (e) { return { date: e.date, v: e.dr === '1290' ? e.amount : -e.amount, desc: e.desc, used: false }; });
+  };
+  for (var i = 0; i < ALL_KEYS.length; i++) for (var j = i + 1; j < ALL_KEYS.length; j++) {
+    var a = ALL_KEYS[i], b = ALL_KEYS[j], la = lines(a, b), lb = lines(b, a);
+    if (!la.length && !lb.length) continue;
+    var va = la.reduce(function (s, x) { return s + x.v; }, 0), vb = lb.reduce(function (s, x) { return s + x.v; }, 0);
+    // Гүйлгээ бүрийг нөгөө талын эсрэг дүнтэй (±5 хоног) гүйлгээтэй тааруулна
+    la.forEach(function (x) {
+      var m = lb.filter(function (y) { return !y.used && Math.abs(x.v + y.v) < 1 && Math.abs((new Date(x.date) - new Date(y.date)) / 864e5) <= 5; })[0];
+      if (m) { m.used = true; x.used = true; }
+    });
+    out.push({ a: a, b: b, va: r0(va), vb: r0(vb), diff: r0(va + vb),
+      miss: la.filter(function (x) { return !x.used; }).map(function (x) { return Object.assign({ biz: a, other: b }, x); })
+        .concat(lb.filter(function (x) { return !x.used; }).map(function (x) { return Object.assign({ biz: b, other: a }, x); })) });
+  }
+  return out;
+}
+function icReconCard() {
+  var rs = icRecon().filter(function (x) { return x.a === state.biz || x.b === state.biz; });
+  if (!rs.length) return '';
+  var miss = [];
+  rs.forEach(function (x) { x.miss.forEach(function (m) { miss.push(m); }); });
+  return '<div class="card rep"><div class="rep-cap"><b>Хоёр талаас тулгах</b><span>Нэг компанид бүртгэгдсэн шилжүүлэг нөгөөд нь бүртгэгдсэн эсэх</span></div><div class="scroll"><table class="rep-t">' +
+    '<tr><th>Компани</th><th class="n">Тэдний бүртгэлээр</th><th>Компани</th><th class="n">Тэдний бүртгэлээр</th><th class="n">Зөрүү</th><th></th></tr>' +
+    rs.map(function (x) {
+      return '<tr><td>' + esc(BUSINESSES[x.a].name) + '</td><td class="n">' + mny(x.va) + '</td><td>' + esc(BUSINESSES[x.b].name) + '</td><td class="n">' + mny(x.vb) + '</td>' +
+        '<td class="n' + (Math.abs(x.diff) >= 1 ? ' neg' : '') + '">' + mny(x.diff) + '</td><td>' + (Math.abs(x.diff) < 1 ? '<span class="tag">Таарсан</span>' : '<span class="tag r">Зөрүүтэй</span>') + '</td></tr>';
+    }).join('') + '</table></div>' +
+    (miss.length ? '<p class="rep-note bad">Нөгөө талд нь бүртгэгдээгүй гүйлгээ (тэр компанийн банкны хуулгад «Компани хооронд» гэж тулгана):</p><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Хаана бүртгэгдсэн</th><th>Хэнтэй</th><th class="n">Дүн</th><th>Утга</th><th></th></tr>' +
+      miss.sort(function (p, q) { return p.date < q.date ? 1 : -1; }).map(function (m) {
+        return '<tr><td>' + esc(m.date) + '</td><td>' + esc(BUSINESSES[m.biz].name) + '</td><td>' + esc(BUSINESSES[m.other].name) + '</td><td class="n">' + (m.v > 0 ? 'явуулсан ' : 'ирсэн ') + mny(Math.abs(m.v)) + '</td>' +
+          '<td style="white-space:normal">' + esc(m.desc) + '</td><td><button class="mini" onclick="state.biz=\'' + m.other + '\';state.module=\'finance\';setSub(\'bank\')">' + esc(BUSINESSES[m.other].name) + '-ийн банк</button></td></tr>';
+      }).join('') + '</table></div>' : '<p class="rep-note ok">Бүх шилжүүлэг хоёр талдаа бүртгэгдсэн.</p>') + '</div>';
+}
 function debtsPre(E) {
   var k = state.dtab || 'r', td = todayStr(), b = balances(E, td);
   var tabs = '<div class="tabs" style="margin-bottom:10px">' + Object.keys(DEBT_TABS).map(function (x) {
@@ -347,7 +389,7 @@ function debtsPre(E) {
         (x.left < 0 ? ' <small class="muted">' + (k === 'c' ? 'тэднээс ирсэн' : 'илүү төлсөн') + '</small>' : '') + '</td><td class="n">' + (x.old ? x.old + ' хоног' : '') + '</td></tr>'; }).join('') +
       '<tr class="tot"><td>Нийт</td><td class="n">' + dl({ acc: accs, to: td, sign: T[3], grp: k === 'l' ? 'acc' : 'partner', t: T[0] }, mny(tot)) + '</td><td></td></tr>' : '<tr><td class="muted" colspan="3">' + T[0] + ' алга</td></tr>') + '</table></div>';
   var chk = '<label style="display:inline-flex;gap:6px;align-items:center;font-size:13px;margin:4px 0 8px"><input type="checkbox"' + (state.dclosed ? ' checked' : '') + ' onchange="state.dclosed=this.checked;render()"> Хаагдсаныг (бүрэн төлөгдсөн) харуулах</label>';
-  return tabs + card + chk;
+  return tabs + card + (k === 'c' ? icReconCard() : '') + chk;
 }
 
 // ═══════════ ЦАЛИН, НДШ (хуучин «НДШ Цалин», «ХХОАТ/НДШ тайлан») ═══════════

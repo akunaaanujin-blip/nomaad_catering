@@ -96,6 +96,25 @@ function monthlyView() {
   if (tracked) { var lc = moves.filter(function (m) { return m.biz === biz && m.kind === 'Тооллого'; }).map(function (m) { return String(m.date).slice(0, 10); }).sort().pop() || '';
     items.push([lc >= lm + '-01', 'Барааны тооллого хийх', lc ? 'Сүүлийн тооллого: ' + lc : 'Тооллого хийгээгүй', "openModule('products');setSub('stock')"]); }
   var unpaidOld = repAging(J(), todayStr(), '1201').rows.filter(function (r) { return r.b60 + r.b90 > 0; });
+  // Зээл: хоцорсон / дараагийн төлөлт
+  var lns = (typeof loanList === 'function' ? loanList(biz) : []).filter(function (L) { return L.status === 'Идэвхтэй'; });
+  if (lns.length) {
+    var lateL = [], nextL = null;
+    lns.forEach(function (L) { var sc = loanSched(L); if (sc.late.n) lateL.push(L.partner + ' ' + fmt(sc.late.amt) + ' (' + sc.late.days + ' хоног)'); if (sc.next && (!nextL || sc.next.d < nextL.d)) nextL = { d: sc.next.d, amt: sc.next.amt, p: L.partner }; });
+    items.push([!lateL.length, 'Зээлийн төлөлтөө хийх', lateL.length ? 'Хоцорсон: ' + lateL.join(', ') : nextL ? 'Дараагийн: ' + nextL.d + ' · ' + nextL.p + ' · ' + fmt(nextL.amt) : 'Хуваарьт төлөлт алга', "setSub('loans')"]);
+  }
+  // Бараа захиалга: ирээгүй захиалга
+  var opn = (window.pos || []).filter(function (P) { return P.biz === biz && P.status === 'Захиалсан'; });
+  if (opn.length) {
+    var oldest = opn.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; })[0], od = Math.round((new Date(todayStr()) - new Date(oldest.date)) / 864e5);
+    items.push([od < 45, 'Бараа захиалгаа шалгах', opn.length + ' захиалга ирээгүй · хамгийн удсан ' + oldest.no + ' (' + od + ' хоног)', "openModule('products');setSub('po')"]);
+  }
+  // Компани хоорондын тооцоо хоёр талаараа таарч байгаа эсэх
+  var icr = icRecon().filter(function (x) { return x.a === biz || x.b === biz; });
+  if (icr.length) {
+    var bad = icr.filter(function (x) { return Math.abs(x.diff) >= 1; });
+    items.push([!bad.length, 'Компани хоорондын тооцоог тулгах', bad.length ? bad.map(function (x) { return BUSINESSES[x.a === biz ? x.b : x.a].name + ' зөрүү ' + fmt(Math.abs(x.diff)); }).join(', ') : 'Хоёр талаараа таарч байна', "state.dtab='c';setSub('debts')"]);
+  }
   items.push([!unpaidOld.length, 'Удсан авлагаа нэхэх', unpaidOld.length ? unpaidOld.length + ' хүний өр 60 хоногоос удсан' : 'Удсан авлага алга', "setSub('aging_r')"]);
   items.push([!!meta.lock && meta.lock >= lastDayOf(lm), lm + ' сарыг шалгаад түгжих', meta.lock ? 'Одоо ' + meta.lock + ' хүртэл түгжигдсэн' : 'Түгжээгүй', "setSub('lock')"]);
   items.push([false, 'Сарын тайлангаа Excel-ээр хадгалах', 'Бүх тайлан → Excel татах', "openModule('reports')"]);

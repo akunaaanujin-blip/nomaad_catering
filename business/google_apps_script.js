@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v4.1 (ТТД/регистр → байгууллагын нэр; зээлийн хуваарь; удирдлагын санхүү, бараа захиалга)
+// NOMAAD Бизнесүүд — Google Apps Script v4.2 (И-баримт нөхөж олгох record_receipt; ТТД лавлагаа; зээлийн хуваарь)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -87,6 +87,7 @@ function doPost(e) {
     if (data.type === 'admin_task') return json(isAdmin(data) ? adminTask(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_setting') return json(isAdmin(data) ? adminSetting(data) : { status: 'error', error: 'auth' });
     if (data.type === 'tasks') return json(staffTasks(data));
+    if (data.type === 'record_receipt') return json(recordReceipt(data));
     if (data.type === 'task_done') return json(staffTaskDone(data));
     if (data.type === 'admin_reminder') return json(isAdmin(data) ? adminReminder(data) : { status: 'error', error: 'auth' });
     if (data.type === 'order_save') return json(orderSave(data));
@@ -222,6 +223,22 @@ function doGet(e) {
     return ContentService.createTextOutput(p.callback + '(' + body + ')').setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
   return ContentService.createTextOutput(body).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── И-баримтыг дараа нь (нөхөж) гаргасан борлуулалтын тайлбарт ДДТД бичнэ (ажилтны токеноор, зөвхөн өөрийн дэлгүүрийн мөр) ──
+function recordReceipt(d) {
+  const who = checkStaff(d.token);
+  if (!who) return { status: 'error', error: 'auth' };
+  const ids = (Array.isArray(d.ids) ? d.ids : []).map(String).slice(0, 200), ddtd = String(d.ddtd || '');
+  if (!ids.length || !/^\d{15,40}$/.test(ddtd)) return { status: 'error', error: 'fields' };
+  const sh = logSheet(), last = sh.getLastRow();
+  if (last < 2) return { status: 'error', error: 'not_found' };
+  const v = sh.getRange(2, 1, last - 1, 16).getValues(); let n = 0;
+  for (let i = 0; i < v.length; i++) {
+    if (ids.indexOf(String(v[i][0])) < 0 || String(v[i][15]) !== who.biz) continue;
+    sh.getRange(i + 2, 15).setValue(('ДДТД ' + ddtd + ' · ' + String(d.note || 'нөхөж олгосон')).slice(0, 200)); n++;
+  }
+  return { status: 'ok', updated: n };
 }
 
 // ── ТТД / регистр → байгууллагын нэр ──

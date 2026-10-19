@@ -247,3 +247,88 @@ function ebCheckInfo() {
       el.style.display = 'block';
     });
 }
+
+// ═══════════ БАРИМТЫН ТҮҮХ (#11) ═══════════
+// Сүүлийн 45 хоногийн баримтууд: өмнөх өдрийн баримтыг ч буцаана, засварлана (шинэ баримт гарч хуучин нь «inactiveId»-аар хүчингүй болно),
+// И-баримт гараагүй борлуулалтад дараа нь баримт гаргана (өмнөх сарынх бол «reportMonth»).
+function ebHistGroups(days) {
+  var cut = todayStr(new Date(Date.now() - (days || 45) * 864e5)), g = {}, order = [];
+  load(LS_REC, []).filter(function (r) { return r.biz === BIZ_KEY && r.type === 'sale' && r.date >= cut && r.amount > 0 && !/ \(буцаалт\)$/.test(r.item); }).forEach(function (r) {
+    var k = r.ddtd ? 'D' + r.ddtd : r.bill ? 'B' + r.bill : 'R' + r.id;
+    if (!g[k]) { g[k] = { key: k, ddtd: r.ddtd || '', ebDate: r.ebDate || '', date: r.date, time: r.time, pay: r.pay, lines: [], total: 0, returned: false, buyerTin: r.buyerTin || '', buyerName: r.buyerName || '' }; order.push(k); }
+    g[k].lines.push(r); g[k].total += r.amount; if (r.returned) g[k].returned = true;
+  });
+  return order.map(function (k) { return g[k]; }).reverse();
+}
+function ensureHistSheet() {
+  if ($('histSheet')) return;
+  document.body.insertAdjacentHTML('beforeend', '<div class="sheet" id="histSheet" onclick="if(event.target===this)closeSheet(\'histSheet\')"><div class="panel">' +
+    '<h2>Баримтын түүх</h2><p class="muted" style="font-size:12.5px">Сүүлийн 45 хоног. Өмнөх өдрийн баримтыг ч буцааж, засаж болно. И-баримт гараагүй борлуулалтад дараа нь баримт гаргана.</p>' +
+    '<ul class="list" id="histList"></ul><button class="btn ghost" onclick="closeSheet(\'histSheet\')">Хаах</button></div></div>');
+}
+function openEbHist() {
+  ensureHistSheet();
+  var on = ebEnabled(), list = ebHistGroups(45), lm = todayStr().slice(0, 7);
+  $('histList').innerHTML = list.length ? list.map(function (g) {
+    var items = g.lines.map(function (l) { return esc(l.item) + (l.qty !== 1 ? ' × ' + l.qty : ''); }).join(', ');
+    var old = g.date.slice(0, 7) < lm, tooOld = g.date < todayStr(new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1));
+    var acts = '';
+    if (g.ddtd && !g.returned && on) acts = '<button class="mini" onclick="ebReturn(\'' + g.lines[0].id + '\');closeSheet(\'histSheet\')">Буцаах</button>' +
+      '<button class="mini" style="color:var(--accent)" onclick="ebEdit(\'' + g.key + '\')">Засах</button>';
+    if (!g.ddtd && !g.returned && on) acts = tooOld ? '<small class="muted">өмнөх сараас хуучин — баримт гаргах боломжгүй</small>' :
+      '<button class="mini" style="color:var(--accent)" onclick="ebIssueLate(\'' + g.key + '\')">Баримт гаргах' + (old ? ' (өмнөх сар)' : '') + '</button>';
+    return '<li><span>' + items + '<small>' + esc(g.date) + ' ' + esc(g.time || '') + ' · ' + esc(g.pay || '') + (g.buyerName ? ' · ' + esc(g.buyerName) : '') +
+      (g.returned ? ' · <b>буцаагдсан</b>' : g.ddtd ? ' · баримттай' : ' · <b style="color:var(--red)">баримтгүй</b>') + '</small>' +
+      (g.ddtd ? '<small class="ddtd">ДДТД ' + esc(g.ddtd) + '</small>' : '') + (acts ? '<span style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">' + acts + '</span>' : '') +
+      '</span><span class="amt g">' + fmt(g.total) + '</span></li>';
+  }).join('') : '<li class="muted">Сүүлийн 45 хоногт борлуулалт алга</li>';
+  if (!on) $('histList').insertAdjacentHTML('afterbegin', '<li class="muted">И-баримт энэ компьютер дээр асаалттай биш — буцаах, засах, баримт гаргах боломжгүй.</li>');
+  openSheet('histSheet');
+}
+// Засах: тухайн баримтын бараагаар сагс нээгдэнэ; шинэ баримт гарахад хуучин нь хүчингүй (inactiveId)
+function ebEdit(key) {
+  var g = ebHistGroups(45).filter(function (x) { return x.key === key; })[0]; if (!g) return;
+  closeSheet('histSheet');
+  openSale();
+  sale.edit = { ddtd: g.ddtd, ebDate: g.ebDate, lines: g.lines };
+  sale.cart = g.lines.map(function (l) { return { name: l.item, unit: l.unit, price: l.price, listPrice: l.price, qty: l.qty, cls: l.classificationCode || '' }; });
+  setPay(g.pay || 'Бэлэн');
+  if (g.buyerTin) { $('saleTin').value = g.buyerTin; saleTinInput(); if ($('saleBuyer')) $('saleBuyer').value = g.buyerName || ''; }
+  var note = $('saleEditNote');
+  if (!note) { $('saleSheet').querySelector('.panel h2').insertAdjacentHTML('afterend', '<p id="saleEditNote" class="pending" style="display:block"></p>'); note = $('saleEditNote'); }
+  note.style.display = 'block';
+  note.textContent = 'Засвар: ' + g.date + '-ний баримт (ДДТД ' + g.ddtd + '). Шинэ баримт гарахад хуучин нь хүчингүй болно.';
+  renderChips(); renderCart();
+}
+// Засварын дараа: хуучин мөрүүдийг буцаалт болгож, шинэ мөрүүдийг борлуулалт болгоно
+function ebEditDone(edit) {
+  var all = load(LS_REC, []);
+  all.forEach(function (y) { if (y.ddtd === edit.ddtd) y.returned = true; });
+  save(LS_REC, all);
+  var neg = edit.lines.map(function (y) {
+    return { type: 'sale', item: y.item + ' (буцаалт)', qty: -y.qty, unit: y.unit, price: y.price, amount: -y.amount, pay: y.pay, customer: y.customer || '',
+             bill: y.bill ? y.bill + '-e' : '', note: 'Засвар · хуучин ДДТД ' + edit.ddtd };
+  });
+  addRecords(neg);
+  neg.forEach(function (r) { stockTake(String(r.item).replace(/ \(буцаалт\)$/, ''), r.qty); });   // үлдэгдэлд буцаана
+}
+// Нөхөж олгох: баримт гараагүй борлуулалтад баримт гаргана; өмнөх сарынх бол reportMonth
+function ebIssueLate(key) {
+  var g = ebHistGroups(45).filter(function (x) { return x.key === key; })[0]; if (!g) return;
+  var lm = todayStr().slice(0, 7), rm = g.date.slice(0, 7) < lm ? g.date.slice(0, 7) : '';
+  if (!confirm(g.date + '-ний борлуулалтад (' + fmt(g.total) + ') И-баримт гаргах уу?' + (rm ? '\n\nӨмнөх сарын (' + rm + ') баримт болж бүртгэгдэнэ.' : ''))) return;
+  var req = ebBuildRequest(g.lines.map(function (l) { return { item: l.item, qty: l.qty, unit: l.unit, price: l.price, amount: l.amount, pay: l.pay, classificationCode: l.classificationCode }; }),
+    g.buyerTin ? { tin: g.buyerTin } : null);
+  if (rm) req.reportMonth = rm;
+  ebSend(req, function (err, res) {
+    if (err) { alert('И-баримт гарсангүй:\n' + err.message); return; }
+    var ids = g.lines.map(function (l) { return l.id; }), all = load(LS_REC, []);
+    all.forEach(function (y) { if (ids.indexOf(y.id) >= 0) { y.ddtd = res.id; y.ebDate = res.date; y.note = 'ДДТД ' + res.id + ' · нөхөж олгосон' + (rm ? ' (' + rm + ')' : ''); } });
+    save(LS_REC, all);
+    if (API_URL) fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ type: 'record_receipt', token: session ? session.token : '', ids: ids, ddtd: res.id, note: rm ? 'нөхөж олгосон (' + rm + ')' : 'нөхөж олгосон' }) }).catch(function () {});
+    closeSheet('histSheet');
+    ebShowReceipt(res, g.lines);
+    renderToday();
+  });
+}

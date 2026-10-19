@@ -187,7 +187,8 @@ function saleTinInput() {
 
 // ── Борлуулалт (сагс: олон бараа → нэг баримт) ──
 function openSale() {
-  sale = { cart: [], pay: 'Бэлэн', cat: '' };
+  sale = { cart: [], pay: 'Бэлэн', cat: '', edit: null };
+  if ($('saleEditNote')) $('saleEditNote').style.display = 'none';
   $('saleSearch').value = '';
   $('saleSearchWrap').style.display = products.length > 12 ? 'block' : 'none';
   renderCats();
@@ -307,7 +308,10 @@ function submitSale() {
     if (!(Number(l.qty) > 0)) { toast(l.name + ' — тоо хэмжээ оруулна уу'); return; }
     if (!(Number(l.price) > 0)) { toast(l.name + ' — үнэ оруулна уу'); return; }
   }
-  var short = stockShort(sale.cart.map(function (l) { return { item: l.name, qty: l.qty }; }));
+  var short = stockShort(sale.cart.map(function (l) {   // засвар бол хуучин баримтын тоо үлдэгдэлд буцна
+    var back = sale.edit ? sale.edit.lines.filter(function (x) { return x.item === l.name; }).reduce(function (a, x) { return a + Number(x.qty); }, 0) : 0;
+    return { item: l.name, qty: Number(l.qty) - back };
+  }));
   if (short.length) { alert('Үлдэгдэл хүрэлцэхгүй — зарах боломжгүй:\n\n' + short.join('\n') + '\n\nУдирдлагаар орлого бүртгүүлсний дараа дахин оролдоно уу.'); loadStock(); return; }
   var cust = $('saleCust').value.trim();
   if (sale.pay === 'Зээлээр' && cust.length < 2) { toast('Зээлээр авсан хүн / байгууллагын нэрийг бичнэ үү'); $('saleCust').focus(); return; }
@@ -321,7 +325,7 @@ function submitSale() {
     if (l.cls) r.classificationCode = l.cls;   // БҮНА код (И-баримтад)
     return r;
   });
-  if (!ebEnabled()) { finishSale(lines); return; }
+  if (!ebEnabled()) { if (sale.edit) { toast('Засвар хийхэд И-баримт асаалттай байх ёстой'); return; } finishSale(lines); return; }
   var noCls = lines.filter(function (r) { return !r.classificationCode && !ebConfig().classificationCode; });
   if (noCls.length) {
     toast('И-баримтад ангилал хэрэгтэй: «' + noCls[0].item + '» — жагсаалтаас сонгоно уу');
@@ -340,9 +344,12 @@ function submitSale() {
   var btn = $('saleSubmit');
   btn.disabled = true;
   btn.textContent = 'Баримт гаргаж байна...';
-  ebSend(ebBuildRequest(lines, { tin: tin }), function (err, res) {
+  var req = ebBuildRequest(lines, { tin: tin }), edit = sale.edit;
+  if (edit) req.inactiveId = edit.ddtd;   // засвар: хуучин баримт хүчингүй болно
+  ebSend(req, function (err, res) {
     btn.disabled = false;
     btn.textContent = 'Төлбөр авах';
+    if (err && edit) { alert('Засварын баримт гарсангүй:\n' + err.message + '\n\nХуучин баримт хэвээр байна.'); return; }
     if (err) {
       if (confirm('И-баримт гарсангүй:\n' + err.message + '\n\nБаримтгүйгээр борлуулалтаа хадгалах уу?')) {
         lines.forEach(function (r) { r.note = 'И-баримт гараагүй'; });
@@ -354,8 +361,9 @@ function submitSale() {
       r.ddtd = res.id;
       r.ebDate = res.date;
       if (tin) { r.buyerTin = tin; if (buyer) r.buyerName = buyer; }
-      r.note = 'ДДТД ' + res.id + (tin ? ' · ТТД ' + tin + (buyer ? ' · ' + buyer : '') : '');
+      r.note = 'ДДТД ' + res.id + (tin ? ' · ТТД ' + tin + (buyer ? ' · ' + buyer : '') : '') + (edit ? ' · засвар (хуучин ' + edit.ddtd + ')' : '');
     });
+    if (edit) ebEditDone(edit);
     finishSale(lines);
     ebShowReceipt(res, lines);
   });
@@ -515,6 +523,9 @@ function renderToday() {
   $('sumExp').textContent = fmt(t.exp);
   $('sumNet').textContent = fmt(t.sales - t.exp);
   var recs = todayRecords().slice().reverse();
+  var hb = $('histBtn');
+  if (!hb && $('todayList')) { $('todayList').insertAdjacentHTML('afterend', '<button class="btn ghost" id="histBtn" style="margin-top:8px" onclick="openEbHist()">Баримтын түүх (өмнөх өдрүүд)</button>'); hb = $('histBtn'); }
+  if (hb) hb.style.display = ebEnabled() || load(LS_REC, []).some(function (r) { return r.ddtd; }) ? '' : 'none';
   if (!recs.length) {
     $('todayList').innerHTML = '<li class="muted">Өнөөдөр бичлэг алга байна</li>';
     return;
