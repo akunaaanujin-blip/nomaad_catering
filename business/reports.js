@@ -454,15 +454,6 @@ function repStockMove(R, biz, from, to) {
   return { title: 'Бараа материалын хөдөлгөөний тайлан', cols: [c('item', 'Бараа'), m('o', 'Эхний'), m('inq', 'Орлого'), m('outq', 'Зарлага'), m('cl', 'Эцсийн'),
     m('cost', 'Нэгж өртөг'), m('val', 'Эцсийн өртөг')], rows: rows, total: { item: 'Нийт', val: sum(rows, 'val') } };
 }
-function repItemCard(R, biz, item, from, to) {
-  var ev = [], since = costEngine(biz, R).since;
-  R.moves.forEach(function (m) { if (m.biz === biz && m.item === item) ev.push({ date: String(m.date).slice(0, 16), doc: m.kind + (m.loc ? ' · ' + m.loc : ''), q: m.qty, note: m.note || m.partner || '' }); });
-  R.records.forEach(function (x) { if (x.biz === biz && x.type === 'sale' && since && x.date >= since && String(x.item).replace(/ \(буцаалт\)$/, '') === item) ev.push({ date: x.date + ' ' + x.time, doc: x.amount < 0 ? 'Борлуулалтын буцаалт' : 'Борлуулалт', q: -(Number(x.qty) || 0), note: x.staff || '' }); });
-  ev.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
-  var bal = 0, rows = [];
-  ev.forEach(function (e) { bal += e.q; if (e.date.slice(0, 10) >= from && e.date.slice(0, 10) <= to) rows.push({ date: e.date, doc: e.doc, inq: e.q > 0 ? r0(e.q) : '', outq: e.q < 0 ? r0(-e.q) : '', bal: r0(bal), note: e.note }); });
-  return { title: 'Барааны карт · ' + item, cols: [c('date', 'Огноо'), c('doc', 'Гүйлгээ'), m('inq', 'Орлого'), m('outq', 'Зарлага'), m('bal', 'Үлдэгдэл'), c('note', 'Тайлбар')], rows: rows };
-}
 function repReceiptsIn(R, biz, from, to) {
   var rows = R.moves.filter(function (m) { var d = String(m.date).slice(0, 10); return m.biz === biz && (m.kind === 'Орлого' || m.kind === 'Эхний үлдэгдэл') && d >= from && d <= to; })
     .map(function (m) { var sg = { CNY: '¥', USD: '$', MNT: '₮' }[m.cur] || '';

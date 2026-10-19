@@ -20,7 +20,7 @@ var records = [], staff = [], salary = [], stockData = {}, moves = [], journal =
 var BASE_PRODUCTS = {};
 Object.keys(BUSINESSES).forEach(function (k) { BASE_PRODUCTS[k] = BUSINESSES[k].products.slice(); });
 var state = { view: 'companies', biz: '', module: 'sales', period: 'month', staffBiz: 'all', month: todayStr().slice(0, 7), q: '', stockF: 'in', showMoves: false,
-  sub: { sales: 'overview', products: 'stock', finance: 'simple' }, from: todayStr().slice(0, 8) + '01', to: todayStr(), acc: '10003', item: '' };
+  sub: { sales: 'overview', products: 'stock', finance: 'simple' }, from: todayStr().slice(0, 8) + '01', to: todayStr(), acc: '10003' };
 var editId = '', salId = '', salKind = 'Урьдчилгаа';
 var NAV = { idx: 0, key: '', restoring: false };   // дэлгэцийн түүх (← Буцах)
 
@@ -266,7 +266,7 @@ function openMgmt() { state.view = 'company'; state.biz = 'mgmt'; state.module =
 // Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
 var MENU = {
   sales: [['Борлуулалт', ['overview', 'orders', 'customers', 'receipts']], ['Борлуулалтын тайлан', ['item', 'cat', 'staff', 'day', 'pay']], ['И-баримт', ['ebarimt']]],
-  products: [['Бараа материал', ['catalog', 'stock', 'in', 'po']], ['Тайлан', ['move', 'card', 'prices']], ['Харилцагч', ['suppliers']]],
+  products: [['Бараа материал', ['catalog', 'stock', 'in', 'po']], ['Тайлан', ['move', 'prices']], ['Харилцагч', ['suppliers']]],
   // Санхүү — цөөн, ойлгомжтой цэс. Нягтлангийн тайлан, тохиргоо нь тус бүр нэг хуудсанд цуглуулагдсан (finance.js HUBS)
   finance: [['Үр дүн', ['simple', 'months', 'profit']], ['Мөнгө', ['money', 'bank', 'vouchers']], ['Өр, авлага', ['debts', 'loans']], ['Цалин', ['payroll']],
             ['Бусад', ['monthly', 'assets', 'acct', 'setup']]],
@@ -402,6 +402,13 @@ function periodBar() {
 }
 
 // Борлуулалт
+function orderReminder(biz) {   // доод үлдэгдлээс бага болсон бараа (Бараа захиалга хуудсанд тохируулна)
+  if (!BUSINESSES[biz] || BUSINESSES[biz].finOnly) return '';
+  var need = needList(biz); if (!need.length) return '';
+  var names = need.slice(0, 6).map(function (r) { return r.name; }).join(', ') + (need.length > 6 ? ' … (+' + (need.length - 6) + ')' : '');
+  return '<div class="alert"><div><b>Захиалах бараа: ' + need.length + '</b> — ' + esc(names) + '</div>' +
+    '<div class="pg-act"><button class="b-btn primary" onclick="openModule(\'products\');setSub(\'po\')">Бараа захиалга</button></div></div>';
+}
 function salesModule() {
   var list = inRange(state.biz), s = sums(list);
   var sales = list.filter(function (x) { return x.type === 'sale'; });
@@ -410,7 +417,7 @@ function salesModule() {
   var byStaff = {};
   sales.forEach(function (x) { var k = x.staff || '—'; byStaff[k] = (byStaff[k] || 0) + (Number(x.amount) || 0); });
   var staffRows = Object.keys(byStaff).sort(function (a, b) { return byStaff[b] - byStaff[a]; });
-  return '<div class="kpis">' +
+  return orderReminder(state.biz) + '<div class="kpis">' +
     kpi('Борлуулалт', fmt(s.sales), Object.keys(bills).length + ' баримт / гүйлгээ') +
     kpi('Бэлэн', fmt(s.cash)) + kpi('Карт', fmt(s.card)) + kpi('Шилжүүлэг', fmt(s.transfer)) + (s.credit ? kpi('Захиалга (урьдчилгаа, зээл)', fmt(s.credit)) : '') +
     '</div><div class="grid2"><div class="card"><h2>Худалдагчаар</h2><div class="scroll"><table>' +
@@ -919,7 +926,7 @@ function closeSheet(id) { $(id).classList.remove('show'); }
 var SUBS = {
   sales: [['overview', 'Тойм'], ['orders', 'Захиалга'], ['customers', 'Харилцагчид (утсаар)'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'], ['pay', 'Төлбөрийн хэлбэрээр'],
           ['receipts', 'Баримтын жагсаалт'], ['ebarimt', 'И-баримт тулгалт']],
-  products: [['catalog', 'Барааны бүртгэл, үнэ'], ['po', 'Бараа захиалга (Хятад)'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['card', 'Барааны карт'], ['prices', 'Үнийн түүх'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
+  products: [['catalog', 'Барааны бүртгэл, үнэ'], ['po', 'Бараа захиалга (Хятад)'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['prices', 'Үнийн түүх'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
   finance: [['simple', 'Үр дүн'], ['months', 'Сар бүрээр'], ['profit', 'Барааны ашиг'], ['money', 'Орлого, зарлага'], ['bank', 'Банкны хуулга'], ['vouchers', 'Кассын баримт'],
             ['debts', 'Авлага, өглөг'], ['loans', 'Зээл (авсан, өгсөн)'], ['assets', 'Үндсэн хөрөнгө, элэгдэл'], ['banklink', 'Банкны данс холбох'], ['digest', 'Өдрийн тойм и-мэйл'], ['payroll', 'Цалин, НДШ'], ['monthly', 'Сар бүрийн ажил'], ['acct', 'Нягтлангийн тайлан'], ['setup', 'Тохиргоо'],
             ['dash', 'Бүртгэлийн шалгалт'], ['entry', 'Журналын бичилт'], ['journal', 'Ерөнхий журнал'], ['trial', 'Гүйлгээ баланс'], ['ledger', 'Дансны хуулга'], ['gl', 'Ерөнхий дэвтэр'],
@@ -948,7 +955,6 @@ function makeReport(mod, sub) {
   }
   if (mod === 'products') {
     if (sub === 'move') return repStockMove(R(), biz, f, t);
-    if (sub === 'card') return repItemCard(R(), biz, state.item, f, t);
     if (sub === 'in') return repReceiptsIn(R(), biz, f, t);
     if (sub === 'stock') return repStockNow(biz);
     if (sub === 'catalog') return repCatalog(biz);
@@ -1050,11 +1056,6 @@ function subBody() {
   }
   if (mod === 'finance' && sub === 'ledger') pre = '<div class="filter"><label>Данс<select onchange="state.acc=this.value;render()">' +
     ACCOUNTS.map(function (a) { return '<option value="' + a[0] + '"' + (state.acc === a[0] ? ' selected' : '') + '>' + a[0] + ' ' + esc(a[1]) + '</option>'; }).join('') + '</select></label></div>';
-  if (mod === 'products' && sub === 'card') {
-    pre = '<div class="filter"><label>Бараа<input list="cardItems" value="' + esc(state.item) + '" placeholder="Барааны нэр…" onchange="state.item=this.value;render()" style="min-width:260px"></label>' +
-      '<datalist id="cardItems">' + stockRows(state.biz).map(function (r) { return '<option value="' + esc(r.name) + '">'; }).join('') + '</datalist></div>';
-    if (!state.item) return pre + '<div class="card muted">Бараагаа сонгоно уу.</div>';
-  }
   if (mod === 'finance' && sub === 'entry') pre = '<p class="hint">Борлуулалт, зарлага, бараа, цалин санхүүд <b>автоматаар</b> бичигддэг. Энд зөвхөн бусад гүйлгээг (эхний үлдэгдэл, хөрөнгө оруулалт, зээл, банкинд тушаах, нийлүүлэгчид төлөх г.м) оруулна.</p>';
   if (sub === 'entry') rep.edit = 'editEntry';
   return pre + reportCard(rep, { entry: 'cancelEntry', in: 'cancelMove', expenses: 'cancelRecord', vouchers: 'cancelEntry', catalog: 'openProduct' }[sub]) + post;
