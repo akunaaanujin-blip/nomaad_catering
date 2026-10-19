@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v4.5 (KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v4.6 (серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -84,8 +84,10 @@ function tinTest() {
 function doPost(e) {
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
+  let drop = null;
   try {
     const data = JSON.parse(e.postData.contents);
+    drop = cacheKeysFor(data);   // бичилт бол хамаарах кэшийг (хариу өгсний дараа) цэвэрлэнэ
     if (/^admin_/.test(String(data.type)) && data.type !== 'admin_login') {   // удирдлагын эрх: Эзэн — бүгд, Менежер — өөрийн дэлгүүр
       const who = adminWho(data);
       if (!who) return json({ status: 'error', error: 'auth' });
@@ -125,9 +127,36 @@ function doPost(e) {
   } catch (err) {
     return json({ status: 'error', error: err.message });
   } finally {
+    try { if (drop) cacheDrop(drop); } catch (e2) {}
     lock.releaseLock();
   }
 }
+// ── Серверийн кэш (хурд): удирдлагын уншилт хуудас тус бүрийг 5 мин кэшлэнэ, бичилт хийхэд тэр хуудсыг л цэвэрлэнэ ──
+// Sheet-ийг гараар засвал 5 минутын дотор шинэчлэгдэнэ.
+const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price'];
+const CACHE_MAP = { admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
+  admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr'], admin_bank: ['bank', 'jr', 'ord'], admin_partner: ['pt'], admin_reminder: ['rem'],
+  admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_po: ['po', 'jr'],
+  admin_staff: ['adm'], admin_salary: ['adm'], admin_contract: ['adm'], register: ['adm'] };
+const CACHE_READ = { admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
+function cacheKeysFor(d) {
+  if (!d.type) return ['rec', 'stk'];   // ажилтны бичлэг (борлуулалт, зарлага, касс)
+  if (CACHE_READ[d.type]) return null;
+  return CACHE_MAP[d.type] || CACHE_ALL;   // мэдэгдэхгүй бичилт (он хаах г.м) — бүгдийг
+}
+function cacheGet(name, fn) {
+  const c = CacheService.getScriptCache(), k = 'ck_' + name, n = Number(c.get(k) || 0);
+  if (n > 0) {
+    const keys = []; for (let i = 0; i < n; i++) keys.push(k + '_' + i);
+    const parts = c.getAll(keys); let s = '';
+    for (let i = 0; i < n; i++) { const p = parts[keys[i]]; if (p == null) { s = null; break; } s += p; }
+    if (s != null) { try { return JSON.parse(s); } catch (e) {} }
+  }
+  const v = fn(), s = JSON.stringify(v), CH = 40000, cnt = Math.max(1, Math.ceil(s.length / CH));   // нэг утга ≤100KB (кирилл 2 байт)
+  if (cnt <= 60) { const o = {}; for (let i = 0; i < cnt; i++) o[k + '_' + i] = s.slice(i * CH, (i + 1) * CH); o[k] = String(cnt); try { c.putAll(o, 300); } catch (e) {} }
+  return JSON.parse(s);
+}
+function cacheDrop(names) { CacheService.getScriptCache().removeAll(names.map(function (n) { return 'ck_' + n; })); }
 // Удирдагчийн токен (admin_login-оор олгоно, 8 цаг хүчинтэй)
 function isAdmin(data) { return !!adminWho(data); }
 // Токен → { id, role, biz }. Хуучин токен (зөвхөн ID) = Эзэн.
@@ -201,33 +230,33 @@ function adminLogin(d) {
   return { status: 'ok', token: token, name: s.name, role: s.role, biz: s.biz };
 }
 function adminRead(d) {
-  const a = adminData();
-  a.records = data(d.from).records;
-  a.stock = stockAll(true);
-  a.moves = stockMoves();
-  a.journal = journalRows();
-  a.partners = partnerRows();
+  const a = cacheGet('adm', adminData);
+  a.records = d.from ? data(d.from).records : cacheGet('rec', function () { return data('').records; });
+  a.stock = cacheGet('stk', function () { return stockAll(true); });
+  a.moves = cacheGet('mov', stockMoves);
+  a.journal = cacheGet('jr', journalRows);
+  a.partners = cacheGet('pt', partnerRows);
   const pr = PropertiesService.getScriptProperties();
   a.taxcfg = JSON.parse(pr.getProperty('TAXCFG') || '{}');
   a.accountsX = JSON.parse(pr.getProperty('ACCOUNTS_X') || '[]');
   a.lock = pr.getProperty('LOCK') || '';
   a.meta = { closed: pr.getProperty('CLOSED') || '', lastBackup: pr.getProperty('LAST_BACKUP') || '', backupUrl: pr.getProperty('BACKUP_FOLDER_URL') || '' };
-  a.reminders = reminderRows();
-  a.bank = bankRows();
-  a.docs = docRows();
-  a.tasks = taskRows();
+  a.reminders = cacheGet('rem', reminderRows);
+  a.bank = cacheGet('bank', bankRows);
+  a.docs = cacheGet('docs', docRows);
+  a.tasks = cacheGet('task', taskRows);
   a.payInfo = payInfoAll();
-  a.orders = orderRows().map(function (o) { delete o.row; return o; });
+  a.orders = cacheGet('ord', orderRows).map(function (o) { delete o.row; return o; });
   a.tasks = a.tasks.map(function (t) { delete t.row; return t; });
-  a.products = productRows().map(function (p) { const o = Object.assign({}, p); delete o.row; return o; });
-  a.loans = loanRows().map(function (x) { delete x.row; return x; });
-  a.pos = poRows().map(function (x) { delete x.row; return x; });
+  a.products = cacheGet('prod', productRows).map(function (p) { const o = Object.assign({}, p); delete o.row; return o; });
+  a.loans = cacheGet('loan', loanRows).map(function (x) { delete x.row; return x; });
+  a.pos = cacheGet('po', poRows).map(function (x) { delete x.row; return x; });
   a.bankLinks = JSON.parse(pr.getProperty('BANKLINKS') || '[]');
   a.kpi = JSON.parse(pr.getProperty('KPI') || '{}');
   a.assets = JSON.parse(pr.getProperty('ASSETS') || '[]');
   a.minstock = minStockAll();
   a.digest = { on: pr.getProperty('DIGEST') === 'on', to: pr.getProperty('DIGEST_TO') || '', mail: DIGEST_MAIL };
-  a.priceLog = priceRows();
+  a.priceLog = cacheGet('price', priceRows);
   const who = d._who || { role: 'Эзэн', biz: 'all' };
   a.role = who.role; a.roleBiz = who.biz;
   if (who.role !== 'Эзэн') {   // менежер: зөвхөн өөрийн дэлгүүр
