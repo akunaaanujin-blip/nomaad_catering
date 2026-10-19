@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v3.7 (бараа орлого: авсан үнэ × ханш + карго; каргоны төлбөр, карго компани тусдаа)
+// NOMAAD Бизнесүүд — Google Apps Script v3.8 (бараа Excel-ээр олноор бүртгэх; орлого: авсан үнэ × ханш + карго)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -1028,6 +1028,22 @@ function productRows() {
 }
 // Удирдагч: бараа нэмэх / засах (нэрээр нь олно). Үнэ, нэгж, ангилал, БҮНА, идэвхтэй эсэх.
 function adminProduct(d) {
+  if (Array.isArray(d.products)) {   // Excel-ээс олноор (нэг уншилт, нэг бичилт)
+    const list = d.products;
+    if (!list.length || list.length > 1000) return { status: 'error', error: 'fields' };
+    const sh = prodSheet(), idx = {}, add = [];
+    productRows().forEach(function (x) { idx[x.biz + '|' + x.name.toLowerCase()] = x.row; });
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i], name = String(p.name || '').trim().slice(0, 80);
+      if (!BIZ_NAMES[p.biz] || !name || !(Number(p.price) >= 0) || (p.cls && !/^\d{7}$/.test(String(p.cls)))) return { status: 'error', error: 'fields', index: i };
+      const row = [p.biz, name, String(p.unit || '').slice(0, 10), Number(p.price) || 0, String(p.cls || ''), String(p.cat || '').slice(0, 40), p.off ? 'Идэвхгүй' : 'Идэвхтэй'];
+      const k = p.biz + '|' + name.toLowerCase();
+      if (idx[k] > 0) sh.getRange(idx[k], 1, 1, PROD_HEAD.length).setValues([row]);
+      else if (!idx[k]) { add.push(row); idx[k] = -1; }
+    }
+    if (add.length) sh.getRange(sh.getLastRow() + 1, 1, add.length, PROD_HEAD.length).setValues(add);
+    return { status: 'ok', saved: list.length };
+  }
   const p = d.product || {};
   const name = String(p.name || '').trim().slice(0, 80);
   if (!BIZ_NAMES[p.biz] || !name || !(Number(p.price) >= 0) || (p.cls && !/^\d{7}$/.test(String(p.cls)))) return { status: 'error', error: 'fields' };

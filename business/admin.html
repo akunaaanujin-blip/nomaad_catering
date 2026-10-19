@@ -358,6 +358,13 @@
     <div class="pg-act" style="margin-top:12px"><button class="b-btn" id="drBack" onclick="drillBack()">← Буцах</button><button class="b-btn" onclick="drillExcel()">Excel</button><button class="b-btn primary" onclick="closeSheet('drillSheet')">Хаах</button></div>
   </div>
 </div>
+<div class="sheet" id="piSheet" onclick="if(event.target===this)closeSheet('piSheet')">
+  <div class="panel wide-panel">
+    <div id="piBody"></div>
+    <div class="pg-act" style="margin-top:12px"><button class="b-btn primary" id="piSave" onclick="piSave()">Бүртгэх</button><button class="b-btn" onclick="closeSheet('piSheet')">Болих</button></div>
+  </div>
+</div>
+<input type="file" id="prodFile" accept=".xlsx,.xls" style="display:none" onchange="importProducts(this)">
 <input type="file" id="bankFile" accept=".xlsx,.xls" style="display:none" onchange="importBank(this)">
 <input type="file" id="baazFile" accept=".xlsx,.xls" style="display:none" onchange="importBaaz(this)">
 <div class="toast" id="toast"></div>
@@ -371,6 +378,7 @@
 <script src="finance.js?v=20261019f"></script>
 <script src="calendar.js?v=20261019f"></script>
 <script src="bank.js?v=20261019f"></script>
+<script src="prodimport.js?v=20261019f"></script>
 <script src="admin.js?v=20261019f"></script>
 </body>
 </html>

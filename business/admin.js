@@ -293,10 +293,11 @@ function companyView() {
     '<button class="b-btn" onclick="openVoucher(\'ХО\')">+ Харилцахын орлого</button><button class="b-btn" onclick="openVoucher(\'ХЗ\')">+ Харилцахын зарлага</button>' + acts;
   if (sub === 'accounts') acts = '<button class="b-btn primary" onclick="addAccount()">+ Данс нэмэх</button>' + acts;
   if (sub === 'bank') acts = '<button class="b-btn primary" onclick="$(\'bankFile\').click()">Хуулга оруулах (Excel)</button>';
-  if (sub === 'catalog') acts = '<button class="b-btn primary" onclick="openProduct()">+ Шинэ бараа</button>' + acts;
+  var xl = '<button class="b-btn" onclick="$(\'prodFile\').click()">Excel-ээр бүртгэх</button><a class="b-btn" href="templates/baraa_burtgel.xlsx" download>Загвар татах</a>';
+  if (sub === 'catalog') acts = '<button class="b-btn primary" onclick="openProduct()">+ Шинэ бараа</button>' + xl + acts;
   if (sub === 'partners' || sub === 'suppliers') acts = '<button class="b-btn primary" onclick="openPartner()">+ Харилцагч</button>' + (sub === 'partners' ? '<button class="b-btn" onclick="openRem(null,{kind:\'Өглөг төлөх\'})">+ Сануулга</button>' : '') + acts;
   if (sub === 'orders') acts = '<button class="b-btn" onclick="importCozyOld()">Хуучин хүснэгтээс шилжүүлэх</button>' + acts;
-  if (sub === 'stock') acts = '<button class="b-btn primary" onclick="openMove(\'Орлого\')">+ Орлого</button>' +
+  if (sub === 'stock') acts = '<button class="b-btn primary" onclick="openMove(\'Орлого\')">+ Орлого</button>' + xl +
     (hasWarehouse(state.biz) ? '<button class="b-btn" onclick="openMove(\'Шилжүүлэг\')">Шилжүүлэг</button>' : '') +
     '<button class="b-btn" onclick="openMove(\'Тооллого\')">Тооллого</button><button class="b-btn" onclick="openMove(\'Хасалт\')">Хасалт</button>' +
     '<button class="b-btn" onclick="exportCurrent()">Excel</button>';
