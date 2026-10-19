@@ -182,7 +182,7 @@ function bankApply(ids, quiet) {
       if (!confirm(l0.date + ' · ' + (l0.credit ? '+' + fmt(l0.credit) : '−' + fmt(l0.debit)) + '\n«' + l0.desc + '»\n\n→ ' + what + '\n\nТулгах уу?')) return;
     }
   }
-  var entries = [], orderUpd = [], updates = [], biz = state.biz;
+  var entries = [], orderUpd = [], updates = [], biz = state.biz, loanCloseIds = [];
   ids.forEach(function (id) {
     var l = bankLines.filter(function (x) { return x.id === id; })[0]; if (!l) return;
     var pick = bankPick[id] || '', info = bankAcctInfo(l.acct), acc = info ? info.acc : '1101', d = l.date.slice(0, 10), amt = l.credit || l.debit;
@@ -211,6 +211,7 @@ function bankApply(ids, quiet) {
       var le = loanEntries(pick.slice(2), l.credit ? 'in' : 'out', acc, d, amt, Number(($('bi_' + id) || {}).value) || 0, l.desc.slice(0, 80));
       if (!le) return;
       entries = entries.concat(le.entries); updates.push({ id: id, status: 'Тулгасан', link: le.link });
+      if (le.closes) loanCloseIds.push(pick.slice(2));
       return;
     }
     if (pick.indexOf('PO:') === 0) {   // бараа захиалгын төлбөр / карго (1505)
@@ -236,9 +237,11 @@ function bankApply(ids, quiet) {
   if (!API_URL) {
     entries.forEach(function (e, i) { e.id = 'J' + Date.now() + '-' + i; e.by = ownerName; journal.push(e); });
     updates.forEach(function (u) { bankLines.forEach(function (l) { if (l.id === u.id) { l.status = u.status; l.link = u.link; } }); });
+    loanCloseIds.forEach(function (lid) { var L = loanById(lid); if (L) L.status = 'Хаагдсан'; }); if (loanCloseIds.length) save('nb_demo_loans', window.loans);
     save('nb_demo_journal', journal); save('nb_demo_bank', bankLines); save('nb_orders_cozy', window.adminOrders); render(); toast(updates.length + ' гүйлгээ тулгагдлаа'); return;
   }
-  var n = 1 + orderUpd.length + (entries.length ? 1 : 0), fin = function () { if (--n === 0) { toast(updates.length + ' гүйлгээ тулгагдлаа'); refresh(); } };
+  var n = 1 + orderUpd.length + loanCloseIds.length + (entries.length ? 1 : 0), fin = function () { if (--n === 0) { toast(updates.length + ' гүйлгээ тулгагдлаа'); refresh(); } };
+  loanCloseIds.forEach(function (lid) { post({ type: 'admin_loan', closeId: lid }, function () { fin(); }); });
   if (entries.length) post({ type: 'admin_journal', by: ownerName, entries: entries }, function (err) { if (err) toast('Журнал: ' + err); fin(); });
   orderUpd.forEach(function (u) { post({ type: 'admin_order', id: u.id, by: ownerName, fields: u.fields }, function () { fin(); }); });
   post({ type: 'admin_bank', by: ownerName, updates: updates }, function (err) { if (err) toast('Алдаа: ' + err); fin(); });
