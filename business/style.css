@@ -754,3 +754,27 @@ body:not(.bz-admin) .mono{border-radius:4px}
 .bz-admin .co-card{border-top:3px solid var(--co,#2F5B8E)!important}
 .bz-admin .ck.ok{background:#2F6B3F;color:#fff}
 @media(max-width:760px){.bz-admin .rail{border-top:0}.bz-admin .rail button.on{box-shadow:inset 0 3px 0 #8DB4E2}}
+/* ═══ v6.2 · илүү өнгө ═══ */
+.bz-admin{--b-bg:#EEF3F9}
+.bz-admin .bz-head{background:#fff;border-bottom-color:#DCE4EF}
+.bz-admin .subnav{background:#F5F8FD;border-right-color:#DCE4EF}
+.bz-admin .sub-group{color:#5B7BA3;font-weight:600}
+.bz-admin .sub-title,.bz-admin .pg-head h1,.bz-admin .sec-title{color:#1F3A5F}
+.bz-admin span.mono{background:var(--co,#2F5B8E);color:#fff}
+.crumb-co .mono{background:color-mix(in srgb,var(--co,#2F5B8E) 14%,#fff)!important;color:var(--co,#2F5B8E)!important}
+.bz-admin .co-card{background:linear-gradient(180deg,color-mix(in srgb,var(--co,#2F5B8E) 7%,#fff) 0,#fff 90px)}
+.bz-admin .card h2{color:#1F3A5F;padding-left:9px;border-left:3px solid #6E9BD0}
+.bz-admin .rep-cap b{color:#1F3A5F}
+.bz-admin .kpis{border-color:#DCE4EF}
+.bz-admin .kpis .biz{border-top:3px solid #2F5B8E}
+.bz-admin .kpis .biz:nth-child(5n+2){border-top-color:#2F8A6B}
+.bz-admin .kpis .biz:nth-child(5n+3){border-top-color:#D2A24C}
+.bz-admin .kpis .biz:nth-child(5n+4){border-top-color:#7A5BA6}
+.bz-admin .kpis .biz:nth-child(5n+5){border-top-color:#C0614D}
+.bz-admin th{background:#EAF1FA;color:#2B4A70}
+.bz-admin table.rep-t tr.tot td{background:#EEF4FB}
+.bz-admin .b-btn{border-color:#C9D6E8;color:#24466F}
+.bz-admin .b-btn:hover{background:#F0F5FC}
+.bz-admin .mini{border-color:#D3DEEC;color:#24466F!important}
+.bz-admin .filter{background:#F8FBFF;border-color:#DCE4EF}
+.bz-admin .hint{color:#4F6684}
