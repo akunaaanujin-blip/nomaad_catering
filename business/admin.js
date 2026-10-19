@@ -176,10 +176,10 @@ function render() {
   else if (state.view === 'cal') $('view').innerHTML = calView();
   else if (state.view === 'docs') $('view').innerHTML = pageHead('Маягт, загвар', '<button class="b-btn primary" onclick="editDoc()">+ Шинэ маягт</button>') + docsModule();
   else if (state.view === 'staff') $('view').innerHTML = staffPage();
-  else if (state.view === 'company') $('view').innerHTML = coBar() + companyView();
+  else if (state.view === 'company') $('view').innerHTML = companyView();
   else $('view').innerHTML = companiesView();
   var inCo = state.view === 'company' && BUSINESSES[state.biz];
-  document.querySelector('.bz-head').style.boxShadow = inCo ? 'inset 0 3px 0 ' + BUSINESSES[state.biz].color : '';
+  document.querySelector('.bz-head').style.boxShadow = inCo ? 'inset 0 2px 0 ' + BUSINESSES[state.biz].color : '';
   navTrack();
   $('backBtn').style.display = state.view !== 'companies' || NAV.idx > 0 ? '' : 'none';
 }
@@ -212,19 +212,6 @@ window.addEventListener('popstate', function (e) {
 });
 function navBack() { if (NAV.idx > 0) history.back(); else go('companies'); }
 
-// ── Компанийн дотор байгааг тодорхой харуулах толгой ──
-function coBar() {
-  var B = BUSINESSES[state.biz]; if (!B) return '';
-  var E = (window.EBARIMT || {})[state.biz] || {};
-  return '<div class="co-bar" style="border-left-color:' + B.color + '"><span class="mono" style="background:' + B.color + '">' + B.icon + '</span>' +
-    '<div class="co-bar-t"><small>Компани</small><b>' + esc(B.name) + '</b>' + (E.legalName ? '<span>' + esc(E.legalName) + (E.merchantTin ? ' · ТТД ' + esc(E.merchantTin) : '') + '</span>' : '') + '</div>' +
-    '<div class="co-bar-mods">' + bizModules(state.biz).map(function (m) {
-      return '<button class="' + (state.module === m[0] ? 'on' : '') + '" onclick="openModule(\'' + m[0] + '\')">' + m[1] + '</button>'; }).join('') + '</div>' +
-    '<div class="co-bar-r">' + (ALL_KEYS.length > 1 ? '<select onchange="go(\'company\',this.value)" title="Компани солих">' + ALL_KEYS.map(function (k) {
-      return '<option value="' + k + '"' + (k === state.biz ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('') + '</select>' : '') +
-    (isOwner() || KEYS.length > 1 ? '<button class="b-btn" onclick="go(\'companies\')">Компаниас гарах</button>' : '') + '</div></div>';
-}
-
 // ── Baaz маягийн цэс: зүүн цэнхэр зурвас + бүлэглэсэн дэд цэс ──
 var ICONS = {
   home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
@@ -251,9 +238,7 @@ function railHtml(pend) {
   var inCo = state.view === 'company';
   return '<div class="rail-logo">N</div>' +
     item(state.view === 'companies', "go('companies')", 'home', 'Компаниуд') +
-    (inCo && BUSINESSES[state.biz] ? '<div class="rail-co" title="' + esc(BUSINESSES[state.biz].name) + '"><span class="mono" style="background:' + BUSINESSES[state.biz].color + '">' + BUSINESSES[state.biz].icon + '</span>' +
-      esc(BUSINESSES[state.biz].name.split(' ')[0]) + '</div>' +
-      bizModules(state.biz).map(function (m) { return item(state.module === m[0], "openModule('" + m[0] + "')", m[0], m[1]); }).join('') : '') +
+    (inCo && BUSINESSES[state.biz] ? bizModules(state.biz).map(function (m) { return item(state.module === m[0], "openModule('" + m[0] + "')", m[0], m[1]); }).join('') : '') +
     '<div class="rail-sep"></div>' +
     (isOwner() ? item(inCo && state.biz === 'mgmt', 'openMgmt()', 'mgmt', 'Удирдлага') : '') +
     item(state.view === 'staff', "state.staffBiz=state.view==='company'?state.biz:state.staffBiz;go('staff')", 'people', 'Ажилчид', pend && isOwner() ? '<i class="dot">' + pend + '</i>' : '') +
@@ -276,8 +261,9 @@ function subGroup(mod, k) { var g = (MENU[mod] || []).filter(function (g) { retu
 function subnavHtml() {
   if (state.view !== 'company') return '';
   var B = BUSINESSES[state.biz], mod = state.module;
-  var head = '<div class="sub-co"><span class="mono" style="background:' + B.color + '">' + B.icon + '</span><div><b>' + esc(B.name) + '</b>' +
-    '<select onchange="go(\'company\',this.value)">' + ALL_KEYS.map(function (k) { return '<option value="' + k + '"' + (k === state.biz ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('') + '</select></div></div>' +
+  var head = '<div class="sub-co"><span class="mono" style="--co:' + B.color + '">' + B.icon + '</span><div><small>Компани</small><b>' + esc(B.name) + '</b>' +
+    (ALL_KEYS.length > 1 ? '<select onchange="if(this.value)go(\'company\',this.value)"><option value="" selected>Компани солих</option>' + ALL_KEYS.filter(function (k) { return k !== state.biz; }).map(function (k) {
+      return '<option value="' + k + '">' + esc(BUSINESSES[k].name) + '</option>'; }).join('') + '</select>' : '') + '</div></div>' +
     '<div class="sub-title">' + MODULES.filter(function (m) { return m[0] === mod; })[0][1] + '</div>';
   if (!MENU[mod]) {
     var one = mod === 'staff' ? [['Ажилчид', 'Ажилчид, цалин']] : mod === 'docs' ? [['docs', 'Маягт, загвар']] : [['reports', 'Бүх тайлан']];
@@ -313,9 +299,10 @@ function crumbHtml() {
   if (state.view === 'cal') return '<b>Календарь</b>';
   if (state.view === 'docs') return '<b>Маягт, загвар</b>';
   if (state.view === 'tax') return '<span>' + esc(ENTITIES[taxState.ent].name) + '</span><i>/</i><b>Татвар, тайлан</b>';
-  var mod = state.module, parts = [esc(BUSINESSES[state.biz].name), MODULES.filter(function (m) { return m[0] === mod; })[0][1]];
+  var B = BUSINESSES[state.biz], mod = state.module, parts = [MODULES.filter(function (m) { return m[0] === mod; })[0][1]];
   if (MENU[mod]) { parts.push(subGroup(mod, state.sub[mod])); }
-  return parts.map(function (p, i) { return i === parts.length - 1 ? '<b>' + p + '</b>' : '<span>' + p + '</span>'; }).join('<i>/</i>');
+  return '<span class="crumb-co"><span class="mono" style="--co:' + B.color + '">' + B.icon + '</span><span class="nm">' + esc(B.name) + '</span></span><i>/</i>' +
+    parts.map(function (p, i) { return i === parts.length - 1 ? '<b>' + p + '</b>' : '<span>' + p + '</span>'; }).join('<i>/</i>');
 }
 function pageHead(title, actions, withPeriod) {
   return '<div class="pg-head"><h1>' + title + '</h1><div class="pg-act">' + (actions || '') + '</div></div>' + (withPeriod ? periodBar() : '');
@@ -332,7 +319,7 @@ function companiesView() {
     var active = st.filter(function (s) { return s.status === 'Тийм'; }).length;
     var pend = st.filter(function (s) { return s.status === 'Хүлээгдэж'; }).length;
     return '<div class="co-card" style="border-top-color:' + B.color + '">' +
-      '<div class="co-head"><span class="mono" style="background:' + B.color + '">' + B.icon + '</span><div><b>' + esc(B.name) + '</b>' +
+      '<div class="co-head"><span class="mono" style="--co:' + B.color + '">' + B.icon + '</span><div><b>' + esc(B.name) + '</b>' +
       '<small>' + (E.merchantTin ? esc(E.legalName || '') + ' · ТТД ' + esc(E.merchantTin) : 'И-баримтгүй') + '</small></div></div>' +
       '<div class="co-stats">' +
       '<div><span>Өнөөдөр</span><b>' + fmt(today.sales) + '</b></div>' +
@@ -351,7 +338,7 @@ function mgmtCard() {
   var b = balances(buildJournal('mgmt', R()), todayStr()), cash = ACCOUNTS.filter(function (a) { return a[3] === 'cash'; }).reduce(function (s, a) { return s + (b[a[0]] || 0); }, 0);
   var links = (window.bankLinks || []).filter(function (l) { return l.biz === 'mgmt'; }).length;
   return '<h2 class="sec-title">Удирдлага</h2><div class="co-grid"><div class="co-card" style="border-top-color:#374151">' +
-    '<div class="co-head"><span class="mono" style="background:#374151">У</span><div><b>Удирдлагын санхүү</b><small>Удирдлагын өөрийн данс, зээл, компаниудтай тооцоо</small></div></div>' +
+    '<div class="co-head"><span class="mono" style="--co:#374151">У</span><div><b>Удирдлагын санхүү</b><small>Удирдлагын өөрийн данс, зээл, компаниудтай тооцоо</small></div></div>' +
     '<div class="co-stats"><div><span>Мөнгө</span><b>' + fmt(cash) + '</b></div><div><span>Авсан зээл</span><b>' + fmt(-(b['3501'] || 0)) + '</b></div>' +
     '<div><span>Өгсөн зээл</span><b>' + fmt(b['1210'] || 0) + '</b></div><div><span>Холбосон данс</span><b>' + links + '</b></div></div>' +
     '<button class="btn" style="background:#374151" onclick="openMgmt()">Нэвтрэх →</button></div></div>';

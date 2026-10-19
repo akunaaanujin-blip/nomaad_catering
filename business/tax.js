@@ -248,7 +248,7 @@ function taxAlerts() {   // Миний компаниуд дээрх сануу�
 function openTax(k, sub) { state.view = 'tax'; if (k) taxState.ent = k; if (sub) taxState.sub = sub; if (/^(payroll|nd8|tt11)$/.test(taxState.sub)) loadJobs(); render(); window.scrollTo(0, 0); }
 function taxSubnav() {
   var E = ENTITIES[taxState.ent];
-  return '<div class="sub-co"><span class="mono" style="background:#1E3A5F">' + esc(E.name.charAt(0)) + '</span><div><b>' + esc(E.name) + '</b>' +
+  return '<div class="sub-co"><span class="mono" style="--co:#1E3A5F">' + esc(E.name.charAt(0)) + '</span><div><small>Хуулийн этгээд</small><b>' + esc(E.name) + '</b>' +
     '<select onchange="openTax(this.value)">' + Object.keys(ENTITIES).map(function (k) { return '<option value="' + k + '"' + (k === taxState.ent ? ' selected' : '') + '>' + esc(ENTITIES[k].name) + ' (' + ENTITIES[k].type + ')</option>'; }).join('') + '</select></div></div>' +
     '<div class="sub-title">Татвар, тайлан</div>' + TAX_SUBS.map(function (g) {
       return '<div class="sub-group">' + g[0] + '</div><ul class="sub-list">' + g[1].map(function (s) {

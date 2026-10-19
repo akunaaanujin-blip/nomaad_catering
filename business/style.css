@@ -600,22 +600,136 @@ body:not(.bz-admin) .mono{border-radius:4px}
 .att-bar .btn{width:auto;margin:0;padding:8px 18px}
 .att-bar .btn.ghost{border:1px solid var(--line);color:var(--ink)}
 
-/* Буцах товч, компанийн толгой (компанийн дотор байгааг тодорхой) */
+/* Буцах товч */
 .bz-back{border:1px solid var(--b-line);background:#fff;border-radius:3px;padding:5px 10px;font:inherit;font-size:13px;font-weight:600;color:#374151;cursor:pointer;white-space:nowrap;flex:none}
 .bz-back:hover{background:#F7F8FA}
-.co-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;background:#fff;border:1px solid var(--b-line);border-left:4px solid var(--b-blue);border-radius:4px;padding:10px 14px;margin-bottom:14px}
-.co-bar .mono{width:38px;height:38px;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;border-radius:3px}
-.co-bar-t{min-width:0}
-.co-bar-t small{display:block;font-size:10.5px;color:var(--b-mut);text-transform:uppercase;letter-spacing:.05em}
-.co-bar-t b{display:block;font-size:16px;font-weight:700;color:var(--b-ink);line-height:1.25}
-.co-bar-t span{display:block;font-size:12px;color:var(--b-mut)}
-.co-bar-mods{display:flex;flex-wrap:wrap;gap:4px}
-.co-bar-mods button{border:1px solid transparent;background:none;border-radius:3px;padding:6px 10px;font:inherit;font-size:13px;color:#4B5563;cursor:pointer}
-.co-bar-mods button:hover{background:#F3F4F6}
-.co-bar-mods button.on{background:#E8EDF4;color:#1F2933;font-weight:600;border-color:#D5DEEA}
-.co-bar-r{margin-left:auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.co-bar-r select{width:auto;font-size:13px;padding:6px 8px}
-.rail-co{flex:none;margin:2px 6px 6px;padding:7px 2px 6px;border-radius:3px;background:#2F3B4A;display:flex;flex-direction:column;align-items:center;gap:4px;color:#fff;font-size:10px;font-weight:600;text-align:center;line-height:1.15;overflow:hidden}
-.rail-co .mono{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:3px;font-weight:700;font-size:13px;color:#fff}
-@media(max-width:760px){.rail-co{display:none}.co-bar-r{margin-left:0;width:100%}.co-bar-r select{flex:1}.bz-back{padding:5px 8px}}
 .bz-menu{white-space:nowrap;flex:none}
+
+/* ═══════════ v6 · Тайван, цэгцтэй (удирдлага) — 2026-10-19 ═══════════
+   Цөөн өнгө, нимгэн зураас, том үсэг (uppercase) хэрэглэхгүй, нэг л тод өнгө (navy). Агуулга өөрчлөгдөөгүй. */
+.bz-admin{--b-blue:#2F5B8E;--b-blue-d:#264B76;--b-bg:#F6F7F9;--b-line:#E6E8EC;--b-ink:#1F2328;--b-mut:#6B7280;--accent:#2F5B8E;--green:#2F6B3F;--red:#A64633;
+  background:var(--b-bg);color:var(--b-ink);font-size:13.5px;-webkit-font-smoothing:antialiased}
+/* зүүн зурвас — цайвар */
+.bz-admin .rail{background:#fff;border-right:1px solid var(--b-line);gap:1px}
+.bz-admin .rail-logo{color:var(--b-ink);border:1px solid var(--b-line);border-radius:6px;font-weight:700}
+.bz-admin .rail button{color:#6B7280;font-weight:500;font-size:10.5px;border-radius:0}
+.bz-admin .rail button svg{stroke-width:1.6}
+.bz-admin .rail button:hover{background:#F4F5F7;color:var(--b-ink)}
+.bz-admin .rail button.on{background:#EEF2F7;color:var(--b-ink);box-shadow:inset 2px 0 0 var(--b-blue)}
+.bz-admin .rail .dot{background:#B4533F;font-weight:600}
+.bz-admin .rail-sep{background:var(--b-line);margin:6px 14px}
+/* дэд цэс */
+.bz-admin .subnav{background:#fff;border-right:1px solid var(--b-line)}
+.bz-admin .sub-co{padding:14px 14px 12px;gap:10px}
+.bz-admin .sub-co small{display:block;font-size:11px;color:var(--b-mut);margin-bottom:1px}
+.bz-admin .sub-co b{font-size:13.5px;font-weight:600}
+.bz-admin .sub-co select{font-size:12px;color:var(--b-mut);padding:0;margin-top:3px}
+.bz-admin .sub-title{font-size:13px;font-weight:600;color:var(--b-ink);padding:14px 16px 2px}
+.bz-admin .sub-group{font-size:11.5px;font-weight:500;letter-spacing:0;text-transform:none;color:#9AA0A8;padding:14px 16px 4px}
+.bz-admin .sub-list button{font-size:13px;color:#4B5563;border-radius:6px;padding:6px 10px}
+.bz-admin .sub-list button:hover{background:#F4F5F7}
+.bz-admin .sub-list button.on{background:#EEF2F7;color:var(--b-ink);font-weight:600;box-shadow:none}
+/* толгой мөр */
+.bz-admin .bz-head{height:48px;border-bottom:1px solid var(--b-line);background:#fff}
+.bz-admin .bz-crumb{font-size:13px;color:var(--b-mut)}
+.bz-admin .bz-crumb b{font-weight:600;color:var(--b-ink)}
+.bz-admin .bz-crumb i{color:#C9CDD3}
+.crumb-co{display:inline-flex;align-items:center;gap:6px;color:var(--b-ink);font-weight:500}
+.crumb-co .mono{width:20px!important;height:20px!important;font-size:11px!important;border-radius:4px!important}
+.bz-admin .bz-back{border-color:var(--b-line);border-radius:6px;font-weight:500;color:#374151;padding:5px 10px}
+.bz-admin .bz-user{font-weight:500}
+/* компанийн тэмдэг — өнгөтэй дөрвөлжин биш, бүдэг дэвсгэр */
+.bz-admin span.mono{background:#EEF1F5;background:color-mix(in srgb,var(--co,#2F5B8E) 12%,#fff);color:var(--co,#2F5B8E);font-weight:700;border-radius:6px;width:34px;height:34px;font-size:15px}
+.bz-admin .sub-co .mono{border-radius:6px}
+/* хуудас */
+.bz-admin .bz-content{padding:20px 24px 48px}
+.bz-admin .pg-head{margin-bottom:14px}
+.bz-admin .pg-head h1{font-size:18px;font-weight:600;letter-spacing:-.01em}
+.bz-admin .hint{color:var(--b-mut);font-size:12.5px;line-height:1.55;padding:0 0 10px}
+.bz-admin .sec-title{font-size:16px;font-weight:600;margin:20px 0 8px}
+/* карт */
+.bz-admin .card,.bz-admin .co-card,.bz-admin .st-card{background:#fff;border:1px solid var(--b-line);border-radius:8px;box-shadow:none}
+.bz-admin .card{padding:16px;margin-bottom:14px}
+.bz-admin .card h2{font-size:13.5px;font-weight:600;color:var(--b-ink);margin-bottom:10px}
+.bz-admin .card.rep{padding:0}
+.bz-admin .rep-cap{padding:12px 14px;border-bottom:1px solid var(--b-line)}
+.bz-admin .rep-cap b{font-size:13.5px;font-weight:600}
+.bz-admin .rep-note{background:#F7F8FA;border-radius:6px;color:#4B5563;font-size:12.5px}
+.bz-admin .rep-note.ok,.bz-admin .rep-note.bad{background:#F7F8FA}
+/* KPI */
+.bz-admin .kpis{border:1px solid var(--b-line);border-radius:8px;background:#fff;margin-bottom:14px}
+.bz-admin .kpis .biz{padding:12px 16px;border-right:1px solid #EFF1F4}
+.bz-admin .kpis .biz .muted:first-child{font-size:12px;text-transform:none;letter-spacing:0;color:var(--b-mut)}
+.bz-admin .kpis .biz .rev{font-size:17px;font-weight:600;margin-top:3px;color:var(--b-ink)}
+/* хүснэгт */
+.bz-admin table{font-size:13px}
+.bz-admin th{background:#fff;color:var(--b-mut);font-weight:500;font-size:12px;text-transform:none;letter-spacing:0;border-bottom:1px solid var(--b-line);padding:9px 12px}
+.bz-admin td{padding:8px 12px;border-bottom:1px solid #F0F1F4}
+.bz-admin tr:hover td{background:#FAFBFC}
+.bz-admin table.rep-t tr.tot td{background:#F8F9FB;border-top:1px solid var(--b-line);font-weight:600}
+.bz-admin a.dl{text-decoration:underline dotted #C3C9D2;text-underline-offset:3px}
+/* товч — нэг тод (primary), бусад нь даруу */
+.bz-admin .b-btn{border:1px solid #DADDE2;background:#fff;color:#374151;border-radius:6px;font-weight:500;padding:6px 12px;font-size:13px}
+.bz-admin .b-btn:hover{background:#F7F8FA}
+.bz-admin .b-btn.primary{background:var(--b-blue);border-color:var(--b-blue);color:#fff}
+.bz-admin .b-btn.primary:hover{background:var(--b-blue-d)}
+.bz-admin .btn{border-radius:6px;font-weight:500;font-size:14px;background:var(--b-blue)}
+.bz-admin .btn.ghost{background:transparent;color:var(--b-mut)}
+.bz-admin .mini{border:1px solid #E3E5E9;background:#fff;color:#374151!important;border-radius:5px;font-size:12px;padding:3px 9px;margin:2px 0 2px 4px}
+.bz-admin .mini:hover{background:#F7F8FA}
+.bz-admin .link{color:var(--b-blue)}
+.bz-admin .tabs{gap:4px}
+.bz-admin .tabs button{border:1px solid #E3E5E9;background:#fff;color:#4B5563;border-radius:6px;padding:5px 12px;font-size:13px;font-weight:500}
+.bz-admin .tabs button.on{background:#EEF2F7;border-color:#C9D3E0;color:var(--b-ink);font-weight:600}
+.bz-admin .seg button{border-radius:6px;font-weight:500}
+/* шошго */
+.bz-admin .tag{background:#F3F4F6;color:#4B5563;border-radius:4px;font-weight:500;font-size:11.5px;padding:2px 7px}
+.bz-admin .tag.r{background:#F3F4F6;color:var(--red)}
+.bz-admin .tag.b{background:#F3F4F6;color:var(--b-blue)}
+.bz-admin .tag.g{background:#F3F4F6;color:var(--green)}
+/* сануулга — нимгэн зураас, товч нь даруу */
+.bz-admin .alert{background:#fff;border:1px solid var(--b-line);border-left:2px solid #D2A24C;border-radius:6px;color:var(--b-ink);padding:10px 14px;margin-bottom:10px;font-size:13px}
+.bz-admin .alert.bad{border-left-color:#C0614D}
+.bz-admin .alert b{font-weight:600}
+.bz-admin .alert .b-btn.primary{background:#fff;color:#374151;border-color:#DADDE2}
+.bz-admin .alert .b-btn.primary:hover{background:#F7F8FA}
+/* шүүлтүүр, оролт */
+.bz-admin .filter{background:#fff;border:1px solid var(--b-line);border-radius:8px;padding:10px 14px}
+.bz-admin .filter label{font-size:12px;font-weight:500;color:var(--b-mut)}
+.bz-admin input,.bz-admin select,.bz-admin textarea{border-color:#DADDE2;border-radius:6px}
+.bz-admin input:focus,.bz-admin select:focus,.bz-admin textarea:focus{outline:none;border-color:#9DB2CE;box-shadow:0 0 0 3px rgba(47,91,142,.10)}
+/* компаниуд */
+.bz-admin .co-grid{gap:14px}
+.bz-admin .co-card{padding:16px;gap:14px;border-top:1px solid var(--b-line)!important}
+.bz-admin .co-head b{font-size:14.5px;font-weight:600}
+.bz-admin .co-head small{font-size:12px}
+.bz-admin .co-stats{gap:10px 16px}
+.bz-admin .co-stats div{background:transparent!important;border:0!important;padding:0;border-radius:0}
+.bz-admin .co-stats span{font-size:12px}
+.bz-admin .co-stats b{font-size:15px;font-weight:600}
+.bz-admin .co-card .btn{background:#fff!important;color:var(--b-ink);border:1px solid #DADDE2;font-weight:500;font-size:13.5px;padding:9px;border-radius:6px}
+.bz-admin .co-card .btn:hover{background:#F7F8FA!important}
+/* ажилчид */
+.bz-admin .st-sal div{background:#F8F9FB;border:0;border-radius:6px}
+.bz-admin .st-sal .st-left{background:#F1F6F2}
+/* жагсаалт, тэмдэглэгээ */
+.bz-admin .ck{width:20px;height:20px;border-radius:50%;font-size:11px}
+.bz-admin .ck.ok{background:#E7F1E9;color:var(--green)}
+.bz-admin .ck.bad{background:#fff;color:var(--b-mut);border:1px solid #D5D9DF}
+.bz-admin .cklist li,.bz-admin .rep-links li{border-bottom-color:#F0F1F4}
+/* цонх */
+.bz-admin .sheet .panel{border-radius:10px 10px 0 0}
+@media(min-width:761px){.bz-admin .sheet .panel{border-radius:10px}}
+/* утас: доод зурвас цайвар */
+@media(max-width:760px){
+  .bz-admin .rail{border-right:0;border-top:1px solid var(--b-line)}
+  .bz-admin .rail button.on{box-shadow:inset 0 2px 0 var(--b-blue)}
+  .bz-admin .bz-content{padding:14px 14px 80px}
+  .bz-admin .kpis .biz{border-right:0;border-bottom:1px solid #EFF1F4}
+  .bz-admin .bz-user{display:none}
+  .bz-admin .bz-back span{display:none}
+  .bz-admin .bz-head{gap:8px;padding:0 12px}
+  .bz-admin .bz-crumb > span:not(.crumb-co),.bz-admin .bz-crumb > span:not(.crumb-co) + i{display:none}   /* утсанд: компани / хуудас */
+  .crumb-co{min-width:0;flex:0 1 auto}
+  .crumb-co .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
