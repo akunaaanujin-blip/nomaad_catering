@@ -285,7 +285,7 @@ function subVisible(biz, k) {
   var B = BUSINESSES[biz] || {};
   if (k === 'orders' || k === 'customers') return !!B.orders;
   if (k === 'ebarimt') return B.ebarimt !== false;
-  if (B.finOnly && /^(profit|payroll|expenses|assets)$/.test(k)) return false;   // Удирдлага: бараа, ажилчидгүй
+  if (B.finOnly && /^(simple|months|profit|payroll|expenses|assets)$/.test(k)) return false;   // Удирдлага: үр дүн, бараа, ажилчидгүй
   if (!isOwner() && /^(payroll|loans|setup|banklink|opening|accounts|lock|close|assets|digest)$/.test(k)) return false;   // менежерт эзний хуудас харагдахгүй
   return true;
 }
@@ -351,7 +351,10 @@ function mgmtCard() {
 function companyView() {
   if (BUSINESSES[state.biz] && BUSINESSES[state.biz].finOnly && state.module !== 'finance') state.module = 'finance';
   var mod = state.module;
-  if (MENU[mod] && !subVisible(state.biz, state.sub[mod])) state.sub[mod] = MENU[mod][0][1][0];   // компани солиход хамааралгүй хуудас үлдэхгүй
+  if (MENU[mod] && !subVisible(state.biz, state.sub[mod])) {   // компани солиход хамааралгүй хуудас үлдэхгүй — эхний харагдах хуудас
+    var first = []; MENU[mod].forEach(function (g) { g[1].forEach(function (k) { if (subVisible(state.biz, k)) first.push(k); }); });
+    state.sub[mod] = first[0] || MENU[mod][0][1][0];
+  }
   if (mod === 'staff') return pageHead('Ажилчид', '') + staffView(state.biz);
   if (mod === 'reports') return pageHead('Бүх тайлан', '<button class="b-btn primary" onclick="exportAll()">Бүх тайланг Excel-ээр татах</button>', true) + reportsModule();
   var sub = state.sub[mod], noPeriod = /^(accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary|months|payroll|debts|acct|setup|loans|banklink|po|assets|customers|digest)$/.test(sub);
