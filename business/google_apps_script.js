@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v4.0 (зээлийн хуваарь, нийт төлөх дүн; удирдлагын санхүү, бараа захиалга, данс холбох)
+// NOMAAD Бизнесүүд — Google Apps Script v4.1 (ТТД/регистр → байгууллагын нэр; зээлийн хуваарь; удирдлагын санхүү, бараа захиалга)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -208,6 +208,7 @@ function doGet(e) {
   if (p.action === 'products') out = products(p.biz);
   else if (p.action === 'login') out = login(p.biz, p.user, p.code);
   else if (p.action === 'stock') out = BIZ_NAMES[p.biz] ? { status: 'ok', stock: stockAll()[p.biz] || {} } : { status: 'error', error: 'biz' };
+  else if (p.action === 'tin') out = tinInfo(p.q);
   else out = { status: 'ok', app: 'NOMAAD' };
   const body = JSON.stringify(out);
   if (p.callback) {
@@ -215,6 +216,36 @@ function doGet(e) {
   }
   return ContentService.createTextOutput(body).setMimeType(ContentService.MimeType.JSON);
 }
+
+// ── ТТД / регистр → байгууллагын нэр ──
+// ebarimt.mn-ийн нийтийн лавлагаа (хөтчөөс шууд дуудахыг CORS хаадаг тул энд дамжуулна). 6 цаг кэшлэнэ.
+// Анх удаа: редактороос tinTest()-ийг нэг удаа ажиллуулж «гадаад холболт» (UrlFetchApp)-ын зөвшөөрөл өгнө.
+function tinInfo(q) {
+  q = String(q || '').trim().toUpperCase().replace(/\s/g, '');
+  if (!/^(\d{7}|\d{11,12})$/.test(q)) return { status: 'error', error: 'format' };
+  const cache = CacheService.getScriptCache(), key = 'tin_' + q, hit = cache.get(key);
+  if (hit) return JSON.parse(hit);
+  const get = function (url) {
+    const r = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    if (r.getResponseCode() !== 200) return null;
+    try { return JSON.parse(r.getContentText()); } catch (e) { return null; }
+  };
+  try {
+    let tin = /^\d{11,12}$/.test(q) ? q : '', out;
+    if (!tin) {   // 7 оронтой регистр → ТТД
+      const a = get('https://api.ebarimt.mn/api/info/check/getTinInfo?regNo=' + encodeURIComponent(q));
+      if (a && a.status === 200 && a.data) tin = String(a.data);
+    }
+    const b = tin ? get('https://api.ebarimt.mn/api/info/check/getInfo?tin=' + encodeURIComponent(tin)) : null;
+    if (b && b.status === 200 && b.data && b.data.found) out = { status: 'ok', found: true, tin: tin, regNo: /^\d{7}$/.test(q) ? q : '', name: String(b.data.name || ''), vatPayer: !!b.data.vatPayer };
+    else out = { status: 'ok', found: false, tin: tin };
+    cache.put(key, JSON.stringify(out), out.found ? 21600 : 1800);
+    return out;
+  } catch (e) {
+    return { status: 'error', error: /permission|зөвшөөр|authoriz/i.test(String(e.message)) ? 'perm' : 'network' };
+  }
+}
+function tinTest() { return tinInfo('8330042'); }   // редактороос нэг удаа ажиллуулж зөвшөөрөл өгнө
 
 // ── Ажилтны нэвтрэлт ── Кодын жагсаалтыг хэзээ ч буцаахгүй. Зөвхөн "Тийм" төлөвтэй ажилтан нэвтэрнэ.
 function login(biz, user, code) {

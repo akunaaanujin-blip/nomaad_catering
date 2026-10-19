@@ -1124,8 +1124,21 @@ function cancelEntry(id) {
 }
 
 // ── Харилцагч ──
+var ptTinQ = '';
+function ptTinInput() {   // байгууллагын регистр / ТТД → нэрийг ebarimt.mn-ээс
+  var q = $('ptTin').value.trim().replace(/\s/g, ''), el = $('ptTinInfo'); ptTinQ = q;
+  if (!/^(\d{7}|\d{11,12})$/.test(q)) { el.textContent = ''; return; }
+  el.textContent = 'Шалгаж байна…';
+  tinLookup(q, function (err, d) {
+    if (ptTinQ !== q) return;
+    if (err) { el.textContent = tinErrText(err); return; }
+    if (!d.found) { el.textContent = '✗ Бүртгэлгүй дугаар'; return; }
+    el.innerHTML = '✓ ' + esc(d.name) + ' · ТТД ' + esc(d.tin) + (d.vatPayer ? ' · НӨАТ төлөгч' : '');
+    if (!$('ptName').value.trim()) $('ptName').value = d.name;
+  });
+}
 function openPartner() {
-  $('ptKind').value = 'Нийлүүлэгч'; ['ptName', 'ptTin', 'ptPhone', 'ptNote'].forEach(function (k) { $(k).value = ''; });
+  $('ptKind').value = 'Нийлүүлэгч'; ['ptName', 'ptTin', 'ptPhone', 'ptNote'].forEach(function (k) { $(k).value = ''; }); $('ptTinInfo').textContent = '';
   openSheet('partnerSheet');
 }
 function savePartner() {

@@ -164,6 +164,22 @@ function stockTake(item, qty) {
   if (s.shop < 0 && s.wh > 0) { var t = Math.min(s.wh, -s.shop); s.wh -= t; s.shop += t; }
 }
 
+// ── Байгууллагын ТТД: бичихэд нэрийг нь шалгаж харуулна ──
+var tinLook = { q: '', res: null };
+function saleTinInput() {
+  var q = $('saleTin').value.trim().replace(/\s/g, ''), el = $('saleTinName');
+  tinLook = { q: q, res: null };
+  if (!q) { el.textContent = ''; return; }
+  if (!/^(\d{7}|\d{11,12})$/.test(q)) { el.textContent = q.length < 7 ? '' : tinErrText('format'); return; }
+  el.textContent = 'Шалгаж байна…';
+  tinLookup(q, function (err, d) {
+    if (tinLook.q !== q) return;   // энэ хооронд өөрчилсөн
+    if (err) { el.textContent = tinErrText(err); return; }
+    tinLook.res = d;
+    el.innerHTML = d.found ? '✓ <b>' + esc(d.name) + '</b> · ТТД ' + esc(d.tin) + (d.vatPayer ? ' · НӨАТ төлөгч' : '') : '✗ Бүртгэлгүй дугаар — шалгана уу';
+  });
+}
+
 // ── Борлуулалт (сагс: олон бараа → нэг баримт) ──
 function openSale() {
   sale = { cart: [], pay: 'Бэлэн', cat: '' };
@@ -173,7 +189,7 @@ function openSale() {
   renderChips();
   $('saleItem').value = '';
   $('salePrice').value = '';
-  $('saleTin').value = '';
+  $('saleTin').value = ''; tinLook = { q: '', res: null }; if ($('saleTinName')) $('saleTinName').textContent = '';
   $('saleCust').value = '';
   $('saleTinWrap').style.display = ebEnabled() ? 'block' : 'none';
   setPay('Бэлэн');
@@ -307,7 +323,13 @@ function submitSale() {
   }
 
   // И-баримт гаргаад дараа нь хадгална
-  var tin = $('saleTin').value.trim();
+  var tinIn = $('saleTin').value.trim().replace(/\s/g, ''), tin = tinIn, buyer = '';
+  if (tinIn) {   // регистрээр бичсэн бол ТТД руу хөрвүүлнэ; нэрийг баримтад хэвлэнэ
+    var lr = tinLook.q === tinIn ? tinLook.res : null;
+    if (lr && !lr.found) { toast('Энэ ТТД / регистр бүртгэлгүй байна — шалгана уу'); return; }
+    if (lr) { tin = lr.tin; buyer = lr.name; }
+    else if (!/^\d{11,12}$/.test(tinIn)) { toast('Регистрээр ТТД-г шалгаж чадсангүй — ТТД (11–12 оронтой)-г шууд бичнэ үү'); return; }
+  }
   var btn = $('saleSubmit');
   btn.disabled = true;
   btn.textContent = 'Баримт гаргаж байна...';
@@ -324,8 +346,8 @@ function submitSale() {
     lines.forEach(function (r) {
       r.ddtd = res.id;
       r.ebDate = res.date;
-      if (tin) r.buyerTin = tin;
-      r.note = 'ДДТД ' + res.id + (tin ? ' · ТТД ' + tin : '');
+      if (tin) { r.buyerTin = tin; if (buyer) r.buyerName = buyer; }
+      r.note = 'ДДТД ' + res.id + (tin ? ' · ТТД ' + tin + (buyer ? ' · ' + buyer : '') : '');
     });
     finishSale(lines);
     ebShowReceipt(res, lines);

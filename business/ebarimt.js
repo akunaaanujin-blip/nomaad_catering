@@ -107,6 +107,7 @@ function ebShowReceipt(res, lines) {
     '<div class="rc-row"><span>ТТД</span><span>' + esc(res.merchantTin || '') + '</span></div>' +
     '<div class="rc-row"><span>Огноо</span><span>' + esc(res.date || '') + '</span></div>' +
     '<div class="rc-row"><span>Худалдагч</span><span>' + esc(staffName) + '</span></div>' +
+    (first.buyerName ? '<div class="rc-row"><span>Худалдан авагч</span><span>' + esc(first.buyerName) + '</span></div>' : '') +
     (first.buyerTin ? '<div class="rc-row"><span>Худалдан авагч ТТД</span><span>' + esc(first.buyerTin) + '</span></div>' : '') +
     '<div class="rc-line"></div>' +
     lines.map(function (r) {

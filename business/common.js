@@ -51,6 +51,21 @@ function jsonp(params, cb) {
     .then(function (data) { clearTimeout(timer); finish(null, data); })
     .catch(function () { clearTimeout(timer); jsonpScript(q, finish); });
 }
+// ТТД / регистр → байгууллагын нэр (сервер ebarimt.mn-ээс лавлана). cb(err, { found, tin, name, vatPayer })
+function tinLookup(q, cb) {
+  q = String(q || '').trim().replace(/\s/g, '');
+  if (!API_URL) { cb('demo'); return; }
+  jsonp({ action: 'tin', q: q }, function (err, d) {
+    if (err || !d) { cb('network'); return; }
+    if (d.status !== 'ok') { cb(d.error || 'error'); return; }
+    if (d.found === undefined) { cb('notready'); return; }   // сервер хараахан шинэчлэгдээгүй
+    cb(null, d);
+  });
+}
+function tinErrText(err) {
+  return err === 'demo' ? 'Туршилтын горимд шалгахгүй' : err === 'perm' ? 'Удирдлага ТТД шалгах зөвшөөрлийг (Apps Script) хараахан өгөөгүй байна' :
+    err === 'format' ? 'Регистр 7 оронтой эсвэл ТТД 11–12 оронтой' : err === 'notready' ? 'ТТД шалгах үйлчилгээ хараахан идэвхжээгүй' : 'Шалгаж чадсангүй — интернэтээ шалгана уу';
+}
 function jsonpScript(q, cb) {
   var name = 'cb_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
   var s = document.createElement('script');
