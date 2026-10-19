@@ -236,7 +236,7 @@ function railHtml(pend) {
     return '<button class="' + (on ? 'on' : '') + '" onclick="' + onclick + '" title="' + label + '">' + ico(icon) + '<span>' + label + '</span>' + (extra || '') + '</button>';
   };
   var inCo = state.view === 'company';
-  return '<div class="rail-logo">N</div>' +
+  return '<div class="rail-logo" onclick="go(\'companies\')" title="Нүүр хуудас" style="cursor:pointer">N</div>' +
     (state.view !== 'companies' ? item(false, 'navBack()', 'back', 'Буцах') : '') +   // нүүр (компаниуд) хуудаснаас буцах шаардлагагүй
     item(state.view === 'companies', "go('companies')", 'home', 'Компаниуд') +
     (inCo && BUSINESSES[state.biz] ? bizModules(state.biz).map(function (m) { return item(state.module === m[0], "openModule('" + m[0] + "')", m[0], m[1]); }).join('') : '') +
@@ -778,7 +778,7 @@ function staffPage() {
   var tabs = '<div class="tabs" style="margin-bottom:10px">' + (isOwner() ? [['pay', 'Ажилчид, цалин'], ['att', 'Ирц, ажилласан цаг']] : [['att', 'Ирц, ажилласан цаг']]).map(function (t) {
     return '<button class="' + (tab === t[0] ? 'on' : '') + '" onclick="state.staffTab=\'' + t[0] + '\';render()">' + t[1] + '</button>'; }).join('') + '</div>';
   var acts = '<button class="b-btn primary" onclick="openTask()">+ Даалгавар илгээх</button>' + (isOwner() ? '<a class="b-btn" href="register.html" target="_blank">+ Бүртгүүлэх хуудас</a>' : '');
-  return pageHead('Ажилчид', acts) + tabs + tasksCard() + (tab === 'att' ? attendView() : staffView(''));
+  return pageHead('Ажилчид', acts) + tabs + tasksCard() + (tab === 'att' ? attendView() : staffView('') + staffLinks());
 }
 // ── KPI: сарын борлуулалтын % → «KPI бонус» болгон цалинд («Шагнал» — хуучин нэр) ──
 function kpiPct(s) { return Number((window.kpiCfg || {})[s.id]) || 0; }
@@ -801,6 +801,19 @@ function kpiPost(id) {
     toast('✓ KPI бонус цалинд бичигдлээ'); refresh();
   });
 }
+function roleName(r) { return r === 'Эзэн' ? 'Захирал' : r; }
+function dismissStaff(id) {   // ажлаас гаргах — нэвтрэлт нь шууд хүчингүй, түүх нь хадгалагдана («Идэвхгүй» жагсаалтаас буцааж болно)
+  var s = staff.filter(function (x) { return x.id === id; })[0]; if (!s) return;
+  if (!confirm(s.name + '-г ажлаас гаргах уу?\nНэвтрэх эрх нь шууд хаагдана. Цалин, борлуулалтын түүх хадгалагдана.')) return;
+  post({ type: 'admin_staff', id: id, fields: { status: 'Үгүй' } }, function (err) { if (err) { toast('Алдаа: ' + err); return; } toast('Ажлаас гаргалаа'); refresh(); });
+}
+function staffLinks() {   // компани бүрийн ажилчдын нэвтрэх, бүртгүүлэх холбоос
+  var base = location.href.replace(/[^\/]*$/, '');
+  return '<div class="card"><h2>Ажилчдын хуудас</h2><table class="rep-t"><tr><th>Компани</th><th>Нэвтрэх (өдөр бүр)</th><th>Бүртгүүлэх (шинэ ажилтан)</th></tr>' +
+    KEYS.map(function (k) { var u = base + k + '.html', r = base + 'register.html?biz=' + k;
+      return '<tr><td>' + esc(BUSINESSES[k].name) + '</td><td><a class="link" href="' + u + '" target="_blank">' + esc(u.replace(/^https?:\/\//, '')) + '</a></td>' +
+        '<td><a class="link" href="' + r + '" target="_blank">Бүртгүүлэх холбоос</a></td></tr>'; }).join('') + '</table></div>';
+}
 function bizLabel(b) { return b === 'all' ? 'Бүх дэлгүүр' : (BUSINESSES[b] ? BUSINESSES[b].name : b); }
 function pendCard(s) {
   return '<div class="pend"><div><b>' + esc(s.surname ? s.surname + ' ' : '') + esc(s.name) + '</b> <span class="muted">@' + esc(s.username || '') + '</span> · ' + bizLabel(s.biz) +
@@ -812,10 +825,11 @@ function pendCard(s) {
 function staffCard(s, m) {
   var r = salaryOf(s, m), sales = staffSales(s, m);
   return '<div class="st-card"><div class="st-head"><div><b>' + esc(s.surname ? s.surname + ' ' : '') + esc(s.name) + '</b>' +
-    '<small>@' + esc(s.username || '—') + ' · ' + bizLabel(s.biz) + ' · ' + (s.role === 'Худалдагч' ? 'Худалдагч' : '<span class="tag b">' + esc(s.role) + '</span>') + (s.position ? ' · ' + esc(s.position) : '') + '</small>' +
+    '<small>@' + esc(s.username || '—') + ' · ' + bizLabel(s.biz) + ' · ' + (s.role === 'Худалдагч' ? 'Худалдагч' : '<span class="tag b">' + esc(roleName(s.role)) + '</span>') + (s.position ? ' · ' + esc(s.position) : '') + '</small>' +
     '<small>' + (s.phone ? 'Утас: ' + esc(s.phone) : '') + (s.bank ? ' · Данс: ' + esc(s.bank) : '') + '</small>' +
     '<small>' + contractBadge(s) + '</small></div>' +
-    '<div><button class="mini" onclick="openStaff(\'' + s.id + '\')">Засах</button> <button class="mini" style="color:var(--accent)" onclick="openContract(\'' + s.id + '\')">Гэрээ</button></div></div>' +
+    '<div><button class="mini" onclick="openStaff(\'' + s.id + '\')">Засах</button> <button class="mini" onclick="openContract(\'' + s.id + '\')">Гэрээ</button>' +
+      (s.role !== 'Эзэн' ? ' <button class="mini" onclick="dismissStaff(\'' + s.id + '\')">Ажлаас гаргах</button>' : '') + '</div></div>' +
     '<div class="st-sal">' +
     '<div><span>Үндсэн</span><b>' + (r.base ? fmt(r.base) : '<span class="muted">тохируулаагүй</span>') + '</b></div>' +
     '<div><span>KPI бонус</span><b>' + fmt(r.bonus) + '</b></div>' +
@@ -845,7 +859,7 @@ function reject(id) {
 function openStaff(id) {
   var s = staff.filter(function (x) { return x.id === id; })[0]; if (!s) return;
   editId = id;
-  $('sfTitle').textContent = (s.surname ? s.surname + ' ' : '') + s.name;
+  $('sfTitle').textContent = (s.surname ? s.surname + ' ' : '') + s.name; $('sfName').value = s.name || '';
   $('sfSub').textContent = bizLabel(s.biz) + (s.created ? ' · бүртгүүлсэн ' + s.created : '');
   $('sfBiz').innerHTML = ['all'].concat(KEYS).map(function (k) { return '<option value="' + k + '">' + esc(bizLabel(k)) + '</option>'; }).join('');
   $('sfStatus').value = s.status; $('sfRole').value = s.role; $('sfBiz').value = s.biz;
@@ -857,7 +871,7 @@ function openStaff(id) {
   openSheet('staffSheet');
 }
 function saveStaff() {
-  var f = { status: $('sfStatus').value, role: $('sfRole').value, biz: $('sfBiz').value, position: $('sfPos').value.trim(),
+  var f = { name: $('sfName').value.trim(), status: $('sfStatus').value, role: $('sfRole').value, biz: $('sfBiz').value, position: $('sfPos').value.trim(),
             salary: Number($('sfSalary').value) || 0, phone: $('sfPhone').value.trim(), bank: $('sfBank').value.trim(),
             username: $('sfUser').value.trim().toLowerCase(), address: $('sfAddr').value.trim(), ndType: $('sfNdType').value, ndJob: $('sfNdJob').value.trim() };
   if (f.ndJob && !/^\d{4}-\d{2}$/.test(f.ndJob)) { toast('НД мэргэжлийн кодыг жагсаалтаас сонгоно уу (жишээ 5223-11)'); return; }

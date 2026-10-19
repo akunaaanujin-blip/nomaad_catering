@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ажилтан</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261019y">
+<link rel="stylesheet" href="style.css?v=20261019z">
 </head>
 <body>
 <div class="demo" id="demo" style="display:none">Туршилтын горим — мэдээлэл зөвхөн энэ төхөөрөмжид хадгалагдаж байна</div>
@@ -19,7 +19,7 @@
     <label for="userInput">Нэвтрэх нэр</label>
     <input id="userInput" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="жишээ: bold.b" onkeydown="if(event.key==='Enter')$('codeInput').focus()">
     <label for="codeInput">Нууц код</label>
-    <input id="codeInput" class="code-input" type="password" inputmode="numeric" maxlength="8" autocomplete="current-password" placeholder="••••" oninput="onCodeInput()" onkeydown="if(event.key==='Enter')doLogin()">
+    <input id="codeInput" class="code-input" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="••••" oninput="onCodeInput()" onkeydown="if(event.key==='Enter')doLogin()">
     <p class="muted" id="loginMsg" style="margin-top:8px;min-height:20px;color:var(--red)"></p>
     <button class="btn" onclick="doLogin()">Нэвтрэх</button>
     <p class="muted" style="margin-top:10px;font-size:13px">Шинэ ажилтан уу? <a href="register.html?biz=cozy">Энд бүртгүүлнэ үү</a></p>
@@ -241,14 +241,14 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="products.js?v=20261019y"></script>
-<script src="config.js?v=20261019y"></script>
-<script src="common.js?v=20261019y"></script>
+<script src="products.js?v=20261019z"></script>
+<script src="config.js?v=20261019z"></script>
+<script src="common.js?v=20261019z"></script>
 <script>var BIZ_KEY = 'cozy';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261019y"></script>
-<script src="ebarimt.js?v=20261019y"></script>
+<script src="staff.js?v=20261019z"></script>
+<script src="ebarimt.js?v=20261019z"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="orders.js?v=20261019y"></script>
+<script src="orders.js?v=20261019z"></script>
 </body>
 </html>

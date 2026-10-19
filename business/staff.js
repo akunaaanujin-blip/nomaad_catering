@@ -45,8 +45,7 @@ function showLogin() {
 }
 function onCodeInput() {
   var v = $('codeInput').value.replace(/\D/g, '').slice(0, 8);
-  $('codeInput').value = v;
-  if (v.length === 4 && $('userInput').value.trim()) doLogin();
+  $('codeInput').value = v;   // автоматаар нэвтрүүлэхгүй — хөтчийн хадгалсан кодоор өөрөө орохоос сэргийлнэ
 }
 function doLogin() {
   var user = $('userInput').value.trim().toLowerCase();
