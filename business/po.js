@@ -34,9 +34,39 @@ function poView() {
         '<span class="tag b">' + (s.sup ? 'Төлбөр хийгдсэн' : 'Захиалсан') + '</span>') + '</td><td class="n" style="white-space:nowrap">' + acts + '</td></tr>';
   }).join('');
   return '<p class="hint">1) «+ Шинэ захиалга» — ямар бараа, хэдийг, хэдэн юаниар захиалсан. 2) Урьдчилгаа, үлдэгдэл төлбөр, каргоны мөнгийг «Банкны хуулга»-аас энэ захиалгаар тулгана (эсвэл «Төлбөр», «Карго» товч). ' +
-    '3) Бараа ирэхэд «Бараа ирсэн» — бүх зардал барааны өртөгт хуваагдаж, үлдэгдэлд орно.</p>' +
-    '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th>Дугаар</th><th>Нийлүүлэгч</th><th>Бараа</th><th class="n">Нийт (валютаар)</th><th class="n">Төлсөн</th><th class="n">Карго</th><th>Төлөв</th><th></th></tr>' +
+    '3) Бараа ирэхэд «Бараа ирсэн» — бүх зардал барааны өртөгт хуваагдаж, үлдэгдэлд орно.</p>' + poLowCard() +
+    '<div class="card rep"><div class="rep-cap"><b>Захиалгууд</b></div><div class="scroll"><table class="rep-t"><tr><th>Дугаар</th><th>Нийлүүлэгч</th><th>Бараа</th><th class="n">Нийт (валютаар)</th><th class="n">Төлсөн</th><th class="n">Карго</th><th>Төлөв</th><th></th></tr>' +
     (rows || '<tr><td colspan="8" class="muted">Захиалга алга — «+ Шинэ захиалга» дарна уу</td></tr>') + '</table></div></div>';
+}
+// ── Захиалах бараа: үлдэгдэл + замд яваа нь доод үлдэгдлээс бага ──
+function poSuggest(biz, r, oo) { return Math.max(1, Math.ceil(minOf(biz, r.name) * 2 - (round2(r.shop + r.wh) + (oo[r.name] || 0)))); }
+function poLowCard() {
+  var biz = state.biz, oo = onOrder(biz), lb = lastBuys(biz), rows = stockRows(biz);
+  if (state.msEdit) {
+    return '<div class="card rep"><div class="rep-cap"><b>Доод үлдэгдэл тохируулах</b><span>Бараа бүрийн хамгийн бага байх тоо. Хоосон эсвэл 0 — хянахгүй.</span></div>' +
+      '<div class="bar-row" style="padding:10px 12px;gap:6px"><input class="search" placeholder="Бараа хайх…" oninput="msFilter(this.value)" style="max-width:260px">' +
+      '<div class="pg-act"><button class="b-btn primary" onclick="msSave()">Хадгалах</button><button class="b-btn" onclick="state.msEdit=false;render()">Болих</button></div></div>' +
+      '<div class="scroll"><table class="rep-t"><tr><th>Бараа</th><th>Ангилал</th><th class="n">Үлдэгдэл</th><th class="n">Замд</th><th class="n">Доод үлдэгдэл</th></tr>' +
+      rows.map(function (r) {
+        var mn = minOf(biz, r.name);
+        return '<tr class="ms-row" data-q="' + esc((r.name + ' ' + r.cat).toLowerCase()) + '"><td>' + esc(r.name) + '</td><td class="muted">' + esc(r.cat) + '</td><td class="n">' + round2(r.shop + r.wh) + '</td>' +
+          '<td class="n">' + (oo[r.name] ? round2(oo[r.name]) : '') + '</td><td class="n"><input type="number" min="0" step="any" class="ms-in" data-k="' + esc(r.name) + '" value="' + (mn || '') + '" style="width:80px"></td></tr>';
+      }).join('') + '</table></div></div>';
+  }
+  var need = needList(biz), anyMin = rows.some(function (r) { return minOf(biz, r.name) > 0; });
+  return '<div class="card rep"><div class="rep-cap"><b>Захиалах бараа</b><span>Үлдэгдэл + замд яваа нь доод үлдэгдлээс бага болсон бараа</span></div>' +
+    (need.length ? '<div class="scroll"><table class="rep-t"><tr><th>Бараа</th><th class="n">Үлдэгдэл</th><th class="n">Замд</th><th class="n">Доод үлдэгдэл</th><th class="n">Санал болгох тоо</th><th class="n">Сүүлд авсан үнэ</th></tr>' +
+      need.map(function (r) {
+        return '<tr><td>' + esc(r.name) + '</td><td class="n">' + round2(r.shop + r.wh) + '</td><td class="n">' + (oo[r.name] ? round2(oo[r.name]) : '') + '</td><td class="n">' + round2(minOf(biz, r.name)) + '</td>' +
+          '<td class="n"><b>' + poSuggest(biz, r, oo) + '</b></td><td class="n">' + buyText(lb[r.name]) + '</td></tr>';
+      }).join('') + '</table></div>'
+      : '<p class="muted" style="margin:10px 12px">' + (anyMin ? 'Доод үлдэгдлээс бага бараа алга.' : 'Доод үлдэгдэл тохируулаагүй байна — «Доод үлдэгдэл тохируулах» дарж бараа бүрийн хамгийн бага тоог оруулбал дуусах дөхсөн бараа энд гарна.') + '</p>') +
+    '<div class="pg-act" style="padding:0 12px 12px">' + (need.length ? '<button class="b-btn primary" onclick="poFromLow()">Эдгээрээр захиалга үүсгэх</button>' : '') +
+    '<button class="b-btn" onclick="state.msEdit=true;render()">Доод үлдэгдэл тохируулах</button></div></div>';
+}
+function msFilter(q) {
+  q = String(q || '').toLowerCase().trim();
+  [].forEach.call(document.querySelectorAll('.ms-row'), function (tr) { tr.style.display = !q || tr.dataset.q.indexOf(q) >= 0 ? '' : 'none'; });
 }
 // ── Захиалга үүсгэх / засах ──
 var pqIt = [];

@@ -192,6 +192,23 @@ function buildJournal(biz, R) {
     if (j.biz !== biz) return;
     add(j.date, j.no ? VOUCHER_NAMES[j.no.slice(0, 2)] + ' ' + j.no : /^Он нээлт/.test(j.desc) ? 'Он нээлт' : 'Журналын бичилт', j.id, j.dr, j.cr, j.amount, j.desc, j.partner);
   });
+  // Үндсэн хөрөнгийн элэгдэл — сар бүрийн эцэст автоматаар (шулуун шугамаар, авсны дараа сараас). Гараар бичсэн сар байвал түүнийг авна.
+  var td = todayStr();
+  (R.assets || []).forEach(function (A) {
+    if (A.biz !== biz || !(A.life > 0) || !A.date) return;
+    var cap = r0(A.cost - (A.salv || 0) - (A.dep0 || 0)), mon = Math.round(Math.max(0, cap) / A.life), re = new RegExp('#' + A.id + '(?![\\w])'), manual = {};
+    if (!mon) return;
+    R.journal.forEach(function (j) { if (j.biz === biz && j.dr === '7304' && re.test(String(j.desc))) { var mm = String(j.desc).match(/Элэгдэл (\d{4}-\d{2})/); if (mm) manual[mm[1]] = (manual[mm[1]] || 0) + j.amount; } });
+    var acc = 0, y = Number(A.date.slice(0, 4)), mo = Number(A.date.slice(5, 7)) + 1;   // авсны дараа сар (1–12)
+    for (var i = 0; i < 1200 && acc < cap - 0.005; i++) {
+      if (mo > 12) { mo = 1; y++; }
+      var m = y + '-' + ('0' + mo).slice(-2), end = todayStr(new Date(y, mo, 0));
+      if (end > td || (A.gone && end > A.gone)) break;   // зөвхөн дууссан сар, актласнаас өмнө
+      var amt = manual[m] != null ? manual[m] : Math.min(mon, r0(cap - acc));
+      if (manual[m] == null && !(R.closed && end <= R.closed)) add(end, 'Элэгдэл', A.id + '-' + m, '7304', '2002', amt, 'Элэгдэл ' + m + ' #' + A.id + ' ' + A.name);
+      acc = r0(acc + amt); mo++;
+    }
+  });
   E.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
   return E;
 }

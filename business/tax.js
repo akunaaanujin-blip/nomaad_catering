@@ -40,7 +40,7 @@ function calcPay(s, month) {
   var sumK = function (k) { return e.filter(function (x) { return x.kind === k; }).reduce(function (a, x) { return a + x.amount; }, 0); };
   var started = !s.start || s.start <= lastDay(month);   // ажилд орохоос өмнөх сард цалин тооцохгүй
   var ended = s.contractEnd && s.contractEnd < month + '-01';
-  var base = started && !ended ? Number(s.salary) || 0 : 0, bonus = sumK('Шагнал'), gross = base + bonus;
+  var base = started && !ended ? Number(s.salary) || 0 : 0, bonus = sumK('KPI бонус') + sumK('Шагнал'), gross = base + bonus;
   var ndBase = Math.min(gross, TAX.ndCeiling), inj = jobInjury(s.ndJob);
   var ndEE = Math.round(ndBase * rateSum(TAX.ndEmployee) / 100), ndER = Math.round(ndBase * (rateSum(TAX.ndEmployer) + inj) / 100);
   var taxable = gross - ndEE, credit = gross ? pitCredit(gross) : 0, pit = Math.max(0, Math.round(taxable * TAX.pitRate / 100) - credit);

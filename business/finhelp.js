@@ -111,12 +111,6 @@ function monthlyView() {
     var oldest = opn.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; })[0], od = Math.round((new Date(todayStr()) - new Date(oldest.date)) / 864e5);
     items.push([od < 45, 'Бараа захиалгаа шалгах', opn.length + ' захиалга ирээгүй · хамгийн удсан ' + oldest.no + ' (' + od + ' хоног)', "openModule('products');setSub('po')"]);
   }
-  // Үндсэн хөрөнгийн элэгдэл: өнгөрсөн сарынх бичигдсэн эсэх
-  var fas = typeof faList === 'function' && isOwner() ? faList(biz).filter(function (A) { return A.status === 'Ашиглаж буй'; }) : [];
-  if (fas.length) {
-    var EJ = J(), dueFa = fas.filter(function (A) { return faDue(A, lm, EJ) > 0; });
-    items.push([!dueFa.length, lm + ' сарын элэгдэл бичих', dueFa.length ? dueFa.length + ' хөрөнгийн элэгдэл бичигдээгүй' : 'Бичигдсэн', "state.faMonth='" + lm + "';setSub('assets')"]);
-  }
   // Компани хоорондын тооцоо хоёр талаараа таарч байгаа эсэх
   var icr = isOwner() ? icRecon().filter(function (x) { return x.a === biz || x.b === biz; }) : [];
   if (icr.length) {

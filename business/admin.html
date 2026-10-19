@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Удирдлагын самбар</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261019s">
+<link rel="stylesheet" href="style.css?v=20261019t">
 </head>
 <body class="bz-admin">
 <div class="demo" id="demo" style="display:none">Туршилтын горим — зөвхөн энэ төхөөрөмж дээр бичигдсэн мэдээлэл харагдана (код: 0000)</div>
@@ -30,6 +30,7 @@
   <div class="bz-scrim" onclick="toggleNav(false)"></div>
   <div class="bz-body">
     <header class="bz-head">
+      <button class="bz-back" id="backBtn" onclick="navBack()" style="display:none">← Буцах</button>
       <button class="bz-menu" onclick="toggleNav(true)" aria-label="Цэс">☰ Цэс</button>
       <div class="bz-crumb" id="crumb"></div>
       <div class="bz-user"><small id="updated"></small><span id="ownerName"></span></div>
@@ -59,8 +60,8 @@
       <div><label for="sfPhone">Утас</label><input id="sfPhone" inputmode="tel"></div>
     </div>
     <div class="row2">
-      <div><label for="sfKpi">Борлуулалтын урамшуулал (KPI, %)</label><input id="sfKpi" type="number" inputmode="decimal" min="0" max="50" step="0.1" placeholder="жишээ 1"></div>
-      <div><small class="muted" style="display:block;margin-top:26px">Сарын борлуулалтын энэ хувийг «Шагнал» болгон цалинд бичнэ (ажилтны картаас нэг товчоор).</small></div>
+      <div><label for="sfKpi">KPI бонус (сарын борлуулалтын %)</label><input id="sfKpi" type="number" inputmode="decimal" min="0" max="50" step="0.1" placeholder="жишээ 1"></div>
+      <div><small class="muted" style="display:block;margin-top:26px">Сарын борлуулалтын энэ хувийг «KPI бонус» болгон цалинд бичнэ (ажилтны картаас нэг товчоор).</small></div>
     </div>
     <label for="sfBank">Цалингийн данс</label><input id="sfBank">
     <label for="sfAddr">Гэрийн хаяг</label><input id="sfAddr">
@@ -87,7 +88,7 @@
     <div class="seg seg4" id="slKind">
       <button data-v="Урьдчилгаа" onclick="setKind(this)">Урьдчилгаа</button>
       <button data-v="Олгосон" onclick="setKind(this)">Олгосон</button>
-      <button data-v="Шагнал" onclick="setKind(this)">Шагнал</button>
+      <button data-v="KPI бонус" onclick="setKind(this)">KPI бонус</button>
       <button data-v="Суутгал" onclick="setKind(this)">Суутгал</button>
     </div>
     <div class="row2">
@@ -376,20 +377,20 @@
 <input type="file" id="baazFile" accept=".xlsx,.xls" style="display:none" onchange="importBaaz(this)">
 <div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="products.js?v=20261019s"></script>
-<script src="config.js?v=20261019s"></script>
-<script src="common.js?v=20261019s"></script>
-<script src="reports.js?v=20261019s"></script>
-<script src="tax.js?v=20261019s"></script>
-<script src="finhelp.js?v=20261019s"></script>
-<script src="finance.js?v=20261019s"></script>
-<script src="calendar.js?v=20261019s"></script>
-<script src="bank.js?v=20261019s"></script>
-<script src="prodimport.js?v=20261019s"></script>
-<script src="loans.js?v=20261019s"></script>
-<script src="po.js?v=20261019s"></script>
-<script src="assets.js?v=20261019s"></script>
-<script src="ops.js?v=20261019s"></script>
-<script src="admin.js?v=20261019s"></script>
+<script src="products.js?v=20261019t"></script>
+<script src="config.js?v=20261019t"></script>
+<script src="common.js?v=20261019t"></script>
+<script src="reports.js?v=20261019t"></script>
+<script src="tax.js?v=20261019t"></script>
+<script src="finhelp.js?v=20261019t"></script>
+<script src="finance.js?v=20261019t"></script>
+<script src="calendar.js?v=20261019t"></script>
+<script src="bank.js?v=20261019t"></script>
+<script src="prodimport.js?v=20261019t"></script>
+<script src="loans.js?v=20261019t"></script>
+<script src="po.js?v=20261019t"></script>
+<script src="assets.js?v=20261019t"></script>
+<script src="ops.js?v=20261019t"></script>
+<script src="admin.js?v=20261019t"></script>
 </body>
 </html>
