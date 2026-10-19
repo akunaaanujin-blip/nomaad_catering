@@ -763,7 +763,7 @@ function staffView(fixedBiz) {
     (pend.length ? '<div class="card"><h2>Баталгаажуулалт хүлээж буй (' + pend.length + ')</h2>' + pend.map(pendCard).join('') + '</div>' : '') +
     '<div class="card"><div class="bar-row"><h2 style="margin:0">Ажилчид (' + act.length + ')</h2>' +
     '<a class="link" href="' + reg + '" target="_blank">＋ Бүртгүүлэх хуудас</a></div>' +
-    (act.length ? '<div class="st-grid">' + act.map(function (s) { return staffCard(s, m); }).join('') + '</div>' : '<p class="muted">Ажилтан алга</p>') + '</div>' +
+    (act.length ? staffGroups(act, m) : '<p class="muted">Ажилтан алга</p>') + '</div>' +
     (off.length ? '<details class="card"><summary>Идэвхгүй (' + off.length + ')</summary>' + off.map(function (s) {
       return '<div class="st-off">' + esc(s.surname ? s.surname + ' ' : '') + esc(s.name) + ' · ' + bizLabel(s.biz) +
         ' <button class="mini" onclick="openStaff(\'' + s.id + '\')">Засах</button></div>';
@@ -818,9 +818,17 @@ function pendCard(s) {
     '<button class="btn sm" onclick="approve(\'' + s.id + '\',\'Менежер\')">✓ Менежерээр</button>' +
     '<button class="btn sm ghost" style="color:var(--red)" onclick="reject(\'' + s.id + '\')">✕ Татгалзах</button></div></div>';
 }
-function staffCard(s, m) {
+function staffGroups(act, m) {   // компани (байршил) бүрээр, өнгөөр нь ангилна
+  return KEYS.concat(['all']).map(function (k) {
+    var L = act.filter(function (s) { return s.biz === k; }); if (!L.length) return '';
+    var B = BUSINESSES[k] || { name: 'Бүх дэлгүүр', icon: '★', color: '#5B6B82' };
+    return '<div class="st-grp" style="--co:' + B.color + '"><div class="st-grp-h"><span class="mono">' + B.icon + '</span><b>' + esc(B.name) + '</b><small>' + L.length + ' ажилтан</small></div>' +
+      '<div class="st-grid">' + L.map(function (s) { return staffCard(s, m, B.color); }).join('') + '</div></div>';
+  }).join('');
+}
+function staffCard(s, m, color) {
   var r = salaryOf(s, m), sales = staffSales(s, m);
-  return '<div class="st-card"><div class="st-head"><div><b>' + esc(s.surname ? s.surname + ' ' : '') + esc(s.name) + '</b>' +
+  return '<div class="st-card"' + (color ? ' style="border-top:3px solid ' + color + '!important"' : '') + '><div class="st-head"><div><b>' + esc(s.surname ? s.surname + ' ' : '') + esc(s.name) + '</b>' +
     '<small>@' + esc(s.username || '—') + ' · ' + bizLabel(s.biz) + ' · ' + (s.role === 'Худалдагч' ? 'Худалдагч' : '<span class="tag b">' + esc(roleName(s.role)) + '</span>') + (s.position ? ' · ' + esc(s.position) : '') + '</small>' +
     '<small>' + (s.phone ? 'Утас: ' + esc(s.phone) : '') + (s.bank ? ' · Данс: ' + esc(s.bank) : '') + '</small>' +
     '<small>' + contractBadge(s) + '</small></div>' +

@@ -808,3 +808,10 @@ body:not(.bz-admin) .mono{border-radius:4px}
 .ch-card h3{font-size:14px;font-weight:600;margin:0 0 10px;color:#111827}
 .ch-box{position:relative;height:270px}.ch-box.sm{height:230px}
 @media(max-width:900px){.ch-grid{grid-template-columns:1fr}}
+
+/* Ажилчид — компани (байршил) бүрээр өнгөтэй бүлэг */
+.st-grp{margin-top:14px}
+.st-grp-h{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--co) 9%,#fff);margin-bottom:10px}
+.st-grp-h .mono{width:28px!important;height:28px!important;font-size:13px!important;border-radius:8px!important;background:var(--co)!important;color:#fff!important}
+.st-grp-h b{font-size:14px;color:var(--co)}
+.st-grp-h small{margin-left:auto;color:#6B7280;font-size:12px}
