@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ажилтан</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261020i">
+<link rel="stylesheet" href="style.css?v=20261020j">
 </head>
 <body>
 <div class="demo" id="demo" style="display:none">Туршилтын горим — мэдээлэл зөвхөн энэ төхөөрөмжид хадгалагдаж байна</div>
@@ -40,12 +40,8 @@
       <button class="big exp" onclick="openExpense()"><span>−</span>Зарлага</button>
       <button class="big close" onclick="openClose()"><span></span>Өдрийн касс хаах</button>
     </div>
-    <div class="big-btns" style="margin-top:10px">
-      <button class="big ord-btn" onclick="openOrder()"><span>＋</span>Захиалга</button>
-      <button class="big buu-btn" onclick="openBuuhia()"><span>⇩</span>Буухиа Excel</button>
-    </div>
     <div class="card">
-      <div class="bar-row"><h2 style="margin:0">Захиалгууд</h2><button class="link" onclick="loadOrders()">Шинэчлэх</button></div>
+      <div class="ord-bar"><button class="btn sm" onclick="openOrder()">＋ Захиалга</button><button class="btn sm ghost2" onclick="openBuuhia()">Буухиа Excel</button><button class="link" onclick="loadOrders()">Шинэчлэх</button></div>
       <div class="tabs ord-tabs" id="orderTabs" style="margin-top:8px"></div>
       <div id="orderList" style="margin-top:8px"></div>
     </div>
@@ -243,14 +239,14 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="products.js?v=20261020i"></script>
-<script src="config.js?v=20261020i"></script>
-<script src="common.js?v=20261020i"></script>
+<script src="products.js?v=20261020j"></script>
+<script src="config.js?v=20261020j"></script>
+<script src="common.js?v=20261020j"></script>
 <script>var BIZ_KEY = 'cozy';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261020i"></script>
-<script src="ebarimt.js?v=20261020i"></script>
+<script src="staff.js?v=20261020j"></script>
+<script src="ebarimt.js?v=20261020j"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="orders.js?v=20261020i"></script>
+<script src="orders.js?v=20261020j"></script>
 </body>
 </html>

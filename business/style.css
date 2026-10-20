@@ -918,3 +918,31 @@ body:not(.bz-admin) .mini.pos{color:#15803D;border-color:#BBF7D0}
   .ep-tbl td.c-n{display:none}.ep-tbl .c-a,.ep-tbl .c-i{max-width:none;min-width:0}
   .ep-tbl .acts{justify-content:flex-end;min-width:0}
 }
+/* ── v8 · Тайван: нил ягааныг зөвхөн цэс ба үндсэн товчинд; бусад нь цагаан/саарал ── */
+body:not(.bz-admin) .big,body:not(.bz-admin) .big.buu-btn,body:not(.bz-admin) .big.ord-btn{background:#fff;color:#111827;border:1px solid #E5E7EB;box-shadow:none}
+body:not(.bz-admin) .big span,body:not(.bz-admin) .big.buu-btn span{color:#9CA3AF}
+body:not(.bz-admin) .big.sale{background:#6A5ADF;border-color:#6A5ADF;color:#fff}
+body:not(.bz-admin) .big.sale span{color:#E0DBFA}
+body:not(.bz-admin) .tabs button{border-color:#E5E7EB;color:#4B5563;font-weight:600}
+body:not(.bz-admin) .tabs button.on{background:#111827;border-color:#111827}
+.ep-grp{background:rgba(255,255,255,.18);padding:6px}
+.ep-it{color:#fff;font-weight:600}
+.ep-it:hover{background:rgba(255,255,255,.18)}
+.ep-it.on{background:#fff;color:#111827}
+/* төлөв — өнгөт шошгогүй, жижиг цэгтэй текст */
+.st{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#374151;white-space:nowrap}
+.st::before{content:'';width:7px;height:7px;border-radius:50%;background:#9CA3AF}
+.st.g::before{background:#16A34A}.st.y::before{background:#D97706}.st.r::before{background:#DC2626}.st.b::before{background:#6A5ADF}.st.n::before{background:#D1D5DB}
+.ep-tbl select.act{width:auto;min-width:130px;padding:6px 8px;font-size:13px;border-radius:8px;border:1px solid #E5E7EB;background:#fff;color:#374151;cursor:pointer}
+.ep-tbl .c-p b{color:#111827}
+.ep-tbl{min-width:900px}
+.ord-bar{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.ord-bar .link{margin-left:auto}
+.btn.sm{width:auto;display:inline-block;margin:0;padding:8px 14px;font-size:14px}
+body:not(.bz-admin) .btn.ghost2{background:#fff;color:#111827;border:1px solid #E5E7EB}
+.ep-tbl{min-width:0;table-layout:auto}
+.ep-tbl .c-a{min-width:140px;max-width:220px}.ep-tbl .c-i{min-width:120px;max-width:200px}
+.ep-tbl td.c-s small .st{font-size:12px;color:#6B7280}
+.ep-tbl select.act{min-width:96px;max-width:120px}
+.ep-tbl .c-a{min-width:120px;max-width:180px}.ep-tbl .c-i{min-width:100px;max-width:160px}
+.ep-tbl td,.ep-tbl th{padding-left:8px;padding-right:8px}

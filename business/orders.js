@@ -47,8 +47,13 @@ function saveOrder(o, done) {
     else orders = orders.map(function (x) { return x.id === o.id ? Object.assign(x, o) : x; });
     save(LS_ORD, orders); done && done(o); renderOrders(); return;
   }
+  // Байгаа захиалгыг шууд дэлгэцэнд шинэчилнэ (сервер 2–5 секунд хариулдаг) — алдаа гарвал серверээс дахин татна
+  if (o.id) {
+    var k = orders.findIndex(function (x) { return x.id === o.id; });
+    if (k >= 0) { orders[k] = Object.assign({}, orders[k], o, { items: ordItems(o) }); save(LS_ORD, orders); renderOrders(); }
+  }
   ordPost(body, function (err, d) {
-    if (err) { toast(err === 'phone' ? 'Утасны дугаар 8 оронтой байна' : err === 'network' ? 'Интернэт холболтоо шалгана уу' : 'Алдаа: ' + err); return; }
+    if (err) { toast(err === 'phone' ? 'Утасны дугаар 8 оронтой байна' : err === 'network' ? 'Интернэт холболтоо шалгана уу — хадгалагдсангүй' : 'Алдаа: ' + err); if (o.id) loadOrders(); return; }
     var saved = d.order; saved.items = ordItems(saved);
     var i = orders.findIndex(function (x) { return x.id === saved.id; });
     if (i >= 0) orders[i] = saved; else orders.push(saved);
@@ -85,7 +90,7 @@ function ordBook(o, prev) {
   }
 }
 function ordAwaitReturn(o) { return ordDead(o) && /^yes:/.test(o.saleDone || ''); }   // бараа буухиа дээр, буцааж аваагүй
-function ordReceive(id) { withFresh(function () {
+function ordReceive(id) { (function (cb) { cb(); })(function () {
   var o = orders.filter(function (x) { return x.id === id; })[0]; if (!o || !ordAwaitReturn(o)) { renderOrders(); return; }
   if (!confirm('Захиалга ' + o.phone + '-ийн бараа буцаж ирсэн үү?\n\n' + ordItemsText(o) + '\n\nБорлуулалт буцаагдаж, бараа үлдэгдэлд нэмэгдэнэ.')) return;
   var n = Object.assign({}, o, { receive: true }); ordBook(n, o); saveOrder(n); toast('Буцаалт бүртгэгдлээ — бараа үлдэгдэлд нэмэгдлээ');
@@ -200,7 +205,8 @@ function withFresh(cb) {
   if (!API_URL) { cb(); return; }
   ordPost({ type: 'orders' }, function (err, d) { if (!err) { orders = d.orders; save(LS_ORD, orders); } cb(); });
 }
-function quickOrd(id, field, val) { withFresh(function () { quickOrd2(id, field, val); }); }
+// Сервер баталгаажсан төлбөр, борлуулалтын тэмдгийг өөрөө хамгаалдаг тул урьдчилан татахгүй — шууд хийнэ
+function quickOrd(id, field, val) { quickOrd2(id, field, val); }
 function quickOrd2(id, field, val) {   // жагсаалтаас нэг товчоор төлөв солих
   var o = orders.filter(function (x) { return x.id === id; })[0]; if (!o) return;
   if (field === 'paid' && o.confirmed) { renderOrders(); toast('Удирдлага баталгаажуулсан — өөрчлөх боломжгүй'); return; }
@@ -222,6 +228,11 @@ function ordFilter(o) {
   if (ordTab === 'back') return ordDead(o);
   return true;
 }
+function ordAct(id, v) {
+  if (!v) return;
+  if (v === 'r') ordReceive(id); else if (v === 'm') copyPayMsg(id); else if (v === 'e') openOrder(id);
+  else quickOrd(id, v.charAt(0) === 's' ? 'status' : 'paid', v.slice(2));
+}
 function renderOrders() {
   var el = $('orderList'); if (!el) return;
   var cnt = function (t) { var keep = ordTab; ordTab = t; var n = orders.filter(ordFilter).length; ordTab = keep; return n; };
@@ -230,30 +241,28 @@ function renderOrders() {
   var list = orders.filter(ordFilter).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
   var STC = { 'Шинэ': 'b', 'Буухиад өгсөн': 'y', 'Хүргэгдсэн': 'g', 'Буцаасан': 'r', 'Цуцалсан': 'r' };
   var rows = list.map(function (o, idx) {
-    var fee = ordFee(o), q = function (v, t, cls) { return '<button class="mini' + (cls ? ' ' + cls : '') + '" onclick="quickOrd(\'' + o.id + '\',\'status\',\'' + v + '\')">' + t + '</button>'; };
-    var acts = (o.status === 'Шинэ' ? q('Буухиад өгсөн', 'Буухиад өгсөн') + q('Цуцалсан', 'Цуцлах', 'neg') : '') +
-      (o.status === 'Буухиад өгсөн' ? q('Хүргэгдсэн', 'Хүргэгдсэн') + q('Буцаасан', 'Буцаасан', 'neg') + q('Цуцалсан', 'Цуцалсан', 'neg') : '') +
-      (o.status === 'Хүргэгдсэн' ? q('Буцаасан', 'Буцаасан', 'neg') : '') +
-      (ordAwaitReturn(o) ? '<button class="mini pos" onclick="ordReceive(\'' + o.id + '\')">Буцаалт хүлээн авсан</button>' : '') +
-      (o.confirmed || ordDead(o) ? '' : o.paid !== 'Орсон'
-        ? '<button class="mini pos" onclick="quickOrd(\'' + o.id + '\',\'paid\',\'Орсон\')">Төлбөр орсон</button>'
-        : '<button class="mini" onclick="quickOrd(\'' + o.id + '\',\'paid\',\'Ороогүй\')">Ороогүй</button>') +
-      '<button class="mini" onclick="copyPayMsg(\'' + o.id + '\')">Мессеж</button>';
+    var fee = ordFee(o), opts = [];
+    if (o.status === 'Шинэ') opts.push(['s:Буухиад өгсөн', 'Буухиад өгсөн'], ['s:Цуцалсан', 'Цуцлах']);
+    if (o.status === 'Буухиад өгсөн') opts.push(['s:Хүргэгдсэн', 'Хүргэгдсэн'], ['s:Буцаасан', 'Буцаасан'], ['s:Цуцалсан', 'Цуцалсан']);
+    if (o.status === 'Хүргэгдсэн') opts.push(['s:Буцаасан', 'Буцаасан']);
+    if (ordAwaitReturn(o)) opts.push(['r', 'Буцаалт хүлээн авсан']);
+    if (!o.confirmed && !ordDead(o)) opts.push(o.paid !== 'Орсон' ? ['p:Орсон', 'Төлбөр орсон'] : ['p:Ороогүй', 'Төлбөр ороогүй']);
+    opts.push(['m', 'Төлбөрийн мессеж хуулах'], ['e', 'Засах']);
+    var acts = '<select class="act" onchange="ordAct(\'' + o.id + '\',this.value);this.selectedIndex=0"><option value="">Үйлдэл</option>' +
+      opts.map(function (x) { return '<option value="' + x[0] + '">' + x[1] + '</option>'; }).join('') + '</select>';
     var ret = ordAwaitReturn(o) ? '<small class="warn">Бараа буцаж ирээгүй</small>' : o.saleDone === 'returned' ? '<small>Бараа буцаж ирсэн</small>' : '';
     return '<tr>' +
-      '<td class="c-n" data-l="#">' + (idx + 1) + '</td>' +
-      '<td class="c-d" data-l="Огноо">' + esc(String(o.date || '').replace(/-/g, '/')) + '<small>' + esc(o.time || '') + '</small></td>' +
+      '<td class="c-d" data-l="Огноо">' + esc(String(o.date || '').slice(5).replace('-', '/')) + '<small>' + esc(o.time || '') + '</small></td>' +
       '<td class="c-p" data-l="Хэрэглэгч" onclick="openOrder(\'' + o.id + '\')"><b>' + esc(o.phone) + '</b><small>' + esc(o.customer || '') + '</small></td>' +
-      '<td class="c-a" data-l="Хаяг">' + esc([o.city && o.city !== 'Улаанбаатар' ? o.city : '', o.district, o.address].filter(Boolean).join(' ')).slice(0, 110) + '</td>' +
+      '<td class="c-a" data-l="Хаяг">' + esc([o.city && o.city !== 'Улаанбаатар' ? o.city : '', o.district, o.address].filter(Boolean).join(' ')).slice(0, 80) + '</td>' +
       '<td class="c-i" data-l="Бараа">' + esc(ordItemsText(o)) + '</td>' +
-      '<td class="c-m num" data-l="Дүн">' + fmt(o.amount) + '</td>' +
-      '<td class="c-f num" data-l="Хүргэлт">' + fmt(fee) + '</td>' +
-      '<td class="c-s" data-l="Төлөв"><span class="tag ' + (STC[o.status] || 'b') + '">' + esc(o.status) + '</span>' + ret + '</td>' +
-      '<td class="c-y" data-l="Төлбөр"><span class="tag ' + (o.confirmed ? 'g' : o.paid === 'Орсон' ? 'g' : 'r') + '">' + (o.confirmed ? 'Баталгаажсан' : esc(o.paid || 'Ороогүй')) + '</span></td>' +
-      '<td class="c-x" data-l="Үйлдэл"><div class="acts">' + acts + '</div></td></tr>';
+      '<td class="c-m num" data-l="Дүн">' + fmt(o.amount) + (fee ? '<small>хүргэлт ' + fmt(fee) + '</small>' : '') + '</td>' +
+      '<td class="c-s" data-l="Төлөв"><span class="st ' + (STC[o.status] || 'b') + '">' + esc(o.status) + '</span>' + ret +
+        '<small><span class="st ' + (o.confirmed || o.paid === 'Орсон' ? 'g' : 'n') + '">' + (o.confirmed ? 'Төлбөр баталгаажсан' : 'Төлбөр ' + esc((o.paid || 'Ороогүй').toLowerCase())) + '</span></small></td>' +
+      '<td class="c-x" data-l="">' + acts + '</td></tr>';
   }).join('');
   var sum = list.reduce(function (a, o) { return a + (Number(o.amount) || 0); }, 0), fees = list.reduce(function (a, o) { return a + ordFee(o); }, 0);
-  el.innerHTML = list.length ? '<div class="ep-tbl-wrap"><table class="ep-tbl"><thead><tr><th>#</th><th>Огноо</th><th>Хэрэглэгч</th><th>Хаяг</th><th>Бараа</th><th class="num">Дүн</th><th class="num">Хүргэлт</th><th>Төлөв</th><th>Төлбөр</th><th>Үйлдэл</th></tr></thead><tbody>' + rows +
+  el.innerHTML = list.length ? '<div class="ep-tbl-wrap"><table class="ep-tbl"><thead><tr><th>Огноо</th><th>Хэрэглэгч</th><th>Хаяг</th><th>Бараа</th><th class="num">Дүн</th><th>Төлөв</th><th></th></tr></thead><tbody>' + rows +
     '</tbody></table></div><div class="ep-tbl-foot">Нийт ' + list.length + ' захиалга · ' + fmt(sum) + ' · хүргэлт ' + fmt(fees) + '</div>'
     : '<p class="muted" style="padding:14px">Захиалга алга</p>';
 }

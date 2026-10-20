@@ -108,24 +108,10 @@ function showMain() {
 // ── ebuuhia маягийн бүтэц: зүүн талын нил ягаан цэс (бүлэглэсэн) + цагаан толгой + саарал ажлын талбар ──
 // Хуудас бүрийн одоогийн хэсгүүдийг view-ээр (dash / orders) ялгаж харуулна; утсан дээр цэс ☰ товчоор нээгдэнэ.
 var shellView = 'dash';
-function navMenu() {
-  var g = [{ t: 'Хянах самбар', items: [['dash', 'Өнөөдөр', function () { showView('dash'); }]] }];
-  if (BIZ.orders) {
-    g.push({ t: 'Захиалгын цэс', items: [
-      ['ord-new', 'Захиалга үүсгэх', function () { openOrder(); }],
-      ['ord-all', 'Захиалгын жагсаалт', function () { showView('orders', 'all'); }],
-      ['ord-wait', 'Илгээх захиалга', function () { showView('orders', 'new'); }]] });
-    g.push({ t: 'Хүргэлтийн цэс', items: [
-      ['buu', 'Буухиа Excel', function () { openBuuhia(); }],
-      ['ord-sent', 'Буухиад байгаа', function () { showView('orders', 'sent'); }],
-      ['ord-back', 'Буцаалт, цуцлалт', function () { showView('orders', 'back'); }],
-      ['ord-unpaid', 'Төлбөр ороогүй', function () { showView('orders', 'unpaid'); }]] });
-  }
-  g.push({ t: 'Борлуулалт', items: [
-    ['sale', 'Борлуулалт бүртгэх', function () { openSale(); }],
-    ['exp', 'Зарлага', function () { openExpense(); }],
-    ['close', 'Өдрийн касс хаах', function () { openClose(); }]] });
-  return g;
+function navMenu() {   // зөвхөн хуудсууд — үйлдлийн товчнууд хуудас дотроо нэг л удаа
+  var g = [['dash', 'Өнөөдөр', function () { showView('dash'); }]];
+  if (BIZ.orders) g.push(['orders', 'Захиалга', function () { showView('orders', 'new'); }]);
+  return [{ t: '', items: g }];
 }
 function buildShell() {
   var main = $('main'); if (!main || main.classList.contains('ep-app')) { renderNav(); return; }
@@ -146,10 +132,10 @@ function buildShell() {
 }
 function renderNav() {
   var nav = $('epNav'); if (!nav) return;
-  var cur = shellView === 'orders' ? 'ord-' + (typeof ordTab !== 'undefined' ? (ordTab === 'new' ? 'wait' : ordTab) : 'all') : shellView;
+  var cur = shellView;
   nav.innerHTML = '<div class="ep-brand"><span class="mono">' + esc((BIZ.name || '?').charAt(0)) + '</span><b>' + esc(BIZ.name || '') + '</b></div>' +
     navMenu().map(function (grp, gi) {
-      return '<div class="ep-grp"><div class="ep-grp-t">' + esc(grp.t) + '</div>' + grp.items.map(function (it, ii) {
+      return '<div class="ep-grp">' + (grp.t ? '<div class="ep-grp-t">' + esc(grp.t) + '</div>' : '') + grp.items.map(function (it, ii) {
         return '<a class="ep-it' + (it[0] === cur ? ' on' : '') + '" onclick="navGo(' + gi + ',' + ii + ')">' + esc(it[1]) + '</a>';
       }).join('') + '</div>';
     }).join('') + '<div class="ep-foot">NOMAAD · ажилтны хуудас</div>';
@@ -163,7 +149,7 @@ function showView(v, tab) {
     el.style.display = (el.getAttribute('data-view') || 'dash') === v ? '' : 'none';
   });
   var w = document.querySelector('#main .wrap'); if (w) w.classList.toggle('ep-wide', v === 'orders');
-  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалгын жагсаалт' : 'Хянах самбар';
+  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : 'Өнөөдөр';
   renderNav(); window.scrollTo(0, 0);
 }
 

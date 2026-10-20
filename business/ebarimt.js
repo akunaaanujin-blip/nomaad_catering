@@ -167,6 +167,7 @@ function testEbConnection() {
 function renderEbBadge() {
   var el = $('ebBadge');
   if (!el) return;
+  if (BIZ.ebarimt === false) { el.style.display = 'none'; return; }   // И-баримтгүй бизнес (Cozy) — тэмдэг хэрэггүй
   var s = ebSettings();
   el.textContent = ebEnabled() ? (s.test ? 'И-баримт · туршилт' : 'И-баримт идэвхтэй') : 'И-баримт унтраалттай';
   el.className = 'eb-badge' + (ebEnabled() ? (s.test ? ' test' : ' on') : '');
