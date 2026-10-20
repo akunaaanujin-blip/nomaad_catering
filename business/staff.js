@@ -138,6 +138,7 @@ function loadStock() {
   if (!API_URL) return;
   jsonp({ action: 'stock', biz: BIZ_KEY }, function (err, d) {
     if (err || !d || d.status !== 'ok') return;
+    if (d.stock) delete d.stock[FEE_ITEM];   // хүргэлтийн төлбөр — бараа биш
     stock = Object.keys(d.stock || {}).length ? d.stock : null;
     save('nb_stock_' + BIZ_KEY, stock);
     if ($('saleSheet').classList.contains('show')) renderChips();
