@@ -33,9 +33,13 @@ function ordPost(body, cb) {
     .catch(function () { cb('network'); });
 }
 function loadOrders() {
-  if (!API_URL) { renderOrders(); return; }
+  renderOrders();   // төхөөрөмж дээр хадгалсан хуулбарыг шууд харуулна — сервер (~3с) ард нь шинэчилнэ
+  if (!API_URL) return;
   ordPost({ type: 'orders' }, function (err, d) {
-    if (!err) { orders = d.orders; save(LS_ORD, orders); }
+    if (!err) {
+      var keep = orders.filter(function (x) { return x.pending || x.failed; });   // хадгалагдаж байгаа шинэ захиалгыг алдахгүй
+      orders = d.orders.concat(keep); save(LS_ORD, orders.filter(function (x) { return !x.pending; }));
+    }
     renderOrders();
   });
 }
@@ -46,6 +50,20 @@ function saveOrder(o, done) {
     if (!o.id) { o.id = 'O' + Date.now(); o.date = todayStr(); o.time = timeStr(); o.staff = staffName; orders.push(o); }
     else orders = orders.map(function (x) { return x.id === o.id ? Object.assign(x, o) : x; });
     save(LS_ORD, orders); done && done(o); renderOrders(); return;
+  }
+  // Шинэ захиалга: түр мөрөөр шууд жагсаалтад гаргаж, цонхыг хаана; серверийн ID ирэхэд солино
+  if (!o.id) {
+    var tmp = Object.assign({}, o, { id: 'tmp' + Date.now(), date: todayStr(), time: timeStr(), staff: staffName, pending: true, items: ordItems(o) });
+    orders.push(tmp); renderOrders(); done && done(tmp);
+    ordPost(body, function (err, d) {
+      var i = orders.findIndex(function (x) { return x.id === tmp.id; });
+      if (err) { if (i >= 0) { orders[i].pending = false; orders[i].failed = true; } renderOrders();
+        toast('Захиалга ' + o.phone + ' хадгалагдсангүй — жагсаалтаас «Дахин хадгалах» дарна уу'); return; }
+      var saved = d.order; saved.items = ordItems(saved);
+      if (i >= 0) orders[i] = saved; else orders.push(saved);
+      save(LS_ORD, orders.filter(function (x) { return !x.pending; })); renderOrders();
+    });
+    return;
   }
   // Байгаа захиалгыг шууд дэлгэцэнд шинэчилнэ (сервер 2–5 секунд хариулдаг) — алдаа гарвал серверээс дахин татна
   if (o.id) {
@@ -228,6 +246,11 @@ function ordFilter(o) {
   if (ordTab === 'back') return ordDead(o);
   return true;
 }
+function ordRetry(id) {
+  var i = orders.findIndex(function (x) { return x.id === id; }); if (i < 0) return;
+  var o = orders.splice(i, 1)[0]; ['id', 'date', 'time', 'staff', 'failed', 'pending'].forEach(function (k) { delete o[k]; });
+  saveOrder(o);
+}
 function ordAct(id, v) {
   if (!v) return;
   if (v === 'r') ordReceive(id); else if (v === 'm') copyPayMsg(id); else if (v === 'e') openOrder(id);
@@ -248,7 +271,7 @@ function renderOrders() {
     if (ordAwaitReturn(o)) opts.push(['r', 'Буцаалт хүлээн авсан']);
     if (!o.confirmed && !ordDead(o)) opts.push(o.paid !== 'Орсон' ? ['p:Орсон', 'Төлбөр орсон'] : ['p:Ороогүй', 'Төлбөр ороогүй']);
     opts.push(['m', 'Төлбөрийн мессеж хуулах'], ['e', 'Засах']);
-    var acts = '<select class="act" onchange="ordAct(\'' + o.id + '\',this.value);this.selectedIndex=0"><option value="">Үйлдэл</option>' +
+    var acts = o.pending ? '<small class="muted">Хадгалж байна…</small>' : o.failed ? '<button class="mini neg" onclick="ordRetry(\'' + o.id + '\')">Дахин хадгалах</button>' : '<select class="act" onchange="ordAct(\'' + o.id + '\',this.value);this.selectedIndex=0"><option value="">Үйлдэл</option>' +
       opts.map(function (x) { return '<option value="' + x[0] + '">' + x[1] + '</option>'; }).join('') + '</select>';
     var ret = ordAwaitReturn(o) ? '<small class="warn">Бараа буцаж ирээгүй</small>' : o.saleDone === 'returned' ? '<small>Бараа буцаж ирсэн</small>' : '';
     return '<tr>' +
