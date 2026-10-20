@@ -866,3 +866,55 @@ body:not(.bz-admin) .login .card{box-shadow:0 10px 30px rgba(55,40,160,.18);bord
 .bu-row input{width:auto;margin-top:3px;accent-color:#6A5ADF}
 .bu-row span{flex:1;min-width:0}.bu-row small{display:block;color:#6B7280;font-size:12.5px}
 .bu-row .n{white-space:nowrap}
+/* ── ebuuhia бүтэц: зүүн цэс + ажлын талбар (ажилтны хуудас) ── */
+.ep-app{display:block}
+.ep-nav{position:fixed;top:0;left:0;bottom:0;width:264px;background:linear-gradient(180deg,#6A5ADF 0%,#7B6CE6 100%);padding:16px 14px;overflow-y:auto;z-index:30}
+.ep-brand{display:flex;align-items:center;gap:10px;color:#fff;padding:4px 6px 16px}
+.ep-brand .mono{background:#fff!important;color:#6A5ADF!important;width:36px;height:36px;font-size:17px}
+.ep-brand b{font-size:15px;font-weight:800;line-height:1.2}
+.ep-grp{background:rgba(255,255,255,.4);border-radius:12px;margin-bottom:12px;padding:6px 6px 8px}
+.ep-grp-t{font-size:15px;font-weight:800;color:#020817;padding:10px 10px 6px}
+.ep-it{display:flex;align-items:center;height:42px;padding:0 12px;border-radius:10px;color:#111827;font-size:15px;cursor:pointer;position:relative;text-decoration:none}
+.ep-it:hover{background:rgba(255,255,255,.55)}
+.ep-it.on{background:#fff;font-weight:700}
+.ep-it.on::after{content:'';position:absolute;right:12px;width:14px;height:14px;border-radius:50%;background:#6A5ADF;box-shadow:inset 0 0 0 4px #6A5ADF,inset 0 0 0 7px #fff}
+.ep-foot{color:rgba(255,255,255,.75);font-size:12px;padding:8px 10px}
+.ep-body{margin-left:264px;min-height:100vh}
+.ep-shade{display:none}
+.ep-burger{display:none;border:0;background:#F3F1FD;color:#6A5ADF;font-size:20px;width:38px;height:38px;border-radius:10px;cursor:pointer;flex:none}
+.ep-app .wrap{max-width:760px}
+.ep-app .wrap.ep-wide{max-width:none;padding-left:22px;padding-right:22px}
+.ep-title{font-size:18px;font-weight:800;margin:6px 0 4px}
+.ep-app .top .ico.mono#bizIcon{display:none}
+@media(max-width:900px){
+  .ep-nav{transform:translateX(-105%);transition:transform .2s;box-shadow:0 0 40px rgba(0,0,0,.25)}
+  .ep-app.nav-open .ep-nav{transform:none}
+  .ep-app.nav-open .ep-shade{display:block;position:fixed;inset:0;background:rgba(15,23,42,.35);z-index:25}
+  .ep-body{margin-left:0}
+  .ep-burger{display:inline-flex;align-items:center;justify-content:center}
+  .ep-app .wrap.ep-wide{padding-left:12px;padding-right:12px}
+}
+/* захиалгын хүснэгт — ebuuhia шиг */
+.ep-tbl-wrap{overflow-x:auto;border:1px solid #E5E7EB;border-radius:12px;background:#fff}
+.ep-tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:980px}
+.ep-tbl th{background:#fff;color:#020817;font-weight:700;font-size:13px;text-transform:none;letter-spacing:0;text-align:left;padding:12px 10px;border-bottom:1px solid #E5E7EB;white-space:nowrap}
+.ep-tbl td{padding:11px 10px;border-bottom:1px solid #E5E7EB;vertical-align:top;background:#fff}
+.ep-tbl tr:last-child td{border-bottom:0}
+.ep-tbl tbody tr:hover td{background:#FAFAFF}
+.ep-tbl small{display:block;color:#6B7280;font-size:12px;margin-top:2px}
+.ep-tbl small.warn{color:#B45309;font-weight:700}
+.ep-tbl .num{text-align:right;white-space:nowrap}
+.ep-tbl .c-p{cursor:pointer;white-space:nowrap}.ep-tbl .c-p b{color:#6A5ADF}
+.ep-tbl .c-d{white-space:nowrap}.ep-tbl .c-a{min-width:200px;max-width:280px}.ep-tbl .c-i{min-width:150px}
+.ep-tbl .acts{display:flex;flex-wrap:wrap;gap:4px;min-width:170px}.ep-tbl .acts .mini{margin:0}
+.ep-tbl-foot{font-size:13px;color:#4B5563;padding:10px 4px 0}
+body:not(.bz-admin) .tag.y{background:#FEF3C7;color:#B45309}
+body:not(.bz-admin) .mini.pos{color:#15803D;border-color:#BBF7D0}
+@media(max-width:700px){
+  .ep-tbl{min-width:0}.ep-tbl thead{display:none}
+  .ep-tbl tr{display:block;border-bottom:1px solid #E5E7EB;padding:8px 4px}
+  .ep-tbl td{display:flex;justify-content:space-between;gap:10px;border:0;padding:4px 8px;text-align:right}
+  .ep-tbl td::before{content:attr(data-l);color:#6B7280;font-size:12px;text-align:left;flex:none}
+  .ep-tbl td.c-n{display:none}.ep-tbl .c-a,.ep-tbl .c-i{max-width:none;min-width:0}
+  .ep-tbl .acts{justify-content:flex-end;min-width:0}
+}

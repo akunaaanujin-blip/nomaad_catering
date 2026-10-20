@@ -19,6 +19,7 @@ function guessDistrict(t) { var d = DISTRICTS.filter(function (x) { return x[1].
 function guessKhoroo(t) { var m = String(t || '').match(/(\d{1,2})\s*-?\s*(р|r|дүгээр|дугаар)?\s*(хороо|horoo)/i); return m ? m[1] + '-р хороо' : ''; }
 function isProvince(t) { return /унаанд|машинд|автобус|unaand|mashind/i.test(t || ''); }
 function ordItems(o) { try { return typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []); } catch (e) { return [{ name: String(o.items), qty: 1, price: o.amount }]; } }
+function ordOpen(o) { return o.status === 'Шинэ' || o.status === 'Буухиад өгсөн'; }   // хаагдаагүй (хүргэгдээгүй, цуцлаагүй)
 function ordGoods(o) { return ordItems(o).filter(function (i) { return !isFee(i.name); }); }   // хүргэлтийн төлбөргүй бараанууд
 function ordFee(o) { return ordItems(o).filter(function (i) { return isFee(i.name); }).reduce(function (a, i) { return a + (Number(i.price) || 0) * (Number(i.qty) || 1); }, 0); }
 function ordItemsText(o) { return ordGoods(o).map(function (i) { return i.name + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); }
@@ -59,8 +60,8 @@ function saveOrder(o, done) {
 function ordCustomer(o) { return (o.customer ? o.customer + ' ' : '') + o.phone; }
 // Буухиагаар хүргэсэн мөнгө (бэлнээр авсан ч) дансанд шилжиж ирдэг тул «Шилжүүлэг» (харилцах) гэж бичнэ — дэлгүүрийн кассыг хөндөхгүй
 // Удирдлага баталгаажуулсан (o.confirmed) бол мөнгө нь урьдчилгаа (3802)-д байгаа → бараа өгөхөд орлого болно;
-// баталгаагүй бол (ажилтан «орсон» гэсэн ч) авлага (1201) болж, удирдлага банкны хуулгаар тулгахад хаагдана.
-function ordSalePay(o) { return o.confirmed ? 'Урьдчилгаа' : 'Зээлээр'; }
+// бусад үед дансаар (1101) — хэрэглэгчийн шийдвэр: Cozy-гийн бүх захиалга дансаар төлөгддөг, авлагаар бичихгүй.
+function ordSalePay(o) { return o.confirmed ? 'Урьдчилгаа' : 'Шилжүүлэг'; }
 function ordBook(o, prev) {
   var sold = /^yes:/.test(o.saleDone || ''), salePay = sold ? o.saleDone.slice(4) : '';
   var lines = function (sign, pay) {
@@ -76,9 +77,19 @@ function ordBook(o, prev) {
     var pay = ordSalePay(o); var ls = lines(1, pay); addRecords(ls); ls.forEach(function (r) { stockTake(r.item, r.qty); }); o.saleDone = 'yes:' + pay; return;
   }
   // 2) Төлбөр орсныг удирдлага (банкны хуулга / «Төлбөр орсон») бүртгэнэ — энд юу ч бичихгүй
-  // 3) Борлуулалт бичигдсэний дараа цуцалсан / буцаасан бол буцаалт — бараа үлдэгдэлд буцаж нэмэгдэнэ
-  if (sold && ordDead(o) && !ordDead(prev)) { var rl = lines(-1, salePay); addRecords(rl); rl.forEach(function (r) { stockTake(r.item, r.qty); }); o.saleDone = 'returned'; }
+  // 3) Буухиад өгсний дараа цуцалсан / буцаасан бол бараа буухиа дээр байна — «Буцаалт хүлээн авсан» дарахад л (ordReceive) буцаалт бичигдэж үлдэгдэлд нэмэгдэнэ
+  if (o.receive && sold && ordDead(o)) {
+    var rl = lines(-1, salePay); addRecords(rl); rl.forEach(function (r) { stockTake(r.item, r.qty); });
+    o.saleDone = 'returned'; o.note = ((o.note ? o.note + ' · ' : '') + 'Буцаалт хүлээн авсан ' + todayStr() + ' ' + timeStr() + ' ' + (typeof staffName !== 'undefined' ? staffName : '')).slice(0, 300);
+    delete o.receive;
+  }
 }
+function ordAwaitReturn(o) { return ordDead(o) && /^yes:/.test(o.saleDone || ''); }   // бараа буухиа дээр, буцааж аваагүй
+function ordReceive(id) { withFresh(function () {
+  var o = orders.filter(function (x) { return x.id === id; })[0]; if (!o || !ordAwaitReturn(o)) { renderOrders(); return; }
+  if (!confirm('Захиалга ' + o.phone + '-ийн бараа буцаж ирсэн үү?\n\n' + ordItemsText(o) + '\n\nБорлуулалт буцаагдаж, бараа үлдэгдэлд нэмэгдэнэ.')) return;
+  var n = Object.assign({}, o, { receive: true }); ordBook(n, o); saveOrder(n); toast('Буцаалт бүртгэгдлээ — бараа үлдэгдэлд нэмэгдлээ');
+}); }
 
 function ordShort(o) { return typeof stockShort === 'function' ? stockShort(ordGoods(o).map(function (i) { return { item: i.name, qty: Number(i.qty) || 1 }; })) : []; }
 
@@ -194,8 +205,9 @@ function quickOrd2(id, field, val) {   // жагсаалтаас нэг товч
   var o = orders.filter(function (x) { return x.id === id; })[0]; if (!o) return;
   if (field === 'paid' && o.confirmed) { renderOrders(); toast('Удирдлага баталгаажуулсан — өөрчлөх боломжгүй'); return; }
   var prev = JSON.parse(JSON.stringify(o)), n = Object.assign({}, o); n[field] = val;
-  if (field === 'status' && val === 'Цуцалсан' && !confirm('Захиалга ' + o.phone + '-ийг цуцлах уу?' + (/^yes:/.test(o.saleDone || '') ? '\nБорлуулалт буцаагдаж, бараа үлдэгдэлд нэмэгдэнэ.' : ''))) return;
-  if (field === 'status' && val === 'Буцаасан' && !confirm('Захиалга ' + o.phone + ' буухиагаас буцаж ирсэн үү?\nБорлуулалт буцаагдаж, бараа үлдэгдэлд буцаж нэмэгдэнэ.')) return;
+  var sentOut = /^yes:/.test(o.saleDone || '');
+  if (field === 'status' && val === 'Цуцалсан' && !confirm('Захиалга ' + o.phone + '-ийг цуцлах уу?' + (sentOut ? '\nБараа буухиа дээр байгаа бол буцаж ирэхэд «Буцаалт хүлээн авсан» дарна.' : ''))) return;
+  if (field === 'status' && val === 'Буцаасан' && !confirm('Захиалга ' + o.phone + ' буцаагдсан уу?\nБараа гарт ирэхэд «Буцаалт хүлээн авсан» дарахад үлдэгдэлд нэмэгдэнэ.')) return;
   var bad = ordBook(n, prev);
   if (bad) { alert('Үлдэгдэл хүрэлцэхгүй:\n\n' + bad); loadStock(); renderOrders(); return; }
   saveOrder(n);
@@ -214,24 +226,36 @@ function renderOrders() {
   var el = $('orderList'); if (!el) return;
   var cnt = function (t) { var keep = ordTab; ordTab = t; var n = orders.filter(ordFilter).length; ordTab = keep; return n; };
   $('orderTabs').innerHTML = ORD_TABS.map(function (t) { return '<button class="' + (ordTab === t[0] ? 'on' : '') + '" onclick="ordTab=\'' + t[0] + '\';renderOrders()">' + t[1] + ' <small>' + cnt(t[0]) + '</small></button>'; }).join('');
+  if (typeof renderNav === 'function') renderNav();
   var list = orders.filter(ordFilter).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
-  el.innerHTML = list.length ? list.map(function (o) {
-    var st = ordDead(o) ? 'r' : o.status === 'Хүргэгдсэн' ? 'g' : 'b', fee = ordFee(o), q = function (v, t, cls) { return '<button class="mini' + (cls ? ' ' + cls : '') + '" onclick="quickOrd(\'' + o.id + '\',\'status\',\'' + v + '\')">' + t + '</button>'; };
-    return '<li class="ord"><div onclick="openOrder(\'' + o.id + '\')"><b>' + esc(o.phone) + (o.customer ? ' · ' + esc(o.customer) : '') + '</b>' +
-      '<small>' + esc(ordItemsText(o)) + (fee ? ' · хүргэлт ' + fmt(fee) : '') + '</small><small>' + esc((o.district ? o.district + ', ' : '') + (o.address || '')).slice(0, 90) + '</small>' +
-      '<small><span class="tag ' + st + '">' + esc(o.status) + '</span> <span class="tag ' + (o.confirmed ? 'g' : o.paid === 'Орсон' ? '' : 'r') + '">' +
-      (o.confirmed ? 'Төлбөр баталгаажсан' : 'Төлбөр ' + esc((o.paid || 'Ороогүй').toLowerCase())) + '</span>' +
-      (o.deliverDate ? ' · ' + esc(o.deliverDate) : '') + '</small></div>' +
-      '<div class="ord-r"><b>' + fmt(o.amount) + '</b>' +
-      '<button class="mini" style="color:var(--accent)" onclick="copyPayMsg(\'' + o.id + '\')">Төлбөрийн мессеж</button>' +
-      (o.status === 'Шинэ' ? q('Буухиад өгсөн', 'Буухиад өгсөн') + q('Цуцалсан', 'Цуцлах', 'neg') : '') +
-      (o.status === 'Буухиад өгсөн' ? q('Хүргэгдсэн', 'Хүргэгдсэн') + q('Буцаасан', 'Буцаасан', 'neg') : '') +
+  var STC = { 'Шинэ': 'b', 'Буухиад өгсөн': 'y', 'Хүргэгдсэн': 'g', 'Буцаасан': 'r', 'Цуцалсан': 'r' };
+  var rows = list.map(function (o, idx) {
+    var fee = ordFee(o), q = function (v, t, cls) { return '<button class="mini' + (cls ? ' ' + cls : '') + '" onclick="quickOrd(\'' + o.id + '\',\'status\',\'' + v + '\')">' + t + '</button>'; };
+    var acts = (o.status === 'Шинэ' ? q('Буухиад өгсөн', 'Буухиад өгсөн') + q('Цуцалсан', 'Цуцлах', 'neg') : '') +
+      (o.status === 'Буухиад өгсөн' ? q('Хүргэгдсэн', 'Хүргэгдсэн') + q('Буцаасан', 'Буцаасан', 'neg') + q('Цуцалсан', 'Цуцалсан', 'neg') : '') +
       (o.status === 'Хүргэгдсэн' ? q('Буцаасан', 'Буцаасан', 'neg') : '') +
+      (ordAwaitReturn(o) ? '<button class="mini pos" onclick="ordReceive(\'' + o.id + '\')">Буцаалт хүлээн авсан</button>' : '') +
       (o.confirmed || ordDead(o) ? '' : o.paid !== 'Орсон'
-        ? '<button class="mini" style="color:var(--green)" onclick="quickOrd(\'' + o.id + '\',\'paid\',\'Орсон\')">Төлбөр орсон</button>'
+        ? '<button class="mini pos" onclick="quickOrd(\'' + o.id + '\',\'paid\',\'Орсон\')">Төлбөр орсон</button>'
         : '<button class="mini" onclick="quickOrd(\'' + o.id + '\',\'paid\',\'Ороогүй\')">Ороогүй</button>') +
-      '</div></li>';
-  }).join('') : '<li class="muted">Захиалга алга</li>';
+      '<button class="mini" onclick="copyPayMsg(\'' + o.id + '\')">Мессеж</button>';
+    var ret = ordAwaitReturn(o) ? '<small class="warn">Бараа буцаж ирээгүй</small>' : o.saleDone === 'returned' ? '<small>Бараа буцаж ирсэн</small>' : '';
+    return '<tr>' +
+      '<td class="c-n" data-l="#">' + (idx + 1) + '</td>' +
+      '<td class="c-d" data-l="Огноо">' + esc(String(o.date || '').replace(/-/g, '/')) + '<small>' + esc(o.time || '') + '</small></td>' +
+      '<td class="c-p" data-l="Хэрэглэгч" onclick="openOrder(\'' + o.id + '\')"><b>' + esc(o.phone) + '</b><small>' + esc(o.customer || '') + '</small></td>' +
+      '<td class="c-a" data-l="Хаяг">' + esc([o.city && o.city !== 'Улаанбаатар' ? o.city : '', o.district, o.address].filter(Boolean).join(' ')).slice(0, 110) + '</td>' +
+      '<td class="c-i" data-l="Бараа">' + esc(ordItemsText(o)) + '</td>' +
+      '<td class="c-m num" data-l="Дүн">' + fmt(o.amount) + '</td>' +
+      '<td class="c-f num" data-l="Хүргэлт">' + fmt(fee) + '</td>' +
+      '<td class="c-s" data-l="Төлөв"><span class="tag ' + (STC[o.status] || 'b') + '">' + esc(o.status) + '</span>' + ret + '</td>' +
+      '<td class="c-y" data-l="Төлбөр"><span class="tag ' + (o.confirmed ? 'g' : o.paid === 'Орсон' ? 'g' : 'r') + '">' + (o.confirmed ? 'Баталгаажсан' : esc(o.paid || 'Ороогүй')) + '</span></td>' +
+      '<td class="c-x" data-l="Үйлдэл"><div class="acts">' + acts + '</div></td></tr>';
+  }).join('');
+  var sum = list.reduce(function (a, o) { return a + (Number(o.amount) || 0); }, 0), fees = list.reduce(function (a, o) { return a + ordFee(o); }, 0);
+  el.innerHTML = list.length ? '<div class="ep-tbl-wrap"><table class="ep-tbl"><thead><tr><th>#</th><th>Огноо</th><th>Хэрэглэгч</th><th>Хаяг</th><th>Бараа</th><th class="num">Дүн</th><th class="num">Хүргэлт</th><th>Төлөв</th><th>Төлбөр</th><th>Үйлдэл</th></tr></thead><tbody>' + rows +
+    '</tbody></table></div><div class="ep-tbl-foot">Нийт ' + list.length + ' захиалга · ' + fmt(sum) + ' · хүргэлт ' + fmt(fees) + '</div>'
+    : '<p class="muted" style="padding:14px">Захиалга алга</p>';
 }
 
 // ── Буухиа Excel (ebuuhia.com → «Хүргэлт» импортын албан загвар, 12 багана) ──
@@ -241,12 +265,12 @@ var BUUHIA_COLS = ['Дэлгүүрийн нэр *', 'Хүлээн авагчий
 function openBuuhia() { withFresh(openBuuhia2); }
 // Илгээх захиалгуудаа чагтлаж сонгоно (анхдагчаар бүгд сонгогдсон)
 function openBuuhia2() {
-  var list = orders.filter(function (o) { return o.status === 'Шинэ'; }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
-  if (!list.length) { toast('Илгээх (Шинэ) захиалга алга'); return; }
+  var list = orders.filter(ordOpen).sort(function (a, b) { return (a.status === 'Шинэ') - (b.status === 'Шинэ') || ((a.date + a.time) < (b.date + b.time) ? -1 : 1); }).reverse();
+  if (!list.length) { toast('Хаагдаагүй захиалга алга'); return; }
   $('buList').innerHTML = list.map(function (o) {
-    return '<label class="bu-row"><input type="checkbox" value="' + o.id + '" checked onchange="buCount()">' +
+    return '<label class="bu-row"><input type="checkbox" value="' + o.id + '"' + (o.status === 'Шинэ' ? ' checked' : '') + ' onchange="buCount()">' +
       '<span><b>' + esc(o.phone) + (o.customer ? ' · ' + esc(o.customer) : '') + '</b><small>' + esc(ordItemsText(o)) + '</small>' +
-      '<small>' + esc((o.district ? o.district + ', ' : '') + (o.address || '')).slice(0, 70) + '</small></span><b class="n">' + fmt(o.amount) + '</b></label>';
+      '<small>' + esc((o.district ? o.district + ', ' : '') + (o.address || '')).slice(0, 70) + '</small>' + (o.status !== 'Шинэ' ? '<small><span class="tag b">' + esc(o.status) + '</span> дахин илгээх бол чагтлана</small>' : '') + '</span><b class="n">' + fmt(o.amount) + '</b></label>';
   }).join('');
   buCount(); openSheet('buuSheet');
 }
@@ -257,12 +281,13 @@ function buuhiaExport(withAmount) {
   var ids = buChecked();
   if (!ids.length) { toast('Илгээх захиалгаа сонгоно уу'); return; }
   closeSheet('buuSheet');
-  var list = orders.filter(function (o) { return o.status === 'Шинэ' && ids.indexOf(o.id) >= 0; });
-  if (!list.length) { toast('Илгээх (Шинэ) захиалга алга'); return; }
+  var list = orders.filter(function (o) { return ordOpen(o) && ids.indexOf(o.id) >= 0; });
+  if (!list.length) { toast('Илгээх захиалга алга'); return; }
   if (!window.XLSX) { toast('Excel сан ачаалагдаагүй — интернэтээ шалгана уу'); return; }
   // Үлдэгдэл хүрэлцэхгүй захиалгыг файлд оруулахгүй (дараалан хуримтлуулж шалгана)
   var need = {}, skip = [];
   list = list.filter(function (o) {
+    if (/^yes:/.test(o.saleDone || '')) return true;   // аль хэдийн буухиад өгсөн (бараа нь хасагдсан) — дахин илгээх
     var mine = {}; ordGoods(o).forEach(function (i) { mine[i.name] = (mine[i.name] || 0) + (Number(i.qty) || 1); });
     var sh = stockShort(Object.keys(mine).map(function (k) { return { item: k, qty: mine[k] + (need[k] || 0) }; }));
     if (sh.length) { skip.push(o.phone + ': ' + sh.join('; ')); return false; }
@@ -286,9 +311,10 @@ function buuhiaExport(withAmount) {
   XLSX.writeFile(wb, 'buuhia-hurgelt-' + BIZ_KEY + '-' + todayStr() + (withAmount ? '-dun' : '-dungui') + '.xlsx');
   if (noDist) toast(noDist + ' захиалгын дүүрэг хоосон — буухиа анхааруулга өгнө, хаягаа шалгаарай');
   setTimeout(function () {
-    if (!confirm(list.length + ' захиалгыг ebuuhia.com-д оруулсны дараа «Буухиад өгсөн» болгох уу?\n(Борлуулалт санхүүд бичигдэнэ)')) return;
+    var fresh = list.filter(function (o) { return o.status === 'Шинэ'; }); if (!fresh.length) return;
+    if (!confirm(fresh.length + ' шинэ захиалгыг ebuuhia.com-д оруулсны дараа «Буухиад өгсөн» болгох уу?\n(Борлуулалт санхүүд бичигдэнэ)')) return;
     var bads = [];
-    list.forEach(function (o) { var prev = JSON.parse(JSON.stringify(o)), n = Object.assign({}, o, { status: 'Буухиад өгсөн' }); var bad = ordBook(n, prev); if (bad) bads.push(bad); else saveOrder(n); });
+    fresh.forEach(function (o) { var prev = JSON.parse(JSON.stringify(o)), n = Object.assign({}, o, { status: 'Буухиад өгсөн' }); var bad = ordBook(n, prev); if (bad) bads.push(bad); else saveOrder(n); });
     if (bads.length) { alert(bads.length + ' захиалга үлдэгдэл хүрэлцэхгүй тул «Шинэ» хэвээр үлдлээ:\n\n' + bads.join('\n')); loadStock(); }
   }, 600);
 }

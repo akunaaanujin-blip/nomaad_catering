@@ -102,6 +102,69 @@ function showMain() {
   if (typeof ebCheckInfo === 'function') { ebCheckInfo(); setInterval(ebCheckInfo, 30 * 60000); }
   if (BIZ.orders && typeof loadOrders === 'function') loadOrders();   // Cozy: захиалгууд
   loadTasks();
+  buildShell();
+}
+
+// ── ebuuhia маягийн бүтэц: зүүн талын нил ягаан цэс (бүлэглэсэн) + цагаан толгой + саарал ажлын талбар ──
+// Хуудас бүрийн одоогийн хэсгүүдийг view-ээр (dash / orders) ялгаж харуулна; утсан дээр цэс ☰ товчоор нээгдэнэ.
+var shellView = 'dash';
+function navMenu() {
+  var g = [{ t: 'Хянах самбар', items: [['dash', 'Өнөөдөр', function () { showView('dash'); }]] }];
+  if (BIZ.orders) {
+    g.push({ t: 'Захиалгын цэс', items: [
+      ['ord-new', 'Захиалга үүсгэх', function () { openOrder(); }],
+      ['ord-all', 'Захиалгын жагсаалт', function () { showView('orders', 'all'); }],
+      ['ord-wait', 'Илгээх захиалга', function () { showView('orders', 'new'); }]] });
+    g.push({ t: 'Хүргэлтийн цэс', items: [
+      ['buu', 'Буухиа Excel', function () { openBuuhia(); }],
+      ['ord-sent', 'Буухиад байгаа', function () { showView('orders', 'sent'); }],
+      ['ord-back', 'Буцаалт, цуцлалт', function () { showView('orders', 'back'); }],
+      ['ord-unpaid', 'Төлбөр ороогүй', function () { showView('orders', 'unpaid'); }]] });
+  }
+  g.push({ t: 'Борлуулалт', items: [
+    ['sale', 'Борлуулалт бүртгэх', function () { openSale(); }],
+    ['exp', 'Зарлага', function () { openExpense(); }],
+    ['close', 'Өдрийн касс хаах', function () { openClose(); }]] });
+  return g;
+}
+function buildShell() {
+  var main = $('main'); if (!main || main.classList.contains('ep-app')) { renderNav(); return; }
+  main.classList.add('ep-app');
+  var nav = document.createElement('nav'); nav.className = 'ep-nav'; nav.id = 'epNav';
+  var body = document.createElement('div'); body.className = 'ep-body';
+  while (main.firstChild) body.appendChild(main.firstChild);
+  main.appendChild(nav); main.appendChild(body);
+  var shade = document.createElement('div'); shade.className = 'ep-shade'; shade.onclick = function () { main.classList.remove('nav-open'); }; main.appendChild(shade);
+  var top = body.querySelector('.top');
+  if (top) top.insertAdjacentHTML('afterbegin', '<button class="ep-burger" onclick="$(\'main\').classList.toggle(\'nav-open\')" aria-label="Цэс">☰</button>');
+  var wrap = body.querySelector('.wrap');
+  if (wrap) {
+    wrap.insertAdjacentHTML('afterbegin', '<h2 class="ep-title" id="epTitle"></h2>');
+    var ol = $('orderList'); if (ol) { var card = ol.closest('.card'); if (card) card.setAttribute('data-view', 'orders'); }
+  }
+  renderNav(); showView('dash');
+}
+function renderNav() {
+  var nav = $('epNav'); if (!nav) return;
+  var cur = shellView === 'orders' ? 'ord-' + (typeof ordTab !== 'undefined' ? (ordTab === 'new' ? 'wait' : ordTab) : 'all') : shellView;
+  nav.innerHTML = '<div class="ep-brand"><span class="mono">' + esc((BIZ.name || '?').charAt(0)) + '</span><b>' + esc(BIZ.name || '') + '</b></div>' +
+    navMenu().map(function (grp, gi) {
+      return '<div class="ep-grp"><div class="ep-grp-t">' + esc(grp.t) + '</div>' + grp.items.map(function (it, ii) {
+        return '<a class="ep-it' + (it[0] === cur ? ' on' : '') + '" onclick="navGo(' + gi + ',' + ii + ')">' + esc(it[1]) + '</a>';
+      }).join('') + '</div>';
+    }).join('') + '<div class="ep-foot">NOMAAD · ажилтны хуудас</div>';
+}
+function navGo(gi, ii) { $('main').classList.remove('nav-open'); navMenu()[gi].items[ii][2](); }
+function showView(v, tab) {
+  shellView = v;
+  if (v === 'orders' && tab && typeof ordTab !== 'undefined') { ordTab = tab; renderOrders(); }
+  [].slice.call(document.querySelectorAll('#main .wrap > *')).forEach(function (el) {
+    if (el.id === 'epTitle') return;
+    el.style.display = (el.getAttribute('data-view') || 'dash') === v ? '' : 'none';
+  });
+  var w = document.querySelector('#main .wrap'); if (w) w.classList.toggle('ep-wide', v === 'orders');
+  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалгын жагсаалт' : 'Хянах самбар';
+  renderNav(); window.scrollTo(0, 0);
 }
 
 // ── Бараа ──
