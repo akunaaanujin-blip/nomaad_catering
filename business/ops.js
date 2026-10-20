@@ -107,7 +107,7 @@ function dgLocal() {   // туршилтын горим: серверийн dige
   reminders.filter(function (r) { return r.status === 'Хүлээгдэж' && r.date <= tm; }).forEach(function (r) { L.push('- ' + (r.date < td ? 'Хэтэрсэн ' : r.date === td ? 'Өнөөдөр ' : 'Маргааш ') + r.date + ' — ' + r.title); });
   var late = {}; loanEvents().filter(function (e) { return !e.done && e.date < td; }).forEach(function (e) { var x = late[e.loan.id] || (late[e.loan.id] = { p: e.loan.partner, a: 0 }); x.a += e.amt; });
   Object.keys(late).forEach(function (k) { L.push('- Зээл хоцорсон — ' + late[k].p + ' ' + fmt(late[k].a)); });
-  var uc = (window.adminOrders || []).filter(function (o) { return o.paid === 'Орсон' && !o.confirmed && o.status !== 'Цуцалсан'; });
+  var uc = (window.adminOrders || []).filter(function (o) { return o.paid === 'Орсон' && !o.confirmed && !ordDead(o); });
   if (uc.length) L.push('- Баталгаажуулах захиалгын төлбөр: ' + uc.length);
   var nb = (bankLines || []).filter(function (l) { return l.status === 'Шинэ'; }).length;
   if (nb) L.push('- Тулгаагүй банкны гүйлгээ: ' + nb);

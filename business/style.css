@@ -815,3 +815,54 @@ body:not(.bz-admin) .mono{border-radius:4px}
 .st-grp-h .mono{width:28px!important;height:28px!important;font-size:13px!important;border-radius:8px!important;background:var(--co)!important;color:#fff!important}
 .st-grp-h b{font-size:14px;color:var(--co)}
 .st-grp-h small{margin-left:auto;color:#6B7280;font-size:12px}
+
+/* ═══════════ v7 · Ажилтны хуудас — ebuuhia маяг (нил ягаан #6A5ADF, цайвар саарал дэвсгэр, цагаан самбар) ═══════════ */
+body:not(.bz-admin){--ep:#6A5ADF;--ep-soft:#EEEBFC;--ep-line:#E5E7EB;--ep-bg:#F8F9FA;--ep-ink:#020817;
+  font-family:'Nunito Sans','Inter',-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--ep-bg);color:var(--ep-ink);--accent:#6A5ADF}
+body:not(.bz-admin) .top{background:#fff;border-bottom:1px solid var(--ep-line);min-height:64px;padding:10px 18px}
+body:not(.bz-admin) .top h1{font-size:17px;font-weight:800}
+body:not(.bz-admin) .top .right button{border-radius:9px;border:1px solid #E0E7FF;color:var(--ep);font-weight:700}
+body:not(.bz-admin) .mono{background:var(--ep)!important;color:#fff!important;border-radius:10px!important}
+body:not(.bz-admin) .card{border-radius:12px;border:1px solid var(--ep-line);background:#fff}
+body:not(.bz-admin) .card h2{font-size:16px;font-weight:800}
+body:not(.bz-admin) .big{border-radius:12px;border:1px solid var(--ep-line);background:#fff;color:var(--ep-ink);font-weight:700}
+body:not(.bz-admin) .big span{color:var(--ep)}
+body:not(.bz-admin) .big.sale,body:not(.bz-admin) .big.buu-btn{background:var(--ep);border-color:var(--ep);color:#fff}
+body:not(.bz-admin) .big.sale span,body:not(.bz-admin) .big.buu-btn span{color:#fff}
+body:not(.bz-admin) .big.ord-btn{background:#fff;color:var(--ep);border-color:#C9C2F4;box-shadow:none}
+body:not(.bz-admin) .btn{border-radius:9px;background:var(--ep);font-weight:700}
+body:not(.bz-admin) .btn.ghost{background:transparent;color:#6B7280}
+body:not(.bz-admin) .link{color:var(--ep);font-weight:700}
+body:not(.bz-admin) input:focus,body:not(.bz-admin) select:focus,body:not(.bz-admin) textarea:focus{border-color:var(--ep);box-shadow:0 0 0 3px rgba(106,90,223,.15)}
+body:not(.bz-admin) .tabs button{border-radius:999px;border:1px solid #E0E7FF;background:#fff;color:#4B5563;font-weight:700}
+body:not(.bz-admin) .tabs button.on{background:var(--ep);border-color:var(--ep);color:#fff}
+body:not(.bz-admin) .chip{border-radius:9px;border:1px solid var(--ep-line)}
+body:not(.bz-admin) .chip.on,body:not(.bz-admin) .seg button.on{background:var(--ep);border-color:var(--ep);color:#fff}
+body:not(.bz-admin) .list li{border-bottom:1px solid var(--ep-line)}
+body:not(.bz-admin) .list li.ord{padding:12px 4px}
+body:not(.bz-admin) .list li.ord:hover{background:#FAFAFF}
+/* төлөвийн тэмдэг — ebuuhia шиг дугуй шошго */
+body:not(.bz-admin) .tag{border-radius:999px;padding:2px 9px;font-size:11px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;background:var(--ep-soft);color:var(--ep)}
+body:not(.bz-admin) .tag.g{background:#DCFCE7;color:#15803D}
+body:not(.bz-admin) .tag.r{background:#FEE2E2;color:#B91C1C}
+body:not(.bz-admin) .tag.b{background:var(--ep-soft);color:var(--ep)}
+body:not(.bz-admin) .mini{border-radius:8px;border:1px solid #E0E7FF;color:var(--ep);font-weight:700;background:#fff}
+body:not(.bz-admin) .mini.neg{color:#B91C1C;border-color:#FECACA}
+body:not(.bz-admin) .sheet .panel{border-radius:14px 14px 0 0}
+body:not(.bz-admin) .eb-badge{border-radius:999px}
+/* нэвтрэх — нил ягаан дэвсгэр дээр цагаан карт */
+body:not(.bz-admin) .login{max-width:none;margin:0;min-height:100vh;padding:12vh 16px 16px;background:linear-gradient(160deg,#6A5ADF 0%,#8B7CF0 55%,#F8F9FA 55%)}
+body:not(.bz-admin) .login > *{max-width:400px;margin-left:auto;margin-right:auto}
+body:not(.bz-admin) .login h1,body:not(.bz-admin) .login > .muted{color:#fff}
+body:not(.bz-admin) .login .mono{background:#fff!important;color:var(--ep)!important}
+body:not(.bz-admin) .login .card{box-shadow:0 10px 30px rgba(55,40,160,.18);border:0;padding:22px}
+/* хүргэлтийн төлбөр, буухиа сонголт */
+.fee-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.fee-row label{margin:0}.fee-row input{width:120px;padding:7px 10px;font-size:15px;text-align:right}
+.bu-all{display:flex;align-items:center;gap:6px;margin:0;font-weight:700}.bu-all input{width:auto}
+.bu-list{max-height:46vh;overflow:auto;border:1px solid #E5E7EB;border-radius:12px;margin:10px 0}
+.bu-row{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-bottom:1px solid #E5E7EB;margin:0;font-weight:400;color:inherit;cursor:pointer}
+.bu-row:last-child{border-bottom:0}
+.bu-row input{width:auto;margin-top:3px;accent-color:#6A5ADF}
+.bu-row span{flex:1;min-width:0}.bu-row small{display:block;color:#6B7280;font-size:12.5px}
+.bu-row .n{white-space:nowrap}

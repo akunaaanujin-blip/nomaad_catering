@@ -23,8 +23,8 @@ function dashView(biz, list, s, bills) {
   if (B.orders) {
     var os = (window.adminOrders || []).filter(function (o) { return o.biz === biz && o.date >= from && o.date <= to; }), st = {};
     os.forEach(function (o) { st[o.status || 'Шинэ'] = (st[o.status || 'Шинэ'] || 0) + 1; });
-    D.ordL = ['Шинэ', 'Буухиад өгсөн', 'Хүргэгдсэн', 'Цуцалсан']; D.ordV = D.ordL.map(function (k) { return st[k] || 0; });
-    var wait = (window.adminOrders || []).filter(function (o) { return o.biz === biz && !o.confirmed && o.status !== 'Цуцалсан'; });
+    D.ordL = ['Шинэ', 'Буухиад өгсөн', 'Хүргэгдсэн', 'Буцаасан', 'Цуцалсан']; D.ordV = D.ordL.map(function (k) { return st[k] || 0; });
+    var wait = (window.adminOrders || []).filter(function (o) { return o.biz === biz && !o.confirmed && !ordDead(o); });
     cards += dashCard('products', DASH_C[2], 'Захиалга', os.length, (st['Хүргэгдсэн'] || 0) + ' хүргэгдсэн') +
       dashCard('cal', DASH_C[5], 'Баталгаажаагүй төлбөр', fmt(wait.reduce(function (a, o) { return a + (Number(o.amount) || 0); }, 0)), wait.length + ' захиалга');
     ordCard = '<div class="ch-card"><h3>Захиалгын төлөв</h3><div class="ch-box sm"><canvas id="chOrd"></canvas></div></div>';

@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ажилтан</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261020f">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20261020g">
 </head>
 <body>
 <div class="demo" id="demo" style="display:none">Туршилтын горим — мэдээлэл зөвхөн энэ төхөөрөмжид хадгалагдаж байна</div>
@@ -71,7 +71,8 @@
 <div class="sheet" id="buuSheet" onclick="if(event.target===this)closeSheet('buuSheet')">
   <div class="panel">
     <h2>Буухиа Excel</h2>
-    <p class="muted"><b id="buN">0</b> илгээх захиалга байна.</p>
+    <div class="bar-row"><label class="bu-all"><input type="checkbox" id="buAll" checked onchange="buToggleAll(this.checked)"> Бүгдийг сонгох</label><span class="muted">Сонгосон: <b id="buN">0</b></span></div>
+    <div class="bu-list" id="buList"></div>
     <button class="btn" onclick="buuhiaExport(true)">Үнийн дүнтэй</button>
     <p class="muted" style="font-size:13px;margin-top:6px">Буухиа хүлээн авагчаас мөнгийг авч дансанд шилжүүлнэ. Төлбөр нь орсон захиалгад дүн бичигдэхгүй.</p>
     <button class="btn" style="background:#4B5563" onclick="buuhiaExport(false)">Үнийн дүнгүй</button>
@@ -96,7 +97,8 @@
       <div class="row2" style="margin-top:8px"><input id="orItem" placeholder="Барааны нэр"><input id="orItemPrice" type="number" inputmode="numeric" placeholder="Үнэ (₮)"></div>
       <button class="btn ghost" style="color:var(--accent);margin-top:4px" onclick="ordAddCustom()">＋ Нэмэх</button></details>
     <ul class="list cart" id="orCart"></ul>
-    <p style="text-align:right;margin-top:6px">Нийт: <b id="orTotal">₮0</b></p>
+    <div class="fee-row"><label for="orFee">Хүргэлтийн төлбөр (₮)</label><input id="orFee" type="number" inputmode="numeric" min="0" value="7000" oninput="renderOrdCart()"></div>
+    <p style="text-align:right;margin-top:6px">Нийт (хүргэлттэй): <b id="orTotal">₮0</b></p>
     <label for="orAddress">Хаяг * <span class="muted" style="font-weight:400">(хороолол, байр, тоот, орц, код)</span></label>
     <textarea id="orAddress" rows="2" oninput="ordAddrInput()"></textarea>
     <p class="muted" id="orProvince" style="display:none;font-size:13px">Орон нутаг руу унаанд тавих захиалга — тайлбарт унааны мэдээллээ бичнэ үү.</p>
@@ -112,7 +114,7 @@
       <div><label for="orPayType">Төлбөрийн хэлбэр</label><select id="orPayType"><option>Шилжүүлэг</option><option>Хүргэлтээр бэлэн</option><option>Дансаар дараа</option></select></div>
       <div><label for="orPaid">Төлбөр <span id="orPaidHint" class="muted" style="font-weight:400"></span></label><select id="orPaid"><option>Ороогүй</option><option>Орсон</option></select></div>
     </div>
-    <div id="orStatusWrap"><label for="orStatus">Хүргэлтийн төлөв</label><select id="orStatus"><option>Шинэ</option><option>Буухиад өгсөн</option><option>Хүргэгдсэн</option><option>Цуцалсан</option></select></div>
+    <div id="orStatusWrap"><label for="orStatus">Хүргэлтийн төлөв</label><select id="orStatus"><option>Шинэ</option><option>Буухиад өгсөн</option><option>Хүргэгдсэн</option><option>Буцаасан</option><option>Цуцалсан</option></select></div>
     <label for="orNote">Тэмдэглэл (хүргэлтийн тайлбар)</label><input id="orNote" placeholder="Жишээ: ажлын цагаар залгаад хүргэх">
     <button class="btn" onclick="submitOrder()">Хадгалах</button>
     <button class="btn ghost" onclick="closeSheet('orderSheet')">Болих</button>
@@ -241,14 +243,14 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="products.js?v=20261020f"></script>
-<script src="config.js?v=20261020f"></script>
-<script src="common.js?v=20261020f"></script>
+<script src="products.js?v=20261020g"></script>
+<script src="config.js?v=20261020g"></script>
+<script src="common.js?v=20261020g"></script>
 <script>var BIZ_KEY = 'cozy';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261020f"></script>
-<script src="ebarimt.js?v=20261020f"></script>
+<script src="staff.js?v=20261020g"></script>
+<script src="ebarimt.js?v=20261020g"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="orders.js?v=20261020f"></script>
+<script src="orders.js?v=20261020g"></script>
 </body>
 </html>

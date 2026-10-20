@@ -1,5 +1,11 @@
 // ── Нийтлэг туслах функцүүд (ажилтан + удирдагч) ──
 
+// Захиалгын хүргэлтийн төлбөр — борлуулалтын тусдаа мөр (орлого), бараа биш тул үлдэгдэл/өртөгт орохгүй
+var FEE_ITEM = 'Хүргэлтийн төлбөр', FEE_DEFAULT = 7000;
+function isFee(name) { return String(name || '').replace(/ \(буцаалт\)$/, '') === FEE_ITEM; }
+// Цуцалсан (буухиад өгөхөөс өмнө) ба Буцаасан (хүргэлтээс буцсан) — аль аль нь идэвхгүй захиалга
+function ordDead(o) { return o.status === 'Цуцалсан' || o.status === 'Буцаасан'; }
+
 function fmt(n) {
   n = Math.round(Number(n) || 0);
   return '₮' + n.toLocaleString('en-US');

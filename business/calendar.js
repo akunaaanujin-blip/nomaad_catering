@@ -131,7 +131,7 @@ function repOrders(biz) {
   var list = all.filter(ordFilt(state.ordF || 'wait'));
   var items = function (o) { try { var arr = typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []); return arr.map(function (i) { return i.name + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); } catch (e) { return String(o.items); } };
   var rows = list.map(function (o) {
-    var act = o.status === 'Цуцалсан' ? '' : o.confirmed
+    var act = ordDead(o) ? '' : o.confirmed
       ? '<button class="mini" onclick="undoPayOrder(\'' + o.id + '\')">Буцаах</button>'
       : '<button class="mini" style="color:var(--green)" onclick="openPayOrder(\'' + o.id + '\')">Баталгаажуулах</button>';
     return { date: o.date + ' ' + o.time, phone: o.phone, customer: o.customer, items: items(o), status: o.status, payType: o.payType, paid: o.paid || 'Ороогүй',
@@ -153,7 +153,7 @@ function custGroups(biz) {
     x.list.push(o);
     if (o.date < x.first) x.first = o.date;
     if (o.date >= x.last) { x.last = o.date; x.phone = o.phone; if (o.customer) x.name = o.customer; }
-    if (o.status === 'Цуцалсан') { x.canc++; return; }
+    if (ordDead(o)) { x.canc++; return; }
     x.n++; x.total += Number(o.amount) || 0;
     if (!o.confirmed) x.wait += Number(o.amount) || 0;
   });
@@ -183,8 +183,8 @@ function openCust(k) {
 // Захиалгын шүүлтүүр: check — ажилтан «орсон» гэсэн ч баталгаажаагүй; wait — баталгаажаагүй бүгд; conf — баталгаажсан
 function ordFilt(f) {
   return function (o) {
-    if (f === 'check') return !o.confirmed && o.paid === 'Орсон' && o.status !== 'Цуцалсан';
-    if (f === 'wait') return !o.confirmed && o.status !== 'Цуцалсан';
+    if (f === 'check') return !o.confirmed && o.paid === 'Орсон' && !ordDead(o);
+    if (f === 'wait') return !o.confirmed && !ordDead(o);
     if (f === 'conf') return !!o.confirmed;
     return true;
   };

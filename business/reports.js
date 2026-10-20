@@ -98,7 +98,7 @@ function costEngine(biz, R, until) {
   var ev = [];
   R.moves.forEach(function (m) { if (m.biz === biz && m.kind !== 'Шилжүүлэг') ev.push({ t: String(m.date).slice(0, 16), m: m }); });
   if (since) R.records.forEach(function (x) {
-    if (x.biz !== biz || x.type !== 'sale') return;
+    if (x.biz !== biz || x.type !== 'sale' || isFee(x.item)) return;
     var t = x.date + ' ' + (x.time || '00:00');
     if (t >= since) ev.push({ t: t, x: x });
   });

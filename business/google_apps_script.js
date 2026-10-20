@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v4.6 (серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v4.7 (хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -44,6 +44,7 @@ const SHEET_PO = 'Бараа захиалга';
 const PO_HEAD = ['ID', 'Дугаар', 'Огноо', 'biz', 'Нийлүүлэгч', 'Бараа', 'Валют', 'Нийт (валютаар)', 'Карго компани', 'Төлөв', 'Ирсэн огноо', 'Тэмдэглэл', 'Үүсгэсэн'];
 const SHEET_DOC = 'Маягт';
 const DOC_HEAD = ['ID', 'Нэр', 'Бүлэг', 'Агуулга (HTML)', 'Үндсэн маягт', 'Шинэчилсэн', 'Төлөв'];
+const FEE_ITEM = 'Хүргэлтийн төлбөр';   // захиалгын хүргэлтийн төлбөр (борлуулалтын мөр, үлдэгдэлд орохгүй)
 const COZY_OLD_SHEET = '1KUXN7wrApwDSwQQZnzYgPigfRkzkiG3Xbt4VSihQd9c';   // хуучин «Cozy хүргэлт» хүснэгт (шилжүүлэхэд л уншина)
 const LOG_HEAD = ['ID', 'Огноо', 'Цаг', 'Бизнес', 'Төрөл', 'Ажилтан', 'Бараа / Ангилал', 'Тоо', 'Нэгж',
                   'Нэгжийн үнэ', 'Дүн', 'Төлбөр', 'Тоолсон бэлэн', 'Зөрүү', 'Тайлбар', 'biz', 'type', 'Баримт', 'Төлөв', 'Харилцагч'];
@@ -390,7 +391,7 @@ function digestText() {
     if (late > 0.5) lines.push('- Зээл хоцорсон — ' + L.partner + ' ' + fmtN(late) + ' (' + since + '-наас) · ' + (BIZ_NAMES[L.biz] || L.biz));
   });
   // Ажилтан «орсон» гэсэн ч баталгаажаагүй захиалга
-  const uc = orderRows().filter(function (o) { return o.paid === 'Орсон' && !o.confirmed && o.status !== 'Цуцалсан'; });
+  const uc = orderRows().filter(function (o) { return o.paid === 'Орсон' && !o.confirmed && !/^(Цуцалсан|Буцаасан)$/.test(o.status); });
   if (uc.length) lines.push('- Баталгаажуулах захиалгын төлбөр: ' + uc.length + ' захиалга, ' + fmtN(uc.reduce(function (a, o) { return a + o.amount; }, 0)));
   // Тулгаагүй банкны гүйлгээ
   const nb = bankRows().filter(function (l) { return l.status === 'Шинэ'; }).length;
@@ -634,6 +635,7 @@ function stockAll(withCost) {
       const when = fmtDate(v[1], 'yyyy-MM-dd') + ' ' + fmtDate(v[2], 'HH:mm');
       if (when < since[biz]) return;
       const item = String(v[6]).replace(/ \(буцаалт\)$/, '').trim();
+      if (item === FEE_ITEM) return;   // хүргэлтийн төлбөр — бараа биш
       const it = out[biz][item] = out[biz][item] || { shop: 0, wh: 0 };
       it.shop -= Number(v[7]) || 0;   // буцаалтын тоо сөрөг тул буцааж нэмэгдэнэ
     });
@@ -1238,7 +1240,7 @@ function ordersFor(d) {
   if (!who) return { status: 'error', error: 'auth' };
   const since = Utilities.formatDate(new Date(Date.now() - 45 * 864e5), TZ, 'yyyy-MM-dd');
   return { status: 'ok', orders: orderRows().filter(function (o) {
-    return o.biz === who.biz && (o.date >= since || !/^(Хүргэгдсэн|Цуцалсан)$/.test(o.status) || (!o.confirmed && o.status !== 'Цуцалсан'));
+    return o.biz === who.biz && (o.date >= since || !/^(Хүргэгдсэн|Цуцалсан|Буцаасан)$/.test(o.status) || (!o.confirmed && !/^(Цуцалсан|Буцаасан)$/.test(o.status)));
   }).map(function (o) { delete o.row; return o; }) };
 }
 // Утасны дугаараар өмнөх захиалга (ажилтан шинэ захиалга бичихэд): тоо, нийт дүн, сүүлийн хаяг
@@ -1249,7 +1251,7 @@ function orderHist(d) {
   if (ph.length < 8) return { status: 'error', error: 'fields' };
   const L = orderRows().filter(function (o) { return o.biz === who.biz && String(o.phone).replace(/\D/g, '').slice(-8) === ph; })
     .sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
-  const ok = L.filter(function (o) { return o.status !== 'Цуцалсан'; }), l = L[L.length - 1];
+  const ok = L.filter(function (o) { return !/^(Цуцалсан|Буцаасан)$/.test(o.status); }), l = L[L.length - 1];
   return { status: 'ok', n: ok.length, canc: L.length - ok.length, total: ok.reduce(function (a, o) { return a + (Number(o.amount) || 0); }, 0),
            last: l ? { date: l.date, customer: l.customer, address: l.address, district: l.district, khoroo: l.khoroo, city: l.city, phone2: l.phone2 } : null };
 }

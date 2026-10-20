@@ -154,12 +154,13 @@ function shopLeft(name) {
 function stockShort(lines) {   // [{ item, qty }] → хүрэлцэхгүй барааны тайлбар
   if (!stock) return [];
   var need = {};
-  lines.forEach(function (r) { if (Number(r.qty) > 0) need[r.item] = (need[r.item] || 0) + Number(r.qty); });
+  lines.forEach(function (r) { if (Number(r.qty) > 0 && !isFee(r.item)) need[r.item] = (need[r.item] || 0) + Number(r.qty); });
   return Object.keys(need).filter(function (k) { return need[k] > stockAvail(k) + 1e-9; })
     .map(function (k) { return '«' + k + '» — хэрэгтэй ' + need[k] + ', үлдэгдэл ' + Math.max(0, stockAvail(k)); });
 }
 function stockTake(item, qty) {
-  if (!stock) return;
+  if (!stock || isFee(item)) return;
+  item = String(item).replace(/ \(буцаалт\)$/, '');   // буцаалт (сөрөг тоо) үлдэгдэлд нэмэгдэнэ
   var s = stock[item] = stock[item] || { shop: 0, wh: 0 };
   s.shop -= qty;
   if (s.shop < 0 && s.wh > 0) { var t = Math.min(s.wh, -s.shop); s.wh -= t; s.shop += t; }
