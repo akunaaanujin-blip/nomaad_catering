@@ -149,7 +149,9 @@ function cacheKeysFor(d) {
   if (CACHE_READ[d.type]) return null;
   return CACHE_MAP[d.type] || CACHE_ALL;   // мэдэгдэхгүй бичилт (он хаах г.м) — бүгдийг
 }
+const CACHE_OFF = { stk: 1, mov: 1 };   // ТҮР УНТРААСАН: нөөцийн кэш (сайжруулалт дуустал) — дахин асаахдаа энэ жагсаалтаас хасна
 function cacheGet(name, fn) {
+  if (CACHE_OFF[name]) return fn();
   const c = CacheService.getScriptCache(), k = 'ck2_' + name, n = Number(c.get(k) || 0);
   if (n > 0) {
     const keys = []; for (let i = 0; i < n; i++) keys.push(k + '_' + i);
