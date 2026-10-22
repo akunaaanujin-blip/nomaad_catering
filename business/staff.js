@@ -109,7 +109,7 @@ function showMain() {
 // Хуудас бүрийн одоогийн хэсгүүдийг view-ээр (dash / orders) ялгаж харуулна; утсан дээр цэс ☰ товчоор нээгдэнэ.
 var shellView = 'dash';
 function navMenu() {   // зөвхөн хуудсууд — үйлдлийн товчнууд хуудас дотроо нэг л удаа
-  var g = [['dash', 'Борлуулалт', function () { showView('dash'); }]];
+  var g = [['dash', 'Борлуулалт', function () { showView('dash'); }], ['stock', 'Барааны үлдэгдэл', function () { showView('stock'); }]];
   return [{ t: '', items: g }];
 }
 function buildShell() {
@@ -148,10 +148,38 @@ function showView(v, tab) {
     el.style.display = (el.getAttribute('data-view') || 'dash') === v ? '' : 'none';
   });
   var w = document.querySelector('#main .wrap'); if (w) w.classList.toggle('ep-wide', v === 'orders');
-  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : 'Борлуулалт';
+  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : v === 'stock' ? 'Барааны үлдэгдэл' : 'Борлуулалт';
+  if (v === 'stock') renderStockPage();
   renderNav(); window.scrollTo(0, 0);
 }
 
+// ── Барааны үлдэгдэл (ажилтны хуудас): нөөц + хараахан санхүүд бичигдээгүй (хүргэгдээгүй) захиалгад байгаа тоо ──
+var stkQ = '';
+function pendingGoods() {   // «Шинэ» / «Буухиад өгсөн» захиалгын бараа — хүргэгдэх хүртэл нөөцөөс хасагдаагүй
+  var m = {};
+  if (typeof orders === 'undefined' || typeof ordItems !== 'function') return m;
+  orders.forEach(function (o) {
+    if (o.status !== 'Шинэ' && o.status !== 'Буухиад өгсөн') return;
+    ordItems(o).forEach(function (i) { if (isNonGoods(i.name)) return; m[i.name] = (m[i.name] || 0) + (Number(i.qty) || 1); });
+  });
+  return m;
+}
+function renderStockPage() {
+  var el = $('stockList'); if (!el) return;
+  var pend = pendingGoods(), names = {};
+  products.forEach(function (p) { names[p.name] = 1; });
+  Object.keys(stock || {}).forEach(function (k) { names[k] = 1; });
+  Object.keys(pend).forEach(function (k) { names[k] = 1; });
+  var q = stkQ.toLowerCase().trim();
+  var rows = Object.keys(names).filter(function (n) { return !isNonGoods(n) && (!q || n.toLowerCase().indexOf(q) >= 0); }).sort().map(function (n) {
+    var s = (stock && stock[n]) || { shop: 0, wh: 0 }, tot = Math.round(((s.shop || 0) + (s.wh || 0)) * 1000) / 1000, pd = pend[n] || 0;
+    var cls = pd > tot ? ' class="neg"' : '';
+    return '<tr' + cls + '><td>' + esc(n) + '</td><td class="num">' + (s.shop || 0) + '</td><td class="num">' + (s.wh || 0) + '</td><td class="num"><b>' + tot + '</b></td><td class="num">' + (pd || '') + '</td></tr>';
+  });
+  el.innerHTML = stock || Object.keys(pend).length
+    ? '<table class="rep-t"><tr><th>Бараа</th><th class="num">Дэлгүүр</th><th class="num">Агуулах</th><th class="num">Нийт</th><th class="num">Захиалгад</th></tr>' + rows.join('') + '</table>'
+    : '<p class="muted">Үлдэгдэл бүртгэгдээгүй байна.</p>';
+}
 // ── Бараа ──
 // Үндсэн жагсаалт config.js / products.js-д (БҮНА кодтой), Sheet-ийн "Бараа" хуудас үнэ/нэгжийг давхарлаж, шинэ бараа нэмнэ.
 // Удирдлагаас засварласан үнэ, нэгж, ангилал, БҮНА давхарлана; «Идэвхгүй» болгосон бараа жагсаалтаас нуугдана.

@@ -1230,3 +1230,7 @@ body:not(.bz-admin) .pos-foot .btn{background:linear-gradient(135deg,#15803D,#22
 .sx-k:nth-child(1){border-top:4px solid var(--cg)}.sx-k:nth-child(2){border-top:4px solid var(--cb)}
 .sx-k:nth-child(3){border-top:4px solid var(--ck)}.sx-k:nth-child(4){border-top:4px solid var(--cr)}
 @media(max-width:700px){.sum{grid-template-columns:1fr}.sum>div b{font-size:20px}.ep-app .wrap{padding:12px 12px 40px}}
+/* Ажилтан · Барааны үлдэгдэл */
+#stockList table.rep-t{width:100%}
+#stockList .num{text-align:right}
+#stockList tr.neg td{color:#B91C1C}

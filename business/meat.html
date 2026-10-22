@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261022o">
+<link rel="stylesheet" href="style.css?v=20261022p">
 </head>
 <body>
 <div class="demo" id="demo" style="display:none">Туршилтын горим — мэдээлэл зөвхөн энэ төхөөрөмжид хадгалагдаж байна</div>
@@ -47,6 +47,13 @@
       <button class="big sale" onclick="openSale()"><span>＋</span>Борлуулалт</button>
       <button class="big exp" onclick="openExpense()"><span>−</span>Зарлага</button>
       <button class="big close" onclick="openClose()"><span></span>Өдрийн касс хаах</button>
+    </div>
+    <div data-view="stock" id="stockView" style="display:none">
+      <div class="card">
+        <input type="search" placeholder="Бараагаар хайх…" oninput="stkQ=this.value;renderStockPage()">
+        <div id="stockList" style="margin-top:8px;overflow-x:auto"></div>
+        <p class="muted" style="margin-top:8px">«Захиалгад» — «Шинэ» ба «Буухиад өгсөн» захиалгад байгаа тоо. Хүргэгдэж борлуулалт санхүүд бичигдэх хүртэл нөөцөөс хасагдаагүй. Захиалгад нөөцөөс их байвал мөр улаанаар харагдана.</p>
+      </div>
     </div>
     <div class="pending" id="pending"></div>
     <div class="pending" id="ebWarn"></div>
@@ -225,7 +232,7 @@
 <script src="common.js?v=20261022o"></script>
 <script>var BIZ_KEY = 'meat';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261022o"></script>
+<script src="staff.js?v=20261022p"></script>
 <script src="ebarimt.js?v=20261022o"></script>
 </body>
 </html>
