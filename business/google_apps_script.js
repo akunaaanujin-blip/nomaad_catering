@@ -1656,3 +1656,19 @@ function cancelDuplicateOrderSales() {
   });
   Logger.log('ДАВХАР: ' + done.length + ' мөр цуцаллаа — ' + done.join('; '));
 }
+// Нэг удаа (2026-10-22, хэрэглэгч баталсан): борлуулалт нь бичигдсэн «Шинэ» захиалга → «Буухиад өгсөн»; илүү гутлын тавиурын орлого, аяллын 10-15-ны 3 туршилтын борлуулалт, журналын 50₮ → «Устгасан»
+function cleanupOct22() {
+  const log = logSheet(), lv = log.getRange(2, 1, log.getLastRow() - 1, LOG_HEAD.length).getValues(), sold = {}, out = [];
+  lv.forEach(function (r) { if (String(r[16]) === 'sale' && /^O\d/.test(String(r[17])) && String(r[18]) !== 'Устгасан') sold[String(r[17])] = 1; });
+  const os = orderSheet(), ov = os.getRange(2, 1, os.getLastRow() - 1, ORDER_HEAD.length).getValues(); let n = 0;
+  ov.forEach(function (r, i) { if (String(r[16]) === 'Шинэ' && sold[String(r[0])] && !/^yes:/.test(String(r[20]))) { os.getRange(i + 2, 17).setValue('Буухиад өгсөн'); os.getRange(i + 2, 21).setValue('yes:Шилжүүлэг'); n++; } });
+  out.push('захиалга ' + n);
+  const ss = stockSheet(), sv = ss.getRange(2, 1, ss.getLastRow() - 1, 1).getValues();
+  sv.forEach(function (r, i) { if (String(r[0]) === 'M1792663557917-0') { ss.getRange(i + 2, 14).setValue('Устгасан'); out.push('орлого цуцалсан'); } });
+  let t = 0;
+  lv.forEach(function (r, i) { if (String(r[15]) === 'travel' && String(r[16]) === 'sale' && fmtDate(r[1], 'yyyy-MM-dd') === '2026-10-15' && String(r[18]) !== 'Устгасан') { log.getRange(i + 2, 19).setValue('Устгасан'); log.getRange(i + 2, 15).setValue(String(r[14] || '') + ' [туршилт — цуцалсан]'); t++; } });
+  out.push('туршилтын борлуулалт ' + t);
+  const js = journalSheet(), jv = js.getRange(2, 1, js.getLastRow() - 1, 1).getValues();
+  jv.forEach(function (r, i) { if (String(r[0]) === 'J1792487001494-0') { js.getRange(i + 2, 12).setValue('Устгасан'); out.push('журнал 50₮ цуцалсан'); } });
+  Logger.log('ЦЭВЭРЛЭГЭЭ: ' + out.join('; '));
+}
