@@ -80,7 +80,7 @@ function fetchAll(cb) {
     accountsX = load('nb_demo_accx', []); applyCustomAccounts(accountsX); meta.lock = load('nb_demo_lock', '');
     window.loans = load('nb_demo_loans', []); window.pos = load('nb_demo_pos', []); window.bankLinks = load('nb_demo_banklinks', []);
     window.kpiCfg = load('nb_demo_kpi', {}); window.assets = load('nb_demo_assets', []); window.minStock = load('nb_demo_minstock', {});
-    window.digestCfg = load('nb_demo_digest', { on: false, to: '' }); window.priceLog = load('nb_demo_pricelog', []);
+    window.digestCfg = load('nb_demo_digest', { on: false, to: '' }); window.priceLog = load('nb_demo_pricelog', []); window.reviewNotes = load('nb_review', {});
     applyRole(load('nb_demo_role', 'Эзэн'), load('nb_demo_rolebiz', 'all'));
     stamp(); cb(true); return;
   }
@@ -94,6 +94,7 @@ function fetchAll(cb) {
     accountsX = d.accountsX || []; applyCustomAccounts(accountsX); meta.lock = d.lock || '';
     window.kpiCfg = d.kpi || {}; window.assets = d.assets || []; window.minStock = d.minstock || {};
     window.digestCfg = d.digest || { on: false, to: '' }; window.priceLog = d.priceLog || [];
+    window.reviewNotes = Object.assign(load('nb_review', {}), d.review || {});   // сервер түрүүлнэ; хадгалагдаагүй бол энэ төхөөрөмжийнх
     applyRole(d.role, d.roleBiz);
     stamp(); cb(true);
   });
@@ -177,6 +178,7 @@ function render() {
   else if (state.view === 'cal') $('view').innerHTML = calView();
   else if (state.view === 'docs') $('view').innerHTML = pageHead('Маягт, загвар', '<button class="b-btn primary" onclick="editDoc()">+ Шинэ маягт</button>') + docsModule();
   else if (state.view === 'staff') $('view').innerHTML = staffPage();
+  else if (state.view === 'review') { $('view').innerHTML = reviewView(); setTimeout(rvCharts, 0); }
   else if (state.view === 'company') $('view').innerHTML = companyView();
   else $('view').innerHTML = companiesView();
   if (window.__dash) setTimeout(drawDash, 0);   // хянах самбарын график
@@ -216,6 +218,7 @@ function navBack() { if (NAV.idx > 0) history.back(); else go('companies'); }
 // ── Baaz маягийн цэс: зүүн цэнхэр зурвас + бүлэглэсэн дэд цэс ──
 var ICONS = {
   home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
+  review: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 16v-3M12 16V9M16 16v-5"/>',
   mgmt: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',
   sales: '<path d="M3 4h2l2.4 11h11.2L21 7H6"/><circle cx="9" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/>',
   products: '<path d="M3 7.5L12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5l9 4.5 9-4.5M12 12v9"/>',
@@ -244,6 +247,7 @@ function railHtml(pend) {
     (inCo && BUSINESSES[state.biz] ? bizModules(state.biz).map(function (m) { return item(state.module === m[0], "openModule('" + m[0] + "')", m[0], m[1]); }).join('') : '') +
     (inCo ? '' :   // компанийн дотор зөвхөн компанийн цэс; удирдлагын цэс нь «Компаниуд» түвшинд
     '<div class="rail-sep"></div>' +
+    item(state.view === 'review', "go('review')", 'review', 'Удирдлагын тойм') +
     (isOwner() ? item(inCo && state.biz === 'mgmt', 'openMgmt()', 'mgmt', 'Удирдлага') : '') +
     item(state.view === 'staff', "state.staffBiz=state.view==='company'?state.biz:state.staffBiz;go('staff')", 'people', 'Ажилчид', pend && isOwner() ? '<i class="dot">' + pend + '</i>' : '') +
     (isOwner() ? item(state.view === 'tax', 'openTax()', 'tax', 'Татвар, тайлан') + item(state.view === 'docs', "go('docs')", 'docs', 'Маягт') : '') +
@@ -300,6 +304,7 @@ function toggleNav(on) { $('main').classList.toggle('nav-open', !!on); }
 function crumbHtml() {
   if (state.view === 'companies') return '<b>Миний компаниуд</b>';
   if (state.view === 'staff') return '<b>Ажилчид</b>';
+  if (state.view === 'review') return '<b>Удирдлагын тойм</b>';
   if (state.view === 'cal') return '<b>Календарь</b>';
   if (state.view === 'docs') return '<b>Маягт, загвар</b>';
   if (state.view === 'tax') return '<span>' + esc(ENTITIES[taxState.ent].name) + '</span><i>/</i><b>Татвар, тайлан</b>';

@@ -1255,3 +1255,61 @@ body:not(.bz-admin) .pos-foot .btn{background:linear-gradient(135deg,#15803D,#22
 .bo-note{font-size:13px;margin:4px 0 8px;padding:6px 10px;border-radius:6px}
 .bo-note.bo-run{background:var(--bo-run-bg);color:var(--bo-run)}
 .bo-card .sx-k b,.bo-t td.n{white-space:nowrap}
+
+/* ── Удирдлагын тойм (review.js) ── */
+.rv{max-width:1180px}
+.rv-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:12px}
+.rv-tools label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#6B7280;font-weight:600}
+.rv-tools select{padding:8px 10px;border:1px solid #D7DCE3;border-radius:8px;font:inherit;font-size:14px;background:#fff;min-width:150px}
+.rv-tools .pg-act{margin-left:auto}
+.rv-head h1{font-size:22px;margin:0 0 4px;color:#111827}
+.rv-head p{margin:0 0 14px;font-size:13px}
+.rv-sec{background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(16,24,40,.05),0 3px 10px rgba(16,24,40,.06);padding:16px 18px;margin-bottom:16px}
+.rv-sec h2{display:flex;align-items:center;gap:10px;font-size:16px;margin:0 0 12px;color:#111827}
+.rv-sec h2 i{font-style:normal;width:26px;height:26px;border-radius:50%;background:#2F5B8E;color:#fff;font-size:13px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.rv-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px}
+.rv-kpis.sm{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.rv-kpi{border:1px solid #E3E7ED;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.rv-kpi > span{font-size:12.5px;color:#6B7280;font-weight:600}
+.rv-kpi > b{font-size:20px;font-weight:800;color:#111827;overflow-wrap:anywhere;line-height:1.2}
+.rv-kpis:not(.sm) .rv-kpi > b{font-size:22px}
+.rv-kpi small{font-size:12px}
+.rv-kpi .link{font-size:12.5px;align-self:flex-start}
+.rv-cmp{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.rv-d{font-weight:700;border-radius:999px;padding:1px 7px;font-size:11.5px;background:#F1F3F6;color:#4B5563}
+.rv-d.up{background:#DCFCE7;color:#15803D}.rv-d.dn{background:#FEE2E2;color:#B91C1C}
+.rv-ok{color:#15803D}.rv-bad{color:#B91C1C}
+.rv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.rv-card{border:1px solid #E3E7ED;border-radius:12px;padding:12px 14px;min-width:0}
+.rv-card h3{font-size:14px;margin:0 0 8px;color:#111827}
+.rv-t{width:100%;font-size:13px}
+.rv-t td:first-child{white-space:normal}
+.rv-t tr.rv-warn td{background:#FEF2F2;color:#B91C1C}
+.rv-t tr.rv-warn td small{color:#B91C1C}
+.rv-num{width:90px;font:inherit;font-size:20px;font-weight:800;padding:2px 6px;border:1px solid #D7DCE3;border-radius:6px}
+.rv-notes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.rv-note{display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.rv-note textarea{font:inherit;font-size:14px;padding:10px;border:1px solid #D7DCE3;border-radius:8px;resize:vertical;min-height:110px;line-height:1.5}
+.rv-save{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;justify-content:flex-end;margin-top:12px}
+.rv-save label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#6B7280;font-weight:600}
+.rv-save input{padding:8px 10px;border:1px solid #D7DCE3;border-radius:8px;font:inherit;width:180px}
+@media(max-width:760px){
+  .rv-kpis,.rv-kpis.sm{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .rv-kpis:not(.sm) .rv-kpi:first-child{grid-column:1/-1}
+  .rv-grid,.rv-notes{grid-template-columns:1fr}
+  .rv-sec{padding:14px 12px}
+  .rv-kpi > b,.rv-kpis:not(.sm) .rv-kpi > b{font-size:18px}
+  .rv-tools .pg-act{margin-left:0;width:100%}
+  .rv-head h1{font-size:19px}
+}
+.rv-pdf .no-print{display:none!important}
+.rv-pdf .rv-sec{box-shadow:none;border:1px solid #E3E7ED}
+@media print{
+  body.bz-admin *{visibility:visible}
+  .rv .no-print{display:none!important}
+  .rv{max-width:none}
+  .rv-sec{box-shadow:none;border:1px solid #E3E7ED;break-inside:auto}
+  .rv-kpi,.rv-card,.rv-t tr{break-inside:avoid}
+  .rv .scroll{max-height:none;overflow:visible}
+  .rv-note textarea{border:1px solid #ccc;resize:none}
+}

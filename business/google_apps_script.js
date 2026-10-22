@@ -265,6 +265,7 @@ function adminRead(d) {
   a.kpi = JSON.parse(pr.getProperty('KPI') || '{}');
   a.targets = JSON.parse(pr.getProperty('TARGETS') || '{}');   // борлуулалтын зорилт { 'biz|YYYY-MM': { total, staff: { нэр: дүн } } }
   a.assets = JSON.parse(pr.getProperty('ASSETS') || '[]');
+  a.review = JSON.parse(pr.getProperty('REVIEW') || '{}');   // удирдлагын тойм { 'biz|YYYY-MM': { good, issues, next, complaints, planProfit } }
   a.minstock = minStockAll();
   a.digest = { on: pr.getProperty('DIGEST') === 'on', to: pr.getProperty('DIGEST_TO') || '', mail: DIGEST_MAIL };
   a.priceLog = cacheGet('price', priceRows);
@@ -1055,7 +1056,7 @@ function adminSetting(d) {
     if (ms.length > 8500) return { status: 'error', error: 'too_big' };
     PropertiesService.getScriptProperties().setProperty('MINSTOCK_' + d.biz, ms); return { status: 'ok' };
   }
-  const JSONKEYS = { kpi: 'KPI', assets: 'ASSETS', targets: 'TARGETS' };   // KPI %, үндсэн хөрөнгө, борлуулалтын зорилт
+  const JSONKEYS = { kpi: 'KPI', assets: 'ASSETS', targets: 'TARGETS', review: 'REVIEW' };   // + удирдлагын тоймын дүгнэлт   // KPI %, үндсэн хөрөнгө, борлуулалтын зорилт
   if (JSONKEYS[d.key]) {
     const s = JSON.stringify(d.value || (d.key === 'assets' ? [] : {}));
     if (s.length > 8500) return { status: 'error', error: 'too_big' };
