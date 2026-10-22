@@ -249,7 +249,7 @@ function quickOrd2(id, field, val) {   // жагсаалтаас нэг товч
 }
 // «Буухиад өгсөн» / «Хүргэгдсэн»: борлуулалт ба төлөвийг сервер нэг хүсэлтээр бичнэ — хагас хадгалагдах, давхардах боломжгүй
 var shipping = false;
-function shipOrders(ids, to) {
+function shipOrders(ids, to, done) {
   if (!ids.length) return;
   if (shipping) { toast('Хадгалж байна — түр хүлээнэ үү'); return; }
   shipping = true; toast(ids.length + ' захиалгыг хадгалж байна…');
@@ -262,7 +262,75 @@ function shipOrders(ids, to) {
     renderOrders(); if (typeof syncToday === 'function') syncToday(); loadStock();
     if (d.skipped.length) alert(d.skipped.length + ' захиалга «Шинэ» хэвээр үлдлээ:\n\n' + d.skipped.map(function (x) { return (x.phone || '') + ': ' + x.why; }).join('\n'));
     toast(d.shipped.length + ' захиалга «' + d.to + '» боллоо');
+    done && done(d);
   });
+}
+
+// ── Буухиагийн тайлан (ebuuhia «Харилцагчийн нийлсэн тайлан» Excel) → утсаар тааруулж «Хүргэгдсэн» / «Буцаасан», төлбөр орсон ──
+// Шууд хийхгүй: тааруулсан жагсаалтыг харуулж, чагталсныг л хийнэ.
+var brRows = [];
+function brNum(v) { var n = Number(String(v == null ? '' : v).replace(/[,\s₮]/g, '')); return isFinite(n) ? n : 0; }
+function buReport(input) {
+  var f = input.files && input.files[0]; input.value = '';
+  if (!f) return;
+  if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин оролдоно уу'); ensureXlsx(function () {}); return; }
+  var rd = new FileReader();
+  rd.onload = function (e) {
+    var wb; try { wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' }); } catch (er) { toast('Файлыг уншиж чадсангүй'); return; }
+    var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: '' });
+    var hi = rows.findIndex(function (r) { return r.some(function (c) { return /Хэрэглэгч/.test(c); }) && r.some(function (c) { return /Төлөв/.test(c); }); });
+    if (hi < 0) { toast('Буухиагийн тайлан биш байна («Хэрэглэгч», «Төлөв» багана олдсонгүй)'); return; }
+    var h = rows[hi].map(function (c) { return String(c).trim(); }), col = function (re) { return h.findIndex(function (c) { return re.test(c); }); };
+    var cPh = col(/^Хэрэглэгч/), cSt = col(/^Төлөв/), cAmt = col(/^Дүн/), cGot = col(/^Авсан/), cNote = col(/Нэмэлт тайлбар/), used = {};
+    brRows = rows.slice(hi + 1).map(function (r) {
+      var ph = String(r[cPh] || '').replace(/\D/g, '').slice(-8), st = String(r[cSt] || '').trim().toUpperCase();
+      if (!/^\d{8}$/.test(ph) || !st) return null;
+      var amt = brNum(r[cAmt]), got = brNum(r[cGot]);
+      var to = /ХҮРГЭГДСЭН/.test(st) ? 'Хүргэгдсэн' : /БУЦААСАН|ЦУЦАЛСАН/.test(st) ? 'Буцаасан' : '';
+      var cands = orders.filter(function (o) { return !used[o.id] && String(o.phone || '').replace(/\D/g, '') === ph && o.status !== 'Цуцалсан'; });
+      var o = cands.filter(function (x) { return amt && Number(x.amount) === amt; })[0] || cands.filter(function (x) { return x.status === 'Буухиад өгсөн'; })[0] || cands[0];
+      if (o) used[o.id] = 1;
+      var act = !o || !to ? 'none' : o.status === to ? 'same'
+        : to === 'Хүргэгдсэн' ? (/^(Шинэ|Буухиад өгсөн)$/.test(o.status) ? 'set' : 'none') : (o.status === 'Буухиад өгсөн' ? 'set' : 'none');
+      return { ph: ph, st: st, amt: amt, got: got, note: cNote >= 0 ? String(r[cNote] || '') : '', o: o, to: to, act: act, pay: !!(o && got > 0 && o.paid !== 'Орсон' && !o.confirmed) };
+    }).filter(Boolean);
+    brRender(); openSheet('brSheet');
+  };
+  rd.readAsArrayBuffer(f);
+}
+function brRender() {
+  var n = { set: 0, same: 0, none: 0 };
+  brRows.forEach(function (r) { n[r.o ? r.act : 'none']++; });
+  $('brSum').textContent = brRows.length + ' мөр · өөрчлөх ' + n.set + ' · аль хэдийн тохирсон ' + n.same + ' · тааруулаагүй ' + n.none;
+  $('brList').innerHTML = brRows.map(function (r, i) {
+    var can = r.act === 'set' || r.pay;
+    var what = !r.o ? '<span class="warn">Системд олдсонгүй</span>' : r.act === 'set' ? esc(r.o.status) + ' → <b>' + esc(r.to) + '</b>' : r.act === 'same' ? esc(r.o.status) + ' (тохирсон)' : esc(r.o.status) + ' — буухиа: ' + esc(r.st);
+    return '<label class="bu-row"><input type="checkbox" value="' + i + '"' + (can ? ' checked' : ' disabled') + '>' +
+      '<span><b>' + esc(r.ph) + '</b> · ' + what + (r.o ? '<small>' + esc(ordItemsText(r.o)) + ' · ' + fmt(r.o.amount) + '</small>' : '') +
+      '<small>Буухиа: ' + esc(r.st) + (r.amt ? ' · дүн ' + fmt(r.amt) : '') + (r.got ? ' · авсан ' + fmt(r.got) : '') + (r.pay ? ' · <b>төлбөр орсон болгоно</b>' : '') + (r.note ? ' · ' + esc(r.note) : '') + '</small></span></label>';
+  }).join('');
+}
+function brApply() {
+  var sel = {}; [].forEach.call(document.querySelectorAll('#brList input:checked'), function (c) { sel[c.value] = 1; });
+  var dl = [], ch = [];
+  brRows.forEach(function (r, i) {
+    if (!sel[i] || !r.o) return;
+    if (r.act === 'set' && r.to === 'Хүргэгдсэн') dl.push(r.o.id);
+    var c = {};
+    if (r.act === 'set' && r.to === 'Буцаасан') c.status = 'Буцаасан';
+    if (r.pay) c.paid = 'Орсон';
+    if (Object.keys(c).length) ch.push({ id: r.o.id, ch: c });
+  });
+  if (!dl.length && !ch.length) { toast('Сонгосон мөр алга'); return; }
+  closeSheet('brSheet');
+  var rest = function () { brSeq(ch); };   // серверийг давхар ачаалахгүй — дараалан
+  if (dl.length) shipOrders(dl, 'Хүргэгдсэн', rest); else rest();
+}
+function brSeq(list) {
+  if (!list.length) { toast('Буухиагийн тайлан тулгагдлаа'); return; }
+  var x = list.shift(), o = orders.filter(function (y) { return y.id === x.id; })[0];
+  if (!o) { brSeq(list); return; }
+  saveOrder(Object.assign({}, o, x.ch), function () { brSeq(list); });
 }
 
 // ── Жагсаалт ──
