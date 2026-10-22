@@ -157,24 +157,64 @@ function showView(v, tab) {
 }
 
 // ── Boost: зар сурталчилгааны төлбөрийг бараа бүрээр бичнэ (зөвхөн бүртгэл — санхүүд банкны хуулгаар 7205 орно) ──
+// Олон бараа сонговол дүнг тэнцүү хуваана. Бичлэг бүр: item, amount = ₮, price = валютаар, unit = валют, qty = хоног, bill = нэг boost-ийн бүлэг
+var boost = { items: [], cur: 'USD', days: 0 }, BOOST_DAYS = [1, 3, 5, 7, 14, 30];
+function boostChips() {
+  $('bSel').innerHTML = boost.items.map(function (n, i) { return '<button class="chip on" onclick="boost.items.splice(' + i + ',1);boostChips()">' + esc(n) + ' ×</button>'; }).join('');
+  $('bCur').innerHTML = [['USD', '$'], ['MNT', '₮']].map(function (c) { return '<button class="chip' + (boost.cur === c[0] ? ' on' : '') + '" onclick="boost.cur=\'' + c[0] + '\';boostChips()">' + c[1] + '</button>'; }).join('');
+  $('bDays').innerHTML = BOOST_DAYS.map(function (d) { return '<button class="chip' + (boost.days === d ? ' on' : '') + '" onclick="boost.days=' + d + ';$(\'bDayN\').value=\'\';boostChips()">' + d + '</button>'; }).join('');
+  $('bRateWrap').style.display = boost.cur === 'USD' ? '' : 'none';
+  boostCalc();
+}
+function boostAdd() {
+  var n = $('bItem').value.trim();
+  if (products.some(function (p) { return p.name === n; }) && boost.items.indexOf(n) < 0) boost.items.push(n);
+  $('bItem').value = ''; boostChips();
+}
+function splitAmt(total, n, dec) {   // тэнцүү хуваана, үлдэгдэл сүүлийнхэд (нийлбэр яг таарна)
+  var f = Math.pow(10, dec), each = Math.floor(total * f / n) / f, out = [];
+  for (var i = 0; i < n; i++) out.push(i < n - 1 ? each : Math.round((total - each * (n - 1)) * f) / f);
+  return out;
+}
+function boostTotals() {
+  var amt = parseFloat($('bAmt').value) || 0, rate = boost.cur === 'USD' ? parseFloat($('bRate').value) || 0 : 1;
+  return { amt: amt, rate: rate, mnt: Math.round(amt * rate) };
+}
+function boostCur(v, cur) { return cur === 'USD' ? '$' + (Math.round(v * 100) / 100) : fmt(v); }
+function boostCalc() {
+  var t = boostTotals(), n = boost.items.length, el = $('bCalc');
+  if (!t.amt || !n) { el.textContent = ''; return; }
+  el.textContent = (boost.cur === 'USD' ? (t.rate ? '≈ ' + fmt(t.mnt) + '. ' : 'Ханшаа бичнэ үү. ') : '') +
+    (n > 1 ? 'Бараа тус бүрт ' + boostCur(splitAmt(t.amt, n, boost.cur === 'USD' ? 2 : 0)[0], boost.cur) + (boost.cur === 'USD' && t.rate ? ' (≈ ' + fmt(splitAmt(t.mnt, n, 0)[0]) + ')' : '') : '') +
+    (boost.days ? (n > 1 ? ', ' : '') + boost.days + ' хоног' : '');
+}
 function renderBoost() {
   var dl = $('boostItems');
   if (dl) dl.innerHTML = products.filter(function (p) { return !isNonGoods(p.name); }).map(function (p) { return '<option value="' + esc(p.name) + '">'; }).join('');
+  if (!$('bRate').value) $('bRate').value = load('nb_usd_rate', '') || '';
+  boostChips();
   var cut = todayStr(new Date(Date.now() - 30 * 864e5));
   var list = load(LS_REC, []).filter(function (r) { return r.type === 'boost' && r.biz === BIZ_KEY && r.date >= cut; }).reverse();
   var by = {}; list.forEach(function (r) { by[r.item] = (by[r.item] || 0) + r.amount; });
   $('boostList').innerHTML = list.length ? Object.keys(by).sort(function (a, b) { return by[b] - by[a]; }).map(function (k) {
-    return '<li><span><b>' + esc(k) + '</b><small>' + list.filter(function (r) { return r.item === k; }).map(function (r) { return esc(r.date.slice(5)) + ' ' + fmt(r.amount) + (r.note ? ' (' + esc(r.note) + ')' : ''); }).join(' · ') + '</small></span>' +
+    return '<li><span><b>' + esc(k) + '</b><small>' + list.filter(function (r) { return r.item === k; }).map(function (r) {
+      return esc(r.date.slice(5)) + ' ' + (r.unit === 'USD' ? boostCur(r.price, 'USD') : fmt(r.amount)) + (r.qty ? ' · ' + r.qty + ' хоног' : '') + (r.note ? ' (' + esc(r.note) + ')' : ''); }).join(' · ') + '</small></span>' +
       '<span class="amt">' + fmt(by[k]) + '</span></li>';
   }).join('') : '<li class="muted">Сүүлийн 30 хоногт boost бичээгүй байна</li>';
 }
 function saveBoost() {
-  var item = $('bItem').value.trim(), amt = Math.round(parseFloat($('bAmt').value) || 0);
-  if (!products.some(function (p) { return p.name === item; })) { toast('Бараагаа жагсаалтаас сонгоно уу'); $('bItem').focus(); return; }
-  if (amt <= 0) { toast('Дүн оруулна уу'); $('bAmt').focus(); return; }
-  addRecord({ type: 'boost', item: item, amount: amt, note: $('bNote').value.trim() });
-  $('bItem').value = ''; $('bAmt').value = ''; $('bNote').value = '';
-  renderBoost(); toast('✓ Boost бичигдлээ: ' + item + ' · ' + fmt(amt));
+  if ($('bItem').value.trim()) boostAdd();
+  var t = boostTotals(), n = boost.items.length;
+  if (!n) { toast('Бараагаа жагсаалтаас сонгоно уу'); $('bItem').focus(); return; }
+  if (t.amt <= 0) { toast('Дүн оруулна уу'); $('bAmt').focus(); return; }
+  if (!t.rate) { toast('Долларын ханшаа бичнэ үү'); $('bRate').focus(); return; }
+  if (!boost.days) { toast('Хэдэн хоног гэдгийг сонгоно уу'); return; }
+  if (boost.cur === 'USD') save('nb_usd_rate', String(t.rate));
+  var fx = splitAmt(t.amt, n, boost.cur === 'USD' ? 2 : 0), mnt = splitAmt(t.mnt, n, 0), bill = 'BST-' + Date.now(), note = $('bNote').value.trim();
+  addRecords(boost.items.map(function (item, i) { return { type: 'boost', item: item, amount: mnt[i], price: fx[i], unit: boost.cur, qty: boost.days, bill: bill, note: note }; }));
+  toast('✓ Boost бичигдлээ: ' + n + ' бараа · ' + boostCur(t.amt, boost.cur));
+  boost.items = []; boost.days = 0; $('bAmt').value = ''; $('bNote').value = ''; $('bDayN').value = '';
+  renderBoost();
 }
 
 // ── Барааны үлдэгдэл (ажилтны хуудас): нөөц + хараахан борлуулалт болоогүй («Шинэ») захиалгад байгаа тоо ──

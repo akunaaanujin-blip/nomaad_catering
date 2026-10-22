@@ -443,16 +443,16 @@ function repReceipts(R, biz, from, to) {
 function repBoost(R, biz, from, to) {
   var bs = R.records.filter(function (x) { return x.biz === biz && x.type === 'boost' && x.date >= from && x.date <= to; });
   var sold = {}; salesIn(R, biz, from, to).forEach(function (x) { if (!isAdj(x.item)) { var k = baseItem(x.item); sold[k] = sold[k] || { q: 0, a: 0 }; sold[k].q += Number(x.qty) || 0; sold[k].a += Number(x.amount) || 0; } });
-  var by = {}; bs.forEach(function (x) { by[x.item] = by[x.item] || { n: 0, a: 0 }; by[x.item].n++; by[x.item].a += Number(x.amount) || 0; });
+  var by = {}; bs.forEach(function (x) { var o = by[x.item] = by[x.item] || { n: 0, a: 0, usd: 0, d: 0 }; o.n++; o.a += Number(x.amount) || 0; o.d += Number(x.qty) || 0; if (x.unit === 'USD') o.usd += Number(x.price) || 0; });
   var rows = Object.keys(by).sort(function (a, b) { return by[b].a - by[a].a; }).map(function (k) {
     var s = sold[k] || { q: 0, a: 0 };
-    return { key: k, n: by[k].n, boost: r0(by[k].a), qty: r0(s.q), sales: r0(s.a), ratio: s.a ? Math.round(by[k].a / s.a * 100) + '%' : '—' };
+    return { key: k, n: by[k].n, days: by[k].d || '', usd: by[k].usd ? '$' + r0(by[k].usd) : '', _usd: by[k].usd, boost: r0(by[k].a), qty: r0(s.q), sales: r0(s.a), ratio: s.a ? Math.round(by[k].a / s.a * 100) + '%' : '—' };
   });
   var det = bs.slice().sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; }).map(function (x) {
-    return { key: x.date + ' ' + (x.time || '') + ' · ' + x.item + (x.note ? ' · ' + x.note : '') + ' · ' + (x.staff || ''), boost: r0(Number(x.amount) || 0), _id: x.id };
+    return { key: x.date + ' ' + (x.time || '') + ' · ' + x.item + (x.note ? ' · ' + x.note : '') + ' · ' + (x.staff || ''), days: Number(x.qty) || '', usd: x.unit === 'USD' ? '$' + r0(x.price) : '', boost: r0(Number(x.amount) || 0), _id: x.id };
   });
-  return { title: 'Boost бараагаар', cols: [c('key', 'Бараа'), m('n', 'Удаа'), m('boost', 'Boost'), m('qty', 'Зарсан тоо'), m('sales', 'Борлуулалт'), c('ratio', 'Boost / борлуулалт')],
-    rows: rows.concat(det.length ? [{ key: '— Бичилтүүд —', _b: true }] : []).concat(det), total: { key: 'Нийт', boost: sum(rows, 'boost'), sales: sum(rows, 'sales') },
+  return { title: 'Boost бараагаар', cols: [c('key', 'Бараа'), m('n', 'Удаа'), m('days', 'Хоног'), c('usd', 'Доллар'), m('boost', 'Boost ₮'), m('qty', 'Зарсан тоо'), m('sales', 'Борлуулалт'), c('ratio', 'Boost / борлуулалт')],
+    rows: rows.concat(det.length ? [{ key: '— Бичилтүүд —', _b: true }] : []).concat(det), total: { key: 'Нийт', usd: sum(rows, '_usd') ? '$' + sum(rows, '_usd') : '', boost: sum(rows, 'boost'), sales: sum(rows, 'sales') },
     note: 'Ажилтны бичсэн boost — зөвхөн бүртгэл. Санхүүд зардал нь банкны хуулгаар (7205 Зар сурталчилгаа) орно.' };
 }
 // Цаг, гарагаар: аль цагт хамгийн их зардаг вэ (ээлж төлөвлөхөд)

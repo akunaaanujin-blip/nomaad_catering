@@ -72,14 +72,25 @@
     </div>
     <div data-view="boost" id="boostView" style="display:none">
       <div class="card">
-        <label for="bItem">Бараа</label>
-        <input id="bItem" list="boostItems" placeholder="Бараа хайх…" autocomplete="off"><datalist id="boostItems"></datalist>
-        <label for="bAmt">Төлсөн дүн (₮)</label>
-        <input id="bAmt" type="number" inputmode="numeric" min="0">
+        <label for="bItem">Бараа (олныг сонгож болно)</label>
+        <input id="bItem" list="boostItems" placeholder="Бараа хайж сонгох…" autocomplete="off" onchange="boostAdd()"><datalist id="boostItems"></datalist>
+        <div class="chips" id="bSel" style="margin-top:6px"></div>
+        <label for="bAmt">Төлсөн дүн</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="bAmt" type="number" inputmode="decimal" min="0" step="0.01" oninput="boostCalc()" style="flex:1">
+          <div class="chips" id="bCur" style="margin:0"></div>
+        </div>
+        <div id="bRateWrap"><label for="bRate">Ханш (1$ = ₮)</label><input id="bRate" type="number" inputmode="decimal" min="0" oninput="boostCalc()"></div>
+        <label>Хэдэн хоног</label>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <div class="chips" id="bDays" style="margin:0"></div>
+          <input id="bDayN" type="number" inputmode="numeric" min="1" placeholder="хоног" oninput="boost.days=Number(this.value)||0;boostChips()" style="width:90px">
+        </div>
         <label for="bNote">Тайлбар (заавал биш)</label>
-        <input id="bNote" placeholder="Жишээ: 3 хоног, FB пост">
-        <button class="btn" style="margin-top:10px" onclick="saveBoost()">Хадгалах</button>
-        <p class="muted" style="margin-top:8px">Кассын мөнгөнөөс хасагдахгүй — зөвхөн аль бараанд хэдэн төгрөгийн boost хийснийг бүртгэнэ.</p>
+        <input id="bNote" placeholder="Жишээ: FB пост, reel">
+        <p class="muted" id="bCalc" style="margin-top:8px"></p>
+        <button class="btn" style="margin-top:6px" onclick="saveBoost()">Хадгалах</button>
+        <p class="muted" style="margin-top:8px">Олон бараа сонговол дүн бараанд тэнцүү хуваагдана. Кассын мөнгөнөөс хасагдахгүй — зөвхөн бүртгэл.</p>
       </div>
       <h3 style="margin:14px 0 6px">Сүүлийн 30 хоног</h3>
       <ul class="list card" id="boostList"></ul>
@@ -304,7 +315,7 @@
 <script src="common.js?v=20261022o"></script>
 <script>var BIZ_KEY = 'cozy';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261022w"></script>
+<script src="staff.js?v=20261022x"></script>
 <script src="ebarimt.js?v=20261022u"></script>
 <script src="orders.js?v=20261022t"></script>
 <script src="label.js?v=20261022o"></script>

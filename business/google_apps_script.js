@@ -316,9 +316,9 @@ function saveRecords(data) {
     rows.push([
       r.id, r.date, r.time, BIZ_NAMES[r.biz], TYPE_NAMES[r.type], staffName,
       r.type === 'sale' || r.type === 'attend' || r.type === 'boost' ? String(r.item || '').slice(0, 80) : (r.type === 'expense' ? r.category : ''),
-      r.type === 'sale' ? Number(r.qty) : '',
-      r.type === 'sale' ? r.unit : '',
-      r.type === 'sale' ? Number(r.price) : '',
+      r.type === 'sale' || r.type === 'boost' ? Number(r.qty) : '',     // boost: qty = хоног
+      r.type === 'sale' || r.type === 'boost' ? r.unit : '',            // boost: unit = валют (USD/MNT)
+      r.type === 'sale' || r.type === 'boost' ? Number(r.price) : '',   // boost: price = валютаар төлсөн дүн
       Number(r.amount) || 0,
       r.type === 'sale' || r.type === 'collect' ? r.pay : '',
       r.type === 'close' ? Number(r.counted) : '',
@@ -1472,7 +1472,8 @@ function data(from) {
     if (r.type === 'sale') { r.item = v[6]; r.qty = Number(v[7]) || 0; r.unit = v[8]; r.price = Number(v[9]) || 0; r.pay = v[11]; r.bill = String(v[17] || ''); r.customer = String(v[19] || ''); }
     else if (r.type === 'collect') { r.pay = v[11]; r.customer = String(v[19] || ''); r.bill = String(v[17] || ''); }
     else if (r.type === 'expense') { r.category = v[6]; }
-    else if (r.type === 'attend' || r.type === 'boost') { r.item = String(v[6] || ''); }
+    else if (r.type === 'attend') { r.item = String(v[6] || ''); }
+    else if (r.type === 'boost') { r.item = String(v[6] || ''); r.qty = Number(v[7]) || 0; r.unit = String(v[8] || ''); r.price = Number(v[9]) || 0; r.bill = String(v[17] || ''); }
     else { r.counted = Number(v[12]) || 0; r.diff = Number(v[13]) || 0; }
     records.push(r);
   });

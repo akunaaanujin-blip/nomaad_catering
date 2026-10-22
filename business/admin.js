@@ -549,7 +549,7 @@ function recordRows(list) {
     } else if (x.type === 'attend') {
       tag = '<span class="tag">Ирц</span>'; detail = esc(x.item); amt = '';
     } else if (x.type === 'boost') {
-      tag = '<span class="tag">Boost</span>'; detail = esc(x.item) + (x.note ? ' · ' + esc(x.note) : ''); amt = fmt(x.amount);
+      tag = '<span class="tag">Boost</span>'; detail = esc(x.item) + (x.unit === 'USD' ? ' · $' + x.price : '') + (x.qty ? ' · ' + x.qty + ' хоног' : '') + (x.note ? ' · ' + esc(x.note) : ''); amt = fmt(x.amount);
     } else if (x.type === 'expense') {
       tag = '<span class="tag r">Зарлага</span>'; detail = esc(x.category) + (x.note ? ' · ' + esc(x.note) : ''); amt = '−' + fmt(x.amount);
     } else {
