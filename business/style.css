@@ -1313,3 +1313,109 @@ body:not(.bz-admin) .pos-foot .btn{background:linear-gradient(135deg,#15803D,#22
   .rv .scroll{max-height:none;overflow:visible}
   .rv-note textarea{border:1px solid #ccc;resize:none}
 }
+
+/* ═══════════ v10 · Оньс / Бааз маягийн POS (зөвхөн cozy.html — body.pos10) ═══════════
+   Цагаан хавтгай гадаргуу, нэг цэнхэр өнгө, нимгэн хүрээ, 8px радиус, градиентгүй. Агуулга, бүтэц өөрчлөгдөхгүй. */
+body.pos10{--p:#2378F0;--p-d:#1A63CC;--p-50:#EAF2FE;--ink:#1D2939;--mut:#667085;--ln:#E4E7EC;--bg:#F4F6F9;--ok:#12A150;--bad:#E5484D;
+  background:var(--bg);color:var(--ink);font-family:'Inter',-apple-system,'Segoe UI',Roboto,sans-serif}
+/* хажуугийн цэс — цагаан, идэвхтэй мөр цайвар цэнхэр */
+body.pos10 .ep-nav{background:#fff;border-right:1px solid var(--ln);box-shadow:none;width:240px;padding:14px 12px}
+body.pos10 .ep-body{margin-left:240px}
+body.pos10 .ep-brand{color:var(--ink);padding:4px 6px 14px;border-bottom:1px solid var(--ln);margin-bottom:10px}
+body.pos10 .ep-brand .mono{background:var(--p)!important;color:#fff!important;border-radius:8px}
+body.pos10 .ep-grp{background:transparent;padding:0;margin-bottom:6px;border-radius:0}
+body.pos10 .ep-grp-t{color:var(--mut);font-size:12px;font-weight:600;padding:8px 10px 4px}
+body.pos10 .ep-it{color:#344054;font-weight:500;font-size:14.5px;height:40px;border-radius:8px}
+body.pos10 .ep-it:hover{background:#F2F4F7}
+body.pos10 .ep-it.on{background:var(--p-50);color:var(--p);font-weight:600}
+body.pos10 .ep-it.on::after{content:'';right:auto;left:0;top:8px;bottom:8px;width:3px;height:auto;border-radius:0 3px 3px 0;background:var(--p);box-shadow:none}
+body.pos10 .ep-foot{color:var(--mut)}
+body.pos10 .ep-burger{background:var(--p-50);color:var(--p);border-radius:8px}
+@media(max-width:900px){body.pos10 .ep-body{margin-left:0}}
+/* дээд мөр */
+body.pos10 .top,body.pos10.ep-app .top,body.pos10 .ep-app .top{background:#fff;border-bottom:1px solid var(--ln);box-shadow:none}
+body.pos10 .top h1{font-size:17px;font-weight:700;color:var(--ink)}
+body.pos10 .top small{color:var(--mut)}
+body.pos10 .top .right button{border:1px solid var(--ln);background:#fff;color:#344054;border-radius:8px;font-weight:500}
+body.pos10 .ep-title{font-size:20px;font-weight:700;color:var(--ink)}
+/* үндсэн үйлдлийн товчнууд — Оньсын хавтан шиг */
+body.pos10 .big-btns{gap:12px}
+body.pos10 .big,body.pos10 .big.exp,body.pos10 .big.close,body.pos10 .big.ord-btn,body.pos10 .big.buu-btn{background:#fff;color:var(--ink);border:1px solid var(--ln);border-radius:10px;box-shadow:0 1px 2px rgba(16,24,40,.04);
+  font-size:16px;font-weight:600;padding:20px 12px;display:flex;align-items:center;justify-content:center;gap:10px}
+body.pos10 .big span{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;font-size:20px;font-weight:600;margin:0;background:#F2F4F7;color:#344054}
+body.pos10 .big span:empty{display:none}
+body.pos10 .big:hover{border-color:#C9DBFB;background:#FBFCFF}
+body.pos10 .big.sale{background:var(--p);border-color:var(--p);color:#fff}
+body.pos10 .big.sale span{background:rgba(255,255,255,.2);color:#fff}
+body.pos10 .big.sale:hover{background:var(--p-d)}
+body.pos10 .big.exp span{background:#FDECEC;color:var(--bad)}
+/* өнөөдрийн дүн — цагаан KPI хавтан, өнгө зөвхөн тоонд */
+body.pos10 .sum{gap:12px}
+body.pos10 .sum>div,body.pos10 .sum>div:nth-child(n){background:#F9FAFB;border:1px solid var(--ln);border-radius:10px;color:var(--ink);padding:14px 16px}
+body.pos10 .sum>div .muted{color:var(--mut)!important;font-size:13px}
+body.pos10 .sum>div b{font-size:22px;font-weight:700}
+body.pos10 .sum>div:nth-child(1) b{color:var(--ok)!important}
+body.pos10 .sum>div:nth-child(2) b{color:var(--bad)!important}
+body.pos10 .sum>div:nth-child(3) b{color:var(--ink)!important}
+/* карт */
+body.pos10 .card,body.pos10 .card:nth-of-type(n){background:#fff;border:1px solid var(--ln);border-top:1px solid var(--ln);border-radius:10px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+body.pos10 .card h2{font-size:15px;font-weight:600;color:var(--ink)}
+/* товч */
+body.pos10 .btn{background:var(--p);border-radius:8px;font-weight:600;box-shadow:none}
+body.pos10 .btn:hover{background:var(--p-d)}
+body.pos10 .btn.ghost{background:#fff;color:#344054;border:1px solid var(--ln)}
+body.pos10 .btn.ghost2,body.pos10 .btn.sm.ghost2{background:#fff;color:#344054;border:1px solid var(--ln);border-radius:8px}
+body.pos10 .btn.ghost2:hover{background:#F9FAFB}
+body.pos10 .link{color:var(--p)}
+/* таб, чип */
+body.pos10 .tabs button,body.pos10 .tabs button:nth-child(n){background:#fff;border:1px solid var(--ln);color:#344054;font-weight:500;border-radius:8px}
+body.pos10 .tabs button.on,body.pos10 .tabs button:nth-child(n).on{background:var(--p);border-color:var(--p);color:#fff}
+body.pos10 .chip{border-radius:8px;border-color:var(--ln)}
+body.pos10 .chip.on{background:var(--p);border-color:var(--p);color:#fff}
+/* оролт */
+body.pos10 input,body.pos10 select,body.pos10 textarea{border:1px solid #D0D5DD;border-radius:8px}
+body.pos10 input:focus,body.pos10 select:focus,body.pos10 textarea:focus{outline:0;border-color:var(--p);box-shadow:0 0 0 3px rgba(35,120,240,.15)}
+/* хүснэгт */
+body.pos10 .ep-tbl-wrap{border:1px solid var(--ln);border-radius:10px}
+body.pos10 .ep-tbl th{background:#F9FAFB;color:var(--mut);font-weight:600;font-size:12.5px;border-bottom:1px solid var(--ln)}
+body.pos10 .ep-tbl tbody tr:nth-child(even) td{background:#fff}
+body.pos10 .ep-tbl tbody tr:hover td{background:#F5F9FF}
+body.pos10 .ep-tbl .c-p b{color:var(--p)}
+body.pos10 .st.b{color:var(--p)}
+/* ── Касс ── */
+body.pos10 .sheet .panel.pos{border-radius:12px;background:var(--bg)}
+body.pos10 .pos-head{background:#fff;color:var(--ink);border-bottom:1px solid var(--ln);padding:12px 18px}
+body.pos10 .pos-head h2{color:var(--ink);font-size:17px;font-weight:700}
+body.pos10 .pos-x{background:#F2F4F7;color:#344054;border-radius:8px}
+body.pos10 .pos-search input{border-radius:8px;border-color:#D0D5DD}
+body.pos10 .pos-cat{background:#fff;border:1px solid var(--ln);color:#344054;font-weight:500;border-radius:8px}
+body.pos10 .pos-cat.on{background:var(--p);border-color:var(--p);color:#fff}
+body.pos10 .ptile,body.pos10 .ptile:nth-child(n){border:1px solid var(--ln);border-left:1px solid var(--ln);border-radius:10px;box-shadow:none;background:#fff;min-height:100px}
+body.pos10 .ptile:hover{border-color:var(--p);box-shadow:0 2px 8px rgba(35,120,240,.12)}
+body.pos10 .ptile.on{background:var(--p-50);border-color:var(--p);box-shadow:inset 0 0 0 1px var(--p)}
+body.pos10 .pt-n{font-weight:500;color:var(--ink)}
+body.pos10 .pt-f b{color:var(--p);font-weight:700}
+body.pos10 .pt-q{background:var(--p)}
+body.pos10 .pos-right{border-left:1px solid var(--ln)}
+body.pos10 .pos-cart-h b{font-weight:700}
+body.pos10 .pos-cart .cl-sum{color:var(--ink)}
+body.pos10 .pos-cart .cl-qty button{border-radius:8px}
+body.pos10 .pos-mode button{border-radius:8px}
+body.pos10 .pos-mode button.on{background:var(--p);border-color:var(--p);color:#fff}
+body.pos10 .pe-u button.on{background:var(--p);color:#fff}
+body.pos10 .pos-pay .seg button,body.pos10 .pos-pay .seg button[data-v]{background:#fff;border:1px solid #D0D5DD;color:#344054;font-weight:600;opacity:1;border-radius:8px;box-shadow:none}
+body.pos10 .pos-pay .seg button.on,body.pos10 .pos-pay .seg button[data-v].on{background:var(--p-50);border-color:var(--p);color:var(--p);box-shadow:inset 0 0 0 1px var(--p)}
+body.pos10 .pos-total .total{color:var(--ink);font-weight:700}
+body.pos10 .pos-foot .btn{background:var(--p);box-shadow:none;border-radius:10px}
+body.pos10 .pos-foot .btn:hover{background:var(--p-d)}
+body.pos10 .sheet .panel{border-radius:12px 12px 0 0}
+@media(min-width:821px){body.pos10 .sheet .panel{border-radius:12px}}
+@media(max-width:700px){body.pos10 .big{padding:16px 10px;font-size:15px}body.pos10 .sum>div b{font-size:19px}}
+/* ── Ажилтны тооллого, мөнгөний хүсэлт ── */
+.nb-badge{display:inline-block;min-width:18px;height:18px;line-height:18px;padding:0 5px;border-radius:9px;background:#DC2626;color:#fff;font-style:normal;font-size:11px;font-weight:700;text-align:center;margin-left:4px;vertical-align:1px}
+.cnt-bar{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.cnt-bar label{display:flex;flex-direction:column;gap:4px;margin:0;font-size:13px}
+.cnt-bar input[type=search]{flex:1;min-width:180px}
+.cnt-t td{vertical-align:middle}
+.cnt-t .cnt-in{width:110px;padding:7px 9px;text-align:right;font-size:15px}
+#reqList .st{display:flex;margin-top:3px}

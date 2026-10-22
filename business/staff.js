@@ -110,7 +110,8 @@ function showMain() {
 // Хуудас бүрийн одоогийн хэсгүүдийг view-ээр (dash / orders) ялгаж харуулна; утсан дээр цэс ☰ товчоор нээгдэнэ.
 var shellView = 'dash';
 function navMenu() {   // зөвхөн хуудсууд — үйлдлийн товчнууд хуудас дотроо нэг л удаа
-  var g = [['dash', 'Борлуулалт', function () { showView('dash'); }], ['stock', 'Барааны үлдэгдэл', function () { showView('stock'); }]];
+  var g = [['dash', 'Борлуулалт', function () { showView('dash'); }], ['stock', 'Барааны үлдэгдэл', function () { showView('stock'); }],
+           ['count', 'Тооллого', function () { showView('count'); }], ['req', 'Мөнгөний хүсэлт', function () { showView('req'); }]];
   if (BIZ.boost && $('boostView')) g.push(['boost', 'Boost', function () { showView('boost'); }]);
   return [{ t: '', items: g }];
 }
@@ -128,6 +129,16 @@ function buildShell() {
   var wrap = body.querySelector('.wrap');
   if (wrap) {
     wrap.insertAdjacentHTML('afterbegin', '<h2 class="ep-title" id="epTitle"></h2>');
+    var pend = $('pending');   // тооллого, мөнгөний хүсэлтийн хуудсууд (гурван дэлгүүрт ижил тул энд үүсгэнэ)
+    var html = '<div data-view="count" id="countView" style="display:none"><div class="card">' +
+        '<div class="cnt-bar">' + (BIZ.warehouse ? '<label>Байршил<select id="cntLoc"><option>Дэлгүүр</option><option>Агуулах</option></select></label>' : '') +
+        '<input type="search" id="cntQ" placeholder="Бараагаар хайх…" oninput="renderCount()"></div>' +
+        '<div id="cntList" style="margin-top:8px;overflow-x:auto"></div>' +
+        '<p class="muted" style="margin-top:8px">Бараа бүрийг тоолоод бодит тоог бичнэ. Тоолоогүй барааг хоосон үлдээнэ. Илгээсний дараа удирдлага баталж, үлдэгдэл засагдана.</p>' +
+        '<button class="btn" onclick="submitCount()">Тооллого илгээх</button></div></div>' +
+      '<div data-view="req" id="reqView" style="display:none"><div class="card"><div class="ord-bar"><button class="btn sm" onclick="openExpense()">＋ Мөнгөний хүсэлт</button>' +
+        '<button class="link" onclick="loadRequests()">Шинэчлэх</button></div><ul class="list" id="reqList" style="margin-top:8px"></ul></div></div>';
+    if (pend) pend.insertAdjacentHTML('beforebegin', html); else wrap.insertAdjacentHTML('beforeend', html);
   }
   renderNav(); showView('dash');
 }
@@ -150,8 +161,10 @@ function showView(v, tab) {
     el.style.display = (el.getAttribute('data-view') || 'dash') === v ? '' : 'none';
   });
   var w = document.querySelector('#main .wrap'); if (w) w.classList.toggle('ep-wide', v === 'orders');
-  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : v === 'stock' ? 'Барааны үлдэгдэл' : v === 'boost' ? 'Boost' : 'Борлуулалт';
+  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : v === 'stock' ? 'Барааны үлдэгдэл' : v === 'boost' ? 'Boost' : v === 'count' ? 'Тооллого' : v === 'req' ? 'Мөнгөний хүсэлт' : 'Борлуулалт';
   if (v === 'stock') renderStockPage();
+  if (v === 'count') renderCount();
+  if (v === 'req') loadRequests();
   if (v === 'boost') renderBoost();
   renderNav(); window.scrollTo(0, 0);
 }
@@ -788,6 +801,7 @@ function openExpense() {
   }).join('');
   $('expAmount').value = '';
   $('expNote').value = '';
+  if ($('expTo')) $('expTo').value = '';
   openSheet('expSheet');
 }
 function pickExp(i) {
@@ -797,11 +811,71 @@ function pickExp(i) {
 }
 function submitExpense() {
   var amt = parseFloat($('expAmount').value) || 0;
-  if (!expense.category) { toast('Зарлагын төрөл сонгоно уу'); return; }
+  var to = $('expTo') ? $('expTo').value.trim() : '';
+  if (!expense.category) { toast('Юунд хэрэгтэйг сонгоно уу'); return; }
   if (amt <= 0) { toast('Дүн оруулна уу'); return; }
-  addRecord({ type: 'expense', category: expense.category, amount: Math.round(amt), note: $('expNote').value.trim() });
+  if (!to) { toast('Хэнд шилжүүлэхийг бичнэ үү'); $('expTo').focus(); return; }
+  // Мөнгөний хүсэлт: кассаас гарахгүй, удирдлага баталж гүйлгээ хийнэ (санхүүд удирдлагын баримтаар орно)
+  addRecord({ type: 'request', category: expense.category, amount: Math.round(amt), customer: to, note: $('expNote').value.trim() });
   closeSheet('expSheet');
-  toast('✓ Зарлага бичигдлээ: ' + fmt(amt));
+  toast('✓ Хүсэлт илгээгдлээ: ' + fmt(amt) + ' — удирдлага батална');
+  if (shellView === 'req') setTimeout(loadRequests, 1500);
+}
+// ── Мөнгөний хүсэлтүүд (төлөвтэй) ──
+var REQ_ST = { '': ['Хүлээгдэж', 'y'], 'Төлсөн': ['Төлсөн', 'g'], 'Татгалзсан': ['Татгалзсан', 'r'] };
+function renderRequests(list) {
+  var el = $('reqList'); if (!el) return;
+  list = (list || []).slice().sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
+  el.innerHTML = list.length ? list.map(function (r) {
+    var st = REQ_ST[r.status || ''] || [r.status, 'n'];
+    return '<li><span>' + esc(r.category) + ' · ' + esc(r.customer || '') + '<small>' + esc(r.date.slice(5) + ' ' + (r.time || '')) + ' · ' + esc(r.staff || '') +
+      (r.note ? ' · ' + esc(String(r.note).replace(/ \[.*\]$/, '')) : '') + '</small><span class="st ' + st[1] + '">' + st[0] + '</span></span><span class="amt">' + fmt(r.amount) + '</span></li>';
+  }).join('') : '<li class="muted">Хүсэлт алга</li>';
+}
+function loadRequests() {
+  var local = load(LS_REC, []).filter(function (r) { return r.type === 'request' && r.biz === BIZ_KEY; });
+  renderRequests(local);   // эхлээд төхөөрөмж дээрхийг, дараа нь серверийн төлөвтэйг
+  if (!API_URL || !session || !session.token) return;
+  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'requests', token: session.token }) })
+    .then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || d.status !== 'ok') return;
+      var ids = {}; d.requests.forEach(function (r) { ids[r.id] = 1; });
+      renderRequests(d.requests.concat(local.filter(function (r) { return !ids[r.id]; })));   // илгээгдээгүй нь «Хүлээгдэж»
+    }).catch(function () {});
+}
+// ── Тооллого: бодит тоог бичнэ (системийн тоог харуулахгүй — сохор тооллого), удирдлага батална ──
+var cntVals = {};
+function renderCount() {
+  var el = $('cntList'); if (!el) return;
+  var q = ($('cntQ') ? $('cntQ').value : '').toLowerCase().trim(), names = {};
+  products.forEach(function (p) { if (!p.off) names[p.name] = p.unit || BIZ.unit || ''; });
+  Object.keys(stock || {}).forEach(function (k) { if (!(k in names)) names[k] = BIZ.unit || ''; });
+  var rows = Object.keys(names).filter(function (n) { return !isNonGoods(n) && (!q || n.toLowerCase().indexOf(q) >= 0); }).sort();
+  var done = Object.keys(cntVals).filter(function (k) { return cntVals[k] !== ''; }).length;
+  el.innerHTML = '<table class="rep-t cnt-t"><tr><th>Бараа</th><th class="num">Тоолсон</th></tr>' + rows.map(function (n) {
+    return '<tr><td>' + esc(n) + ' <small class="muted">' + esc(names[n]) + '</small></td><td class="num"><input class="cnt-in" type="number" inputmode="decimal" min="0" step="any" value="' + esc(cntVals[n] == null ? '' : cntVals[n]) +
+      '" oninput="cntVals[' + esc(JSON.stringify(n)) + ']=this.value;cntNote()"></td></tr>'; }).join('') + '</table>' +
+    '<p class="muted" id="cntN" style="margin-top:6px">' + (done ? done + ' бараа тоолсон' : '') + '</p>';
+}
+function cntNote() { var n = Object.keys(cntVals).filter(function (k) { return cntVals[k] !== ''; }).length, el = $('cntN'); if (el) el.textContent = n ? n + ' бараа тоолсон' : ''; }
+function submitCount() {
+  var items = Object.keys(cntVals).filter(function (k) { return cntVals[k] !== '' && isFinite(Number(cntVals[k])) && Number(cntVals[k]) >= 0; })
+    .map(function (k) { return { item: k, counted: Number(cntVals[k]) }; });
+  if (!items.length) { toast('Тоолсон тоогоо оруулна уу'); return; }
+  var loc = $('cntLoc') ? $('cntLoc').value : 'Дэлгүүр';
+  if (!confirm(items.length + ' барааны тооллогыг (' + loc + ') илгээх үү?')) return;
+  var done = function (msg) { cntVals = {}; renderCount(); toast(msg); };
+  if (!API_URL) {   // туршилтын горим: удирдлагын хуудсанд «Хүлээгдэж» болж харагдана
+    var st = stock || {}, k = loc === 'Агуулах' ? 'wh' : 'shop', all = load('nb_demo_counts', []), now = todayStr() + ' ' + timeStr(), diffN = 0;
+    items.forEach(function (x, i) { var sys = (st[x.item] || {})[k] || 0, d = Math.round((x.counted - sys) * 1000) / 1000; if (!d) return; diffN++;
+      all.push({ id: 'M' + Date.now() + '-c' + i, date: now, loc: loc, item: x.item, kind: 'Тооллого', qty: d, by: staffName, note: 'Тоолсон ' + x.counted + ', системд ' + sys, biz: BIZ_KEY, status: 'Хүлээгдэж' }); });
+    save('nb_demo_counts', all); done(diffN ? 'Илгээгдлээ — ' + diffN + ' бараанд зөрүүтэй, удирдлага батална' : 'Зөрүүгүй — бүх тоо таарч байна'); return;
+  }
+  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'stock_count', token: session ? session.token : '', loc: loc, items: items }) })
+    .then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || d.status !== 'ok') { toast(d && d.error === 'auth' ? 'Дахин нэвтэрнэ үү' : 'Илгээж чадсангүй — дахин оролдоно уу'); return; }
+      done(d.diff ? 'Илгээгдлээ — ' + d.diff + ' бараанд зөрүүтэй, удирдлага батална' : 'Зөрүүгүй — бүх тоо таарч байна');
+    }).catch(function () { toast('Интернэт холболтоо шалгана уу — илгээгдсэнгүй'); });
 }
 
 // ── Касс хаах ──
@@ -989,6 +1063,9 @@ function renderToday() {
     var r = row.r;
     if (r.type === 'collect') {
       return '<li><span>Төлбөр орсон · ' + esc(r.customer || '') + '<small>' + r.time + ' · ' + esc(r.pay) + '</small></span><span class="amt g">+' + fmt(r.amount) + '</span></li>';
+    }
+    if (r.type === 'request') {
+      return '<li><span>' + esc(r.category) + ' · ' + esc(r.customer || '') + '<small>' + r.time + ' · Мөнгөний хүсэлт</small></span><span class="amt">' + fmt(r.amount) + '</span></li>';
     }
     if (r.type === 'expense') {
       return '<li><span>' + esc(r.category) + (r.note ? ' · ' + esc(r.note) : '') +

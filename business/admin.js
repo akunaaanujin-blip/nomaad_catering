@@ -80,7 +80,7 @@ function fetchAll(cb) {
     accountsX = load('nb_demo_accx', []); applyCustomAccounts(accountsX); meta.lock = load('nb_demo_lock', '');
     window.loans = load('nb_demo_loans', []); window.pos = load('nb_demo_pos', []); window.bankLinks = load('nb_demo_banklinks', []);
     window.kpiCfg = load('nb_demo_kpi', {}); window.assets = load('nb_demo_assets', []); window.minStock = load('nb_demo_minstock', {});
-    window.digestCfg = load('nb_demo_digest', { on: false, to: '' }); window.priceLog = load('nb_demo_pricelog', []); window.reviewNotes = load('nb_review', {});
+    window.digestCfg = load('nb_demo_digest', { on: false, to: '' }); window.priceLog = load('nb_demo_pricelog', []); window.stockCounts = load('nb_demo_counts', []).filter(function (m) { return m.status === 'Хүлээгдэж'; }); window.reviewNotes = load('nb_review', {});
     applyRole(load('nb_demo_role', 'Эзэн'), load('nb_demo_rolebiz', 'all'));
     stamp(); cb(true); return;
   }
@@ -93,7 +93,7 @@ function fetchAll(cb) {
     bankLines = d.bank || []; window.payInfoAll = d.payInfo || {}; window.spAll = d.storepay || {}; window.salesTargets = d.targets || {}; tasks = d.tasks || []; taxCfg = d.taxcfg || {}; customDocs = d.docs || [];
     accountsX = d.accountsX || []; applyCustomAccounts(accountsX); meta.lock = d.lock || '';
     window.kpiCfg = d.kpi || {}; window.assets = d.assets || []; window.minStock = d.minstock || {};
-    window.digestCfg = d.digest || { on: false, to: '' }; window.priceLog = d.priceLog || [];
+    window.digestCfg = d.digest || { on: false, to: '' }; window.priceLog = d.priceLog || []; window.stockCounts = d.counts || [];
     window.reviewNotes = Object.assign(load('nb_review', {}), d.review || {});   // сервер түрүүлнэ; хадгалагдаагүй бол энэ төхөөрөмжийнх
     applyRole(d.role, d.roleBiz);
     stamp(); cb(true);
@@ -257,9 +257,9 @@ function openMgmt() { state.view = 'company'; state.biz = 'mgmt'; state.module =
 // Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
 var MENU = {
   sales: [['Өдөр тутам', ['receipts', 'orders', 'boost']], ['Тайлан', ['item', 'cat', 'staff', 'day', 'pay', 'disc', 'slow']], ['И-баримт', ['ebarimt']]],
-  products: [['Бараа материал', ['catalog', 'stock', 'in', 'po']], ['Тайлан', ['move', 'prices']], ['Харилцагч', ['suppliers']]],
+  products: [['Бараа материал', ['catalog', 'stock', 'counts', 'in', 'po']], ['Тайлан', ['move', 'prices']], ['Харилцагч', ['suppliers']]],
   // Санхүү — цөөн, ойлгомжтой цэс. Нягтлангийн тайлан, тохиргоо нь тус бүр нэг хуудсанд цуглуулагдсан (finance.js HUBS)
-  finance: [['Үр дүн', ['simple', 'months', 'profit']], ['Мөнгө', ['money', 'bank', 'vouchers']], ['Өр, авлага', ['debts', 'loans']], ['Цалин', ['payroll']],
+  finance: [['Үр дүн', ['simple', 'months', 'profit']], ['Мөнгө', ['requests', 'money', 'bank', 'vouchers']], ['Өр, авлага', ['debts', 'loans']], ['Цалин', ['payroll']],
             ['Бусад', ['monthly', 'assets', 'acct', 'setup']]],
 };
 function subLabel(mod, k) { var x = (SUBS[mod] || []).filter(function (s) { return s[0] === k; })[0]; return x ? x[1] : k; }
@@ -279,7 +279,7 @@ function subnavHtml() {
     var ks = g[1].filter(function (k) { return subVisible(state.biz, k); });
     if (!ks.length) return '';
     return '<div class="sub-group">' + g[0] + '</div><ul class="sub-list">' + ks.map(function (k) {
-      return '<li><button class="' + (state.sub[mod] === k || (mod === 'finance' && hubOf(state.sub[mod]) === k) ? 'on' : '') + '" onclick="setSub(\'' + k + '\')">' + subLabel(mod, k) + '</button></li>';
+      return '<li><button class="' + (state.sub[mod] === k || (mod === 'finance' && hubOf(state.sub[mod]) === k) ? 'on' : '') + '" onclick="setSub(\'' + k + '\')">' + subLabel(mod, k) + navBadge(k) + '</button></li>';
     }).join('') + '</ul>';
   }).join('') + moduleSwitch();
 }
@@ -288,7 +288,7 @@ function subVisible(biz, k) {
   var B = BUSINESSES[biz] || {};
   if (k === 'orders' || k === 'customers') return !!B.orders;
   if (k === 'ebarimt') return B.ebarimt !== false;
-  if (B.finOnly && /^(simple|months|profit|payroll|expenses|assets)$/.test(k)) return false;   // Удирдлага: үр дүн, бараа, ажилчидгүй
+  if (B.finOnly && /^(simple|months|profit|payroll|expenses|assets|requests)$/.test(k)) return false;   // Удирдлага: үр дүн, бараа, ажилчидгүй
   if (!isOwner() && /^(payroll|loans|setup|banklink|opening|accounts|lock|close|assets|digest)$/.test(k)) return false;   // менежерт эзний хуудас харагдахгүй
   return true;
 }
@@ -333,7 +333,7 @@ function companiesView() {
       '<div><span>Цэвэр (сар)</span><b style="color:' + (month.sales - month.exp >= 0 ? 'var(--green)' : 'var(--red)') + '">' + fmt(month.sales - month.exp) + '</b></div>' +
       '<div><span>Ажилчид</span><b>' + active + (pend ? ' <span class="tag r">+' + pend + ' хүлээгдэж</span>' : '') + '</b></div>' +
       '</div>' +
-      '<div class="co-meta"><span class="tag">Хэвийн</span>' + (E.merchantTin ? ' <span class="tag b">И-баримт</span>' : '') +
+      '<div class="co-meta"><span class="tag">Хэвийн</span>' + (E.merchantTin ? ' <span class="tag b">И-баримт</span>' : '') + pendTags(k) +
       '</div>' +
       '<button class="btn" style="background:' + B.color + '" onclick="go(\'company\',\'' + k + '\')">Нэвтрэх →</button>' +
       '</div>';
@@ -361,8 +361,8 @@ function companyView() {
   if (mod === 'staff') return pageHead('Ажилчид', '') + staffView(state.biz);
   if (mod === 'review') return reviewView();
   if (mod === 'reports') return pageHead('Бүх тайлан', '<button class="b-btn primary" onclick="exportAll()">Бүх тайланг Excel-ээр татах</button>', true) + reportsModule();
-  var sub = state.sub[mod], noPeriod = /^(accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary|months|payroll|debts|acct|setup|loans|banklink|po|assets|customers|digest)$/.test(sub);
-  var acts = /^(overview|dash|stock|close|bank|opening|lock|simple|monthly|glossary|acct|setup|loans|banklink|po|assets|digest)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
+  var sub = state.sub[mod], noPeriod = /^(counts|requests|accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary|months|payroll|debts|acct|setup|loans|banklink|po|assets|customers|digest)$/.test(sub);
+  var acts = /^(counts|requests|overview|dash|stock|close|bank|opening|lock|simple|monthly|glossary|acct|setup|loans|banklink|po|assets|digest)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
   if (sub === 'money') acts = '<button class="b-btn primary" onclick="openVoucher(\'ХО\')">+ Орлого (банк)</button><button class="b-btn primary" onclick="openVoucher(\'ХЗ\')">+ Зарлага (банк)</button>' +
     '<button class="b-btn" onclick="openVoucher(\'КО\')">+ Орлого (касс)</button><button class="b-btn" onclick="openVoucher(\'КЗ\')">+ Зарлага (касс)</button>' + acts;
   if (sub === 'debts') acts = '<button class="b-btn primary" onclick="openRem(null,{kind:state.dtab===\'r\'?\'Авлага нэхэх\':\'Өглөг төлөх\'})">+ Сануулга</button><button class="b-btn" onclick="openPartner()">+ Харилцагч</button>' +
@@ -993,8 +993,8 @@ function closeSheet(id) { $(id).classList.remove('show'); }
 var SUBS = {
   sales: [['receipts', 'Баримтууд'], ['orders', 'Захиалга'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'],
           ['pay', 'Төлбөрийн хэлбэрээр'], ['disc', 'Хөнгөлөлт, буцаалт'], ['slow', 'Удаан эргэлттэй бараа'], ['boost', 'Boost бараагаар'], ['ebarimt', 'И-баримт тулгалт']],
-  products: [['catalog', 'Барааны бүртгэл, үнэ'], ['po', 'Бараа захиалга (Хятад)'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['prices', 'Үнийн түүх'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
-  finance: [['simple', 'Үр дүн'], ['months', 'Сар бүрээр'], ['profit', 'Барааны ашиг'], ['money', 'Орлого, зарлага'], ['bank', 'Банкны хуулга'], ['vouchers', 'Кассын баримт'],
+  products: [['catalog', 'Барааны бүртгэл, үнэ'], ['counts', 'Тооллого батлах'], ['po', 'Бараа захиалга (Хятад)'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['prices', 'Үнийн түүх'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
+  finance: [['requests', 'Мөнгөний хүсэлт'], ['simple', 'Үр дүн'], ['months', 'Сар бүрээр'], ['profit', 'Барааны ашиг'], ['money', 'Орлого, зарлага'], ['bank', 'Банкны хуулга'], ['vouchers', 'Кассын баримт'],
             ['debts', 'Авлага, өглөг'], ['loans', 'Зээл (авсан, өгсөн)'], ['assets', 'Үндсэн хөрөнгө, элэгдэл'], ['banklink', 'Банкны данс холбох'], ['digest', 'Өдрийн тойм и-мэйл'], ['payroll', 'Цалин, НДШ'], ['monthly', 'Сар бүрийн ажил'], ['acct', 'Нягтлангийн тайлан'], ['setup', 'Тохиргоо'],
             ['dash', 'Бүртгэлийн шалгалт'], ['entry', 'Журналын бичилт'], ['journal', 'Ерөнхий журнал'], ['trial', 'Гүйлгээ баланс'], ['ledger', 'Дансны хуулга'], ['gl', 'Ерөнхий дэвтэр'],
             ['cash', 'Касс, харилцах (өдрөөр)'], ['cashflow', 'Мөнгөн гүйлгээний тайлан'], ['expenses', 'Зарлага, касс хаалт'], ['partners', 'Авлага, өглөгийн товчоо'], ['aging_r', 'Авлагын насжилт'],
@@ -1089,9 +1089,84 @@ function repManual(biz, f, t) {
     c('desc', 'Гүйлгээний утга'), c('by', 'Хэн')], rows: rows, total: { date: 'Нийт', amount: sum(rows, 'amount') } };
 }
 
+// ── Ажилтны хүсэлтүүд: мөнгөний хүсэлт (Санхүү), тооллого (Бараа материал) — удирдлага мөр бүрийг баталгаажуулна ──
+var vcReq = '';   // зарлагын баримт аль мөнгөний хүсэлтийг төлж байгаа
+function pendRequests(biz) { return records.filter(function (x) { return x.type === 'request' && x.biz === biz && !x.status; }); }
+function pendCounts(biz) { return (window.stockCounts || []).filter(function (m) { return m.biz === biz; }); }
+function navBadge(k) {
+  var n = k === 'requests' ? pendRequests(state.biz).length : k === 'counts' ? pendCounts(state.biz).length : 0;
+  return n ? ' <i class="nb-badge">' + n + '</i>' : '';
+}
+function pendTags(biz) {
+  var r = pendRequests(biz).length, c = pendCounts(biz).length;
+  return (r ? ' <span class="tag r">Мөнгөний хүсэлт ' + r + '</span>' : '') + (c ? ' <span class="tag r">Тооллого ' + c + '</span>' : '');
+}
+function requestsView() {
+  var biz = state.biz, tab = state.reqTab || 'p';
+  var all = records.filter(function (x) { return x.type === 'request' && x.biz === biz; }).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
+  var list = tab === 'p' ? all.filter(function (x) { return !x.status; }) : all;
+  var st = function (s) { return !s ? '<span class="st y">Хүлээгдэж</span>' : s === 'Төлсөн' ? '<span class="st g">Төлсөн</span>' : '<span class="st r">' + esc(s) + '</span>'; };
+  return '<p class="hint">Ажилтны илгээсэн мөнгөний хүсэлт. «Төлөх» дарахад зарлагын баримт бөглөгдөж нээгдэнэ — шалгаад хадгалахад хүсэлт «Төлсөн» болно.</p>' +
+    '<div class="tabs" style="margin-bottom:10px"><button class="' + (tab === 'p' ? 'on' : '') + '" onclick="state.reqTab=\'p\';render()">Хүлээгдэж (' + pendRequests(biz).length + ')</button>' +
+    '<button class="' + (tab === 'a' ? 'on' : '') + '" onclick="state.reqTab=\'a\';render()">Бүгд</button></div>' +
+    '<div class="card"><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Ажилтан</th><th>Юунд</th><th>Хэнд (данс)</th><th>Тайлбар</th><th class="n">Дүн</th><th>Төлөв</th><th></th></tr>' +
+    (list.length ? list.map(function (x) {
+      return '<tr><td>' + esc(x.date.slice(5) + ' ' + (x.time || '')) + '</td><td>' + esc(x.staff || '') + '</td><td>' + esc(x.category || '') + '</td><td>' + esc(x.customer || '') + '</td>' +
+        '<td>' + esc(String(x.note || '')) + '</td><td class="n"><b>' + fmt(x.amount) + '</b></td><td>' + st(x.status) + '</td><td class="n" style="white-space:normal;min-width:120px">' +
+        (!x.status ? '<button class="mini" style="color:var(--accent)" onclick="reqPay(\'' + esc(x.id) + '\',\'ХЗ\')">Төлөх (банк)</button> <button class="mini" style="color:var(--accent)" onclick="reqPay(\'' + esc(x.id) + '\',\'КЗ\')">Касснаас</button> ' +
+          '<button class="mini" onclick="reqReject(\'' + esc(x.id) + '\')">Татгалзах</button>' : '') + '</td></tr>';
+    }).join('') : '<tr><td colspan="8" class="muted">' + (tab === 'p' ? 'Хүлээгдэж буй хүсэлт алга' : 'Хүсэлт алга') + '</td></tr>') + '</table></div></div>';
+}
+function reqPay(id, kind) {
+  var x = records.filter(function (r) { return r.id === id; })[0]; if (!x) return;
+  openVoucher(kind);
+  var acc = expenseAcc(x.category, x.biz, !!costEngine(x.biz, R()).since);
+  if (![].some.call($('vcPurpose').options, function (o) { return o.value === acc; })) $('vcPurpose').insertAdjacentHTML('beforeend', '<option value="' + acc + '">' + esc(accName(acc)) + ' — ' + acc + '</option>');
+  $('vcPurpose').value = acc; vcPurpose();
+  $('vcAmount').value = x.amount; $('vcPartner').value = String(x.customer || '').slice(0, 80);
+  $('vcDesc').value = 'Мөнгөний хүсэлт · ' + x.category + (x.note ? ' · ' + x.note : '') + ' (' + (x.staff || '') + ') #' + x.id;
+  vcReq = id;
+}
+function reqReject(id) {
+  if (!confirm('Энэ хүсэлтийг татгалзах уу?')) return;
+  reqSetStatus(id, 'Татгалзсан');
+}
+function reqSetStatus(id, status, ref) {
+  var apply = function () { records.forEach(function (r) { if (r.id === id) r.status = status; }); render(); };
+  if (!API_URL) { var all = load('nb_records', []); all.forEach(function (r) { if (r.id === id) r.status = status; }); save('nb_records', all); apply(); toast('Хүсэлт: ' + status); return; }
+  post({ type: 'admin_record', statusId: id, status: status, by: ownerName, ref: ref || '' }, function (err) {
+    if (err) { toast(err === 'state' ? 'Хүсэлт аль хэдийн шийдэгдсэн' : 'Хүсэлтийн төлөв хадгалагдсангүй: ' + err); return; }
+    apply(); toast('Хүсэлт: ' + status);
+  });
+}
+function countsView() {
+  var list = pendCounts(state.biz).slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+  return '<p class="hint">Ажилтны тоолсон тоо системийнхээс зөрсөн бараа. «Батлах» дарвал зөрүүгээр үлдэгдэл засагдана (дутсан бол хорогдолд орно), «Татгалзах» бол юу ч өөрчлөгдөхгүй.</p>' +
+    '<div class="card"><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Ажилтан</th><th>Байршил</th><th>Бараа</th><th>Тоолсон / систем</th><th class="n">Зөрүү</th><th></th></tr>' +
+    (list.length ? list.map(function (m) {
+      return '<tr><td>' + esc(String(m.date).slice(5)) + '</td><td>' + esc(m.by || '') + '</td><td>' + esc(m.loc || '') + '</td><td>' + esc(m.item) + '</td><td>' + esc(m.note || '') + '</td>' +
+        '<td class="n"><b class="' + (m.qty < 0 ? 'neg' : '') + '">' + (m.qty > 0 ? '+' : '') + m.qty + '</b></td><td class="n" style="white-space:nowrap">' +
+        '<button class="mini" style="color:var(--accent)" onclick="countAct(\'' + esc(m.id) + '\',1)">Батлах</button> <button class="mini" onclick="countAct(\'' + esc(m.id) + '\',0)">Татгалзах</button></td></tr>';
+    }).join('') : '<tr><td colspan="7" class="muted">Батлах тооллого алга</td></tr>') + '</table></div></div>';
+}
+function countAct(id, ok) {
+  if (!ok && !confirm('Энэ тооллогыг татгалзах уу?')) return;
+  if (!API_URL) {
+    var all = load('nb_demo_counts', []), m = all.filter(function (x) { return x.id === id; })[0]; if (!m) return;
+    m.status = ok ? '' : 'Устгасан'; save('nb_demo_counts', all);
+    if (ok) { moves.push(m); save('nb_demo_moves', moves); var st = stockData[m.biz] = stockData[m.biz] || {}, it = st[m.item] = st[m.item] || { shop: 0, wh: 0 }; it[m.loc === 'Агуулах' ? 'wh' : 'shop'] += m.qty; save('nb_demo_stock', stockData); }
+    window.stockCounts = all.filter(function (x) { return x.status === 'Хүлээгдэж'; }); render(); toast(ok ? 'Баталлаа' : 'Татгалзлаа'); return;
+  }
+  post(ok ? { type: 'admin_stock', approveId: id, by: ownerName } : { type: 'admin_stock', cancelId: id, by: ownerName }, function (err, d) {
+    if (err) { toast(err === 'negative' ? 'Батлах боломжгүй — үлдэгдэл хасах болно (' + ((d && d.item) || '') + ')' : 'Алдаа: ' + err); return; }
+    toast(ok ? 'Баталлаа — үлдэгдэл засагдлаа' : 'Татгалзлаа'); refresh();
+  });
+}
 function subBody() {
   var mod = state.module, sub = state.sub[mod];
   if (mod === 'products' && sub === 'stock') return productsModule();
+  if (mod === 'products' && sub === 'counts') return countsView();
+  if (mod === 'finance' && sub === 'requests') return requestsView();
   if (mod === 'finance' && sub === 'dash') return financeDash();
   if (mod === 'finance' && sub === 'simple') return simpleView();
   if (mod === 'finance' && sub === 'monthly') return monthlyView();
@@ -1472,7 +1547,7 @@ var V_PURPOSE = {
 };
 var vKind = 'КО';
 function openVoucher(kind) {
-  vKind = kind; var V = VOUCHER[kind];
+  vKind = kind; vcReq = ''; var V = VOUCHER[kind];
   $('vcTitle').textContent = V.name;
   $('vcPurpose').innerHTML = vcPurposeOpts(V);
   $('vcKindLabel').textContent = V.dir === 'in' ? 'Мөнгө хаана орсон' : 'Мөнгө хаанаас гарсан';
@@ -1516,7 +1591,8 @@ function saveVoucher() {
   var e = { biz: state.biz, date: $('vcDate').value, dr: V.dir === 'in' ? V.acc : other, cr: V.dir === 'in' ? other : V.acc, amount: amt,
             partner: partner, desc: vcDescWithTags($('vcDesc').value.trim() || purpose[1], picked ? vcTags() : ''), vkind: vKind };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date)) { toast('Огноо оруулна уу'); return; }
-  var done = function (no) { closeSheet('voucherSheet'); toast(no + ' бүртгэгдлээ'); if (confirm(no + ' баримтыг хэвлэх үү?')) printVoucher(e, no); };
+  var req = vcReq; vcReq = '';
+  var done = function (no) { closeSheet('voucherSheet'); toast(no + ' бүртгэгдлээ'); if (req) reqSetStatus(req, 'Төлсөн', no); if (confirm(no + ' баримтыг хэвлэх үү?')) printVoucher(e, no); };
   if (!API_URL) {
     var n = journal.filter(function (j) { return j.biz === e.biz && String(j.no || '').indexOf(vKind + '-') === 0; }).length + 1;
     e.id = 'J' + Date.now(); e.by = ownerName; e.no = vKind + '-' + ('000' + n).slice(-4);

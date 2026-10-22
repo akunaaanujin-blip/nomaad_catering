@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261022p">
+<link rel="stylesheet" href="style.css?v=20261023s">
 </head>
 <body>
 <div class="demo" id="demo" style="display:none">Туршилтын горим — мэдээлэл зөвхөн энэ төхөөрөмжид хадгалагдаж байна</div>
@@ -45,7 +45,7 @@
   <div class="wrap">
     <div class="big-btns">
       <button class="big sale" onclick="openSale()"><span>＋</span>Борлуулалт</button>
-      <button class="big exp" onclick="openExpense()"><span>−</span>Зарлага</button>
+      <button class="big exp" onclick="openExpense()"><span>₮</span>Мөнгөний хүсэлт</button>
       <button class="big close" onclick="openClose()"><span></span>Өдрийн касс хаах</button>
     </div>
     <div class="card">
@@ -150,18 +150,20 @@
   </div>
 </div>
 
-<!-- Зарлага -->
+<!-- Мөнгөний хүсэлт (удирдлага баталж гүйлгээ хийнэ) -->
 <div class="sheet" id="expSheet" onclick="if(event.target===this)closeSheet('expSheet')">
   <div class="panel">
-    <h2>− Зарлага</h2>
-    <label>Юунд зарцуулсан бэ?</label>
+    <h2>Мөнгөний хүсэлт</h2>
+    <label>Юунд хэрэгтэй вэ?</label>
     <div class="chips" id="expChips"></div>
     <label for="expAmount">Дүн (₮)</label>
     <input id="expAmount" type="number" inputmode="numeric" min="0">
+    <label for="expTo">Хэнд шилжүүлэх (нэр, банк, дансны дугаар)</label>
+    <input id="expTo" placeholder="Жишээ: Бат-Эрдэнэ · Хаан банк 5000123456">
     <label for="expNote">Тайлбар (заавал биш)</label>
     <input id="expNote" placeholder="Жишээ: 20кг үхрийн мах">
-    <p class="muted" style="margin-top:8px">Зарлагыг кассын бэлэн мөнгөнөөс гаргасан гэж тооцно.</p>
-    <button class="btn" style="background:var(--red)" onclick="submitExpense()">Хадгалах</button>
+    <p class="muted" style="margin-top:8px">Удирдлага баталж, мөнгийг шилжүүлнэ. Кассын бэлэн мөнгөнөөс гаргахгүй.</p>
+    <button class="btn" onclick="submitExpense()">Хүсэлт илгээх</button>
     <button class="btn ghost" onclick="closeSheet('expSheet')">Болих</button>
   </div>
 </div>
@@ -232,7 +234,7 @@
 <script src="common.js?v=20261022o"></script>
 <script>var BIZ_KEY = 'meat';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261022z"></script>
+<script src="staff.js?v=20261023a"></script>
 <script src="ebarimt.js?v=20261022u"></script>
 </body>
 </html>
