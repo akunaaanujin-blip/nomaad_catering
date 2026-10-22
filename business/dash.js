@@ -48,7 +48,7 @@ function drawDash() {
   };
   mk('chSales', { type: 'line', data: { labels: D.days, datasets: [
       { label: 'Борлуулалт', data: D.sales, borderColor: DASH_C[0], backgroundColor: 'rgba(59,111,182,.14)', fill: true, tension: .35, pointRadius: 0, borderWidth: 2.2 },
-      { label: 'Зарлага', data: D.exp, borderColor: DASH_C[4], backgroundColor: 'transparent', tension: .35, pointRadius: 0, borderWidth: 1.6, borderDash: [5, 4] }] },
+      { label: D.expLabel || 'Зарлага', data: D.exp, borderColor: DASH_C[4], backgroundColor: 'transparent', tension: .35, pointRadius: 0, borderWidth: 1.6, borderDash: [5, 4] }] },
     options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true } }, tooltip: money },
       scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } }, y: { beginAtZero: true, grid: { color: '#EEF1F6' }, ticks: { callback: shortNum } } } } });
   donut('chPay', D.payL, D.payV);

@@ -98,7 +98,7 @@ function costEngine(biz, R, until) {
   var ev = [];
   R.moves.forEach(function (m) { if (m.biz === biz && m.kind !== 'Шилжүүлэг') ev.push({ t: String(m.date).slice(0, 16), m: m }); });
   if (since) R.records.forEach(function (x) {
-    if (x.biz !== biz || x.type !== 'sale' || isFee(x.item)) return;
+    if (x.biz !== biz || x.type !== 'sale' || isNonGoods(x.item)) return;
     var t = x.date + ' ' + (x.time || '00:00');
     if (t >= since) ev.push({ t: t, x: x });
   });
@@ -145,6 +145,12 @@ function buildJournal(biz, R) {
       var cash = SALE_ACC[x.pay] || '10003', cust = x.pay === 'StorePay' ? 'StorePay' : x.pay === 'Зээлээр' || x.pay === 'Урьдчилгаа' ? (x.customer || '(нэргүй харилцагч)') : '';
       var item = String(x.item).replace(/ \(буцаалт\)$/, '');
       var c = Math.abs(ce.rec[x.id] || 0);
+      if (baseItem(x.item) === SPLIT_ITEM) {   // хуваан төлсөн: орлого өөрчлөгдөхгүй, мөнгө нэг хэлбэрээс нөгөөд
+        if (a >= 0) add(d, 'Төлбөр хуваалт', x.id, cash, '5101', a, 'Хуваан төлсөн (' + (x.pay || 'Бэлэн') + ')', cust, x.bill);
+        else add(d, 'Төлбөр хуваалт', x.id, '5101', cash, -a, 'Хуваан төлсөн (' + (x.pay || 'Бэлэн') + ')', cust, x.bill);
+        return;
+      }
+      if (baseItem(x.item) === DISC_ITEM) { add(d, 'Борлуулалтын хөнгөлөлт', x.id, '6001', cash, -a, 'Хөнгөлөлт · баримт ' + (x.bill || ''), cust, x.bill); return; }
       if (a >= 0) {
         add(d, 'Борлуулалт', x.id, cash, '5101', a, item + ' × ' + x.qty + ' (' + (x.pay || 'Бэлэн') + ')', cust, x.bill);
         if (c) add(d, 'Борлуулалт · өртөг', x.id, '6101', '1404', c, item + ' × ' + x.qty);
@@ -376,12 +382,14 @@ function groupSales(list, keyFn) {
   list.forEach(function (x) {
     var k = keyFn(x), o = g[k] = g[k] || { key: k, qty: 0, amount: 0, ret: 0, n: 0 };
     var a = Number(x.amount) || 0;
+    if (isAdj(x.item)) { o.amount += a; return; }   // хөнгөлөлт, төлбөр хуваалт — борлуулалтын дүнг засна (буцаалт биш)
     if (a >= 0) { o.amount += a; o.qty += Number(x.qty) || 0; o.n++; } else { o.ret += -a; o.qty += Number(x.qty) || 0; }
   });
   return Object.keys(g).map(function (k) { var o = g[k]; o.net = o.amount - o.ret; return o; }).sort(function (a, b) { return b.net - a.net; });
 }
 function repSalesBy(R, biz, from, to, by) {
   var list = salesIn(R, biz, from, to);
+  if (by === 'item' || by === 'cat') list = list.filter(function (x) { return !isAdj(x.item); });   // хөнгөлөлт, хуваалт бараа биш
   var kf = { item: function (x) { return String(x.item).replace(/ \(буцаалт\)$/, ''); }, cat: function (x) { return catOf(biz, String(x.item).replace(/ \(буцаалт\)$/, '')); },
              staff: function (x) { return x.staff || '—'; }, day: function (x) { return x.date; }, pay: function (x) { return x.pay || 'Бэлэн'; } }[by];
   var title = { item: 'Борлуулалт · бараагаар', cat: 'Борлуулалт · ангиллаар', staff: 'Борлуулалт · худалдагчаар', day: 'Борлуулалт · өдрөөр', pay: 'Борлуулалт · төлбөрийн хэлбэрээр' }[by];
@@ -400,20 +408,88 @@ function repSalesBy(R, biz, from, to, by) {
   if (by === 'item') { tot.cogs = sum(rows, 'cogs'); tot.margin = sum(rows, 'margin'); }
   return { title: title, cols: cols, rows: rows, total: tot };
 }
-function repReceipts(R, biz, from, to) {
-  var g = {};
-  salesIn(R, biz, from, to).forEach(function (x) {
-    var dd = (String(x.note || '').match(/ДДТД (\d+)/) || [])[1];
-    var k = x.bill || dd || x.id;
-    var o = g[k] = g[k] || { date: x.date, time: x.time, staff: x.staff, pay: x.pay, items: [], amount: 0, ddtd: '', ret: false };
-    o.items.push(String(x.item) + ' × ' + x.qty); o.amount += Number(x.amount) || 0;
-    if (dd) o.ddtd = dd; if (x.amount < 0) o.ret = true;
+// Баримтаар бүлэглэх (удирдлага): бараа, хөнгөлөлт, буцаалт, төлбөрийн хэлбэр тус бүр
+function groupBills(list) {
+  var g = {}, order = [];
+  list.forEach(function (x) {
+    var k = billKey(x);
+    var o = g[k]; if (!o) { o = g[k] = { key: k, date: x.date, time: x.time || '', staff: x.staff || '', customer: '', items: [], lines: [], gross: 0, disc: 0, ret: 0, net: 0, pays: {}, ddtd: '' }; order.push(k); }
+    var a = Number(x.amount) || 0, isRet = / \(буцаалт\)$/.test(x.item);
+    o.lines.push(x); o.net += a;
+    if (baseItem(x.item) === DISC_ITEM) o.disc += -a;
+    else if (isAdj(x.item)) {}
+    else if (isRet) o.ret += -a;
+    else { o.gross += a; o.items.push(x.item + (Number(x.qty) !== 1 ? ' ×' + x.qty : '')); }
+    if (!isRet) o.pays[x.pay || 'Бэлэн'] = (o.pays[x.pay || 'Бэлэн'] || 0) + a;
+    var dd = x.ddtd || (String(x.note || '').match(/ДДТД (\d+)/) || [])[1]; if (dd) o.ddtd = dd;
+    if (x.customer && !o.customer) o.customer = x.customer;
+    if ((x.date + x.time) < (o.date + o.time)) { o.date = x.date; o.time = x.time || ''; }
   });
-  var rows = Object.keys(g).map(function (k) { var o = g[k];
-    return { date: o.date + ' ' + o.time, staff: o.staff, items: o.items.join(', '), pay: o.pay, ebarimt: o.ddtd ? (o.ret ? 'Буцаалт · ' : '') + o.ddtd : '—', amount: r0(o.amount) };
+  return order.map(function (k) { return g[k]; });
+}
+function payText(pays) { return Object.keys(pays).filter(function (k) { return pays[k] > 0; }).map(function (k) { return k + (Object.keys(pays).length > 1 ? ' ' + fmt(pays[k]) : ''); }).join(' + '); }
+function repReceipts(R, biz, from, to) {
+  var rows = groupBills(salesIn(R, biz, from, to)).map(function (o) {
+    return { date: o.date + ' ' + o.time, staff: o.staff, items: o.items.join(', '), customer: o.customer, pay: payText(o.pays), disc: o.disc ? r0(o.disc) : '', ret: o.ret ? r0(o.ret) : '',
+             ebarimt: o.ddtd || '—', amount: r0(o.net), _bill: o.key };
   }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
-  return { title: 'Баримтын жагсаалт', cols: [c('date', 'Огноо'), c('staff', 'Худалдагч'), c('items', 'Бараа'), c('pay', 'Төлбөр'), c('ebarimt', 'И-баримт ДДТД'), m('amount', 'Дүн')],
-    rows: rows, total: { items: rows.length + ' баримт', amount: sum(rows, 'amount') } };
+  return { title: 'Баримтын жагсаалт', cols: [c('date', 'Огноо'), c('staff', 'Худалдагч'), c('items', 'Бараа'), c('customer', 'Хэрэглэгч'), c('pay', 'Төлбөр'), m('disc', 'Хөнгөлөлт'), m('ret', 'Буцаалт'), c('ebarimt', 'И-баримт'), m('amount', 'Дүн')],
+    rows: rows, total: { items: rows.length + ' баримт', disc: sum(rows, 'disc'), ret: sum(rows, 'ret'), amount: sum(rows, 'amount') }, note: 'Мөр дээр дарахад баримтын дэлгэрэнгүй нээгдэнэ.' };
+}
+// Цаг, гарагаар: аль цагт хамгийн их зардаг вэ (ээлж төлөвлөхөд)
+var WDAYS = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'];
+function repHour(R, biz, from, to) {
+  var H = {}, W = {}, nb = {};
+  groupBills(salesIn(R, biz, from, to)).forEach(function (o) {
+    var h = Number(String(o.time).slice(0, 2)) || 0, w = new Date(o.date + 'T00:00:00').getDay();
+    H[h] = H[h] || { n: 0, a: 0 }; H[h].n++; H[h].a += o.net;
+    W[w] = W[w] || { n: 0, a: 0 }; W[w].n++; W[w].a += o.net;
+  });
+  var rows = [];
+  for (var h = 0; h < 24; h++) if (H[h]) rows.push({ key: (h < 10 ? '0' : '') + h + ':00–' + (h < 9 ? '0' : '') + (h + 1) + ':00', n: H[h].n, amount: r0(H[h].a), avg: r0(H[h].a / H[h].n) });
+  var max = Math.max.apply(null, rows.map(function (r) { return r.amount; }).concat([1]));
+  rows.forEach(function (r) { r.bar = '█'.repeat(Math.max(1, Math.round(r.amount / max * 20))); });
+  var wrows = [1, 2, 3, 4, 5, 6, 0].filter(function (w) { return W[w]; }).map(function (w) { return { key: WDAYS[w] + ' гараг', n: W[w].n, amount: r0(W[w].a), avg: r0(W[w].a / W[w].n), bar: '' }; });
+  var wmax = Math.max.apply(null, wrows.map(function (r) { return r.amount; }).concat([1]));
+  wrows.forEach(function (r) { r.bar = '█'.repeat(Math.max(1, Math.round(r.amount / wmax * 20))); });
+  var all = rows.concat(wrows.length ? [{ key: '— Гарагаар —', _b: true }] : []).concat(wrows);
+  return { title: 'Борлуулалт · цаг, гарагаар', cols: [c('key', 'Цаг / гараг'), m('n', 'Баримт'), m('amount', 'Дүн'), m('avg', 'Дундаж чек'), c('bar', '')], rows: all,
+    note: 'Хамгийн их зардаг цаг, гарагт илүү ажилтан гаргаж, сул цагт бараа тооллого, захиалга хийхэд ашиглана.' };
+}
+// Хөнгөлөлт ба буцаалт: хэн, хэдэн, ямар шалтгаанаар
+function repDiscRet(R, biz, from, to) {
+  var list = salesIn(R, biz, from, to), rows = [];
+  list.forEach(function (x) {
+    var a = Number(x.amount) || 0;
+    if (baseItem(x.item) === DISC_ITEM && a < 0) rows.push({ date: x.date + ' ' + (x.time || ''), kind: 'Хөнгөлөлт', staff: x.staff || '', item: String(x.note || '').replace(/^Хөнгөлөлт /, ''), why: '', amount: r0(-a), _bill: billKey(x) });
+    else if (/ \(буцаалт\)$/.test(x.item) && !isAdj(x.item)) rows.push({ date: x.date + ' ' + (x.time || ''), kind: 'Буцаалт', staff: x.staff || '', item: baseItem(x.item) + ' ×' + Math.abs(x.qty),
+      why: String(x.note || '').replace(/^Буцаалт:? ?/, '').replace(/^· /, ''), amount: r0(-a), _bill: billKey(x) });
+  });
+  rows.sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+  var by = {}; rows.forEach(function (r) { var k = r.kind + ' · ' + (r.staff || '—'); by[k] = (by[k] || 0) + r.amount; });
+  var sumD = rows.filter(function (r) { return r.kind === 'Хөнгөлөлт'; }).reduce(function (a, r) { return a + r.amount; }, 0), sumR = rows.filter(function (r) { return r.kind === 'Буцаалт'; }).reduce(function (a, r) { return a + r.amount; }, 0);
+  return { title: 'Хөнгөлөлт, буцаалт', cols: [c('date', 'Огноо'), c('kind', 'Төрөл'), c('staff', 'Ажилтан'), c('item', 'Бараа / хэмжээ'), c('why', 'Шалтгаан'), m('amount', 'Дүн')], rows: rows,
+    total: { date: 'Нийт', item: 'Хөнгөлөлт ' + fmt(sumD) + ' · Буцаалт ' + fmt(sumR), amount: r0(sumD + sumR) },
+    note: Object.keys(by).length ? 'Ажилтнаар: ' + Object.keys(by).map(function (k) { return k + ' ' + fmt(by[k]); }).join(' · ') : '' };
+}
+// Удаан эргэлттэй бараа: үлдэгдэлтэй боловч сүүлийн N хоногт зарагдаагүй (мөнгө хөлдсөн)
+function repSlow(R, biz, days, stockMap) {
+  days = days || 30;
+  var cut = todayStr(new Date(Date.now() - days * 864e5)), last = {}, sold = {};
+  R.records.forEach(function (x) {
+    if (x.biz !== biz || x.type !== 'sale' || isNonGoods(x.item) || !(Number(x.qty) > 0)) return;
+    var k = x.item; if (!last[k] || x.date > last[k]) last[k] = x.date; if (x.date >= cut) sold[k] = (sold[k] || 0) + Number(x.qty);
+  });
+  var ce = costEngine(biz, R), st = stockMap || {};
+  var rows = Object.keys(st).map(function (k) {
+    var q = Math.round(((st[k].shop || 0) + (st[k].wh || 0)) * 1000) / 1000; if (!(q > 0) || isNonGoods(k)) return null;
+    var cs = Math.round(avgCost(ce, k)), sq = sold[k] || 0;
+    var dleft = sq ? Math.round(q / (sq / days)) : '';
+    return { item: k, qty: q, last: last[k] || 'хэзээ ч', sold: sq, days: dleft, cost: cs || '', val: cs ? r0(q * cs) : '', _slow: !sq };
+  }).filter(Boolean).filter(function (r) { return !r.sold || r.days > 90; })
+    .sort(function (a, b) { return (Number(b.val) || 0) - (Number(a.val) || 0); });
+  return { title: 'Удаан эргэлттэй бараа (' + days + ' хоног)', noRange: true, cols: [c('item', 'Бараа'), m('qty', 'Үлдэгдэл'), c('last', 'Сүүлд зарагдсан'), m('sold', days + ' хоногт зарсан'), m('days', 'Дуусахад (хоног)'), m('cost', 'Нэгж өртөг'), m('val', 'Хөлдсөн мөнгө')],
+    rows: rows, total: { item: rows.length + ' бараа', val: sum(rows, 'val') }, note: 'Сүүлийн ' + days + ' хоногт огт зараагүй, эсвэл одоогийн хурдаар 90+ хоногт дуусах бараа. Урамшуулал, хямдрал зарлах, дахин захиалахгүй байхад ашиглана.' };
 }
 function repEbarimt(R, biz, from, to) {
   var d = {};

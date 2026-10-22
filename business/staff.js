@@ -188,7 +188,7 @@ function loadStock() {
   if (!API_URL) return;
   jsonp({ action: 'stock', biz: BIZ_KEY }, function (err, d) {
     if (err || !d || d.status !== 'ok') return;
-    if (d.stock) delete d.stock[FEE_ITEM];   // хүргэлтийн төлбөр — бараа биш
+    if (d.stock) [FEE_ITEM, DISC_ITEM, SPLIT_ITEM].forEach(function (k) { delete d.stock[k]; });   // бараа биш мөрүүд
     stock = Object.keys(d.stock || {}).length ? d.stock : null;
     save('nb_stock_' + BIZ_KEY, stock);
     if ($('saleSheet').classList.contains('show')) renderChips();
@@ -205,12 +205,12 @@ function shopLeft(name) {
 function stockShort(lines) {   // [{ item, qty }] → хүрэлцэхгүй барааны тайлбар
   if (!stock) return [];
   var need = {};
-  lines.forEach(function (r) { if (Number(r.qty) > 0 && !isFee(r.item)) need[r.item] = (need[r.item] || 0) + Number(r.qty); });
+  lines.forEach(function (r) { if (Number(r.qty) > 0 && !isNonGoods(r.item)) need[r.item] = (need[r.item] || 0) + Number(r.qty); });
   return Object.keys(need).filter(function (k) { return need[k] > stockAvail(k) + 1e-9; })
     .map(function (k) { return '«' + k + '» — хэрэгтэй ' + need[k] + ', үлдэгдэл ' + Math.max(0, stockAvail(k)); });
 }
 function stockTake(item, qty) {
-  if (!stock || isFee(item)) return;
+  if (!stock || isNonGoods(item)) return;
   item = String(item).replace(/ \(буцаалт\)$/, '');   // буцаалт (сөрөг тоо) үлдэгдэлд нэмэгдэнэ
   var s = stock[item] = stock[item] || { shop: 0, wh: 0 };
   s.shop -= qty;
@@ -300,11 +300,14 @@ function spOverlay(title, sub, stuck) {
 
 // ── Борлуулалт (сагс: олон бараа → нэг баримт) ──
 function openSale() {
-  sale = { cart: [], pay: 'Бэлэн', cat: '', edit: null };
+  sale = { cart: [], pay: 'Бэлэн', cat: '', edit: null, discU: '%' };
+  salePop = popularity();
   if ($('saleEditNote')) $('saleEditNote').style.display = 'none';
   $('saleSearch').value = '';
   $('saleSearchWrap').style.display = products.length > 8 ? 'block' : 'none';
   if ($('saleCash')) $('saleCash').value = '';
+  if ($('saleDisc')) { $('saleDisc').value = ''; setDiscU('%'); $('salePhone').value = ''; $('salePhoneHint').textContent = ''; $('saleSplitOn').checked = false; $('saleSplitAmt').value = ''; $('saleSplitWrap').style.display = 'none'; }
+  parkBtnUpd();
   if ($('saleSpPhone')) { $('saleSpPhone').value = ''; $('saleSpInfo').textContent = ''; }
   spShowBtn();
   renderCats();
@@ -338,6 +341,7 @@ function renderChips() {
     if (sale.cat && p.cat !== sale.cat) return;
     if (!q || p.name.toLowerCase().indexOf(q) >= 0) shown.push(i);
   });
+  shown.sort(function (a, b) { return (salePop[products[b].name] || 0) - (salePop[products[a].name] || 0) || a - b; });   // их зарагддаг нь эхэнд
   var more = shown.length > 60 ? shown.length - 60 : 0;
   $('saleChips').innerHTML = shown.slice(0, 60).map(function (i) {
     var p = products[i], line = sale.cart.filter(function (l) { return l.name === p.name; })[0];
@@ -414,6 +418,8 @@ function setPay(v) {
   $('saleCustWrap').style.display = v === 'Зээлээр' ? 'block' : 'none';   // зээлээр бол хэнд өгснийг заавал бичнэ
   if ($('saleCashWrap')) $('saleCashWrap').style.display = v === 'Бэлэн' ? '' : 'none';   // бэлэн бол хариулт тооцно
   if ($('saleSpWrap')) $('saleSpWrap').style.display = v === 'StorePay' ? '' : 'none';
+  if ($('saleSplitLbl')) { var noSp = /Зээлээр|StorePay/.test(v); $('saleSplitLbl').style.display = noSp ? 'none' : ''; if (noSp) { $('saleSplitOn').checked = false; $('saleSplitWrap').style.display = 'none'; } }
+  if (sale.cart) calcSale();
   calcChange();
 }
 function calcChange() {
@@ -423,11 +429,79 @@ function calcChange() {
   el.parentNode.classList.toggle('short', !!got && d < 0);
   if (got && d < 0) el.textContent = 'дутуу ' + fmt(-d);
 }
-function cartTotal() {
+function cartGross() {
   return sale.cart.reduce(function (a, l) { return a + Math.round((Number(l.qty) || 0) * (Number(l.price) || 0)); }, 0);
 }
+function discAmt() {
+  var el = $('saleDisc'); if (!el) return 0;
+  var v = Number(el.value) || 0, g = cartGross();
+  if (v <= 0) return 0;
+  return Math.min(g, Math.round(sale.discU === '%' ? g * Math.min(v, 100) / 100 : v));
+}
+function cartTotal() { return cartGross() - discAmt(); }   // төлөх дүн (хөнгөлөлтийн дараа)
+function setDiscU(u) {
+  sale.discU = u; var b = $('discU'); if (b) [].forEach.call(b.children, function (x) { x.classList.toggle('on', x.dataset.u === u); });
+  if (sale.cart) calcSale();
+}
+// Хуваан төлөх: үндсэн хэлбэр + өөр нэг хэлбэр (бэлэн, карт, шилжүүлэг хооронд)
+function splitToggle() {
+  var on = $('saleSplitOn').checked; $('saleSplitWrap').style.display = on ? '' : 'none';
+  if (on && $('saleSplitPay').value === sale.pay) $('saleSplitPay').value = sale.pay === 'Карт' ? 'Бэлэн' : 'Карт';
+  calcSale();
+}
+function splitInfo() {   // { pay2, amt2, err }
+  if (!$('saleSplitOn') || !$('saleSplitOn').checked) return null;
+  var pay2 = $('saleSplitPay').value, amt2 = Math.round(Number($('saleSplitAmt').value) || 0), net = cartTotal();
+  var err = /Зээлээр|StorePay/.test(sale.pay) ? 'Зээлээр, StorePay төлбөрийг хуваах боломжгүй' : pay2 === sale.pay ? 'Хоёр өөр төлбөрийн хэлбэр сонгоно уу'
+    : !(amt2 > 0) ? pay2 + '-аар төлөх дүнгээ бичнэ үү' : amt2 >= net ? 'Хуваах дүн нийт дүнгээс бага байх ёстой' : '';
+  return { pay2: pay2, amt2: amt2, err: err };
+}
+// Хэрэглэгчийн утас: энэ төхөөрөмж дээрх өмнөх худалдан авалтыг харуулна
+function salePhoneHint() {
+  var ph = String($('salePhone').value).replace(/\D/g, '').slice(-8), el = $('salePhoneHint');
+  if (ph.length < 8) { el.textContent = ''; return; }
+  var bills = {}, tot = 0;
+  load(LS_REC, []).forEach(function (r) { if (r.type === 'sale' && r.biz === BIZ_KEY && String(r.customer || '').replace(/\D/g, '').slice(-8) === ph) { bills[billKey(r)] = 1; tot += Number(r.amount) || 0; } });
+  var n = Object.keys(bills).length;
+  el.textContent = n ? 'Өмнө ' + n + ' удаа худалдан авсан · нийт ' + fmt(tot) : 'Шинэ хэрэглэгч';
+}
+// Их зарагддаг бараа (сүүлийн 60 хоног, энэ төхөөрөмж)
+var salePop = {};
+function popularity() {
+  var o = {}; load(LS_REC, []).forEach(function (r) { if (r.type === 'sale' && r.biz === BIZ_KEY && r.qty > 0 && !isNonGoods(r.item)) o[r.item] = (o[r.item] || 0) + Number(r.qty); }); return o;
+}
+// ── Түр хадгалах: хэрэглэгч бодож байхад сагсыг хадгалаад дараагийн хүнд үйлчилнэ ──
+var LS_PARK = 'nb_park_' + BIZ_KEY;
+function parkBtnUpd() { var b = $('parkBtn'); if (!b) return; var n = load(LS_PARK, []).length; b.style.display = n ? '' : 'none'; b.textContent = 'Хадгалсан (' + n + ')'; }
+function parkSale() {
+  if (!sale.cart.length) { toast('Сагс хоосон байна'); return; }
+  if (sale.edit) { toast('Засварыг түр хадгалах боломжгүй'); return; }
+  var list = load(LS_PARK, []);
+  list.push({ id: 'P' + Date.now(), time: timeStr(), cart: sale.cart, pay: sale.pay, disc: $('saleDisc').value, discU: sale.discU, phone: $('salePhone').value, total: cartTotal() });
+  save(LS_PARK, list); openSale(); toast('Сагс түр хадгалагдлаа');
+}
+function openParked() {
+  var list = load(LS_PARK, []), el = $('spWait'); if (!el) return;
+  el.style.display = 'flex';
+  el.innerHTML = '<div class="sp-box park-box"><b>Түр хадгалсан сагс</b>' + (list.length ? '<ul class="park-l">' + list.map(function (p) {
+    return '<li><span><b>' + esc(p.time) + ' · ' + fmt(p.total) + '</b><small>' + esc(p.cart.map(function (l) { return l.name + (l.qty > 1 ? ' ×' + l.qty : ''); }).join(', ')).slice(0, 80) + (p.phone ? ' · ' + esc(p.phone) : '') + '</small></span>' +
+      '<span class="park-a"><button class="btn sm" onclick="unpark(\'' + p.id + '\')">Сэргээх</button><button class="btn sm ghost2" onclick="dropPark(\'' + p.id + '\')">Устгах</button></span></li>';
+  }).join('') + '</ul>' : '<small>Хоосон</small>') + '<div class="sp-acts"><button class="btn sm ghost2" onclick="$(\'spWait\').style.display=\'none\'">Хаах</button></div></div>';
+}
+function unpark(id) {
+  var list = load(LS_PARK, []), p = list.filter(function (x) { return x.id === id; })[0]; if (!p) return;
+  if (sale.cart.length && !confirm('Одоогийн сагсыг солих уу? (Одоогийн сагсыг түр хадгалах бол «Болих» дараад «Түр хадгалах»)')) return;
+  save(LS_PARK, list.filter(function (x) { return x.id !== id; }));
+  openSale(); sale.cart = p.cart; setPay(p.pay || 'Бэлэн'); $('saleDisc').value = p.disc || ''; setDiscU(p.discU || '%'); $('salePhone').value = p.phone || ''; salePhoneHint();
+  $('spWait').style.display = 'none'; renderChips(); renderCart();
+}
+function dropPark(id) { save(LS_PARK, load(LS_PARK, []).filter(function (x) { return x.id !== id; })); parkBtnUpd(); openParked(); }
 function calcSale() {
   $('saleTotal').textContent = fmt(cartTotal());
+  var g = cartGross(), dsc = discAmt(), sp = splitInfo(), sub = $('saleSub');
+  if (sub) sub.innerHTML = (dsc ? '<span>Дүн ' + fmt(g) + '</span><span class="neg">Хөнгөлөлт −' + fmt(dsc) + (sale.discU === '%' ? ' (' + ($('saleDisc').value) + '%)' : '') + '</span>' : '') +
+    (sp && !sp.err ? '<span>' + esc(sale.pay) + ' ' + fmt(cartTotal() - sp.amt2) + ' + ' + esc(sp.pay2) + ' ' + fmt(sp.amt2) + '</span>' : '');
+  if ($('saleSplitInfo')) $('saleSplitInfo').textContent = sp ? (sp.err || esc(sale.pay) + ': ' + fmt(cartTotal() - sp.amt2)) : '';
   var n = sale.cart.reduce(function (a, l) { return a + (Number(l.qty) || 0); }, 0);
   $('saleCount').textContent = sale.cart.length ? sale.cart.length + ' төрөл · ' + Math.round(n * 1000) / 1000 + ' ш' : '';
   $('saleSubmit').textContent = sale.cart.length ? 'Төлбөр авах · ' + fmt(cartTotal()) : 'Төлбөр авах';
@@ -445,6 +519,11 @@ function submitSale() {
     return { item: l.name, qty: Number(l.qty) - back };
   }));
   if (short.length) { alert('Үлдэгдэл хүрэлцэхгүй — зарах боломжгүй:\n\n' + short.join('\n') + '\n\nУдирдлагаар орлого бүртгүүлсний дараа дахин оролдоно уу.'); loadStock(); return; }
+  var dsc = discAmt(), sp = splitInfo();
+  if (dsc && !isManager && dsc > cartGross() * 0.1 + 0.5) { toast('10%-иас их хөнгөлөлтийг менежер өгнө'); return; }
+  if (sp && sp.err) { toast(sp.err); return; }
+  var phone = $('salePhone') ? String($('salePhone').value).replace(/\D/g, '') : '';
+  if (phone && phone.length < 8) { toast('Хэрэглэгчийн утас 8 оронтой байна'); return; }
   var cust = $('saleCust').value.trim();
   if (sale.pay === 'Зээлээр' && cust.length < 2) { toast('Зээлээр авсан хүн / байгууллагын нэрийг бичнэ үү'); $('saleCust').focus(); return; }
   if (sale.pay === 'StorePay' && sale.edit) { toast('Баримт засварт StorePay ашиглах боломжгүй'); return; }
@@ -455,13 +534,20 @@ function submitSale() {
       type: 'sale', item: l.name, qty: Number(l.qty), unit: l.unit, price: Number(l.price),
       amount: Math.round(Number(l.qty) * Number(l.price)), pay: sale.pay, bill: bill,
     };
-    if (sale.pay === 'Зээлээр') r.customer = cust;
+    if (sale.pay === 'Зээлээр') r.customer = cust; else if (phone) r.customer = phone.slice(-8);
     if (sale.pay === 'StorePay') { r.customer = 'StorePay'; r.note = 'StorePay #' + sale.spPaid + ' · ' + sale.spPhone; }
     if (l.cls) r.classificationCode = l.cls;   // БҮНА код (И-баримтад)
     return r;
   });
+  var cu = lines[0] && lines[0].customer;
+  if (dsc) lines.push({ type: 'sale', item: DISC_ITEM, qty: 1, unit: '', price: -dsc, amount: -dsc, pay: sale.pay, bill: bill, customer: cu || '',
+    note: 'Хөнгөлөлт ' + (sale.discU === '%' ? $('saleDisc').value + '%' : fmt(dsc)) + ' · ' + staffName });
+  if (sp) {   // нэг хэлбэрээс нөгөө рүү: орлого өөрчлөгдөхгүй, касс/карт зөв хуваагдана
+    lines.push({ type: 'sale', item: SPLIT_ITEM, qty: 1, unit: '', price: -sp.amt2, amount: -sp.amt2, pay: sale.pay, bill: bill, customer: cu || '' });
+    lines.push({ type: 'sale', item: SPLIT_ITEM, qty: 1, unit: '', price: sp.amt2, amount: sp.amt2, pay: sp.pay2, bill: bill, customer: cu || '' });
+  }
   if (!ebEnabled()) { if (sale.edit) { toast('Засвар хийхэд И-баримт асаалттай байх ёстой'); return; } finishSale(lines); return; }
-  var noCls = lines.filter(function (r) { return !r.classificationCode && !ebConfig().classificationCode; });
+  var noCls = lines.filter(function (r) { return !isAdj(r.item) && !r.classificationCode && !ebConfig().classificationCode; });
   if (noCls.length) {
     toast('И-баримтад ангилал хэрэгтэй: «' + noCls[0].item + '» — жагсаалтаас сонгоно уу');
     return;
@@ -506,7 +592,7 @@ function submitSale() {
 function finishSale(lines) {
   lines.forEach(function (r) { stockTake(r.item, r.qty); });
   addRecords(lines);
-  closeSheet('saleSheet');
+  closeSheet('saleSheet'); parkBtnUpd();
   toast('✓ Борлуулалт бичигдлээ: ' + fmt(lines.reduce(function (a, r) { return a + r.amount; }, 0)));
 }
 
@@ -680,17 +766,21 @@ function renderToday() {
     $('todayList').innerHTML = '<li class="muted">Өнөөдөр бичлэг алга байна</li>';
     return;
   }
-  var retShown = {};
-  $('todayList').innerHTML = recs.map(function (r) {
-    if (r.type === 'sale') {
-      var showRet = r.ddtd && !r.returned && r.amount > 0 && !retShown[r.ddtd];
-      if (showRet) retShown[r.ddtd] = 1;
-      return '<li><span>' + esc(r.item) + ' · ' + r.qty + ' ' + esc(r.unit) +
-        '<small>' + r.time + ' · ' + esc(r.pay) + (r.customer ? ' · ' + esc(r.customer) : '') + (r.ddtd ? ' · баримттай' : '') + (r.returned ? ' · буцаагдсан' : '') + '</small>' +
-        (r.ddtd || /ДДТД/.test(r.note || '') ? '<small class="ddtd">ДДТД ' + esc(r.ddtd || (r.note.match(/ДДТД (\d+)/) || [])[1] || '') + '</small>' : '') +
-        (showRet ? '<button class="mini" onclick="ebReturn(\'' + r.id + '\')">Баримт буцаах</button>' : '') +
-        '</span><span class="amt ' + (r.amount < 0 ? 'r' : 'g') + '">' + (r.amount < 0 ? '−' + fmt(-r.amount) : '+' + fmt(r.amount)) + '</span></li>';
+  // Борлуулалтыг баримтаар бүлэглэнэ (нэг баримт = нэг мөр), бусад бичлэг (зарлага, касс хаалт) хэвээр
+  var seen = {}, rows = [];
+  recs.forEach(function (r) {
+    if (r.type !== 'sale') { rows.push({ r: r }); return; }
+    var k = billKey(r); if (seen[k]) return; seen[k] = 1; rows.push({ bill: k });
+  });
+  $('todayList').innerHTML = rows.map(function (row) {
+    if (row.bill) {
+      var b = billInfo(row.bill);
+      return '<li class="bill-row" onclick="openBill(\'' + jsqS(row.bill) + '\')"><span><b>' + esc(b.items.slice(0, 3).join(', ') + (b.items.length > 3 ? ' +' + (b.items.length - 3) : '')) + '</b>' +
+        '<small>' + esc(b.time) + ' · ' + esc(b.pays.join(' + ')) + (b.customer ? ' · ' + esc(b.customer) : '') + (b.disc ? ' · хөнгөлөлт ' + fmt(b.disc) : '') +
+        (b.ddtd ? ' · баримттай' : '') + (b.retAll ? ' · <b>буцаагдсан</b>' : b.ret ? ' · хэсэгчлэн буцаасан' : '') + '</small></span>' +
+        '<span class="amt ' + (b.net < 0 ? 'r' : 'g') + '">' + (b.net < 0 ? '−' + fmt(-b.net) : fmt(b.net)) + '</span></li>';
     }
+    var r = row.r;
     if (r.type === 'collect') {
       return '<li><span>Төлбөр орсон · ' + esc(r.customer || '') + '<small>' + r.time + ' · ' + esc(r.pay) + '</small></span><span class="amt g">+' + fmt(r.amount) + '</span></li>';
     }
@@ -701,6 +791,89 @@ function renderToday() {
     return '<li><span>Касс хаасан<small>' + r.time + ' · Тоолсон ' + fmt(r.counted) +
       '</small></span><span class="amt">' + (r.diff ? (r.diff > 0 ? '+' : '−') + fmt(Math.abs(r.diff)) : '✓') + '</span></li>';
   }).join('');
+}
+function jsqS(v) { return String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+// ── Баримт: бүх мөр, хөнгөлөлт, төлбөр, буцаалт ──
+function billLines(key) { return load(LS_REC, []).filter(function (r) { return r.type === 'sale' && r.biz === BIZ_KEY && billKey(r) === key; }); }
+function billInfo(key) {
+  var L = billLines(key), goods = L.filter(function (x) { return !isAdj(x.item) && x.amount > 0 && !/ \(буцаалт\)$/.test(x.item); });
+  var pays = {}, disc = 0, ret = 0, net = 0;
+  L.forEach(function (x) {
+    net += Number(x.amount) || 0;
+    if (baseItem(x.item) === DISC_ITEM && x.amount < 0) disc += -x.amount;
+    if (/ \(буцаалт\)$/.test(x.item) && !isAdj(x.item)) ret += -x.amount;
+  });
+  // төлбөрийн хэлбэр тус бүрийн цэвэр дүн
+  L.forEach(function (x) { if (!/ \(буцаалт\)$/.test(x.item)) pays[x.pay || 'Бэлэн'] = (pays[x.pay || 'Бэлэн'] || 0) + (Number(x.amount) || 0); });
+  var gross = goods.reduce(function (a, x) { return a + x.amount; }, 0), f = L[0] || {};
+  return { key: key, lines: L, goods: goods, items: goods.map(function (x) { return x.item + (x.qty !== 1 ? ' ×' + x.qty : ''); }), time: f.time || '', date: f.date || '', staff: f.staff || '',
+    customer: f.customer || '', ddtd: (L.filter(function (x) { return x.ddtd; })[0] || {}).ddtd || '', pays: Object.keys(pays).filter(function (k) { return pays[k] > 0; }),
+    payAmt: pays, disc: disc, gross: gross, ret: ret, retAll: L.some(function (x) { return x.returned; }) || (gross > 0 && ret >= gross - disc - 0.5), net: net };
+}
+function returnedQty(L, item) { return -L.filter(function (x) { return x.item === item + ' (буцаалт)'; }).reduce(function (a, x) { return a + (Number(x.qty) || 0); }, 0); }
+function ensureBillSheet() {
+  if ($('billSheet')) return;
+  document.body.insertAdjacentHTML('beforeend', '<div class="sheet" id="billSheet" onclick="if(event.target===this)closeSheet(\'billSheet\')"><div class="panel bill-panel" id="billPanel"></div></div>');
+}
+function openBill(key) {
+  ensureBillSheet();
+  var b = billInfo(key), canRet = !b.retAll && b.goods.length;
+  var rows = b.goods.map(function (x) {
+    var back = returnedQty(b.lines, x.item);
+    return '<tr><td>' + esc(x.item) + (back ? '<small>буцаасан ' + back + '</small>' : '') + '</td><td class="n">' + x.qty + ' × ' + fmt(x.price) + '</td><td class="n">' + fmt(x.amount) + '</td></tr>';
+  }).join('');
+  $('billPanel').innerHTML = '<div class="bill-h"><h2>Баримт</h2><button class="pos-x" onclick="closeSheet(\'billSheet\')">✕</button></div>' +
+    '<p class="muted bill-meta">' + esc(b.date + ' ' + b.time) + ' · ' + esc(b.staff) + (b.customer ? ' · ' + esc(b.customer) : '') + (b.ddtd ? '<br>ДДТД ' + esc(b.ddtd) : '') + '</p>' +
+    '<table class="bill-t">' + rows +
+    (b.disc ? '<tr class="sub"><td>Хөнгөлөлт</td><td></td><td class="n neg">−' + fmt(b.disc) + '</td></tr>' : '') +
+    (b.ret ? '<tr class="sub"><td>Буцаалт</td><td></td><td class="n neg">−' + fmt(b.ret) + '</td></tr>' : '') +
+    '<tr class="tot"><td>Нийт</td><td></td><td class="n">' + fmt(b.net) + '</td></tr></table>' +
+    '<p class="muted bill-pay">Төлбөр: ' + b.pays.map(function (k) { return esc(k) + ' ' + fmt(b.payAmt[k]); }).join(' + ') + '</p>' +
+    '<div id="billRet"></div>' +
+    '<div class="bill-acts"><button class="btn sm ghost2" onclick="printBill(\'' + jsqS(key) + '\')">Хэвлэх</button>' +
+    (canRet ? (b.ddtd ? (typeof ebEnabled === 'function' && ebEnabled() ? '<button class="btn sm ghost2" onclick="closeSheet(\'billSheet\');ebReturn(\'' + b.goods[0].id + '\')">Бүтэн буцаах (И-баримт)</button>' : '') :
+      '<button class="btn sm" onclick="billReturnForm(\'' + jsqS(key) + '\')">Буцаах</button>') : '') + '</div>' +
+    (b.ddtd && canRet ? '<p class="muted" style="font-size:12px;margin-top:8px">И-баримттай баримтыг хэсэгчлэн буцаахдаа «Баримтын түүх» → «Засах»-аар шинэ баримт гаргана.</p>' : '');
+  openSheet('billSheet');
+}
+// Буцаалт: мөр бүрээр тоо сонгож, шалтгаан бичнэ. Хөнгөлөлттэй баримт бол хөнгөлөлтийн хувиар бууруулж буцаана.
+var RET_REASONS = ['Гэмтэлтэй, чанаргүй', 'Солих (өөр бараа авна)', 'Таалагдаагүй', 'Буруу бараа өгсөн', 'Бусад'];
+function billReturnForm(key) {
+  var b = billInfo(key);
+  $('billRet').innerHTML = '<div class="ret-box"><b>Юуг буцаах вэ?</b>' + b.goods.map(function (x, i) {
+    var left = Math.round((x.qty - returnedQty(b.lines, x.item)) * 1000) / 1000;
+    return left > 0 ? '<label class="ret-l"><input type="checkbox" id="rtc' + i + '" checked> <span>' + esc(x.item) + '</span><input type="number" id="rtq' + i + '" min="0" max="' + left + '" step="any" value="' + left + '"><small>/ ' + left + '</small></label>' : '';
+  }).join('') + '<label>Шалтгаан</label><select id="rtWhy">' + RET_REASONS.map(function (r) { return '<option>' + r + '</option>'; }).join('') + '</select>' +
+    '<input id="rtNote" placeholder="Нэмэлт тайлбар (заавал биш)" style="margin-top:6px">' +
+    '<button class="btn" onclick="billReturnSave(\'' + jsqS(key) + '\')">Буцаалт бүртгэх</button></div>';
+}
+function billReturnSave(key) {
+  var b = billInfo(key), ratio = b.gross ? b.disc / b.gross : 0, out = [];
+  var why = $('rtWhy').value + ($('rtNote').value.trim() ? ' · ' + $('rtNote').value.trim() : '');
+  var mainPay = (b.goods[0] || {}).pay || 'Бэлэн';
+  b.goods.forEach(function (x, i) {
+    var cb = $('rtc' + i); if (!cb || !cb.checked) return;
+    var left = x.qty - returnedQty(b.lines, x.item), q = Math.min(left, Number($('rtq' + i).value) || 0);
+    if (!(q > 0)) return;
+    var unit = Math.round(x.price * (1 - ratio) * 100) / 100;
+    out.push({ type: 'sale', item: x.item + ' (буцаалт)', qty: -q, unit: x.unit, price: unit, amount: -Math.round(q * unit), pay: mainPay, bill: key, customer: x.customer || '', note: 'Буцаалт: ' + why });
+  });
+  if (!out.length) { toast('Буцаах бараа, тоогоо сонгоно уу'); return; }
+  var tot = -out.reduce(function (a, r) { return a + r.amount; }, 0);
+  if (!confirm('Буцаалт: ' + out.map(function (r) { return baseItem(r.item) + ' ×' + (-r.qty); }).join(', ') + '\nХэрэглэгчид буцаах: ' + fmt(tot) + ' (' + mainPay + ')\nШалтгаан: ' + why)) return;
+  out.forEach(function (r) { stockTake(r.item, r.qty); });
+  addRecords(out); toast('Буцаалт бүртгэгдлээ — бараа үлдэгдэлд нэмэгдлээ'); openBill(key);
+}
+// Энгийн баримт хэвлэх (И-баримтгүй дэлгүүрт ч)
+function printBill(key) {
+  var b = billInfo(key), w = window.open('', '_blank', 'width=380,height=600'); if (!w) { toast('Цонх нээгдсэнгүй — хөтчийн popup-ыг зөвшөөрнө үү'); return; }
+  w.document.write('<!doctype html><meta charset="utf-8"><title>Баримт</title><style>body{font-family:Arial,sans-serif;font-size:13px;padding:14px;max-width:300px}h3{text-align:center;margin:0 0 4px}p{margin:2px 0;text-align:center;color:#555}table{width:100%;border-collapse:collapse;margin-top:10px}td{padding:3px 0;border-bottom:1px dashed #ccc}td.n{text-align:right}tr.t td{font-weight:bold;border-bottom:0;padding-top:6px}</style>' +
+    '<h3>' + esc(BIZ.name) + '</h3><p>' + esc(b.date + ' ' + b.time) + '</p><p>Ажилтан: ' + esc(b.staff) + '</p><table>' +
+    b.goods.map(function (x) { return '<tr><td>' + esc(x.item) + '<br><small>' + x.qty + ' × ' + fmt(x.price) + '</small></td><td class="n">' + fmt(x.amount) + '</td></tr>'; }).join('') +
+    (b.disc ? '<tr><td>Хөнгөлөлт</td><td class="n">−' + fmt(b.disc) + '</td></tr>' : '') + (b.ret ? '<tr><td>Буцаалт</td><td class="n">−' + fmt(b.ret) + '</td></tr>' : '') +
+    '<tr class="t"><td>НИЙТ</td><td class="n">' + fmt(b.net) + '</td></tr></table><p style="margin-top:8px">' + b.pays.map(function (k) { return esc(k) + ' ' + fmt(b.payAmt[k]); }).join(' + ') + '</p>' +
+    (b.ddtd ? '<p>ДДТД ' + esc(b.ddtd) + '</p>' : '') + '<p style="margin-top:10px">Баярлалаа!</p><script>window.print()<\/script>');
+  w.document.close();
 }
 
 // ── Modal ──

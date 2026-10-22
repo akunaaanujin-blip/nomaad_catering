@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v4.9 (ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v5.0 (хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -44,7 +44,7 @@ const SHEET_PO = 'Бараа захиалга';
 const PO_HEAD = ['ID', 'Дугаар', 'Огноо', 'biz', 'Нийлүүлэгч', 'Бараа', 'Валют', 'Нийт (валютаар)', 'Карго компани', 'Төлөв', 'Ирсэн огноо', 'Тэмдэглэл', 'Үүсгэсэн'];
 const SHEET_DOC = 'Маягт';
 const DOC_HEAD = ['ID', 'Нэр', 'Бүлэг', 'Агуулга (HTML)', 'Үндсэн маягт', 'Шинэчилсэн', 'Төлөв'];
-const FEE_ITEM = 'Хүргэлтийн төлбөр';   // захиалгын хүргэлтийн төлбөр (борлуулалтын мөр, үлдэгдэлд орохгүй)
+const FEE_ITEM = 'Хүргэлтийн төлбөр', DISC_ITEM = 'Хөнгөлөлт', SPLIT_ITEM = 'Төлбөр хуваалт';   // захиалгын хүргэлтийн төлбөр (борлуулалтын мөр, үлдэгдэлд орохгүй)
 const COZY_OLD_SHEET = '1KUXN7wrApwDSwQQZnzYgPigfRkzkiG3Xbt4VSihQd9c';   // хуучин «Cozy хүргэлт» хүснэгт (шилжүүлэхэд л уншина)
 const LOG_HEAD = ['ID', 'Огноо', 'Цаг', 'Бизнес', 'Төрөл', 'Ажилтан', 'Бараа / Ангилал', 'Тоо', 'Нэгж',
                   'Нэгжийн үнэ', 'Дүн', 'Төлбөр', 'Тоолсон бэлэн', 'Зөрүү', 'Тайлбар', 'biz', 'type', 'Баримт', 'Төлөв', 'Харилцагч'];
@@ -257,6 +257,7 @@ function adminRead(d) {
   a.pos = cacheGet('po', poRows).map(function (x) { delete x.row; return x; });
   a.bankLinks = JSON.parse(pr.getProperty('BANKLINKS') || '[]');
   a.kpi = JSON.parse(pr.getProperty('KPI') || '{}');
+  a.targets = JSON.parse(pr.getProperty('TARGETS') || '{}');   // борлуулалтын зорилт { 'biz|YYYY-MM': { total, staff: { нэр: дүн } } }
   a.assets = JSON.parse(pr.getProperty('ASSETS') || '[]');
   a.minstock = minStockAll();
   a.digest = { on: pr.getProperty('DIGEST') === 'on', to: pr.getProperty('DIGEST_TO') || '', mail: DIGEST_MAIL };
@@ -638,7 +639,7 @@ function stockAll(withCost) {
       const when = fmtDate(v[1], 'yyyy-MM-dd') + ' ' + fmtDate(v[2], 'HH:mm');
       if (when < since[biz]) return;
       const item = String(v[6]).replace(/ \(буцаалт\)$/, '').trim();
-      if (item === FEE_ITEM) return;   // хүргэлтийн төлбөр — бараа биш
+      if (item === FEE_ITEM || item === DISC_ITEM || item === SPLIT_ITEM) return;   // хүргэлт, хөнгөлөлт, төлбөр хуваалт — бараа биш
       const it = out[biz][item] = out[biz][item] || { shop: 0, wh: 0 };
       it.shop -= Number(v[7]) || 0;   // буцаалтын тоо сөрөг тул буцааж нэмэгдэнэ
     });
@@ -1034,7 +1035,7 @@ function adminSetting(d) {
     if (ms.length > 8500) return { status: 'error', error: 'too_big' };
     PropertiesService.getScriptProperties().setProperty('MINSTOCK_' + d.biz, ms); return { status: 'ok' };
   }
-  const JSONKEYS = { kpi: 'KPI', assets: 'ASSETS' };   // KPI %, үндсэн хөрөнгө
+  const JSONKEYS = { kpi: 'KPI', assets: 'ASSETS', targets: 'TARGETS' };   // KPI %, үндсэн хөрөнгө, борлуулалтын зорилт
   if (JSONKEYS[d.key]) {
     const s = JSON.stringify(d.value || (d.key === 'assets' ? [] : {}));
     if (s.length > 8500) return { status: 'error', error: 'too_big' };

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261022c">
+<link rel="stylesheet" href="style.css?v=20261022e">
 </head>
 <body>
 <div class="demo" id="demo" style="display:none">Туршилтын горим — мэдээлэл зөвхөн энэ төхөөрөмжид хадгалагдаж байна</div>
@@ -65,6 +65,7 @@
   <div class="panel pos">
     <div class="pos-head">
       <h2>Борлуулалт</h2>
+      <div class="pos-head-acts"><button class="btn sm ghost2" onclick="parkSale()">Түр хадгалах</button><button class="btn sm ghost2" id="parkBtn" onclick="openParked()" style="display:none">Хадгалсан</button></div>
       <button class="pos-x" onclick="closeSheet('saleSheet')" aria-label="Хаах">✕</button>
     </div>
     <div class="sp-wait" id="spWait" style="display:none"></div>
@@ -89,6 +90,11 @@
       <section class="pos-right">
         <div class="pos-cart-h"><b>Сагс</b><span class="muted" id="saleCount"></span></div>
         <ul class="list cart pos-cart" id="cartList"></ul>
+        <div class="pos-extra">
+          <div class="pe-row"><label for="saleDisc">Хөнгөлөлт</label><div class="pe-disc"><input id="saleDisc" type="number" inputmode="numeric" min="0" placeholder="0" oninput="calcSale()"><div class="pe-u" id="discU"><button data-u="%" onclick="setDiscU('%')">%</button><button data-u="₮" onclick="setDiscU('₮')">₮</button></div></div></div>
+          <div class="pe-row"><label for="salePhone">Хэрэглэгчийн утас</label><input id="salePhone" inputmode="tel" maxlength="12" placeholder="заавал биш" oninput="salePhoneHint()"></div>
+          <small id="salePhoneHint" class="pe-hint"></small>
+        </div>
         <div class="pos-pay">
           <div class="pos-lbl">Төлбөрийн хэлбэр</div>
           <div class="seg seg4" id="paySeg">
@@ -98,6 +104,8 @@
             <button data-v="Зээлээр" onclick="setPay('Зээлээр')">Зээлээр</button>
             <button data-v="StorePay" onclick="setPay('StorePay')" style="display:none">StorePay</button>
           </div>
+          <label class="pe-split" id="saleSplitLbl"><input type="checkbox" id="saleSplitOn" onchange="splitToggle()"> Хуваан төлөх</label>
+          <div id="saleSplitWrap" class="pe-split-w" style="display:none"><select id="saleSplitPay" onchange="calcSale()"><option>Карт</option><option>Шилжүүлэг</option><option>Бэлэн</option></select><input id="saleSplitAmt" type="number" inputmode="numeric" min="0" placeholder="Энэ хэлбэрээр төлөх дүн" oninput="calcSale()"><small id="saleSplitInfo" class="pe-hint"></small></div>
           <div id="saleSpWrap" class="pos-sp" style="display:none">
             <label for="saleSpPhone">Хэрэглэгчийн StorePay утас *</label>
             <div class="sp-row"><input id="saleSpPhone" inputmode="tel" maxlength="12" placeholder="99112233"><button class="btn sm ghost2" onclick="spLimit()">Лимит шалгах</button></div>
@@ -120,6 +128,7 @@
           </div>
         </div>
         <div class="sale-foot pos-foot">
+          <div class="pos-sub" id="saleSub"></div>
           <div class="pos-total" onclick="var r=document.querySelector('.pos-right');if(r&&innerWidth<=820)r.scrollIntoView({behavior:'smooth'})"><span>Нийт</span><b class="total" id="saleTotal">₮0</b></div>
           <button class="btn" id="saleSubmit" onclick="submitSale()">Төлбөр авах</button>
         </div>
@@ -205,12 +214,12 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="products.js?v=20261022c"></script>
-<script src="config.js?v=20261022c"></script>
-<script src="common.js?v=20261022c"></script>
+<script src="products.js?v=20261022e"></script>
+<script src="config.js?v=20261022e"></script>
+<script src="common.js?v=20261022e"></script>
 <script>var BIZ_KEY = 'travel';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261022c"></script>
-<script src="ebarimt.js?v=20261022c"></script>
+<script src="staff.js?v=20261022e"></script>
+<script src="ebarimt.js?v=20261022e"></script>
 </body>
 </html>

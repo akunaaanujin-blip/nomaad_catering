@@ -23,8 +23,13 @@ function ebEnabled() {
 function ebBuildRequest(lines, buyer) {
   var c = ebConfig();
   var vatOf = function (amt) { return c.taxType === 'VAT_ABLE' ? Math.round(amt / 11 * 100) / 100 : 0; };
-  var items = lines.map(function (r) {
-    var amount = Math.round(r.amount);
+  // Хөнгөлөлт, төлбөр хуваалтын мөр баримтад бараа болж орохгүй — хөнгөлөлтийг бараануудад хувь тэнцүүлэн шингээнэ
+  var goods = lines.filter(function (r) { return !isAdj(r.item); });
+  var paid = lines.reduce(function (a, r) { return a + Math.round(r.amount); }, 0), gross = goods.reduce(function (a, r) { return a + Math.round(r.amount); }, 0);
+  var left = paid;
+  var adjAmt = goods.map(function (r, i) { var v = i === goods.length - 1 ? left : Math.round(Math.round(r.amount) * (gross ? paid / gross : 1)); left -= v; return v; });
+  var items = goods.map(function (r, gi) {
+    var amount = adjAmt[gi];
     var cls = r.classificationCode || c.classificationCode || '';
     return {
       name: r.item,
@@ -33,7 +38,7 @@ function ebBuildRequest(lines, buyer) {
       classificationCode: cls,
       measureUnit: r.unit,
       qty: r.qty,
-      unitPrice: r.price,
+      unitPrice: Math.round(amount / (Number(r.qty) || 1) * 100) / 100,
       totalVAT: vatOf(amount),
       totalCityTax: 0,
       totalAmount: amount,
@@ -58,7 +63,7 @@ function ebBuildRequest(lines, buyer) {
       merchantTin: c.merchantTin,
       items: items,
     }],
-    payments: [{ code: EBARIMT_PAY[lines[0].pay] || 'CASH', status: 'PAID', paidAmount: total }],
+    payments: ebPayments(lines, total),
   };
   var dc = ebSettings().district || c.districtCode || (ebSettings().test ? '2501' : '');
   if (dc) req.districtCode = dc;
@@ -66,6 +71,15 @@ function ebBuildRequest(lines, buyer) {
   return req;
 }
 
+// Төлбөрийн хэлбэр тус бүрийн дүн (хуваан төлсөн бол хэд хэдэн) — нийлбэр нь баримтын дүнтэй яг тэнцүү
+function ebPayments(lines, total) {
+  var by = {};
+  lines.forEach(function (r) { var code = EBARIMT_PAY[r.pay] || 'CASH'; by[code] = (by[code] || 0) + Math.round(r.amount); });
+  var out = Object.keys(by).filter(function (k) { return by[k] > 0; }).map(function (k) { return { code: k, status: 'PAID', paidAmount: by[k] }; });
+  var sumP = out.reduce(function (a, p) { return a + p.paidAmount; }, 0);
+  if (!out.length) out = [{ code: 'CASH', status: 'PAID', paidAmount: total }]; else if (sumP !== total) out[0].paidAmount += total - sumP;
+  return out;
+}
 // PosAPI руу илгээнэ. cb(err, res)
 function ebSend(req, cb) {
   var url = ebSettings().url.replace(/\/+$/, '') + '/rest/receipt';
@@ -179,9 +193,9 @@ function ebReturn(id) {
   var all = load(LS_REC, []);
   var r = all.filter(function (x) { return x.id === id; })[0];
   if (!r || !r.ddtd) return;
-  var lines = all.filter(function (x) { return x.ddtd === r.ddtd && x.amount > 0 && !x.returned; });
+  var lines = all.filter(function (x) { return x.ddtd === r.ddtd && !x.returned && !/ \(буцаалт\)$/.test(x.item); });   // хөнгөлөлт, хуваалтын мөр хамт
   var total = lines.reduce(function (a, x) { return a + x.amount; }, 0);
-  if (!confirm('Энэ баримтыг бүхэлд нь буцаах уу?\n\n' + lines.map(function (x) { return '• ' + x.item + ' · ' + fmt(x.amount); }).join('\n') +
+  if (!confirm('Энэ баримтыг бүхэлд нь буцаах уу?\n\n' + lines.filter(function (x) { return !isAdj(x.item); }).map(function (x) { return '• ' + x.item + ' · ' + fmt(x.amount); }).join('\n') +
     '\nНийт: ' + fmt(total) + '\nДДТД ' + r.ddtd)) return;
   var url = ebSettings().url.replace(/\/+$/, '') + '/rest/receipt';
   fetch(url, {
@@ -254,7 +268,7 @@ function ebCheckInfo() {
 // И-баримт гараагүй борлуулалтад дараа нь баримт гаргана (өмнөх сарынх бол «reportMonth»).
 function ebHistGroups(days) {
   var cut = todayStr(new Date(Date.now() - (days || 45) * 864e5)), g = {}, order = [];
-  load(LS_REC, []).filter(function (r) { return r.biz === BIZ_KEY && r.type === 'sale' && r.date >= cut && r.amount > 0 && !/ \(буцаалт\)$/.test(r.item); }).forEach(function (r) {
+  load(LS_REC, []).filter(function (r) { return r.biz === BIZ_KEY && r.type === 'sale' && r.date >= cut && !/ \(буцаалт\)$/.test(r.item); }).forEach(function (r) {
     var k = r.ddtd ? 'D' + r.ddtd : r.bill ? 'B' + r.bill : 'R' + r.id;
     if (!g[k]) { g[k] = { key: k, ddtd: r.ddtd || '', ebDate: r.ebDate || '', date: r.date, time: r.time, pay: r.pay, lines: [], total: 0, returned: false, buyerTin: r.buyerTin || '', buyerName: r.buyerName || '' }; order.push(k); }
     g[k].lines.push(r); g[k].total += r.amount; if (r.returned) g[k].returned = true;
@@ -271,7 +285,7 @@ function openEbHist() {
   ensureHistSheet();
   var on = ebEnabled(), list = ebHistGroups(45), lm = todayStr().slice(0, 7);
   $('histList').innerHTML = list.length ? list.map(function (g) {
-    var items = g.lines.map(function (l) { return esc(l.item) + (l.qty !== 1 ? ' × ' + l.qty : ''); }).join(', ');
+    var items = g.lines.filter(function (l) { return !isAdj(l.item); }).map(function (l) { return esc(l.item) + (l.qty !== 1 ? ' × ' + l.qty : ''); }).join(', ');
     var old = g.date.slice(0, 7) < lm, tooOld = g.date < todayStr(new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1));
     var acts = '';
     if (g.ddtd && !g.returned && on) acts = '<button class="mini" onclick="ebReturn(\'' + g.lines[0].id + '\');closeSheet(\'histSheet\')">Буцаах</button>' +
@@ -292,7 +306,9 @@ function ebEdit(key) {
   closeSheet('histSheet');
   openSale();
   sale.edit = { ddtd: g.ddtd, ebDate: g.ebDate, lines: g.lines };
-  sale.cart = g.lines.map(function (l) { return { name: l.item, unit: l.unit, price: l.price, listPrice: l.price, qty: l.qty, cls: l.classificationCode || '' }; });
+  sale.cart = g.lines.filter(function (l) { return !isAdj(l.item); }).map(function (l) { return { name: l.item, unit: l.unit, price: l.price, listPrice: l.price, qty: l.qty, cls: l.classificationCode || '' }; });
+  var dsc = -g.lines.filter(function (l) { return baseItem(l.item) === DISC_ITEM; }).reduce(function (a, l) { return a + l.amount; }, 0);
+  if (dsc > 0 && $('saleDisc')) { sale.discU = '₮'; $('saleDisc').value = dsc; setDiscU('₮'); }
   setPay(g.pay || 'Бэлэн');
   if (g.buyerTin) { $('saleTin').value = g.buyerTin; saleTinInput(); if ($('saleBuyer')) $('saleBuyer').value = g.buyerName || ''; }
   var note = $('saleEditNote');

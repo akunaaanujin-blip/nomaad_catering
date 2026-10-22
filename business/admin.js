@@ -76,7 +76,7 @@ function fetchAll(cb) {
     records = load('nb_records', []); staff = []; salary = []; stockData = load('nb_demo_stock', {}); moves = load('nb_demo_moves', []);
     journal = load('nb_demo_journal', []); partners = load('nb_demo_partners', []); sheetProducts = load('nb_demo_products', []); applyProducts(); meta = load('nb_demo_meta', {});
     reminders = load('nb_demo_rem', []); window.adminOrders = load('nb_orders_cozy', []);
-    bankLines = load('nb_demo_bank', []); window.payInfoAll = load('nb_demo_payinfo', {}); tasks = load('nb_demo_tasks', []); taxCfg = load('nb_demo_taxcfg', {}); customDocs = load('nb_demo_docs', []);
+    bankLines = load('nb_demo_bank', []); window.payInfoAll = load('nb_demo_payinfo', {}); window.salesTargets = load('nb_demo_targets', {}); tasks = load('nb_demo_tasks', []); taxCfg = load('nb_demo_taxcfg', {}); customDocs = load('nb_demo_docs', []);
     accountsX = load('nb_demo_accx', []); applyCustomAccounts(accountsX); meta.lock = load('nb_demo_lock', '');
     window.loans = load('nb_demo_loans', []); window.pos = load('nb_demo_pos', []); window.bankLinks = load('nb_demo_banklinks', []);
     window.kpiCfg = load('nb_demo_kpi', {}); window.assets = load('nb_demo_assets', []); window.minStock = load('nb_demo_minstock', {});
@@ -87,10 +87,10 @@ function fetchAll(cb) {
   post({ type: 'admin_read', from: '' }, function (err, d) {   // санхүүгийн тайланд бүх түүх хэрэгтэй
     if (err) { if (err !== 'auth') toast('Холбогдож чадсангүй'); cb(false); return; }
     records = d.records || []; staff = d.staff || []; salary = d.salary || []; stockData = d.stock || {}; moves = d.moves || [];
-    Object.keys(stockData).forEach(function (b) { if (stockData[b]) delete stockData[b][FEE_ITEM]; });   // хүргэлтийн төлбөр — бараа биш
+    Object.keys(stockData).forEach(function (b) { if (stockData[b]) [FEE_ITEM, DISC_ITEM, SPLIT_ITEM].forEach(function (k) { delete stockData[b][k]; }); });   // бараа биш мөрүүд
     journal = d.journal || []; partners = d.partners || []; sheetProducts = d.products || []; applyProducts(); meta = d.meta || {};
     reminders = d.reminders || []; window.adminOrders = d.orders || []; window.loans = d.loans || []; window.pos = d.pos || []; window.bankLinks = d.bankLinks || [];
-    bankLines = d.bank || []; window.payInfoAll = d.payInfo || {}; window.spAll = d.storepay || {}; tasks = d.tasks || []; taxCfg = d.taxcfg || {}; customDocs = d.docs || [];
+    bankLines = d.bank || []; window.payInfoAll = d.payInfo || {}; window.spAll = d.storepay || {}; window.salesTargets = d.targets || {}; tasks = d.tasks || []; taxCfg = d.taxcfg || {}; customDocs = d.docs || [];
     accountsX = d.accountsX || []; applyCustomAccounts(accountsX); meta.lock = d.lock || '';
     window.kpiCfg = d.kpi || {}; window.assets = d.assets || []; window.minStock = d.minstock || {};
     window.digestCfg = d.digest || { on: false, to: '' }; window.priceLog = d.priceLog || [];
@@ -254,7 +254,7 @@ function bizModules(biz) { return BUSINESSES[biz] && BUSINESSES[biz].finOnly ? M
 function openMgmt() { state.view = 'company'; state.biz = 'mgmt'; state.module = 'finance'; render(); window.scrollTo(0, 0); }
 // Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
 var MENU = {
-  sales: [['Борлуулалт', ['overview', 'orders', 'receipts']], ['Борлуулалтын тайлан', ['item', 'cat', 'staff', 'day', 'pay']], ['И-баримт', ['ebarimt']]],
+  sales: [['Өдөр тутам', ['overview', 'receipts', 'orders']], ['Тайлан', ['item', 'cat', 'staff', 'day', 'hour', 'pay', 'disc', 'slow']], ['И-баримт', ['ebarimt']]],
   products: [['Бараа материал', ['catalog', 'stock', 'in', 'po']], ['Тайлан', ['move', 'prices']], ['Харилцагч', ['suppliers']]],
   // Санхүү — цөөн, ойлгомжтой цэс. Нягтлангийн тайлан, тохиргоо нь тус бүр нэг хуудсанд цуглуулагдсан (finance.js HUBS)
   finance: [['Үр дүн', ['simple', 'months', 'profit']], ['Мөнгө', ['money', 'bank', 'vouchers']], ['Өр, авлага', ['debts', 'loans']], ['Цалин', ['payroll']],
@@ -402,22 +402,100 @@ function orderReminder(biz) {   // доод үлдэгдлээс бага бол
   return '<div class="alert"><div><b>Захиалах бараа: ' + need.length + '</b> — ' + esc(names) + '</div>' +
     '<div class="pg-act"><button class="b-btn primary" onclick="openModule(\'products\');setSub(\'po\')">Бараа захиалга</button></div></div>';
 }
+// Тойм: 4 гол тоо (өмнөх үетэй харьцуулсан), зорилт, график, сүүлийн баримтууд — ойлгомжтой, цөөн
+function prevRange() {
+  var r = range(), a = new Date(r[0] + 'T00:00:00'), b = new Date(r[1] + 'T00:00:00'), n = Math.round((b - a) / 864e5) + 1;
+  return [todayStr(new Date(a - n * 864e5)), todayStr(new Date(a - 864e5))];
+}
+function salesStats(biz, from, to) {
+  var list = records.filter(function (x) { return x.biz === biz && x.type === 'sale' && x.date >= from && x.date <= to; });
+  var bills = groupBills(list).filter(function (o) { return o.gross > 0; }), net = list.reduce(function (a, x) { return a + (Number(x.amount) || 0); }, 0);
+  var ce = costEngine(biz, R()), cogs = 0, tracked = !!ce.since;
+  list.forEach(function (x) { cogs += Number(ce.rec[x.id] || 0); });
+  return { net: net, n: bills.length, avg: bills.length ? net / bills.length : 0, cogs: cogs, profit: tracked ? net - cogs : null, list: list, bills: bills };
+}
+function deltaTag(cur, prev) {
+  if (!prev) return cur ? '<span class="dlt up">шинэ</span>' : '';
+  var p = Math.round((cur - prev) / Math.abs(prev) * 100);
+  return '<span class="dlt ' + (p >= 0 ? 'up' : 'dn') + '">' + (p >= 0 ? '▲ ' : '▼ ') + Math.abs(p) + '%</span>';
+}
 function salesModule() {
-  var list = inRange(state.biz), s = sums(list);
-  var sales = list.filter(function (x) { return x.type === 'sale'; });
-  var bills = {};
-  sales.forEach(function (x) { var k = x.bill || (String(x.note || '').match(/ДДТД (\d+)/) || [])[1] || x.id; if (x.amount > 0) bills[k] = 1; });
-  var byStaff = {};
-  sales.forEach(function (x) { var k = x.staff || '—'; byStaff[k] = (byStaff[k] || 0) + (Number(x.amount) || 0); });
-  var staffRows = Object.keys(byStaff).sort(function (a, b) { return byStaff[b] - byStaff[a]; });
-  return orderReminder(state.biz) + dashView(state.biz, list, s, bills) +
-    '<div class="grid2"><div class="card"><h2>Худалдагчаар</h2><div class="scroll"><table>' +
-    (staffRows.length ? '<tr><th>Ажилтан</th><th class="n">Дүн</th></tr>' + staffRows.map(function (k) {
-      return '<tr><td>' + esc(k) + '</td><td class="n">' + fmt(byStaff[k]) + '</td></tr>';
-    }).join('') : '<tr><td class="muted">Борлуулалт алга</td></tr>') + '</table></div></div>' +
-    '<div class="card"><h2>Шилдэг бараа</h2><div class="scroll"><table>' + topProducts(sales, 10) + '</table></div></div></div>' +
-    '<div class="card" id="txCard"><div class="bar-row"><h2 style="margin:0">Гүйлгээ</h2><input class="search" type="search" placeholder="Бараа, ажилтан, төлбөрөөр хайх…" oninput="rowSearch(this,\'#txCard\')" style="max-width:300px"><small class="muted" id="srCount"></small></div>' +
-    '<div class="scroll" style="margin-top:8px"><table>' + recordRows(sales.slice().reverse().slice(0, 300)) + '</table></div></div>';
+  var biz = state.biz, r = range(), pr = prevRange(), A = salesStats(biz, r[0], r[1]), P = salesStats(biz, pr[0], pr[1]);
+  var cmp = '<small class="muted">өмнөх ' + pr[0].slice(5) + '–' + pr[1].slice(5) + '</small>';
+  var k = function (label, val, d, sub) { return '<div class="sx-k"><span>' + label + '</span><b>' + val + '</b><em>' + (d || '') + ' ' + (sub || '') + '</em></div>'; };
+  var kp = '<div class="sx-kpis">' +
+    k('Борлуулалт', fmt(A.net), deltaTag(A.net, P.net), cmp) +
+    k('Нийт ашиг', A.profit === null ? '—' : fmt(A.profit), A.profit === null ? '' : deltaTag(A.profit, P.profit || 0), A.profit === null ? '<small class="muted">үлдэгдэл хөтлөөгүй</small>' : '<small class="muted">' + (A.net ? Math.round(A.profit / A.net * 100) : 0) + '% ашиг</small>') +
+    k('Баримт', A.n, deltaTag(A.n, P.n), '') +
+    k('Дундаж чек', fmt(Math.round(A.avg)), deltaTag(A.avg, P.avg), '') + '</div>';
+  // өдрөөр график
+  var days = [], dS = {}, dP = {}, a0 = new Date(r[0] + 'T00:00:00'), a1 = new Date(r[1] + 'T00:00:00');
+  if ((a1 - a0) / 864e5 > 92) a0 = new Date(a1 - 91 * 864e5);
+  for (var d = new Date(a0); d <= a1; d.setDate(d.getDate() + 1)) days.push(todayStr(d));
+  A.list.forEach(function (x) { dS[x.date] = (dS[x.date] || 0) + (Number(x.amount) || 0); });
+  var off = Math.round((new Date(r[0] + 'T00:00:00') - new Date(pr[0] + 'T00:00:00')) / 864e5);
+  P.list.forEach(function (x) { var dd = todayStr(new Date(new Date(x.date + 'T00:00:00').getTime() + off * 864e5)); dP[dd] = (dP[dd] || 0) + (Number(x.amount) || 0); });
+  window.__dash = { days: days.map(function (x) { return x.slice(5); }), sales: days.map(function (x) { return dS[x] || 0; }), exp: days.map(function (x) { return dP[x] || 0; }), expLabel: 'Өмнөх үе',
+    payL: [], payV: [], topL: [], topV: [] };
+  var recent = A.bills.slice().sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; }).slice(0, 10);
+  var rc = '<div class="card"><div class="bar-row"><h2 style="margin:0">Сүүлийн баримтууд</h2><button class="link" onclick="setSub(\'receipts\')">Бүгдийг харах →</button></div>' +
+    '<div class="scroll"><table class="rep-t sx-rec"><tr><th>Цаг</th><th>Бараа</th><th>Ажилтан</th><th>Төлбөр</th><th class="n">Дүн</th></tr>' +
+    (recent.length ? recent.map(function (o) {
+      return '<tr class="clk" onclick="openBillAdm(' + esc(JSON.stringify(o.key)) + ')"><td>' + esc(o.date.slice(5) + ' ' + o.time) + '</td><td>' + esc(o.items.slice(0, 3).join(', ') + (o.items.length > 3 ? ' +' + (o.items.length - 3) : '')) +
+        (o.disc ? ' <small class="muted">· хөнгөлөлт ' + fmt(o.disc) + '</small>' : '') + (o.ret ? ' <small class="neg">· буцаалт ' + fmt(o.ret) + '</small>' : '') + '</td><td>' + esc(o.staff) + '</td><td>' + esc(payText(o.pays)) + '</td><td class="n">' + fmt(o.net) + '</td></tr>';
+    }).join('') : '<tr><td colspan="5" class="muted">Энэ хугацаанд борлуулалт алга</td></tr>') + '</table></div></div>';
+  return orderReminder(biz) + kp + targetCard(biz, A) +
+    '<div class="ch-card sx-ch"><h3>Борлуулалт өдрөөр <small class="muted">— тасархай: өмнөх үе</small></h3><div class="ch-box"><canvas id="chSales"></canvas></div></div>' + rc;
+}
+// ── Борлуулалтын зорилт (сар бүр, дэлгүүр болон ажилтнаар) ──
+function tgtKey(biz, mo) { return biz + '|' + (mo || todayStr().slice(0, 7)); }
+function targetCard(biz, A) {
+  var mo = todayStr().slice(0, 7), T = (window.salesTargets || {})[tgtKey(biz, mo)] || {}, total = Number(T.total) || 0;
+  var sold = records.filter(function (x) { return x.biz === biz && x.type === 'sale' && x.date.slice(0, 7) === mo; });
+  var net = sold.reduce(function (a, x) { return a + (Number(x.amount) || 0); }, 0);
+  var dIn = Number(todayStr().slice(8, 10)), dAll = new Date(Number(mo.slice(0, 4)), Number(mo.slice(5, 7)), 0).getDate();
+  var bar = function (v, t) { var p = t ? Math.min(100, Math.round(v / t * 100)) : 0, exp = Math.round(dIn / dAll * 100);
+    return '<div class="tg-bar"><i style="width:' + p + '%"></i><u style="left:' + exp + '%" title="Өнөөдрийн байх ёстой түвшин"></u></div><small class="muted">' + fmt(v) + ' / ' + fmt(t) + ' · ' + p + '%' + (p < exp ? ' · хоцорч байна' : ' · хэвийн') + '</small>'; };
+  var byStaff = {}; sold.forEach(function (x) { var k = x.staff || '—'; byStaff[k] = (byStaff[k] || 0) + (Number(x.amount) || 0); });
+  var st = T.staff || {}, names = Object.keys(st).concat(Object.keys(byStaff).filter(function (k) { return !st[k] && k !== '—'; }));
+  return '<div class="card tg-card"><div class="bar-row"><h2 style="margin:0">' + mo + ' сарын зорилт</h2><button class="link" onclick="editTarget(\'' + biz + '\')">' + (total ? 'Засах' : 'Зорилт тавих') + '</button></div>' +
+    (total ? bar(net, total) : '<p class="muted" style="font-size:13px">Зорилт тавиагүй байна. Энэ сард ' + fmt(net) + ' борлуулсан.</p>') +
+    (names.length ? '<table class="rep-t tg-st"><tr><th>Ажилтан</th><th class="n">Борлуулсан</th><th>Зорилт</th><th></th></tr>' + names.map(function (n) {
+      return '<tr><td>' + esc(n) + '</td><td class="n">' + fmt(byStaff[n] || 0) + '</td><td>' + (st[n] ? bar(byStaff[n] || 0, st[n]) : '<small class="muted">—</small>') + '</td><td class="n"><button class="mini" onclick="editTarget(\'' + biz + '\',' + esc(JSON.stringify(n)) + ')">' + (st[n] ? 'Засах' : 'Тавих') + '</button></td></tr>';
+    }).join('') + '</table>' : '') + '</div>';
+}
+function editTarget(biz, staffName) {
+  var mo = todayStr().slice(0, 7), key = tgtKey(biz, mo), all = JSON.parse(JSON.stringify(window.salesTargets || {})), T = all[key] = all[key] || { total: 0, staff: {} };
+  T.staff = T.staff || {};
+  var cur = staffName ? T.staff[staffName] : T.total;
+  var v = prompt((staffName ? staffName + '-ийн ' : 'Дэлгүүрийн ') + mo + ' сарын борлуулалтын зорилт (₮). Хоосон бол устгана:', cur || '');
+  if (v === null) return;
+  v = Math.round(Number(String(v).replace(/[^\d.]/g, '')) || 0);
+  if (staffName) { if (v) T.staff[staffName] = v; else delete T.staff[staffName]; } else T.total = v;
+  // хуучин саруудын (3+ сар) зорилтыг цэвэрлэнэ — Script Property-ийн хэмжээ хязгаартай
+  var lim = todayStr(new Date(Date.now() - 100 * 864e5)).slice(0, 7);
+  Object.keys(all).forEach(function (k) { if (k.split('|')[1] < lim) delete all[k]; });
+  window.salesTargets = all;
+  if (!API_URL) { save('nb_demo_targets', all); render(); return; }
+  post({ type: 'admin_setting', key: 'targets', value: all }, function (err) { if (err) toast('Алдаа: ' + err); else toast('Зорилт хадгалагдлаа'); render(); });
+}
+// ── Баримтын дэлгэрэнгүй (удирдлага) ──
+function openBillAdm(key) {
+  var L = records.filter(function (x) { return x.type === 'sale' && billKey(x) === key; }); if (!L.length) return;
+  var o = groupBills(L)[0], ce = costEngine(L[0].biz, R());
+  var rows = L.map(function (x) {
+    var cs = Number(ce.rec[x.id] || 0);
+    return '<tr><td>' + esc(x.item) + (x.note && !/^ДДТД/.test(x.note) ? '<small class="muted">' + esc(x.note) + '</small>' : '') + '</td><td class="n">' + (isAdj(x.item) ? '' : Math.abs(x.qty) + ' × ' + fmt(x.price)) + '</td><td>' + esc(x.pay || '') + '</td>' +
+      '<td class="n' + (x.amount < 0 ? ' neg' : '') + '">' + (x.amount < 0 ? '−' + fmt(-x.amount) : fmt(x.amount)) + '</td><td class="n muted">' + (cs ? fmt(cs) : '') + '</td></tr>';
+  }).join('');
+  var cogs = L.reduce(function (a, x) { return a + Number(ce.rec[x.id] || 0); }, 0);
+  var html = '<div class="bar-row"><h2 style="margin:0">Баримт</h2><button class="b-btn ghost" onclick="closeSheet(\'billAdmSheet\')">Хаах</button></div>' +
+    '<p class="muted" style="margin:6px 0 10px">' + esc(o.date + ' ' + o.time) + ' · ' + esc(o.staff) + (o.customer ? ' · ' + esc(o.customer) : '') + (o.ddtd ? ' · ДДТД ' + esc(o.ddtd) : '') + '</p>' +
+    '<div class="scroll"><table class="rep-t"><tr><th>Мөр</th><th class="n">Тоо × үнэ</th><th>Төлбөр</th><th class="n">Дүн</th><th class="n">Өртөг</th></tr>' + rows +
+    '<tr class="tot"><td>Нийт</td><td></td><td>' + esc(payText(o.pays)) + '</td><td class="n">' + fmt(o.net) + '</td><td class="n">' + (cogs ? fmt(cogs) : '') + '</td></tr></table></div>' +
+    (cogs ? '<p class="muted" style="margin-top:8px">Энэ баримтын ашиг: <b>' + fmt(o.net - cogs) + '</b> (' + (o.net ? Math.round((o.net - cogs) / o.net * 100) : 0) + '%)</p>' : '');
+  if (!$('billAdmSheet')) document.body.insertAdjacentHTML('beforeend', '<div class="sheet" id="billAdmSheet" onclick="if(event.target===this)closeSheet(\'billAdmSheet\')"><div class="panel" id="billAdmPanel" style="max-width:720px"></div></div>');
+  $('billAdmPanel').innerHTML = html; openSheet('billAdmSheet');
 }
 // Хайлт: хүснэгтийн мөрийг шууд шүүнэ (дахин зурахгүй). Хайж байхад «Нийт» мөр нуугдана.
 function searchBox(ph) {
@@ -949,8 +1027,8 @@ function closeSheet(id) { $(id).classList.remove('show'); }
 
 // ═══════════ ДЭД ЦЭС, ТАЙЛАН (reports.js-ийн хөдөлгүүрээр) ═══════════
 var SUBS = {
-  sales: [['overview', 'Тойм'], ['orders', 'Захиалга'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'], ['pay', 'Төлбөрийн хэлбэрээр'],
-          ['receipts', 'Баримтын жагсаалт'], ['ebarimt', 'И-баримт тулгалт']],
+  sales: [['overview', 'Тойм'], ['receipts', 'Баримтууд'], ['orders', 'Захиалга'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'], ['hour', 'Цаг, гарагаар'],
+          ['pay', 'Төлбөрийн хэлбэрээр'], ['disc', 'Хөнгөлөлт, буцаалт'], ['slow', 'Удаан эргэлттэй бараа'], ['ebarimt', 'И-баримт тулгалт']],
   products: [['catalog', 'Барааны бүртгэл, үнэ'], ['po', 'Бараа захиалга (Хятад)'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['prices', 'Үнийн түүх'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
   finance: [['simple', 'Үр дүн'], ['months', 'Сар бүрээр'], ['profit', 'Барааны ашиг'], ['money', 'Орлого, зарлага'], ['bank', 'Банкны хуулга'], ['vouchers', 'Кассын баримт'],
             ['debts', 'Авлага, өглөг'], ['loans', 'Зээл (авсан, өгсөн)'], ['assets', 'Үндсэн хөрөнгө, элэгдэл'], ['banklink', 'Банкны данс холбох'], ['digest', 'Өдрийн тойм и-мэйл'], ['payroll', 'Цалин, НДШ'], ['monthly', 'Сар бүрийн ажил'], ['acct', 'Нягтлангийн тайлан'], ['setup', 'Тохиргоо'],
@@ -976,6 +1054,9 @@ function makeReport(mod, sub) {
     if (sub === 'orders') return repOrders(biz);
     if (sub === 'customers') return repCustomers(biz);
     if (sub === 'ebarimt') return repEbarimt(R(), biz, f, t);
+    if (sub === 'hour') return repHour(R(), biz, f, t);
+    if (sub === 'disc') return repDiscRet(R(), biz, f, t);
+    if (sub === 'slow') return repSlow(R(), biz, 30, stockData[biz]);
     return repSalesBy(R(), biz, f, t, sub);
   }
   if (mod === 'products') {
@@ -1083,7 +1164,7 @@ function subBody() {
     ACCOUNTS.map(function (a) { return '<option value="' + a[0] + '"' + (state.acc === a[0] ? ' selected' : '') + '>' + a[0] + ' ' + esc(a[1]) + '</option>'; }).join('') + '</select></label></div>';
   if (mod === 'finance' && sub === 'entry') pre = '<p class="hint">Борлуулалт, зарлага, бараа, цалин санхүүд <b>автоматаар</b> бичигддэг. Энд зөвхөн бусад гүйлгээг (эхний үлдэгдэл, хөрөнгө оруулалт, зээл, банкинд тушаах, нийлүүлэгчид төлөх г.м) оруулна.</p>';
   if (sub === 'entry') rep.edit = 'editEntry';
-  if (mod === 'sales' && /^(receipts|orders|item)$/.test(sub)) pre += searchBox(sub === 'orders' ? 'Утас, нэр, бараагаар хайх…' : sub === 'item' ? 'Барааны нэрээр хайх…' : 'Бараа, ажилтан, ДДТД-аар хайх…');
+  if (mod === 'sales' && /^(receipts|orders|item|disc)$/.test(sub)) pre += searchBox(sub === 'orders' ? 'Утас, нэр, бараагаар хайх…' : sub === 'item' ? 'Барааны нэрээр хайх…' : 'Бараа, ажилтан, ДДТД-аар хайх…');
   return pre + reportCard(rep, { entry: 'cancelEntry', in: 'cancelMove', expenses: 'cancelRecord', vouchers: 'cancelEntry', catalog: 'openProduct' }[sub]) + post;
 }
 
@@ -1097,7 +1178,7 @@ function reportCard(rep, cancellable) {
   // r._d[багана] — тэр дүн дээр дарахад задрал (finance.js)
   var cell = function (cl, r) { var v = cellVal(cl, r[cl.k]); return r._d && r._d[cl.k] && v ? dl(r._d[cl.k], v) : v; };
   var body = rep.rows.length ? rep.rows.map(function (r) {
-    return '<tr' + (r._b ? ' class="b"' : '') + '>' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n' + (r[cl.k] < 0 ? ' neg' : '') + '"' : '') + '>' + cell(cl, r) + '</td>'; }).join('') +
+    return '<tr' + (r._b ? ' class="b"' : '') + (r._bill ? ' class="clk" onclick="openBillAdm(' + esc(JSON.stringify(r._bill)) + ')"' : '') + '>' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n' + (r[cl.k] < 0 ? ' neg' : '') + '"' : '') + '>' + cell(cl, r) + '</td>'; }).join('') +
       (rep.actions ? '<td class="n">' + (r._act || '') + '</td>' : '') +
       (rep.edit ? '<td class="n">' + (r._id ? '<button class="mini" onclick="' + rep.edit + '(' + esc(JSON.stringify(r._id)) + ')">Засах</button>' : '') + '</td>' : '') +
       (rep.print ? '<td class="n">' + (r._id ? '<button class="mini" style="color:var(--accent)" onclick="printVoucherId(' + esc(JSON.stringify(r._id)) + ')">Хэвлэх</button>' : '') + '</td>' : '') +
@@ -1115,11 +1196,14 @@ function journalCheck(E, f, t) {
   // Борлуулалтын мөр бүр журналд яг нэг удаа, яг ижил дүнгээр орсныг шалгана
   var sales = records.filter(function (x) { return x.biz === state.biz && x.type === 'sale' && x.date >= f && x.date <= t && Number(x.amount); });
   var posted = {};
-  E.forEach(function (e) { if (e.doc === 'Борлуулалт' || e.doc === 'Борлуулалтын буцаалт') posted[e.ref] = (posted[e.ref] || 0) + e.amount; });
+  var SD = { 'Борлуулалт': 1, 'Борлуулалтын буцаалт': 1, 'Борлуулалтын хөнгөлөлт': 1, 'Төлбөр хуваалт': 1 };
+  E.forEach(function (e) { if (SD[e.doc]) posted[e.ref] = (posted[e.ref] || 0) + e.amount; });
   var miss = sales.filter(function (x) { return Math.abs((posted[x.id] || 0) - Math.abs(Number(x.amount))) > 0.5; });
   var sAmt = sales.reduce(function (a, x) { return a + Number(x.amount); }, 0);
   var rev = 0;   // зөвхөн борлуулалтын бичлэгээс үүссэн орлого (гараар/банкаар бичсэн 5101-ийг тооцохгүй)
-  E.forEach(function (e) { if (e.date >= f && e.date <= t) { if (e.doc === 'Борлуулалт' && e.cr === '5101') rev += e.amount; if (e.doc === 'Борлуулалтын буцаалт' && e.dr === '6001') rev -= e.amount; } });
+  E.forEach(function (e) { if (e.date >= f && e.date <= t) { if (e.doc === 'Борлуулалт' && e.cr === '5101') rev += e.amount; if (e.doc === 'Борлуулалтын буцаалт' && e.dr === '6001') rev -= e.amount;
+    if (e.doc === 'Борлуулалтын хөнгөлөлт') rev += e.dr === '6001' ? -e.amount : e.amount;
+    if (e.doc === 'Төлбөр хуваалт') rev += e.cr === '5101' ? e.amount : -e.amount; } });
   var exps = records.filter(function (x) { return x.biz === state.biz && x.type === 'expense' && x.date >= f && x.date <= t && Number(x.amount); });
   var eMiss = exps.filter(function (x) { return !E.some(function (e) { return e.ref === x.id; }); });
   var tb = repTrial(E, f, t), bs = repBalance(E, t);

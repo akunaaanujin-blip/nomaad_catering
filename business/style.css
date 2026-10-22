@@ -1044,3 +1044,61 @@ body:not(.bz-admin) .pos-foot .btn:disabled{opacity:.6}
 .sp-acts{display:flex;gap:8px;margin-top:10px}
 .sp-spin{width:36px;height:36px;border-radius:50%;border:3px solid #E5E7EB;border-top-color:#6A5ADF;animation:spspin .8s linear infinite;margin-bottom:6px}
 @keyframes spspin{to{transform:rotate(360deg)}}
+/* ── Касс: хөнгөлөлт, утас, хуваан төлөх, түр хадгалах, баримт ── */
+.pos-head{gap:10px}.pos-head h2{margin-right:auto}
+.pos-head-acts{display:flex;gap:6px}
+.pos-extra{padding:10px 18px;border-top:1px solid #E5E7EB;display:flex;flex-direction:column;gap:8px}
+.pe-row{display:grid;grid-template-columns:120px 1fr;align-items:center;gap:8px}
+.pe-row label{margin:0;font-size:13px}
+.pe-row input{padding:8px 10px;font-size:14.5px;border-radius:9px}
+.pe-disc{display:flex;gap:6px}.pe-disc input{flex:1;text-align:right}
+.pe-u{display:flex;border:1px solid #E5E7EB;border-radius:9px;overflow:hidden}
+.pe-u button{border:0;background:#fff;padding:0 12px;font:inherit;font-weight:700;color:#6B7280;cursor:pointer}
+.pe-u button.on{background:#111827;color:#fff}
+.pe-hint{display:block;font-size:12.5px;color:#6B7280;min-height:15px;margin-top:-4px;padding-left:128px}
+.pe-split{display:flex;align-items:center;gap:6px;margin:10px 0 0;font-size:13px;font-weight:600;color:#374151;cursor:pointer}
+.pe-split input{width:auto;accent-color:#6A5ADF}
+.pe-split-w{display:grid;grid-template-columns:120px 1fr;gap:6px;margin-top:6px}
+.pe-split-w select,.pe-split-w input{padding:8px 10px;font-size:14px;border-radius:9px}
+.pe-split-w .pe-hint{grid-column:1/-1;padding-left:0;margin-top:0}
+.pos-sub{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 10px;font-size:13px;color:#4B5563;margin-bottom:4px}
+.pos-sub .neg{color:#B91C1C}
+.park-box{max-width:460px;text-align:left;align-items:stretch}
+.park-l{list-style:none;margin:6px 0 0;padding:0;max-height:50vh;overflow:auto}
+.park-l li{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #F0F1F3}
+.park-l li span:first-child{min-width:0}.park-l small{display:block;color:#6B7280}
+.park-a{display:flex;gap:6px;flex:none}
+.list li.bill-row{cursor:pointer}
+.list li.bill-row:hover{background:#FAFAFF}
+.bill-panel{max-width:520px}
+.bill-h{display:flex;justify-content:space-between;align-items:center}
+.bill-meta{font-size:13px;margin:4px 0 10px}
+.bill-t{width:100%;border-collapse:collapse;font-size:14px}
+.bill-t td{padding:8px 4px;border-bottom:1px solid #F0F1F3;vertical-align:top}
+.bill-t td small{display:block;color:#B45309;font-size:12px}
+.bill-t .n{text-align:right;white-space:nowrap}
+.bill-t tr.sub td{color:#4B5563}.bill-t .neg{color:#B91C1C}
+.bill-t tr.tot td{font-weight:800;font-size:16px;border-bottom:0}
+.bill-pay{font-size:13px;margin:8px 0}
+.bill-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ret-box{border:1px solid #E5E7EB;border-radius:12px;padding:12px;margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.ret-l{display:grid;grid-template-columns:auto 1fr 80px auto;gap:8px;align-items:center;margin:0;font-weight:400}
+.ret-l input[type=checkbox]{width:auto;accent-color:#6A5ADF}.ret-l input[type=number]{padding:6px;font-size:14px;text-align:right}
+.ret-box label{margin:6px 0 0}
+@media(max-width:820px){.pe-row{grid-template-columns:100px 1fr}.pe-hint{padding-left:108px}.pos-head-acts .btn{padding:6px 10px;font-size:12.5px}}
+/* ── Удирдлага · Борлуулалтын тойм ── */
+.sx-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.sx-k{background:#fff;border:1px solid #E3E5E9;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.sx-k span{font-size:12.5px;color:#6B7280;font-weight:600}
+.sx-k b{font-size:22px;font-weight:800;color:#111827;letter-spacing:-.01em}
+.sx-k em{font-style:normal;font-size:12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.dlt{font-weight:700;border-radius:999px;padding:1px 7px;font-size:11.5px}
+.dlt.up{background:#DCFCE7;color:#15803D}.dlt.dn{background:#FEE2E2;color:#B91C1C}
+.sx-ch{margin-bottom:14px}
+.tg-card .tg-bar{position:relative;height:10px;background:#EEF0F4;border-radius:999px;overflow:visible;margin:10px 0 4px}
+.tg-card .tg-bar i{position:absolute;left:0;top:0;bottom:0;background:#3B6FB6;border-radius:999px}
+.tg-card .tg-bar u{position:absolute;top:-3px;bottom:-3px;width:2px;background:#111827;opacity:.5}
+.tg-st{margin-top:10px}.tg-st td{vertical-align:middle}.tg-st .tg-bar{margin:4px 0 2px;height:6px}
+tr.clk{cursor:pointer}tr.clk:hover td{background:#F7F9FC}
+.sx-rec td{vertical-align:top}
+@media(max-width:900px){.sx-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}

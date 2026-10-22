@@ -3,6 +3,13 @@
 // Захиалгын хүргэлтийн төлбөр — борлуулалтын тусдаа мөр (орлого), бараа биш тул үлдэгдэл/өртөгт орохгүй
 var FEE_ITEM = 'Хүргэлтийн төлбөр', FEE_DEFAULT = 7000;
 function isFee(name) { return String(name || '').replace(/ \(буцаалт\)$/, '') === FEE_ITEM; }
+// Баримтын тусгай мөрүүд: хөнгөлөлт (хасах дүн) ба төлбөр хуваалт (нэг хэлбэрээс нөгөө рүү) — бараа биш, тайлангийн «бараа»-нд орохгүй
+var DISC_ITEM = 'Хөнгөлөлт', SPLIT_ITEM = 'Төлбөр хуваалт';
+function baseItem(name) { return String(name || '').replace(/ \(буцаалт\)$/, ''); }
+function isAdj(name) { var b = baseItem(name); return b === DISC_ITEM || b === SPLIT_ITEM; }
+function isNonGoods(name) { return isFee(name) || isAdj(name); }   // үлдэгдэл, өртөгт орохгүй
+// Баримтын түлхүүр: bill → ДДТД → мөрийн ID
+function billKey(x) { return x.bill || (String(x.note || '').match(/ДДТД (\d+)/) || [])[1] || x.id; }
 // Цуцалсан (буухиад өгөхөөс өмнө) ба Буцаасан (хүргэлтээс буцсан) — аль аль нь идэвхгүй захиалга
 function ordDead(o) { return o.status === 'Цуцалсан' || o.status === 'Буцаасан'; }
 
