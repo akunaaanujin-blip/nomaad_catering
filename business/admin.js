@@ -1142,7 +1142,7 @@ function reqSetStatus(id, status, ref) {
 function countsView() {
   var list = pendCounts(state.biz).slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
   return '<p class="hint">Ажилтны тоолсон тоо системийнхээс зөрсөн бараа. «Батлах» дарвал зөрүүгээр үлдэгдэл засагдана (дутсан бол хорогдолд орно), «Татгалзах» бол юу ч өөрчлөгдөхгүй.</p>' +
-    '<div class="card"><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Ажилтан</th><th>Байршил</th><th>Бараа</th><th>Тоолсон / систем</th><th class="n">Зөрүү</th><th></th></tr>' +
+    '<div class="card"><div class="scroll"><table class="rep-t"><tr><th>Тоолсон цаг</th><th>Тоолсон хүн</th><th>Байршил</th><th>Бараа</th><th>Тоолсон / систем</th><th class="n">Зөрүү</th><th></th></tr>' +
     (list.length ? list.map(function (m) {
       return '<tr><td>' + esc(String(m.date).slice(5)) + '</td><td>' + esc(m.by || '') + '</td><td>' + esc(m.loc || '') + '</td><td>' + esc(m.item) + '</td><td>' + esc(m.note || '') + '</td>' +
         '<td class="n"><b class="' + (m.qty < 0 ? 'neg' : '') + '">' + (m.qty > 0 ? '+' : '') + m.qty + '</b></td><td class="n" style="white-space:nowrap">' +

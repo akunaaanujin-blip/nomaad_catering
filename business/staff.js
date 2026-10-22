@@ -859,21 +859,42 @@ function renderCount() {
 }
 function cntNote() { var n = Object.keys(cntVals).filter(function (k) { return cntVals[k] !== ''; }).length, el = $('cntN'); if (el) el.textContent = n ? n + ' бараа тоолсон' : ''; }
 function submitCount() {
-  var items = Object.keys(cntVals).filter(function (k) { return cntVals[k] !== '' && isFinite(Number(cntVals[k])) && Number(cntVals[k]) >= 0; })
-    .map(function (k) { return { item: k, counted: Number(cntVals[k]) }; });
+  var items = cntItems();
   if (!items.length) { toast('Тоолсон тоогоо оруулна уу'); return; }
-  var loc = $('cntLoc') ? $('cntLoc').value : 'Дэлгүүр';
-  if (!confirm(items.length + ' барааны тооллогыг (' + loc + ') илгээх үү?')) return;
-  var done = function (msg) { cntVals = {}; renderCount(); toast(msg); };
+  var loc = $('cntLoc') ? $('cntLoc').value : 'Дэлгүүр', now = new Date();
+  if (!$('cntSheet')) document.body.insertAdjacentHTML('beforeend', '<div class="sheet" id="cntSheet" onclick="if(event.target===this)closeSheet(\'cntSheet\')"><div class="panel">' +
+    '<h2>Тооллого илгээх</h2><p class="muted" id="cntSum"></p>' +
+    '<label for="cntWho">Тоолсон хүний нэр *</label><input id="cntWho" placeholder="Жишээ: Болд, Сараа">' +
+    '<label for="cntWhen">Тоолсон огноо, цаг *</label><input id="cntWhen" type="datetime-local">' +
+    '<p class="muted" style="margin-top:8px;font-size:13px">Тоолсон цагаас хойших борлуулалтыг сервер тооцож зөрүүг гаргана.</p>' +
+    '<button class="btn" onclick="sendCount()">Илгээх</button><button class="btn ghost" onclick="closeSheet(\'cntSheet\')">Болих</button></div></div>');
+  $('cntSum').textContent = items.length + ' бараа · ' + loc;
+  if (!$('cntWho').value) $('cntWho').value = staffName || '';
+  $('cntWhen').value = todayStr(now) + 'T' + timeStr(now);
+  $('cntWhen').max = $('cntWhen').value;
+  openSheet('cntSheet');
+}
+function cntItems() {
+  return Object.keys(cntVals).filter(function (k) { return cntVals[k] !== '' && isFinite(Number(cntVals[k])) && Number(cntVals[k]) >= 0; })
+    .map(function (k) { return { item: k, counted: Number(cntVals[k]) }; });
+}
+function sendCount() {
+  var items = cntItems(), loc = $('cntLoc') ? $('cntLoc').value : 'Дэлгүүр';
+  var who = $('cntWho').value.trim(), when = String($('cntWhen').value || '').replace('T', ' ').slice(0, 16), now = todayStr() + ' ' + timeStr();
+  if (!who) { toast('Тоолсон хүний нэрийг бичнэ үү'); $('cntWho').focus(); return; }
+  if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(when)) { toast('Тоолсон огноо, цагаа оруулна уу'); return; }
+  if (when > now) { toast('Ирээдүйн цаг байж болохгүй'); return; }
+  if (when < todayStr(new Date(Date.now() - 7 * 864e5))) { toast('7 хоногоос өмнөх тооллогыг илгээх боломжгүй'); return; }
+  var done = function (msg) { cntVals = {}; closeSheet('cntSheet'); renderCount(); toast(msg); };
   if (!API_URL) {   // туршилтын горим: удирдлагын хуудсанд «Хүлээгдэж» болж харагдана
-    var st = stock || {}, k = loc === 'Агуулах' ? 'wh' : 'shop', all = load('nb_demo_counts', []), now = todayStr() + ' ' + timeStr(), diffN = 0;
+    var st = stock || {}, k = loc === 'Агуулах' ? 'wh' : 'shop', all = load('nb_demo_counts', []), diffN = 0;
     items.forEach(function (x, i) { var sys = (st[x.item] || {})[k] || 0, d = Math.round((x.counted - sys) * 1000) / 1000; if (!d) return; diffN++;
-      all.push({ id: 'M' + Date.now() + '-c' + i, date: now, loc: loc, item: x.item, kind: 'Тооллого', qty: d, by: staffName, note: 'Тоолсон ' + x.counted + ', системд ' + sys, biz: BIZ_KEY, status: 'Хүлээгдэж' }); });
+      all.push({ id: 'M' + Date.now() + '-c' + i, date: when, loc: loc, item: x.item, kind: 'Тооллого', qty: d, by: who, note: 'Тоолсон ' + x.counted + ', системд ' + sys + ' · илгээсэн ' + staffName, biz: BIZ_KEY, status: 'Хүлээгдэж' }); });
     save('nb_demo_counts', all); done(diffN ? 'Илгээгдлээ — ' + diffN + ' бараанд зөрүүтэй, удирдлага батална' : 'Зөрүүгүй — бүх тоо таарч байна'); return;
   }
-  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'stock_count', token: session ? session.token : '', loc: loc, items: items }) })
+  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'stock_count', token: session ? session.token : '', loc: loc, items: items, counter: who, at: when }) })
     .then(function (r) { return r.json(); }).then(function (d) {
-      if (!d || d.status !== 'ok') { toast(d && d.error === 'auth' ? 'Дахин нэвтэрнэ үү' : 'Илгээж чадсангүй — дахин оролдоно уу'); return; }
+      if (!d || d.status !== 'ok') { toast(d && d.error === 'auth' ? 'Дахин нэвтэрнэ үү' : d && d.error === 'time' ? 'Тоолсон цаг буруу байна' : 'Илгээж чадсангүй — дахин оролдоно уу'); return; }
       done(d.diff ? 'Илгээгдлээ — ' + d.diff + ' бараанд зөрүүтэй, удирдлага батална' : 'Зөрүүгүй — бүх тоо таарч байна');
     }).catch(function () { toast('Интернэт холболтоо шалгана уу — илгээгдсэнгүй'); });
 }
