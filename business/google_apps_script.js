@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v5.4 (ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v5.5 (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -1758,17 +1758,32 @@ function staffRequests(d) {
 function stockCount(d) {
   const who = checkStaff(d.token);
   if (!who) return { status: 'error', error: 'auth' };
-  const biz = who.biz, loc = STOCK_LOCS[d.loc] ? d.loc : 'Дэлгүүр', items = d.items || [];
-  if (!BIZ_NAMES[biz] || !items.length || items.length > 1000) return { status: 'error', error: 'fields' };
-  const st = stockAll()[biz] || {}, k = loc === 'Агуулах' ? 'wh' : 'shop', now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), rows = [];
+  const biz = who.biz, loc = STOCK_LOCS[d.loc] ? d.loc : 'Дэлгүүр', items = d.items || [], counter = String(d.counter || '').trim().slice(0, 40);
+  if (!BIZ_NAMES[biz] || !items.length || items.length > 1000 || !counter) return { status: 'error', error: 'fields' };
+  const now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), at = String(d.at || '');
+  const week = Utilities.formatDate(new Date(Date.now() - 7 * 864e5), TZ, 'yyyy-MM-dd');
+  if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(at) || at > now || at < week) return { status: 'error', error: 'time' };
+  // Тоолсон цаг дахь системийн тоо = одоогийн тоо + тэр цагаас хойш зарагдсан − тэр цагаас хойш орсон (хөдөлгөөн)
+  const st = stockAll()[biz] || {}, k = loc === 'Агуулах' ? 'wh' : 'shop', after = {};
+  stockMoves().forEach(function (m) { if (m.biz === biz && m.loc === loc && m.date > at) after[m.item] = (after[m.item] || 0) - m.qty; });
+  if (loc === 'Дэлгүүр') {
+    const sh0 = logSheet(), l0 = sh0.getLastRow();
+    if (l0 >= 2) sh0.getRange(2, 1, l0 - 1, LOG_HEAD.length).getValues().forEach(function (v) {
+      if (String(v[15]) !== biz || String(v[16]) !== 'sale' || String(v[18]) === 'Устгасан') return;
+      if (fmtDate(v[1], 'yyyy-MM-dd') + ' ' + fmtDate(v[2], 'HH:mm') <= at) return;
+      const item = String(v[6]).replace(/ \(буцаалт\)$/, '').trim();
+      after[item] = (after[item] || 0) + (Number(v[7]) || 0);
+    });
+  }
+  const rows = [];
   let same = 0;
   items.forEach(function (x, i) {
     const name = String(x.item || '').trim().slice(0, 80), cnt = Number(x.counted);
     if (!name || !isFinite(cnt) || cnt < 0) return;
-    const sys = Math.round((((st[name] || {})[k]) || 0) * 1000) / 1000, diff = Math.round((cnt - sys) * 1000) / 1000;
+    const sys = Math.round(((((st[name] || {})[k]) || 0) + (after[name] || 0)) * 1000) / 1000, diff = Math.round((cnt - sys) * 1000) / 1000;
     if (!diff) { same++; return; }
-    rows.push(['M' + Date.now() + '-c' + i, now, BIZ_NAMES[biz], loc, name, 'Тооллого', diff, '', who.staff.name,
-               ('Тоолсон ' + cnt + ', системд ' + sys + (d.note ? ' · ' + String(d.note).slice(0, 60) : '')).slice(0, 120), biz, '', '', 'Хүлээгдэж', '', '', '', '', '', '']);
+    rows.push(['M' + Date.now() + '-c' + i, at, BIZ_NAMES[biz], loc, name, 'Тооллого', diff, '', counter,
+               ('Тоолсон ' + cnt + ', системд ' + sys + ' · илгээсэн ' + who.staff.name).slice(0, 120), biz, '', '', 'Хүлээгдэж', '', '', '', '', '', '']);
   });
   if (rows.length) { const sh = stockSheet(); sh.getRange(sh.getLastRow() + 1, 1, rows.length, STOCK_HEAD.length).setValues(rows); }
   return { status: 'ok', diff: rows.length, same: same };
