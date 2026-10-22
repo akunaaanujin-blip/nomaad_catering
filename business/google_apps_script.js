@@ -1592,3 +1592,9 @@ function selfTest() {
   Logger.log('ТОКЕН ' + (ok && !fake && !none ? 'OK' : 'АЛДАА') + ' (зөв=' + ok + ', хуурамч=' + fake + ', хоосон=' + none + ')');
 }
 function setup() { logSheet(); prodSheet(); staffSheet(); salarySheet(); stockSheet(); journalSheet(); partnerSheet(); orderSheet(); bankSheet(); taskSheet(); remindSheet(); loanSheet(); poSheet(); }
+// Нэг удаа ажиллуулна: бүх хуудсанд «Show a warning» хамгаалалт (гараар засахад анхааруулга, скрипт хэвийн бичнэ)
+function protectAllSheets() {
+  SpreadsheetApp.openById(SHEET_ID).getSheets().forEach(function (sh) {
+    if (!sh.getProtections(SpreadsheetApp.ProtectionType.SHEET).length) sh.protect().setDescription('NOMAAD систем').setWarningOnly(true);
+  });
+}
