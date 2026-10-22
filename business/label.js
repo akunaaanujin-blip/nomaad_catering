@@ -22,7 +22,17 @@ function niimConnect(cb) {
   });
 }
 function niimDisconnect() { try { niim.client && niim.client.disconnect(); } catch (e) {} niim.client = null; lblStatus(); }
+// Принтер холбогдоогүй үед «шошго хэвлэх» чагтын хажууд сануулна
+function lblWarn() {
+  [].forEach.call(document.querySelectorAll('.lbl-warn'), function (w) {
+    var cb = w.parentNode.querySelector('input[type=checkbox]');
+    w.textContent = cb && cb.checked && !niimOn() ? '· принтер холбогдоогүй — хадгалахад холбох цонх гарна' : '';
+    w.classList.toggle('warn', !!(cb && cb.checked && !niimOn()));
+  });
+}
 function lblStatus() {
+  [].forEach.call(document.querySelectorAll('.lbl-conn'), function (b) { b.textContent = niimOn() ? 'Принтер ✓' : 'Принтер холбох'; b.classList.toggle('on', niimOn()); });
+  lblWarn();
   var b = $('lblConnBtn'); if (b) { b.textContent = niimOn() ? 'Принтер: ' + (niim.model || 'B1') + ' ✓' : 'Принтер холбох'; b.classList.toggle('on', niimOn()); }
   var s = $('lblState'); if (s) s.textContent = niimOn() ? 'Холбогдсон: ' + (niim.model || 'B1') : 'Холбогдоогүй';
 }

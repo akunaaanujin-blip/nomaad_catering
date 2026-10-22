@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261022j">
+<link rel="stylesheet" href="style.css?v=20261022k">
 </head>
 <body>
 <div class="demo" id="demo" style="display:none">Туршилтын горим — мэдээлэл зөвхөн энэ төхөөрөмжид хадгалагдаж байна</div>
@@ -105,7 +105,7 @@
             <button data-v="StorePay" onclick="setPay('StorePay')" style="display:none">StorePay</button>
           </div>
           <label class="pe-split" id="saleSplitLbl"><input type="checkbox" id="saleSplitOn" onchange="splitToggle()"> Хуваан төлөх</label>
-          <div id="saleSplitWrap" class="pe-split-w" style="display:none"><select id="saleSplitPay" onchange="calcSale()"><option>Карт</option><option>Шилжүүлэг</option><option>Бэлэн</option></select><input id="saleSplitAmt" type="number" inputmode="numeric" min="0" placeholder="Энэ хэлбэрээр төлөх дүн" oninput="calcSale()"><small id="saleSplitInfo" class="pe-hint"></small></div>
+          <div id="saleSplitWrap" class="pe-split-w" style="display:none"><select id="saleSplitP1" onchange="setPay(this.value)"><option>Бэлэн</option><option>Карт</option><option>Шилжүүлэг</option></select><input id="saleSplitAmt" type="number" inputmode="numeric" min="0" placeholder="Дүн" oninput="calcSale()"><select id="saleSplitPay" onchange="calcSale()"><option>Карт</option><option>Шилжүүлэг</option><option>Бэлэн</option></select><b id="saleSplitA2" class="sp-a2">₮0</b><small id="saleSplitInfo" class="pe-hint"></small></div>
           <div id="saleSpWrap" class="pos-sp" style="display:none">
             <label for="saleSpPhone">Хэрэглэгчийн StorePay утас *</label>
             <div class="sp-row"><input id="saleSpPhone" inputmode="tel" maxlength="12" placeholder="99112233"><button class="btn sm ghost2" onclick="spLimit()">Лимит шалгах</button></div>
@@ -214,12 +214,12 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="products.js?v=20261022j"></script>
-<script src="config.js?v=20261022j"></script>
-<script src="common.js?v=20261022j"></script>
+<script src="products.js?v=20261022k"></script>
+<script src="config.js?v=20261022k"></script>
+<script src="common.js?v=20261022k"></script>
 <script>var BIZ_KEY = 'meat';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261022j"></script>
-<script src="ebarimt.js?v=20261022j"></script>
+<script src="staff.js?v=20261022k"></script>
+<script src="ebarimt.js?v=20261022k"></script>
 </body>
 </html>

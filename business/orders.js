@@ -163,6 +163,7 @@ function openOrder(id) {
   $('orStatus').value = o ? o.status || 'Шинэ' : 'Шинэ'; $('orNote').value = o ? o.note || '' : '';
   $('orStatusWrap').style.display = o ? 'block' : 'none';
   if ($('orPrint')) $('orPrint').checked = typeof lblAuto === 'function' && lblAuto();
+  if (typeof lblWarn === 'function') lblWarn();
   $('orChips').innerHTML = products.map(function (p, i) { return '<button class="chip" onclick="ordAdd(' + i + ')">' + esc(p.name) + (p.price ? ' <small>' + fmt(p.price) + '</small>' : '') + '</button>'; }).join('');
   renderOrdCart();
   openSheet('orderSheet');

@@ -1126,3 +1126,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:#F7F9FC}
 .pos-dlv .d-lbl{margin:2px 0 0;font-size:13px}
 .d-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 .d-row3 label{margin:0;font-size:12px;display:flex;flex-direction:column;gap:3px}
+.pe-split-w{grid-template-columns:110px 1fr}
+.pe-split-w .sp-a2{align-self:center;font-size:15px;padding-left:4px}
+#paySeg button.off{opacity:.45}
+.lbl-warn.warn{color:#B45309!important;font-weight:600}
+.lbl-conn.on{color:#15803D;border-color:#BBF7D0}

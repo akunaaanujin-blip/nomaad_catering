@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261022j">
+<link rel="stylesheet" href="style.css?v=20261022k">
 </head>
 <body>
 <div class="demo" id="demo" style="display:none">Туршилтын горим — мэдээлэл зөвхөн энэ төхөөрөмжид хадгалагдаж байна</div>
@@ -43,7 +43,7 @@
       <button class="big close" onclick="openClose()"><span></span>Өдрийн касс хаах</button>
     </div>
     <div class="card">
-      <div class="ord-bar"><button class="btn sm" onclick="openSale('dlv')">＋ Захиалга</button><button class="btn sm ghost2" onclick="openBuuhia()">Буухиа Excel</button><button class="link" onclick="loadOrders()">Шинэчлэх</button></div>
+      <div class="ord-bar"><button class="btn sm" onclick="openSale('dlv')">＋ Захиалга</button><button class="btn sm ghost2" onclick="openBuuhia()">Буухиа Excel</button><button class="btn sm ghost2 lbl-conn" onclick="niimOn()?niimDisconnect():niimConnect()">Принтер холбох</button><button class="link" onclick="loadOrders()">Шинэчлэх</button></div>
       <div class="tabs ord-tabs" id="orderTabs" style="margin-top:8px"></div>
       <input id="ordSearch" type="search" placeholder="Утас, нэр, хаяг, бараагаар хайх…" oninput="ordQ=this.value;renderOrders()" style="margin-top:8px">
       <div id="orderList" style="margin-top:8px"></div>
@@ -113,7 +113,7 @@
     </div>
     <div id="orStatusWrap"><label for="orStatus">Хүргэлтийн төлөв</label><select id="orStatus"><option>Шинэ</option><option>Буухиад өгсөн</option><option>Хүргэгдсэн</option><option>Буцаасан</option><option>Цуцалсан</option></select></div>
     <label for="orNote">Тэмдэглэл (хүргэлтийн тайлбар)</label><input id="orNote" placeholder="Жишээ: ажлын цагаар залгаад хүргэх">
-    <label class="or-print"><input type="checkbox" id="orPrint"> Хадгалаад шошго хэвлэх <small class="muted">(Niimbot B1)</small></label>
+    <label class="or-print"><input type="checkbox" id="orPrint" onchange="lblWarn()"> Хадгалаад шошго хэвлэх <small class="muted lbl-warn"></small></label>
     <button class="btn" onclick="submitOrder()">Хадгалах</button>
     <button class="btn ghost" onclick="closeSheet('orderSheet')">Болих</button>
   </div>
@@ -164,7 +164,7 @@
             <button data-v="StorePay" onclick="setPay('StorePay')" style="display:none">StorePay</button>
           </div>
           <label class="pe-split" id="saleSplitLbl"><input type="checkbox" id="saleSplitOn" onchange="splitToggle()"> Хуваан төлөх</label>
-          <div id="saleSplitWrap" class="pe-split-w" style="display:none"><select id="saleSplitPay" onchange="calcSale()"><option>Карт</option><option>Шилжүүлэг</option><option>Бэлэн</option></select><input id="saleSplitAmt" type="number" inputmode="numeric" min="0" placeholder="Энэ хэлбэрээр төлөх дүн" oninput="calcSale()"><small id="saleSplitInfo" class="pe-hint"></small></div>
+          <div id="saleSplitWrap" class="pe-split-w" style="display:none"><select id="saleSplitP1" onchange="setPay(this.value)"><option>Бэлэн</option><option>Карт</option><option>Шилжүүлэг</option></select><input id="saleSplitAmt" type="number" inputmode="numeric" min="0" placeholder="Дүн" oninput="calcSale()"><select id="saleSplitPay" onchange="calcSale()"><option>Карт</option><option>Шилжүүлэг</option><option>Бэлэн</option></select><b id="saleSplitA2" class="sp-a2">₮0</b><small id="saleSplitInfo" class="pe-hint"></small></div>
           <div id="saleSpWrap" class="pos-sp" style="display:none">
             <label for="saleSpPhone">Хэрэглэгчийн StorePay утас *</label>
             <div class="sp-row"><input id="saleSpPhone" inputmode="tel" maxlength="12" placeholder="99112233"><button class="btn sm ghost2" onclick="spLimit()">Лимит шалгах</button></div>
@@ -273,14 +273,14 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="products.js?v=20261022j"></script>
-<script src="config.js?v=20261022j"></script>
-<script src="common.js?v=20261022j"></script>
+<script src="products.js?v=20261022k"></script>
+<script src="config.js?v=20261022k"></script>
+<script src="common.js?v=20261022k"></script>
 <script>var BIZ_KEY = 'cozy';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261022j"></script>
-<script src="ebarimt.js?v=20261022j"></script>
-<script src="orders.js?v=20261022j"></script>
-<script src="label.js?v=20261022j"></script>
+<script src="staff.js?v=20261022k"></script>
+<script src="ebarimt.js?v=20261022k"></script>
+<script src="orders.js?v=20261022k"></script>
+<script src="label.js?v=20261022k"></script>
 </body>
 </html>
