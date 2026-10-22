@@ -766,6 +766,7 @@ function saveMove() {
   }
   sendMoves(ms, function () { closeSheet('moveSheet'); toast('Бүртгэгдлээ'); });
 }
+var moveSending = false;
 function sendMoves(ms, done) {
   if (!API_URL) {   // туршилтын горим
     ms.forEach(function (m) {
@@ -779,7 +780,10 @@ function sendMoves(ms, done) {
     });
     save('nb_demo_stock', stockData); save('nb_demo_moves', moves); render(); done(); return;
   }
+  if (moveSending) { toast('Хадгалж байна — түр хүлээнэ үү'); return; }   // сервер 2–5 секунд хариулдаг: давхар дарвал орлого давхар бичигдэнэ
+  moveSending = true;
   post({ type: 'admin_stock', by: ownerName, moves: ms }, function (err, d) {
+    moveSending = false;
     if (err === 'negative') { toast('Үлдэгдэл хүрэлцэхгүй: ' + ((d && d.item) || '') + ' — хасах руу оруулах боломжгүй'); return; }
     if (err) { toast('Алдаа: ' + err); return; }
     done(); refresh();
