@@ -870,7 +870,7 @@ function staffPage() {
   var tabs = '<div class="tabs" style="margin-bottom:10px">' + (isOwner() ? [['pay', 'Ажилчид, цалин'], ['att', 'Ирц, ажилласан цаг']] : [['att', 'Ирц, ажилласан цаг']]).map(function (t) {
     return '<button class="' + (tab === t[0] ? 'on' : '') + '" onclick="state.staffTab=\'' + t[0] + '\';render()">' + t[1] + '</button>'; }).join('') + '</div>';
   var acts = '<button class="b-btn primary" onclick="openTask()">+ Даалгавар илгээх</button>' + (isOwner() ? '<a class="b-btn" href="register.html" target="_blank">+ Бүртгүүлэх хуудас</a>' : '');
-  return pageHead('Ажилчид', acts) + tabs + tasksCard() + (tab === 'att' ? attendView() : staffView('') + staffLinks());
+  return pageHead('Ажилчид', acts) + tabs + tasksCard() + (tab === 'att' ? attendView() : staffView('') + staffLinks() + delCodeCard());
 }
 // ── KPI: сарын борлуулалтын % → «KPI бонус» болгон цалинд («Шагнал» — хуучин нэр) ──
 function kpiPct(s) { return Number((window.kpiCfg || {})[s.id]) || 0; }
@@ -905,6 +905,19 @@ function staffLinks() {   // компани бүрийн ажилчдын нэв
     KEYS.map(function (k) { var u = base + k + '.html', r = base + 'register.html?biz=' + k;
       return '<tr><td>' + esc(BUSINESSES[k].name) + '</td><td><a class="link" href="' + u + '" target="_blank">' + esc(u.replace(/^https?:\/\//, '')) + '</a></td>' +
         '<td><a class="link" href="' + r + '" target="_blank">Бүртгүүлэх холбоос</a></td></tr>'; }).join('') + '</table></div>';
+}
+// Цуцалсан захиалгыг бүр устгах код — зөвхөн эзэн тохируулна (Cozy ажилтан захиалга устгахдаа асууна)
+function delCodeCard() {
+  if (!API_URL || !isOwner()) return '';
+  return '<div class="card"><h2>Захиалга устгах код</h2><p class="muted">Цуцалсан захиалгыг бүр устгахад ажилтнаас асуух код (4–12 цифр). Хоосон хадгалбал устгах боломжгүй болно.</p>' +
+    '<div class="filter" style="margin-top:10px"><label>Шинэ код<input type="password" id="delCode" inputmode="numeric" maxlength="12" autocomplete="new-password"></label>' +
+    '<label>&nbsp;<button class="b-btn primary" onclick="saveDelCode()">Хадгалах</button></label></div></div>';
+}
+function saveDelCode() {
+  var v = $('delCode').value.trim();
+  if (v && !/^\d{4,12}$/.test(v)) { toast('Код 4–12 цифр байна'); return; }
+  if (!v && !confirm('Код хоосон — захиалга устгах боломжгүй болно. Үргэлжлүүлэх үү?')) return;
+  post({ type: 'admin_setting', key: 'delcode', value: v }, function (err, d) { if (err) { toast('Алдаа: ' + err); return; } $('delCode').value = ''; toast(d && d.set ? 'Устгах код хадгалагдлаа' : 'Устгах код унтарлаа'); });
 }
 function bizLabel(b) { return b === 'all' ? 'Бүх дэлгүүр' : (BUSINESSES[b] ? BUSINESSES[b].name : b); }
 function pendCard(s) {
