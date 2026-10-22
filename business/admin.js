@@ -20,7 +20,7 @@ var records = [], staff = [], salary = [], stockData = {}, moves = [], journal =
 var BASE_PRODUCTS = {};
 Object.keys(BUSINESSES).forEach(function (k) { BASE_PRODUCTS[k] = BUSINESSES[k].products.slice(); });
 var state = { view: 'companies', biz: '', module: 'sales', period: 'month', staffBiz: 'all', month: todayStr().slice(0, 7), q: '', stockF: 'in', showMoves: false,
-  sub: { sales: 'overview', products: 'stock', finance: 'simple' }, from: todayStr().slice(0, 8) + '01', to: todayStr(), acc: '10003' };
+  sub: { sales: 'receipts', products: 'stock', finance: 'simple' }, from: todayStr().slice(0, 8) + '01', to: todayStr(), acc: '10003' };
 var editId = '', salId = '', salKind = 'Урьдчилгаа';
 var NAV = { idx: 0, key: '', restoring: false };   // дэлгэцийн түүх (← Буцах)
 
@@ -256,7 +256,7 @@ function bizModules(biz) { return BUSINESSES[biz] && BUSINESSES[biz].finOnly ? M
 function openMgmt() { state.view = 'company'; state.biz = 'mgmt'; state.module = 'finance'; render(); window.scrollTo(0, 0); }
 // Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
 var MENU = {
-  sales: [['Өдөр тутам', ['overview', 'boost', 'receipts', 'orders']], ['Тайлан', ['item', 'cat', 'staff', 'day', 'pay', 'disc', 'slow']], ['И-баримт', ['ebarimt']]],
+  sales: [['Өдөр тутам', ['receipts', 'orders', 'boost']], ['Тайлан', ['item', 'cat', 'staff', 'day', 'pay', 'disc', 'slow']], ['И-баримт', ['ebarimt']]],
   products: [['Бараа материал', ['catalog', 'stock', 'in', 'po']], ['Тайлан', ['move', 'prices']], ['Харилцагч', ['suppliers']]],
   // Санхүү — цөөн, ойлгомжтой цэс. Нягтлангийн тайлан, тохиргоо нь тус бүр нэг хуудсанд цуглуулагдсан (finance.js HUBS)
   finance: [['Үр дүн', ['simple', 'months', 'profit']], ['Мөнгө', ['money', 'bank', 'vouchers']], ['Өр, авлага', ['debts', 'loans']], ['Цалин', ['payroll']],
@@ -354,7 +354,7 @@ function mgmtCard() {
 function companyView() {
   if (BUSINESSES[state.biz] && BUSINESSES[state.biz].finOnly && state.module !== 'finance') state.module = 'finance';
   var mod = state.module;
-  if (MENU[mod] && !subVisible(state.biz, state.sub[mod])) {   // компани солиход хамааралгүй хуудас үлдэхгүй — эхний харагдах хуудас
+  if (MENU[mod] && (!subVisible(state.biz, state.sub[mod]) || !hubOf(state.sub[mod]) && !(SUBS[mod] || []).some(function (x) { return x[0] === state.sub[mod]; }))) {   // хассан хуудас (хуучин түүхээс) үлдэхгүй   // компани солиход хамааралгүй хуудас үлдэхгүй — эхний харагдах хуудас
     var first = []; MENU[mod].forEach(function (g) { g[1].forEach(function (k) { if (subVisible(state.biz, k)) first.push(k); }); });
     state.sub[mod] = first[0] || MENU[mod][0][1][0];
   }
@@ -398,112 +398,8 @@ function periodBar() {
 }
 
 // Борлуулалт
-function orderReminder(biz) {   // доод үлдэгдлээс бага болсон бараа (Бараа захиалга хуудсанд тохируулна)
-  if (!BUSINESSES[biz] || BUSINESSES[biz].finOnly) return '';
-  var need = needList(biz); if (!need.length) return '';
-  var names = need.slice(0, 6).map(function (r) { return r.name; }).join(', ') + (need.length > 6 ? ' … (+' + (need.length - 6) + ')' : '');
-  return '<div class="alert"><div><b>Захиалах бараа: ' + need.length + '</b> — ' + esc(names) + '</div>' +
-    '<div class="pg-act"><button class="b-btn primary" onclick="openModule(\'products\');setSub(\'po\')">Бараа захиалга</button></div></div>';
-}
-// Тойм: 4 гол тоо (өмнөх үетэй харьцуулсан), зорилт, график, сүүлийн баримтууд — ойлгомжтой, цөөн
-function prevRange() {
-  var r = range(), a = new Date(r[0] + 'T00:00:00'), b = new Date(r[1] + 'T00:00:00'), n = Math.round((b - a) / 864e5) + 1;
-  return [todayStr(new Date(a - n * 864e5)), todayStr(new Date(a - 864e5))];
-}
-function salesStats(biz, from, to) {
-  var list = records.filter(function (x) { return x.biz === biz && x.type === 'sale' && x.date >= from && x.date <= to; });
-  var bills = groupBills(list).filter(function (o) { return o.gross > 0; }), net = list.reduce(function (a, x) { return a + (Number(x.amount) || 0); }, 0);
-  var ce = costEngine(biz, R()), cogs = 0, tracked = !!ce.since;
-  list.forEach(function (x) { cogs += Number(ce.rec[x.id] || 0); });
-  return { net: net, n: bills.length, avg: bills.length ? net / bills.length : 0, cogs: cogs, profit: tracked ? net - cogs : null, list: list, bills: bills };
-}
-function deltaTag(cur, prev) {
-  if (!prev) return cur ? '<span class="dlt up">шинэ</span>' : '';
-  var p = Math.round((cur - prev) / Math.abs(prev) * 100);
-  return '<span class="dlt ' + (p >= 0 ? 'up' : 'dn') + '">' + (p >= 0 ? '▲ ' : '▼ ') + Math.abs(p) + '%</span>';
-}
-function salesModule() {
-  var biz = state.biz, r = range(), pr = prevRange(), A = salesStats(biz, r[0], r[1]), P = salesStats(biz, pr[0], pr[1]);
-  var cmp = '<small class="muted">өмнөх ' + pr[0].slice(5) + '–' + pr[1].slice(5) + '</small>';
-  var k = function (label, val, d, sub) { return '<div class="sx-k"><span>' + label + '</span><b>' + val + '</b><em>' + (d || '') + ' ' + (sub || '') + '</em></div>'; };
-  var kp = '<div class="sx-kpis">' +
-    k('Борлуулалт', fmt(A.net), deltaTag(A.net, P.net), cmp) +
-    k('Нийт ашиг', A.profit === null ? '—' : fmt(A.profit), A.profit === null ? '' : deltaTag(A.profit, P.profit || 0), A.profit === null ? '<small class="muted">үлдэгдэл хөтлөөгүй</small>' : '<small class="muted">' + (A.net ? Math.round(A.profit / A.net * 100) : 0) + '% ашиг</small>') +
-    k('Баримт', A.n, deltaTag(A.n, P.n), '') +
-    k('Дундаж чек', fmt(Math.round(A.avg)), deltaTag(A.avg, P.avg), '') + '</div>';
-  // өдрөөр график
-  var days = [], dS = {}, dP = {}, a0 = new Date(r[0] + 'T00:00:00'), a1 = new Date(r[1] + 'T00:00:00');
-  if ((a1 - a0) / 864e5 > 92) a0 = new Date(a1 - 91 * 864e5);
-  for (var d = new Date(a0); d <= a1; d.setDate(d.getDate() + 1)) days.push(todayStr(d));
-  A.list.forEach(function (x) { dS[x.date] = (dS[x.date] || 0) + (Number(x.amount) || 0); });
-  var off = Math.round((new Date(r[0] + 'T00:00:00') - new Date(pr[0] + 'T00:00:00')) / 864e5);
-  P.list.forEach(function (x) { var dd = todayStr(new Date(new Date(x.date + 'T00:00:00').getTime() + off * 864e5)); dP[dd] = (dP[dd] || 0) + (Number(x.amount) || 0); });
-  window.__dash = { days: days.map(function (x) { return x.slice(5); }), sales: days.map(function (x) { return dS[x] || 0; }), exp: days.map(function (x) { return dP[x] || 0; }), expLabel: 'Өмнөх үе',
-    payL: [], payV: [], topL: [], topV: [] };
-  var recent = A.bills.slice().sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; }).slice(0, 10);
-  var rc = '<div class="card"><div class="bar-row"><h2 style="margin:0">Сүүлийн баримтууд</h2><button class="link" onclick="setSub(\'receipts\')">Бүгдийг харах →</button></div>' +
-    '<div class="scroll"><table class="rep-t sx-rec"><tr><th>Цаг</th><th>Бараа</th><th>Ажилтан</th><th>Төлбөр</th><th class="n">Дүн</th></tr>' +
-    (recent.length ? recent.map(function (o) {
-      return '<tr class="clk" onclick="openBillAdm(' + esc(JSON.stringify(o.key)) + ')"><td>' + esc(o.date.slice(5) + ' ' + o.time) + '</td><td>' + esc(o.items.slice(0, 3).join(', ') + (o.items.length > 3 ? ' +' + (o.items.length - 3) : '')) +
-        (o.disc ? ' <small class="muted">· хөнгөлөлт ' + fmt(o.disc) + '</small>' : '') + (o.ret ? ' <small class="neg">· буцаалт ' + fmt(o.ret) + '</small>' : '') + '</td><td>' + esc(o.staff) + '</td><td>' + esc(payText(o.pays)) + '</td><td class="n">' + fmt(o.net) + '</td></tr>';
-    }).join('') : '<tr><td colspan="5" class="muted">Энэ хугацаанд борлуулалт алга</td></tr>') + '</table></div></div>';
-  return orderReminder(biz) + kp + boostCard(biz, r[0], r[1]) + targetCard(biz, A) +
-    '<div class="ch-card sx-ch"><h3>Борлуулалт өдрөөр <small class="muted">— тасархай: өмнөх үе</small></h3><div class="ch-box"><canvas id="chSales"></canvas></div></div>' + rc;
-}
-// ── Boost (тойм дээр): ашигтай / ашиггүй boost, нэмэлт ашиг, цэвэр үр дүн; эзлэх %, нэг захиалгын зардал, явж буй / дуусах, банкны 7205-тай тулгалт ──
-function boVerdictCls(v) { return /^Явж/.test(v) ? 'bo-run' : /\(өртөггүй\)/.test(v) ? 'bo-na' : /^Ашигтай/.test(v) ? 'bo-good' : 'bo-bad'; }
-function boSigned(v) { return v > 0 ? '+' + fmt(v) : v < 0 ? '−' + fmt(-v) : fmt(0); }
-function boostCard(biz, f, t) {
-  if (!BUSINESSES[biz].boost && !records.some(function (x) { return x.biz === biz && x.type === 'boost'; })) return '';
-  // boost тус бүрээр (нэг бараанд дууссан ба явж буй boost тус тусдаа дүгнэгдэнэ)
-  var rep = repBoost(R(), biz, f, t), rows = rep.rows.filter(function (x) { return x._id; }), today = todayStr();
-  var tot = sum(rows, 'boost'), usd = sum(rep.rows.filter(function (x) { return !x._b && !x._id; }), '_usd'), sales = salesStats(biz, f, t).net, ordN = rep.total.orders;
-  var done = rows.filter(function (x) { return !/^Явж/.test(x.verdict); }), good = done.filter(function (x) { return x.net >= 0; }), bad = done.filter(function (x) { return x.net < 0; });
-  var up = sum(done, 'uplift'), net = sum(done, 'net');
-  var live = records.filter(function (x) { return x.biz === biz && x.type === 'boost' && x.date <= today && boostEnd(x) > today; })
-    .map(function (x) { return { item: x.item, left: Math.round((new Date(boostEnd(x) + 'T00:00:00') - new Date(today + 'T00:00:00')) / 864e5) }; });
-  var ending = live.filter(function (l) { return l.left <= 1; });   // өнөөдөр сүүлийн өдөр
-  var bank = J().filter(function (e) { return e.date >= f && e.date <= t; }).reduce(function (a, e) { return a + (e.dr === '7205' ? e.amount : e.cr === '7205' ? -e.amount : 0); }, 0), gap = Math.round(bank - tot);
-  var k = function (label, val, sub, cls) { return '<div class="sx-k' + (cls ? ' ' + cls : '') + '"><span>' + label + '</span><b>' + val + '</b><em>' + (sub || '') + '</em></div>'; };
-  var best = good.slice().sort(function (a, b) { return b.net - a.net; })[0], worst = bad.slice().sort(function (a, b) { return a.net - b.net; })[0];
-  var ord = function (x) { return /^Явж/.test(x.verdict) ? 0 : x.net >= 0 ? 1 : 2; };
-  var list = rows.slice().sort(function (a, b) { return ord(a) - ord(b) || b.net - a.net; }).slice(0, 10);
-  return '<div class="card bo-card"><div class="bar-row"><h2 style="margin:0">Boost-ийн үр дүн</h2><button class="link" onclick="setSub(\'boost\')">Дэлгэрэнгүй →</button></div>' +
-    '<div class="sx-kpis" style="margin:8px 0">' +
-      k('Boost зардал', fmt(tot), usd ? '<small class="muted">$' + usd + '</small>' : '') +
-      k('Нэмэлт ашиг', boSigned(up), '<small class="muted">өмнөх ижил үеэс</small>') +
-      k('Цэвэр үр дүн', boSigned(net), '<small class="muted">нэмэлт ашиг − дууссан boost</small>', done.length ? (net >= 0 ? 'bo-good' : 'bo-bad') : '') +
-      k('Ашигтай / ашиггүй', good.length + ' / ' + bad.length, live.length ? '<small class="muted">' + live.length + ' явж байна</small>' : '') + '</div>' +
-    (best || worst ? '<p class="bo-sum">' + (best ? 'Хамгийн ашигтай: <b>' + esc(best._item) + '</b> (' + boSigned(best.net) + ', зарцуулсан ₮1 тутамд ' + (best.boost ? (Math.round((best.net + best.boost) / best.boost * 10) / 10) : 0) + '₮ нэмэлт ашиг). ' : '') +
-      (worst ? 'Хамгийн их алдагдал: <b>' + esc(worst._item) + '</b> (' + boSigned(worst.net) + ') — дахин boost хийхээс өмнө үнэ, зураг, текстээ эргэж хараарай.' : '') + '</p>' : '') +
-    (ending.length ? '<p class="bo-note bo-run">Өнөөдөр дуусна: <b>' + esc(ending.map(function (l) { return l.item; }).join(', ')) + '</b> — доорх үр дүнгээс харж сунгах эсэхээ шийдээрэй.</p>' : '') +
-    (list.length ? '<div class="scroll"><table class="rep-t bo-t"><tr><th>Бараа</th><th class="n">Boost</th><th class="n">Зарсан (boost / өмнө)</th><th class="n">Нэмэлт ашиг</th><th class="n">Цэвэр үр дүн</th><th class="n">Нэг захиалга</th><th>Дүгнэлт</th></tr>' +
-      list.map(function (x) { var cl = boVerdictCls(x.verdict);
-        return '<tr class="' + cl + '"><td>' + esc(x._item) + '<small class="muted" style="display:block">' + esc(x._from.slice(5) + (x._to > x._from ? ' – ' + x._to.slice(5) : '')) + '</small></td><td class="n">' + fmt(x.boost) + '</td><td class="n">' + x.qty + ' / ' + x.before + '</td><td class="n">' + boSigned(x.uplift) + '</td><td class="n"><b>' + boSigned(x.net) + '</b></td>' +
-          '<td class="n">' + (x.cpo ? fmt(x.cpo) : '—') + '</td><td><span class="bo-tag ' + cl + '">' + esc(x.verdict) + '</span></td></tr>'; }).join('') + '</table></div>'
-      : '<p class="muted" style="font-size:13px">Энэ хугацаанд boost бичигдээгүй байна.</p>') +
-    '<p class="muted" style="font-size:12.5px;margin:8px 0 0">Борлуулалтад эзлэх ' + (sales ? Math.round(tot / sales * 100) + '%' : '—') + ' · нэг захиалгын зардал ' + (ordN ? fmt(Math.round(tot / ordN)) + ' (' + ordN + ' захиалга)' : '—') +
-      (live.length ? ' · явж буй: ' + esc(live.slice(0, 3).map(function (l) { return l.item + ' ' + l.left + ' хоног'; }).join(', ')) : '') + '<br>' +
-      'Банкны хуулгаар (7205) ' + fmt(bank) + ' · ажилтан бичсэн ' + fmt(tot) + (Math.abs(gap) >= 1000 ? ' · <b>зөрүү: ' + (gap > 0 ? 'бичигдээгүй boost ' + fmt(gap) : 'хуулгад ороогүй ' + fmt(-gap)) + '</b>' : ' · таарч байна') +
-      '<br>Нэмэлт ашиг = boost үеийн нийт ашиг − өмнөх ижил олон хоногийн нийт ашиг. «Өртөггүй» — барааны өртөг бүртгэлгүй тул борлуулалтаар тооцсон.</p></div>';
-}
 // ── Борлуулалтын зорилт (сар бүр, дэлгүүр болон ажилтнаар) ──
 function tgtKey(biz, mo) { return biz + '|' + (mo || todayStr().slice(0, 7)); }
-function targetCard(biz, A) {
-  var mo = todayStr().slice(0, 7), T = (window.salesTargets || {})[tgtKey(biz, mo)] || {}, total = Number(T.total) || 0;
-  var sold = records.filter(function (x) { return x.biz === biz && x.type === 'sale' && x.date.slice(0, 7) === mo; });
-  var net = sold.reduce(function (a, x) { return a + (Number(x.amount) || 0); }, 0);
-  var dIn = Number(todayStr().slice(8, 10)), dAll = new Date(Number(mo.slice(0, 4)), Number(mo.slice(5, 7)), 0).getDate();
-  var bar = function (v, t) { var p = t ? Math.min(100, Math.round(v / t * 100)) : 0, exp = Math.round(dIn / dAll * 100);
-    return '<div class="tg-bar"><i style="width:' + p + '%"></i><u style="left:' + exp + '%" title="Өнөөдрийн байх ёстой түвшин"></u></div><small class="muted">' + fmt(v) + ' / ' + fmt(t) + ' · ' + p + '%' + (p < exp ? ' · хоцорч байна' : ' · хэвийн') + '</small>'; };
-  var byStaff = {}; sold.forEach(function (x) { var k = x.staff || '—'; byStaff[k] = (byStaff[k] || 0) + (Number(x.amount) || 0); });
-  var st = T.staff || {}, names = Object.keys(st).concat(Object.keys(byStaff).filter(function (k) { return !st[k] && k !== '—'; }));
-  return '<div class="card tg-card"><div class="bar-row"><h2 style="margin:0">' + mo + ' сарын зорилт</h2><button class="link" onclick="editTarget(\'' + biz + '\')">' + (total ? 'Засах' : 'Зорилт тавих') + '</button></div>' +
-    (total ? bar(net, total) : '<p class="muted" style="font-size:13px">Зорилт тавиагүй байна. Энэ сард ' + fmt(net) + ' борлуулсан.</p>') +
-    (names.length ? '<table class="rep-t tg-st"><tr><th>Ажилтан</th><th class="n">Борлуулсан</th><th>Зорилт</th><th></th></tr>' + names.map(function (n) {
-      return '<tr><td>' + esc(n) + '</td><td class="n">' + fmt(byStaff[n] || 0) + '</td><td>' + (st[n] ? bar(byStaff[n] || 0, st[n]) : '<small class="muted">—</small>') + '</td><td class="n"><button class="mini" onclick="editTarget(\'' + biz + '\',' + esc(JSON.stringify(n)) + ')">' + (st[n] ? 'Засах' : 'Тавих') + '</button></td></tr>';
-    }).join('') + '</table>' : '') + '</div>';
-}
 function editTarget(biz, staffName) {
   var mo = todayStr().slice(0, 7), key = tgtKey(biz, mo), all = JSON.parse(JSON.stringify(window.salesTargets || {})), T = all[key] = all[key] || { total: 0, staff: {} };
   T.staff = T.staff || {};
@@ -1095,7 +991,7 @@ function closeSheet(id) { $(id).classList.remove('show'); }
 
 // ═══════════ ДЭД ЦЭС, ТАЙЛАН (reports.js-ийн хөдөлгүүрээр) ═══════════
 var SUBS = {
-  sales: [['overview', 'Тойм'], ['receipts', 'Баримтууд'], ['orders', 'Захиалга'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'],
+  sales: [['receipts', 'Баримтууд'], ['orders', 'Захиалга'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'],
           ['pay', 'Төлбөрийн хэлбэрээр'], ['disc', 'Хөнгөлөлт, буцаалт'], ['slow', 'Удаан эргэлттэй бараа'], ['boost', 'Boost бараагаар'], ['ebarimt', 'И-баримт тулгалт']],
   products: [['catalog', 'Барааны бүртгэл, үнэ'], ['po', 'Бараа захиалга (Хятад)'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['prices', 'Үнийн түүх'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
   finance: [['simple', 'Үр дүн'], ['months', 'Сар бүрээр'], ['profit', 'Барааны ашиг'], ['money', 'Орлого, зарлага'], ['bank', 'Банкны хуулга'], ['vouchers', 'Кассын баримт'],
@@ -1195,7 +1091,6 @@ function repManual(biz, f, t) {
 
 function subBody() {
   var mod = state.module, sub = state.sub[mod];
-  if (mod === 'sales' && sub === 'overview') return salesModule();
   if (mod === 'products' && sub === 'stock') return productsModule();
   if (mod === 'finance' && sub === 'dash') return financeDash();
   if (mod === 'finance' && sub === 'simple') return simpleView();
