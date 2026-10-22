@@ -1181,7 +1181,7 @@ function subBody() {
     ACCOUNTS.map(function (a) { return '<option value="' + a[0] + '"' + (state.acc === a[0] ? ' selected' : '') + '>' + a[0] + ' ' + esc(a[1]) + '</option>'; }).join('') + '</select></label></div>';
   if (mod === 'finance' && sub === 'entry') pre = '<p class="hint">Борлуулалт, зарлага, бараа, цалин санхүүд <b>автоматаар</b> бичигддэг. Энд зөвхөн бусад гүйлгээг (эхний үлдэгдэл, хөрөнгө оруулалт, зээл, банкинд тушаах, нийлүүлэгчид төлөх г.м) оруулна.</p>';
   if (sub === 'entry') rep.edit = 'editEntry';
-  if (mod === 'sales' && /^(receipts|orders|item|disc)$/.test(sub)) pre += searchBox(sub === 'orders' ? 'Утас, нэр, бараагаар хайх…' : sub === 'item' ? 'Барааны нэрээр хайх…' : 'Бараа, ажилтан, ДДТД-аар хайх…');
+  if (mod === 'sales' && /^(receipts|orders|item|disc)$/.test(sub)) pre += searchBox(sub === 'orders' ? 'Утас, нэр, бараагаар хайх…' : sub === 'item' ? 'Барааны нэрээр хайх…' : 'Бараа, хэрэглэгч, утас, ажилтан, ДДТД-аар хайх…');
   return pre + reportCard(rep, { entry: 'cancelEntry', in: 'cancelMove', expenses: 'cancelRecord', vouchers: 'cancelEntry', catalog: 'openProduct' }[sub]) + post;
 }
 

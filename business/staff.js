@@ -697,7 +697,7 @@ function submitSale() {
     lines.forEach(function (r) {
       r.ddtd = res.id;
       r.ebDate = res.date;
-      if (tin) { r.buyerTin = tin; if (buyer) r.buyerName = buyer; }
+      if (tin) { r.buyerTin = tin; if (buyer) r.buyerName = buyer; if (!r.customer) r.customer = buyer || 'ТТД ' + tin; }
       r.note = 'ДДТД ' + res.id + (tin ? ' · ТТД ' + tin + (buyer ? ' · ' + buyer : '') : '') + (edit ? ' · засвар (хуучин ' + edit.ddtd + ')' : '');
     });
     if (edit) ebEditDone(edit);

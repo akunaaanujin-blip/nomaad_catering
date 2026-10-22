@@ -429,8 +429,10 @@ function groupBills(list) {
 }
 function payText(pays) { return Object.keys(pays).filter(function (k) { return pays[k] > 0; }).map(function (k) { return k + (Object.keys(pays).length > 1 ? ' ' + fmt(pays[k]) : ''); }).join(' + '); }
 function repReceipts(R, biz, from, to) {
+  var ords = {}; (window.adminOrders || []).forEach(function (o) { ords[o.id] = o; });
+  var custOf = function (o) { var d = ords[o.key]; return o.customer || (d ? (d.customer ? d.customer + ' ' : '') + d.phone : ''); };   // Cozy захиалгын баримтад захиалгаас
   var rows = groupBills(salesIn(R, biz, from, to)).map(function (o) {
-    return { date: o.date + ' ' + o.time, staff: o.staff, items: o.items.join(', '), customer: o.customer, pay: payText(o.pays), disc: o.disc ? r0(o.disc) : '', ret: o.ret ? r0(o.ret) : '',
+    return { date: o.date + ' ' + o.time, staff: o.staff, items: o.items.join(', '), customer: custOf(o), pay: payText(o.pays), disc: o.disc ? r0(o.disc) : '', ret: o.ret ? r0(o.ret) : '',
              ebarimt: o.ddtd || '—', amount: r0(o.net), _bill: o.key };
   }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
   return { title: 'Баримтын жагсаалт', cols: [c('date', 'Огноо'), c('staff', 'Худалдагч'), c('items', 'Бараа'), c('customer', 'Хэрэглэгч'), c('pay', 'Төлбөр'), m('disc', 'Хөнгөлөлт'), m('ret', 'Буцаалт'), c('ebarimt', 'И-баримт'), m('amount', 'Дүн')],
