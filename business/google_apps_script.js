@@ -288,12 +288,25 @@ function saveRecords(data) {
   const sheet = logSheet();
   const seen = existingIds(sheet);
   const rows = [], rejected = [];
+  // Захиалгаас үүссэн борлуулалт (bill = захиалгын ID): нэг захиалгын нэг барааг давхар борлуулахгүй (хөтөч серверээс хоцорвол давхар илгээдэг)
+  const net = {};
+  if ((data.records || []).some(function (r) { return r.type === 'sale' && /^O\d/.test(String(r.bill || '')); })) {
+    const lr = sheet.getLastRow();
+    if (lr >= 2) sheet.getRange(2, 1, lr - 1, LOG_HEAD.length).getValues().forEach(function (v) {
+      if (String(v[16]) === 'sale' && /^O\d/.test(String(v[17])) && String(v[18]) !== 'Устгасан') { const k = v[17] + '|' + String(v[6]).replace(/ \(буцаалт\)/, ''); net[k] = (net[k] || 0) + (Number(v[7]) > 0 ? 1 : -1); }
+    });
+  }
   (data.records || []).forEach(function (r) {
     if (!r.id || seen[r.id] || !BIZ_NAMES[r.biz] || !TYPE_NAMES[r.type]) return;
     if (r.type === 'collect') return;   // «Төлбөр орсон»-ыг зөвхөн удирдлага бүртгэнэ (хуучин хуудаснаас ирсэнийг алгасна)
     const own = verify(r.tok);
     const who = own && own.biz === r.biz ? own : (cur && cur.biz === r.biz ? cur : null);
     if (!who) { rejected.push(r.id); return; }
+    if (r.type === 'sale' && /^O\d/.test(String(r.bill || ''))) {
+      const k = r.bill + '|' + String(r.item || '').slice(0, 80).replace(/ \(буцаалт\)/, ''), sg = Number(r.qty) > 0 ? 1 : -1;
+      if (sg > 0 ? (net[k] || 0) > 0 : (net[k] || 0) <= 0) return;   // давхар борлуулалт / эх борлуулалтгүй буцаалт
+      net[k] = (net[k] || 0) + sg;
+    }
     const staffName = own && own.biz === r.biz ? own.staff.name : (r.staff || who.staff.name);   // өөрийн токентой бол нэрийг сервер бичнэ
     seen[r.id] = 1;
     rows.push([
@@ -1628,4 +1641,16 @@ function fillMissingCost() {
     const c = Math.round(p * 0.85); sh.getRange(i + 2, 8).setValue(c); done.push(String(r[4]) + ' ' + c);
   });
   Logger.log('ӨРТӨГ: ' + done.length + ' мөр бичлээ — ' + done.join('; ') + (skipped.length ? ' | үнэгүй, алгассан: ' + skipped.join(', ') : ''));
+}
+// Нэг удаа ажиллуулна: захиалгаас үүссэн давхар борлуулалтын мөрийг (нэг захиалгын нэг бараа 2+ удаа) сүүлийнхийг нь «Устгасан» болгоно — нөөц буцаж нэмэгдэнэ
+function cancelDuplicateOrderSales() {
+  const sh = logSheet(), last = sh.getLastRow(); if (last < 2) return;
+  const v = sh.getRange(2, 1, last - 1, LOG_HEAD.length).getValues(), net = {}, done = [];
+  v.forEach(function (r, i) {
+    if (String(r[16]) !== 'sale' || !/^O\d/.test(String(r[17])) || String(r[18]) === 'Устгасан' || /ДДТД/.test(String(r[14]))) return;
+    const k = r[17] + '|' + String(r[6]).replace(/ \(буцаалт\)/, ''), sg = Number(r[7]) > 0 ? 1 : -1;
+    if (sg > 0 && (net[k] || 0) > 0) { sh.getRange(i + 2, 19).setValue('Устгасан'); sh.getRange(i + 2, 15).setValue(String(r[14] || '') + ' [давхар бүртгэл — цуцалсан]'); done.push(r[6] + ' ' + r[10]); return; }
+    net[k] = (net[k] || 0) + sg;
+  });
+  Logger.log('ДАВХАР: ' + done.length + ' мөр цуцаллаа — ' + done.join('; '));
 }
