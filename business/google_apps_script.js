@@ -1288,7 +1288,7 @@ function orderRows() {
 function orderSave(d) {
   const who = checkStaff(d.token), o = d.order || {};
   if (!who || who.biz !== o.biz) return { status: 'error', error: 'auth' };
-  if (!o.id && !/^\d{8}$/.test(String(o.phone || '').replace(/\D/g, ''))) return { status: 'error', error: 'phone' };
+  if (!o.id && !o.noPhone && !/^\d{8}$/.test(String(o.phone || '').replace(/\D/g, ''))) return { status: 'error', error: 'phone' };
   const sh = orderSheet(), now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
   const cur = o.id ? orderRows().filter(function (x) { return x.id === String(o.id); })[0] : null;
   if (o.id && !cur) return { status: 'error', error: 'not_found' };
