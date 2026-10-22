@@ -42,6 +42,7 @@ function loadOrders() {
       orders = d.orders.concat(keep); save(LS_ORD, orders.filter(function (x) { return !x.pending; }));
     }
     renderOrders();
+    if (typeof syncToday === 'function') syncToday();
   });
 }
 function saveOrder(o, done) {
@@ -241,9 +242,27 @@ function quickOrd2(id, field, val) {   // жагсаалтаас нэг товч
   var sentOut = /^yes:/.test(o.saleDone || '');
   if (field === 'status' && val === 'Цуцалсан' && !confirm('Захиалга ' + o.phone + '-ийг цуцлах уу?' + (sentOut ? '\nБараа буухиа дээр байгаа бол буцаж ирэхэд «Буцаалт хүлээн авсан» дарна.' : ''))) return;
   if (field === 'status' && val === 'Буцаасан' && !confirm('Захиалга ' + o.phone + ' буцаагдсан уу?\nБараа гарт ирэхэд «Буцаалт хүлээн авсан» дарахад үлдэгдэлд нэмэгдэнэ.')) return;
+  if (API_URL && field === 'status' && (val === 'Буухиад өгсөн' || val === 'Хүргэгдсэн')) { shipOrders([id], val); return; }   // борлуулалт + төлөв серверт нэг дор
   var bad = ordBook(n, prev);
   if (bad) { alert('Үлдэгдэл хүрэлцэхгүй:\n\n' + bad); loadStock(); renderOrders(); return; }
   saveOrder(n);
+}
+// «Буухиад өгсөн» / «Хүргэгдсэн»: борлуулалт ба төлөвийг сервер нэг хүсэлтээр бичнэ — хагас хадгалагдах, давхардах боломжгүй
+var shipping = false;
+function shipOrders(ids, to) {
+  if (!ids.length) return;
+  if (shipping) { toast('Хадгалж байна — түр хүлээнэ үү'); return; }
+  shipping = true; toast(ids.length + ' захиалгыг хадгалж байна…');
+  ordPost({ type: 'orders_ship', ids: ids, to: to }, function (err, d) {
+    shipping = false;
+    if (err) { alert('Хадгалж чадсангүй (' + err + '). Жагсаалтыг шинэчилж төлөвийг шалгаад дахин оролдоно уу — давхар бичигдэхгүй.'); loadOrders(); return; }
+    var m = {}; d.shipped.forEach(function (s) { m[s.id] = s; });
+    orders = orders.map(function (o) { var s = m[o.id]; return s ? Object.assign({}, o, { status: d.to, saleDone: s.saleDone }) : o; });
+    save(LS_ORD, orders.filter(function (x) { return !x.pending; }));
+    renderOrders(); if (typeof syncToday === 'function') syncToday(); loadStock();
+    if (d.skipped.length) alert(d.skipped.length + ' захиалга «Шинэ» хэвээр үлдлээ:\n\n' + d.skipped.map(function (x) { return (x.phone || '') + ': ' + x.why; }).join('\n'));
+    toast(d.shipped.length + ' захиалга «' + d.to + '» боллоо');
+  });
 }
 
 // ── Жагсаалт ──
@@ -382,6 +401,7 @@ function buuhiaExport(withAmount) {
   setTimeout(function () {
     var fresh = list.filter(function (o) { return o.status === 'Шинэ'; }); if (!fresh.length) return;
     if (!confirm(fresh.length + ' шинэ захиалгыг ebuuhia.com-д оруулсны дараа «Буухиад өгсөн» болгох уу?\n(Борлуулалт санхүүд бичигдэнэ)')) return;
+    if (API_URL) { shipOrders(fresh.map(function (o) { return o.id; }), 'Буухиад өгсөн'); return; }
     var bads = [];
     fresh.forEach(function (o) { var prev = JSON.parse(JSON.stringify(o)), n = Object.assign({}, o, { status: 'Буухиад өгсөн' }); var bad = ordBook(n, prev); if (bad) bads.push(bad); else saveOrder(n); });
     if (bads.length) { alert(bads.length + ' захиалга үлдэгдэл хүрэлцэхгүй тул «Шинэ» хэвээр үлдлээ:\n\n' + bads.join('\n')); loadStock(); }

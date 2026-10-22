@@ -99,6 +99,7 @@ function showMain() {
   $('today').textContent = todayStr();
   renderEbBadge();
   renderToday();
+  syncToday(); if (!syncTimer) syncTimer = setInterval(syncToday, 2 * 60000);   // өнөөдрийн дүн серверээс
   if (typeof ebCheckInfo === 'function') { ebCheckInfo(); setInterval(ebCheckInfo, 30 * 60000); }
   if (BIZ.orders && typeof loadOrders === 'function') loadOrders();   // Cozy: захиалгууд
   loadTasks();
@@ -823,10 +824,28 @@ function flushQueue() {
         var rest = load(LS_QUEUE, []).filter(function (r) { return !sent[r.id]; });
         save(LS_QUEUE, rest);
         updatePending(rest.length);
+        syncToday();
       }
     })
     .catch(function () {})
     .then(function () { flushing = false; });
+}
+// Өнөөдрийн бичлэгийг серверээс авч төхөөрөмжийн хуулбарыг солино (цуцалсан, давхар мөр арилна); илгээгдээгүй бичлэг хэвээр
+var syncTimer = null;
+function syncToday() {
+  if (!API_URL || !session || !session.token) return;
+  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'staff_today', token: session.token }) })
+    .then(function (res) { return res.json(); })
+    .then(function (d) {
+      if (!d || d.status !== 'ok') return;
+      var d0 = todayStr(), q = {}, byId = {}, all = load(LS_REC, []);
+      load(LS_QUEUE, []).forEach(function (r) { q[r.id] = 1; });
+      all.forEach(function (r) { byId[r.id] = r; });
+      var keep = all.filter(function (r) { return !(r.biz === BIZ_KEY && r.date === d0) || q[r.id]; });
+      d.records.forEach(function (s) { if (q[s.id]) return; var l = byId[s.id]; keep.push(l ? Object.assign({}, l, s, { ddtd: l.ddtd || s.ddtd }) : s); });
+      save(LS_REC, keep); renderToday();
+    })
+    .catch(function () {});
 }
 function updatePending(n) {
   var el = $('pending');

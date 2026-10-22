@@ -116,6 +116,8 @@ function doPost(e) {
     if (data.type === 'admin_reminder') return json(isAdmin(data) ? adminReminder(data) : { status: 'error', error: 'auth' });
     if (data.type === 'order_save') return json(orderSave(data));
     if (data.type === 'order_delete') return json(orderDelete(data));
+    if (data.type === 'orders_ship') return json(ordersShip(data));
+    if (data.type === 'staff_today') return json(staffToday(data));
     if (data.type === 'orders') return json(ordersFor(data));
     if (data.type === 'order_hist') return json(orderHist(data));
     if (data.type === 'admin_import_cozy') return json(isAdmin(data) ? importCozy(data) : { status: 'error', error: 'auth' });
@@ -139,11 +141,11 @@ function doPost(e) {
 // ── Серверийн кэш (хурд): удирдлагын уншилт хуудас тус бүрийг 5 мин кэшлэнэ, бичилт хийхэд тэр хуудсыг л цэвэрлэнэ ──
 // Sheet-ийг гараар засвал 5 минутын дотор шинэчлэгдэнэ.
 const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf'];
-const CACHE_MAP = { admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], order_delete: ['ord'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
+const CACHE_MAP = { admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
   admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr'], admin_bank: ['bank', 'jr', 'ord'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_po: ['po', 'jr'],
   admin_staff: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
-const CACHE_READ = { admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
+const CACHE_READ = { staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
 function cacheKeysFor(d) {
   if (!d.type) return ['rec', 'stk'];   // ажилтны бичлэг (борлуулалт, зарлага, касс)
   if (CACHE_READ[d.type]) return null;
@@ -1671,4 +1673,58 @@ function cleanupOct22() {
   const js = journalSheet(), jv = js.getRange(2, 1, js.getLastRow() - 1, 1).getValues();
   jv.forEach(function (r, i) { if (String(r[0]) === 'J1792487001494-0') { js.getRange(i + 2, 12).setValue('Устгасан'); out.push('журнал 50₮ цуцалсан'); } });
   Logger.log('ЦЭВЭРЛЭГЭЭ: ' + out.join('; '));
+}
+// «Буухиад өгсөн» / «Хүргэгдсэн» болгох — борлуулалт ба төлөвийг сервер нэг хүсэлтээр, нэг түгжээн дор бичнэ
+// (өмнө нь хөтөч захиалга бүрийг тусад нь илгээдэг байсан тул хагас хадгалагдаж, дахин дарахад давхардаж байсан)
+function ordersShip(d) {
+  const who = checkStaff(d.token);
+  if (!who) return { status: 'error', error: 'auth' };
+  const to = d.to === 'Хүргэгдсэн' ? 'Хүргэгдсэн' : 'Буухиад өгсөн', want = {};
+  (Array.isArray(d.ids) ? d.ids : []).slice(0, 300).forEach(function (x) { want[String(x)] = 1; });
+  const list = orderRows().filter(function (o) { return want[o.id] && o.biz === who.biz; });
+  const stock = stockAll(false)[who.biz] || {}, hasStock = Object.keys(stock).length > 0, avail = {};
+  Object.keys(stock).forEach(function (k) { avail[k] = (Number(stock[k].shop) || 0) + (Number(stock[k].wh) || 0); });
+  const now = new Date(), date = Utilities.formatDate(now, TZ, 'yyyy-MM-dd'), time = Utilities.formatDate(now, TZ, 'HH:mm'), stamp = date + ' ' + time;
+  const rows = [], upd = [], skipped = [];
+  list.forEach(function (o, n) {
+    if (o.status === 'Цуцалсан' || o.status === 'Буцаасан') { skipped.push({ id: o.id, phone: o.phone, why: o.status }); return; }
+    let items; try { items = JSON.parse(o.items || '[]'); } catch (e) { items = []; }
+    let saleDone = String(o.saleDone || '');
+    if (!/^yes:/.test(saleDone) && saleDone !== 'imported') {
+      if (hasStock) {   // үлдэгдэл хасах руу орохгүй — хүрэлцэхгүй бол «Шинэ» хэвээр
+        const need = {};
+        items.forEach(function (i) { if (i.name === FEE_ITEM || i.name === DISC_ITEM || i.name === SPLIT_ITEM) return; need[i.name] = (need[i.name] || 0) + (Number(i.qty) || 1); });
+        const short = Object.keys(need).filter(function (k) { return need[k] > (avail[k] || 0) + 1e-9; });
+        if (short.length) { skipped.push({ id: o.id, phone: o.phone, why: short.map(function (k) { return '«' + k + '» — хэрэгтэй ' + need[k] + ', үлдэгдэл ' + Math.max(0, avail[k] || 0); }).join('; ') }); return; }
+        Object.keys(need).forEach(function (k) { avail[k] = (avail[k] || 0) - need[k]; });
+      }
+      const pay = o.confirmed ? 'Урьдчилгаа' : 'Шилжүүлэг', cust = pay === 'Урьдчилгаа' ? ((o.customer ? o.customer + ' ' : '') + o.phone) : '';
+      items.forEach(function (i, k) {
+        const q = Number(i.qty) || 1, p = Number(i.price) || 0, amt = Math.round(q * p); if (!amt) return;
+        rows.push([who.biz + '-' + now.getTime() + '-s' + n + '-' + k, date, time, BIZ_NAMES[who.biz], TYPE_NAMES.sale, who.staff.name, String(i.name || '').slice(0, 80), q, 'ш', p, amt, pay,
+          '', '', 'Захиалга ' + o.phone, who.biz, 'sale', o.id, '', cust]);
+      });
+      saleDone = 'yes:' + pay;
+    }
+    upd.push({ row: o.row, id: o.id, saleDone: saleDone });
+  });
+  if (rows.length) { const log = logSheet(); log.getRange(log.getLastRow() + 1, 1, rows.length, LOG_HEAD.length).setValues(rows); }   // эхлээд борлуулалт, дараа нь төлөв
+  const osh = orderSheet();
+  upd.forEach(function (u) { osh.getRange(u.row, 17).setValue(to); osh.getRange(u.row, 20).setValue(stamp + ' ' + who.staff.name); osh.getRange(u.row, 21).setValue(u.saleDone); });
+  return { status: 'ok', shipped: upd.map(function (u) { return { id: u.id, saleDone: u.saleDone }; }), skipped: skipped, to: to };
+}
+// Ажилтны «Өнөөдрийн дүн / баримт» — төхөөрөмжийн хуулбар биш, серверийн өнөөдрийн бичлэг (цуцалсан нь орохгүй)
+function staffToday(d) {
+  const who = checkStaff(d.token);
+  if (!who) return { status: 'error', error: 'auth' };
+  const today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), sh = logSheet(), last = sh.getLastRow(), out = [];
+  if (last >= 2) sh.getRange(2, 1, last - 1, LOG_HEAD.length).getValues().forEach(function (r) {
+    if (String(r[15]) !== who.biz || String(r[18]) === 'Устгасан' || fmtDate(r[1], 'yyyy-MM-dd') !== today) return;
+    const t = String(r[16]), note = String(r[14] || ''), m = note.match(/ДДТД\s*(\d{10,40})/);
+    out.push({ id: String(r[0]), date: today, time: fmtDate(r[2], 'HH:mm'), biz: who.biz, type: t, staff: String(r[5]),
+      item: t === 'expense' ? '' : String(r[6]), category: t === 'expense' ? String(r[6]) : '', qty: Number(r[7]) || 0, unit: String(r[8] || ''),
+      price: Number(r[9]) || 0, amount: Number(r[10]) || 0, pay: String(r[11] || ''), counted: Number(r[12]) || 0, diff: Number(r[13]) || 0,
+      note: note, bill: String(r[17] || ''), customer: String(r[19] || ''), ddtd: m ? m[1] : '' });
+  });
+  return { status: 'ok', records: out };
 }
