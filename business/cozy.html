@@ -104,9 +104,6 @@
     <label for="orCustomer">Захиалагч (Facebook нэр)</label><input id="orCustomer">
     <label>Бараа</label>
     <div class="chips" id="orChips"></div>
-    <details class="custom-item"><summary>Жагсаалтад байхгүй бараа</summary>
-      <div class="row2" style="margin-top:8px"><input id="orItem" placeholder="Барааны нэр"><input id="orItemPrice" type="number" inputmode="numeric" placeholder="Үнэ (₮)"></div>
-      <button class="btn ghost" style="color:var(--accent);margin-top:4px" onclick="ordAddCustom()">＋ Нэмэх</button></details>
     <ul class="list cart" id="orCart"></ul>
     <div class="fee-row"><label for="orFee">Хүргэлтийн төлбөр (₮)</label><input id="orFee" type="number" inputmode="numeric" min="0" value="7000" oninput="renderOrdCart()"></div>
     <p style="text-align:right;margin-top:6px">Нийт (хүргэлттэй): <b id="orTotal">₮0</b></p>
@@ -150,14 +147,6 @@
         </div>
         <div class="pos-cats" id="saleCats" style="display:none"></div>
         <div class="pos-tiles" id="saleChips"></div>
-        <details class="custom-item pos-custom">
-          <summary>Жагсаалтад байхгүй бараа</summary>
-          <div class="row2" style="margin-top:8px">
-            <input id="saleItem" placeholder="Барааны нэр">
-            <input id="salePrice" type="number" inputmode="numeric" min="0" placeholder="Үнэ (₮)">
-          </div>
-          <button class="btn sm ghost2" style="margin-top:8px" onclick="addCustom()">Сагсанд нэмэх</button>
-        </details>
       </section>
       <!-- Сагс, төлбөр -->
       <section class="pos-right">
@@ -292,7 +281,7 @@
 <script src="common.js?v=20261022o"></script>
 <script>var BIZ_KEY = 'cozy';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261022q"></script>
+<script src="staff.js?v=20261022r"></script>
 <script src="ebarimt.js?v=20261022o"></script>
 <script src="orders.js?v=20261022p"></script>
 <script src="label.js?v=20261022o"></script>

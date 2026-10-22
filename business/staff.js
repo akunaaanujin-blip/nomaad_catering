@@ -421,8 +421,7 @@ function openSale(mode) {
   spShowBtn();
   renderCats();
   renderChips();
-  $('saleItem').value = '';
-  $('salePrice').value = '';
+  if ($('saleItem')) { $('saleItem').value = ''; $('salePrice').value = ''; }
   $('saleTin').value = ''; tinLook = { q: '', res: null }; if ($('saleTinName')) $('saleTinName').textContent = '';
   if ($('saleBuyer')) { $('saleBuyer').value = ''; $('saleBuyer').style.display = 'none'; }
   $('saleCust').value = '';
@@ -461,7 +460,7 @@ function renderChips() {
       '<span class="pt-n">' + esc(p.name) + '</span>' +
       '<span class="pt-f"><b>' + (p.price ? fmt(p.price) : 'Үнэ оруулна') + '</b>' + (stockTxt ? '<small class="' + (out ? 'o' : left <= 2 ? 'l' : '') + '">' + stockTxt + '</small>' : '') + '</span></button>';
   }).join('') + (more ? '<p class="muted pos-more">+' + more + ' бараа — хайлтаар олно уу</p>' : '') +
-    (!shown.length ? '<p class="muted pos-more">Олдсонгүй — «Жагсаалтад байхгүй бараа»-аар нэмнэ үү</p>' : '');
+    (!shown.length ? '<p class="muted pos-more">Олдсонгүй' + ($('saleItem') ? ' — «Жагсаалтад байхгүй бараа»-аар нэмнэ үү' : '') + '</p>' : '');
 }
 // Бараа дарахад сагсанд нэмнэ (байгаа бол тоог нь 1-ээр нэмнэ)
 function pickProduct(i) {
