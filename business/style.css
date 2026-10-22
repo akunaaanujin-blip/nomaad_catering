@@ -1234,3 +1234,24 @@ body:not(.bz-admin) .pos-foot .btn{background:linear-gradient(135deg,#15803D,#22
 #stockList table.rep-t{width:100%}
 #stockList .num{text-align:right}
 #stockList tr.neg td{color:#B91C1C}
+
+/* Boost-ийн үр дүн — бүдэг дулаан өнгө (ашигтай: чидун, ашиггүй: тоосгон, явж буй: элсэн, өртөггүй: саарал бор) */
+:root{--bo-good:#5E6B3C;--bo-good-bg:#F1F2E6;--bo-bad:#A0503A;--bo-bad-bg:#F8EAE3;--bo-run:#8C6A2F;--bo-run-bg:#F7F0E1;--bo-na:#7A6E62;--bo-na-bg:#F3EFEA}
+.bo-tag{display:inline-block;font-size:11.5px;padding:2px 8px;border-radius:4px;font-weight:600;white-space:nowrap}
+.bo-tag.bo-good{background:var(--bo-good-bg);color:var(--bo-good)}
+.bo-tag.bo-bad{background:var(--bo-bad-bg);color:var(--bo-bad)}
+.bo-tag.bo-run{background:var(--bo-run-bg);color:var(--bo-run)}
+.bo-tag.bo-na{background:var(--bo-na-bg);color:var(--bo-na)}
+.bo-t tr.bo-good td{background:#FAFAF4}
+.bo-t tr.bo-bad td{background:#FDF6F2}
+.bo-t tr.bo-run td{background:#FCF8EF}
+.bo-t tr.bo-good td b{color:var(--bo-good)}
+.bo-t tr.bo-bad td b{color:var(--bo-bad)}
+.bo-card .sx-k.bo-good{background:var(--bo-good-bg)}
+.bo-card .sx-k.bo-good b{color:var(--bo-good)}
+.bo-card .sx-k.bo-bad{background:var(--bo-bad-bg)}
+.bo-card .sx-k.bo-bad b{color:var(--bo-bad)}
+.bo-sum{font-size:13px;margin:4px 0 8px;line-height:1.5;color:#4B4237}
+.bo-note{font-size:13px;margin:4px 0 8px;padding:6px 10px;border-radius:6px}
+.bo-note.bo-run{background:var(--bo-run-bg);color:var(--bo-run)}
+.bo-card .sx-k b,.bo-t td.n{white-space:nowrap}

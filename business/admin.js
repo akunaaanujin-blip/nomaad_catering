@@ -447,28 +447,42 @@ function salesModule() {
   return orderReminder(biz) + kp + boostCard(biz, r[0], r[1]) + targetCard(biz, A) +
     '<div class="ch-card sx-ch"><h3>Борлуулалт өдрөөр <small class="muted">— тасархай: өмнөх үе</small></h3><div class="ch-box"><canvas id="chSales"></canvas></div></div>' + rc;
 }
-// ── Boost (тойм дээр): зардал, эзлэх %, нэг захиалгын зардал, одоо явж буй / дуусах, банкны хуулгатай тулгалт, бараагаар ──
+// ── Boost (тойм дээр): ашигтай / ашиггүй boost, нэмэлт ашиг, цэвэр үр дүн; эзлэх %, нэг захиалгын зардал, явж буй / дуусах, банкны 7205-тай тулгалт ──
+function boVerdictCls(v) { return /^Явж/.test(v) ? 'bo-run' : /\(өртөггүй\)/.test(v) ? 'bo-na' : /^Ашигтай/.test(v) ? 'bo-good' : 'bo-bad'; }
+function boSigned(v) { return v > 0 ? '+' + fmt(v) : v < 0 ? '−' + fmt(-v) : fmt(0); }
 function boostCard(biz, f, t) {
   if (!BUSINESSES[biz].boost && !records.some(function (x) { return x.biz === biz && x.type === 'boost'; })) return '';
-  var rep = repBoost(R(), biz, f, t), rows = rep.rows.filter(function (x) { return !x._b && !x._id; }), today = todayStr(), tm = addDays(today, 1);
-  var tot = sum(rows, 'boost'), usd = sum(rows, '_usd'), sales = salesStats(biz, f, t).net, ordN = rep.total.orders;
+  // boost тус бүрээр (нэг бараанд дууссан ба явж буй boost тус тусдаа дүгнэгдэнэ)
+  var rep = repBoost(R(), biz, f, t), rows = rep.rows.filter(function (x) { return x._id; }), today = todayStr();
+  var tot = sum(rows, 'boost'), usd = sum(rep.rows.filter(function (x) { return !x._b && !x._id; }), '_usd'), sales = salesStats(biz, f, t).net, ordN = rep.total.orders;
+  var done = rows.filter(function (x) { return !/^Явж/.test(x.verdict); }), good = done.filter(function (x) { return x.net >= 0; }), bad = done.filter(function (x) { return x.net < 0; });
+  var up = sum(done, 'uplift'), net = sum(done, 'net');
   var live = records.filter(function (x) { return x.biz === biz && x.type === 'boost' && x.date <= today && boostEnd(x) > today; })
     .map(function (x) { return { item: x.item, left: Math.round((new Date(boostEnd(x) + 'T00:00:00') - new Date(today + 'T00:00:00')) / 864e5) }; });
   var ending = live.filter(function (l) { return l.left <= 1; });   // өнөөдөр сүүлийн өдөр
-  var bank = J().filter(function (e) { return e.date >= f && e.date <= t; }).reduce(function (a, e) { return a + (e.dr === '7205' ? e.amount : e.cr === '7205' ? -e.amount : 0); }, 0);
-  var k = function (label, val, sub) { return '<div class="sx-k"><span>' + label + '</span><b>' + val + '</b><em>' + (sub || '') + '</em></div>'; };
-  var gap = Math.round(bank - tot);
-  return '<div class="card"><div class="bar-row"><h2 style="margin:0">Boost</h2><button class="link" onclick="setSub(\'boost\')">Дэлгэрэнгүй →</button></div>' +
-    '<div class="sx-kpis" style="margin:8px 0">' + k('Boost зардал', fmt(tot), usd ? '<small class="muted">$' + usd + '</small>' : '') +
-    k('Борлуулалтад эзлэх', sales ? Math.round(tot / sales * 100) + '%' : '—', '<small class="muted">борлуулалт ' + fmt(sales) + '</small>') +
-    k('Нэг захиалгын зардал', ordN ? fmt(Math.round(tot / ordN)) : '—', '<small class="muted">' + ordN + ' захиалга boost үед</small>') +
-    k('Одоо явж буй', live.length, live.length ? '<small class="muted">' + esc(live.slice(0, 3).map(function (l) { return l.item + ' · ' + l.left + ' хоног'; }).join(', ')) + '</small>' : '') + '</div>' +
-    (ending.length ? '<p style="font-size:13px;margin:4px 0 8px"><b>Өнөөдөр дуусна:</b> ' + esc(ending.map(function (l) { return l.item; }).join(', ')) + ' — үр дүнг доорх хүснэгтээс харж сунгах эсэхээ шийдээрэй.</p>' : '') +
-    '<p class="muted" style="font-size:12.5px;margin:0 0 8px">Банкны хуулгаар (7205): ' + fmt(bank) + ' · ажилтан бичсэн: ' + fmt(tot) +
-      (Math.abs(gap) >= 1000 ? ' · <b>зөрүү ' + (gap > 0 ? 'бичигдээгүй boost ' + fmt(gap) : 'хуулгад ороогүй ' + fmt(-gap)) + '</b>' : ' · таарч байна') + '</p>' +
-    (rows.length ? '<div class="scroll"><table class="rep-t"><tr><th>Бараа</th><th class="n">Boost</th><th class="n">Зарсан (boost үед)</th><th class="n">Өмнөх ижил үе</th><th class="n">Нэг захиалгын зардал</th><th class="n">Boost / борлуулалт</th></tr>' +
-      rows.slice(0, 5).map(function (x) { return '<tr><td>' + esc(x.key) + '</td><td class="n">' + fmt(x.boost) + '</td><td class="n">' + x.qty + '</td><td class="n">' + x.before + '</td><td class="n">' + (x.cpo ? fmt(x.cpo) : '—') + '</td><td class="n">' + esc(x.ratio) + '</td></tr>'; }).join('') + '</table></div>'
-      : '<p class="muted" style="font-size:13px">Энэ хугацаанд boost бичигдээгүй байна.</p>') + '</div>';
+  var bank = J().filter(function (e) { return e.date >= f && e.date <= t; }).reduce(function (a, e) { return a + (e.dr === '7205' ? e.amount : e.cr === '7205' ? -e.amount : 0); }, 0), gap = Math.round(bank - tot);
+  var k = function (label, val, sub, cls) { return '<div class="sx-k' + (cls ? ' ' + cls : '') + '"><span>' + label + '</span><b>' + val + '</b><em>' + (sub || '') + '</em></div>'; };
+  var best = good.slice().sort(function (a, b) { return b.net - a.net; })[0], worst = bad.slice().sort(function (a, b) { return a.net - b.net; })[0];
+  var ord = function (x) { return /^Явж/.test(x.verdict) ? 0 : x.net >= 0 ? 1 : 2; };
+  var list = rows.slice().sort(function (a, b) { return ord(a) - ord(b) || b.net - a.net; }).slice(0, 10);
+  return '<div class="card bo-card"><div class="bar-row"><h2 style="margin:0">Boost-ийн үр дүн</h2><button class="link" onclick="setSub(\'boost\')">Дэлгэрэнгүй →</button></div>' +
+    '<div class="sx-kpis" style="margin:8px 0">' +
+      k('Boost зардал', fmt(tot), usd ? '<small class="muted">$' + usd + '</small>' : '') +
+      k('Нэмэлт ашиг', boSigned(up), '<small class="muted">өмнөх ижил үеэс</small>') +
+      k('Цэвэр үр дүн', boSigned(net), '<small class="muted">нэмэлт ашиг − дууссан boost</small>', done.length ? (net >= 0 ? 'bo-good' : 'bo-bad') : '') +
+      k('Ашигтай / ашиггүй', good.length + ' / ' + bad.length, live.length ? '<small class="muted">' + live.length + ' явж байна</small>' : '') + '</div>' +
+    (best || worst ? '<p class="bo-sum">' + (best ? 'Хамгийн ашигтай: <b>' + esc(best._item) + '</b> (' + boSigned(best.net) + ', зарцуулсан ₮1 тутамд ' + (best.boost ? (Math.round((best.net + best.boost) / best.boost * 10) / 10) : 0) + '₮ нэмэлт ашиг). ' : '') +
+      (worst ? 'Хамгийн их алдагдал: <b>' + esc(worst._item) + '</b> (' + boSigned(worst.net) + ') — дахин boost хийхээс өмнө үнэ, зураг, текстээ эргэж хараарай.' : '') + '</p>' : '') +
+    (ending.length ? '<p class="bo-note bo-run">Өнөөдөр дуусна: <b>' + esc(ending.map(function (l) { return l.item; }).join(', ')) + '</b> — доорх үр дүнгээс харж сунгах эсэхээ шийдээрэй.</p>' : '') +
+    (list.length ? '<div class="scroll"><table class="rep-t bo-t"><tr><th>Бараа</th><th class="n">Boost</th><th class="n">Зарсан (boost / өмнө)</th><th class="n">Нэмэлт ашиг</th><th class="n">Цэвэр үр дүн</th><th class="n">Нэг захиалга</th><th>Дүгнэлт</th></tr>' +
+      list.map(function (x) { var cl = boVerdictCls(x.verdict);
+        return '<tr class="' + cl + '"><td>' + esc(x._item) + '<small class="muted" style="display:block">' + esc(x._from.slice(5) + (x._to > x._from ? ' – ' + x._to.slice(5) : '')) + '</small></td><td class="n">' + fmt(x.boost) + '</td><td class="n">' + x.qty + ' / ' + x.before + '</td><td class="n">' + boSigned(x.uplift) + '</td><td class="n"><b>' + boSigned(x.net) + '</b></td>' +
+          '<td class="n">' + (x.cpo ? fmt(x.cpo) : '—') + '</td><td><span class="bo-tag ' + cl + '">' + esc(x.verdict) + '</span></td></tr>'; }).join('') + '</table></div>'
+      : '<p class="muted" style="font-size:13px">Энэ хугацаанд boost бичигдээгүй байна.</p>') +
+    '<p class="muted" style="font-size:12.5px;margin:8px 0 0">Борлуулалтад эзлэх ' + (sales ? Math.round(tot / sales * 100) + '%' : '—') + ' · нэг захиалгын зардал ' + (ordN ? fmt(Math.round(tot / ordN)) + ' (' + ordN + ' захиалга)' : '—') +
+      (live.length ? ' · явж буй: ' + esc(live.slice(0, 3).map(function (l) { return l.item + ' ' + l.left + ' хоног'; }).join(', ')) : '') + '<br>' +
+      'Банкны хуулгаар (7205) ' + fmt(bank) + ' · ажилтан бичсэн ' + fmt(tot) + (Math.abs(gap) >= 1000 ? ' · <b>зөрүү: ' + (gap > 0 ? 'бичигдээгүй boost ' + fmt(gap) : 'хуулгад ороогүй ' + fmt(-gap)) + '</b>' : ' · таарч байна') +
+      '<br>Нэмэлт ашиг = boost үеийн нийт ашиг − өмнөх ижил олон хоногийн нийт ашиг. «Өртөггүй» — барааны өртөг бүртгэлгүй тул борлуулалтаар тооцсон.</p></div>';
 }
 // ── Борлуулалтын зорилт (сар бүр, дэлгүүр болон ажилтнаар) ──
 function tgtKey(biz, mo) { return biz + '|' + (mo || todayStr().slice(0, 7)); }

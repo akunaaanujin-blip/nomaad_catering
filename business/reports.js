@@ -452,6 +452,10 @@ function repBoost(R, biz, from, to) {
   var bs = R.records.filter(function (x) { return x.biz === biz && x.type === 'boost' && x.date >= from && x.date <= to; });
   var sales = R.records.filter(function (x) { return x.biz === biz && x.type === 'sale' && !isAdj(x.item); });
   var ords = (R.orders || []).filter(function (o) { return o.biz === biz && !ordDead(o); });
+  var ce = costEngine(biz, R), today = todayStr();
+  // нийт ашиг = борлуулалт − өртөг; өртөг тодорхойгүй мөр байвал noCost (дүгнэлт борлуулалтаар)
+  var gpOf = function (y, flag) { var cs = ce.rec[y.id]; if (cs === undefined || (!cs && Number(y.qty) > 0)) flag.nc = true; return (Number(y.amount) || 0) - (Number(cs) || 0); };
+  var verdict = function (net, run, nc) { return run ? 'Явж байна' : (net >= 0 ? 'Ашигтай' : 'Ашиггүй') + (nc ? ' (өртөггүй)' : ''); };
   var itemsOf = function (o) { try { return (typeof o.items === 'string' ? JSON.parse(o.items || '[]') : o.items || []).map(function (i) { return i.name; }); } catch (e) { return []; } };
   var by = {};
   var det = bs.slice().sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; }).map(function (x) {
@@ -459,25 +463,29 @@ function repBoost(R, biz, from, to) {
     o.n++; o.a += Number(x.amount) || 0; o.d += Number(x.qty) || 0; if (x.unit === 'USD') o.usd += Number(x.price) || 0;
     for (var d = w.a; d < w.b; d = addDays(d, 1)) o.inD[d] = 1;
     for (var e = w.pa; e < w.a; e = addDays(e, 1)) o.preD[e] = 1;
-    var q = 0, sa = 0, pq = 0, on = 0;
-    sales.forEach(function (y) { if (baseItem(y.item) !== x.item) return; if (y.date >= w.a && y.date < w.b) { q += Number(y.qty) || 0; sa += Number(y.amount) || 0; } else if (y.date >= w.pa && y.date < w.a) pq += Number(y.qty) || 0; });
+    var q = 0, sa = 0, pq = 0, on = 0, gp = 0, pgp = 0, fl = {}, run = boostEnd(x) > today;
+    if (run) o.run = true;
+    sales.forEach(function (y) { if (baseItem(y.item) !== x.item) return; if (y.date >= w.a && y.date < w.b) { q += Number(y.qty) || 0; sa += Number(y.amount) || 0; gp += gpOf(y, fl); } else if (y.date >= w.pa && y.date < w.a) { pq += Number(y.qty) || 0; pgp += gpOf(y, fl); } });
+    var up = gp - pgp, net = up - (Number(x.amount) || 0);
     ords.forEach(function (d) { if (d.date >= w.a && d.date < w.b && itemsOf(d).indexOf(x.item) >= 0) { on++; o.ord[d.id] = 1; } });
     return { key: x.date + ' ' + (x.time || '') + ' · ' + x.item + (x.note ? ' · ' + x.note : '') + ' · ' + (x.staff || ''), days: Number(x.qty) || '', usd: x.unit === 'USD' ? '$' + r0(x.price) : '',
-             boost: r0(Number(x.amount) || 0), qty: r0(q), before: r0(pq), orders: on, cpo: on ? r0(Math.round((Number(x.amount) || 0) / on)) : '', sales: r0(sa), ratio: sa ? Math.round((Number(x.amount) || 0) / sa * 100) + '%' : '—', _id: x.id };
+             boost: r0(Number(x.amount) || 0), qty: r0(q), before: r0(pq), orders: on, cpo: on ? r0(Math.round((Number(x.amount) || 0) / on)) : '', sales: r0(sa), ratio: sa ? Math.round((Number(x.amount) || 0) / sa * 100) + '%' : '—',
+             uplift: r0(up), net: r0(net), verdict: verdict(net, run, fl.nc), _id: x.id, _item: x.item, _from: x.date, _to: addDays(boostEnd(x), -1) };
   });
   var rows = Object.keys(by).sort(function (a, b) { return by[b].a - by[a].a; }).map(function (k) {
-    var o = by[k], q = 0, sa = 0, pq = 0, on = Object.keys(o.ord).length;
+    var o = by[k], q = 0, sa = 0, pq = 0, on = Object.keys(o.ord).length, gp = 0, pgp = 0, fl = {};
     Object.keys(o.preD).forEach(function (d) { if (o.inD[d]) delete o.preD[d]; });   // давхцсан boost-ийн өдрийг «өмнөх үе»-д тооцохгүй
-    sales.forEach(function (y) { if (baseItem(y.item) !== k) return; if (o.inD[y.date]) { q += Number(y.qty) || 0; sa += Number(y.amount) || 0; } else if (o.preD[y.date]) pq += Number(y.qty) || 0; });
+    sales.forEach(function (y) { if (baseItem(y.item) !== k) return; if (o.inD[y.date]) { q += Number(y.qty) || 0; sa += Number(y.amount) || 0; gp += gpOf(y, fl); } else if (o.preD[y.date]) { pq += Number(y.qty) || 0; pgp += gpOf(y, fl); } });
+    var up = gp - pgp, net = up - o.a;
     return { key: k, n: o.n, days: o.d || '', usd: o.usd ? '$' + r0(o.usd) : '', _usd: o.usd, boost: r0(o.a), qty: r0(q), before: r0(pq), orders: on, cpo: on ? r0(Math.round(o.a / on)) : '',
-             sales: r0(sa), ratio: sa ? Math.round(o.a / sa * 100) + '%' : '—' };
+             sales: r0(sa), ratio: sa ? Math.round(o.a / sa * 100) + '%' : '—', uplift: r0(up), net: r0(net), verdict: verdict(net, o.run, fl.nc), roi: o.a ? Math.round(net / o.a * 100) : 0 };
   });
   var tq = sum(rows, 'orders');
   return { title: 'Boost бараагаар', cols: [c('key', 'Бараа'), m('n', 'Удаа'), m('days', 'Хоног'), c('usd', 'Доллар'), m('boost', 'Boost ₮'), m('qty', 'Зарсан (boost үед)'), m('before', 'Өмнөх ижил үе'),
-      m('orders', 'Захиалга'), m('cpo', 'Нэг захиалгын зардал'), m('sales', 'Борлуулалт (boost үед)'), c('ratio', 'Boost / борлуулалт')],
+      m('orders', 'Захиалга'), m('cpo', 'Нэг захиалгын зардал'), m('sales', 'Борлуулалт (boost үед)'), c('ratio', 'Boost / борлуулалт'), m('uplift', 'Нэмэлт ашиг'), m('net', 'Цэвэр үр дүн'), c('verdict', 'Дүгнэлт')],
     rows: rows.concat(det.length ? [{ key: '— Бичилтүүд —', _b: true }] : []).concat(det),
-    total: { key: 'Нийт', usd: sum(rows, '_usd') ? '$' + sum(rows, '_usd') : '', boost: sum(rows, 'boost'), qty: sum(rows, 'qty'), before: sum(rows, 'before'), orders: tq, cpo: tq ? Math.round(sum(rows, 'boost') / tq) : '', sales: sum(rows, 'sales') },
-    note: 'Boost үе = эхэлсэн өдрөөс хоногийн тоогоор (дуусаагүй бол өнөөдрийг хүртэл); «Өмнөх ижил үе» — түүнээс өмнөх ижил олон хоног. Захиалга — тэр хугацаанд тухайн бараатай ирсэн Cozy захиалга. Boost — зөвхөн бүртгэл, санхүүд банкны хуулгаар (7205) орно.' };
+    total: { key: 'Нийт', usd: sum(rows, '_usd') ? '$' + sum(rows, '_usd') : '', boost: sum(rows, 'boost'), qty: sum(rows, 'qty'), before: sum(rows, 'before'), orders: tq, cpo: tq ? Math.round(sum(rows, 'boost') / tq) : '', sales: sum(rows, 'sales'), uplift: sum(rows, 'uplift'), net: sum(rows, 'net') },
+    note: 'Нэмэлт ашиг = boost үеийн нийт ашиг (борлуулалт − өртөг) − өмнөх ижил үеийн нийт ашиг; Цэвэр үр дүн = нэмэлт ашиг − boost зардал (≥ 0 бол ашигтай). Boost үе = эхэлсэн өдрөөс хоногийн тоогоор (дуусаагүй бол өнөөдрийг хүртэл); «Өмнөх ижил үе» — түүнээс өмнөх ижил олон хоног. Захиалга — тэр хугацаанд тухайн бараатай ирсэн Cozy захиалга. Boost — зөвхөн бүртгэл, санхүүд банкны хуулгаар (7205) орно.' };
 }
 // Цаг, гарагаар: аль цагт хамгийн их зардаг вэ (ээлж төлөвлөхөд)
 var WDAYS = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'];
