@@ -152,8 +152,34 @@ function bankView() {
   }).join('');
   return head + '<div class="card"><h2>Төлбөрийн мэдээлэл (хэрэглэгчид илгээх мессежид)</h2><div class="bar-row"><input id="payInfo" value="' + esc(pay) + '" placeholder="Жишээ: Хаан банк 53xxxxxxxx (Н.Анужин)" style="flex:1;min-width:220px">' +
     '<button class="b-btn" onclick="savePayInfo()">Хадгалах</button></div><p class="muted" style="font-size:12.5px;margin-top:6px">Ажилтан захиалга бүртгэхэд «Төлбөрийн мессеж»-д энэ данс, дүн, «Гүйлгээний утга: утасны дугаар» бичигдэнэ — тулгалт автоматаар таарна.</p></div>' +
+    spSettingsCard(biz) +
     tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Гүйлгээний утга</th><th class="n">Орлого</th><th class="n">Зарлага</th><th>Юутай тулгах</th><th></th></tr>' +
     (rows || '<tr><td colspan="6" class="muted">' + (all.length ? 'Тулгах гүйлгээ алга' : 'Хуулга оруулаагүй байна — «Хуулга оруулах» дарна уу') + '</td></tr>') + '</table></div></div>';
+}
+// StorePay merchant API — түлхүүрийг зөвхөн серверт хадгална (энд хэзээ ч буцааж харуулахгүй); хоосон талбар хуучныг хэвээр үлдээнэ
+function spSettingsCard(biz) {
+  if (typeof isOwner === 'function' && !isOwner()) return '';
+  var on = (window.spAll || {})[biz];
+  return '<div class="card"><h2>StorePay холболт <small class="muted" style="font-weight:400">' + (on ? '· асаалттай' : '· тохируулаагүй') + '</small></h2>' +
+    '<p class="muted" style="font-size:12.5px;margin:-4px 0 10px">StorePay-ээс авсан merchant API-ийн мэдээллийг бичнэ. Нууц утгууд зөвхөн серверт хадгалагдаж, дахин харагдахгүй. Хоосон үлдээсэн талбар өөрчлөгдөхгүй.</p>' +
+    '<div class="row2"><div><label>App (client) нэр</label><input id="spAppUser" autocomplete="off"></div><div><label>App (client) нууц үг</label><input id="spAppPass" type="password" autocomplete="new-password"></div></div>' +
+    '<div class="row2"><div><label>Merchant нэвтрэх нэр</label><input id="spUser" autocomplete="off"></div><div><label>Merchant нууц үг</label><input id="spPass" type="password" autocomplete="new-password"></div></div>' +
+    '<div class="row2"><div><label>Store ID (' + esc(BIZ_NAMES_C(biz)) + ')</label><input id="spStore" inputmode="numeric" placeholder="' + (on ? 'тохируулсан — солих бол бичнэ' : 'жишээ: 1234') + '"></div><div></div></div>' +
+    '<div class="bar-row" style="margin-top:10px"><button class="b-btn" onclick="spSave(true)">Хадгалаад шалгах</button>' + (on ? '<button class="b-btn ghost" onclick="spSave(false,true)">Энэ компанид унтраах</button>' : '') +
+    '<small class="muted" id="spMsg"></small></div></div>';
+}
+function BIZ_NAMES_C(b) { return (BUSINESSES[b] && BUSINESSES[b].name) || b; }
+function spSave(test, off) {
+  var v = { appUser: $('spAppUser').value, appPass: $('spAppPass').value, user: $('spUser').value, pass: $('spPass').value };
+  var st = $('spStore').value.replace(/\D/g, ''); if (st) v.store = st; if (off) { v.off = true; if (!confirm('Энэ компанид StorePay-г унтраах уу?')) return; }
+  if (!API_URL) { toast('Google Sheet-тэй холбогдсон үед ажиллана'); return; }
+  $('spMsg').textContent = 'Хадгалж байна…';
+  post({ type: 'admin_setting', key: 'storepay', biz: state.biz, value: v, test: !!test }, function (err, d) {
+    if (err) { $('spMsg').textContent = 'Алдаа: ' + err; return; }
+    window.spAll = window.spAll || {}; window.spAll[state.biz] = !!d.on;
+    ['spAppPass', 'spPass'].forEach(function (k) { $(k).value = ''; });
+    $('spMsg').textContent = (d.on ? 'Асаалттай' : 'Store ID дутуу — асаагүй') + (d.test ? (d.test === 'ok' ? ' · StorePay-д амжилттай нэвтэрлээ' : ' · Нэвтрэх алдаа: ' + d.test) : '');
+  });
 }
 function savePayInfo() {
   var v = $('payInfo').value.trim();

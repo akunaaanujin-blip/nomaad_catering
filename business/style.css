@@ -1031,3 +1031,16 @@ body:not(.bz-admin) .pos-foot .btn:disabled{opacity:.6}
   .pos-total{cursor:pointer}
   .pos-total span::after{content:' · сагс харах ↓';font-weight:600;color:#6A5ADF}
 }
+/* StorePay */
+.pos-pay .seg.seg5{grid-template-columns:repeat(5,1fr)}
+.pos-pay .seg.seg5 button{font-size:12.5px;padding:10px 2px}
+.pos-sp{margin-top:10px}.pos-sp label{margin:0 0 6px}
+.sp-row{display:flex;gap:6px}.sp-row input{flex:1;padding:9px 10px;font-size:15px;border-radius:9px}.sp-row .btn{white-space:nowrap}
+.sp-info{display:block;font-size:13px;margin-top:6px;min-height:16px;color:#6B7280}.sp-info.ok{color:#15803D}.sp-info.bad{color:#B91C1C}
+.panel.pos{position:relative}
+.sp-wait{position:absolute;inset:0;z-index:5;background:rgba(248,249,250,.92);display:flex;align-items:center;justify-content:center;padding:20px}
+.sp-box{background:#fff;border:1px solid #E5E7EB;border-radius:16px;padding:28px 26px;max-width:380px;width:100%;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;box-shadow:0 10px 30px rgba(15,23,42,.08)}
+.sp-box b{font-size:17px}.sp-box small{color:#6B7280;font-size:13.5px}
+.sp-acts{display:flex;gap:8px;margin-top:10px}
+.sp-spin{width:36px;height:36px;border-radius:50%;border:3px solid #E5E7EB;border-top-color:#6A5ADF;animation:spspin .8s linear infinite;margin-bottom:6px}
+@keyframes spspin{to{transform:rotate(360deg)}}

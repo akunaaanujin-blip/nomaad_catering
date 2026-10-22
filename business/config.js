@@ -75,7 +75,7 @@ var EBARIMT_TEST = { legalName: 'ТЕСТИЙН ХЭРЭГЛЭГЧ 1', merchantT
 
 // Төлбөрийн хэлбэр → PosAPI код
 // «Зээлээр» — бараа өгөхөд баримт гаргана (төлбөрийн хэлбэр CASH), мөнгө нь дараа «Кассын орлого»-оор авлагаас хаагдана
-var EBARIMT_PAY = { 'Бэлэн': 'CASH', 'Карт': 'PAYMENT_CARD', 'Шилжүүлэг': 'PAYMENT_CARD', 'Зээлээр': 'CASH' };
+var EBARIMT_PAY = { 'Бэлэн': 'CASH', 'Карт': 'PAYMENT_CARD', 'Шилжүүлэг': 'PAYMENT_CARD', 'Зээлээр': 'CASH', 'StorePay': 'PAYMENT_CARD' };
 
 // ── Банкны данс → компани (дансны сүүлийн 4 оронгоор; бүтэн дугаарыг нийтийн кодонд бичихгүй) ──
 var BANK_ACCOUNTS = {

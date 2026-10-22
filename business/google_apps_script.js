@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v4.7 (хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v4.8 (StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -83,6 +83,8 @@ function tinTest() {
   return r;
 }
 function doPost(e) {
+  // StorePay — гадаад API хүлээдэг тул түгжээгүй (бусад бичилтийг саатуулахгүй); Sheet-д юу ч бичихгүй
+  try { const sp = JSON.parse(e.postData.contents); if (/^storepay_/.test(String(sp.type))) return json(storePay(sp)); } catch (e0) {}
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   let drop = null;
@@ -247,6 +249,7 @@ function adminRead(d) {
   a.docs = cacheGet('docs', docRows);
   a.tasks = cacheGet('task', taskRows);
   a.payInfo = payInfoAll();
+  a.storepay = {}; Object.keys(BIZ_NAMES).forEach(function (b) { a.storepay[b] = spOn(b); });   // зөвхөн асаалттай эсэх — түлхүүр буцаахгүй
   a.orders = cacheGet('ord', orderRows).map(function (o) { delete o.row; return o; });
   a.tasks = a.tasks.map(function (t) { delete t.row; return t; });
   a.products = cacheGet('prod', productRows).map(function (p) { const o = Object.assign({}, p); delete o.row; return o; });
@@ -1021,6 +1024,7 @@ function adminOrder(d) {
 }
 // Дэлгүүрийн төлбөрийн мэдээлэл (данс, эзэмшигч) — GitHub-д бичихгүй, Script Properties-д
 function adminSetting(d) {
+  if (d.key === 'storepay') return storePaySetting(d);
   if (d.key === 'accounts') { PropertiesService.getScriptProperties().setProperty('ACCOUNTS_X', JSON.stringify(d.value || []).slice(0, 8000)); return { status: 'ok' }; }
   if (d.key === 'lock') { const v = String(d.value || ''); if (v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) return { status: 'error', error: 'fields' }; PropertiesService.getScriptProperties().setProperty('LOCK', v); return { status: 'ok' }; }
   if (d.key === 'taxcfg') { PropertiesService.getScriptProperties().setProperty('TAXCFG', JSON.stringify(d.value || {}).slice(0, 8000)); return { status: 'ok' }; }
@@ -1047,6 +1051,76 @@ function adminSetting(d) {
 }
 function minStockAll() { const p = PropertiesService.getScriptProperties(), o = {}; Object.keys(BIZ_NAMES).forEach(function (b) { if (b !== 'mgmt') o[b] = JSON.parse(p.getProperty('MINSTOCK_' + b) || '{}'); }); return o; }
 function payInfoAll() { const p = PropertiesService.getScriptProperties(), o = {}; Object.keys(BIZ_NAMES).forEach(function (b) { o[b] = p.getProperty('PAYINFO_' + b) || ''; }); return o; }
+
+// ═══════════ STOREPAY (хэрэглэгч хувааж төлөх — merchant API) ═══════════
+// Түлхүүр Script Property STOREPAY = {appUser, appPass, user, pass, stores:{cozy:'id',...}} — ЗӨВХӨН энд, репод болон хөтөчид буцаахгүй.
+// Урсгал: possibleAmount (лимит) → merchant/loan (хүсэлт, хэрэглэгч апп дээрээ батална) → merchant/loan/check/{id} (баталсан эсэх).
+const SP_API = 'https://service.storepay.mn/lend-merchant/';
+function spCfg() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('STOREPAY') || '{}'); } catch (e) { return {}; } }
+function spOn(biz) { const c = spCfg(); return !!(c.user && c.appUser && c.stores && c.stores[biz]); }
+function spToken(c, fresh) {
+  const ck = CacheService.getScriptCache(), k = 'sp_tok_' + Utilities.base64EncodeWebSafe(String(c.user)).slice(0, 40);
+  const t = fresh ? null : ck.get(k); if (t) return t;
+  const url = 'https://service.storepay.mn/merchant-uaa/oauth/token?grant_type=password&username=' + encodeURIComponent(c.user) + '&password=' + encodeURIComponent(c.pass);
+  const r = UrlFetchApp.fetch(url, { method: 'post', headers: { Authorization: 'Basic ' + Utilities.base64Encode(c.appUser + ':' + c.appPass) },
+    contentType: 'application/json', payload: JSON.stringify({ username: c.user, password: c.pass }), muteHttpExceptions: true });
+  let d = {}; try { d = JSON.parse(r.getContentText() || '{}'); } catch (e) {}
+  if (!d.access_token) throw new Error('storepay_auth' + (d.error_description || d.error ? ': ' + (d.error_description || d.error) : ' (' + r.getResponseCode() + ')'));
+  const ex = Number(d.expires_in) || 0; if (ex > 120) ck.put(k, d.access_token, Math.min(21600, ex - 60));
+  return d.access_token;
+}
+function spCall(c, method, path, body) {
+  const go = function (fresh) {
+    const o = { method: method, headers: { Authorization: 'Bearer ' + spToken(c, fresh) }, contentType: 'application/json', muteHttpExceptions: true };
+    if (body) o.payload = JSON.stringify(body);
+    return UrlFetchApp.fetch(SP_API + path, o);
+  };
+  let r = go(false); if (r.getResponseCode() === 401) r = go(true);   // хугацаа дууссан токен
+  try { return JSON.parse(r.getContentText() || '{}'); } catch (e) { return { status: 'Failed', error: 'http ' + r.getResponseCode() }; }
+}
+function spErr(d) { const m = d && d.msgList && d.msgList[0]; return String((m && (m.text || m.code)) || (d && d.error) || 'storepay'); }
+function storePay(d) {
+  const who = checkStaff(d.token); if (!who) return { status: 'error', error: 'auth' };
+  const c = spCfg(), store = c.stores && c.stores[who.biz];
+  if (!c.user || !c.appUser || !store) return { status: 'error', error: 'storepay_off' };
+  const phone = String(d.phone || '').replace(/\D/g, '').slice(-8);
+  try {
+    if (d.type === 'storepay_amount') {
+      if (phone.length !== 8) return { status: 'error', error: 'phone' };
+      const r = spCall(c, 'post', 'user/possibleAmount', { mobileNumber: phone });
+      if (r.status === 'Failed') return { status: 'error', error: spErr(r) };
+      return { status: 'ok', amount: Number(r.value) || 0 };
+    }
+    if (d.type === 'storepay_create') {
+      const amount = Math.round(Number(d.amount) || 0);
+      if (phone.length !== 8 || !(amount > 0)) return { status: 'error', error: 'fields' };
+      const r = spCall(c, 'post', 'merchant/loan', { storeId: Number(store), mobileNumber: Number(phone), description: String(d.desc || BIZ_NAMES[who.biz]).slice(0, 120),
+        amount: amount, callbackUrl: '', requestId: String(d.requestId || ('NB' + Date.now())).slice(0, 60) });
+      if (r.status !== 'Success') return { status: 'error', error: spErr(r) };
+      return { status: 'ok', id: String(r.value) };
+    }
+    if (d.type === 'storepay_check') {
+      if (!d.id) return { status: 'error', error: 'fields' };
+      const r = spCall(c, 'get', 'merchant/loan/check/' + encodeURIComponent(String(d.id)));
+      if (r.status === 'Failed') return { status: 'error', error: spErr(r) };
+      return { status: 'ok', paid: !!r.value };
+    }
+  } catch (err) { return { status: 'error', error: String(err.message || err).slice(0, 200) }; }
+  return { status: 'error', error: 'type' };
+}
+// Удирдлага (зөвхөн Эзэн): түлхүүр хадгалах — хоосон талбар хуучныг хэвээр үлдээнэ; test=true бол токен авч шалгана. Нууц утгыг хэзээ ч буцаахгүй.
+function storePaySetting(d) {
+  if (!d._who || d._who.role !== 'Эзэн') return { status: 'error', error: 'role' };
+  const c = spCfg(), v = d.value || {};
+  ['appUser', 'appPass', 'user', 'pass'].forEach(function (k) { if (String(v[k] || '').trim()) c[k] = String(v[k]).trim().slice(0, 200); });
+  c.stores = c.stores || {};
+  if (d.biz && BIZ_NAMES[d.biz] && v.store !== undefined) { const st = String(v.store || '').replace(/\D/g, ''); if (st) c.stores[d.biz] = st; else delete c.stores[d.biz]; }
+  if (v.off) { delete c.stores[d.biz]; }
+  PropertiesService.getScriptProperties().setProperty('STOREPAY', JSON.stringify(c));
+  const out = { status: 'ok', on: spOn(d.biz), stores: Object.keys(c.stores) };
+  if (d.test) { try { spToken(c, true); out.test = 'ok'; } catch (e) { out.test = String(e.message || e).slice(0, 200); } }
+  return out;
+}
 
 // ═══════════ ЗЭЭЛИЙН БҮРТГЭЛ (авсан / өгсөн) ═══════════
 // Мөнгөн гүйлгээ нь журналд «#ID» лавлагаатай бичигдэнэ (үндсэн 3501 / 1210, хүү 7401 / 5202) — үлдэгдлийг тэндээс тооцно.
@@ -1386,7 +1460,7 @@ function products(biz) {
   if (last < 2) return { status: 'ok', products: [] };
   const list = productRows().filter(function (p) { return p.biz === biz; })
     .map(function (p) { return { name: p.name, unit: p.unit, price: p.price, cls: p.cls, cat: p.cat, off: p.off }; });
-  return { status: 'ok', products: list, payInfo: PropertiesService.getScriptProperties().getProperty('PAYINFO_' + biz) || '' };
+  return { status: 'ok', products: list, payInfo: PropertiesService.getScriptProperties().getProperty('PAYINFO_' + biz) || '', storepay: spOn(biz) };
 }
 function productRows() {
   const sh = prodSheet(), last = sh.getLastRow();

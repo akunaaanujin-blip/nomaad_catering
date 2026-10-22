@@ -90,7 +90,7 @@ function fetchAll(cb) {
     Object.keys(stockData).forEach(function (b) { if (stockData[b]) delete stockData[b][FEE_ITEM]; });   // хүргэлтийн төлбөр — бараа биш
     journal = d.journal || []; partners = d.partners || []; sheetProducts = d.products || []; applyProducts(); meta = d.meta || {};
     reminders = d.reminders || []; window.adminOrders = d.orders || []; window.loans = d.loans || []; window.pos = d.pos || []; window.bankLinks = d.bankLinks || [];
-    bankLines = d.bank || []; window.payInfoAll = d.payInfo || {}; tasks = d.tasks || []; taxCfg = d.taxcfg || {}; customDocs = d.docs || [];
+    bankLines = d.bank || []; window.payInfoAll = d.payInfo || {}; window.spAll = d.storepay || {}; tasks = d.tasks || []; taxCfg = d.taxcfg || {}; customDocs = d.docs || [];
     accountsX = d.accountsX || []; applyCustomAccounts(accountsX); meta.lock = d.lock || '';
     window.kpiCfg = d.kpi || {}; window.assets = d.assets || []; window.minStock = d.minstock || {};
     window.digestCfg = d.digest || { on: false, to: '' }; window.priceLog = d.priceLog || [];
@@ -156,7 +156,7 @@ function sums(list) {
     var a = Number(x.amount) || 0;
     if (x.type === 'sale') {
       s.sales += a; if (a > 0) s.n++;
-      if (x.pay === 'Карт') s.card += a; else if (x.pay === 'Шилжүүлэг') s.transfer += a; else if (x.pay === 'Зээлээр' || x.pay === 'Урьдчилгаа') s.credit += a; else s.cash += a;
+      if (x.pay === 'Карт') s.card += a; else if (x.pay === 'Шилжүүлэг') s.transfer += a; else if (x.pay === 'Зээлээр' || x.pay === 'Урьдчилгаа' || x.pay === 'StorePay') s.credit += a; else s.cash += a;
     } else if (x.type === 'expense') s.exp += a;
   });
   return s;
