@@ -256,12 +256,17 @@ function ordAct(id, v) {
   if (v === 'r') ordReceive(id); else if (v === 'm') copyPayMsg(id); else if (v === 'e') openOrder(id);
   else quickOrd(id, v.charAt(0) === 's' ? 'status' : 'paid', v.slice(2));
 }
+var ordQ = '';
+function ordMatch(o) {
+  var q = ordQ.toLowerCase().trim(); if (!q) return true;
+  return [o.phone, o.phone2, o.customer, o.address, o.district, ordItemsText(o), o.status].join(' ').toLowerCase().indexOf(q) >= 0;
+}
 function renderOrders() {
   var el = $('orderList'); if (!el) return;
   var cnt = function (t) { var keep = ordTab; ordTab = t; var n = orders.filter(ordFilter).length; ordTab = keep; return n; };
   $('orderTabs').innerHTML = ORD_TABS.map(function (t) { return '<button class="' + (ordTab === t[0] ? 'on' : '') + '" onclick="ordTab=\'' + t[0] + '\';renderOrders()">' + t[1] + ' <small>' + cnt(t[0]) + '</small></button>'; }).join('');
   if (typeof renderNav === 'function') renderNav();
-  var list = orders.filter(ordFilter).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
+  var list = orders.filter(ordFilter).filter(ordMatch).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
   var STC = { 'Шинэ': 'b', 'Буухиад өгсөн': 'y', 'Хүргэгдсэн': 'g', 'Буцаасан': 'r', 'Цуцалсан': 'r' };
   var rows = list.map(function (o, idx) {
     var fee = ordFee(o), opts = [];

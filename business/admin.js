@@ -416,7 +416,21 @@ function salesModule() {
       return '<tr><td>' + esc(k) + '</td><td class="n">' + fmt(byStaff[k]) + '</td></tr>';
     }).join('') : '<tr><td class="muted">Борлуулалт алга</td></tr>') + '</table></div></div>' +
     '<div class="card"><h2>Шилдэг бараа</h2><div class="scroll"><table>' + topProducts(sales, 10) + '</table></div></div></div>' +
-    '<div class="card"><h2>Гүйлгээ</h2><div class="scroll"><table>' + recordRows(sales.slice().reverse().slice(0, 300)) + '</table></div></div>';
+    '<div class="card" id="txCard"><div class="bar-row"><h2 style="margin:0">Гүйлгээ</h2><input class="search" type="search" placeholder="Бараа, ажилтан, төлбөрөөр хайх…" oninput="rowSearch(this,\'#txCard\')" style="max-width:300px"><small class="muted" id="srCount"></small></div>' +
+    '<div class="scroll" style="margin-top:8px"><table>' + recordRows(sales.slice().reverse().slice(0, 300)) + '</table></div></div>';
+}
+// Хайлт: хүснэгтийн мөрийг шууд шүүнэ (дахин зурахгүй). Хайж байхад «Нийт» мөр нуугдана.
+function searchBox(ph) {
+  return '<div class="filter" style="margin-bottom:10px"><label>Хайх<input class="search" type="search" placeholder="' + ph + '" oninput="rowSearch(this)" style="min-width:280px"></label><small class="muted" id="srCount" style="align-self:center"></small></div>';
+}
+function rowSearch(inp, scope) {
+  var q = String(inp.value).toLowerCase().trim(), n = 0, tot = 0;
+  [].forEach.call(document.querySelectorAll((scope || '#view .card.rep') + ' table tr'), function (tr) {
+    if (tr.querySelector('th')) return;
+    if (tr.classList.contains('tot')) { tr.style.display = q ? 'none' : ''; return; }
+    tot++; var hit = !q || tr.textContent.toLowerCase().indexOf(q) >= 0; tr.style.display = hit ? '' : 'none'; if (hit) n++;
+  });
+  var c = $('srCount'); if (c) c.textContent = q ? n + ' / ' + tot + ' олдлоо' : '';
 }
 function kpi(label, val, sub) {
   return '<div class="biz"><div class="muted">' + label + '</div><div class="rev">' + val + '</div>' + (sub ? '<div class="muted">' + sub + '</div>' : '') + '</div>';
@@ -1069,6 +1083,7 @@ function subBody() {
     ACCOUNTS.map(function (a) { return '<option value="' + a[0] + '"' + (state.acc === a[0] ? ' selected' : '') + '>' + a[0] + ' ' + esc(a[1]) + '</option>'; }).join('') + '</select></label></div>';
   if (mod === 'finance' && sub === 'entry') pre = '<p class="hint">Борлуулалт, зарлага, бараа, цалин санхүүд <b>автоматаар</b> бичигддэг. Энд зөвхөн бусад гүйлгээг (эхний үлдэгдэл, хөрөнгө оруулалт, зээл, банкинд тушаах, нийлүүлэгчид төлөх г.м) оруулна.</p>';
   if (sub === 'entry') rep.edit = 'editEntry';
+  if (mod === 'sales' && /^(receipts|orders|item)$/.test(sub)) pre += searchBox(sub === 'orders' ? 'Утас, нэр, бараагаар хайх…' : sub === 'item' ? 'Барааны нэрээр хайх…' : 'Бараа, ажилтан, ДДТД-аар хайх…');
   return pre + reportCard(rep, { entry: 'cancelEntry', in: 'cancelMove', expenses: 'cancelRecord', vouchers: 'cancelEntry', catalog: 'openProduct' }[sub]) + post;
 }
 
