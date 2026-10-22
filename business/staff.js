@@ -178,6 +178,7 @@ function loadProducts() {
     save(LS_PROD, sheetProducts);
     if (data.payInfo !== undefined) save('nb_payinfo_' + BIZ_KEY, data.payInfo);   // захиалгын төлбөрийн мессежид
     save('nb_sp_' + BIZ_KEY, !!data.storepay); spShowBtn();   // StorePay тохируулсан эсэх
+    if (data.barcodes) save('nb_bc_' + BIZ_KEY, data.barcodes);   // баркод → барааны нэр
     products = mergeProducts(BIZ.products, sheetProducts);
   });
 }
@@ -384,6 +385,8 @@ function openSale(mode) {
   $('saleSearch').value = '';
   $('saleSearchWrap').style.display = products.length > 8 ? 'block' : 'none';
   if ($('saleCash')) $('saleCash').value = '';
+  if (BIZ.barcode && $('saleSearchWrap') && !$('scanBtn')) $('saleSearchWrap').insertAdjacentHTML('beforeend', '<button class="btn sm ghost2 scan-btn" id="scanBtn" onclick="scanOpen()">Скан</button>');
+  scanClose();
   if ($('saleDisc')) { $('saleDisc').value = ''; setDiscU('%'); $('salePhone').value = ''; $('salePhoneHint').textContent = ''; $('saleSplitOn').checked = false; $('saleSplitAmt').value = ''; $('saleSplitWrap').style.display = 'none'; }
   parkBtnUpd();
   if ($('saleSpPhone')) { $('saleSpPhone').value = ''; $('saleSpInfo').textContent = ''; }
@@ -866,7 +869,8 @@ function renderToday() {
       return '<li class="bill-row" onclick="openBill(\'' + jsqS(row.bill) + '\')"><span><b>' + esc(b.items.slice(0, 3).join(', ') + (b.items.length > 3 ? ' +' + (b.items.length - 3) : '')) + '</b>' +
         '<small>' + esc(b.time) + ' · ' + esc(b.pays.join(' + ')) + (b.customer ? ' · ' + esc(b.customer) : '') + (b.disc ? ' · хөнгөлөлт ' + fmt(b.disc) : '') +
         (b.ddtd ? ' · баримттай' : '') + (b.retAll ? ' · <b>буцаагдсан</b>' : b.ret ? ' · хэсэгчлэн буцаасан' : '') + '</small></span>' +
-        '<span class="amt ' + (b.net < 0 ? 'r' : 'g') + '">' + (b.net < 0 ? '−' + fmt(-b.net) : fmt(b.net)) + '</span></li>';
+        '<span class="amt ' + (b.net < 0 ? 'r' : 'g') + '">' + (b.net < 0 ? '−' + fmt(-b.net) : fmt(b.net)) + '</span>' +
+        (b.retAll || b.net <= 0 ? '' : '<button class="mini neg bill-x" onclick="event.stopPropagation();billCancel(\'' + jsqS(row.bill) + '\')">Цуцлах</button>') + '</li>';
     }
     var r = row.r;
     if (r.type === 'collect') {
@@ -919,7 +923,7 @@ function openBill(key) {
     '<p class="muted bill-pay">Төлбөр: ' + b.pays.map(function (k) { return esc(k) + ' ' + fmt(b.payAmt[k]); }).join(' + ') + '</p>' +
     '<div id="billRet"></div>' +
     '<div class="bill-acts"><button class="btn sm ghost2" onclick="printBill(\'' + jsqS(key) + '\')">Хэвлэх</button>' +
-    (canRet ? (b.ddtd ? (typeof ebEnabled === 'function' && ebEnabled() ? '<button class="btn sm ghost2" onclick="closeSheet(\'billSheet\');ebReturn(\'' + b.goods[0].id + '\')">Бүтэн буцаах (И-баримт)</button>' : '') :
+    (canRet ? '<button class="btn sm ghost2 neg" onclick="billCancel(\'' + jsqS(key) + '\')">Бүтнээр цуцлах</button>' : '') + (canRet ? (b.ddtd ? (typeof ebEnabled === 'function' && ebEnabled() ? '<button class="btn sm ghost2" onclick="closeSheet(\'billSheet\');ebReturn(\'' + b.goods[0].id + '\')">Бүтэн буцаах (И-баримт)</button>' : '') :
       '<button class="btn sm" onclick="billReturnForm(\'' + jsqS(key) + '\')">Буцаах</button>') : '') + '</div>' +
     (b.ddtd && canRet ? '<p class="muted" style="font-size:12px;margin-top:8px">И-баримттай баримтыг хэсэгчлэн буцаахдаа «Баримтын түүх» → «Засах»-аар шинэ баримт гаргана.</p>' : '');
   openSheet('billSheet');
@@ -952,6 +956,66 @@ function billReturnSave(key) {
   out.forEach(function (r) { stockTake(r.item, r.qty); });
   addRecords(out); toast('Буцаалт бүртгэгдлээ — бараа үлдэгдэлд нэмэгдлээ'); openBill(key);
 }
+// Баримтыг бүтнээр цуцлах: И-баримттай бол PosAPI-аар буцаана, үгүй бол буцаалтын мөр бичиж бараа үлдэгдэлд нэмнэ
+function billCancel(key) {
+  var b = billInfo(key); if (!b.goods.length || b.retAll) return;
+  if (b.ddtd) { if (typeof ebEnabled === 'function' && ebEnabled()) { closeSheet('billSheet'); ebReturn(b.goods[0].id); } else toast('И-баримттай баримтыг цуцлахад PosAPI асаалттай байх ёстой'); return; }
+  var ratio = b.gross ? b.disc / b.gross : 0, mainPay = b.goods[0].pay || 'Бэлэн', out = [];
+  b.goods.forEach(function (x) {
+    var q = x.qty - returnedQty(b.lines, x.item); if (!(q > 0)) return;
+    var unit = Math.round(x.price * (1 - ratio) * 100) / 100;
+    out.push({ type: 'sale', item: x.item + ' (буцаалт)', qty: -q, unit: x.unit, price: unit, amount: -Math.round(q * unit), pay: mainPay, bill: key, customer: x.customer || '', note: 'Буцаалт: Баримт цуцалсан' });
+  });
+  if (!out.length) return;
+  var tot = -out.reduce(function (a, r) { return a + r.amount; }, 0);
+  if (!confirm('Баримтыг бүтнээр цуцлах уу?\n' + b.items.join(', ') + '\nБуцаах: ' + fmt(tot) + ' (' + mainPay + ')' + (mainPay === 'StorePay' ? '\nStorePay-ийн мөнгийг StorePay-аас өөрөө буцаана уу.' : ''))) return;
+  out.forEach(function (r) { stockTake(r.item, r.qty); });
+  addRecords(out); closeSheet('billSheet'); toast('Баримт цуцлагдлаа — бараа үлдэгдэлд нэмэгдлээ');
+}
+// ── Баркод: утасны камераар уншуулж барааг сагсанд нэмнэ (Chrome Android / компьютер) ──
+// Бүртгэлгүй баркод уншигдвал «аль бараа вэ?» гэж асууж холбоно — дараа нь автоматаар таньна.
+var scan = { stream: null, timer: null, det: null, last: '', lastAt: 0, pending: '' };
+function bcMap() { return load('nb_bc_' + BIZ_KEY, {}) || {}; }
+function scanOpen() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { alert('Камер ашиглах боломжгүй — Chrome хөтөч, https хаяг дээр нээнэ үү.'); return; }
+  var go = function () {
+    ensureScanBox(); $('scanBox').style.display = 'flex'; $('scanMsg').textContent = 'Баркодоо камерт ойртуулна уу';
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(function (st) {
+      scan.stream = st; var v = $('scanVideo'); v.srcObject = st; v.play();
+      if ('BarcodeDetector' in window) { scan.det = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'qr_code'] }); scan.timer = setInterval(scanTick, 350); }
+      else $('scanMsg').textContent = 'Энэ хөтөч баркод уншихыг дэмжихгүй — Chrome ашиглана уу';
+    }).catch(function (e) { $('scanMsg').textContent = 'Камер нээгдсэнгүй: ' + ((e && e.message) || e); });
+  };
+  go();
+}
+function scanClose() { clearInterval(scan.timer); if (scan.stream) scan.stream.getTracks().forEach(function (t) { t.stop(); }); scan.stream = null; var b = $('scanBox'); if (b) b.style.display = 'none'; scan.pending = ''; }
+function ensureScanBox() {
+  if ($('scanBox')) return;
+  document.querySelector('#saleSheet .panel').insertAdjacentHTML('beforeend', '<div class="scan-box" id="scanBox" style="display:none"><div class="scan-in"><video id="scanVideo" playsinline muted></video><div class="scan-line"></div></div>' +
+    '<div class="scan-msg" id="scanMsg"></div><div id="scanAsk"></div><button class="btn sm" onclick="scanClose()">Дуусгах</button></div>');
+}
+function scanTick() {
+  var v = $('scanVideo'); if (!v || v.readyState < 2 || scan.pending) return;
+  scan.det.detect(v).then(function (r) {
+    if (!r.length) return; var code = r[0].rawValue, now = Date.now();
+    if (code === scan.last && now - scan.lastAt < 2000) return; scan.last = code; scan.lastAt = now;
+    scanHandle(code);
+  }).catch(function () {});
+}
+function scanHandle(code) {
+  var name = bcMap()[code], i = name ? products.findIndex(function (p) { return p.name === name; }) : -1;
+  if (i >= 0) { pickProduct(i); $('scanMsg').textContent = '✓ ' + name; if (navigator.vibrate) navigator.vibrate(60); return; }
+  scan.pending = code; var opts = products.map(function (p, k) { return '<option value="' + k + '">' + esc(p.name) + '</option>'; }).join('');
+  $('scanMsg').textContent = 'Шинэ баркод ' + code + ' — аль бараа вэ?';
+  $('scanAsk').innerHTML = '<select id="scanSel"><option value="">— Бараа сонгох —</option>' + opts + '</select><div class="sp-acts"><button class="btn sm" onclick="scanLink()">Холбох</button><button class="btn sm ghost2" onclick="scan.pending=\'\';$(\'scanAsk\').innerHTML=\'\'">Алгасах</button></div>';
+}
+function scanLink() {
+  var k = $('scanSel').value, code = scan.pending; if (k === '' || !code) { toast('Бараагаа сонгоно уу'); return; }
+  var p = products[Number(k)], m = bcMap(); m[code] = p.name; save('nb_bc_' + BIZ_KEY, m);
+  if (API_URL) fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'barcode_set', token: session ? session.token : '', code: code, name: p.name }) }).catch(function () {});
+  scan.pending = ''; $('scanAsk').innerHTML = ''; pickProduct(Number(k)); $('scanMsg').textContent = '✓ Холбогдлоо: ' + p.name;
+}
+
 // Энгийн баримт хэвлэх (И-баримтгүй дэлгүүрт ч)
 function printBill(key) {
   var b = billInfo(key), w = window.open('', '_blank', 'width=380,height=600'); if (!w) { toast('Цонх нээгдсэнгүй — хөтчийн popup-ыг зөвшөөрнө үү'); return; }

@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v5.0 (хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v5.1 (баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -111,6 +111,7 @@ function doPost(e) {
     if (data.type === 'admin_setting') return json(isAdmin(data) ? adminSetting(data) : { status: 'error', error: 'auth' });
     if (data.type === 'tasks') return json(staffTasks(data));
     if (data.type === 'record_receipt') return json(recordReceipt(data));
+    if (data.type === 'barcode_set') return json(barcodeSet(data));
     if (data.type === 'task_done') return json(staffTaskDone(data));
     if (data.type === 'admin_reminder') return json(isAdmin(data) ? adminReminder(data) : { status: 'error', error: 'auth' });
     if (data.type === 'order_save') return json(orderSave(data));
@@ -1464,7 +1465,19 @@ function data(from) {
 function products(biz) {
   const list = cacheGet('prod', productRows).filter(function (p) { return p.biz === biz; })   // кэш — бараа засахад цэвэрлэгдэнэ
     .map(function (p) { return { name: p.name, unit: p.unit, price: p.price, cls: p.cls, cat: p.cat, off: p.off }; });
-  return { status: 'ok', products: list, payInfo: PropertiesService.getScriptProperties().getProperty('PAYINFO_' + biz) || '', storepay: spOn(biz) };
+  let bc = {}; try { bc = JSON.parse(PropertiesService.getScriptProperties().getProperty('BARCODES_' + biz) || '{}'); } catch (e) {}
+  return { status: 'ok', products: list, payInfo: PropertiesService.getScriptProperties().getProperty('PAYINFO_' + biz) || '', storepay: spOn(biz), barcodes: bc };
+}
+// Баркод → барааны нэр (дэлгүүр тус бүр Script Property BARCODES_<biz>). Ажилтан кассаас уншуулж сургана; name хоосон бол баркодыг устгана.
+function barcodeSet(d) {
+  const who = checkStaff(d.token); if (!who) return { status: 'error', error: 'auth' };
+  const code = String(d.code || '').replace(/\s/g, '').slice(0, 40), name = String(d.name || '').trim().slice(0, 80);
+  if (code.length < 4) return { status: 'error', error: 'fields' };
+  const pr = PropertiesService.getScriptProperties(), k = 'BARCODES_' + who.biz;
+  let m = {}; try { m = JSON.parse(pr.getProperty(k) || '{}'); } catch (e) {}
+  if (name) m[code] = name; else delete m[code];
+  const js = JSON.stringify(m); if (js.length > 8500) return { status: 'error', error: 'too_big' };
+  pr.setProperty(k, js); return { status: 'ok' };
 }
 function productRows() {
   const sh = prodSheet(), last = sh.getLastRow();
