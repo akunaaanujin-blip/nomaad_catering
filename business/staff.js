@@ -110,12 +110,12 @@ function showMain() {
 var shellView = 'dash';
 function navMenu() {   // зөвхөн хуудсууд — үйлдлийн товчнууд хуудас дотроо нэг л удаа
   var g = [['dash', 'Борлуулалт', function () { showView('dash'); }]];
-  if (BIZ.orders) g.push(['orders', 'Захиалга', function () { showView('orders', 'new'); }]);
   return [{ t: '', items: g }];
 }
 function buildShell() {
   var main = $('main'); if (!main || main.classList.contains('ep-app')) { renderNav(); return; }
   main.classList.add('ep-app');
+  if (navMenu()[0].items.length <= 1) main.classList.add('no-nav');   // ганц хуудас — зүүн цэсгүй
   var nav = document.createElement('nav'); nav.className = 'ep-nav'; nav.id = 'epNav';
   var body = document.createElement('div'); body.className = 'ep-body';
   while (main.firstChild) body.appendChild(main.firstChild);
@@ -126,7 +126,6 @@ function buildShell() {
   var wrap = body.querySelector('.wrap');
   if (wrap) {
     wrap.insertAdjacentHTML('afterbegin', '<h2 class="ep-title" id="epTitle"></h2>');
-    var ol = $('orderList'); if (ol) { var card = ol.closest('.card'); if (card) card.setAttribute('data-view', 'orders'); }
   }
   renderNav(); showView('dash');
 }
@@ -298,9 +297,87 @@ function spOverlay(title, sub, stuck) {
     (sale.spId ? '<div class="sp-acts">' + (stuck ? '<button class="btn sm" onclick="spRecheck()">Дахин шалгах</button>' : '') + '<button class="btn sm ghost2" onclick="spCancel()">Болих</button></div>' : '') + '</div>';
 }
 
+// ── Нэг касс: «Дэлгүүрт» (шууд борлуулалт) эсвэл «Хүргэлтээр» (захиалга — буухиад өгөхөд борлуулалт болно) ──
+function ensureDlv() {
+  if ($('posMode')) return;
+  var right = document.querySelector('#saleSheet .pos-right'), extra = document.querySelector('#saleSheet .pos-extra');
+  if (!right || !extra) return;
+  right.insertAdjacentHTML('afterbegin', '<div class="pos-mode" id="posMode"><button data-m="shop" onclick="setMode(\'shop\')">Дэлгүүрт</button><button data-m="dlv" onclick="setMode(\'dlv\')">Хүргэлтээр</button></div>');
+  var dist = ['Баянзүрх', 'Баянгол', 'Сүхбаатар', 'Чингэлтэй', 'Хан-Уул', 'Сонгинохайрхан', 'Налайх', 'Багануур', 'Багахангай'];
+  extra.insertAdjacentHTML('afterend', '<div class="pos-dlv" id="posDlv" style="display:none">' +
+    '<div class="pe-row"><label for="dPhone">Утас *</label><input id="dPhone" inputmode="tel" maxlength="12" placeholder="99112233" oninput="dlvHint()"></div><small id="dHint" class="pe-hint"></small>' +
+    '<div class="pe-row"><label for="dName">Нэр</label><input id="dName" placeholder="Facebook нэр"></div>' +
+    '<div class="pe-row"><label for="dPhone2">Нэмэлт утас</label><input id="dPhone2" inputmode="tel" maxlength="12"></div>' +
+    '<label for="dAddr" class="d-lbl">Хаяг * <small class="muted">(хороолол, байр, тоот, орц, код)</small></label><textarea id="dAddr" rows="2" oninput="dlvAddr()"></textarea>' +
+    '<div class="d-row3"><select id="dDist"><option value="">Дүүрэг</option>' + dist.map(function (d) { return '<option>' + d + '</option>'; }).join('') + '</select><input id="dKhoroo" placeholder="Хороо"><input id="dCity" value="Улаанбаатар" placeholder="Хот / аймаг"></div>' +
+    '<div class="d-row3"><label>Хүргэх өдөр<input id="dDate" type="date"></label><label>Хүргэлт (₮)<input id="dFee" type="number" inputmode="numeric" min="0" oninput="calcSale()"></label><label>Төлбөр<select id="dPaid"><option>Ороогүй</option><option>Орсон</option></select></label></div>' +
+    '<input id="dNote" placeholder="Хүргэлтийн тайлбар (заавал биш)">' +
+    '<label class="or-print"><input type="checkbox" id="dPrint"> Хадгалаад шошго хэвлэх</label></div>');
+}
+function setMode(m) {
+  if (!$('posMode')) return;
+  sale.mode = m;
+  [].forEach.call($('posMode').children, function (b) { b.classList.toggle('on', b.dataset.m === m); });
+  var dlv = m === 'dlv';
+  $('posDlv').style.display = dlv ? '' : 'none';
+  document.querySelector('#saleSheet .pos-pay').style.display = dlv ? 'none' : '';
+  var ph = $('salePhone'); if (ph) ph.closest('.pe-row').style.display = dlv ? 'none' : '';
+  if ($('salePhoneHint')) $('salePhoneHint').style.display = dlv ? 'none' : '';
+  document.querySelector('#saleSheet .pos-head h2').textContent = dlv ? 'Захиалга (хүргэлтээр)' : 'Борлуулалт';
+  if (dlv && !$('dFee').value) {
+    $('dFee').value = typeof FEE_DEFAULT !== 'undefined' ? FEE_DEFAULT : 7000;
+    $('dDate').value = todayStr(new Date(Date.now() + 864e5));
+    $('dPrint').checked = typeof lblAuto === 'function' && lblAuto();
+  }
+  if (sale.cart) calcSale();
+}
+function dlvReset() { ['dPhone', 'dName', 'dPhone2', 'dAddr', 'dKhoroo', 'dNote', 'dFee'].forEach(function (k) { if ($(k)) $(k).value = ''; }); if ($('dDist')) $('dDist').value = ''; if ($('dCity')) $('dCity').value = 'Улаанбаатар'; if ($('dHint')) $('dHint').textContent = ''; }
+function dlvAddr() {
+  var t = $('dAddr').value;
+  if (typeof guessDistrict === 'function' && !$('dDist').value) $('dDist').value = guessDistrict(t);
+  if (typeof guessKhoroo === 'function' && !$('dKhoroo').value) $('dKhoroo').value = guessKhoroo(t);
+}
+function dlvHint() {   // өмнөх захиалга (энэ төхөөрөмж дээрх жагсаалтаас)
+  var k = String($('dPhone').value).replace(/\D/g, '').slice(-8), el = $('dHint');
+  if (k.length < 8 || typeof orders === 'undefined') { el.textContent = ''; return; }
+  var L = orders.filter(function (o) { return String(o.phone).replace(/\D/g, '').slice(-8) === k; }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
+  if (!L.length) { el.textContent = 'Шинэ хэрэглэгч'; return; }
+  var l = L[L.length - 1];
+  el.innerHTML = 'Өмнө ' + L.length + ' захиалга · сүүлд ' + esc(l.date) + (l.address && !$('dAddr').value.trim() ? ' <button class="mini" onclick="dlvFill(\'' + l.id + '\')">Өмнөх хаягаар</button>' : '');
+}
+function dlvFill(id) {
+  var l = orders.filter(function (o) { return o.id === id; })[0]; if (!l) return;
+  if (!$('dName').value.trim()) $('dName').value = l.customer || '';
+  $('dAddr').value = l.address || ''; $('dDist').value = l.district || ''; $('dKhoroo').value = l.khoroo || ''; $('dCity').value = l.city || 'Улаанбаатар';
+  if (!$('dPhone2').value.trim()) $('dPhone2').value = l.phone2 || '';
+}
+function submitDelivery() {
+  for (var i = 0; i < sale.cart.length; i++) { var l = sale.cart[i]; if (!(Number(l.qty) > 0) || !(Number(l.price) > 0)) { toast(l.name + ' — тоо, үнийг шалгана уу'); return; } }
+  var phone = String($('dPhone').value).replace(/\D/g, '');
+  if (!/^\d{8}$/.test(phone)) { toast('Утасны дугаар 8 оронтой байна'); $('dPhone').focus(); return; }
+  if ($('dAddr').value.trim().length < 5) { toast('Хаягаа дэлгэрэнгүй бичнэ үү'); $('dAddr').focus(); return; }
+  var dsc = discAmt(); if (dsc && !isManager && dsc > cartGross() * 0.1 + 0.5) { toast('10%-иас их хөнгөлөлтийг менежер өгнө'); return; }
+  var items = sale.cart.map(function (l) { return { name: l.name, qty: Number(l.qty), price: Number(l.price) }; });
+  if (dsc) items.push({ name: DISC_ITEM, qty: 1, price: -dsc });
+  if (dlvFee()) items.push({ name: FEE_ITEM, qty: 1, price: dlvFee() });
+  var o = { customer: $('dName').value.trim(), phone: phone, phone2: String($('dPhone2').value).replace(/\D/g, ''), city: $('dCity').value.trim() || 'Улаанбаатар',
+    district: $('dDist').value, khoroo: $('dKhoroo').value.trim(), address: $('dAddr').value.trim(), items: items,
+    amount: Math.round(items.reduce(function (a, x) { return a + x.qty * x.price; }, 0)), deliverDate: $('dDate').value,
+    payType: 'Шилжүүлэг', paid: $('dPaid').value, status: 'Шинэ', note: $('dNote').value.trim() };
+  if (typeof ordShort === 'function' && ordShort(o).length) toast('Анхаар: үлдэгдэл хүрэлцэхгүй — орлого ортол буухиад өгөх боломжгүй');
+  var doPrint = $('dPrint').checked; save('nb_lbl_auto', doPrint);
+  saveOrder(o, function (saved) {
+    closeSheet('saleSheet'); dlvReset(); toast('Захиалга бүртгэгдлээ');
+    if (typeof ordTab !== 'undefined') { ordTab = 'new'; renderOrders(); }
+    if (doPrint && typeof lblQuick === 'function') lblQuick([saved.id]);
+    else if (saved.paid !== 'Орсон' && typeof copyPayMsg === 'function') copyPayMsg(saved.id);
+  });
+}
+
 // ── Борлуулалт (сагс: олон бараа → нэг баримт) ──
-function openSale() {
-  sale = { cart: [], pay: 'Бэлэн', cat: '', edit: null, discU: '%' };
+function openSale(mode) {
+  sale = { cart: [], pay: 'Бэлэн', cat: '', edit: null, discU: '%', mode: 'shop' };
+  if (BIZ.orders) { ensureDlv(); setMode(mode === 'dlv' ? 'dlv' : 'shop'); }
   salePop = popularity();
   if ($('saleEditNote')) $('saleEditNote').style.display = 'none';
   $('saleSearch').value = '';
@@ -438,7 +515,8 @@ function discAmt() {
   if (v <= 0) return 0;
   return Math.min(g, Math.round(sale.discU === '%' ? g * Math.min(v, 100) / 100 : v));
 }
-function cartTotal() { return cartGross() - discAmt(); }   // төлөх дүн (хөнгөлөлтийн дараа)
+function cartTotal() { return cartGross() - discAmt() + dlvFee(); }   // төлөх дүн (хөнгөлөлтийн дараа, хүргэлттэй бол хүргэлтийн төлбөр нэмэгдэнэ)
+function dlvFee() { return sale && sale.mode === 'dlv' && $('dFee') ? Math.max(0, Math.round(Number($('dFee').value) || 0)) : 0; }
 function setDiscU(u) {
   sale.discU = u; var b = $('discU'); if (b) [].forEach.call(b.children, function (x) { x.classList.toggle('on', x.dataset.u === u); });
   if (sale.cart) calcSale();
@@ -504,11 +582,14 @@ function calcSale() {
   if ($('saleSplitInfo')) $('saleSplitInfo').textContent = sp ? (sp.err || esc(sale.pay) + ': ' + fmt(cartTotal() - sp.amt2)) : '';
   var n = sale.cart.reduce(function (a, l) { return a + (Number(l.qty) || 0); }, 0);
   $('saleCount').textContent = sale.cart.length ? sale.cart.length + ' төрөл · ' + Math.round(n * 1000) / 1000 + ' ш' : '';
-  $('saleSubmit').textContent = sale.cart.length ? 'Төлбөр авах · ' + fmt(cartTotal()) : 'Төлбөр авах';
+  var lbl = sale.mode === 'dlv' ? 'Захиалга бүртгэх' : 'Төлбөр авах';
+  $('saleSubmit').textContent = sale.cart.length ? lbl + ' · ' + fmt(cartTotal()) : lbl;
+  if (sub && sale.mode === 'dlv' && dlvFee()) sub.innerHTML += '<span>Хүргэлт +' + fmt(dlvFee()) + '</span>';
   calcChange();
 }
 function submitSale() {
   if (!sale.cart.length) { toast('Сагсанд бараа нэмнэ үү'); return; }
+  if (sale.mode === 'dlv') { submitDelivery(); return; }
   for (var i = 0; i < sale.cart.length; i++) {
     var l = sale.cart[i];
     if (!(Number(l.qty) > 0)) { toast(l.name + ' — тоо хэмжээ оруулна уу'); return; }
@@ -756,6 +837,7 @@ function attend(kind) {
 }
 function renderToday() {
   renderAttend();
+  if (BIZ.orders && typeof renderOrders === 'function') setTimeout(renderOrders, 0);   // табын тоо шинэчлэгдэнэ
   var t = todayTotals();
   $('sumSales').textContent = fmt(t.sales);
   $('sumExp').textContent = fmt(t.exp);

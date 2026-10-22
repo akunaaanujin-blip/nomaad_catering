@@ -1114,3 +1114,15 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:#F7F9FC}
 .or-print{display:flex;align-items:center;gap:8px;margin:14px 0 0;font-weight:600;font-size:14px;color:#374151;cursor:pointer}
 .or-print input{width:auto;accent-color:#6A5ADF}
 .ep-tbl .c-x{white-space:nowrap}.ep-tbl .lbl-q{margin:0 6px 4px 0;vertical-align:top}
+/* ── Нэг касс: дэлгүүрт / хүргэлтээр; ганц хуудас (зүүн цэсгүй) ── */
+.ep-app.no-nav .ep-nav,.ep-app.no-nav .ep-burger{display:none!important}
+.ep-app.no-nav .ep-body{margin-left:0}
+.ep-app.no-nav .wrap{max-width:1100px}
+.pos-mode{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:14px 18px 0}
+.pos-mode button{border:1px solid #E5E7EB;background:#fff;border-radius:10px;padding:10px;font:inherit;font-weight:700;color:#374151;cursor:pointer}
+.pos-mode button.on{background:#111827;border-color:#111827;color:#fff}
+.pos-dlv{padding:10px 18px;border-top:1px solid #E5E7EB;display:flex;flex-direction:column;gap:7px}
+.pos-dlv input,.pos-dlv select,.pos-dlv textarea{padding:8px 10px;font-size:14px;border-radius:9px}
+.pos-dlv .d-lbl{margin:2px 0 0;font-size:13px}
+.d-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.d-row3 label{margin:0;font-size:12px;display:flex;flex-direction:column;gap:3px}

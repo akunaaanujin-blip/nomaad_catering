@@ -6,7 +6,7 @@
 var ORD_STATUS = ['Шинэ', 'Буухиад өгсөн', 'Хүргэгдсэн', 'Буцаасан', 'Цуцалсан'];
 var ORD_PAYTYPE = ['Шилжүүлэг', 'Хүргэлтээр бэлэн', 'Дансаар дараа'];
 var LS_ORD = 'nb_orders_' + (typeof BIZ_KEY !== 'undefined' ? BIZ_KEY : 'cozy');
-var orders = load(LS_ORD, []), ordTab = 'new', ordEdit = null, ordCart = [];
+var orders = load(LS_ORD, []), ordTab = 'bills', ordEdit = null, ordCart = [];
 
 // Хаягаас дүүрэг, хороо таних (буухиа «Дүүрэг / сум *» баганад)
 var DISTRICTS = [
@@ -20,7 +20,8 @@ function guessKhoroo(t) { var m = String(t || '').match(/(\d{1,2})\s*-?\s*(р|r|
 function isProvince(t) { return /унаанд|машинд|автобус|unaand|mashind/i.test(t || ''); }
 function ordItems(o) { try { return typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []); } catch (e) { return [{ name: String(o.items), qty: 1, price: o.amount }]; } }
 function ordOpen(o) { return o.status === 'Шинэ' || o.status === 'Буухиад өгсөн'; }   // хаагдаагүй (хүргэгдээгүй, цуцлаагүй)
-function ordGoods(o) { return ordItems(o).filter(function (i) { return !isFee(i.name); }); }   // хүргэлтийн төлбөргүй бараанууд
+function ordGoods(o) { return ordItems(o).filter(function (i) { return !isNonGoods(i.name); }); }   // хүргэлтийн төлбөргүй бараанууд
+function ordDiscLines(o) { return o && o.items ? ordItems(o).filter(function (i) { return baseItem(i.name) === DISC_ITEM; }) : []; }   // засварт хөнгөлөлт хадгалагдана
 function ordFee(o) { return ordItems(o).filter(function (i) { return isFee(i.name); }).reduce(function (a, i) { return a + (Number(i.price) || 0) * (Number(i.qty) || 1); }, 0); }
 function ordItemsText(o) { return ordGoods(o).map(function (i) { return i.name + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); }
 
@@ -211,8 +212,8 @@ function submitOrder2() {
   var o = Object.assign({}, prev, {
     customer: $('orCustomer').value.trim(), phone: phone, phone2: $('orPhone2').value.replace(/\D/g, ''), city: $('orCity').value.trim() || 'Улаанбаатар',
     district: $('orDistrict').value, khoroo: $('orKhoroo').value.trim(), address: $('orAddress').value.trim(),
-    items: ordCart.slice().concat(ordFeeVal() ? [{ name: FEE_ITEM, qty: 1, price: ordFeeVal() }] : []),
-    amount: Math.round(ordCartTotal()), deliverDate: $('orDate').value,
+    items: ordCart.slice().concat(ordDiscLines(prev)).concat(ordFeeVal() ? [{ name: FEE_ITEM, qty: 1, price: ordFeeVal() }] : []),
+    amount: Math.round(ordCartTotal() + ordDiscLines(prev).reduce(function (a, x) { return a + x.qty * x.price; }, 0)), deliverDate: $('orDate').value,
     payType: $('orPayType').value, paid: $('orPaid').value, status: ordEdit ? $('orStatus').value : 'Шинэ', note: $('orNote').value.trim() });
   var bad = ordBook(o, prev);
   if (bad) { alert('Үлдэгдэл хүрэлцэхгүй — хүргэлтэд гаргах боломжгүй:\n\n' + bad + '\n\nУдирдлагаар орлого бүртгүүлсний дараа дахин оролдоно уу.'); loadStock(); return; }
@@ -245,8 +246,9 @@ function quickOrd2(id, field, val) {   // жагсаалтаас нэг товч
 }
 
 // ── Жагсаалт ──
-var ORD_TABS = [['new', 'Илгээх'], ['sent', 'Буухиад'], ['unpaid', 'Төлбөр ороогүй'], ['back', 'Буцаасан, цуцалсан'], ['all', 'Бүгд']];
+var ORD_TABS = [['bills', 'Өнөөдрийн баримт'], ['new', 'Илгээх'], ['sent', 'Буухиад'], ['unpaid', 'Төлбөр ороогүй'], ['back', 'Буцаасан, цуцалсан'], ['all', 'Бүгд']];
 function ordFilter(o) {
+  if (ordTab === 'bills') return false;   // өнөөдрийн баримт — тусдаа жагсаалт (todayList)
   if (ordTab === 'new') return o.status === 'Шинэ';
   if (ordTab === 'sent') return o.status === 'Буухиад өгсөн';
   if (ordTab === 'unpaid') return o.paid !== 'Орсон' && !ordDead(o);
@@ -270,7 +272,11 @@ function ordMatch(o) {
 }
 function renderOrders() {
   var el = $('orderList'); if (!el) return;
-  var cnt = function (t) { var keep = ordTab; ordTab = t; var n = orders.filter(ordFilter).length; ordTab = keep; return n; };
+  var cnt = function (t) {
+    if (t === 'bills') { var k = {}; (typeof todayRecords === 'function' ? todayRecords() : []).forEach(function (r) { if (r.type === 'sale') k[billKey(r)] = 1; }); return Object.keys(k).length; }
+    var keep = ordTab; ordTab = t; var n = orders.filter(ordFilter).length; ordTab = keep; return n; };
+  var bills = ordTab === 'bills';
+  if ($('todayWrap')) { $('todayWrap').style.display = bills ? '' : 'none'; el.style.display = bills ? 'none' : ''; if ($('ordSearch')) $('ordSearch').style.display = bills ? 'none' : ''; }
   $('orderTabs').innerHTML = ORD_TABS.map(function (t) { return '<button class="' + (ordTab === t[0] ? 'on' : '') + '" onclick="ordTab=\'' + t[0] + '\';renderOrders()">' + t[1] + ' <small>' + cnt(t[0]) + '</small></button>'; }).join('');
   if (typeof renderNav === 'function') renderNav();
   var list = orders.filter(ordFilter).filter(ordMatch).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
