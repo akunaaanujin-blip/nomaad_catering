@@ -153,13 +153,13 @@ function showView(v, tab) {
   renderNav(); window.scrollTo(0, 0);
 }
 
-// ── Барааны үлдэгдэл (ажилтны хуудас): нөөц + хараахан санхүүд бичигдээгүй (хүргэгдээгүй) захиалгад байгаа тоо ──
+// ── Барааны үлдэгдэл (ажилтны хуудас): нөөц + хараахан борлуулалт болоогүй («Шинэ») захиалгад байгаа тоо ──
 var stkQ = '';
-function pendingGoods() {   // «Шинэ» / «Буухиад өгсөн» захиалгын бараа — хүргэгдэх хүртэл нөөцөөс хасагдаагүй
+function pendingGoods() {   // «Шинэ» захиалгын бараа — «Буухиад өгсөн» болтол нөөцөөс хасагдаагүй
   var m = {};
   if (typeof orders === 'undefined' || typeof ordItems !== 'function') return m;
   orders.forEach(function (o) {
-    if (o.status !== 'Шинэ' && o.status !== 'Буухиад өгсөн') return;
+    if (o.status !== 'Шинэ' || /^yes:/.test(o.saleDone || '')) return;   // «Буухиад өгсөн» болсон нь аль хэдийн борлуулагдаж нөөцөөс хасагдсан
     ordItems(o).forEach(function (i) { if (isNonGoods(i.name)) return; m[i.name] = (m[i.name] || 0) + (Number(i.qty) || 1); });
   });
   return m;
