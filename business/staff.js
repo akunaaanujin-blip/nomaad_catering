@@ -878,7 +878,7 @@ function printBill(key) {
 
 // ── Modal ──
 function openSheet(id) { $(id).classList.add('show'); }
-function closeSheet(id) { $(id).classList.remove('show'); }
+function closeSheet(id) { var e = $(id); if (e) e.classList.remove('show'); }
 
 document.addEventListener('DOMContentLoaded', init);
 
