@@ -130,10 +130,12 @@ function repOrders(biz) {
   var all = (window.adminOrders || []).filter(function (o) { return o.biz === biz; }).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
   var list = all.filter(ordFilt(state.ordF || 'wait'));
   var items = function (o) { try { var arr = typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []); return arr.map(function (i) { return i.name + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); } catch (e) { return String(o.items); } };
+  var billed = {}; (window.records || []).forEach(function (x) { if (x.type === 'sale' && x.bill) billed[x.bill] = 1; });
   var rows = list.map(function (o) {
     var act = ordDead(o) ? '' : o.confirmed
       ? '<button class="mini" onclick="undoPayOrder(\'' + o.id + '\')">Буцаах</button>'
       : '<button class="mini" style="color:var(--green)" onclick="openPayOrder(\'' + o.id + '\')">Баталгаажуулах</button>';
+    if (billed[o.id]) act = '<button class="mini" onclick="openBillAdm(\'' + o.id + '\')">Баримт</button>' + act;
     return { date: o.date + ' ' + o.time, phone: o.phone, customer: o.customer, items: items(o), status: o.status, payType: o.payType, paid: o.paid || 'Ороогүй',
              conf: o.confirmed ? 'Баталгаажсан' : '—', amount: o.amount, staff: o.staff, _act: act };
   });

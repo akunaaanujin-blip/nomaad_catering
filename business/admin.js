@@ -489,13 +489,22 @@ function openBillAdm(key) {
       '<td class="n' + (x.amount < 0 ? ' neg' : '') + '">' + (x.amount < 0 ? '−' + fmt(-x.amount) : fmt(x.amount)) + '</td><td class="n muted">' + (cs ? fmt(cs) : '') + '</td></tr>';
   }).join('');
   var cogs = L.reduce(function (a, x) { return a + Number(ce.rec[x.id] || 0); }, 0);
-  var html = '<div class="bar-row"><h2 style="margin:0">Баримт</h2><button class="b-btn ghost" onclick="closeSheet(\'billAdmSheet\')">Хаах</button></div>' +
+  var ord = (window.adminOrders || []).filter(function (d) { return d.id === key; })[0];
+  var html = '<div class="bar-row"><h2 style="margin:0">Баримт</h2><span style="display:flex;gap:6px">' +
+    (ord ? '<button class="b-btn ghost" onclick="goOrder(' + esc(JSON.stringify(ord.id)) + ')">Захиалгыг нээх</button>' : '') +
+    '<button class="b-btn ghost" onclick="closeSheet(\'billAdmSheet\')">Хаах</button></span></div>' +
     '<p class="muted" style="margin:6px 0 10px">' + esc(o.date + ' ' + o.time) + ' · ' + esc(o.staff) + (o.customer ? ' · ' + esc(o.customer) : '') + (o.ddtd ? ' · ДДТД ' + esc(o.ddtd) : '') + '</p>' +
     '<div class="scroll"><table class="rep-t"><tr><th>Мөр</th><th class="n">Тоо × үнэ</th><th>Төлбөр</th><th class="n">Дүн</th><th class="n">Өртөг</th></tr>' + rows +
     '<tr class="tot"><td>Нийт</td><td></td><td>' + esc(payText(o.pays)) + '</td><td class="n">' + fmt(o.net) + '</td><td class="n">' + (cogs ? fmt(cogs) : '') + '</td></tr></table></div>' +
     (cogs ? '<p class="muted" style="margin-top:8px">Энэ баримтын ашиг: <b>' + fmt(o.net - cogs) + '</b> (' + (o.net ? Math.round((o.net - cogs) / o.net * 100) : 0) + '%)</p>' : '');
   if (!$('billAdmSheet')) document.body.insertAdjacentHTML('beforeend', '<div class="sheet" id="billAdmSheet" onclick="if(event.target===this)closeSheet(\'billAdmSheet\')"><div class="panel" id="billAdmPanel" style="max-width:720px"></div></div>');
   $('billAdmPanel').innerHTML = html; openSheet('billAdmSheet');
+}
+// «Захиалга» хуудсанд тухайн захиалгыг утсаар нь шүүж харуулна
+function goOrder(id) {
+  var d = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!d) return;
+  closeSheet('billAdmSheet'); state.ordF = 'all'; setSub('orders');
+  var inp = document.querySelector('#view .filter .search'); if (inp) { inp.value = d.phone; rowSearch(inp); }
 }
 // Хайлт: хүснэгтийн мөрийг шууд шүүнэ (дахин зурахгүй). Хайж байхад «Нийт» мөр нуугдана.
 function searchBox(ph) {
