@@ -115,6 +115,7 @@ function doPost(e) {
     if (data.type === 'task_done') return json(staffTaskDone(data));
     if (data.type === 'admin_reminder') return json(isAdmin(data) ? adminReminder(data) : { status: 'error', error: 'auth' });
     if (data.type === 'order_save') return json(orderSave(data));
+    if (data.type === 'order_delete') return json(orderDelete(data));
     if (data.type === 'orders') return json(ordersFor(data));
     if (data.type === 'order_hist') return json(orderHist(data));
     if (data.type === 'admin_import_cozy') return json(isAdmin(data) ? importCozy(data) : { status: 'error', error: 'auth' });
@@ -138,7 +139,7 @@ function doPost(e) {
 // ── Серверийн кэш (хурд): удирдлагын уншилт хуудас тус бүрийг 5 мин кэшлэнэ, бичилт хийхэд тэр хуудсыг л цэвэрлэнэ ──
 // Sheet-ийг гараар засвал 5 минутын дотор шинэчлэгдэнэ.
 const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf'];
-const CACHE_MAP = { admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
+const CACHE_MAP = { admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], order_delete: ['ord'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
   admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr'], admin_bank: ['bank', 'jr', 'ord'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_po: ['po', 'jr'],
   admin_staff: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
@@ -1597,4 +1598,20 @@ function protectAllSheets() {
   SpreadsheetApp.openById(SHEET_ID).getSheets().forEach(function (sh) {
     if (!sh.getProtections(SpreadsheetApp.ProtectionType.SHEET).length) sh.protect().setDescription('NOMAAD систем').setWarningOnly(true);
   });
+}
+// Цуцалсан захиалгыг бүр устгана — тусдаа «устгах код» (Script property DELETE_CODE) шаардана; борлуулалт бичигдсэн захиалгыг устгахгүй
+function orderDelete(d) {
+  const who = checkStaff(d.token);
+  if (!who) return { status: 'error', error: 'auth' };
+  const want = String(PropertiesService.getScriptProperties().getProperty('DELETE_CODE') || ''), cache = CacheService.getScriptCache();
+  if (!want) return { status: 'error', error: 'nocode' };
+  const fails = Number(cache.get('delfail') || 0);
+  if (fails >= 5) return { status: 'error', error: 'locked' };
+  if (String(d.code || '') !== want) { cache.put('delfail', String(fails + 1), 900); return { status: 'error', error: 'code' }; }
+  cache.remove('delfail');
+  const ids = (Array.isArray(d.ids) ? d.ids : []).map(String).slice(0, 200);
+  const rows = orderRows().filter(function (x) { return ids.indexOf(x.id) >= 0 && x.biz === who.biz && x.status === 'Цуцалсан' && !/^yes:|^returned$/.test(String(x.saleDone || '')); });
+  const sh = orderSheet();
+  rows.sort(function (a, b) { return b.row - a.row; }).forEach(function (x) { sh.deleteRow(x.row); });
+  return { status: 'ok', deleted: rows.map(function (x) { return x.id; }) };
 }

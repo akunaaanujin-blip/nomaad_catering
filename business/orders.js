@@ -263,8 +263,18 @@ function ordRetry(id) {
 }
 function ordAct(id, v) {
   if (!v) return;
-  if (v === 'r') ordReceive(id); else if (v === 'l') openLabels([id]); else if (v === 'm') copyPayMsg(id); else if (v === 'e') openOrder(id);
+  if (v === 'r') ordReceive(id); else if (v === 'l') openLabels([id]); else if (v === 'm') copyPayMsg(id); else if (v === 'e') openOrder(id); else if (v === 'x') ordPurge(id);
   else quickOrd(id, v.charAt(0) === 's' ? 'status' : 'paid', v.slice(2));
+}
+// Цуцалсан захиалгыг бүр устгана — серверийн «устгах код»-оор баталгаажна
+function ordPurge(id) {
+  var code = prompt('Захиалгыг бүр устгах (сэргээгдэхгүй). Устгах кодоо оруулна уу:');
+  if (!code) return;
+  ordPost({ type: 'order_delete', ids: [id], code: code }, function (err, d) {
+    if (err) { toast(err === 'code' ? 'Устгах код буруу байна' : err === 'locked' ? 'Олон удаа буруу оруулсан — 15 минутын дараа оролдоно уу' : err === 'nocode' ? 'Устгах код тохируулаагүй байна' : 'Устгаж чадсангүй'); return; }
+    if (!d.deleted || !d.deleted.length) { toast('Устгах боломжгүй захиалга байна'); return; }
+    orders = orders.filter(function (x) { return d.deleted.indexOf(x.id) < 0; }); save(LS_ORD, orders.filter(function (x) { return !x.pending; })); renderOrders(); toast('Захиалга устгагдлаа');
+  });
 }
 var ordQ = '';
 function ordMatch(o) {
@@ -287,6 +297,7 @@ function renderOrders() {
     if (o.status === 'Шинэ') opts.push(['s:Буухиад өгсөн', 'Буухиад өгсөн'], ['s:Цуцалсан', 'Цуцлах']);
     if (o.status === 'Буухиад өгсөн') opts.push(['s:Хүргэгдсэн', 'Хүргэгдсэн'], ['s:Буцаасан', 'Буцаасан'], ['s:Цуцалсан', 'Цуцалсан']);
     if (o.status === 'Хүргэгдсэн') opts.push(['s:Буцаасан', 'Буцаасан']);
+    if (o.status === 'Цуцалсан') opts.push(['x', 'Бүр устгах']);
     if (ordAwaitReturn(o)) opts.push(['r', 'Буцаалт хүлээн авсан']);
     if (!o.confirmed && !ordDead(o)) opts.push(o.paid !== 'Орсон' ? ['p:Орсон', 'Төлбөр орсон'] : ['p:Ороогүй', 'Төлбөр ороогүй']);
     opts.push(['l', 'Шошго хэвлэх'], ['m', 'Төлбөрийн мессеж хуулах'], ['e', 'Засах']);
