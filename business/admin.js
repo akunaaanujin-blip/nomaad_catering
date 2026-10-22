@@ -240,7 +240,7 @@ function railHtml(pend) {
   var inCo = state.view === 'company';
   return '<div class="rail-logo" onclick="go(\'companies\')" title="Нүүр хуудас" style="cursor:pointer">N</div>' +
     (state.view !== 'companies' ? item(false, 'navBack()', 'back', 'Буцах') : '') +   // нүүр (компаниуд) хуудаснаас буцах шаардлагагүй
-    item(state.view === 'companies', "go('companies')", 'home', 'Компаниуд') +
+    (inCo ? '' : item(state.view === 'companies', "go('companies')", 'home', 'Компаниуд')) +   // компанийн дотор «Компаниуд» цэсгүй (лого, Буцах-аар гарна)
     (inCo && BUSINESSES[state.biz] ? bizModules(state.biz).map(function (m) { return item(state.module === m[0], "openModule('" + m[0] + "')", m[0], m[1]); }).join('') : '') +
     (inCo ? '' :   // компанийн дотор зөвхөн компанийн цэс; удирдлагын цэс нь «Компаниуд» түвшинд
     '<div class="rail-sep"></div>' +
