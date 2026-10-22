@@ -315,15 +315,21 @@ var BUUHIA_COLS = ['Дэлгүүрийн нэр *', 'Хүлээн авагчий
 // false бол дүнгүй (мөнгийг өөрсдөө авсан / дараа авна) — буухиа мөнгө шилжүүлэхгүй.
 function openBuuhia() { withFresh(openBuuhia2); }
 // Илгээх захиалгуудаа чагтлаж сонгоно (анхдагчаар бүгд сонгогдсон)
-function openBuuhia2() {
-  var list = orders.filter(ordOpen).sort(function (a, b) { return (a.status === 'Шинэ') - (b.status === 'Шинэ') || ((a.date + a.time) < (b.date + b.time) ? -1 : 1); }).reverse();
-  if (!list.length) { toast('Хаагдаагүй захиалга алга'); return; }
-  $('buList').innerHTML = list.map(function (o) {
-    return '<label class="bu-row"><input type="checkbox" value="' + o.id + '"' + (o.status === 'Шинэ' ? ' checked' : '') + ' onchange="buCount()">' +
+function openBuuhia2() { $('buDate').value = todayStr(); buRender(); openSheet('buuSheet'); }
+// Сонгосон өдрийн бүх хүргэлт (цуцалсангүй) + өмнөх өдрүүдийн илгээгдээгүй «Шинэ» захиалга
+function buList() {
+  var d = $('buDate').value || todayStr();
+  return orders.filter(function (o) { return !ordDead(o) && (o.date === d || (o.status === 'Шинэ' && o.date < d)); })
+    .sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
+}
+function buRender() {
+  var list = buList(), d = $('buDate').value;
+  $('buList').innerHTML = list.length ? list.map(function (o) {
+    return '<label class="bu-row"><input type="checkbox" value="' + o.id + '" checked onchange="buCount()">' +
       '<span><b>' + esc(o.phone) + (o.customer ? ' · ' + esc(o.customer) : '') + '</b><small>' + esc(ordItemsText(o)) + '</small>' +
-      '<small>' + esc((o.district ? o.district + ', ' : '') + (o.address || '')).slice(0, 70) + '</small>' + (o.status !== 'Шинэ' ? '<small><span class="tag b">' + esc(o.status) + '</span> дахин илгээх бол чагтлана</small>' : '') + '</span><b class="n">' + fmt(o.amount) + '</b></label>';
-  }).join('');
-  buCount(); openSheet('buuSheet');
+      '<small>' + esc((o.district ? o.district + ', ' : '') + (o.address || '')).slice(0, 70) + '</small>' + (o.status !== 'Шинэ' ? '<small><span class="tag b">' + esc(o.status) + '</span>' + (o.date < d ? ' · ' + esc(o.date) : '') + '</small>' : (o.date < d ? '<small>' + esc(o.date) + ' · илгээгдээгүй</small>' : '')) + '</span><b class="n">' + fmt(o.amount) + '</b></label>';
+  }).join('') : '<p class="muted" style="padding:14px">Энэ өдөр хүргэлт алга</p>';
+  buCount();
 }
 function buChecked() { return [].slice.call(document.querySelectorAll('#buList input:checked')).map(function (c) { return c.value; }); }
 function buCount() { var n = buChecked().length, all = document.querySelectorAll('#buList input').length; $('buN').textContent = n + ' / ' + all; $('buAll').checked = n === all; }
@@ -332,7 +338,7 @@ function buuhiaExport(withAmount) {
   var ids = buChecked();
   if (!ids.length) { toast('Илгээх захиалгаа сонгоно уу'); return; }
   closeSheet('buuSheet');
-  var list = orders.filter(function (o) { return ordOpen(o) && ids.indexOf(o.id) >= 0; });
+  var list = buList().filter(function (o) { return ids.indexOf(o.id) >= 0; });
   if (!list.length) { toast('Илгээх захиалга алга'); return; }
   if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин оролдоно уу'); ensureXlsx(function () {}); return; }
   // Үлдэгдэл хүрэлцэхгүй захиалгыг файлд оруулахгүй (дараалан хуримтлуулж шалгана)
@@ -359,7 +365,7 @@ function buuhiaExport(withAmount) {
   ws['!cols'] = [22, 18, 12, 12, 14, 16, 12, 50, 30, 8, 12, 30].map(function (w) { return { wch: w }; });
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Хүргэлт');
-  XLSX.writeFile(wb, 'buuhia-hurgelt-' + BIZ_KEY + '-' + todayStr() + (withAmount ? '-dun' : '-dungui') + '.xlsx');
+  XLSX.writeFile(wb, 'буухиа ' + ($('buDate').value || todayStr()).slice(5) + (withAmount ? '' : ' (дүнгүй)') + '.xlsx');
   if (noDist) toast(noDist + ' захиалгын дүүрэг хоосон — буухиа анхааруулга өгнө, хаягаа шалгаарай');
   setTimeout(function () {
     var fresh = list.filter(function (o) { return o.status === 'Шинэ'; }); if (!fresh.length) return;

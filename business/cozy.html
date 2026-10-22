@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261022k">
+<link rel="stylesheet" href="style.css?v=20261022l">
 </head>
 <body>
 <div class="demo" id="demo" style="display:none">Туршилтын горим — мэдээлэл зөвхөн энэ төхөөрөмжид хадгалагдаж байна</div>
@@ -67,6 +67,7 @@
 <div class="sheet" id="buuSheet" onclick="if(event.target===this)closeSheet('buuSheet')">
   <div class="panel">
     <h2>Буухиа Excel</h2>
+    <div class="bar-row"><label class="bu-date">Өдөр <input type="date" id="buDate" onchange="buRender()"></label></div>
     <div class="bar-row"><label class="bu-all"><input type="checkbox" id="buAll" checked onchange="buToggleAll(this.checked)"> Бүгдийг сонгох</label><span class="muted">Сонгосон: <b id="buN">0</b></span></div>
     <div class="bu-list" id="buList"></div>
     <button class="btn" onclick="buuhiaExport(true)">Үнийн дүнтэй</button>
@@ -273,14 +274,14 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="products.js?v=20261022k"></script>
-<script src="config.js?v=20261022k"></script>
-<script src="common.js?v=20261022k"></script>
+<script src="products.js?v=20261022l"></script>
+<script src="config.js?v=20261022l"></script>
+<script src="common.js?v=20261022l"></script>
 <script>var BIZ_KEY = 'cozy';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261022k"></script>
-<script src="ebarimt.js?v=20261022k"></script>
-<script src="orders.js?v=20261022k"></script>
-<script src="label.js?v=20261022k"></script>
+<script src="staff.js?v=20261022l"></script>
+<script src="ebarimt.js?v=20261022l"></script>
+<script src="orders.js?v=20261022l"></script>
+<script src="label.js?v=20261022l"></script>
 </body>
 </html>
