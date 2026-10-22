@@ -94,23 +94,41 @@ function lblRender() {
   $('lblPrintBtn').textContent = 'Хэвлэх' + (lblQueue.length > 1 ? ' (' + lblQueue.length + ' шошго)' : '');
 }
 function lblPrintAll() {
-  if (niim.busy) return;
-  if (!niimOn()) { niimConnect(lblPrintAll); return; }
-  var L = window.niimbluelib, btn = $('lblPrintBtn'), canvases = [].slice.call(document.querySelectorAll('#lblPrev canvas'));
-  niim.busy = true; btn.disabled = true;
+  var btn = $('lblPrintBtn'), canvases = [].slice.call(document.querySelectorAll('#lblPrev canvas'));
+  btn.disabled = true;
+  lblPrintCanvases(canvases, function (err) { btn.disabled = false; lblMsg(err ? 'Хэвлэж чадсангүй: ' + err : '✓ ' + canvases.length + ' шошго хэвлэгдлээ'); }, lblMsg);
+}
+// Нэг товчоор: урьдчилан харахгүйгээр шууд хэвлэнэ (принтер холбоогүй бол эхлээд холбоно — товч дарсан үйлдэл дотор байх ёстой)
+function lblQuick(ids) {
+  var list = (ids || []).map(function (id) { return orders.filter(function (x) { return x.id === id; })[0]; }).filter(Boolean);
+  if (!list.length) return;
+  var go = function () {
+    var cs = list.map(function (o) { return drawLabel(o, document.createElement('canvas')); });
+    toast('Шошго хэвлэж байна…');
+    lblPrintCanvases(cs, function (err) { if (err) { toast('Хэвлэж чадсангүй — шошгоны цонхноос дахин оролдоно уу'); openLabels(ids); lblMsg('Алдаа: ' + err); } else toast('✓ Шошго хэвлэгдлээ' + (cs.length > 1 ? ' (' + cs.length + ')' : '')); });
+  };
+  if (niimOn()) go(); else niimConnect(go);
+}
+function lblPrintCanvases(canvases, done, progress) {
+  if (niim.busy) { done && done('өмнөх хэвлэлт дуусаагүй байна'); return; }
+  if (!niimOn()) { niimConnect(function () { lblPrintCanvases(canvases, done, progress); }); return; }
+  var L = window.niimbluelib;
+  niim.busy = true;
   var task = niim.client.protocol.newPrintTask(niim.model || 'B1', { totalPages: canvases.length, statusPollIntervalMs: 100, statusTimeoutMs: 8000, pageColor: 0, density: lblDensity() });   // 0 = нэг өнгө (хар)
   var dir = (niim.client.getModelMetadata && (niim.client.getModelMetadata() || {}).printDirection) || 'top';
   (async function () {
+    var err = null;
     try {
       await task.printInit();
       for (var i = 0; i < canvases.length; i++) {
-        lblMsg('Хэвлэж байна ' + (i + 1) + ' / ' + canvases.length + '…');
+        progress && progress('Хэвлэж байна ' + (i + 1) + ' / ' + canvases.length + '…');
         await task.printPage(L.ImageEncoder.encodeCanvas(canvases[i], 0, dir), 1);
         await task.waitForPageFinished();
       }
       await task.waitForFinished();
-      lblMsg('✓ ' + canvases.length + ' шошго хэвлэгдлээ');
-    } catch (e) { console.error(e); lblMsg('Хэвлэж чадсангүй: ' + ((e && e.message) || e)); }
-    finally { try { await task.printEnd(); } catch (e2) {} niim.busy = false; btn.disabled = false; }
+    } catch (e) { console.error(e); err = (e && e.message) || String(e); }
+    finally { try { await task.printEnd(); } catch (e2) {} niim.busy = false; done && done(err); }
   })();
 }
+// Захиалга хадгалахад шууд хэвлэх эсэх (төхөөрөмж бүр дээр санана)
+function lblAuto() { return !!load('nb_lbl_auto', false); }

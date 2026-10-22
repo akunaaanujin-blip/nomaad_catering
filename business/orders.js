@@ -161,6 +161,7 @@ function openOrder(id) {
   $('orPaid').disabled = !!(o && o.confirmed); $('orPaidHint').textContent = o && o.confirmed ? '(удирдлага баталгаажуулсан)' : '';
   $('orStatus').value = o ? o.status || 'Шинэ' : 'Шинэ'; $('orNote').value = o ? o.note || '' : '';
   $('orStatusWrap').style.display = o ? 'block' : 'none';
+  if ($('orPrint')) $('orPrint').checked = typeof lblAuto === 'function' && lblAuto();
   $('orChips').innerHTML = products.map(function (p, i) { return '<button class="chip" onclick="ordAdd(' + i + ')">' + esc(p.name) + (p.price ? ' <small>' + fmt(p.price) + '</small>' : '') + '</button>'; }).join('');
   renderOrdCart();
   openSheet('orderSheet');
@@ -216,7 +217,13 @@ function submitOrder2() {
   var bad = ordBook(o, prev);
   if (bad) { alert('Үлдэгдэл хүрэлцэхгүй — хүргэлтэд гаргах боломжгүй:\n\n' + bad + '\n\nУдирдлагаар орлого бүртгүүлсний дараа дахин оролдоно уу.'); loadStock(); return; }
   if (!prev.id && ordShort(o).length) toast('Анхаар: үлдэгдэл хүрэлцэхгүй — орлого ортол буухиад өгөх боломжгүй');
-  saveOrder(o, function (saved) { closeSheet('orderSheet'); toast(prev.id ? 'Хадгалагдлаа' : 'Захиалга бүртгэгдлээ'); if (!prev.id && saved.paid !== 'Орсон') copyPayMsg(saved.id); });
+  var doPrint = $('orPrint') && $('orPrint').checked;
+  if ($('orPrint')) save('nb_lbl_auto', doPrint);
+  saveOrder(o, function (saved) {
+    closeSheet('orderSheet'); toast(prev.id ? 'Хадгалагдлаа' : 'Захиалга бүртгэгдлээ');
+    if (doPrint && typeof lblQuick === 'function') lblQuick([saved.id]);   // «Хадгалаад шошго хэвлэх»
+    else if (!prev.id && saved.paid !== 'Орсон') copyPayMsg(saved.id);
+  });
 }
 // Төлөв солихын өмнө серверээс хамгийн сүүлийн захиалгыг татна — удирдлага банкаар «Төлбөр орсон» болгосныг давхар бичихгүй
 function withFresh(cb) {
@@ -287,7 +294,7 @@ function renderOrders() {
       '<td class="c-m num" data-l="Дүн">' + fmt(o.amount) + (fee ? '<small>хүргэлт ' + fmt(fee) + '</small>' : '') + '</td>' +
       '<td class="c-s" data-l="Төлөв"><span class="st ' + (STC[o.status] || 'b') + '">' + esc(o.status) + '</span>' + ret +
         '<small><span class="st ' + (o.confirmed || o.paid === 'Орсон' ? 'g' : 'n') + '">' + (o.confirmed ? 'Төлбөр баталгаажсан' : 'Төлбөр ' + esc((o.paid || 'Ороогүй').toLowerCase())) + '</span></small></td>' +
-      '<td class="c-x" data-l="">' + acts + '</td></tr>';
+      '<td class="c-x" data-l="">' + (o.pending ? '' : '<button class="mini lbl-q" onclick="lblQuick([\'' + o.id + '\'])" title="Шошго хэвлэх">Хэвлэх</button>') + acts + '</td></tr>';
   }).join('');
   var sum = list.reduce(function (a, o) { return a + (Number(o.amount) || 0); }, 0), fees = list.reduce(function (a, o) { return a + ordFee(o); }, 0);
   el.innerHTML = list.length ? '<div class="ep-tbl-wrap"><table class="ep-tbl"><thead><tr><th>Огноо</th><th>Хэрэглэгч</th><th>Хаяг</th><th>Бараа</th><th class="num">Дүн</th><th>Төлөв</th><th></th></tr></thead><tbody>' + rows +

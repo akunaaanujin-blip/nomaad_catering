@@ -1111,3 +1111,6 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:#F7F9FC}
 .lbl-prev{display:flex;flex-direction:column;gap:10px;align-items:center;max-height:52vh;overflow:auto;background:#F3F4F6;border-radius:12px;padding:12px}
 .lbl-prev canvas{width:288px;height:auto;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15);border-radius:4px}
 .lbl-msg{display:block;min-height:16px;margin-top:8px;font-size:13px}
+.or-print{display:flex;align-items:center;gap:8px;margin:14px 0 0;font-weight:600;font-size:14px;color:#374151;cursor:pointer}
+.or-print input{width:auto;accent-color:#6A5ADF}
+.ep-tbl .c-x{white-space:nowrap}.ep-tbl .lbl-q{margin:0 6px 4px 0;vertical-align:top}
