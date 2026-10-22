@@ -254,7 +254,7 @@ function bizModules(biz) { return BUSINESSES[biz] && BUSINESSES[biz].finOnly ? M
 function openMgmt() { state.view = 'company'; state.biz = 'mgmt'; state.module = 'finance'; render(); window.scrollTo(0, 0); }
 // Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
 var MENU = {
-  sales: [['Өдөр тутам', ['overview', 'receipts', 'orders']], ['Тайлан', ['item', 'cat', 'staff', 'day', 'hour', 'pay', 'disc', 'slow', 'boost']], ['И-баримт', ['ebarimt']]],
+  sales: [['Өдөр тутам', ['overview', 'boost', 'receipts', 'orders']], ['Тайлан', ['item', 'cat', 'staff', 'day', 'hour', 'pay', 'disc', 'slow']], ['И-баримт', ['ebarimt']]],
   products: [['Бараа материал', ['catalog', 'stock', 'in', 'po']], ['Тайлан', ['move', 'prices']], ['Харилцагч', ['suppliers']]],
   // Санхүү — цөөн, ойлгомжтой цэс. Нягтлангийн тайлан, тохиргоо нь тус бүр нэг хуудсанд цуглуулагдсан (finance.js HUBS)
   finance: [['Үр дүн', ['simple', 'months', 'profit']], ['Мөнгө', ['money', 'bank', 'vouchers']], ['Өр, авлага', ['debts', 'loans']], ['Цалин', ['payroll']],
@@ -444,8 +444,25 @@ function salesModule() {
       return '<tr class="clk" onclick="openBillAdm(' + esc(JSON.stringify(o.key)) + ')"><td>' + esc(o.date.slice(5) + ' ' + o.time) + '</td><td>' + esc(o.items.slice(0, 3).join(', ') + (o.items.length > 3 ? ' +' + (o.items.length - 3) : '')) +
         (o.disc ? ' <small class="muted">· хөнгөлөлт ' + fmt(o.disc) + '</small>' : '') + (o.ret ? ' <small class="neg">· буцаалт ' + fmt(o.ret) + '</small>' : '') + '</td><td>' + esc(o.staff) + '</td><td>' + esc(payText(o.pays)) + '</td><td class="n">' + fmt(o.net) + '</td></tr>';
     }).join('') : '<tr><td colspan="5" class="muted">Энэ хугацаанд борлуулалт алга</td></tr>') + '</table></div></div>';
-  return orderReminder(biz) + kp + targetCard(biz, A) +
+  return orderReminder(biz) + kp + boostCard(biz, r[0], r[1]) + targetCard(biz, A) +
     '<div class="ch-card sx-ch"><h3>Борлуулалт өдрөөр <small class="muted">— тасархай: өмнөх үе</small></h3><div class="ch-box"><canvas id="chSales"></canvas></div></div>' + rc;
+}
+// ── Boost (тойм дээр): хугацааны нийт, борлуулалтад эзлэх хувь, одоо явж буй boost, бараагаар ──
+function boostCard(biz, f, t) {
+  if (!BUSINESSES[biz].boost && !records.some(function (x) { return x.biz === biz && x.type === 'boost'; })) return '';
+  var rep = repBoost(R(), biz, f, t), rows = rep.rows.filter(function (x) { return !x._b && !x._id; }), today = todayStr();
+  var tot = sum(rows, 'boost'), usd = sum(rows, '_usd'), sales = salesStats(biz, f, t).net;
+  // идэвхтэй: эхэлсэн огноо + хоног > өнөөдөр
+  var live = records.filter(function (x) { return x.biz === biz && x.type === 'boost' && Number(x.qty) > 0 && todayStr(new Date(new Date(x.date + 'T00:00:00').getTime() + Number(x.qty) * 864e5)) > today; })
+    .map(function (x) { var end = new Date(new Date(x.date + 'T00:00:00').getTime() + Number(x.qty) * 864e5); return { item: x.item, left: Math.ceil((end - new Date(today + 'T00:00:00')) / 864e5) }; });
+  var k = function (label, val, sub) { return '<div class="sx-k"><span>' + label + '</span><b>' + val + '</b><em>' + (sub || '') + '</em></div>'; };
+  return '<div class="card"><div class="bar-row"><h2 style="margin:0">Boost</h2><button class="link" onclick="setSub(\'boost\')">Дэлгэрэнгүй →</button></div>' +
+    '<div class="sx-kpis" style="margin:8px 0">' + k('Boost зардал', fmt(tot), usd ? '<small class="muted">$' + usd + '</small>' : '') +
+    k('Борлуулалтад эзлэх', sales ? Math.round(tot / sales * 100) + '%' : '—', '<small class="muted">борлуулалт ' + fmt(sales) + '</small>') +
+    k('Одоо явж буй', live.length, live.length ? '<small class="muted">' + esc(live.slice(0, 3).map(function (l) { return l.item + ' · ' + l.left + ' хоног'; }).join(', ')) + '</small>' : '') + '</div>' +
+    (rows.length ? '<div class="scroll"><table class="rep-t"><tr><th>Бараа</th><th class="n">Boost</th><th class="n">Борлуулалт</th><th class="n">Boost / борлуулалт</th></tr>' +
+      rows.slice(0, 5).map(function (x) { return '<tr><td>' + esc(x.key) + '</td><td class="n">' + fmt(x.boost) + '</td><td class="n">' + fmt(x.sales) + '</td><td class="n">' + esc(x.ratio) + '</td></tr>'; }).join('') + '</table></div>'
+      : '<p class="muted" style="font-size:13px">Энэ хугацаанд boost бичигдээгүй байна.</p>') + '</div>';
 }
 // ── Борлуулалтын зорилт (сар бүр, дэлгүүр болон ажилтнаар) ──
 function tgtKey(biz, mo) { return biz + '|' + (mo || todayStr().slice(0, 7)); }
