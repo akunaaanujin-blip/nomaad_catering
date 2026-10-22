@@ -314,9 +314,10 @@ function renderOrders() {
         '<small><span class="st ' + (o.confirmed || o.paid === 'Орсон' ? 'g' : 'n') + '">' + (o.confirmed ? 'Төлбөр баталгаажсан' : 'Төлбөр ' + esc((o.paid || 'Ороогүй').toLowerCase())) + '</span></small></td>' +
       '<td class="c-x" data-l="">' + (o.pending ? '' : '<button class="mini lbl-q" onclick="lblQuick([\'' + o.id + '\'])" title="Шошго хэвлэх">Хэвлэх</button>') + acts + '</td></tr>';
   }).join('');
-  var sum = list.reduce(function (a, o) { return a + (Number(o.amount) || 0); }, 0), fees = list.reduce(function (a, o) { return a + ordFee(o); }, 0);
+  var live = list.filter(function (o) { return !ordDead(o); }), deadN = list.length - live.length;   // цуцалсан / буцаасан захиалгыг дүнд оруулахгүй
+  var sum = live.reduce(function (a, o) { return a + (Number(o.amount) || 0); }, 0), fees = live.reduce(function (a, o) { return a + ordFee(o); }, 0);
   el.innerHTML = list.length ? '<div class="ep-tbl-wrap"><table class="ep-tbl"><thead><tr><th>Огноо</th><th>Хэрэглэгч</th><th>Хаяг</th><th>Бараа</th><th class="num">Дүн</th><th>Төлөв</th><th></th></tr></thead><tbody>' + rows +
-    '</tbody></table></div><div class="ep-tbl-foot">Нийт ' + list.length + ' захиалга · ' + fmt(sum) + ' · хүргэлт ' + fmt(fees) + '</div>'
+    '</tbody></table></div><div class="ep-tbl-foot">Нийт ' + live.length + ' захиалга · ' + fmt(sum) + ' · хүргэлт ' + fmt(fees) + (deadN ? ' · цуцалсан/буцаасан ' + deadN + ' (дүнд ороогүй)' : '') + '</div>'
     : '<p class="muted" style="padding:14px">Захиалга алга</p>';
 }
 
