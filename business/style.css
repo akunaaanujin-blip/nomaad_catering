@@ -1163,3 +1163,70 @@ body:not(.bz-admin) .card{box-shadow:0 1px 3px rgba(15,23,42,.06)}
 #scanAsk{display:flex;flex-direction:column;gap:8px;align-items:center;width:min(92%,420px)}#scanAsk select{padding:9px;border-radius:9px;width:100%}
 .bill-row{align-items:center}.bill-x{margin:0 0 0 8px;flex:none}
 .btn.neg{color:#B91C1C!important;border-color:#FECACA!important}
+
+/* ═══════════ v9 · Өнгөлөг: хар, цэнхэр, улаан, ногоон — дэлгэц дүүрэн (ажилтны хуудас) ═══════════ */
+body:not(.bz-admin){--cg:#16A34A;--cr:#DC2626;--cb:#2563EB;--ck:#0F172A;background:#EEF2F7}
+/* дэлгэц дүүрэн */
+.ep-app .wrap,.ep-app.no-nav .wrap,.ep-app .wrap.ep-wide{max-width:none;padding:18px 22px 40px}
+.ep-app .top{padding:12px 22px;border-bottom:3px solid var(--cb)}
+/* хажуугийн цэс — хар */
+.ep-nav{background:linear-gradient(185deg,#020617 0%,#0F172A 60%,#1E293B 100%)}
+.ep-grp{background:rgba(255,255,255,.08)}.ep-grp-t{color:#fff}
+.ep-it{color:#CBD5E1}.ep-it.on{background:var(--cb);color:#fff}.ep-it.on::after{background:#fff;box-shadow:none}
+/* үндсэн товчнууд — тус бүр өөр өнгөтэй */
+.big-btns{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+body:not(.bz-admin) .big{color:#fff;border:0;box-shadow:0 6px 16px rgba(15,23,42,.18);font-size:17px;padding:22px 12px}
+body:not(.bz-admin) .big span{color:rgba(255,255,255,.85)}
+body:not(.bz-admin) .big.sale{background:linear-gradient(135deg,#15803D,#22C55E)}
+body:not(.bz-admin) .big.exp{background:linear-gradient(135deg,#B91C1C,#EF4444);color:#fff;border:0}
+body:not(.bz-admin) .big.close{background:linear-gradient(135deg,#020617,#334155);color:#fff;border:0;grid-column:auto}
+body:not(.bz-admin) .big.ord-btn{background:linear-gradient(135deg,#1D4ED8,#3B82F6);color:#fff;border:0}
+body:not(.bz-admin) .big.buu-btn{background:linear-gradient(135deg,#1D4ED8,#3B82F6)}
+/* өнөөдрийн дүн — гурван өнгөт хавтан */
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.sum>div{border-radius:12px;padding:14px 16px;color:#fff;display:flex;flex-direction:column;gap:4px}
+.sum>div .muted{color:rgba(255,255,255,.85)!important}.sum>div b{color:#fff!important;font-size:24px}
+.sum>div:nth-child(1){background:linear-gradient(135deg,#15803D,#22C55E)}
+.sum>div:nth-child(2){background:linear-gradient(135deg,#B91C1C,#EF4444)}
+.sum>div:nth-child(3){background:linear-gradient(135deg,#0F172A,#2563EB)}
+/* картууд — өнгөт дээд зураас */
+body:not(.bz-admin) .card{border:0;border-top:4px solid var(--cb);border-radius:12px;background:#fff}
+body:not(.bz-admin) .card:nth-of-type(3n+2){border-top-color:var(--cg)}
+body:not(.bz-admin) .card:nth-of-type(3n+3){border-top-color:var(--ck)}
+/* таб */
+body:not(.bz-admin) .tabs button{border:0;background:#E2E8F0;color:#0F172A;font-weight:700}
+body:not(.bz-admin) .tabs button:nth-child(4n+1).on{background:var(--cg)}
+body:not(.bz-admin) .tabs button:nth-child(4n+2).on{background:var(--cb)}
+body:not(.bz-admin) .tabs button:nth-child(4n+3).on{background:var(--ck)}
+body:not(.bz-admin) .tabs button:nth-child(4n).on{background:var(--cr)}
+body:not(.bz-admin) .tabs button.on{color:#fff}
+/* төлөв */
+.st.g::before{background:var(--cg)}.st.r::before{background:var(--cr)}.st.b::before{background:var(--cb)}.st.y::before{background:#F59E0B}
+.st{font-weight:700}.st.g{color:#15803D}.st.r{color:#B91C1C}.st.b{color:#1D4ED8}
+.ep-tbl th{background:#0F172A;color:#fff;border:0}
+.ep-tbl tbody tr:nth-child(even) td{background:#F8FAFC}
+/* КАСС */
+.pos-head{background:linear-gradient(90deg,#0F172A,#1E3A8A);color:#fff}.pos-head h2{color:#fff}
+.pos-x{background:rgba(255,255,255,.15);color:#fff}
+.pos-cat{border:0;background:#E2E8F0;font-weight:700}
+.pos-cat.on{background:var(--ck);color:#fff}
+.ptile{border:0;border-left:6px solid var(--cb);box-shadow:0 2px 8px rgba(15,23,42,.08)}
+.ptile:nth-child(4n+1){border-left-color:var(--cb)}.ptile:nth-child(4n+2){border-left-color:var(--cg)}
+.ptile:nth-child(4n+3){border-left-color:var(--ck)}.ptile:nth-child(4n){border-left-color:var(--cr)}
+.ptile.on{background:#F0F9FF;box-shadow:0 0 0 2px var(--cb)}
+.pt-f b{color:#0F172A}.pt-q{background:var(--cr)}
+body:not(.bz-admin) .pos-pay .seg button{border:0;color:#fff;font-weight:700;opacity:.55}
+body:not(.bz-admin) .pos-pay .seg button[data-v="Бэлэн"]{background:var(--cg)}
+body:not(.bz-admin) .pos-pay .seg button[data-v="Карт"]{background:var(--cb)}
+body:not(.bz-admin) .pos-pay .seg button[data-v="Шилжүүлэг"]{background:var(--ck)}
+body:not(.bz-admin) .pos-pay .seg button[data-v="Зээлээр"]{background:var(--cr)}
+body:not(.bz-admin) .pos-pay .seg button[data-v="StorePay"]{background:#7C3AED}
+body:not(.bz-admin) .pos-pay .seg button.on{opacity:1;box-shadow:0 0 0 3px rgba(15,23,42,.25)}
+.pos-mode button.on{background:var(--cb);border-color:var(--cb)}
+.pos-total .total{color:var(--cg)}
+body:not(.bz-admin) .pos-foot .btn{background:linear-gradient(135deg,#15803D,#22C55E);box-shadow:0 4px 12px rgba(22,163,74,.35)}
+.pe-u button.on{background:var(--cr)}
+.pos-cart .cl-sum{color:var(--cb)}.cl1 .cl-del:hover{color:var(--cr)}
+.sx-k:nth-child(1){border-top:4px solid var(--cg)}.sx-k:nth-child(2){border-top:4px solid var(--cb)}
+.sx-k:nth-child(3){border-top:4px solid var(--ck)}.sx-k:nth-child(4){border-top:4px solid var(--cr)}
+@media(max-width:700px){.sum{grid-template-columns:1fr}.sum>div b{font-size:20px}.ep-app .wrap{padding:12px 12px 40px}}
