@@ -148,7 +148,7 @@ function cacheKeysFor(d) {
   return CACHE_MAP[d.type] || CACHE_ALL;   // мэдэгдэхгүй бичилт (он хаах г.м) — бүгдийг
 }
 function cacheGet(name, fn) {
-  const c = CacheService.getScriptCache(), k = 'ck_' + name, n = Number(c.get(k) || 0);
+  const c = CacheService.getScriptCache(), k = 'ck2_' + name, n = Number(c.get(k) || 0);
   if (n > 0) {
     const keys = []; for (let i = 0; i < n; i++) keys.push(k + '_' + i);
     const parts = c.getAll(keys); let s = '';
@@ -159,7 +159,7 @@ function cacheGet(name, fn) {
   if (cnt <= 60) { const o = {}; for (let i = 0; i < cnt; i++) o[k + '_' + i] = s.slice(i * CH, (i + 1) * CH); o[k] = String(cnt); try { c.putAll(o, 300); } catch (e) {} }
   return JSON.parse(s);
 }
-function cacheDrop(names) { CacheService.getScriptCache().removeAll(names.map(function (n) { return 'ck_' + n; })); }
+function cacheDrop(names) { CacheService.getScriptCache().removeAll(names.map(function (n) { return 'ck2_' + n; })); }   // ck2_ — 2026-10-22 эвдэрсэн кэшийг хүчингүй болгосон
 // Удирдагчийн токен (admin_login-оор олгоно, 8 цаг хүчинтэй)
 function isAdmin(data) { return !!adminWho(data); }
 // Токен → { id, role, biz }. Хуучин токен (зөвхөн ID) = Эзэн.
