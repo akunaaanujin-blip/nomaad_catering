@@ -439,21 +439,45 @@ function repReceipts(R, biz, from, to) {
   return { title: 'Баримтын жагсаалт', cols: [c('date', 'Огноо'), c('staff', 'Худалдагч'), c('items', 'Бараа'), c('customer', 'Хэрэглэгч')].concat(oc).concat([c('pay', 'Төлбөр'), m('disc', 'Хөнгөлөлт'), m('ret', 'Буцаалт'), c('ebarimt', 'И-баримт'), m('amount', 'Дүн')]),
     rows: rows, total: { items: rows.length + ' баримт', disc: sum(rows, 'disc'), ret: sum(rows, 'ret'), amount: sum(rows, 'amount') }, note: 'Мөр дээр дарахад баримтын дэлгэрэнгүй нээгдэнэ.' };
 }
-// Boost бараагаар: ажилтны бичсэн зар сурталчилгааны төлбөр ба тухайн барааны борлуулалт (зөвхөн бүртгэл — санхүүд банкны хуулгаар 7205)
+// Boost бараагаар: ажилтны бичсэн зар сурталчилгааны төлбөр (зөвхөн бүртгэл — санхүүд банкны хуулгаар 7205)
+// Boost бүрийн үр дүн: boost явсан өдрүүдийн борлуулалт ↔ түүнээс өмнөх ижил урттай үе; тэр хугацаанд тухайн бараагаар ирсэн захиалга → нэг захиалгын зардал
+function addDays(d, n) { return todayStr(new Date(new Date(d + 'T00:00:00').getTime() + n * 864e5)); }
+function boostWin(x) {   // [эхлэл, төгсгөл) — дуусаагүй boost-ийг өнөөдрийг хүртэл; өмнөх үе ижил урттай
+  var end = addDays(x.date, Math.max(1, Number(x.qty) || 1)), cap = addDays(todayStr(), 1); if (end > cap) end = cap;
+  var len = Math.round((new Date(end + 'T00:00:00') - new Date(x.date + 'T00:00:00')) / 864e5);
+  return { a: x.date, b: end, pa: addDays(x.date, -len), len: len };
+}
+function boostEnd(x) { return addDays(x.date, Math.max(1, Number(x.qty) || 1)); }   // энэ өдрөөс эхлэн boost явахгүй
 function repBoost(R, biz, from, to) {
   var bs = R.records.filter(function (x) { return x.biz === biz && x.type === 'boost' && x.date >= from && x.date <= to; });
-  var sold = {}; salesIn(R, biz, from, to).forEach(function (x) { if (!isAdj(x.item)) { var k = baseItem(x.item); sold[k] = sold[k] || { q: 0, a: 0 }; sold[k].q += Number(x.qty) || 0; sold[k].a += Number(x.amount) || 0; } });
-  var by = {}; bs.forEach(function (x) { var o = by[x.item] = by[x.item] || { n: 0, a: 0, usd: 0, d: 0 }; o.n++; o.a += Number(x.amount) || 0; o.d += Number(x.qty) || 0; if (x.unit === 'USD') o.usd += Number(x.price) || 0; });
-  var rows = Object.keys(by).sort(function (a, b) { return by[b].a - by[a].a; }).map(function (k) {
-    var s = sold[k] || { q: 0, a: 0 };
-    return { key: k, n: by[k].n, days: by[k].d || '', usd: by[k].usd ? '$' + r0(by[k].usd) : '', _usd: by[k].usd, boost: r0(by[k].a), qty: r0(s.q), sales: r0(s.a), ratio: s.a ? Math.round(by[k].a / s.a * 100) + '%' : '—' };
-  });
+  var sales = R.records.filter(function (x) { return x.biz === biz && x.type === 'sale' && !isAdj(x.item); });
+  var ords = (R.orders || []).filter(function (o) { return o.biz === biz && !ordDead(o); });
+  var itemsOf = function (o) { try { return (typeof o.items === 'string' ? JSON.parse(o.items || '[]') : o.items || []).map(function (i) { return i.name; }); } catch (e) { return []; } };
+  var by = {};
   var det = bs.slice().sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; }).map(function (x) {
-    return { key: x.date + ' ' + (x.time || '') + ' · ' + x.item + (x.note ? ' · ' + x.note : '') + ' · ' + (x.staff || ''), days: Number(x.qty) || '', usd: x.unit === 'USD' ? '$' + r0(x.price) : '', boost: r0(Number(x.amount) || 0), _id: x.id };
+    var w = boostWin(x), o = by[x.item] = by[x.item] || { n: 0, a: 0, usd: 0, d: 0, inD: {}, preD: {}, ord: {} };
+    o.n++; o.a += Number(x.amount) || 0; o.d += Number(x.qty) || 0; if (x.unit === 'USD') o.usd += Number(x.price) || 0;
+    for (var d = w.a; d < w.b; d = addDays(d, 1)) o.inD[d] = 1;
+    for (var e = w.pa; e < w.a; e = addDays(e, 1)) o.preD[e] = 1;
+    var q = 0, sa = 0, pq = 0, on = 0;
+    sales.forEach(function (y) { if (baseItem(y.item) !== x.item) return; if (y.date >= w.a && y.date < w.b) { q += Number(y.qty) || 0; sa += Number(y.amount) || 0; } else if (y.date >= w.pa && y.date < w.a) pq += Number(y.qty) || 0; });
+    ords.forEach(function (d) { if (d.date >= w.a && d.date < w.b && itemsOf(d).indexOf(x.item) >= 0) { on++; o.ord[d.id] = 1; } });
+    return { key: x.date + ' ' + (x.time || '') + ' · ' + x.item + (x.note ? ' · ' + x.note : '') + ' · ' + (x.staff || ''), days: Number(x.qty) || '', usd: x.unit === 'USD' ? '$' + r0(x.price) : '',
+             boost: r0(Number(x.amount) || 0), qty: r0(q), before: r0(pq), orders: on, cpo: on ? r0(Math.round((Number(x.amount) || 0) / on)) : '', sales: r0(sa), ratio: sa ? Math.round((Number(x.amount) || 0) / sa * 100) + '%' : '—', _id: x.id };
   });
-  return { title: 'Boost бараагаар', cols: [c('key', 'Бараа'), m('n', 'Удаа'), m('days', 'Хоног'), c('usd', 'Доллар'), m('boost', 'Boost ₮'), m('qty', 'Зарсан тоо'), m('sales', 'Борлуулалт'), c('ratio', 'Boost / борлуулалт')],
-    rows: rows.concat(det.length ? [{ key: '— Бичилтүүд —', _b: true }] : []).concat(det), total: { key: 'Нийт', usd: sum(rows, '_usd') ? '$' + sum(rows, '_usd') : '', boost: sum(rows, 'boost'), sales: sum(rows, 'sales') },
-    note: 'Ажилтны бичсэн boost — зөвхөн бүртгэл. Санхүүд зардал нь банкны хуулгаар (7205 Зар сурталчилгаа) орно.' };
+  var rows = Object.keys(by).sort(function (a, b) { return by[b].a - by[a].a; }).map(function (k) {
+    var o = by[k], q = 0, sa = 0, pq = 0, on = Object.keys(o.ord).length;
+    Object.keys(o.preD).forEach(function (d) { if (o.inD[d]) delete o.preD[d]; });   // давхцсан boost-ийн өдрийг «өмнөх үе»-д тооцохгүй
+    sales.forEach(function (y) { if (baseItem(y.item) !== k) return; if (o.inD[y.date]) { q += Number(y.qty) || 0; sa += Number(y.amount) || 0; } else if (o.preD[y.date]) pq += Number(y.qty) || 0; });
+    return { key: k, n: o.n, days: o.d || '', usd: o.usd ? '$' + r0(o.usd) : '', _usd: o.usd, boost: r0(o.a), qty: r0(q), before: r0(pq), orders: on, cpo: on ? r0(Math.round(o.a / on)) : '',
+             sales: r0(sa), ratio: sa ? Math.round(o.a / sa * 100) + '%' : '—' };
+  });
+  var tq = sum(rows, 'orders');
+  return { title: 'Boost бараагаар', cols: [c('key', 'Бараа'), m('n', 'Удаа'), m('days', 'Хоног'), c('usd', 'Доллар'), m('boost', 'Boost ₮'), m('qty', 'Зарсан (boost үед)'), m('before', 'Өмнөх ижил үе'),
+      m('orders', 'Захиалга'), m('cpo', 'Нэг захиалгын зардал'), m('sales', 'Борлуулалт (boost үед)'), c('ratio', 'Boost / борлуулалт')],
+    rows: rows.concat(det.length ? [{ key: '— Бичилтүүд —', _b: true }] : []).concat(det),
+    total: { key: 'Нийт', usd: sum(rows, '_usd') ? '$' + sum(rows, '_usd') : '', boost: sum(rows, 'boost'), qty: sum(rows, 'qty'), before: sum(rows, 'before'), orders: tq, cpo: tq ? Math.round(sum(rows, 'boost') / tq) : '', sales: sum(rows, 'sales') },
+    note: 'Boost үе = эхэлсэн өдрөөс хоногийн тоогоор (дуусаагүй бол өнөөдрийг хүртэл); «Өмнөх ижил үе» — түүнээс өмнөх ижил олон хоног. Захиалга — тэр хугацаанд тухайн бараатай ирсэн Cozy захиалга. Boost — зөвхөн бүртгэл, санхүүд банкны хуулгаар (7205) орно.' };
 }
 // Цаг, гарагаар: аль цагт хамгийн их зардаг вэ (ээлж төлөвлөхөд)
 var WDAYS = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'];

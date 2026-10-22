@@ -160,7 +160,9 @@ function showView(v, tab) {
 // Олон бараа сонговол дүнг тэнцүү хуваана. Бичлэг бүр: item, amount = ₮, price = валютаар, unit = валют, qty = хоног, bill = нэг boost-ийн бүлэг
 var boost = { items: [], cur: 'USD', days: 0 }, BOOST_DAYS = [1, 3, 5, 7, 14, 30];
 function boostChips() {
-  $('bSel').innerHTML = boost.items.map(function (n, i) { return '<button class="chip on" onclick="boost.items.splice(' + i + ',1);boostChips()">' + esc(n) + ' ×</button>'; }).join('');
+  $('bSel').innerHTML = boost.items.map(function (n, i) {   // үлдэгдэл бага бол чип дээр харагдана (boost хийгээд бараа дуусахаас сэргийлнэ)
+    var q = stockAvail(n), low = q !== null && q <= 2;
+    return '<button class="chip on"' + (low ? ' style="background:var(--red);border-color:var(--red)"' : '') + ' onclick="boost.items.splice(' + i + ',1);boostChips()">' + esc(n) + (low ? ' · үлдэгдэл ' + q : '') + ' ×</button>'; }).join('');
   $('bCur').innerHTML = [['USD', '$'], ['MNT', '₮']].map(function (c) { return '<button class="chip' + (boost.cur === c[0] ? ' on' : '') + '" onclick="boost.cur=\'' + c[0] + '\';boostChips()">' + c[1] + '</button>'; }).join('');
   $('bDays').innerHTML = BOOST_DAYS.map(function (d) { return '<button class="chip' + (boost.days === d ? ' on' : '') + '" onclick="boost.days=' + d + ';$(\'bDayN\').value=\'\';boostChips()">' + d + '</button>'; }).join('');
   $('bRateWrap').style.display = boost.cur === 'USD' ? '' : 'none';
@@ -168,7 +170,10 @@ function boostChips() {
 }
 function boostAdd() {
   var n = $('bItem').value.trim();
-  if (products.some(function (p) { return p.name === n; }) && boost.items.indexOf(n) < 0) boost.items.push(n);
+  if (products.some(function (p) { return p.name === n; }) && boost.items.indexOf(n) < 0) {
+    boost.items.push(n);
+    var q = stockAvail(n); if (q !== null && q <= 2) toast(q <= 0 ? '«' + n + '» үлдэгдэлгүй байна — boost хийхээс өмнө шалгаарай' : '«' + n + '» ердөө ' + q + ' үлдсэн');
+  }
   $('bItem').value = ''; boostChips();
 }
 function splitAmt(total, n, dec) {   // тэнцүү хуваана, үлдэгдэл сүүлийнхэд (нийлбэр яг таарна)

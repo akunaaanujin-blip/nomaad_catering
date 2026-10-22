@@ -447,21 +447,27 @@ function salesModule() {
   return orderReminder(biz) + kp + boostCard(biz, r[0], r[1]) + targetCard(biz, A) +
     '<div class="ch-card sx-ch"><h3>Борлуулалт өдрөөр <small class="muted">— тасархай: өмнөх үе</small></h3><div class="ch-box"><canvas id="chSales"></canvas></div></div>' + rc;
 }
-// ── Boost (тойм дээр): хугацааны нийт, борлуулалтад эзлэх хувь, одоо явж буй boost, бараагаар ──
+// ── Boost (тойм дээр): зардал, эзлэх %, нэг захиалгын зардал, одоо явж буй / дуусах, банкны хуулгатай тулгалт, бараагаар ──
 function boostCard(biz, f, t) {
   if (!BUSINESSES[biz].boost && !records.some(function (x) { return x.biz === biz && x.type === 'boost'; })) return '';
-  var rep = repBoost(R(), biz, f, t), rows = rep.rows.filter(function (x) { return !x._b && !x._id; }), today = todayStr();
-  var tot = sum(rows, 'boost'), usd = sum(rows, '_usd'), sales = salesStats(biz, f, t).net;
-  // идэвхтэй: эхэлсэн огноо + хоног > өнөөдөр
-  var live = records.filter(function (x) { return x.biz === biz && x.type === 'boost' && Number(x.qty) > 0 && todayStr(new Date(new Date(x.date + 'T00:00:00').getTime() + Number(x.qty) * 864e5)) > today; })
-    .map(function (x) { var end = new Date(new Date(x.date + 'T00:00:00').getTime() + Number(x.qty) * 864e5); return { item: x.item, left: Math.ceil((end - new Date(today + 'T00:00:00')) / 864e5) }; });
+  var rep = repBoost(R(), biz, f, t), rows = rep.rows.filter(function (x) { return !x._b && !x._id; }), today = todayStr(), tm = addDays(today, 1);
+  var tot = sum(rows, 'boost'), usd = sum(rows, '_usd'), sales = salesStats(biz, f, t).net, ordN = rep.total.orders;
+  var live = records.filter(function (x) { return x.biz === biz && x.type === 'boost' && x.date <= today && boostEnd(x) > today; })
+    .map(function (x) { return { item: x.item, left: Math.round((new Date(boostEnd(x) + 'T00:00:00') - new Date(today + 'T00:00:00')) / 864e5) }; });
+  var ending = live.filter(function (l) { return l.left <= 1; });   // өнөөдөр сүүлийн өдөр
+  var bank = J().filter(function (e) { return e.date >= f && e.date <= t; }).reduce(function (a, e) { return a + (e.dr === '7205' ? e.amount : e.cr === '7205' ? -e.amount : 0); }, 0);
   var k = function (label, val, sub) { return '<div class="sx-k"><span>' + label + '</span><b>' + val + '</b><em>' + (sub || '') + '</em></div>'; };
+  var gap = Math.round(bank - tot);
   return '<div class="card"><div class="bar-row"><h2 style="margin:0">Boost</h2><button class="link" onclick="setSub(\'boost\')">Дэлгэрэнгүй →</button></div>' +
     '<div class="sx-kpis" style="margin:8px 0">' + k('Boost зардал', fmt(tot), usd ? '<small class="muted">$' + usd + '</small>' : '') +
     k('Борлуулалтад эзлэх', sales ? Math.round(tot / sales * 100) + '%' : '—', '<small class="muted">борлуулалт ' + fmt(sales) + '</small>') +
+    k('Нэг захиалгын зардал', ordN ? fmt(Math.round(tot / ordN)) : '—', '<small class="muted">' + ordN + ' захиалга boost үед</small>') +
     k('Одоо явж буй', live.length, live.length ? '<small class="muted">' + esc(live.slice(0, 3).map(function (l) { return l.item + ' · ' + l.left + ' хоног'; }).join(', ')) + '</small>' : '') + '</div>' +
-    (rows.length ? '<div class="scroll"><table class="rep-t"><tr><th>Бараа</th><th class="n">Boost</th><th class="n">Борлуулалт</th><th class="n">Boost / борлуулалт</th></tr>' +
-      rows.slice(0, 5).map(function (x) { return '<tr><td>' + esc(x.key) + '</td><td class="n">' + fmt(x.boost) + '</td><td class="n">' + fmt(x.sales) + '</td><td class="n">' + esc(x.ratio) + '</td></tr>'; }).join('') + '</table></div>'
+    (ending.length ? '<p style="font-size:13px;margin:4px 0 8px"><b>Өнөөдөр дуусна:</b> ' + esc(ending.map(function (l) { return l.item; }).join(', ')) + ' — үр дүнг доорх хүснэгтээс харж сунгах эсэхээ шийдээрэй.</p>' : '') +
+    '<p class="muted" style="font-size:12.5px;margin:0 0 8px">Банкны хуулгаар (7205): ' + fmt(bank) + ' · ажилтан бичсэн: ' + fmt(tot) +
+      (Math.abs(gap) >= 1000 ? ' · <b>зөрүү ' + (gap > 0 ? 'бичигдээгүй boost ' + fmt(gap) : 'хуулгад ороогүй ' + fmt(-gap)) + '</b>' : ' · таарч байна') + '</p>' +
+    (rows.length ? '<div class="scroll"><table class="rep-t"><tr><th>Бараа</th><th class="n">Boost</th><th class="n">Зарсан (boost үед)</th><th class="n">Өмнөх ижил үе</th><th class="n">Нэг захиалгын зардал</th><th class="n">Boost / борлуулалт</th></tr>' +
+      rows.slice(0, 5).map(function (x) { return '<tr><td>' + esc(x.key) + '</td><td class="n">' + fmt(x.boost) + '</td><td class="n">' + x.qty + '</td><td class="n">' + x.before + '</td><td class="n">' + (x.cpo ? fmt(x.cpo) : '—') + '</td><td class="n">' + esc(x.ratio) + '</td></tr>'; }).join('') + '</table></div>'
       : '<p class="muted" style="font-size:13px">Энэ хугацаанд boost бичигдээгүй байна.</p>') + '</div>';
 }
 // ── Борлуулалтын зорилт (сар бүр, дэлгүүр болон ажилтнаар) ──
@@ -1088,7 +1094,7 @@ function subTabs() {
     return '<button class="' + (cur === s[0] ? 'on' : '') + '" onclick="setSub(\'' + s[0] + '\')">' + s[1] + '</button>';
   }).join('') + '</div>';
 }
-function R() { return { records: records, moves: moves, salary: salary, journal: journal, stock: stockData, staff: staff, partners: partners, closed: meta.closed || '', assets: window.assets || [] }; }
+function R() { return { records: records, moves: moves, salary: salary, journal: journal, stock: stockData, staff: staff, partners: partners, closed: meta.closed || '', assets: window.assets || [], orders: window.adminOrders || [] }; }
 function J() { return buildJournal(state.biz, R()); }
 
 // Тайлан бүрийг нэг газраас гаргана — дэлгэц, Excel, «Бүх тайлан» бүгд үүнийг ашиглана
