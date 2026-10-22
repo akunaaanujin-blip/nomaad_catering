@@ -278,10 +278,12 @@ function buReport(input) {
   rd.onload = function (e) {
     var wb; try { wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' }); } catch (er) { toast('Файлыг уншиж чадсангүй'); return; }
     var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: '' });
-    var hi = rows.findIndex(function (r) { return r.some(function (c) { return /Хэрэглэгч/.test(c); }) && r.some(function (c) { return /Төлөв/.test(c); }); });
-    if (hi < 0) { toast('Буухиагийн тайлан биш байна («Хэрэглэгч», «Төлөв» багана олдсонгүй)'); return; }
+    // ebuuhia-ийн хоёр хэлбэр: хуудасны хүснэгт («Хэрэглэгч», «Дүн», «Авсан») ба Excel («Утас», «Мөнгөн_дүн», «Авсан_мөнгө», «..._тайлбар»)
+    var hi = rows.findIndex(function (r) { return r.some(function (c) { return /^(Хэрэглэгч|Утас)$/.test(String(c).trim()); }) && r.some(function (c) { return /^Төлөв$/.test(String(c).trim()); }); });
+    if (hi < 0) { toast('Буухиагийн тайлан биш байна («Утас», «Төлөв» багана олдсонгүй)'); return; }
     var h = rows[hi].map(function (c) { return String(c).trim(); }), col = function (re) { return h.findIndex(function (c) { return re.test(c); }); };
-    var cPh = col(/^Хэрэглэгч/), cSt = col(/^Төлөв/), cAmt = col(/^Дүн/), cGot = col(/^Авсан/), cNote = col(/Нэмэлт тайлбар/), used = {};
+    var cPh = col(/^(Хэрэглэгч|Утас)$/), cSt = col(/^Төлөв$/), cAmt = col(/^(Дүн|Мөнгөн_дүн)$/), cGot = col(/^Авсан/), used = {};
+    var cNotes = h.map(function (c, i) { return /тайлбар/i.test(c) ? i : -1; }).filter(function (i) { return i >= 0; });
     brRows = rows.slice(hi + 1).map(function (r) {
       var ph = String(r[cPh] || '').replace(/\D/g, '').slice(-8), st = String(r[cSt] || '').trim().toUpperCase();
       if (!/^\d{8}$/.test(ph) || !st) return null;
@@ -292,7 +294,7 @@ function buReport(input) {
       if (o) used[o.id] = 1;
       var act = !o || !to ? 'none' : o.status === to ? 'same'
         : to === 'Хүргэгдсэн' ? (/^(Шинэ|Буухиад өгсөн)$/.test(o.status) ? 'set' : 'none') : (o.status === 'Буухиад өгсөн' ? 'set' : 'none');
-      return { ph: ph, st: st, amt: amt, got: got, note: cNote >= 0 ? String(r[cNote] || '') : '', o: o, to: to, act: act, pay: !!(o && got > 0 && o.paid !== 'Орсон' && !o.confirmed) };
+      return { ph: ph, st: st, amt: amt, got: got, note: cNotes.map(function (i) { return String(r[i] || '').trim(); }).filter(Boolean).join(' · '), o: o, to: to, act: act, pay: !!(o && got > 0 && o.paid !== 'Орсон' && !o.confirmed) };
     }).filter(Boolean);
     brRender(); openSheet('brSheet');
   };
