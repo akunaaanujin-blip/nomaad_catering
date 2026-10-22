@@ -487,26 +487,6 @@ function repBoost(R, biz, from, to) {
     total: { key: 'Нийт', usd: sum(rows, '_usd') ? '$' + sum(rows, '_usd') : '', boost: sum(rows, 'boost'), qty: sum(rows, 'qty'), before: sum(rows, 'before'), orders: tq, cpo: tq ? Math.round(sum(rows, 'boost') / tq) : '', sales: sum(rows, 'sales'), uplift: sum(rows, 'uplift'), net: sum(rows, 'net') },
     note: 'Нэмэлт ашиг = boost үеийн нийт ашиг (борлуулалт − өртөг) − өмнөх ижил үеийн нийт ашиг; Цэвэр үр дүн = нэмэлт ашиг − boost зардал (≥ 0 бол ашигтай). Boost үе = эхэлсэн өдрөөс хоногийн тоогоор (дуусаагүй бол өнөөдрийг хүртэл); «Өмнөх ижил үе» — түүнээс өмнөх ижил олон хоног. Захиалга — тэр хугацаанд тухайн бараатай ирсэн Cozy захиалга. Boost — зөвхөн бүртгэл, санхүүд банкны хуулгаар (7205) орно.' };
 }
-// Цаг, гарагаар: аль цагт хамгийн их зардаг вэ (ээлж төлөвлөхөд)
-var WDAYS = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'];
-function repHour(R, biz, from, to) {
-  var H = {}, W = {}, nb = {};
-  groupBills(salesIn(R, biz, from, to)).forEach(function (o) {
-    var h = Number(String(o.time).slice(0, 2)) || 0, w = new Date(o.date + 'T00:00:00').getDay();
-    H[h] = H[h] || { n: 0, a: 0 }; H[h].n++; H[h].a += o.net;
-    W[w] = W[w] || { n: 0, a: 0 }; W[w].n++; W[w].a += o.net;
-  });
-  var rows = [];
-  for (var h = 0; h < 24; h++) if (H[h]) rows.push({ key: (h < 10 ? '0' : '') + h + ':00–' + (h < 9 ? '0' : '') + (h + 1) + ':00', n: H[h].n, amount: r0(H[h].a), avg: r0(H[h].a / H[h].n) });
-  var max = Math.max.apply(null, rows.map(function (r) { return r.amount; }).concat([1]));
-  rows.forEach(function (r) { r.bar = '█'.repeat(Math.max(1, Math.round(r.amount / max * 20))); });
-  var wrows = [1, 2, 3, 4, 5, 6, 0].filter(function (w) { return W[w]; }).map(function (w) { return { key: WDAYS[w] + ' гараг', n: W[w].n, amount: r0(W[w].a), avg: r0(W[w].a / W[w].n), bar: '' }; });
-  var wmax = Math.max.apply(null, wrows.map(function (r) { return r.amount; }).concat([1]));
-  wrows.forEach(function (r) { r.bar = '█'.repeat(Math.max(1, Math.round(r.amount / wmax * 20))); });
-  var all = rows.concat(wrows.length ? [{ key: '— Гарагаар —', _b: true }] : []).concat(wrows);
-  return { title: 'Борлуулалт · цаг, гарагаар', cols: [c('key', 'Цаг / гараг'), m('n', 'Баримт'), m('amount', 'Дүн'), m('avg', 'Дундаж чек'), c('bar', '')], rows: all,
-    note: 'Хамгийн их зардаг цаг, гарагт илүү ажилтан гаргаж, сул цагт бараа тооллого, захиалга хийхэд ашиглана.' };
-}
 // Хөнгөлөлт ба буцаалт: хэн, хэдэн, ямар шалтгаанаар
 function repDiscRet(R, biz, from, to) {
   var list = salesIn(R, biz, from, to), rows = [];

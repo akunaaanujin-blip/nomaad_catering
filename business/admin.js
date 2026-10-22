@@ -254,7 +254,7 @@ function bizModules(biz) { return BUSINESSES[biz] && BUSINESSES[biz].finOnly ? M
 function openMgmt() { state.view = 'company'; state.biz = 'mgmt'; state.module = 'finance'; render(); window.scrollTo(0, 0); }
 // Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
 var MENU = {
-  sales: [['Өдөр тутам', ['overview', 'boost', 'receipts', 'orders']], ['Тайлан', ['item', 'cat', 'staff', 'day', 'hour', 'pay', 'disc', 'slow']], ['И-баримт', ['ebarimt']]],
+  sales: [['Өдөр тутам', ['overview', 'boost', 'receipts', 'orders']], ['Тайлан', ['item', 'cat', 'staff', 'day', 'pay', 'disc', 'slow']], ['И-баримт', ['ebarimt']]],
   products: [['Бараа материал', ['catalog', 'stock', 'in', 'po']], ['Тайлан', ['move', 'prices']], ['Харилцагч', ['suppliers']]],
   // Санхүү — цөөн, ойлгомжтой цэс. Нягтлангийн тайлан, тохиргоо нь тус бүр нэг хуудсанд цуглуулагдсан (finance.js HUBS)
   finance: [['Үр дүн', ['simple', 'months', 'profit']], ['Мөнгө', ['money', 'bank', 'vouchers']], ['Өр, авлага', ['debts', 'loans']], ['Цалин', ['payroll']],
@@ -1092,7 +1092,7 @@ function closeSheet(id) { $(id).classList.remove('show'); }
 
 // ═══════════ ДЭД ЦЭС, ТАЙЛАН (reports.js-ийн хөдөлгүүрээр) ═══════════
 var SUBS = {
-  sales: [['overview', 'Тойм'], ['receipts', 'Баримтууд'], ['orders', 'Захиалга'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'], ['hour', 'Цаг, гарагаар'],
+  sales: [['overview', 'Тойм'], ['receipts', 'Баримтууд'], ['orders', 'Захиалга'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'],
           ['pay', 'Төлбөрийн хэлбэрээр'], ['disc', 'Хөнгөлөлт, буцаалт'], ['slow', 'Удаан эргэлттэй бараа'], ['boost', 'Boost бараагаар'], ['ebarimt', 'И-баримт тулгалт']],
   products: [['catalog', 'Барааны бүртгэл, үнэ'], ['po', 'Бараа захиалга (Хятад)'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['prices', 'Үнийн түүх'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
   finance: [['simple', 'Үр дүн'], ['months', 'Сар бүрээр'], ['profit', 'Барааны ашиг'], ['money', 'Орлого, зарлага'], ['bank', 'Банкны хуулга'], ['vouchers', 'Кассын баримт'],
@@ -1119,7 +1119,6 @@ function makeReport(mod, sub) {
     if (sub === 'orders') return repOrders(biz);
     if (sub === 'customers') return repCustomers(biz);
     if (sub === 'ebarimt') return repEbarimt(R(), biz, f, t);
-    if (sub === 'hour') return repHour(R(), biz, f, t);
     if (sub === 'boost') return repBoost(R(), biz, f, t);
     if (sub === 'disc') return repDiscRet(R(), biz, f, t);
     if (sub === 'slow') return repSlow(R(), biz, 30, stockData[biz]);
