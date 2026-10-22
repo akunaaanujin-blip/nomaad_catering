@@ -70,6 +70,20 @@
         <p class="muted" style="margin-top:8px">«Захиалгад» — «Шинэ» захиалгад байгаа тоо; «Буухиад өгсөн» болоход борлуулалт бичигдэж нөөцөөс хасагдана. Захиалгад нөөцөөс их байвал мөр улаанаар харагдана.</p>
       </div>
     </div>
+    <div data-view="boost" id="boostView" style="display:none">
+      <div class="card">
+        <label for="bItem">Бараа</label>
+        <input id="bItem" list="boostItems" placeholder="Бараа хайх…" autocomplete="off"><datalist id="boostItems"></datalist>
+        <label for="bAmt">Төлсөн дүн (₮)</label>
+        <input id="bAmt" type="number" inputmode="numeric" min="0">
+        <label for="bNote">Тайлбар (заавал биш)</label>
+        <input id="bNote" placeholder="Жишээ: 3 хоног, FB пост">
+        <button class="btn" style="margin-top:10px" onclick="saveBoost()">Хадгалах</button>
+        <p class="muted" style="margin-top:8px">Кассын мөнгөнөөс хасагдахгүй — зөвхөн аль бараанд хэдэн төгрөгийн boost хийснийг бүртгэнэ.</p>
+      </div>
+      <h3 style="margin:14px 0 6px">Сүүлийн 30 хоног</h3>
+      <ul class="list card" id="boostList"></ul>
+    </div>
     <div class="pending" id="pending"></div>
     <div class="pending" id="ebWarn"></div>
 
@@ -286,11 +300,11 @@
 
 <div class="toast" id="toast"></div>
 <script src="products.js?v=20261022o"></script>
-<script src="config.js?v=20261022o"></script>
+<script src="config.js?v=20261022w"></script>
 <script src="common.js?v=20261022o"></script>
 <script>var BIZ_KEY = 'cozy';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261022u"></script>
+<script src="staff.js?v=20261022w"></script>
 <script src="ebarimt.js?v=20261022u"></script>
 <script src="orders.js?v=20261022t"></script>
 <script src="label.js?v=20261022o"></script>

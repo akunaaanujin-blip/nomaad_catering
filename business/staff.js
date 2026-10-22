@@ -111,6 +111,7 @@ function showMain() {
 var shellView = 'dash';
 function navMenu() {   // зөвхөн хуудсууд — үйлдлийн товчнууд хуудас дотроо нэг л удаа
   var g = [['dash', 'Борлуулалт', function () { showView('dash'); }], ['stock', 'Барааны үлдэгдэл', function () { showView('stock'); }]];
+  if (BIZ.boost && $('boostView')) g.push(['boost', 'Boost', function () { showView('boost'); }]);
   return [{ t: '', items: g }];
 }
 function buildShell() {
@@ -149,9 +150,31 @@ function showView(v, tab) {
     el.style.display = (el.getAttribute('data-view') || 'dash') === v ? '' : 'none';
   });
   var w = document.querySelector('#main .wrap'); if (w) w.classList.toggle('ep-wide', v === 'orders');
-  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : v === 'stock' ? 'Барааны үлдэгдэл' : 'Борлуулалт';
+  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : v === 'stock' ? 'Барааны үлдэгдэл' : v === 'boost' ? 'Boost' : 'Борлуулалт';
   if (v === 'stock') renderStockPage();
+  if (v === 'boost') renderBoost();
   renderNav(); window.scrollTo(0, 0);
+}
+
+// ── Boost: зар сурталчилгааны төлбөрийг бараа бүрээр бичнэ (зөвхөн бүртгэл — санхүүд банкны хуулгаар 7205 орно) ──
+function renderBoost() {
+  var dl = $('boostItems');
+  if (dl) dl.innerHTML = products.filter(function (p) { return !isNonGoods(p.name); }).map(function (p) { return '<option value="' + esc(p.name) + '">'; }).join('');
+  var cut = todayStr(new Date(Date.now() - 30 * 864e5));
+  var list = load(LS_REC, []).filter(function (r) { return r.type === 'boost' && r.biz === BIZ_KEY && r.date >= cut; }).reverse();
+  var by = {}; list.forEach(function (r) { by[r.item] = (by[r.item] || 0) + r.amount; });
+  $('boostList').innerHTML = list.length ? Object.keys(by).sort(function (a, b) { return by[b] - by[a]; }).map(function (k) {
+    return '<li><span><b>' + esc(k) + '</b><small>' + list.filter(function (r) { return r.item === k; }).map(function (r) { return esc(r.date.slice(5)) + ' ' + fmt(r.amount) + (r.note ? ' (' + esc(r.note) + ')' : ''); }).join(' · ') + '</small></span>' +
+      '<span class="amt">' + fmt(by[k]) + '</span></li>';
+  }).join('') : '<li class="muted">Сүүлийн 30 хоногт boost бичээгүй байна</li>';
+}
+function saveBoost() {
+  var item = $('bItem').value.trim(), amt = Math.round(parseFloat($('bAmt').value) || 0);
+  if (!products.some(function (p) { return p.name === item; })) { toast('Бараагаа жагсаалтаас сонгоно уу'); $('bItem').focus(); return; }
+  if (amt <= 0) { toast('Дүн оруулна уу'); $('bAmt').focus(); return; }
+  addRecord({ type: 'boost', item: item, amount: amt, note: $('bNote').value.trim() });
+  $('bItem').value = ''; $('bAmt').value = ''; $('bNote').value = '';
+  renderBoost(); toast('✓ Boost бичигдлээ: ' + item + ' · ' + fmt(amt));
 }
 
 // ── Барааны үлдэгдэл (ажилтны хуудас): нөөц + хараахан борлуулалт болоогүй («Шинэ») захиалгад байгаа тоо ──
@@ -895,7 +918,7 @@ function renderToday() {
   $('sumSales').textContent = fmt(t.sales);
   $('sumExp').textContent = fmt(t.exp);
   $('sumNet').textContent = fmt(t.sales - t.exp);
-  var recs = todayRecords().filter(function (r) { return r.type !== 'attend'; }).slice().reverse();
+  var recs = todayRecords().filter(function (r) { return r.type !== 'attend' && r.type !== 'boost'; }).slice().reverse();
   var hb = $('histBtn');
   if (!hb && $('todayList')) { $('todayList').insertAdjacentHTML('afterend', '<button class="btn ghost" id="histBtn" style="margin-top:8px" onclick="openEbHist()">Баримтын түүх (өмнөх өдрүүд)</button>'); hb = $('histBtn'); }
   if (hb) hb.style.display = ebEnabled() || load(LS_REC, []).some(function (r) { return r.ddtd; }) ? '' : 'none';

@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v5.1 (баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v5.2 (boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -22,7 +22,7 @@ const TZ           = 'Asia/Ulaanbaatar';
 const SHEET_ID     = '1Hkmo9ttsHfm6xfr49W0BpjkE2nnPPCL0dt2fP6rGyKI';   // NOMAAD Бизнесүүд — Бүртгэл
 
 const BIZ_NAMES = { meat: 'Махны дэлгүүр', cozy: 'Cozy Home Ulaanbaatar', travel: 'NOMAAD аяллын дэлгүүр', mgmt: 'Удирдлага' };   // mgmt — зөвхөн санхүү (удирдлагын данс)
-const TYPE_NAMES = { sale: 'Борлуулалт', expense: 'Зарлага', close: 'Касс хаалт', collect: 'Төлбөр орсон', attend: 'Ирц' };
+const TYPE_NAMES = { sale: 'Борлуулалт', expense: 'Зарлага', close: 'Касс хаалт', collect: 'Төлбөр орсон', attend: 'Ирц', boost: 'Boost' };   // boost — зөвхөн бүртгэл, санхүүд банкны хуулгаар орно
 const SHEET_PRICE = 'Үнийн түүх';
 const PRICE_HEAD = ['Огноо', 'biz', 'Бараа', 'Хуучин үнэ', 'Шинэ үнэ', 'Хэн'];
 // Захиалга (Cozy: Facebook захиалга → буухиа хүргэлт)
@@ -315,7 +315,7 @@ function saveRecords(data) {
     seen[r.id] = 1;
     rows.push([
       r.id, r.date, r.time, BIZ_NAMES[r.biz], TYPE_NAMES[r.type], staffName,
-      r.type === 'sale' || r.type === 'attend' ? String(r.item || '').slice(0, 80) : (r.type === 'expense' ? r.category : ''),
+      r.type === 'sale' || r.type === 'attend' || r.type === 'boost' ? String(r.item || '').slice(0, 80) : (r.type === 'expense' ? r.category : ''),
       r.type === 'sale' ? Number(r.qty) : '',
       r.type === 'sale' ? r.unit : '',
       r.type === 'sale' ? Number(r.price) : '',
@@ -1472,7 +1472,7 @@ function data(from) {
     if (r.type === 'sale') { r.item = v[6]; r.qty = Number(v[7]) || 0; r.unit = v[8]; r.price = Number(v[9]) || 0; r.pay = v[11]; r.bill = String(v[17] || ''); r.customer = String(v[19] || ''); }
     else if (r.type === 'collect') { r.pay = v[11]; r.customer = String(v[19] || ''); r.bill = String(v[17] || ''); }
     else if (r.type === 'expense') { r.category = v[6]; }
-    else if (r.type === 'attend') { r.item = String(v[6] || ''); }
+    else if (r.type === 'attend' || r.type === 'boost') { r.item = String(v[6] || ''); }
     else { r.counted = Number(v[12]) || 0; r.diff = Number(v[13]) || 0; }
     records.push(r);
   });
