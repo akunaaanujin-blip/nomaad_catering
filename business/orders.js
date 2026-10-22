@@ -320,7 +320,7 @@ function buuhiaExport(withAmount) {
   closeSheet('buuSheet');
   var list = orders.filter(function (o) { return ordOpen(o) && ids.indexOf(o.id) >= 0; });
   if (!list.length) { toast('Илгээх захиалга алга'); return; }
-  if (!window.XLSX) { toast('Excel сан ачаалагдаагүй — интернэтээ шалгана уу'); return; }
+  if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин оролдоно уу'); ensureXlsx(function () {}); return; }
   // Үлдэгдэл хүрэлцэхгүй захиалгыг файлд оруулахгүй (дараалан хуримтлуулж шалгана)
   var need = {}, skip = [];
   list = list.filter(function (o) {

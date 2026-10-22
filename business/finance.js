@@ -98,7 +98,7 @@ function drillRender() {
   $('drBack').style.display = drillStack.length ? '' : 'none';
 }
 function drillExcel() {
-  if (!window.XLSX || !drillCur) { toast('Excel сан ачаалагдаагүй — интернэтээ шалгана уу'); return; }
+  if (!drillCur) return; if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин оролдоно уу'); ensureXlsx(function () {}); return; }
   var s = drillCur, d = drillLines(s), run = s.bal ? d.open : 0;
   var aoa = [[s.t || 'Задрал'], [BUSINESSES[state.biz].name + ' · ' + (s.from || '') + ' — ' + (s.to || '')], [], ['Огноо', 'Гүйлгээний утга', 'Харилцагч', 'Хаанаас / хаашаа', 'Дүн'].concat(s.bal ? ['Үлдэгдэл'] : [])];
   if (s.bal) aoa.push([s.from || '', 'Эхний үлдэгдэл', '', '', '', r0(run)]);

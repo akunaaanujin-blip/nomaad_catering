@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v4.8 (StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v4.9 (ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -136,11 +136,11 @@ function doPost(e) {
 }
 // ── Серверийн кэш (хурд): удирдлагын уншилт хуудас тус бүрийг 5 мин кэшлэнэ, бичилт хийхэд тэр хуудсыг л цэвэрлэнэ ──
 // Sheet-ийг гараар засвал 5 минутын дотор шинэчлэгдэнэ.
-const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price'];
+const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf'];
 const CACHE_MAP = { admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
   admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr'], admin_bank: ['bank', 'jr', 'ord'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_po: ['po', 'jr'],
-  admin_staff: ['adm'], admin_salary: ['adm'], admin_contract: ['adm'], register: ['adm'] };
+  admin_staff: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
 const CACHE_READ = { admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
 function cacheKeysFor(d) {
   if (!d.type) return ['rec', 'stk'];   // ажилтны бичлэг (борлуулалт, зарлага, касс)
@@ -329,7 +329,7 @@ function checkStaff(tok) {
   const p = String(tok || '').split('|');
   if (p.length !== 4 || !BIZ_NAMES[p[1]] || !(Number(p[2]) > Date.now())) return null;
   if (staffSig(p.slice(0, 3).join('|')) !== p[3]) return null;
-  const s = staffRows().filter(function (x) { return x.id === p[0]; })[0];
+  const s = cacheGet('stf', staffRows).filter(function (x) { return x.id === p[0]; })[0];   // кэш — ажилтны өөрчлөлтөөр цэвэрлэгдэнэ
   if (!s || s.status !== 'Тийм' || (s.biz !== p[1] && s.biz !== 'all')) return null;   // идэвхгүй болгомогц шууд хүчингүй
   return { staff: s, biz: p[1] };
 }
@@ -340,7 +340,7 @@ function doGet(e) {
   let out;
   if (p.action === 'products') out = products(p.biz);
   else if (p.action === 'login') out = login(p.biz, p.user, p.code);
-  else if (p.action === 'stock') out = BIZ_NAMES[p.biz] ? { status: 'ok', stock: stockAll()[p.biz] || {} } : { status: 'error', error: 'biz' };
+  else if (p.action === 'stock') out = BIZ_NAMES[p.biz] ? { status: 'ok', stock: stockPublic(p.biz) } : { status: 'error', error: 'biz' };
   else if (p.action === 'tin') out = tinInfo(p.q);
   else out = { status: 'ok', app: 'NOMAAD' };
   const body = JSON.stringify(out);
@@ -1309,11 +1309,17 @@ function orderSave(d) {
   if (cur) sh.getRange(cur.row, 1, 1, ORDER_HEAD.length).setValues([row]); else sh.appendRow(row);
   return { status: 'ok', order: merged };
 }
+// Ажилтанд үлдэгдэл — удирдлагын кэшээс (өртөггүй)
+function stockPublic(biz) {
+  const all = cacheGet('stk', function () { return stockAll(true); })[biz] || {}, out = {};
+  Object.keys(all).forEach(function (k) { out[k] = { shop: all[k].shop, wh: all[k].wh }; });
+  return out;
+}
 function ordersFor(d) {
   const who = checkStaff(d.token);
   if (!who) return { status: 'error', error: 'auth' };
   const since = Utilities.formatDate(new Date(Date.now() - 45 * 864e5), TZ, 'yyyy-MM-dd');
-  return { status: 'ok', orders: orderRows().filter(function (o) {
+  return { status: 'ok', orders: cacheGet('ord', orderRows).filter(function (o) {
     return o.biz === who.biz && (o.date >= since || !/^(Хүргэгдсэн|Цуцалсан|Буцаасан)$/.test(o.status) || (!o.confirmed && !/^(Цуцалсан|Буцаасан)$/.test(o.status)));
   }).map(function (o) { delete o.row; return o; }) };
 }
@@ -1455,10 +1461,7 @@ function data(from) {
 // "Бараа" хуудас: Бизнес (meat/cozy/travel) | Нэр | Нэгж | Үнэ
 // Энд бараа нэмж, үнээ сольвол ажилтны хуудсанд автоматаар гарч ирнэ.
 function products(biz) {
-  const sheet = prodSheet();
-  const last = sheet.getLastRow();
-  if (last < 2) return { status: 'ok', products: [] };
-  const list = productRows().filter(function (p) { return p.biz === biz; })
+  const list = cacheGet('prod', productRows).filter(function (p) { return p.biz === biz; })   // кэш — бараа засахад цэвэрлэгдэнэ
     .map(function (p) { return { name: p.name, unit: p.unit, price: p.price, cls: p.cls, cat: p.cat, off: p.off }; });
   return { status: 'ok', products: list, payInfo: PropertiesService.getScriptProperties().getProperty('PAYINFO_' + biz) || '', storepay: spOn(biz) };
 }

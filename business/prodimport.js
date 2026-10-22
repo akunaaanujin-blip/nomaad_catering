@@ -28,7 +28,7 @@ function importProducts(input) {
   var f = input.files && input.files[0];
   input.value = '';
   if (!f) return;
-  if (!window.XLSX) { toast('Excel уншигч ачаалагдаагүй — интернэтээ шалгана уу'); return; }
+  if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин оролдоно уу'); ensureXlsx(function () {}); return; }
   var reader = new FileReader();
   reader.onload = function (e) {
     var wb; try { wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' }); } catch (err) { toast('Файлыг уншиж чадсангүй'); return; }

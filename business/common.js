@@ -93,3 +93,24 @@ function jsonpScript(q, cb) {
   document.body.appendChild(s);
   setTimeout(function () { if (!done) { cb(new Error('timeout')); cleanup(); } }, 20000);
 }
+
+// ── Хурд: том сангуудыг хуудас нээгдсэний дараа ард нь ачаална; файлуудыг төхөөрөмжид хадгална (service worker) ──
+var XLSX_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+function loadLib(src, cb) {
+  if (loadLib.done[src]) { cb && cb(); return; }
+  (loadLib.wait[src] = loadLib.wait[src] || []).push(cb || function () {});
+  if (loadLib.wait[src].length > 1) return;
+  var s = document.createElement('script'); s.src = src; s.async = true;
+  s.onload = function () { loadLib.done[src] = 1; loadLib.wait[src].forEach(function (f) { f(); }); loadLib.wait[src] = []; };
+  s.onerror = function () { loadLib.wait[src] = []; };
+  document.head.appendChild(s);
+}
+loadLib.done = {}; loadLib.wait = {};
+function ensureXlsx(cb) { if (window.XLSX) cb(); else loadLib(XLSX_SRC, cb); }
+(function () {
+  var needX = /(admin|cozy)\.html$/.test(location.pathname);
+  window.addEventListener('load', function () {
+    if (needX) (window.requestIdleCallback || function (f) { setTimeout(f, 800); })(function () { loadLib(XLSX_SRC); });
+    if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+})();

@@ -714,7 +714,7 @@ function importBaaz(input) {
   var f = input.files && input.files[0];
   input.value = '';
   if (!f) return;
-  if (!window.XLSX) { toast('Excel уншигч ачаалагдаагүй — интернэтээ шалгана уу'); return; }
+  if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин оролдоно уу'); ensureXlsx(function () {}); return; }
   var reader = new FileReader();
   reader.onload = function (e) {
     var wb; try { wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' }); } catch (err) { toast('Файлыг уншиж чадсангүй'); return; }
@@ -1203,14 +1203,14 @@ function repAoa(rep) {
 }
 function xlsxName(t) { var r = range(); return (BUSINESSES[state.biz].name + ' ' + t + ' ' + r[0] + '_' + r[1]).replace(/[\\/:*?"<>|]/g, '') + '.xlsx'; }
 function exportCurrent() {
-  if (!window.XLSX) { toast('Excel сан ачаалагдаагүй — интернэтээ шалгана уу'); return; }
+  if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин оролдоно уу'); ensureXlsx(function () {}); return; }
   var rep = makeReport(state.module, state.sub[state.module]);
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, repAoa(rep), 'Тайлан');
   XLSX.writeFile(wb, xlsxName(rep.title));
 }
 function exportAll() {
-  if (!window.XLSX) { toast('Excel сан ачаалагдаагүй — интернэтээ шалгана уу'); return; }
+  if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин оролдоно уу'); ensureXlsx(function () {}); return; }
   var wb = XLSX.utils.book_new(), used = {};
   allReportList().forEach(function (x) {
     var rep = makeReport(x[0], x[1]);
