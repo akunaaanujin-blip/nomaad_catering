@@ -109,7 +109,7 @@ function showMain() {
 // Хуудас бүрийн одоогийн хэсгүүдийг view-ээр (dash / orders) ялгаж харуулна; утсан дээр цэс ☰ товчоор нээгдэнэ.
 var shellView = 'dash';
 function navMenu() {   // зөвхөн хуудсууд — үйлдлийн товчнууд хуудас дотроо нэг л удаа
-  var g = [['dash', 'Өнөөдөр', function () { showView('dash'); }]];
+  var g = [['dash', 'Борлуулалт', function () { showView('dash'); }]];
   if (BIZ.orders) g.push(['orders', 'Захиалга', function () { showView('orders', 'new'); }]);
   return [{ t: '', items: g }];
 }
@@ -149,7 +149,7 @@ function showView(v, tab) {
     el.style.display = (el.getAttribute('data-view') || 'dash') === v ? '' : 'none';
   });
   var w = document.querySelector('#main .wrap'); if (w) w.classList.toggle('ep-wide', v === 'orders');
-  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : 'Өнөөдөр';
+  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : 'Борлуулалт';
   renderNav(); window.scrollTo(0, 0);
 }
 
@@ -739,7 +739,9 @@ function todayTotals() {
   return t;
 }
 // ── Ирц: «Ирлээ» / «Явлаа» — ажилласан цаг удирдлагад харагдана ──
+var SHOW_ATTEND = false;   // ирцийн мөрийг ажилтны хуудаснаас хассан (хэрэглэгчийн шийдвэр 2026-10-22)
 function renderAttend() {
+  if (!SHOW_ATTEND) { var ab = $('attBar'); if (ab) ab.remove(); return; }
   var bb = document.querySelector('.big-btns'); if (!bb || !staffName) return;
   if (!$('attBar')) bb.insertAdjacentHTML('beforebegin', '<div class="card att-bar" id="attBar"></div>');
   var a = todayRecords().filter(function (r) { return r.type === 'attend' && r.staff === staffName; });
