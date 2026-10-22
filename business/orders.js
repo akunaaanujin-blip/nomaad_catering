@@ -253,7 +253,7 @@ function ordRetry(id) {
 }
 function ordAct(id, v) {
   if (!v) return;
-  if (v === 'r') ordReceive(id); else if (v === 'm') copyPayMsg(id); else if (v === 'e') openOrder(id);
+  if (v === 'r') ordReceive(id); else if (v === 'l') openLabels([id]); else if (v === 'm') copyPayMsg(id); else if (v === 'e') openOrder(id);
   else quickOrd(id, v.charAt(0) === 's' ? 'status' : 'paid', v.slice(2));
 }
 var ordQ = '';
@@ -275,7 +275,7 @@ function renderOrders() {
     if (o.status === 'Хүргэгдсэн') opts.push(['s:Буцаасан', 'Буцаасан']);
     if (ordAwaitReturn(o)) opts.push(['r', 'Буцаалт хүлээн авсан']);
     if (!o.confirmed && !ordDead(o)) opts.push(o.paid !== 'Орсон' ? ['p:Орсон', 'Төлбөр орсон'] : ['p:Ороогүй', 'Төлбөр ороогүй']);
-    opts.push(['m', 'Төлбөрийн мессеж хуулах'], ['e', 'Засах']);
+    opts.push(['l', 'Шошго хэвлэх'], ['m', 'Төлбөрийн мессеж хуулах'], ['e', 'Засах']);
     var acts = o.pending ? '<small class="muted">Хадгалж байна…</small>' : o.failed ? '<button class="mini neg" onclick="ordRetry(\'' + o.id + '\')">Дахин хадгалах</button>' : '<select class="act" onchange="ordAct(\'' + o.id + '\',this.value);this.selectedIndex=0"><option value="">Үйлдэл</option>' +
       opts.map(function (x) { return '<option value="' + x[0] + '">' + x[1] + '</option>'; }).join('') + '</select>';
     var ret = ordAwaitReturn(o) ? '<small class="warn">Бараа буцаж ирээгүй</small>' : o.saleDone === 'returned' ? '<small>Бараа буцаж ирсэн</small>' : '';
