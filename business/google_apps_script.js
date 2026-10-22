@@ -226,7 +226,7 @@ function adminLogin(d) {
   const key = 'afail_' + user;
   const fails = Number(cache.get(key) || 0);
   if (fails >= 10) return { status: 'error', error: 'locked' };
-  const s = staffRows().filter(function (x) { return x.username === user && (x.role === 'Эзэн' || x.role === 'Менежер') && x.status === 'Тийм'; })[0];
+  const s = cacheGet('stf', staffRows).filter(function (x) { return x.username === user && (x.role === 'Эзэн' || x.role === 'Менежер') && x.status === 'Тийм'; })[0];
   if (!s || s.code !== pass.padStart(4, '0')) { cache.put(key, String(fails + 1), 900); return { status: 'error', error: 'auth' }; }
   cache.remove(key);
   const token = Utilities.getUuid();
@@ -471,7 +471,7 @@ function login(biz, user, code) {
   const key = 'fail_' + biz + '_' + user;
   const fails = Number(cache.get(key) || 0);
   if (fails >= 10) return { status: 'error', error: 'locked' };
-  const s = staffRows().filter(function (x) { return x.username === user && (x.biz === biz || x.biz === 'all'); })[0];
+  const s = cacheGet('stf', staffRows).filter(function (x) { return x.username === user && (x.biz === biz || x.biz === 'all'); })[0];
   if (s && s.code === code.padStart(4, '0')) {
     if (s.status === 'Хүлээгдэж') return { status: 'error', error: 'pending' };
     if (s.status === 'Тийм') {
