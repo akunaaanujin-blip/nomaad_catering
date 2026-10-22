@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ажилтан</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261020k">
+<link rel="stylesheet" href="style.css?v=20261022a">
 </head>
 <body>
 <div class="demo" id="demo" style="display:none">Туршилтын горим — мэдээлэл зөвхөн энэ төхөөрөмжид хадгалагдаж байна</div>
@@ -59,46 +59,62 @@
 </div>
 
 <!-- Борлуулалт -->
-<div class="sheet" id="saleSheet" onclick="if(event.target===this)closeSheet('saleSheet')">
-  <div class="panel">
-    <h2>＋ Борлуулалт</h2>
-    <label>Бараа сонгох</label>
-    <div id="saleSearchWrap" style="display:none;margin-bottom:8px">
-      <input id="saleSearch" placeholder="Бараа хайх (жишээ: майхан, titan)" oninput="renderChips()">
+<div class="sheet pos-sheet" id="saleSheet" onclick="if(event.target===this)closeSheet('saleSheet')">
+  <div class="panel pos">
+    <div class="pos-head">
+      <h2>Борлуулалт</h2>
+      <button class="pos-x" onclick="closeSheet('saleSheet')" aria-label="Хаах">✕</button>
     </div>
-    <div class="chips cats" id="saleCats" style="display:none"></div>
-    <div class="chips" id="saleChips"></div>
-    <details class="custom-item">
-      <summary>Жагсаалтад байхгүй бараа нэмэх</summary>
-      <div class="row2" style="margin-top:8px">
-        <input id="saleItem" placeholder="Барааны нэр">
-        <input id="salePrice" type="number" inputmode="numeric" min="0" placeholder="Үнэ (₮)">
-      </div>
-      <button class="btn ghost" style="color:var(--accent);margin-top:4px" onclick="addCustom()">＋ Сагсанд нэмэх</button>
-    </details>
-    <label>Сагс <span class="muted" id="saleCount"></span></label>
-    <ul class="list cart" id="cartList"></ul>
-    <label>Төлбөр</label>
-    <div class="seg seg4" id="paySeg">
-      <button data-v="Бэлэн" onclick="setPay('Бэлэн')">Бэлэн</button>
-      <button data-v="Карт" onclick="setPay('Карт')">Карт</button>
-      <button data-v="Шилжүүлэг" onclick="setPay('Шилжүүлэг')">Шилжүүлэг</button>
-      <button data-v="Зээлээр" onclick="setPay('Зээлээр')">Зээлээр</button>
-    </div>
-    <div id="saleCustWrap" style="display:none">
-      <label for="saleCust">Хэнд зээлээр өгсөн (нэр, утас) *</label>
-      <input id="saleCust" placeholder="Жишээ: Бат-Эрдэнэ 99112233 / ХХК-ийн нэр">
-    </div>
-    <div id="saleTinWrap" style="display:none">
-      <label for="saleTin">Байгууллагын ТТД (байгууллагад баримт өгөх бол)</label>
-      <input id="saleTin" inputmode="numeric" placeholder="Регистр (7 орон) эсвэл ТТД — хувь хүн бол хоосон" oninput="saleTinInput()">
-      <small id="saleTinName" class="muted" style="display:block;margin-top:4px;min-height:16px"></small>
-      <input id="saleBuyer" placeholder="Байгууллагын нэр (баримтад хэвлэгдэнэ)" style="display:none;margin-top:6px">
-    </div>
-    <div class="sale-foot">
-      <div class="total" id="saleTotal">₮0</div>
-      <button class="btn" id="saleSubmit" style="background:var(--green)" onclick="submitSale()">Төлбөр авах</button>
-      <button class="btn ghost" onclick="closeSheet('saleSheet')">Болих</button>
+    <div class="pos-grid">
+      <!-- Бараа -->
+      <section class="pos-left">
+        <div class="pos-search" id="saleSearchWrap">
+          <input id="saleSearch" type="search" placeholder="Бараа хайх…" oninput="renderChips()" autocomplete="off">
+        </div>
+        <div class="pos-cats" id="saleCats" style="display:none"></div>
+        <div class="pos-tiles" id="saleChips"></div>
+        <details class="custom-item pos-custom">
+          <summary>Жагсаалтад байхгүй бараа</summary>
+          <div class="row2" style="margin-top:8px">
+            <input id="saleItem" placeholder="Барааны нэр">
+            <input id="salePrice" type="number" inputmode="numeric" min="0" placeholder="Үнэ (₮)">
+          </div>
+          <button class="btn sm ghost2" style="margin-top:8px" onclick="addCustom()">Сагсанд нэмэх</button>
+        </details>
+      </section>
+      <!-- Сагс, төлбөр -->
+      <section class="pos-right">
+        <div class="pos-cart-h"><b>Сагс</b><span class="muted" id="saleCount"></span></div>
+        <ul class="list cart pos-cart" id="cartList"></ul>
+        <div class="pos-pay">
+          <div class="pos-lbl">Төлбөрийн хэлбэр</div>
+          <div class="seg seg4" id="paySeg">
+            <button data-v="Бэлэн" onclick="setPay('Бэлэн')">Бэлэн</button>
+            <button data-v="Карт" onclick="setPay('Карт')">Карт</button>
+            <button data-v="Шилжүүлэг" onclick="setPay('Шилжүүлэг')">Шилжүүлэг</button>
+            <button data-v="Зээлээр" onclick="setPay('Зээлээр')">Зээлээр</button>
+          </div>
+          <div id="saleCashWrap" class="pos-cash">
+            <label for="saleCash">Авсан мөнгө</label>
+            <input id="saleCash" type="number" inputmode="numeric" min="0" placeholder="0" oninput="calcChange()">
+            <div class="pos-change">Хариулт <b id="saleChange">₮0</b></div>
+          </div>
+          <div id="saleCustWrap" style="display:none">
+            <label for="saleCust">Хэнд зээлээр өгсөн (нэр, утас) *</label>
+            <input id="saleCust" placeholder="Жишээ: Бат-Эрдэнэ 99112233 / ХХК-ийн нэр">
+          </div>
+          <div id="saleTinWrap" style="display:none">
+            <label for="saleTin">Байгууллагын ТТД (байгууллагад баримт өгөх бол)</label>
+            <input id="saleTin" inputmode="numeric" placeholder="Регистр (7 орон) эсвэл ТТД — хувь хүн бол хоосон" oninput="saleTinInput()">
+            <small id="saleTinName" class="muted" style="display:block;margin-top:4px;min-height:16px"></small>
+            <input id="saleBuyer" placeholder="Байгууллагын нэр (баримтад хэвлэгдэнэ)" style="display:none;margin-top:6px">
+          </div>
+        </div>
+        <div class="sale-foot pos-foot">
+          <div class="pos-total" onclick="var r=document.querySelector('.pos-right');if(r&&innerWidth<=820)r.scrollIntoView({behavior:'smooth'})"><span>Нийт</span><b class="total" id="saleTotal">₮0</b></div>
+          <button class="btn" id="saleSubmit" onclick="submitSale()">Төлбөр авах</button>
+        </div>
+      </section>
     </div>
   </div>
 </div>
@@ -180,12 +196,12 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="products.js?v=20261020k"></script>
-<script src="config.js?v=20261020k"></script>
-<script src="common.js?v=20261020k"></script>
+<script src="products.js?v=20261022a"></script>
+<script src="config.js?v=20261022a"></script>
+<script src="common.js?v=20261022a"></script>
 <script>var BIZ_KEY = 'travel';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261020k"></script>
-<script src="ebarimt.js?v=20261020k"></script>
+<script src="staff.js?v=20261022a"></script>
+<script src="ebarimt.js?v=20261022a"></script>
 </body>
 </html>

@@ -242,7 +242,8 @@ function openSale() {
   sale = { cart: [], pay: 'Бэлэн', cat: '', edit: null };
   if ($('saleEditNote')) $('saleEditNote').style.display = 'none';
   $('saleSearch').value = '';
-  $('saleSearchWrap').style.display = products.length > 12 ? 'block' : 'none';
+  $('saleSearchWrap').style.display = products.length > 8 ? 'block' : 'none';
+  if ($('saleCash')) $('saleCash').value = '';
   renderCats();
   renderChips();
   $('saleItem').value = '';
@@ -262,11 +263,11 @@ function renderCats() {
   $('saleCats').style.display = cats.length > 1 ? 'flex' : 'none';
   $('saleCats').innerHTML = ['Бүгд'].concat(cats).map(function (c) {
     var v = c === 'Бүгд' ? '' : c;
-    return '<button class="chip cat' + (sale.cat === v ? ' on' : '') + '" onclick="setCat(' + esc(JSON.stringify(v)) + ')">' + esc(c) + '</button>';
+    return '<button class="pos-cat' + (sale.cat === v ? ' on' : '') + '" onclick="setCat(' + esc(JSON.stringify(v)) + ')">' + esc(c) + '</button>';
   }).join('');
 }
 function setCat(c) { sale.cat = c; renderCats(); renderChips(); }
-// Хайлт + ангиллаар шүүж бараа харуулна (эхний 24-ийг)
+// Хайлт + ангиллаар шүүж барааг хавтангаар харуулна (эхний 60) — сагсанд байгаа нь тоотой тодорно
 function renderChips() {
   var q = $('saleSearch').value.trim().toLowerCase();
   var shown = [];
@@ -274,14 +275,17 @@ function renderChips() {
     if (sale.cat && p.cat !== sale.cat) return;
     if (!q || p.name.toLowerCase().indexOf(q) >= 0) shown.push(i);
   });
-  var more = shown.length > 24 ? shown.length - 24 : 0;
-  $('saleChips').innerHTML = shown.slice(0, 24).map(function (i) {
-    var inCart = sale.cart.some(function (l) { return l.name === products[i].name; });
-    var left = shopLeft(products[i].name);
-    var badge = left === null ? '' : '<em class="left' + (left <= 0 ? ' out' : (left <= 2 ? ' low' : '')) + '">' + (left <= 0 ? 'дууссан' : left + ' үлд.') + '</em>';
-    return '<button class="chip' + (inCart ? ' on' : '') + '" onclick="pickProduct(' + i + ')">' + esc(products[i].name) + (products[i].price ? ' <small>' + fmt(products[i].price) + '</small>' : '') + badge + '</button>';
-  }).join('') + (more ? '<span class="muted" style="align-self:center">+' + more + ' бараа — хайлтаар олно уу</span>' : '') +
-    (!shown.length ? '<span class="muted">Олдсонгүй — доор нэрийг нь бичнэ үү</span>' : '');
+  var more = shown.length > 60 ? shown.length - 60 : 0;
+  $('saleChips').innerHTML = shown.slice(0, 60).map(function (i) {
+    var p = products[i], line = sale.cart.filter(function (l) { return l.name === p.name; })[0];
+    var left = shopLeft(p.name), out = left !== null && left <= 0;
+    var stockTxt = left === null ? '' : out ? 'Дууссан' : 'Үлд. ' + left;
+    return '<button class="ptile' + (line ? ' on' : '') + (out ? ' out' : '') + '" onclick="pickProduct(' + i + ')">' +
+      (line ? '<i class="pt-q">' + line.qty + '</i>' : '') +
+      '<span class="pt-n">' + esc(p.name) + '</span>' +
+      '<span class="pt-f"><b>' + (p.price ? fmt(p.price) : 'Үнэ оруулна') + '</b>' + (stockTxt ? '<small class="' + (out ? 'o' : left <= 2 ? 'l' : '') + '">' + stockTxt + '</small>' : '') + '</span></button>';
+  }).join('') + (more ? '<p class="muted pos-more">+' + more + ' бараа — хайлтаар олно уу</p>' : '') +
+    (!shown.length ? '<p class="muted pos-more">Олдсонгүй — «Жагсаалтад байхгүй бараа»-аар нэмнэ үү</p>' : '');
 }
 // Бараа дарахад сагсанд нэмнэ (байгаа бол тоог нь 1-ээр нэмнэ)
 function pickProduct(i) {
@@ -308,7 +312,7 @@ function addCustom() {
 function renderCart() {
   var el = $('cartList');
   if (!sale.cart.length) {
-    el.innerHTML = '<li class="muted">Сагс хоосон — дээрээс бараа дарж нэмнэ үү</li>';
+    el.innerHTML = '<li class="pos-empty">Сагс хоосон<small>Бараан дээр дарж нэмнэ үү</small></li>';
   } else {
     el.innerHTML = sale.cart.map(function (l, i) {
       var lock = !isManager && l.listPrice > 0;   // худалдагч жагсаалтын үнийг сольж чадахгүй
@@ -345,13 +349,25 @@ function setPay(v) {
   var b = $('paySeg').children;
   for (var k = 0; k < b.length; k++) b[k].classList.toggle('on', b[k].dataset.v === v);
   $('saleCustWrap').style.display = v === 'Зээлээр' ? 'block' : 'none';   // зээлээр бол хэнд өгснийг заавал бичнэ
+  if ($('saleCashWrap')) $('saleCashWrap').style.display = v === 'Бэлэн' ? '' : 'none';   // бэлэн бол хариулт тооцно
+  calcChange();
+}
+function calcChange() {
+  var el = $('saleChange'); if (!el) return;
+  var got = Number($('saleCash').value) || 0, d = got - cartTotal();
+  el.textContent = got ? fmt(Math.max(0, d)) : '₮0';
+  el.parentNode.classList.toggle('short', !!got && d < 0);
+  if (got && d < 0) el.textContent = 'дутуу ' + fmt(-d);
 }
 function cartTotal() {
   return sale.cart.reduce(function (a, l) { return a + Math.round((Number(l.qty) || 0) * (Number(l.price) || 0)); }, 0);
 }
 function calcSale() {
   $('saleTotal').textContent = fmt(cartTotal());
-  $('saleCount').textContent = sale.cart.length ? sale.cart.length + ' бараа' : '';
+  var n = sale.cart.reduce(function (a, l) { return a + (Number(l.qty) || 0); }, 0);
+  $('saleCount').textContent = sale.cart.length ? sale.cart.length + ' төрөл · ' + Math.round(n * 1000) / 1000 + ' ш' : '';
+  $('saleSubmit').textContent = sale.cart.length ? 'Төлбөр авах · ' + fmt(cartTotal()) : 'Төлбөр авах';
+  calcChange();
 }
 function submitSale() {
   if (!sale.cart.length) { toast('Сагсанд бараа нэмнэ үү'); return; }
