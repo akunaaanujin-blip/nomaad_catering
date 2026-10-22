@@ -1616,3 +1616,16 @@ function orderDelete(d) {
   rows.sort(function (a, b) { return b.row - a.row; }).forEach(function (x) { sh.deleteRow(x.row); });
   return { status: 'ok', deleted: rows.map(function (x) { return x.id; }) };
 }
+// Нэг удаа ажиллуулна: өртөггүй (Cozy) орлого/эхний үлдэгдлийн мөрөнд өртөг = борлуулах үнэ × 0.85 бичнэ (өртөгтэй мөрийг хөндөхгүй)
+function fillMissingCost() {
+  const sh = stockSheet(), last = sh.getLastRow(); if (last < 2) return;
+  const price = {}; SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_PROD).getDataRange().getValues().slice(1).forEach(function (r) { if (String(r[0]) === 'cozy') price[String(r[1]).trim()] = Number(r[3]) || 0; });
+  const v = sh.getRange(2, 1, last - 1, STOCK_HEAD.length).getValues(), done = [], skipped = [];
+  v.forEach(function (r, i) {
+    if (String(r[10]) !== 'cozy' || String(r[13]) === 'Устгасан' || !(Number(r[6]) > 0) || Number(r[7]) || !/^(Орлого|Эхний үлдэгдэл)$/.test(String(r[5]))) return;
+    const p = price[String(r[4]).trim()];
+    if (!p) { skipped.push(String(r[4])); return; }
+    const c = Math.round(p * 0.85); sh.getRange(i + 2, 8).setValue(c); done.push(String(r[4]) + ' ' + c);
+  });
+  Logger.log('ӨРТӨГ: ' + done.length + ' мөр бичлээ — ' + done.join('; ') + (skipped.length ? ' | үнэгүй, алгассан: ' + skipped.join(', ') : ''));
+}
