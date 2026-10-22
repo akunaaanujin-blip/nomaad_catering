@@ -1,0 +1,1734 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOMAAD Catering · Меню ба үнэ</title>
+<meta name="description" content="NOMAAD Catering — Чимун ХХК. Порц хоол, буфет, хорхог. Байгууллагын арга хэмжээ, эвентийн кейтеринг.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F5F0E6; --surface:#ffffff; --ink:#20271F; --muted:#8A8276;
+  --line:#E2E6DF; --accent:#1F4A38; --accent-soft:#E3EDE7;
+  --amber:#C8743F; --amber-soft:#F5E2D5; --sand:#D9C7A3;
+  --shadow:0 1px 2px rgba(32,39,31,.06),0 8px 24px rgba(32,39,31,.07);
+  --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;padding-bottom:60px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+
+.nomad-band{height:6px;background:linear-gradient(90deg,#1F4A38 0%,#1F4A38 25%,#6B8E6F 25%,#6B8E6F 50%,#D9C7A3 50%,#D9C7A3 75%,#C8743F 75%,#C8743F 100%)}
+
+/* ── TOPBAR ── */
+.topbar{background:linear-gradient(135deg,#163528 0%,#1F4A38 55%,#2E6049 100%);color:#fff;padding:26px 0 22px}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.brand .logo{display:inline-flex;align-items:center;gap:11px}
+.brand h1{font-family:'Lora',Georgia,serif;font-size:22px;font-weight:700;letter-spacing:-.2px}
+.brand p{font-size:13px;opacity:.85;font-weight:500;margin-top:2px}
+.dot-ico{width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:19px}
+.tag-pill{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:rgba(255,255,255,.16);padding:5px 11px;border-radius:999px}
+
+/* ── HERO ── */
+.hero{padding:34px 0 8px;text-align:center}
+.hero .eyebrow{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--amber)}
+.hero h2{font-family:'Lora',Georgia,serif;font-size:34px;font-weight:700;letter-spacing:-.5px;margin:9px 0 8px}
+.hero p{font-size:15px;color:var(--muted);max-width:620px;margin:0 auto;line-height:1.6}
+
+/* ── PRICE TIERS ── */
+.tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:28px 0 6px}
+.tier{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 20px;display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden}
+.tier::before{content:"";position:absolute;top:0;left:0;right:0;height:4px}
+.tier.por::before{background:var(--accent)}
+.tier.buf::before{background:var(--amber)}
+.tier.shr::before{background:var(--sand)}
+.tier .t-name{font-family:'Lora',Georgia,serif;font-size:20px;font-weight:700;letter-spacing:-.3px}
+.tier .t-price{font-family:'Lora',Georgia,serif;font-size:34px;font-weight:700;letter-spacing:-1px;margin:6px 0 2px}
+.tier .t-price small{font-size:14px;font-weight:600;color:var(--muted)}
+.tier .t-desc{font-size:13px;color:var(--muted);line-height:1.55}
+.tier .t-badge{align-self:flex-start;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:4px 10px;border-radius:999px;margin-top:10px}
+.tier.por .t-badge{background:var(--accent-soft);color:#27543f}
+.tier.buf .t-badge{background:var(--amber-soft);color:#8a5a12}
+.tier.shr .t-badge{background:#efe7d2;color:#7a6224}
+.tier.ugl::before{background:#2c6a8f}
+.tier.ugl .t-badge{background:#dceaf5;color:#1f516e}
+
+
+/* ── ҮЙЛЧИЛГЭЭНИЙ МӨРҮҮД ── */
+.svc-block{margin-bottom:18px;border-radius:14px;border:2px solid var(--line);overflow:hidden}
+.svc-block .svc-row{border:none;border-radius:0;margin-bottom:0;border-left:5px solid var(--line)}
+.svc-block .dish-select.show{border-top:1px solid var(--line);border-left:5px solid var(--line);margin-top:0;border-radius:0 0 12px 12px}
+.svc-block[data-idx="0"]{border-color:#c8962a}.svc-block[data-idx="0"] .svc-row{border-left-color:#c8962a}.svc-block[data-idx="0"] .svc-row-label{color:#c8962a}.svc-block[data-idx="0"] .dish-select.show{border-color:#c8962a;border-top-color:#f0e0c0}
+.svc-block[data-idx="1"]{border-color:#2a9d8f}.svc-block[data-idx="1"] .svc-row{border-left-color:#2a9d8f}.svc-block[data-idx="1"] .svc-row-label{color:#2a9d8f}.svc-block[data-idx="1"] .dish-select.show{border-color:#2a9d8f;border-top-color:#c8ece9}
+.svc-block[data-idx="2"]{border-color:#4a90d9}.svc-block[data-idx="2"] .svc-row{border-left-color:#4a90d9}.svc-block[data-idx="2"] .svc-row-label{color:#4a90d9}.svc-block[data-idx="2"] .dish-select.show{border-color:#4a90d9;border-top-color:#cce0f5}
+.svc-block[data-idx="3"]{border-color:#8b5cf6}.svc-block[data-idx="3"] .svc-row{border-left-color:#8b5cf6}.svc-block[data-idx="3"] .svc-row-label{color:#8b5cf6}.svc-block[data-idx="3"] .dish-select.show{border-color:#8b5cf6;border-top-color:#e0d5fd}
+.svc-block[data-idx="4"]{border-color:#e11d48}.svc-block[data-idx="4"] .svc-row{border-left-color:#e11d48}.svc-block[data-idx="4"] .svc-row-label{color:#e11d48}.svc-block[data-idx="4"] .dish-select.show{border-color:#e11d48;border-top-color:#fcd5de}
+.svc-row{background:var(--surface);padding:14px 16px}
+.btn-add-svc{font-family:inherit;font-size:15px;font-weight:800;color:#fff;background:var(--accent);border:none;border-radius:12px;padding:14px 16px;cursor:pointer;width:100%;margin-top:10px;box-shadow:0 3px 10px rgba(31,74,56,.22);transition:transform .12s,filter .12s;animation:svcPulse 2.4s ease-in-out infinite}
+.btn-add-svc:hover{filter:brightness(1.08)}
+.btn-add-svc:active{transform:scale(.985)}
+@keyframes svcPulse{0%,100%{box-shadow:0 3px 10px rgba(31,74,56,.22)}50%{box-shadow:0 4px 22px rgba(31,74,56,.46)}}
+.svc-multi-hint{background:#fff8ec;border:1px solid var(--amber);border-radius:10px;padding:10px 13px;font-size:12.5px;line-height:1.55;color:#8a5a1a;margin:2px 0 12px}
+.svc-submit-reminder{background:var(--accent-soft);border:1.5px dashed var(--accent);border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.55;color:var(--accent);font-weight:600;margin:4px 0 14px;text-align:center}
+.btn-svc-remove{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);color:var(--muted);font-size:15px;cursor:pointer;line-height:1;flex-shrink:0;transition:all .15s}
+.btn-svc-remove:hover{border-color:#d44;color:#d44;background:#fff}
+.svc-row-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.svc-row select{margin-top:0}
+
+/* ── АРГА ХЭМЖЭЭНИЙ ТӨРӨЛ ── */
+
+/* ── MENU SECTIONS — always open ── */
+.msec{margin-top:16px}
+.msec-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.msec-header h3{font-family:'Lora',Georgia,serif;font-size:16px;font-weight:700;flex:1;color:var(--ink)}
+.msec-header .price-pill{font-size:12px;font-weight:800;color:#fff;background:var(--accent);padding:4px 12px;border-radius:999px;white-space:nowrap}
+.msec.buf .msec-header .price-pill{background:var(--amber)}
+.msec-body{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.dish-list{display:grid;grid-template-columns:repeat(3,1fr);gap:3px 10px}
+.dish-item{font-size:12.5px;padding:4px 4px;color:var(--ink);display:flex;align-items:center;gap:5px;border-bottom:1px dotted var(--line)}
+.dish-item::before{content:'·';color:var(--accent);font-weight:700;flex-shrink:0}
+.subhead{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin:12px 0 6px}
+.subhead:first-child{margin-top:0}
+.dishes{display:none}
+
+/* ── BOODOG & INFO CARDS ── */
+.boodog{background:linear-gradient(135deg,#1F4A38,#2E6049);color:#fff;border-radius:var(--radius);padding:26px 24px;display:flex;gap:22px;align-items:center;flex-wrap:wrap;box-shadow:var(--shadow);margin-top:14px}
+.boodog .b-ico{font-size:46px;line-height:1}
+.boodog .b-main{flex:1;min-width:240px}
+.boodog h3{font-family:'Lora',Georgia,serif;font-size:24px;font-weight:700;margin-bottom:5px}
+.boodog p{font-size:13.5px;color:rgba(255,255,255,.85);line-height:1.6}
+.boodog .b-price{text-align:right}
+.boodog .b-price .v{font-family:'Lora',Georgia,serif;font-size:34px;font-weight:700;letter-spacing:-1px}
+.boodog .b-price .u{font-size:12px;color:var(--sand);font-weight:600}
+
+/* Өглөөний цай карт */
+.uguluun-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;margin-top:14px;display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.uguluun-card .u-ico{font-size:40px;line-height:1;flex-shrink:0}
+.uguluun-card .u-main{flex:1;min-width:200px}
+.uguluun-card h3{font-family:'Lora',Georgia,serif;font-size:20px;font-weight:700;margin-bottom:4px;color:var(--ink)}
+.uguluun-card .u-sub{font-size:13px;color:var(--muted);margin-bottom:12px}
+.uguluun-list{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 12px}
+.uguluun-list span{font-size:12.5px;color:var(--ink);padding:3px 0;border-bottom:1px dotted var(--line);display:flex;align-items:center;gap:5px}
+.uguluun-list span::before{content:'·';color:var(--amber);font-weight:700}
+
+/* Нэмэлт санал хэсэг */
+.nemeltu-box{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-top:4px}
+.nemeltu-box .n-title{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.nemeltu-chips{display:flex;flex-wrap:wrap;gap:8px}
+.n-chip{font-family:inherit;font-size:13px;font-weight:500;padding:8px 14px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
+.n-chip:hover{border-color:var(--accent);color:var(--accent)}
+.n-chip.sel-n{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.n-chip .free{font-size:10px;background:var(--accent-soft);color:var(--accent);border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:700}
+.n-chip.sel-n .free{background:rgba(255,255,255,.25);color:#fff}
+.n-price{font-size:11px;color:var(--muted);margin-left:4px;font-weight:500}
+.n-chip.sel-n .n-price{color:rgba(255,255,255,.75)}
+
+/* ── DISH SELECTOR ── */
+.dish-select{display:none !important;margin-top:4px}
+.dish-select.show{display:block !important}
+.sel-group{margin-bottom:16px}
+.sel-group-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sel-group-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.sel-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px}
+.sel-badge.green{background:var(--accent-soft);color:var(--accent)}
+.sel-badge.amber{background:var(--amber-soft);color:#8a4a10}
+.sel-badge.done{background:#e3ede7;color:#1F4A38}
+.sel-badge.blue{background:#dceaf5;color:#1f516e}
+.dish-chips{display:flex;flex-wrap:wrap;gap:7px}
+.dish-chip{font-family:inherit;font-size:13px;font-weight:500;padding:7px 13px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;transition:all .15s;text-align:left;display:flex;align-items:center;gap:6px}
+.dish-chip:hover{border-color:var(--accent);color:var(--accent)}
+.dish-chip.sel-green{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.dish-chip.sel-amber{background:var(--amber);border-color:var(--amber);color:#fff;font-weight:600}
+.dish-chip.sel-blue{background:#2c6a8f;border-color:#2c6a8f;color:#fff;font-weight:600}
+.dish-chip.sel-purple{background:#5b3f8a;border-color:#5b3f8a;color:#fff;font-weight:600}
+.dish-chip.disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+/* Идэвхгүй selector блок */
+.dish-select.dimmed{opacity:.35;pointer-events:none;filter:grayscale(40%)}
+.dim-label{font-size:12px;font-weight:600;color:var(--muted);text-align:center;padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;display:none}
+.dish-select.dimmed .dim-label{display:block}
+/* Тоо оруулах */
+.qty-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border:1.5px solid var(--line);border-radius:10px;margin-top:6px}
+.qty-row .qty-name{flex:1;font-size:13px;font-weight:600;color:var(--ink)}
+.qty-row .qty-unit{font-size:12px;color:var(--muted)}
+.qty-row input{width:72px;font-family:inherit;font-size:14px;font-weight:700;text-align:center;border:1.5px solid var(--line);border-radius:8px;padding:5px 8px;outline:none;color:var(--ink);background:#fff;transition:border-color .15s}
+.qty-row input:focus{border-color:var(--accent)}
+.qty-list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.sel-hint{font-size:12px;color:var(--muted);margin-top:8px;font-style:italic}
+.sel-divider{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:16px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
+
+/* ── ORDER SECTION ── */
+.order-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px;margin-top:40px}
+.order-box h3{font-family:'Lora',Georgia,serif;font-size:22px;font-weight:700;margin-bottom:6px}
+.order-box .sub{font-size:13.5px;color:var(--muted);margin-bottom:24px;line-height:1.55}
+.order-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:20px}
+.order-field{display:flex;flex-direction:column;gap:6px}
+.order-field label{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.order-field input,.order-field select,.order-field textarea{
+  font-family:inherit;font-size:14px;color:var(--ink);background:var(--bg);
+  border:1.5px solid var(--line);border-radius:10px;padding:10px 13px;
+  outline:none;transition:border-color .18s;resize:none;
+}
+.order-field input:focus,.order-field select:focus,.order-field textarea:focus{border-color:var(--accent)}
+.order-field.full{grid-column:1/-1}
+.btn-order{width:100%;font-family:inherit;font-size:14px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:13px;cursor:pointer;transition:opacity .15s;margin-top:4px}
+.btn-order:hover{opacity:.88}
+.order-note{font-size:12px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.6}
+.order-success{display:none;background:var(--accent-soft);border:1px solid #b8d4c4;border-radius:10px;padding:16px;text-align:center;font-size:14px;font-weight:600;color:var(--accent);margin-top:16px}
+
+/* ── CONTACT BAR ── */
+.contact-strip{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.cs-item{flex:1;min-width:160px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}
+.cs-item .ci-icon{font-size:22px}
+.cs-item .ci-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.cs-item .ci-val{font-size:14px;font-weight:700;color:var(--ink);margin-top:2px}
+.cs-item a{color:var(--ink);text-decoration:none}
+
+/* ── NOTE ── */
+.note{background:var(--amber-soft);border:1px solid #ecd9c5;border-radius:12px;padding:14px 18px;margin-top:26px;font-size:13px;color:#7a4f23;line-height:1.6}
+.note b{color:#5e3c19}
+
+/* ── FOOTER ── */
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-height:1.7}
+
+/* ── ҮНИЙН ТООЦОО ── */
+.price-box{background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;display:none}
+.price-box .pb-title{font-size:11.5px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.price-line{display:flex;justify-content:space-between;font-size:13px;color:var(--ink);padding:5px 0;border-bottom:1px dotted rgba(31,74,56,.2)}
+.price-line span:last-child{font-weight:700}
+.price-total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:800;color:var(--accent);padding-top:10px;margin-top:2px}
+
+@media(max-width:760px){
+  .tiers{grid-template-columns:repeat(2,1fr)}
+  .dishes{grid-template-columns:1fr}
+  .boodog .b-price{text-align:left;width:100%}
+  .hero h2{font-size:28px}
+  .svc-row .svc-grid{display:flex;flex-direction:column;gap:10px}
+  .uguluun-list{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div class="nomad-band"></div>
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo"><span class="dot-ico">🍽️</span><div><h1>NOMAAD Catering</h1><p>Чимун ХХК · Эвент ба байгууллагын кейтеринг</p></div></div>
+    </div>
+    <span class="tag-pill">Меню 2026</span>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <div class="eyebrow">Кейтеринг үйлчилгээ</div>
+    <h2>Арга хэмжээнд зориулсан мэргэжлийн хоол</h2>
+    <p>Байгууллагын хурлаас эхлээд гадаа арга хэмжээ хүртэл — дулаан хоолыг цагт нь, мэргэжлийн түвшинд хүргэнэ. Порц, буфет, хорхог болон өглөөний цайнаас сонгоно уу.</p>
+  </section>
+
+  <!-- Үнийн карт -->
+  <section class="tiers">
+    <div class="tier por">
+      <div class="t-name">Порц хоол</div>
+      <div class="t-price">₮38,000 <small>/ хүн</small></div>
+      <div class="t-desc">Нэг хүнд тохирсон бэлэн таваг — гол мах, будаа эсвэл хачиртай.</div>
+      <a href="#order" class="t-badge" style="text-decoration:none;display:inline-block;margin-top:auto;cursor:pointer">Захиалах →</a>
+    </div>
+    <div class="tier buf">
+      <div class="t-name">Буфет</div>
+      <div class="t-price">₮54,000 <small>/ хүн</small></div>
+      <div class="t-desc">Олон төрлийн мах, салад, хачир, шөлнөөс сонгох авах боломж.</div>
+      <a href="#order" class="t-badge" style="text-decoration:none;display:inline-block;margin-top:auto;cursor:pointer">Захиалах →</a>
+    </div>
+    <div class="tier shr">
+      <div class="t-name">Хорхог</div>
+      <div class="t-price">₮900,000 <small>/ бүтэн</small></div>
+      <div class="t-desc">Уламжлалт аргаар чулуун дотор шарсан бүтэн хонь — 8–12 хүнд хүрнэ.</div>
+      <a href="#order" class="t-badge" style="text-decoration:none;display:inline-block;margin-top:auto;cursor:pointer">Захиалах →</a>
+    </div>
+    <div class="tier ugl">
+      <div class="t-name">Өглөөний цай</div>
+      <div class="t-price">₮12,000 <small>/ хүн</small></div>
+      <div class="t-desc">Зутан, шөл болон хөнгөн зооглолт — өглөөний хурал, сургалтад тохиромжтой.</div>
+      <a href="#order" class="t-badge" style="text-decoration:none;display:inline-block;margin-top:auto;cursor:pointer">Захиалах →</a>
+    </div>
+  </section>
+
+  <!-- ═══ ЗАХИАЛГА ӨГӨХ ═══ -->
+  <div class="order-box" id="order">
+    <h3>📋 Захиалга өгөх</h3>
+    <p class="sub" id="order-sub">Доорх маягтыг бөглөөд илгээхэд л хангалттай. Манай баг ажлын 24 цагийн дотор тантай эргэн холбогдож, таны арга хэмжээнд тохирсон саналаа хүргэнэ.</p>
+
+    <form id="order-form"
+          action="https://api.web3forms.com/submit"
+          method="POST"
+          onsubmit="handleSubmit(event)">
+      <input type="hidden" name="access_key" value="e2c4a089-97e4-4630-a616-a6eae9fc13ea">
+      <input type="hidden" name="subject" value="🍽️ NOMAAD Catering — Шинэ захиалга">
+      <input type="hidden" name="from_name" value="NOMAAD Catering Website">
+      <input type="checkbox" name="botcheck" style="display:none">
+
+      <div class="order-grid">
+        <div class="order-field">
+          <label>Байгууллагын нэр</label>
+          <input type="text" name="Baiguullaga" id="of-org" placeholder="Байгууллагын нэр" required>
+        </div>
+        <div class="order-field">
+          <label>Холбоо барих нэр</label>
+          <input type="text" name="Ner" id="of-name" placeholder="Овог Нэр" required>
+        </div>
+        <div class="order-field">
+          <label>Утасны дугаар</label>
+          <input type="tel" name="Utas" id="of-phone" placeholder="Утасны дугаар" required>
+        </div>
+        <div class="order-field">
+          <label>И-мэйл <span style="font-weight:400;color:var(--muted)">(заавал биш)</span></label>
+          <input type="email" name="Email" id="of-email" placeholder="example@mail.com">
+        </div>
+        <!-- ── АРГА ХЭМЖЭЭНИЙ ТӨРӨЛ (хүний тооноос өмнө) ── -->
+        <div class="order-field">
+          <label>Арга хэмжээний төрөл <span style="color:#e11d48">*</span></label>
+          <select id="of-event" name="Arga_hemjeenii_turul" onchange="calcPrice();updateLocationField()">
+            <option value="">— Сонгоно уу —</option>
+            <option>Nomaad camp</option>
+            <option>Байгууллагын корпорат арга хэмжээ</option>
+            <option>Албан хурал</option>
+            <option>Найр · баяр</option>
+            <option>Хүлээн авалт</option>
+            <option>Ойн баяр</option>
+            <option>Гадаа арга хэмжээ</option>
+            <option>Сургалт · семинар</option>
+          </select>
+          <div style="margin-top:8px;padding:8px 12px;background:#e8f4f0;border-radius:8px;border-left:3px solid var(--accent);font-size:12px;color:var(--accent)">⛺ <strong>Nomaad Camp</strong> захиалагч бол дээрх жагсаалтаас <strong>Nomaad camp</strong> сонгоно уу.</div>
+        </div>
+        <div class="order-field">
+          <label>Хүний тоо</label>
+          <input type="number" name="Hunii_too" id="of-pax" min="1" placeholder="0" required>
+        </div>
+        <div class="order-field">
+          <label>Арга хэмжээний газар</label>
+          <input type="text" name="Gazar" id="of-location" placeholder="Хаяг, байршил...">
+          <!-- Nomaad camp сонгосон үед гарч ирэх байршлын сонголт -->
+          <select id="of-nomaad-location" style="display:none;margin-top:8px" onchange="syncNomaadLocation()">
+            <option value="">— Nomaad camp байршил сонгох —</option>
+            <option>NOMAAD SUMMIT</option>
+            <option>NOMAAD MEADOW</option>
+            <option>NOMAAD GROVE</option>
+            <option>NOMAAD MOBILE</option>
+          </select>
+        </div>
+        <div class="order-field full">
+          <label>Хамрах хугацаа</label>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div style="flex:1;min-width:130px">
+              <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">Эхлэх өдөр</div>
+              <input type="date" id="of-start-date" name="Ehleh_undur" style="margin-top:0" oninput="updateDateRange()">
+            </div>
+            <div style="font-size:15px;color:var(--muted);font-weight:700;padding-top:18px">→</div>
+            <div style="flex:1;min-width:130px">
+              <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">Дуусах өдөр</div>
+              <input type="date" id="of-end-date" name="Duusah_undur" style="margin-top:0" oninput="updateDateRange()">
+            </div>
+          </div>
+          <div id="date-range-preview" style="margin-top:8px;font-size:13px;font-weight:600;color:var(--accent);display:none"></div>
+        </div>
+
+        <!-- Үйлчилгээнүүд -->
+        <div class="order-field full" id="svc-rows-wrap">
+          <label>Үйлчилгээ <span style="color:#e11d48">*</span></label>
+          <div class="svc-multi-hint">💡 <b>Хэд хэдэн үйлчилгээг НЭГ захиалгад нэмж болно.</b> Жишээ нь: өглөөний цай + өдрийн буфет, эсвэл өөр өөр өдрийн хоол. Тус тусад нь биш — доорх <b>«＋ Үйлчилгээ нэмэх»</b> товчоор бүгдийг нэмээрэй.</div>
+          <div id="svc-rows"></div>
+
+            <button type="button" class="btn-add-svc" onclick="addSvcRow()">＋ Үйлчилгээ нэмэх</button>
+        </div>
+
+        <!-- Сонгосон хоол (hidden) -->
+        <input type="hidden" name="Songoson_hool" id="of-dishes">
+
+        <!-- Уух зүйлсийн сонголт -->
+        <div class="order-field full" id="drinks-box" style="display:none">
+          <div class="nemeltu-box">
+            <div class="n-title">🥤 Уух зүйлс <span style="font-size:11px;font-weight:500;color:#a07040">(заавал биш)</span></div>
+
+            <!-- Nomaad camp: зөвхөн үнэгүй халуун ундаа -->
+            <div id="drinks-nomaad-section" style="display:none">
+              <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">☕ Халуун ундаа — үнэгүй</div>
+              <div class="nemeltu-chips">
+                <button type="button" class="n-chip" data-name="Халуун цай (үнэгүй)" onclick="toggleDrink(this)">☕ Халуун цай <span class="free">Үнэгүй</span></button>
+                <button type="button" class="n-chip" data-name="Кофе (үнэгүй)" onclick="toggleDrink(this)">☕ Кофе <span class="free">Үнэгүй</span></button>
+              </div>
+            </div>
+
+            <!-- Бусад захиалагч: бүтэн жагсаалт -->
+            <div id="drinks-regular-section" style="display:none">
+              <div style="font-size:11px;font-weight:700;color:#a07040;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">☕ Халуун ундаа</div>
+              <div class="nemeltu-chips">
+                <button type="button" class="n-chip" data-name="Халуун цай" onclick="toggleDrink(this)">☕ Халуун цай</button>
+                <button type="button" class="n-chip" data-name="Кофе" onclick="toggleDrink(this)">☕ Кофе</button>
+                <button type="button" class="n-chip" data-name="Какао" onclick="toggleDrink(this)">🍫 Какао</button>
+              </div>
+              <div style="font-size:11px;font-weight:700;color:#a07040;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px">🥤 Хүйтэн ундаа</div>
+              <div class="nemeltu-chips">
+                <button type="button" class="n-chip" data-name="Жимсний жүүс" onclick="toggleDrink(this)">🧃 Жимсний жүүс</button>
+                <button type="button" class="n-chip" data-name="Кока-кола" onclick="toggleDrink(this)">🥤 Кока-кола</button>
+                <button type="button" class="n-chip" data-name="Спрайт" onclick="toggleDrink(this)">🫧 Спрайт</button>
+                <button type="button" class="n-chip" data-name="Эрдэс ус" onclick="toggleDrink(this)">💧 Эрдэс ус</button>
+                <button type="button" class="n-chip" data-name="Цэвэр ус" onclick="toggleDrink(this)">💧 Цэвэр ус</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <input type="hidden" name="Uuh_zuils" id="of-drinks">
+
+        <!-- Нэмэлт санал -->
+        <div class="order-field full" id="nemeltu-box-wrap">
+          <div class="nemeltu-box">
+            <div class="n-title">🍕 Нэмэлт хоол <span style="font-size:11px;font-weight:500;color:#a07040">(заавал биш)</span></div>
+            <div class="nemeltu-chips">
+              <button type="button" class="n-chip" data-name="Жимсний платер" onclick="toggleNemeltu(this)">Жимсний платер <span class="n-price">~₮8,000</span></button>
+              <button type="button" class="n-chip" data-name="Cup cake &amp; Egg tart" onclick="toggleNemeltu(this)">Cup cake & Egg tart <span class="n-price">~₮6,000</span></button>
+              <button type="button" class="n-chip" data-name="Мини пицца" onclick="toggleNemeltu(this)">Мини пицца <span class="n-price">~₮7,000</span></button>
+              <button type="button" class="n-chip" data-name="Мини бургер" onclick="toggleNemeltu(this)">Мини бургер <span class="n-price">~₮7,500</span></button>
+              <button type="button" class="n-chip" data-name="Cheese ball" onclick="toggleNemeltu(this)">Cheese ball <span class="n-price">~₮5,000</span></button>
+            </div>
+            <div id="nemeltu-qty-list"></div>
+          </div>
+        </div>
+        <input type="hidden" name="Nemeltu" id="of-nemeltu">
+
+        <div class="order-field full">
+          <label>Тусгай хүсэлт <span style="font-weight:400;color:var(--muted)">(заавал биш)</span></label>
+          <textarea name="Temdegleg" id="of-note" rows="3" placeholder="Нэмэлт хүсэлт, тайлбар..."></textarea>
+        </div>
+      </div>
+
+      <!-- Үнийн тооцоо -->
+      <div class="price-box" id="price-box">
+        <div class="pb-title">💰 Нийт төлбөрийн тооцоо</div>
+        <div id="price-lines"></div>
+        <div id="price-total"></div>
+        <div style="font-size:11px;color:var(--accent);margin-top:8px;opacity:.7">* Тээвэр, үйлчлэгч тусдаа тооцно</div>
+      </div>
+
+      <div class="svc-submit-reminder">📋 Өөр өдөр эсвэл өөр үйлчилгээ байвал — илгээхээсээ өмнө дээр гарсан <b>«＋ Үйлчилгээ нэмэх»</b>-ээр нэмж, бүгдийг <b>нэг захиалгаар</b> илгээгээрэй.</div>
+      <button type="submit" class="btn-order" id="submit-btn">✉️ Захиалга илгээх</button>
+    </form>
+    <div class="order-success" id="order-success">
+      <div style="font-size:24px;margin-bottom:8px">✅</div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px">Захиалга амжилттай илгээгдлээ!</div>
+      <div style="font-size:13px;font-weight:400;opacity:.8">Бид 24 цагийн дотор тантай холбогдоно.</div>
+    </div>
+    <div id="order-summary" style="display:none"></div>
+
+    <!-- Төлбөрийн мэдээлэл -->
+    <div id="payment-box" style="display:none;margin-top:20px;background:var(--surface);border:1.5px solid var(--accent);border-radius:var(--radius);padding:24px">
+      <div style="font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">💳 Урьдчилгаа төлбөр шилжүүлэх</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;font-size:14px;padding:10px 14px;background:var(--bg);border-radius:10px">
+          <span style="color:var(--muted);font-weight:600">Банк</span>
+          <span style="font-weight:700">Голомт банк</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;padding:10px 14px;background:var(--bg);border-radius:10px">
+          <span style="color:var(--muted);font-weight:600">Дансны дугаар</span>
+          <span style="font-weight:700;letter-spacing:.5px">MN400015001105172457</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;padding:10px 14px;background:var(--bg);border-radius:10px">
+          <span style="color:var(--muted);font-weight:600">Эзний нэр</span>
+          <span style="font-weight:700">Нинжбадам Анужин</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;padding:10px 14px;background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:10px">
+          <span style="color:var(--accent);font-weight:700">Шилжүүлэх дүн (50%)</span>
+          <span style="font-weight:800;color:var(--accent);font-size:16px" id="payment-amount">—</span>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">
+        Гүйлгээний утга: <strong id="payment-ref">NOMAAD захиалга</strong> · Үлдэгдэл 50%-ийг арга хэмжээний өдөр төлнө.
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--ink);background:var(--bg);border-radius:10px;padding:10px 14px;margin-bottom:14px;line-height:1.6">
+        💡 Төлбөр шилжүүлсэн бол доорх товчийг дарж мэдэгдэнэ үү
+      </div>
+      <button type="button" id="payment-confirm-btn" onclick="confirmPayment()"
+        style="width:100%;font-family:inherit;font-size:14px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:13px;cursor:pointer;transition:opacity .15s">
+        ✅ Төлбөр шилжүүллээ — мэдэгдэх
+      </button>
+      <div id="payment-confirm-msg" style="display:none;margin-top:12px;background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;padding:12px;font-size:13px;font-weight:600;color:var(--accent);text-align:center">
+        Баярлалаа! Төлбөрийн мэдэгдэл илгээгдлээ.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ХОЛБОО ═══ -->
+  <div class="contact-strip">
+    <div class="cs-item">
+      <div class="ci-icon">📞</div>
+      <div><div class="ci-label">Утас</div><div class="ci-val"><a href="tel:88028216">88028216</a></div></div>
+    </div>
+    <div class="cs-item">
+      <div class="ci-icon">🌐</div>
+      <div><div class="ci-label">Вэбсайт</div><div class="ci-val"><a href="https://nomaadcatering.mn" target="_blank" style="color:var(--ink);text-decoration:none">nomaadcatering.mn</a></div></div>
+    </div>
+    <div class="cs-item">
+      <div class="ci-icon">📍</div>
+      <div><div class="ci-label">Байршил</div><div class="ci-val">Улаанбаатар</div></div>
+    </div>
+  </div>
+
+  <footer>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:6px;line-height:1.6">Заасан үнэ нь нэг хүний (порц/буфет) болон нэгж (хорхог) дүн юм. Тээвэр, үйлчлэгч, тоног төхөөрөмжийн зардлыг арга хэмжээний хэмжээ, байршлаас хамааруулан тусдаа тооцно.</p>
+    <p>© 2026 NOMAAD Catering · Чимун ХХК · nomaadcatering.mn</p>
+  </footer>
+
+</main>
+
+<script>
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzu-NuP2z764BWOF5r3A9YkriNVc5en54Pq6NW_hApmo948xyUPM8eiqpXeJhJXDhDX8w/exec';
+
+// ── Нэмэлт сонголт ──
+var nemeltuQty = {};
+
+function toggleNemeltu(btn) {
+  var name = btn.dataset.name;
+  btn.classList.toggle('sel-n');
+  if (btn.classList.contains('sel-n')) {
+    if (!nemeltuQty[name]) nemeltuQty[name] = 1;
+  } else {
+    delete nemeltuQty[name];
+  }
+  renderNemeltuQty();
+  updateNemeltuField();
+}
+
+function changeNemeltuQty(name, delta) {
+  if (nemeltuQty[name] !== undefined) {
+    nemeltuQty[name] = Math.max(1, nemeltuQty[name] + delta);
+    var el = document.getElementById('nqty_' + name.replace(/[^a-zA-Z0-9]/g,'_'));
+    if (el) el.textContent = nemeltuQty[name];
+    updateNemeltuField();
+  }
+}
+
+function renderNemeltuQty() {
+  var container = document.getElementById('nemeltu-qty-list');
+  if (!container) return;
+  var keys = Object.keys(nemeltuQty);
+  if (!keys.length) { container.innerHTML = ''; return; }
+  var freeItems = ['Халуун цай','Кофе'];
+  var html = '<div style="border-top:1px solid #ecd9c5;margin-top:12px;padding-top:12px;display:flex;flex-direction:column;gap:8px">';
+  keys.forEach(function(name) {
+    var safeId = 'nqty_' + name.replace(/[^a-zA-Z0-9]/g,'_');
+    var isFree = freeItems.indexOf(name) >= 0;
+    var escapedName = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    html += '<div class="qty-row">' +
+      '<span class="qty-name">' + name +
+        (isFree ? ' <span style="font-size:10px;background:var(--accent-soft);color:var(--accent);border-radius:4px;padding:1px 6px;font-weight:700;margin-left:4px">Үнэгүй</span>' : '') +
+      '</span>' +
+      '<span class="qty-unit">ширхэг</span>' +
+      '<div style="display:flex;align-items:center;gap:6px">' +
+        '<button type="button" onclick="changeNemeltuQty(\'' + escapedName + '\',-1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:16px;cursor:pointer;font-weight:700">−</button>' +
+        '<span id="' + safeId + '" style="font-weight:700;font-size:15px;min-width:24px;text-align:center">' + nemeltuQty[name] + '</span>' +
+        '<button type="button" onclick="changeNemeltuQty(\'' + escapedName + '\',1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:16px;cursor:pointer;font-weight:700">+</button>' +
+      '</div>' +
+    '</div>';
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function updateNemeltuField() {
+  var parts = [];
+  Object.keys(nemeltuQty).forEach(function(name) {
+    parts.push(name + ' × ' + nemeltuQty[name] + ' ширхэг');
+  });
+  document.getElementById('of-nemeltu').value = parts.join(', ');
+}
+
+// ── Уух зүйлсийн сонголт ──
+var selectedDrinks = [];
+
+function toggleDrink(btn) {
+  var name = btn.dataset.name;
+  btn.classList.toggle('sel-n');
+  if (btn.classList.contains('sel-n')) {
+    if (selectedDrinks.indexOf(name) < 0) selectedDrinks.push(name);
+  } else {
+    selectedDrinks = selectedDrinks.filter(function(n) { return n !== name; });
+  }
+  updateDrinkField();
+}
+
+function updateDrinkField() {
+  var el = document.getElementById('of-drinks');
+  if (el) el.value = selectedDrinks.join(', ');
+}
+
+var _lastEventType = null;
+
+function updateDrinksVisibility() {
+  var evnt = document.getElementById('of-event').value;
+  var box = document.getElementById('drinks-box');
+  var nomaadSec = document.getElementById('drinks-nomaad-section');
+  var regularSec = document.getElementById('drinks-regular-section');
+  var nemeltuWrap = document.getElementById('nemeltu-box-wrap');
+
+  if (!box) return;
+
+  var isNC = evnt === 'Nomaad camp';
+
+  // Нуух/харуулах
+  box.style.display = evnt ? 'block' : 'none';
+  if (nomaadSec)   nomaadSec.style.display  = (evnt && isNC)  ? 'block' : 'none';
+  if (regularSec)  regularSec.style.display = (evnt && !isNC) ? 'block' : 'none';
+  if (nemeltuWrap) nemeltuWrap.style.display = isNC ? 'none' : 'block';
+
+  // Зөвхөн арга хэмжээний төрөл СОЛИГДОХОД ундааг цэвэрлэх
+  if (evnt !== _lastEventType) {
+    _lastEventType = evnt;
+    selectedDrinks = [];
+    box.querySelectorAll('.n-chip').forEach(function(c) { c.classList.remove('sel-n'); });
+    updateDrinkField();
+  }
+}
+
+// ── Огноо/цаг давхцал шалгах ──
+// [{date:'2026-06-10', time:'14:00', isNomaad:true}, ...]
+var _bookedOrders = null;
+
+function _parseOrders(orders) {
+  return (orders || [])
+    .filter(function(o){ return o.арга_хэмжээний_огноо; })
+    .map(function(o){
+      var raw = o.арга_хэмжээний_огноо || '';
+      var date = '', time = '';
+      // "2026-06-10 14:00" хэлбэр
+      var m = raw.match(/(\d{4}-\d{2}-\d{2})[T ]?(\d{2}:\d{2})?/);
+      if (m) {
+        date = m[1];
+        time = m[2] || '';
+      } else {
+        // "Sat Jun 06 2026 13:00:00 GMT+0800..." хэлбэр
+        var d = new Date(raw);
+        if (!isNaN(d.getTime())) {
+          var ub = new Date(d.getTime() + 8 * 3600000);
+          date = ub.toISOString().substring(0, 10);
+          time = ub.toISOString().substring(11, 16);
+        }
+      }
+      return {
+        date:     date,
+        time:     time,
+        isNomaad: (o.арга_хэмжээ || '').indexOf('Nomaad') >= 0
+      };
+    })
+    .filter(function(o){ return o.date.length === 10; });
+}
+
+function loadBookedDates() {
+  // JSONP — CORS-ийг тойрч ажилладаг
+  var cbName = 'nomaad_orders_' + Date.now();
+  window[cbName] = function(d) {
+    _bookedOrders = _parseOrders(d.orders);
+    console.log('[NOMAAD] Захиалгууд ачааллаа:', _bookedOrders.length, _bookedOrders);
+    delete window[cbName];
+    var s = document.getElementById('_jsonp_orders');
+    if (s) s.parentNode.removeChild(s);
+  };
+  var s = document.createElement('script');
+  s.id  = '_jsonp_orders';
+  s.src = SHEETS_URL + '?action=orders&callback=' + cbName;
+  s.onerror = function() { _bookedOrders = []; delete window[cbName]; };
+  document.head.appendChild(s);
+}
+
+function refreshBookedDates(cb) {
+  // Submit хийхийн өмнө шинэчилж шалгах
+  var cbName = 'nomaad_chk_' + Date.now();
+  var done   = false;
+  var timer  = setTimeout(function(){ if (!done) { done=true; cb(_bookedOrders||[]); } }, 4000);
+  window[cbName] = function(d) {
+    if (done) return; done = true;
+    clearTimeout(timer);
+    _bookedOrders = _parseOrders(d.orders);
+    delete window[cbName];
+    var s = document.getElementById('_jsonp_chk');
+    if (s) s.parentNode.removeChild(s);
+    cb(_bookedOrders);
+  };
+  var s = document.createElement('script');
+  s.id  = '_jsonp_chk';
+  s.src = SHEETS_URL + '?action=orders&callback=' + cbName;
+  s.onerror = function() { if (!done) { done=true; cb(_bookedOrders||[]); } };
+  document.head.appendChild(s);
+}
+
+function checkDateConflict(input, rowIdx) {
+  if (_bookedOrders === null) {
+    refreshBookedDates(function() { _runConflictCheck(rowIdx); });
+  } else {
+    _runConflictCheck(rowIdx);
+  }
+}
+
+function checkTimeConflict(rowIdx) {
+  if (_bookedOrders === null) {
+    refreshBookedDates(function() { _runConflictCheck(rowIdx); });
+  } else {
+    _runConflictCheck(rowIdx);
+  }
+}
+
+function _runConflictCheck(rowIdx) {
+  var dateEl  = document.getElementById('svc-date-' + rowIdx);
+  var timeEl  = document.getElementById('svc-time-' + rowIdx);
+  var warn    = document.getElementById('date-warn-' + rowIdx);
+  if (!warn || !dateEl) return;
+
+  var selDate = dateEl.value;
+  var selTime = timeEl ? timeEl.value : '';
+  var isCurrentNomaad = (document.getElementById('of-event') || {}).value === 'Nomaad camp';
+
+  if (!selDate) {
+    warn.style.display = 'none';
+    dateEl.style.borderColor = '';
+    return;
+  }
+
+  // Nomaad camp: давхцал шалгахгүй
+  if (isCurrentNomaad) {
+    warn.style.display = 'none';
+    dateEl.style.borderColor = '';
+    return;
+  }
+
+  // 1. Мөр дотроо ижил өдөр давхцал шалгах
+  var innerMsg = '';
+  for (var j = 0; j < svcCount; j++) {
+    if (j === rowIdx) continue;
+    var od = document.getElementById('svc-date-' + j);
+    if (od && od.value === selDate) { innerMsg = '⚠️ Энэ мөр дотор ижил өдөр давхарлаж байна'; break; }
+  }
+
+  // 2. Sheets-аас татсан захиалгуудтай давхцал
+  var sheetMsg = '';
+  if (!innerMsg && Array.isArray(_bookedOrders)) {
+    for (var k = 0; k < _bookedOrders.length; k++) {
+      var bo = _bookedOrders[k];
+      if (bo.date !== selDate) continue;
+      if (!bo.isNomaad) {
+        sheetMsg = '⚠️ Энэ өдөр захиалгатай байна — лавлана уу'; break;
+      }
+    }
+  }
+
+  var msg = innerMsg || sheetMsg;
+  warn.textContent = msg;
+  warn.style.display = msg ? 'block' : 'none';
+  dateEl.style.borderColor = msg ? '#BB4A36' : '';
+}
+
+function updateDateRange() {
+  var s = document.getElementById('of-start-date').value;
+  var e = document.getElementById('of-end-date').value;
+  var prev = document.getElementById('date-range-preview');
+  if (!prev) return;
+  if (!s && !e) { prev.style.display = 'none'; return; }
+  function fmt(d) {
+    if (!d) return '';
+    var p = d.split('-');
+    return p[1].replace(/^0/,'') + '-р сарын ' + p[2].replace(/^0/,'');
+  }
+  var txt = '';
+  if (s && e && s !== e) txt = '📅 ' + fmt(s) + '-наас ' + fmt(e) + ' хүртэл';
+  else if (s && !e)      txt = '📅 ' + fmt(s) + '-ноос эхлэх';
+  else if (!s && e)      txt = '📅 ' + fmt(e) + '-нд дуусах';
+  else                   txt = '📅 ' + fmt(s);
+  prev.textContent = txt;
+  prev.style.display = 'block';
+}
+
+function calcPrice() {
+  updateDrinksVisibility();
+  var pax = parseInt(document.getElementById('of-pax').value) || 0;
+  var PRICES = {por: 38000, buf: 54000, boodog: 900000, uguluun: 12000};
+  var LABELS = {por: 'Порц хоол', buf: 'Буфет', boodog: 'Хорхог', uguluun: 'Өглөөний цай'};
+  var lines = [], total = 0;
+  for (var i = 0; i < svcCount; i++) {
+    var s = document.getElementById('svc-sel-' + i);
+    if (!s || !s.value) continue;
+    var d = document.getElementById('svc-date-' + i);
+    var dateStr = d && d.value ? ' · ' + d.value : '';
+    var qty = (s.value === 'boodog') ? (boodog_n[i] || 1) : pax;
+    if (qty <= 0) continue;
+    var amt = PRICES[s.value] * qty;
+    var qtyLabel = (s.value === 'boodog') ? qty + ' ширхэг' : qty + ' хүн';
+    lines.push({label: LABELS[s.value] + dateStr + ' × ' + qtyLabel, amt: amt});
+    total += amt;
+  }
+  var box = document.getElementById('price-box');
+  var eventSel = document.getElementById('of-event');
+  var isNomaadCamp = eventSel && eventSel.value === 'Nomaad camp';
+  if (!lines.length || isNomaadCamp) { if (box) box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  document.getElementById('price-lines').innerHTML = lines.map(function(l) {
+    return '<div class="price-line"><span>' + l.label + '</span><span>₮' + l.amt.toLocaleString() + '</span></div>';
+  }).join('');
+  document.getElementById('price-total').innerHTML =
+    '<div class="price-total-row"><span>Нийт дүн</span><span>₮' + total.toLocaleString() + '</span></div>';
+}
+
+var boodog_n = [1,1,1,1,1];
+var svcCount = 1;
+var ORDINALS = ['1-р','2-р','3-р','4-р','5-р'];
+
+var POR_CHIPS = ['Соусанд жигнэсэн хонины мах (порц)','Хорхог (порц)','Мини шорлог (порц)','Гахайн цорой (порц)','Гахайн амталсан мах (порц)','Терияки соустай тахиа (порц)','Шаржигнуур тахиа (порц)','Цуйван (порц)','Хуушуур (порц)'];
+var BUF_MAH = ['Соусанд жигнэсэн хонины мах','Хорхог','Мини шорлог /гахай, тахиа/','Гахайн цорой','Гахайн амталсан мах','Терияки соустай тахиа','Шаржигнуур тахиа','Цуйван','Хуушуур'];
+var BUF_SAL = ['Шинэ ногооны салад','Нийслэл салад','Пүнтүүзтэй салад','Байцааны салад','Луувангийн салад','Гоймонгийн салад'];
+var BUF_HAC = ['Амталсан будаа','Шарсан төмс','Төмсний нухаш','Хуурсан ногоо','Мантуу','Сийртэй гоймон','Амталсан өргөст хэмх'];
+var BUF_SHOL = ['Брокли зутан шөл','Мөөгтэй зутан шөл','Нарийн ногооны шөл','Бантан','Далайн байцаатай шөл','Халуун ногоотой шөл','Ясны шөл'];
+var UGULUUN_CHIPS = ['Бантан + боорцог','Гоймонтой шөл + боорцог','Будаатай шөл + мантуу','Ногоотой шөл + бин','English breakfast','Сэндвич','Өрөм боорцог + зутан шөл (хулуу болон брокли)','Хийцтэй будаатай цай + боорцог'];
+
+function chipHTML(items, g, max, ri) {
+  return items.map(function(item, ci) {
+    return '<button type="button" class="dish-chip" data-g="'+g+'" data-max="'+max+'" data-row="'+ri+'" data-ci="'+ci+'" onclick="toggleDish(this)">'+item+'</button>';
+  }).join('');
+}
+
+function bufGroup(title, g, max, color, chips, ri) {
+  return '<div class="sel-group">' +
+    '<div class="sel-group-head">' +
+      '<div class="sel-group-title">'+title+'</div>' +
+      '<span class="sel-badge '+color+'" id="'+g+'-badge-'+ri+'">0 / '+max+'</span>' +
+    '</div>' +
+    '<div class="dish-chips">' + chipHTML(chips, g, max, ri) + '</div>' +
+  '</div>';
+}
+
+function buildFoodPanelHTML(type, ri) {
+  if (type === 'por') {
+    return '<div class="msec-body">' +
+      '<div class="sel-group">' +
+        '<div class="sel-group-head">' +
+          '<div class="sel-group-title">🍱 Порц хоол — хамгийн ихдээ 2 сонгоно</div>' +
+          '<span class="sel-badge green" id="por-badge-'+ri+'">0 / 2</span>' +
+        '</div>' +
+        '<div class="dish-chips">' + chipHTML(POR_CHIPS, 'por', 2, ri) + '</div>' +
+        '<div class="qty-list" id="por-qty-'+ri+'"></div>' +
+        '<div id="por-qty-warn-'+ri+'" style="display:none;font-size:12px;color:var(--amber);font-weight:600;margin-top:6px">⚠️ 2 хоолны нийт порц нь хүний тооноос хэтрэхгүй</div>' +
+        '<p class="sel-hint">* Будаа, дагалдах хачир багтсан. 2 хоолны порцын нийт = хүний тоо</p>' +
+      '</div>' +
+    '</div>';
+  }
+  if (type === 'buf') {
+    return '<div class="msec-body">' +
+      bufGroup('🥩 Мах — 3 төрөл сонгоно','buf-mah',3,'amber',BUF_MAH,ri) +
+      '<div class="sel-divider"></div>' +
+      bufGroup('🥗 Салад — 2 төрөл сонгоно','buf-sal',2,'green',BUF_SAL,ri) +
+      '<div class="sel-divider"></div>' +
+      bufGroup('🍚 Хачир — 2 төрөл сонгоно','buf-hac',2,'amber',BUF_HAC,ri) +
+      '<div class="sel-divider"></div>' +
+      bufGroup('🍜 Шөл — 1 төрөл сонгоно','buf-shol',1,'blue',BUF_SHOL,ri) +
+      '<p class="sel-hint">* Буфетэд мах 3 + салад 2 + хачир 2 + шөл 1 = нийт 8 хоол</p>' +
+    '</div>';
+  }
+  if (type === 'boodog') {
+    return '<div class="msec-body">' +
+      '<div class="sel-group">' +
+        '<div class="sel-group-head">' +
+          '<div class="sel-group-title">🐑 Хэдэн хорхог захиалах вэ?</div>' +
+          '<span class="sel-badge green" style="background:#efe7d2;color:#7a6224" id="boodog-total-'+ri+'"></span>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">' +
+          '<div style="display:flex;align-items:center;gap:10px">' +
+            '<button type="button" onclick="changeBootdog(-1,'+ri+')" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700">−</button>' +
+            '<span id="boodog-count-'+ri+'" style="font-family:\'Lora\',serif;font-size:28px;font-weight:700;min-width:32px;text-align:center;color:var(--accent)">1</span>' +
+            '<button type="button" onclick="changeBootdog(1,'+ri+')" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700">+</button>' +
+            '<span style="font-size:13px;color:var(--muted)">ширхэг</span>' +
+          '</div>' +
+          '<div style="font-size:12.5px;color:var(--muted);line-height:1.6">' +
+            'Нэг хонь → <strong>8–12 хүн</strong> · ₮900,000<br>' +
+            '<span id="boodog-price-'+ri+'" style="color:var(--accent);font-weight:700"></span>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  if (type === 'uguluun') {
+    return '<div class="msec-body">' +
+      '<div class="sel-group">' +
+        '<div class="sel-group-head">' +
+          '<div class="sel-group-title">🍵 Өглөөний цай — 1 сонгоно</div>' +
+          '<span class="sel-badge green" id="uguluun-badge-'+ri+'">0 / 1</span>' +
+        '</div>' +
+        '<div class="dish-chips">' + chipHTML(UGULUUN_CHIPS, 'uguluun', 1, ri) + '</div>' +
+        '<p class="sel-hint">* Нийт хүний тоогоор бэлдэгдэнэ</p>' +
+      '</div>' +
+    '</div>';
+  }
+  return '';
+}
+
+function saveFoodState(i) {
+  var state = { chips: {}, qtys: {}, boodog: (boodog_n[i] || 1) };
+  var panel = document.getElementById('food-panel-' + i);
+  if (!panel) return state;
+  state.type = panel.dataset.currentType || '';
+  panel.querySelectorAll('.dish-chip').forEach(function(btn) {
+    var g = btn.dataset.g;
+    var cls = GROUP_COLORS[g] || 'sel-green';
+    if (btn.classList.contains(cls)) {
+      if (!state.chips[g]) state.chips[g] = [];
+      state.chips[g].push(btn.textContent.trim());
+    }
+  });
+  panel.querySelectorAll('input[type=number]').forEach(function(inp) {
+    state.qtys[inp.id] = inp.value;
+  });
+  return state;
+}
+
+function restoreFoodState(i, state) {
+  if (!state || !state.type) return;
+  var panel = document.getElementById('food-panel-' + i);
+  if (!panel || panel.dataset.currentType !== state.type) return;
+  Object.keys(state.chips).forEach(function(g) {
+    var cls = GROUP_COLORS[g] || 'sel-green';
+    var names = state.chips[g];
+    panel.querySelectorAll('.dish-chip[data-g="'+g+'"]').forEach(function(btn) {
+      if (names.indexOf(btn.textContent.trim()) >= 0) btn.classList.add(cls);
+    });
+    var now = panel.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).length;
+    var firstChip = panel.querySelector('.dish-chip[data-g="'+g+'"]');
+    var max = firstChip ? parseInt(firstChip.dataset.max) || 99 : 99;
+    var badge = document.getElementById(g + '-badge-' + i);
+    if (badge) badge.textContent = now + ' / ' + max;
+    if (g === 'por') renderQty(i);
+  });
+  Object.keys(state.qtys).forEach(function(oldId) {
+    var el = document.getElementById(oldId);
+    if (el) el.value = state.qtys[oldId];
+  });
+  if (state.boodog) boodog_n[i] = state.boodog;
+}
+
+function buildTimeOptions() {
+  var opts = '<option value="">— Цаг —</option>';
+  for (var _h = 6; _h <= 22; _h++) {
+    var hh = (_h < 10 ? '0' : '') + _h;
+    opts += '<option value="'+hh+':00">'+hh+':00</option>';
+    opts += '<option value="'+hh+':30">'+hh+':30</option>';
+  }
+  opts += '<option value="23:00">23:00</option>';
+  return opts;
+}
+
+var SVC_OPTIONS = [
+  {v:'',        l:'— Сонгоно уу —'},
+  {v:'por',     l:'Порц хоол (₮38,000/хүн)'},
+  {v:'buf',     l:'Буфет (₮54,000/хүн)'},
+  {v:'boodog',  l:'Хорхог (₮900,000)'},
+  {v:'uguluun', l:'Өглөөний цай (₮12,000/хүн)'},
+];
+
+function buildSvcRowHTML(i) {
+  var removeBtn = svcCount > 1
+    ? '<button type="button" class="btn-svc-remove" onclick="removeSvcRow('+i+')">×</button>'
+    : '';
+  var colStyle = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px';
+  return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+    '<div class="svc-row-label">'+(i+1)+'-р үйлчилгээ</div>'+removeBtn+
+    '</div>' +
+    '<div class="svc-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">' +
+      '<div><div style="'+colStyle+'">Үйлчилгээний төрөл</div>' +
+      '<select id="svc-sel-'+i+'" onchange="refreshPanels()">' +
+      SVC_OPTIONS.map(function(o){return '<option value="'+o.v+'">'+o.l+'</option>';}).join('')+
+      '</select></div>' +
+      '<div><div style="'+colStyle+'">Огноо</div><input type="date" id="svc-date-'+i+'" style="margin-top:0" onchange="checkDateConflict(this,'+i+')"><div id="date-warn-'+i+'" style="display:none;margin-top:6px;padding:6px 10px;background:#fdecea;border-left:3px solid #BB4A36;border-radius:6px;font-size:11.5px;color:#BB4A36;font-weight:600;line-height:1.4"></div></div>' +
+      '<div><div style="'+colStyle+'">Цаг</div><select id="svc-time-'+i+'" style="margin-top:0" onchange="checkTimeConflict('+i+')">'+buildTimeOptions()+'</select></div>' +
+    '</div>';
+}
+
+function renderSvcRows() {
+  var svcRows = document.getElementById('svc-rows');
+  if (!svcRows) return;
+
+  // Save food states before rebuild
+  var foodStates = [];
+  for (var j = 0; j < svcCount + 5; j++) {
+    var fp = document.getElementById('food-panel-' + j);
+    if (!fp) break;
+    foodStates.push(saveFoodState(j));
+  }
+
+  // Save select values, dates, times
+  var oldVals = [], oldDates = [], oldTimes = [];
+  for (var j2 = 0; j2 < svcCount + 5; j2++) {
+    var os = document.getElementById('svc-sel-' + j2);
+    if (!os) break;
+    oldVals.push(os.value);
+    var od = document.getElementById('svc-date-' + j2);
+    var ot = document.getElementById('svc-time-' + j2);
+    oldDates.push(od ? od.value : '');
+    oldTimes.push(ot ? ot.value : '');
+  }
+
+  svcRows.innerHTML = '';
+  for (var i = 0; i < svcCount; i++) {
+    var block = document.createElement('div');
+    block.className = 'svc-block';
+    block.id = 'svc-block-' + i;
+    block.setAttribute('data-idx', String(i % 5));
+
+    var div = document.createElement('div');
+    div.className = 'svc-row';
+    div.id = 'svc-row-' + i;
+    div.innerHTML = buildSvcRowHTML(i);
+    block.appendChild(div);
+
+    var fpNew = document.createElement('div');
+    fpNew.id = 'food-panel-' + i;
+    fpNew.className = 'dish-select';
+    block.appendChild(fpNew);
+
+    svcRows.appendChild(block);
+  }
+
+  // Restore select values, dates, times
+  for (var k = 0; k < svcCount; k++) {
+    var s = document.getElementById('svc-sel-' + k);
+    var d = document.getElementById('svc-date-' + k);
+    var t = document.getElementById('svc-time-' + k);
+    if (s && oldVals[k]) s.value = oldVals[k];
+    if (d && oldDates[k]) d.value = oldDates[k];
+    if (t && oldTimes[k]) t.value = oldTimes[k];
+  }
+
+  // Populate panels with HTML based on selected types
+  refreshPanels();
+
+  // Restore food states (chips, qtys, boodog)
+  for (var m = 0; m < svcCount; m++) {
+    if (foodStates[m]) restoreFoodState(m, foodStates[m]);
+  }
+}
+
+function addSvcRow() {
+  svcCount++;
+  renderSvcRows();
+}
+
+function removeSvcRow(idx) {
+  if (svcCount <= 1) return;
+  var vals = [], dates = [], times = [], states = [];
+  for (var j = 0; j < svcCount; j++) {
+    if (j === idx) continue;
+    var s = document.getElementById('svc-sel-' + j);
+    var d = document.getElementById('svc-date-' + j);
+    var t = document.getElementById('svc-time-' + j);
+    vals.push(s ? s.value : '');
+    dates.push(d ? d.value : '');
+    times.push(t ? t.value : '');
+    states.push(saveFoodState(j));
+    var newIdx = vals.length - 1;
+    boodog_n[newIdx] = boodog_n[j] || 1;
+  }
+  svcCount--;
+  renderSvcRows();
+  for (var k = 0; k < svcCount; k++) {
+    var sel = document.getElementById('svc-sel-' + k);
+    var dat = document.getElementById('svc-date-' + k);
+    var tim = document.getElementById('svc-time-' + k);
+    if (sel) sel.value = vals[k] || '';
+    if (dat) dat.value = dates[k] || '';
+    if (tim) tim.value = times[k] || '';
+  }
+  refreshPanels();
+  for (var m = 0; m < svcCount; m++) {
+    if (states[m]) restoreFoodState(m, states[m]);
+  }
+  updateDishesField();
+}
+
+function refreshPanels() {
+  for (var i = 0; i < svcCount; i++) {
+    var s = document.getElementById('svc-sel-' + i);
+    var type = s ? s.value : '';
+    var panel = document.getElementById('food-panel-' + i);
+    if (!panel) continue;
+    if (!type) {
+      panel.classList.remove('show');
+      panel.innerHTML = '';
+      panel.dataset.currentType = '';
+    } else {
+      panel.classList.add('show');
+      if (panel.dataset.currentType !== type) {
+        panel.dataset.currentType = type;
+        panel.innerHTML = buildFoodPanelHTML(type, i);
+        if (type === 'boodog') updateBoodogRow(i);
+      }
+    }
+  }
+  updateDishesField();
+  calcPrice();
+}
+
+// ── Хорхогийн тоо (per-row) ──
+function updateBoodogRow(ri) {
+  var n = boodog_n[ri] || 1;
+  var el = document.getElementById('boodog-count-' + ri);
+  var pr = document.getElementById('boodog-price-' + ri);
+  var tt = document.getElementById('boodog-total-' + ri);
+  if (el) el.textContent = n;
+  var total = n * 900000;
+  if (pr) pr.textContent = 'Нийт: ₮' + total.toLocaleString('mn-MN');
+  if (tt) tt.textContent = n + ' × ₮900,000';
+  calcPrice();
+}
+
+function changeBootdog(delta, ri) {
+  boodog_n[ri] = Math.max(1, (boodog_n[ri] || 1) + delta);
+  updateBoodogRow(ri);
+  updateDishesField();
+}
+
+// ── Accordion меню ──
+function toggleMsec(header) {
+  var body = header.nextElementSibling;
+  var chev = header.querySelector('.msec-chev');
+  body.classList.toggle('open');
+  chev.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : '';
+  header.style.borderRadius = body.classList.contains('open') ? '12px 12px 0 0' : '12px';
+}
+
+// ── Chip сонгох / болиулах ──
+var GROUP_COLORS = {
+  'por':'sel-green','buf-mah':'sel-amber','buf-sal':'sel-green',
+  'buf-hac':'sel-amber','buf-shol':'sel-blue','uguluun':'sel-green'
+};
+
+function toggleDish(btn) {
+  var g   = btn.dataset.g;
+  var ri  = btn.dataset.row !== undefined ? parseInt(btn.dataset.row) : -1;
+  var max = parseInt(btn.dataset.max) || 99;
+  var cls = GROUP_COLORS[g] || 'sel-green';
+  var container = ri >= 0 ? document.getElementById('food-panel-' + ri) : document;
+  var sel = (container || document).querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls);
+
+  if (btn.classList.contains(cls)) {
+    btn.classList.remove(cls);
+  } else {
+    if (sel.length >= max) sel[0].classList.remove(cls);
+    btn.classList.add(cls);
+  }
+
+  var now = (container || document).querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).length;
+  var badge = document.getElementById(g + '-badge-' + ri);
+  if (badge) {
+    badge.textContent = now + ' / ' + max;
+    badge.className = 'sel-badge ' + (now >= max ? 'done' : (g.indexOf('mah') >= 0 || g.indexOf('hac') >= 0 ? 'amber' : g.indexOf('shol') >= 0 ? 'blue' : 'green'));
+  }
+  if (g === 'por') renderQty(ri);
+  updateDishesField();
+}
+
+// ── Порц сонгосон хоолын тоо оруулах хэсэг ──
+function renderQty(ri) {
+  var container = document.getElementById('por-qty-' + ri);
+  if (!container) return;
+  var panel = document.getElementById('food-panel-' + ri);
+  var selected = panel ? panel.querySelectorAll('.dish-chip[data-g="por"].sel-green') : [];
+  var paxVal = parseInt(document.getElementById('of-pax').value) || 0;
+  var maxPax = paxVal || 9999;
+  var html = '';
+  selected.forEach(function(btn) {
+    var name = btn.textContent.trim();
+    var safeId = 'qty_' + ri + '_' + btn.dataset.ci;
+    var existing = document.getElementById(safeId);
+    var val = existing ? existing.value : '';
+    // Зөвхөн нэг порц хоол сонгосон бол хүний тоогоор автоматаар бөглөнө
+    if (!val && selected.length === 1 && paxVal > 0) val = paxVal;
+    html += '<div class="qty-row">' +
+      '<span class="qty-name">' + name + '</span>' +
+      '<span class="qty-unit">порц:</span>' +
+      '<input type="number" id="' + safeId + '" data-row="' + ri + '" min="1" max="' + maxPax + '" placeholder="тоо" value="' + val + '" oninput="clampQty(this)">' +
+      '</div>';
+  });
+  container.innerHTML = html;
+}
+
+// ── 2 хоолны нийт порц ≤ хүний тоо ──
+function clampQty(inp) {
+  var ri = parseInt(inp.dataset.row);
+  var v = parseInt(inp.value) || 0;
+  if (v < 1) inp.value = 1;
+  checkTotalQty(ri);
+  updateDishesField();
+}
+
+function checkTotalQty(ri) {
+  var maxPax = parseInt(document.getElementById('of-pax').value) || 0;
+  var qtyContainer = document.getElementById('por-qty-' + ri);
+  if (!qtyContainer) return;
+  var inputs = qtyContainer.querySelectorAll('input[type=number]');
+  var total = 0;
+  inputs.forEach(function(inp) { total += parseInt(inp.value) || 0; });
+  var warn = document.getElementById('por-qty-warn-' + ri);
+  if (maxPax > 0 && total > maxPax) {
+    inputs.forEach(function(inp) {
+      var v = parseInt(inp.value) || 0;
+      if (total > maxPax) {
+        var excess = total - maxPax;
+        var newV = Math.max(1, v - excess);
+        total -= (v - newV);
+        inp.value = newV;
+        inp.style.borderColor = 'var(--amber)';
+      } else {
+        inp.style.borderColor = '';
+      }
+    });
+    if (warn) warn.style.display = 'block';
+  } else {
+    inputs.forEach(function(inp) { inp.style.borderColor = ''; });
+    if (warn) warn.style.display = 'none';
+  }
+}
+
+// Хүний тоо өөрчлөгдөхөд шалгах
+document.getElementById('of-pax').addEventListener('input', function() {
+  for (var i = 0; i < svcCount; i++) {
+    var s = document.getElementById('svc-sel-' + i);
+    if (s && s.value === 'por') {
+      checkTotalQty(i);
+      renderQty(i);
+    }
+  }
+  calcPrice();
+});
+
+// ── Сонгосон хоолуудыг hidden field-д хадгалах ──
+function updateDishesField() {
+  var parts = [];
+  // Эхний оруулсан огноог олж, огноогүй мөрүүдэд өвлүүлнэ (нүцгэн цаг гарахаас сэргийлнэ)
+  var firstDate = '';
+  for (var k = 0; k < svcCount; k++) { var dd = document.getElementById('svc-date-' + k); if (dd && dd.value) { firstDate = dd.value; break; } }
+  var lastDate = firstDate;
+  for (var i = 0; i < svcCount; i++) {
+    var sv = document.getElementById('svc-sel-' + i);
+    if (!sv || !sv.value) continue;
+    var opt = SVC_OPTIONS.filter(function(o) { return o.v === sv.value; })[0];
+    if (!opt || !opt.v) continue;
+    var d = document.getElementById('svc-date-' + i);
+    var t = document.getElementById('svc-time-' + i);
+    if (d && d.value) lastDate = d.value;
+    var dv = lastDate;   // мөрд огноо байхгүй бол өмнөх/эхний огноог авна
+    var dtStr = (dv ? ' · ' + dv : '') + (t && t.value ? ' ' + t.value : '');
+    // Багцыг эхэнд нь, дараа нь түүний хоолыг шууд доор нь (ээлжилсэн) → даалгавар/захиалга дээр багц бүрийн хоол тусдаа харагдана
+    parts.push(ORDINALS[i] + ' ' + opt.l + dtStr);
+    var fp = document.getElementById('food-panel-' + i);
+    var type = sv.value;
+    if (type === 'por' && fp) {
+      fp.querySelectorAll('.dish-chip[data-g="por"].sel-green').forEach(function(btn) {
+        var name = btn.textContent.trim();
+        var safeId = 'qty_' + i + '_' + btn.dataset.ci;
+        var qtyEl = document.getElementById(safeId);
+        parts.push(name + (qtyEl && qtyEl.value ? ' (' + qtyEl.value + ' порц)' : ''));
+      });
+    } else if (type === 'buf' && fp) {
+      ['buf-mah','buf-sal','buf-hac','buf-shol'].forEach(function(g) {
+        var cls = GROUP_COLORS[g];
+        fp.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).forEach(function(btn) {
+          parts.push(btn.textContent.trim());
+        });
+      });
+    } else if (type === 'boodog') {
+      parts.push('Хорхог × ' + (boodog_n[i] || 1) + ' ширхэг');
+    } else if (type === 'uguluun' && fp) {
+      var pax = document.getElementById('of-pax').value || '';
+      fp.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(b) {
+        parts.push('Өглөөний цай: ' + b.textContent.trim() + (pax ? ' × ' + pax + ' хүн' : ''));
+      });
+    }
+  }
+  document.getElementById('of-dishes').value = parts.join(' | ');
+}
+
+// Арга хэмжээний төрлөөс хамаарч байршлын талбарыг солих
+var NOMAAD_LOCATIONS = ['NOMAAD SUMMIT','NOMAAD MEADOW','NOMAAD GROVE','NOMAAD MOBILE'];
+function updateLocationField() {
+  var event = document.getElementById('of-event').value;
+  var sel = document.getElementById('of-nomaad-location');
+  var txt = document.getElementById('of-location');
+  if (!sel || !txt) return;
+  if (event === 'Nomaad camp') {
+    sel.style.display = '';
+    txt.style.display = 'none';
+    txt.value = sel.value;   // мэйл/тооцоонд байршлыг дамжуулна
+  } else {
+    sel.style.display = 'none';
+    txt.style.display = '';
+    // өмнө нь Nomaad байршил сонгосон бол цэвэрлэнэ
+    if (NOMAAD_LOCATIONS.indexOf(txt.value) >= 0) txt.value = '';
+  }
+}
+function syncNomaadLocation() {
+  document.getElementById('of-location').value =
+    document.getElementById('of-nomaad-location').value;
+}
+
+// Нэг үйлчилгээний мөрийн сонгосон хоолыг массив болгож буцаана
+function getRowFoods(i, type) {
+  var fp = document.getElementById('food-panel-' + i);
+  var foods = [];
+  if (type === 'por' && fp) {
+    fp.querySelectorAll('.dish-chip[data-g="por"].sel-green').forEach(function(btn) {
+      var name = btn.textContent.trim();
+      var qtyEl = document.getElementById('qty_' + i + '_' + btn.dataset.ci);
+      foods.push(name + (qtyEl && qtyEl.value ? ' (' + qtyEl.value + ' порц)' : ''));
+    });
+  } else if (type === 'buf' && fp) {
+    ['buf-mah','buf-sal','buf-hac','buf-shol'].forEach(function(g) {
+      var cls = GROUP_COLORS[g];
+      fp.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).forEach(function(btn) {
+        foods.push(btn.textContent.trim());
+      });
+    });
+  } else if (type === 'boodog') {
+    foods.push('Хорхог × ' + (boodog_n[i] || 1) + ' ширхэг');
+  } else if (type === 'uguluun' && fp) {
+    var pax = document.getElementById('of-pax').value || '';
+    fp.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(b) {
+      foods.push(b.textContent.trim() + (pax ? ' × ' + pax + ' хүн' : ''));
+    });
+  }
+  return foods;
+}
+
+// Мэйлд цэгцтэй харагдах захиалгын хураангуй (байгууллага, хүн, үйлчилгээ, цаг, хоол)
+function buildOrderSummary() {
+  var org     = document.getElementById('of-org').value.trim();
+  var contact = document.getElementById('of-name').value.trim();
+  var phone   = document.getElementById('of-phone').value.trim();
+  var email   = document.getElementById('of-email').value.trim();
+  var pax     = document.getElementById('of-pax').value;
+  var event   = document.getElementById('of-event').value;
+  var loc     = document.getElementById('of-location').value.trim();
+  var lines = [];
+  lines.push('🏢 Байгууллага: ' + (org || '—'));
+  if (contact) lines.push('🧑 Хариуцагч: ' + contact);
+  if (phone)   lines.push('📞 Холбоо барих утас: ' + phone);
+  if (email)   lines.push('✉️ И-мэйл: ' + email);
+  lines.push('👤 Нийт хүний тоо: ' + (pax || '—'));
+  if (event) lines.push('🎪 Арга хэмжээ: ' + event);
+  if (loc)   lines.push('📍 Арга хэмжээний газар: ' + loc);
+  lines.push('');
+  lines.push('🍽 ҮЙЛЧИЛГЭЭ:');
+  for (var i = 0; i < svcCount; i++) {
+    var sv = document.getElementById('svc-sel-' + i);
+    if (!sv || !sv.value) continue;
+    var opt = SVC_OPTIONS.filter(function(o){ return o.v === sv.value; })[0];
+    if (!opt || !opt.v) continue;
+    var d = document.getElementById('svc-date-' + i);
+    var t = document.getElementById('svc-time-' + i);
+    var dt = (d && d.value ? d.value : '') + (t && t.value ? ' ' + t.value : '');
+    // Үйлчилгээний нэрнээс үнийг хасна: "Порц хоол (₮38,000/хүн)" → "Порц хоол"
+    var svcLabel = opt.l.replace(/\s*\([^)]*₮[^)]*\)/g, '').trim();
+    lines.push('');
+    lines.push((i + 1) + '-р үйлчилгээ: ' + svcLabel + (dt ? '  ⏰ ' + dt : ''));
+    var foods = getRowFoods(i, sv.value);
+    if (foods.length) {
+      foods.forEach(function(f){ lines.push('   • ' + f); });
+    } else {
+      lines.push('   • (хоол сонгоогүй)');
+    }
+  }
+
+  // ── Нэмэлт мэдээлэл ──
+  var drinks  = document.getElementById('of-drinks').value.trim();
+  var nemeltu = document.getElementById('of-nemeltu').value.trim();
+  var note    = document.getElementById('of-note').value.trim();
+  var sd      = document.getElementById('of-start-date').value;
+  var ed      = document.getElementById('of-end-date').value;
+  if (sd || ed) {
+    var range = (sd && ed && sd !== ed) ? (sd + ' → ' + ed) : (sd || ed);
+    lines.push('');
+    lines.push('📅 Хамрах хугацаа: ' + range);
+  }
+  if (drinks)  lines.push('🥤 Уух зүйлс: ' + drinks);
+  if (nemeltu) lines.push('➕ Нэмэлт: ' + nemeltu);
+  if (note)    lines.push('📝 Тусгай хүсэлт: ' + note);
+
+  // ── Төлбөр (Nomaad camp биш үед) ──
+  var isCamp = (event === 'Nomaad camp' || !event);
+  var totalEl = document.getElementById('price-total');
+  var totalRaw = totalEl ? totalEl.textContent.replace('Нийт дүн','').trim() : '';
+  if (!isCamp && totalRaw) {
+    lines.push('');
+    lines.push('💰 Нийт дүн: ' + totalRaw);
+  }
+
+  return lines.join('\n');
+}
+
+
+async function confirmPayment() {
+  var btn = document.getElementById('payment-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Илгээж байна...';
+
+  var amount  = document.getElementById('payment-amount').textContent;
+  var ref     = document.getElementById('payment-ref').textContent;
+  var org     = document.getElementById('of-org').value.trim();
+  var name    = document.getElementById('of-name').value.trim();
+  var phone   = document.getElementById('of-phone').value.trim();
+  var email   = document.getElementById('of-email').value.trim();
+  var pax     = document.getElementById('of-pax').value;
+  var loc     = document.getElementById('of-location').value.trim();
+  var evnt    = document.getElementById('of-event').value;
+  var endDate = document.getElementById('of-end-date').value;
+  var dishes  = document.getElementById('of-dishes').value;
+  var drinks  = document.getElementById('of-drinks').value;
+  var nemeltu = document.getElementById('of-nemeltu').value;
+  var note    = document.getElementById('of-note').value.trim();
+  var startDate = document.getElementById('of-start-date').value ||
+                  (document.getElementById('svc-date-0') || {}).value || '';
+  var startTime = (document.getElementById('svc-time-0') || {}).value || '';
+  var totalEl   = document.getElementById('price-total');
+  var totalText = totalEl ? (totalEl.textContent.match(/₮[\d,]+/) || [''])[0] : '';
+
+  try {
+    var fd = new FormData();
+    fd.append('access_key', 'e2c4a089-97e4-4630-a616-a6eae9fc13ea');
+    fd.append('subject', '💳 NOMAAD — Төлбөр шилжүүлсэн мэдэгдэл');
+    fd.append('from_name', 'NOMAAD Catering Website');
+    fd.append('Мэдэгдэл',          '⚠️ Захиалагч урьдчилгаа төлбөр шилжүүлсэн гэж мэдэгдлээ.');
+    fd.append('Байгууллага',        org);
+    fd.append('Нэр',                name);
+    fd.append('Утас',               phone);
+    if (email)    fd.append('Email',             email);
+    fd.append('Hunii_too',          pax + ' хүн');
+    if (loc)      fd.append('Gazar',             loc);
+    if (evnt)     fd.append('Arga_hemjee',        evnt);
+    if (startDate) fd.append('Ehleh_ognoo',      startDate + (startTime ? ' ' + startTime : ''));
+    if (endDate)  fd.append('Duusah_ognoo',       endDate);
+    if (dishes)   fd.append('Uychilgee',          dishes);
+    if (drinks)   fd.append('Uuh_zuils',           drinks);
+    if (nemeltu)  fd.append('Nemeltu',            nemeltu);
+    if (note)     fd.append('Temdegleg',          note);
+    fd.append('Shiljuulsen_dun',    amount);
+    if (totalText) fd.append('Niit_dun',          totalText);
+    fd.append('Guilgeenii_utga',    ref);
+    await fetch('https://api.web3forms.com/submit', {
+      method: 'POST', body: fd, headers: { 'Accept': 'application/json' }
+    });
+  } catch(e) {}
+  btn.style.display = 'none';
+  document.getElementById('payment-confirm-msg').style.display = 'block';
+}
+
+async function handleSubmit(e) {
+  e.preventDefault();
+
+  // Validate: at least one service selected
+  var hasService = false;
+  for (var _vi = 0; _vi < svcCount; _vi++) {
+    var _vs = document.getElementById('svc-sel-' + _vi);
+    if (_vs && _vs.value) { hasService = true; break; }
+  }
+  if (!hasService) {
+    alert('Үйлчилгээний төрлийг сонгоно уу.');
+    return;
+  }
+  // Validate: pax > 0 for non-boodog services
+  var hasPaxService = false;
+  for (var _pi = 0; _pi < svcCount; _pi++) {
+    var _ps = document.getElementById('svc-sel-' + _pi);
+    if (_ps && _ps.value && _ps.value !== 'boodog') { hasPaxService = true; break; }
+  }
+  var paxVal = parseInt(document.getElementById('of-pax').value) || 0;
+  if (hasPaxService && paxVal < 1) {
+    alert('Хүний тоог оруулна уу.');
+    return;
+  }
+
+  const btn  = document.getElementById('submit-btn');
+  const form = document.getElementById('order-form');
+  btn.disabled = true;
+  btn.textContent = '🔍 Огноо шалгаж байна...';
+
+  // Submit-ийн өмнө шинэ мэдээлэл татаж давхцал шалгах
+  refreshBookedDates(function() {
+    // Дахин шалгах (warning div-уудыг refresh хийнэ)
+    for (var _ri = 0; _ri < svcCount; _ri++) {
+      var _rd = document.getElementById('svc-date-' + _ri);
+      if (_rd) _runConflictCheck(_ri);
+    }
+
+    var conflictMsgs = [];
+    for (var _ci = 0; _ci < svcCount; _ci++) {
+      var _cw = document.getElementById('date-warn-' + _ci);
+      var _cd = document.getElementById('svc-date-' + _ci);
+      if (_cw && _cw.style.display !== 'none' && _cd && _cd.value) {
+        conflictMsgs.push((_ci+1) + '-р үйлчилгээ: ' + _cd.value);
+      }
+    }
+    if (conflictMsgs.length) {
+      var ok = confirm('⚠️ Огноо/цаг давхцаж байна:\n' + conflictMsgs.join('\n') + '\n\nҮргэлжлүүлэх үү?');
+      if (!ok) {
+        btn.disabled = false;
+        btn.textContent = '✉️ Захиалга илгээх';
+        return;
+      }
+    }
+    _doSubmit(btn, form);
+  });
+}
+
+async function _doSubmit(btn, form) {
+
+  btn.disabled    = true;
+  btn.textContent = '⏳ Илгээж байна...';
+
+  var _startDate = document.getElementById('of-start-date').value ||
+                   (document.getElementById('svc-date-0') || {}).value || '';
+  var _startTime = (document.getElementById('svc-time-0') || {}).value || '';
+  var _startStr  = _startDate + (_startTime ? ' ' + _startTime : '');
+  var _endDate   = document.getElementById('of-end-date').value || '';
+  var eventVal   = document.getElementById('of-event').value;
+  var isNomaadCamp = eventVal === 'Nomaad camp' || !eventVal;
+  var _totalEl   = document.getElementById('price-total');
+  var totalRaw   = _totalEl ? _totalEl.textContent.replace('Нийт дүн','').trim() : '';
+  var _totalNum  = 0;
+  var _halfStr   = '';
+  if (totalRaw) {
+    var _tm = totalRaw.match(/[\d,]+/);
+    if (_tm) { _totalNum = parseInt(_tm[0].replace(/,/g,'')); _halfStr = '₮' + Math.round(_totalNum/2).toLocaleString(); }
+  }
+
+  const payload = {
+    type:          'order',
+    байгууллага:   document.getElementById('of-org').value.trim(),
+    нэр:           document.getElementById('of-name').value.trim(),
+    утас:          document.getElementById('of-phone').value.trim(),
+    email:         document.getElementById('of-email').value.trim(),
+    хүн:           document.getElementById('of-pax').value,
+    арга_хэмжээ:  eventVal,
+    газар:         document.getElementById('of-location').value.trim(),
+    эхлэх_огноо:  _startStr,
+    дуусах_өдөр:  _endDate,
+    үйлчилгээ:    document.getElementById('of-dishes').value,
+    уух_зүйлс:   document.getElementById('of-drinks').value,
+    нэмэлт:       document.getElementById('of-nemeltu').value,
+    тэмдэглэл:    document.getElementById('of-note').value.trim(),
+    нийт_дүн:     isNomaadCamp ? '' : (totalRaw || ''),
+    урьдчилгаа:   isNomaadCamp ? '' : _halfStr,
+    төлөв:        isNomaadCamp ? 'Баталгаажсан' : 'Шинэ захиалга',
+  };
+
+  try {
+    // 1. Google Sheets-д хадгалах
+    await fetch(SHEETS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    }).catch(() => {});
+
+    // 2. Web3Forms → имэйл илгээх
+    const fd = new FormData(form);
+    // Мэйлийн гол хэсэгт цэгцтэй хураангуй (байгууллага, хүн, үйлчилгээ, цаг, хоол)
+    fd.append('message', buildOrderSummary());
+    fd.append('Zahialgiin_tuluw', isNomaadCamp ? 'Баталгаажсан — Nomaad camp (урьдчилгаа төлөгдсөн)' : 'Шинэ захиалга — баталгаажаагүй');
+    if (_startStr) fd.append('Ehleh_ognoo_tsag', _startStr);
+    if (_endDate)  fd.append('Duusah_ognoo', _endDate);
+    var _drinks = document.getElementById('of-drinks').value;
+    if (_drinks) fd.append('Undaa', _drinks);
+    if (isNomaadCamp) {
+      fd.append('Niit_dun', 'Nomaad camp — үнэ тусад нь тооцно');
+    } else if (totalRaw) {
+      fd.append('Niit_dun', totalRaw);
+      if (_halfStr) fd.append('Urьdchilga_50', _halfStr + ' (нийт дүнгийн 50%)');
+    } else {
+      fd.append('Niit_dun', 'Тооцоогүй (хүний тоо оруулаагүй)');
+    }
+    const res = await fetch(form.action, {
+      method:  'POST',
+      body:    fd,
+      headers: { 'Accept': 'application/json' }
+    });
+
+    form.style.display = 'none';
+    document.getElementById('order-sub').style.display = 'none';
+    document.getElementById('order-success').style.display = 'block';
+    showOrderSummary(isNomaadCamp);
+    if (!isNomaadCamp) {
+      var payBox = document.getElementById('payment-box');
+      payBox.style.display = 'block';
+      // Нийт дүнгийн 50% тооцох
+      var totalEl2 = document.getElementById('price-total');
+      var totalText = totalEl2 ? totalEl2.textContent : '';
+      var match = totalText.match(/[\d,]+/);
+      if (match) {
+        var total = parseInt(match[0].replace(/,/g,''));
+        var half = Math.round(total / 2);
+        document.getElementById('payment-amount').textContent = '₮' + half.toLocaleString();
+      }
+      var name = document.getElementById('of-name').value.trim();
+      document.getElementById('payment-ref').textContent = 'NOMAAD ' + (name || 'захиалга');
+    }
+  } catch(err) {
+    form.style.display = 'none';
+    document.getElementById('order-sub').style.display = 'none';
+    document.getElementById('order-success').style.display = 'block';
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = '✉️ Захиалга илгээх';
+  }
+}
+
+function showOrderSummary(isNomaadCamp) {
+  var org    = document.getElementById('of-org').value.trim();
+  var name   = document.getElementById('of-name').value.trim();
+  var phone  = document.getElementById('of-phone').value.trim();
+  var email  = document.getElementById('of-email').value.trim();
+  var pax    = document.getElementById('of-pax').value;
+  var loc    = document.getElementById('of-location').value.trim();
+  var evnt   = document.getElementById('of-event').value;
+  var note   = document.getElementById('of-note').value.trim();
+  var nemeltu = document.getElementById('of-nemeltu').value;
+  var drinks  = document.getElementById('of-drinks').value;
+
+  function fmtDate(d) {
+    if (!d) return '';
+    var p = d.split('-');
+    return p[1].replace(/^0/,'') + '-р сарын ' + p[2].replace(/^0/,'');
+  }
+  var sd = document.getElementById('of-start-date').value;
+  var ed = document.getElementById('of-end-date').value;
+  var dateRange = '';
+  if (sd && ed && sd !== ed) dateRange = fmtDate(sd) + '-наас ' + fmtDate(ed) + ' хүртэл';
+  else if (sd && !ed)        dateRange = fmtDate(sd) + '-ноос эхлэх';
+  else if (!sd && ed)        dateRange = fmtDate(ed) + '-нд дуусах';
+  else if (sd)               dateRange = fmtDate(sd);
+
+  function sumRow(label, val) {
+    if (!val) return '';
+    return '<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 12px;background:var(--bg);border-radius:8px;font-size:13px">' +
+      '<span style="color:var(--muted);font-weight:600;flex-shrink:0">' + label + '</span>' +
+      '<span style="font-weight:600;text-align:right">' + val + '</span>' +
+    '</div>';
+  }
+
+  var svcLines = '';
+  for (var i = 0; i < svcCount; i++) {
+    var s = document.getElementById('svc-sel-' + i);
+    var d = document.getElementById('svc-date-' + i);
+    var t = document.getElementById('svc-time-' + i);
+    if (!s || !s.value) continue;
+    var opt = SVC_OPTIONS.filter(function(o){ return o.v === s.value; })[0];
+    if (!opt || !opt.v) continue;
+    var dt = (d && d.value ? d.value : '') + (t && t.value ? ' ' + t.value : '');
+    svcLines += sumRow(ORDINALS[i] + ' үйлчилгээ', opt.l + (dt ? ' · ' + dt : ''));
+
+    // Тухайн үйлчилгээний сонгосон хоолыг шууд доор нь харуулах
+    (function(ri, dtype) {
+      var fp = document.getElementById('food-panel-' + ri);
+      var dishBits = [];
+      if (dtype === 'por' && fp) {
+        fp.querySelectorAll('.dish-chip[data-g="por"].sel-green').forEach(function(btn) {
+          var nm = btn.textContent.trim();
+          var qtyEl = document.getElementById('qty_' + ri + '_' + btn.dataset.ci);
+          dishBits.push(nm + (qtyEl && qtyEl.value ? ' (' + qtyEl.value + ' порц)' : ''));
+        });
+      } else if (dtype === 'buf' && fp) {
+        ['buf-mah','buf-sal','buf-hac','buf-shol'].forEach(function(g) {
+          var cls = GROUP_COLORS[g];
+          fp.querySelectorAll('.dish-chip[data-g="'+g+'"].'+cls).forEach(function(btn) {
+            dishBits.push(btn.textContent.trim());
+          });
+        });
+      } else if (dtype === 'boodog') {
+        dishBits.push('Хорхог × ' + (boodog_n[ri] || 1) + ' ширхэг');
+      } else if (dtype === 'uguluun' && fp) {
+        fp.querySelectorAll('.dish-chip[data-g="uguluun"].sel-green').forEach(function(btn) {
+          dishBits.push(btn.textContent.trim());
+        });
+      }
+      if (dishBits.length) {
+        svcLines += '<div style="padding:5px 12px 8px 20px;font-size:12px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-top:none;border-radius:0 0 8px 8px;margin-top:-2px;line-height:1.7">🍽 ' + dishBits.join('&nbsp;·&nbsp;') + '</div>';
+      }
+    })(i, s.value);
+  }
+
+  var totalText = '';
+  var halfText = '';
+  if (!isNomaadCamp) {
+    var totalEl = document.getElementById('price-total');
+    if (totalEl) {
+      var m = totalEl.textContent.match(/[\d,]+/);
+      if (m) {
+        var tot = parseInt(m[0].replace(/,/g,''));
+        totalText = '₮' + tot.toLocaleString();
+        halfText  = '₮' + Math.round(tot/2).toLocaleString();
+      }
+    }
+  }
+
+  var statusBlock = isNomaadCamp
+    ? '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#e8f5e9;border:1.5px solid #43a047;border-radius:10px;margin-bottom:10px">' +
+        '<span style="font-size:18px">✅</span>' +
+        '<div><div style="font-size:13px;font-weight:700;color:#2e7d32">Захиалга баталгаажсан</div>' +
+        '<div style="font-size:11.5px;color:#388e3c;margin-top:2px">Nomaad camp — урьдчилгаа төлбөр бүрэн төлөгдсөн</div></div>' +
+      '</div>'
+    : '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FFF8E1;border:1.5px solid #F9A825;border-radius:10px;margin-bottom:10px">' +
+        '<span style="font-size:18px">⏳</span>' +
+        '<div><div style="font-size:13px;font-weight:700;color:#7a5800">Захиалга хүлээгдэж байна</div>' +
+        '<div style="font-size:11.5px;color:#a07000;margin-top:2px">Бид 24 цагийн дотор баталгаажуулж, тантай холбогдоно</div></div>' +
+      '</div>';
+
+  var priceBlock = '';
+  if (!isNomaadCamp && totalText) {
+    priceBlock = '<div style="border-top:1px solid var(--line);margin-top:8px;padding-top:10px;display:flex;flex-direction:column;gap:6px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:10px">' +
+        '<span style="font-size:13px;font-weight:700;color:var(--accent)">Нийт дүн</span>' +
+        '<span style="font-size:17px;font-weight:800;color:var(--accent)">' + totalText + '</span>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--amber-soft);border:1.5px solid var(--amber);border-radius:10px">' +
+        '<span style="font-size:13px;font-weight:700;color:var(--amber)">Урьдчилгаа 50%</span>' +
+        '<span style="font-size:15px;font-weight:800;color:var(--amber)">' + halfText + '</span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  var html = '<div style="background:var(--surface);border:1.5px solid var(--line);border-radius:var(--radius);padding:20px;margin-top:4px">' +
+    '<div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">📋 Захиалгын дэлгэрэнгүй</div>' +
+    statusBlock +
+    '<div style="display:flex;flex-direction:column;gap:6px">' +
+    sumRow('Байгууллага', org) +
+    sumRow('Холбоо барих', name + (phone ? ' · ' + phone : '')) +
+    (email ? sumRow('И-мэйл', email) : '') +
+    sumRow('Хүний тоо', pax ? pax + ' хүн' : '') +
+    (loc ? sumRow('Газар', loc) : '') +
+    (evnt ? sumRow('Арга хэмжээ', evnt) : '') +
+    (dateRange ? sumRow('Хамрах хугацаа', dateRange) : '') +
+    svcLines +
+    (drinks  ? sumRow('Уух зүйлс', drinks) : '') +
+    (nemeltu ? sumRow('Нэмэлт хоол', nemeltu) : '') +
+    (note ? sumRow('Тусгай хүсэлт', note) : '') +
+    '</div>' +
+    priceBlock +
+    '</div>';
+
+  var sumDiv = document.getElementById('order-summary');
+  if (sumDiv) { sumDiv.innerHTML = html; sumDiv.style.display = 'block'; }
+}
+
+// Хуудас ачаалахад 1 мөр харуулах
+renderSvcRows();
+loadBookedDates();
+// Reset pax to empty on load
+document.getElementById('of-pax').value = '';
+</script>
+</body>
+</html>
