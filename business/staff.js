@@ -174,10 +174,10 @@ function renderStockPage() {
   var rows = Object.keys(names).filter(function (n) { return !isNonGoods(n) && (!q || n.toLowerCase().indexOf(q) >= 0); }).sort().map(function (n) {
     var s = (stock && stock[n]) || { shop: 0, wh: 0 }, tot = Math.round(((s.shop || 0) + (s.wh || 0)) * 1000) / 1000, pd = pend[n] || 0;
     var cls = pd > tot ? ' class="neg"' : '';
-    return '<tr' + cls + '><td>' + esc(n) + '</td><td class="num">' + (s.shop || 0) + '</td><td class="num">' + (s.wh || 0) + '</td><td class="num"><b>' + tot + '</b></td><td class="num">' + (pd || '') + '</td></tr>';
+    return '<tr' + cls + '><td>' + esc(n) + '</td><td class="num">' + (s.shop || 0) + '</td><td class="num">' + (s.wh || 0) + '</td><td class="num"><b>' + tot + '</b></td><td class="num">' + (pd || '') + '</td><td class="num"><b>' + Math.round((tot - pd) * 1000) / 1000 + '</b></td></tr>';
   });
   el.innerHTML = stock || Object.keys(pend).length
-    ? '<table class="rep-t"><tr><th>Бараа</th><th class="num">Дэлгүүр</th><th class="num">Агуулах</th><th class="num">Нийт</th><th class="num">Захиалгад</th></tr>' + rows.join('') + '</table>'
+    ? '<table class="rep-t"><tr><th>Бараа</th><th class="num">Дэлгүүр</th><th class="num">Агуулах</th><th class="num">Нийт</th><th class="num">Захиалгад</th><th class="num">Боломжит</th></tr>' + rows.join('') + '</table>'
     : '<p class="muted">Үлдэгдэл бүртгэгдээгүй байна.</p>';
 }
 // ── Бараа ──

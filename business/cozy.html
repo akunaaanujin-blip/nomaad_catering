@@ -49,6 +49,14 @@
       <button class="big close" onclick="openClose()"><span></span>Өдрийн касс хаах</button>
     </div>
     <div class="card">
+      <h2>Өнөөдрийн дүн</h2>
+      <div class="sum">
+        <div><span class="muted">Борлуулалт</span><b class="g" id="sumSales">₮0</b></div>
+        <div><span class="muted">Зарлага</span><b class="r" id="sumExp">₮0</b></div>
+        <div><span class="muted">Цэвэр</span><b id="sumNet">₮0</b></div>
+      </div>
+    </div>
+    <div class="card">
       <div class="ord-bar"><button class="btn sm" onclick="openSale('dlv')">＋ Захиалга</button><button class="btn sm ghost2" onclick="openBuuhia()">Буухиа Excel</button><button class="btn sm ghost2 lbl-conn" onclick="niimOn()?niimDisconnect():niimConnect()">Принтер холбох</button><button class="link" onclick="loadOrders()">Шинэчлэх</button></div>
       <div class="tabs ord-tabs" id="orderTabs" style="margin-top:8px"></div>
       <input id="ordSearch" type="search" placeholder="Утас, нэр, хаяг, бараагаар хайх…" oninput="ordQ=this.value;renderOrders()" style="margin-top:8px">
@@ -65,14 +73,6 @@
     <div class="pending" id="pending"></div>
     <div class="pending" id="ebWarn"></div>
 
-    <div class="card">
-      <h2>Өнөөдрийн дүн</h2>
-      <div class="sum">
-        <div><span class="muted">Борлуулалт</span><b class="g" id="sumSales">₮0</b></div>
-        <div><span class="muted">Зарлага</span><b class="r" id="sumExp">₮0</b></div>
-        <div><span class="muted">Цэвэр</span><b id="sumNet">₮0</b></div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -292,7 +292,7 @@
 <script src="common.js?v=20261022o"></script>
 <script>var BIZ_KEY = 'cozy';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261022p"></script>
+<script src="staff.js?v=20261022q"></script>
 <script src="ebarimt.js?v=20261022o"></script>
 <script src="orders.js?v=20261022p"></script>
 <script src="label.js?v=20261022o"></script>
