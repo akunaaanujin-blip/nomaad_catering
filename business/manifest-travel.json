@@ -1,0 +1,29 @@
+{
+  "id": "travel.html",
+  "name": "NOMAAD аяллын дэлгүүр",
+  "short_name": "Аялал",
+  "lang": "mn",
+  "start_url": "travel.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F8F9FA",
+  "theme_color": "#1E4D3B",
+  "icons": [
+    {
+      "src": "icons/travel-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/travel-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/travel-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

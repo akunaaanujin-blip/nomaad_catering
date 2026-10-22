@@ -1,0 +1,29 @@
+{
+  "id": "meat.html",
+  "name": "Махны дэлгүүр",
+  "short_name": "Мах",
+  "lang": "mn",
+  "start_url": "meat.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F8F9FA",
+  "theme_color": "#8B1E2D",
+  "icons": [
+    {
+      "src": "icons/meat-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/meat-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/meat-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "id": "cozy.html",
+  "name": "Cozy Home Ulaanbaatar",
+  "short_name": "Cozy",
+  "lang": "mn",
+  "start_url": "cozy.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F8F9FA",
+  "theme_color": "#7A5A2E",
+  "icons": [
+    {
+      "src": "icons/cozy-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/cozy-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/cozy-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

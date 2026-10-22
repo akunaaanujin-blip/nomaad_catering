@@ -1,0 +1,29 @@
+{
+  "id": "admin.html",
+  "name": "Удирдлагын самбар",
+  "short_name": "Удирдлага",
+  "lang": "mn",
+  "start_url": "admin.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F8F9FA",
+  "theme_color": "#1E3A5F",
+  "icons": [
+    {
+      "src": "icons/admin-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/admin-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/admin-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NOMAAD Бизнесүүд</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/main-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/main-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="NOMAAD">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20261018c">
 <style>
@@ -24,5 +30,6 @@
   <a class="pick" href="register.html" style="--c:#334155"><span class="mono" style="background:#334155">+</span><div><b>Ажилтан бүртгүүлэх</b><small>Шинэ ажилтан</small></div></a>
   <a class="pick" href="admin.html" style="--c:#1E3A5F"><span class="mono" style="background:#1E3A5F">У</span><div><b>Удирдлагын самбар</b><small>Зөвхөн удирдагч</small></div></a>
 </div>
+<script>if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});</script>
 </body>
 </html>
