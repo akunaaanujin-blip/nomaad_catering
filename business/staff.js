@@ -459,18 +459,16 @@ function renderCart() {
   if (!sale.cart.length) {
     el.innerHTML = '<li class="pos-empty">Сагс хоосон<small>Бараан дээр дарж нэмнэ үү</small></li>';
   } else {
+    // Нэг мөр = нэг бараа: нэр | − тоо ＋ | үнэ | дүн | ✕ — бүх сагс нэг дор харагдана
     el.innerHTML = sale.cart.map(function (l, i) {
       var lock = !isManager && l.listPrice > 0;   // худалдагч жагсаалтын үнийг сольж чадахгүй
-      return '<li class="cart-line"><div class="cl-name">' + esc(l.name) +
-        '<button class="cl-del" onclick="removeLine(' + i + ')" aria-label="Хасах">✕</button></div>' +
-        '<div class="cl-row">' +
+      return '<li class="cart-line cl1"><span class="cl-name">' + esc(l.name) + '</span>' +
         '<span class="cl-qty"><button onclick="stepQty(' + i + ',-1)">−</button>' +
         '<input type="number" inputmode="decimal" step="any" min="0" value="' + l.qty + '" oninput="setLine(' + i + ',\'qty\',this.value)">' +
-        '<button onclick="stepQty(' + i + ',1)">＋</button><small>' + esc(l.unit) + '</small></span>' +
-        '<span class="cl-x">×</span>' +
-        '<input class="cl-price" type="number" inputmode="numeric" min="0" value="' + l.price + '"' + (lock ? ' readonly title="Үнийг менежер л солино"' : '') +
-        ' oninput="setLine(' + i + ',\'price\',this.value)">' +
-        '<b class="cl-sum" id="clSum' + i + '">' + fmt((Number(l.qty) || 0) * (Number(l.price) || 0)) + '</b></div></li>';
+        '<button onclick="stepQty(' + i + ',1)">＋</button></span>' +
+        '<input class="cl-price" type="number" inputmode="numeric" min="0" value="' + l.price + '"' + (lock ? ' readonly title="Үнийг менежер л солино"' : '') + ' oninput="setLine(' + i + ',\'price\',this.value)">' +
+        '<b class="cl-sum" id="clSum' + i + '">' + fmt((Number(l.qty) || 0) * (Number(l.price) || 0)) + '</b>' +
+        '<button class="cl-del" onclick="removeLine(' + i + ')" aria-label="Хасах">✕</button></li>';
     }).join('');
   }
   calcSale();
@@ -587,6 +585,7 @@ function calcSale() {
   if ($('saleSplitInfo')) $('saleSplitInfo').textContent = sp && sp.err ? sp.err : '';
   var n = sale.cart.reduce(function (a, l) { return a + (Number(l.qty) || 0); }, 0);
   $('saleCount').textContent = sale.cart.length ? sale.cart.length + ' төрөл · ' + Math.round(n * 1000) / 1000 + ' ш' : '';
+  var sm = $('saleItems'); if (sm) sm.textContent = sale.cart.map(function (l) { return (l.qty > 1 ? l.qty + '× ' : '') + l.name; }).join(', ');
   var lbl = sale.mode === 'dlv' ? 'Захиалга бүртгэх' : 'Төлбөр авах';
   $('saleSubmit').textContent = sale.cart.length ? lbl + ' · ' + fmt(cartTotal()) : lbl;
   if (sub && sale.mode === 'dlv' && dlvFee()) sub.innerHTML += '<span>Хүргэлт +' + fmt(dlvFee()) + '</span>';

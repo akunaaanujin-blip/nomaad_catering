@@ -1142,3 +1142,15 @@ body:not(.bz-admin) .card{box-shadow:0 1px 3px rgba(15,23,42,.06)}
 .pos-foot{position:sticky;bottom:0;margin-top:auto}
 .pos-dlv{overflow:visible}
 .bu-date{display:flex;align-items:center;gap:8px;margin:0;font-weight:700}.bu-date input{width:auto;padding:6px 10px}
+/* ── Компакт сагс: нэг бараа = нэг мөр ── */
+.pos-cart .cart-line.cl1{display:grid!important;grid-template-columns:minmax(0,1fr) auto 84px auto 24px;align-items:center;gap:6px;padding:8px 0}
+.cl1 .cl-name{font-size:13.5px;font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cl1 .cl-qty{display:flex;align-items:center;gap:2px}
+.cl1 .cl-qty button{width:26px;height:28px;font-size:15px;border-radius:7px}
+.cl1 .cl-qty input{width:42px;padding:4px 2px;font-size:14px;text-align:center}
+.cl1 .cl-price{width:84px;padding:5px 6px;font-size:13.5px;text-align:right}
+.cl1 .cl-sum{min-width:70px;text-align:right;font-size:14px;margin:0}
+.cl1 .cl-del{border:0;background:none;color:#9CA3AF;font-size:15px;cursor:pointer;padding:0}
+.pos-items{font-size:12.5px;color:#4B5563;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pos-items:empty{display:none}
+@media(max-width:820px){.pos-cart .cart-line.cl1{grid-template-columns:minmax(0,1fr) auto 70px 64px 22px}.cl1 .cl-price{width:70px}.cl1 .cl-sum{min-width:0}}
