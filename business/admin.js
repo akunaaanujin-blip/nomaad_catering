@@ -178,10 +178,10 @@ function render() {
   else if (state.view === 'cal') $('view').innerHTML = calView();
   else if (state.view === 'docs') $('view').innerHTML = pageHead('Маягт, загвар', '<button class="b-btn primary" onclick="editDoc()">+ Шинэ маягт</button>') + docsModule();
   else if (state.view === 'staff') $('view').innerHTML = staffPage();
-  else if (state.view === 'review') { $('view').innerHTML = reviewView(); setTimeout(rvCharts, 0); }
   else if (state.view === 'company') $('view').innerHTML = companyView();
   else $('view').innerHTML = companiesView();
   if (window.__dash) setTimeout(drawDash, 0);   // хянах самбарын график
+  if (state.view === 'company' && state.module === 'review') setTimeout(rvCharts, 0);
   var inCo = state.view === 'company' && BUSINESSES[state.biz];
   document.querySelector('.bz-head').style.boxShadow = inCo ? 'inset 0 2px 0 ' + BUSINESSES[state.biz].color : '';
   navTrack();
@@ -235,7 +235,7 @@ var ICONS = {
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4"/><circle cx="12" cy="17" r=".6"/>',
 };
 function ico(k) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + ICONS[k] + '</svg>'; }
-var MODULES = [['sales', 'Борлуулалт'], ['products', 'Бараа материал'], ['finance', 'Санхүү'], ['reports', 'Бүх тайлан']];   // Ажилчид, Маягт — нийтлэг цэс (зүүн зурвас)   // Ажилчид — нэг нийтлэг цэс (зүүн зурвас)
+var MODULES = [['review', 'Удирдлагын тойм'], ['sales', 'Борлуулалт'], ['products', 'Бараа материал'], ['finance', 'Санхүү'], ['reports', 'Бүх тайлан']];   // Ажилчид, Маягт — нийтлэг цэс (зүүн зурвас)   // Ажилчид — нэг нийтлэг цэс (зүүн зурвас)
 function railHtml(pend) {
   var item = function (on, onclick, icon, label, extra) {
     return '<button class="' + (on ? 'on' : '') + '" onclick="' + onclick + '" title="' + label + '">' + ico(icon) + '<span>' + label + '</span>' + (extra || '') + '</button>';
@@ -247,8 +247,6 @@ function railHtml(pend) {
     (inCo && BUSINESSES[state.biz] ? bizModules(state.biz).map(function (m) { return item(state.module === m[0], "openModule('" + m[0] + "')", m[0], m[1]); }).join('') : '') +
     (inCo ? '' :   // компанийн дотор зөвхөн компанийн цэс; удирдлагын цэс нь «Компаниуд» түвшинд
     '<div class="rail-sep"></div>' +
-    item(state.view === 'review', "go('review')", 'review', 'Удирдлагын тойм') +
-    (isOwner() ? item(inCo && state.biz === 'mgmt', 'openMgmt()', 'mgmt', 'Удирдлага') : '') +
     item(state.view === 'staff', "state.staffBiz=state.view==='company'?state.biz:state.staffBiz;go('staff')", 'people', 'Ажилчид', pend && isOwner() ? '<i class="dot">' + pend + '</i>' : '') +
     (isOwner() ? item(state.view === 'tax', 'openTax()', 'tax', 'Татвар, тайлан') + item(state.view === 'docs', "go('docs')", 'docs', 'Маягт') : '') +
     item(state.view === 'cal', 'openCal()', 'cal', 'Календарь', reminders.some(function (r) { return r.status === 'Хүлээгдэж' && r.date <= todayStr(); }) ? '<i class="dot">!</i>' : '') +
@@ -274,7 +272,7 @@ function subnavHtml() {
       return '<option value="' + k + '">' + esc(BUSINESSES[k].name) + '</option>'; }).join('') + '</select>' : '') + '</div></div>' +
     '<div class="sub-title">' + MODULES.filter(function (m) { return m[0] === mod; })[0][1] + '</div>';
   if (!MENU[mod]) {
-    var one = mod === 'staff' ? [['Ажилчид', 'Ажилчид, цалин']] : mod === 'docs' ? [['docs', 'Маягт, загвар']] : [['reports', 'Бүх тайлан']];
+    var one = mod === 'staff' ? [['Ажилчид', 'Ажилчид, цалин']] : mod === 'review' ? [['review', 'Сарын тойм']] : mod === 'docs' ? [['docs', 'Маягт, загвар']] : [['reports', 'Бүх тайлан']];
     return head + '<ul class="sub-list"><li><button class="on">' + one[0][1] + '</button></li></ul>' + moduleSwitch();
   }
   return head + MENU[mod].map(function (g) {
@@ -304,7 +302,6 @@ function toggleNav(on) { $('main').classList.toggle('nav-open', !!on); }
 function crumbHtml() {
   if (state.view === 'companies') return '<b>Миний компаниуд</b>';
   if (state.view === 'staff') return '<b>Ажилчид</b>';
-  if (state.view === 'review') return '<b>Удирдлагын тойм</b>';
   if (state.view === 'cal') return '<b>Календарь</b>';
   if (state.view === 'docs') return '<b>Маягт, загвар</b>';
   if (state.view === 'tax') return '<span>' + esc(ENTITIES[taxState.ent].name) + '</span><i>/</i><b>Татвар, тайлан</b>';
@@ -362,6 +359,7 @@ function companyView() {
     state.sub[mod] = first[0] || MENU[mod][0][1][0];
   }
   if (mod === 'staff') return pageHead('Ажилчид', '') + staffView(state.biz);
+  if (mod === 'review') return reviewView();
   if (mod === 'reports') return pageHead('Бүх тайлан', '<button class="b-btn primary" onclick="exportAll()">Бүх тайланг Excel-ээр татах</button>', true) + reportsModule();
   var sub = state.sub[mod], noPeriod = /^(accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary|months|payroll|debts|acct|setup|loans|banklink|po|assets|customers|digest)$/.test(sub);
   var acts = /^(overview|dash|stock|close|bank|opening|lock|simple|monthly|glossary|acct|setup|loans|banklink|po|assets|digest)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';

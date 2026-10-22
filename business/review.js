@@ -91,14 +91,13 @@ function rvTable(head, rows, empty) {
 function rvBizTag(b) { return RV.biz === 'all' && BUSINESSES[b] ? ' <small class="muted">· ' + esc(BUSINESSES[b].name) + '</small>' : ''; }
 
 function reviewView() {
-  if (RV.biz !== 'all' && KEYS.indexOf(RV.biz) < 0) RV.biz = 'all';
+  RV.biz = state.biz;   // компанийн дотор — тухайн компанийн тойм
   var r = rvRanges(RV.mo), A = rvCalc(r.f, r.t), P = rvCalc(r.pf, r.pt), N = rvNotes(), td = todayStr();
   var days = Math.round((new Date(r.t) - new Date(r.f)) / 864e5) + 1, pDays = Math.round((new Date(r.pt) - new Date(r.pf)) / 864e5) + 1;
   var months = []; for (var i = 0, m = td.slice(0, 7); i < 12; i++, m = rvPrevMo(m)) months.push(m);
   var tools = '<div class="rv-tools no-print"><label>Сар<select onchange="RV.mo=this.value;render()">' + months.map(function (x) { return '<option' + (x === RV.mo ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></label>' +
-    (KEYS.length > 1 ? '<label>Дэлгүүр<select onchange="RV.biz=this.value;render()"><option value="all">Бүх дэлгүүр</option>' + KEYS.map(function (k) { return '<option value="' + k + '"' + (RV.biz === k ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('') + '</select></label>' : '') +
     '<div class="pg-act"><button class="b-btn primary" onclick="rvPdf()">PDF татах</button><button class="b-btn" onclick="window.print()">Хэвлэх</button></div></div>';
-  var scope = RV.biz === 'all' ? 'Бүх дэлгүүр' : BUSINESSES[RV.biz].name;
+  var scope = BUSINESSES[RV.biz].name;
   var head = '<div class="rv-head"><h1>Удирдлагын тойм · ' + RV.mo + '</h1><p class="muted">' + esc(scope) + ' · ' + r.f + ' – ' + r.t +
     ' · харьцуулалт: ' + (r.partial ? 'өмнөх сарын мөн үе (' + r.pf + ' – ' + r.pt + ')' : 'өмнөх сар (' + rvPrevMo(RV.mo) + ')') + '</p></div>';
 
