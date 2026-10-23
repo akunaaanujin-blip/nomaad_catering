@@ -324,7 +324,7 @@ function repDebts(E, k, showClosed) {
       _d: { left: debtSpec(k, { who: g.w, acc: (oi.P[g.w] || {}).acc, np: (oi.P[g.w] || {}).np }, td) } });
     g.L.filter(function (it) { return showClosed || !it.closed; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (it) {
       rows.push({ date: it.date, who: '', desc: it.desc, amt: r0(it.amt), paid: r0(it.paid), left: r0(it.amt - it.paid), closed: it.closed, st: it.closed ? 'Хаагдсан' : days(it.date) + ' хоног',
-        _act: !it.closed && /^[rp]$/.test(k) ? '<button class="mini" style="color:var(--accent)" onclick="debtPay(\'' + k + '\',\'' + esc(it.key) + '\')">' + (k === 'r' ? 'Төлбөр авах' : 'Төлөх') + '</button>' : '' });
+        _act: !it.closed && /^[rp]$/.test(k) ? '<button class="mini" style="color:var(--accent)" onclick="debtClose(\'' + k + '\',\'' + esc(it.key) + '\')">' + (k === 'r' ? 'Авлага хаах' : 'Өглөг хаах') + '</button>' : '' });
     });
   });
   return { title: T[0] + ' — харилцагчаар' + (showClosed ? ' (хаагдсан орсон)' : ''), rows: rows, actions: /^[rp]$/.test(k),

@@ -391,3 +391,45 @@ function bankApplySel() {
   ok.forEach(function (l) { delete bankSel[l.id]; });
   bankApply(ok.map(function (l) { return l.id; }), true);
 }
+
+// ── Авлага / өглөг хаах: хэрхэн хаахыг асууна — харилцах данс бол банкны хуулгын тулгаагүй мөрөөс сонгож тулгана (давхардахгүй) ──
+var dcState = null;
+function debtClose(k, key) {
+  var it = (k === 'r' ? debtItems(['1201'], 1) : debtItems(['3101'], -1)).filter(function (x) { return x.key === key; })[0];
+  if (!it) { toast('Энэ өр аль хэдийн хаагдсан байна'); return; }
+  var ord = (window.adminOrders || []).filter(function (o) { return o.id === it.bill; })[0];
+  var digits = (String(it.who).match(/\d{8}/g) || []).concat(ord ? [String(ord.phone).replace(/\D/g, '')] : []);
+  var words = String(it.who).toLowerCase().split(/\s+/).filter(function (w) { return w.length >= 3 && !/^\d+$/.test(w); });
+  var due = ord && ordOpen(ord) ? ordDue(ord) : it.left;
+  var L = bankLines.filter(function (l) { return l.biz === state.biz && l.status === 'Шинэ' && (k === 'r' ? +l.credit > 0 : +l.debit > 0); }).map(function (l) {
+    var d = String(l.desc).replace(/(\d{4})\s(\d{4})/g, '$1$2').toLowerCase(), amt = k === 'r' ? +l.credit : +l.debit, sc = 0;
+    if (digits.some(function (x) { return x && d.indexOf(x) >= 0; }) || words.some(function (w) { return d.indexOf(w) >= 0; })) sc += 2;
+    if (Math.abs(amt - due) < 1) sc += 1;
+    return { l: l, amt: amt, sc: sc };
+  }).sort(function (a, b) { return b.sc - a.sc || (a.l.date < b.l.date ? 1 : -1); });
+  dcState = { k: k, key: key, it: it, ord: ord, due: due, L: L };
+  var rows = L.slice(0, 40).map(function (x, i) {
+    return '<label class="dc-l' + (x.sc >= 2 ? ' hit' : '') + '"><input type="radio" name="dcLine" value="' + i + '"' + (i === 0 && x.sc >= 2 ? ' checked' : '') + '>' +
+      '<span>' + esc(x.l.date.slice(0, 16)) + '</span><span class="dc-d">' + esc(x.l.desc) + '</span><b>' + fmt(x.amt) + '</b>' +
+      (x.sc >= 2 ? '<em>' + (x.sc === 3 ? 'нэр/утас, дүн таарсан' : 'нэр/утас таарсан') + '</em>' : x.sc === 1 ? '<em class="g">дүн таарсан</em>' : '') + '</label>';
+  }).join('');
+  gOpen('<h2>' + (k === 'r' ? 'Авлага хаах' : 'Өглөг хаах') + '</h2>' +
+    '<p style="margin:0 0 10px"><b>' + esc(it.who) + '</b> · үлдэгдэл <b>' + fmt(due) + '</b><br><small class="muted">' + esc(it.date) + ' · ' + esc(String(it.desc).slice(0, 80)) + '</small></p>' +
+    '<label for="dcHow">Хэрхэн ' + (k === 'r' ? 'төлбөр орсон бэ' : 'төлсөн бэ') + '?</label><select id="dcHow" onchange="dcHowChange()">' +
+      '<option value="bank">Харилцах данс — банкны хуулгын тулгаагүй гүйлгээнээс сонгох</option><option value="cash">Бэлэн (касс) эсвэл бусад — баримт бичих</option></select>' +
+    '<div id="dcBank" style="margin-top:10px">' + (L.length ? '<div class="dc-list">' + rows + '</div>' + (L.length > 40 ? '<p class="muted" style="font-size:12px">Эхний 40-ийг харууллаа.</p>' : '') :
+      '<p class="muted">Тулгаагүй ' + (k === 'r' ? 'орлогын' : 'зарлагын') + ' гүйлгээ алга — эхлээд банкны хуулгаа оруулна уу.</p>') + '</div>' +
+    '<button class="btn" onclick="dcSave()">Хаах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
+}
+function dcHowChange() { var b = document.getElementById('dcBank'); if (b) b.style.display = $('dcHow').value === 'bank' ? '' : 'none'; }
+function dcSave() {
+  var S = dcState; if (!S) return;
+  if ($('dcHow').value === 'cash') { gClose(); debtPay(S.k, S.key); return; }   // хуучин арга — кассын / харилцахын баримт
+  var r = document.querySelector('input[name=dcLine]:checked'); if (!r) { toast('Банкны гүйлгээгээ сонгоно уу'); return; }
+  var x = S.L[Number(r.value)], l = x.l;
+  var pick = S.ord ? 'O:' + S.ord.id : 'D:' + S.it.acc + '|' + S.it.key;
+  var diff = x.amt - S.due;
+  if (!confirm(l.date.slice(0, 16) + ' · ' + fmt(x.amt) + '\n«' + l.desc + '»\n\n→ ' + S.it.who + ' (' + (S.k === 'r' ? 'авлага' : 'өглөг') + ' ' + fmt(S.due) + ')' +
+    (Math.abs(diff) >= 1 ? '\n\nЗөрүү ' + fmt(diff) + (diff < 0 ? ' — үлдсэн хэсэг нь ' + (S.k === 'r' ? 'авлага' : 'өглөг') + ' хэвээр үлдэнэ.' : ' — илүү төлсөн хэсэг нь урьдчилгаа болж харагдана.') : '') + '\n\nХаах уу?')) return;
+  bankPick[l.id] = pick; gClose(); bankApply([l.id], true);
+}

@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261023zc">
+<link rel="stylesheet" href="style.css?v=20261023zd">
 </head>
 <body class="bz-admin">
 <div class="demo" id="demo" style="display:none">Туршилтын горим — зөвхөн энэ төхөөрөмж дээр бичигдсэн мэдээлэл харагдана (код: 0000)</div>
@@ -59,10 +59,9 @@
       <div><label for="sfRole">Эрх</label>
         <select id="sfRole"><option>Худалдагч</option><option>Менежер</option><option value="Эзэн">Захирал</option></select></div>
     </div>
-    <div class="row2">
-      <div><label for="sfBiz">Дэлгүүр</label><select id="sfBiz"></select></div>
-      <div><label for="sfPos">Албан тушаал</label><input id="sfPos"></div>
-    </div>
+    <label>Ажиллах дэлгүүр <span class="muted" style="font-weight:400">(нэг нэвтрэх нэр, кодоор сонгосон бүх дэлгүүрт орно)</span></label>
+    <div id="sfBiz" style="display:flex;flex-wrap:wrap;gap:4px 18px"></div>
+    <label for="sfPos">Албан тушаал</label><input id="sfPos">
     <div class="row2">
       <div><label for="sfSalary">Үндсэн цалин (₮/сар)</label><input id="sfSalary" type="number" inputmode="numeric" min="0"></div>
       <div><label for="sfPhone">Утас</label><input id="sfPhone" inputmode="tel"></div>
@@ -391,10 +390,10 @@
 <script src="reports.js?v=20261023s1"></script>
 <script src="tax.js?v=20261022o"></script>
 <script src="finhelp.js?v=20261022o"></script>
-<script src="finance.js?v=20261023y"></script>
+<script src="finance.js?v=20261023zd"></script>
 <script src="findash.js?v=20261023s1"></script>
 <script src="calendar.js?v=20261022v"></script>
-<script src="bank.js?v=20261023zc"></script>
+<script src="bank.js?v=20261023zd"></script>
 <script src="prodimport.js?v=20261022o"></script>
 <script src="loans.js?v=20261023s1"></script>
 <script src="po.js?v=20261022o"></script>
