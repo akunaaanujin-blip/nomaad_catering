@@ -4,7 +4,7 @@
 // 3) Систем зөвхөн САНАЛ болгоно — мөр бүрийг хэрэглэгч өөрөө шалгаж «Тулгах» дарна (автоматаар юу ч бичихгүй)
 // 4) Хуулгын эцсийн үлдэгдэл = санхүүгийн харилцах дансны үлдэгдэл эсэхийг шалгана
 
-var bankLines = [], bankTab = 'todo', bankPick = {};
+var bankLines = [], bankTab = 'todo', bankPick = {}, bankSel = {};
 var BANK_IN = [['5201', 'Бусад орлого'], ['5101', 'Борлуулалт (системээс гадуур)'], ['4101', 'Хөрөнгө оруулалт (эзэн, хөрөнгө оруулагч)'], ['1201', 'Авлага орж ирсэн'],
   ['3501', 'Зээл авсан (бүртгэлгүй)'], ['5202', 'Хүүгийн орлого'], ['1208', 'Захирал хувийн зарлагаа буцааж төлсөн'], ['10003', 'Кассаас тушаасан'], ['skip', 'Тулгахгүй (алгасах)']];
 var BANK_OUT = [['7205', 'Зар сурталчилгаа (boost)'], ['7301', 'Банкны шимтгэл, бусад зардал'], ['1404', 'Бараа татан авалт'], ['3101', 'Нийлүүлэгчид төлсөн'], ['7207', 'Хүргэлт (буухиа)'],
@@ -120,7 +120,10 @@ function bankView() {
     (last ? kpi('Хуулгын үлдэгдэл (' + last.date.slice(0, 10) + ')', fmt(last.bal)) + kpi('Санхүүгийн ' + acc + ' үлдэгдэл', fmt(ledger), Math.abs(last.bal - ledger) < 1 ? '<span style="color:var(--green)">Таарч байна</span>' : '<span style="color:var(--red)">Зөрүү ' + fmt(last.bal - ledger) + '</span>') : '') + '</div>';
   var tabs = '<div class="tabs" style="margin-bottom:10px">' + [['todo', 'Тулгах'], ['done', 'Тулгасан'], ['all', 'Бүгд']].map(function (t) {
     return '<button class="' + (bankTab === t[0] ? 'on' : '') + '" onclick="bankTab=\'' + t[0] + '\';render()">' + t[1] + '</button>'; }).join('') +
-    (todo.length ? '<button style="margin-left:auto" onclick="bankDel(null)">Тулгаагүй ' + todo.length + ' гүйлгээг устгах</button>' : '') + '</div>';
+    (todo.length ? '<button style="margin-left:auto" onclick="bankDel(null)">Тулгаагүй ' + todo.length + ' гүйлгээг устгах</button>' : '') + '</div>' +
+    (todo.length && bankTab !== 'done' ? '<div class="bk-bar"><button class="b-btn" onclick="bankSelSure()">Таарсныг сонгох' + (sure ? ' (' + sure + ')' : '') + '</button>' +
+      '<button class="b-btn primary" id="bkSelBtn" onclick="bankApplySel()">Сонгосныг тулгах (' + Object.keys(bankSel).length + ')</button>' +
+      '<span class="muted" style="font-size:12.5px">Мөр бүрийн «Юутай тулгах» сонголтоор тулгана. Сонголтгүй мөр алгасагдана.</span></div>' : '');
   var rows = list.map(function (l) {
     var s = l.status === 'Шинэ' ? bankSuggest(l) : null, sel = '';
     if (s) {
@@ -152,15 +155,15 @@ function bankView() {
         (s.kind === 'order' ? ' <small class="muted">санал: ' + (s.sure ? 'утас, дүн таарсан' : 'шалгаж сонгоно уу') + (s.fee > 0 ? ' · буухиагийн хөлс ' + fmt(s.fee) : '') + '</small>' : '') +
         (s.kind === 'debt' ? ' <small class="muted">санал: нэр таарсан — шалгаж сонгоно уу</small>' : '');
     }
-    return '<tr><td>' + esc(l.date) + '</td><td>' + esc(l.desc) + '</td><td class="n" style="color:var(--green)">' + (l.credit ? '+' + fmt(l.credit).slice(1) : '') + '</td>' +
+    return '<tr><td class="bk-ck">' + (s ? '<input type="checkbox" data-id="' + esc(l.id) + '"' + (bankSel[l.id] ? ' checked' : '') + ' onchange="bankSelSet(this)">' : '') + '</td><td>' + esc(l.date) + '</td><td>' + esc(l.desc) + '</td><td class="n" style="color:var(--green)">' + (l.credit ? '+' + fmt(l.credit).slice(1) : '') + '</td>' +
       '<td class="n neg">' + (l.debit ? '−' + fmt(l.debit).slice(1) : '') + '</td><td>' + (s ? sel : '<span class="tag">' + esc(l.status) + '</span> <small class="muted">' + esc(l.link) + '</small>') + '</td>' +
       '<td class="n" style="white-space:nowrap">' + (s ? '<button class="mini" style="color:var(--accent)" onclick="bankApply([\'' + jsq(l.id) + '\'])">Тулгах</button> <button class="mini" title="Хуулгаас устгах" onclick="bankDel([\'' + jsq(l.id) + '\'])">Устгах</button>' : '') + '</td></tr>';
   }).join('');
   return head + '<div class="card"><h2>Төлбөрийн мэдээлэл (хэрэглэгчид илгээх мессежид)</h2><div class="bar-row"><input id="payInfo" value="' + esc(pay) + '" placeholder="Жишээ: Хаан банк 53xxxxxxxx (Н.Анужин)" style="flex:1;min-width:220px">' +
     '<button class="b-btn" onclick="savePayInfo()">Хадгалах</button></div><p class="muted" style="font-size:12.5px;margin-top:6px">Ажилтан захиалга бүртгэхэд «Төлбөрийн мессеж»-д энэ данс, дүн, «Гүйлгээний утга: утасны дугаар» бичигдэнэ — тулгалт автоматаар таарна.</p></div>' +
     spSettingsCard(biz) +
-    tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Гүйлгээний утга</th><th class="n">Орлого</th><th class="n">Зарлага</th><th>Юутай тулгах</th><th></th></tr>' +
-    (rows || '<tr><td colspan="6" class="muted">' + (all.length ? 'Тулгах гүйлгээ алга' : 'Хуулга оруулаагүй байна — «Хуулга оруулах» дарна уу') + '</td></tr>') + '</table></div></div>';
+    tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th class="bk-ck">' + (list.some(function (l) { return l.status === 'Шинэ'; }) ? '<input type="checkbox" title="Бүгдийг сонгох" onchange="bankSelAll(this.checked)">' : '') + '</th><th>Огноо</th><th>Гүйлгээний утга</th><th class="n">Орлого</th><th class="n">Зарлага</th><th>Юутай тулгах</th><th></th></tr>' +
+    (rows || '<tr><td colspan="7" class="muted">' + (all.length ? 'Тулгах гүйлгээ алга' : 'Хуулга оруулаагүй байна — «Хуулга оруулах» дарна уу') + '</td></tr>') + '</table></div></div>';
 }
 // StorePay merchant API — түлхүүрийг зөвхөн серверт хадгална (энд хэзээ ч буцааж харуулахгүй); хоосон талбар хуучныг хэвээр үлдээнэ
 function spSettingsCard(biz) {
@@ -362,4 +365,26 @@ function bankDel(ids) {
     if (err) { toast('Алдаа: ' + err); return; }
     toast(L.length + ' гүйлгээ устгагдлаа'); refresh();
   });
+}
+
+// ── Олноор нь тулгах: сонгосон мөрүүдийг тус бүрийн «Юутай тулгах» сонголтоор нэг дор ──
+function bankSelSet(el) { if (el.checked) bankSel[el.dataset.id] = 1; else delete bankSel[el.dataset.id]; bankSelCount(); }
+function bankSelCount() { var b = document.getElementById('bkSelBtn'); if (b) b.textContent = 'Сонгосныг тулгах (' + Object.keys(bankSel).length + ')'; }
+function bankSelAll(on) {
+  [].forEach.call(document.querySelectorAll('td.bk-ck input[type=checkbox]'), function (c) { c.checked = on; if (on) bankSel[c.dataset.id] = 1; else delete bankSel[c.dataset.id]; });
+  bankSelCount();
+}
+function bankSelSure() {   // утас, дүн таарсан захиалгын төлбөрүүдийг сонгоно
+  bankLines.forEach(function (l) { if (l.biz !== state.biz || l.status !== 'Шинэ') return; var s = bankSuggest(l); if ((s.kind === 'order' && s.sure) || s.kind === 'paid') bankSel[l.id] = 1; });
+  render();
+}
+function bankApplySel() {
+  var sel = bankLines.filter(function (l) { return bankSel[l.id] && l.biz === state.biz && l.status === 'Шинэ'; });
+  if (!sel.length) { toast('Тулгах мөрөө сонгоно уу'); return; }
+  var ok = sel.filter(function (l) { return bankPick[l.id] && bankPick[l.id] !== 'LN:new'; }), miss = sel.length - ok.length;
+  if (!ok.length) { toast('Сонгосон мөрүүдэд «Юутай тулгах» сонгогдоогүй байна'); return; }
+  var inn = ok.reduce(function (a, l) { return a + (+l.credit || 0); }, 0), out = ok.reduce(function (a, l) { return a + (+l.debit || 0); }, 0);
+  if (!confirm(ok.length + ' гүйлгээг тулгах уу?\n\nОрлого: ' + fmt(inn) + '\nЗарлага: ' + fmt(out) + (miss ? '\n\n' + miss + ' мөрөнд сонголт байхгүй (эсвэл шинэ зээл) тул алгасна.' : ''))) return;
+  ok.forEach(function (l) { delete bankSel[l.id]; });
+  bankApply(ok.map(function (l) { return l.id; }), true);
 }
