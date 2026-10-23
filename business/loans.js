@@ -8,7 +8,7 @@ function hasTag(desc, id) { return !!id && new RegExp('#' + id + '(?![\\w])').te
 function gOpen(html) { $('gBody').innerHTML = html; openSheet('gSheet'); }
 function gClose() { closeSheet('gSheet'); }
 function cashAccOpts(sel) {
-  return ACCOUNTS.filter(function (a) { return a[3] === 'cash'; }).map(function (a) { return '<option value="' + a[0] + '"' + (a[0] === sel ? ' selected' : '') + '>' + esc(a[1]) + '</option>'; }).join('');
+  return ACCOUNTS.filter(function (a) { return a[3] === 'cash'; }).map(function (a) { return '<option value="' + a[0] + '"' + (a[0] === sel ? ' selected' : '') + '>' + esc(accName(a[0])) + '</option>'; }).join('');
 }
 // Журналын бичилтүүд (туршилтын горимд — энэ төхөөрөмжид)
 function postEntries(E, cb) {
@@ -404,12 +404,13 @@ function bankLinkView() {
         '<td>' + esc(l.acc + ' ' + accName(l.acc)) + '</td><td class="n">' + (l.cfg ? '<small class="muted">тохиргоонд</small>' : '<button class="mini" onclick="delBankLink(\'' + esc(l.no) + '\')">Салгах</button>') + '</td></tr>';
     }).join('') : '<tr><td colspan="5" class="muted">Холбосон данс алга</td></tr>') + '</table></div></div>';
 }
-function openBankLink(no) {
+function openBankLink(no, acc0) {
+  var ex = no ? allBankLinks().filter(function (l) { return String(l.no) === String(no); })[0] : null;
   gOpen('<h2>Банкны данс холбох</h2>' +
     '<label for="lkNo">Дансны дугаар</label><input id="lkNo" inputmode="numeric" placeholder="Бүтэн дугаар эсвэл сүүлийн 4 орон" value="' + esc(no || '') + '">' +
-    '<label for="lkName">Нэр</label><input id="lkName" placeholder="Жишээ: Хаан банк — удирдлага">' +
-    '<div class="row2"><div><label for="lkBiz">Компани</label><select id="lkBiz">' + ALL_KEYS.map(function (k) { return '<option value="' + k + '"' + (k === state.biz ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('') + '</select></div>' +
-    '<div><label for="lkAcc">Санхүүгийн данс</label><select id="lkAcc">' + cashAccOpts('1101') + '<option value="new">+ Шинэ харилцах данс үүсгэх</option></select></div></div>' +
+    '<label for="lkName">Нэр</label><input id="lkName" placeholder="Жишээ: Хаан банк — удирдлага" value="' + esc(ex ? ex.name : '') + '">' +
+    '<div class="row2"><div><label for="lkBiz">Компани</label><select id="lkBiz">' + ALL_KEYS.map(function (k) { return '<option value="' + k + '"' + (k === (ex ? ex.biz : state.biz) ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('') + '</select></div>' +
+    '<div><label for="lkAcc">Санхүүгийн данс</label><select id="lkAcc">' + cashAccOpts(ex ? ex.acc : acc0 || '1101') + '<option value="new">+ Шинэ харилцах данс үүсгэх</option></select></div></div>' +
     '<p class="muted" style="font-size:12.5px;margin-top:6px">Компанийн анхны банкны данс бол «Байгууллагын харилцах (1101)». Хоёр дахь данс бол «Шинэ харилцах данс үүсгэх» — үлдэгдэл нь тусдаа харагдана.</p>' +
     '<button class="btn" onclick="saveBankLink()">Холбох</button><button class="btn ghost" onclick="gClose()">Болих</button>');
 }

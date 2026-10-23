@@ -125,13 +125,7 @@ function simpleView() {
     (p.profit >= 0 ? 'Үр дүнд нь <b style="color:var(--green)">' + mny(p.profit) + '</b> ашигтай ажилласан.' : '<b style="color:var(--red)">' + mny(-p.profit) + '</b> алдагдалтай ажилласан.');
   var pct = p.net ? ' <small class="muted">(' + Math.round(p.gross / p.net * 100) + '%)</small>' : '';
   return '<p class="hint">Доогуур зураастай дүн дээр дарвал тэр дүн юунаас бүрдсэнийг (задрал) харна.</p>' +
-    '<div class="kpis">' +
-      kpi('Борлуулалт', dl(fl(REV.concat(['6001']), -1, 'item', 'Цэвэр борлуулалт'), mny(p.net))) +
-      kpi('Цэвэр ашиг', dl(fl(PLA, -1, 'acc', 'Цэвэр ашиг'), mny(p.profit))) +
-      kpi('Мөнгө (өнөөдөр)', dl(bl(cash, 1, 'type', 'Нийт мөнгө'), mny(moneyTot))) +
-      kpi('Авлага', dl({ acc: ['1201'], to: td, sign: 1, grp: 'partner', t: 'Авлага — танд өгөх ёстой' }, mny(g('1201')))) +
-      kpi('Өглөг, зээл', dl({ acc: ['3101', '3802'].concat(loans), to: td, sign: -1, grp: 'partner', t: 'Өглөг, зээл — таны өгөх ёстой' }, mny(payTot))) +
-    '</div>' +
+    finDash(E, p, f, t, fl, PLA) + fdAnalysis(E, p, f, t) +
     '<div class="card"><h2>Ашиг, алдагдал</h2><p style="font-size:14px;line-height:1.7;margin:0 0 8px">' + sentence + '</p>' +
     '<div class="grid2"><table class="rep-t">' +
       line('Борлуулалт', p.sales, fl(REV, -1, 'item', 'Борлуулалт')) +
@@ -427,8 +421,9 @@ function repPayroll(E, y) {
 
 // ═══════════ НЯГТЛАНГИЙН ТАЙЛАН, ТОХИРГОО (нэг хуудсанд цуглуулсан) ═══════════
 var HUBS = {
-  acct: ['Нягтлангийн тайлан', [['Шалгалт', ['dash']], ['Журнал', ['entry', 'journal', 'trial', 'ledger', 'gl']], ['Мөнгө', ['cash', 'cashflow', 'expenses']],
+  acct: ['Нягтлангийн тайлан', [['Шалгалт', ['dash']], ['Журнал', ['entry', 'journal', 'trial', 'ledger', 'gl']], ['Мөнгө', ['cash', 'expenses']],
     ['Авлага, өглөг', ['partners', 'aging_r', 'aging_p', 'pstmt']], ['Санхүүгийн тайлан', ['balance', 'pl', 'equity']]]],
+  other: ['Бусад', [['Тайлан', ['profit', 'acct']], ['Мөнгө', ['vouchers']], ['Сар бүр', ['monthly', 'assets']], ['Тохиргоо', ['setup']]]],
   setup: ['Тохиргоо', [['Эхлэх', ['opening', 'accounts', 'banklink']], ['Мэдэгдэл', ['digest']], ['Хамгаалалт', ['lock', 'close']], ['Тусламж', ['glossary']]]],
 };
 function hubOf(sub) { var h = ''; Object.keys(HUBS).forEach(function (k) { HUBS[k][1].forEach(function (g) { if (g[1].indexOf(sub) >= 0) h = k; }); }); return h; }

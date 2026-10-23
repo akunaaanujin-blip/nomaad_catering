@@ -63,7 +63,10 @@ function applyCustomAccounts(list) {
   ACCOUNTS.forEach(function (a) { var was = ACC[a[0]]; ACC[a[0]] = { code: a[0], name: a[1], type: a[2], cash: a[3] === 'cash', custom: was ? was.custom : false }; });
   (list || []).forEach(function (a) { if (ACC[a.code]) ACC[a.code].custom = true; });
 }
-function accName(c) { return ACC[c] ? ACC[c].name : c; }
+function accName(c) {   // мөнгөний данс — тухайн компанид холбосон банкны нэрээр (findash.js cashLinkName)
+  if (ACC[c] && ACC[c].cash && typeof cashLinkName === 'function') { var n = cashLinkName(c); if (n) return n; }
+  return ACC[c] ? ACC[c].name : c;
+}
 function debitNormal(c) { var t = ACC[c] && ACC[c].type; return t === 'asset' || t === 'contra' || t === 'cogs' || t === 'exp'; }
 
 var PAY_ACC = { 'Бэлэн': '10003', 'Карт': '110106', 'Шилжүүлэг': '1101', 'Харилцах': '1101', 'Зээлээр': '3101', 'Захиалга': '1505' };   // бараа орлого (худалдан авалт); Захиалга — урьдчилж төлсөн бараа захиалгаас
