@@ -8,17 +8,17 @@ function lblSize() { var s = load('nb_lbl_size', '50x30'); return LBL_SIZES[s] ?
 function lblDensity() { return Number(load('nb_lbl_den', 3)) || 3; }
 function niimOn() { return !!(niim.client && niim.client.isConnected && niim.client.isConnected()); }
 
-function niimConnect(cb) {
-  if (!navigator.bluetooth) { alert('Энэ хөтөч Bluetooth-ийг дэмжихгүй.\n\nКомпьютер дээр Google Chrome, эсвэл Android утсан дээр Chrome ашиглана уу. iPhone дээр ажиллахгүй.'); return; }
+function niimConnect(cb, fail) {
+  if (!navigator.bluetooth) { fail && fail('Bluetooth дэмжихгүй хөтөч'); alert('Энэ хөтөч Bluetooth-ийг дэмжихгүй.\n\nКомпьютер дээр Google Chrome, эсвэл Android утсан дээр Chrome ашиглана уу. iPhone дээр ажиллахгүй.'); return; }
   if (niimOn()) { cb && cb(); return; }
   lblMsg('Принтер холбож байна… (жагсаалтаас B1-ээ сонгоно уу)');
   loadLib(NIIM_SRC, function () {
-    var L = window.niimbluelib; if (!L) { lblMsg('Принтерийн сан ачаалагдсангүй — интернэтээ шалгана уу'); return; }
+    var L = window.niimbluelib; if (!L) { lblMsg('Принтерийн сан ачаалагдсангүй — интернэтээ шалгана уу'); fail && fail('сан ачаалагдсангүй'); return; }
     var c = L.instantiateClient('bluetooth'); niim.client = c;
     c.on('connect', function () { niim.model = (c.getPrintTaskType && c.getPrintTaskType()) || 'B1'; lblStatus(); });
     c.on('disconnect', function () { niim.client = null; lblStatus(); });
     c.connect().then(function () { niim.model = (c.getPrintTaskType && c.getPrintTaskType()) || 'B1'; lblStatus(); lblMsg('Холбогдлоо: ' + niim.model); cb && cb(); })
-      .catch(function (e) { niim.client = null; lblStatus(); lblMsg('Холбогдсонгүй: ' + ((e && e.message) || e)); });
+      .catch(function (e) { niim.client = null; lblStatus(); lblMsg('Холбогдсонгүй: ' + ((e && e.message) || e)); fail && fail('холбогдсонгүй'); });
   });
 }
 function niimDisconnect() { try { niim.client && niim.client.disconnect(); } catch (e) {} niim.client = null; lblStatus(); }
@@ -105,6 +105,7 @@ function lblRender() {
 }
 function lblPrintAll() {
   var btn = $('lblPrintBtn'), canvases = [].slice.call(document.querySelectorAll('#lblPrev canvas'));
+  if (!canvases.length) { lblMsg('Хэвлэх шошго алга'); return; }
   btn.disabled = true;
   lblPrintCanvases(canvases, function (err) { btn.disabled = false; lblMsg(err ? 'Хэвлэж чадсангүй: ' + err : '✓ ' + canvases.length + ' шошго хэвлэгдлээ'); }, lblMsg);
 }
@@ -117,27 +118,31 @@ function lblQuick(ids) {
     toast('Шошго хэвлэж байна…');
     lblPrintCanvases(cs, function (err) { if (err) { toast('Хэвлэж чадсангүй — шошгоны цонхноос дахин оролдоно уу'); openLabels(ids); lblMsg('Алдаа: ' + err); } else toast('✓ Шошго хэвлэгдлээ' + (cs.length > 1 ? ' (' + cs.length + ')' : '')); });
   };
-  if (niimOn()) go(); else niimConnect(go);
+  if (niimOn()) go(); else niimConnect(go, function (e) { toast('Принтер холбогдсонгүй: ' + e); });
 }
 function lblPrintCanvases(canvases, done, progress) {
   if (niim.busy) { done && done('өмнөх хэвлэлт дуусаагүй байна'); return; }
-  if (!niimOn()) { niimConnect(function () { lblPrintCanvases(canvases, done, progress); }); return; }
-  var L = window.niimbluelib;
+  if (!niimOn()) { niimConnect(function () { lblPrintCanvases(canvases, done, progress); }, function (e) { done && done(e); }); return; }
+  var L = window.niimbluelib, task, dir;
+  try {
+    task = niim.client.protocol.newPrintTask(niim.model || 'B1', { totalPages: canvases.length, statusPollIntervalMs: 100, statusTimeoutMs: 8000, pageColor: 0, density: lblDensity() });   // 0 = нэг өнгө (хар)
+    dir = (niim.client.getModelMetadata && (niim.client.getModelMetadata() || {}).printDirection) || 'top';
+  } catch (e) { console.error(e); done && done((e && e.message) || String(e)); return; }
   niim.busy = true;
-  var task = niim.client.protocol.newPrintTask(niim.model || 'B1', { totalPages: canvases.length, statusPollIntervalMs: 100, statusTimeoutMs: 8000, pageColor: 0, density: lblDensity() });   // 0 = нэг өнгө (хар)
-  var dir = (niim.client.getModelMetadata && (niim.client.getModelMetadata() || {}).printDirection) || 'top';
+  // Принтер хариу өгөхгүй гацвал товч үүрд идэвхгүй үлдэхгүй: алхам бүрт хугацаа
+  var tmo = function (p, ms) { return Promise.race([p, new Promise(function (_, rej) { setTimeout(function () { rej(new Error('принтер хариу өгсөнгүй — унтрааж асаагаад дахин холбоно уу')); }, ms); })]); };
   (async function () {
     var err = null;
     try {
-      await task.printInit();
+      await tmo(task.printInit(), 15000);
       for (var i = 0; i < canvases.length; i++) {
         progress && progress('Хэвлэж байна ' + (i + 1) + ' / ' + canvases.length + '…');
-        await task.printPage(L.ImageEncoder.encodeCanvas(canvases[i], 0, dir), 1);
-        await task.waitForPageFinished();
+        await tmo(task.printPage(L.ImageEncoder.encodeCanvas(canvases[i], 0, dir), 1), 15000);
+        await tmo(task.waitForPageFinished(), 20000);
       }
-      await task.waitForFinished();
+      await tmo(task.waitForFinished(), 20000);
     } catch (e) { console.error(e); err = (e && e.message) || String(e); }
-    finally { try { await task.printEnd(); } catch (e2) {} niim.busy = false; done && done(err); }
+    finally { try { await tmo(task.printEnd(), 5000); } catch (e2) {} niim.busy = false; done && done(err); }
   })();
 }
 // Захиалга хадгалахад шууд хэвлэх эсэх (төхөөрөмж бүр дээр санана)
