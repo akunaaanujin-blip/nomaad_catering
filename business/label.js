@@ -143,3 +143,6 @@ function lblPrintCanvases(canvases, done, progress) {
 }
 // Захиалга хадгалахад шууд хэвлэх эсэх (төхөөрөмж бүр дээр санана)
 function lblAuto() { return !!load('nb_lbl_auto', false); }
+// Сангаа урьдчилан ачаална: Chrome Bluetooth-ийн сонголтын цонхыг зөвхөн товч дарсан агшинд нээдэг тул
+// сан товч дарсны дараа ачаалагдвал (жагсаалтын «Хэвлэх», «Хадгалаад шошго хэвлэх») холболт татгалзагдана
+if (navigator.bluetooth) loadLib(NIIM_SRC);
