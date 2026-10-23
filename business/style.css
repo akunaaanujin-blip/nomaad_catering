@@ -1475,3 +1475,5 @@ body.is-busy .btn,body.is-busy .b-btn.primary,body.is-busy button.mini{pointer-e
 .bz-admin #view .bk-ck{width:28px;text-align:center}
 .bz-admin #view .bk-ck input{width:16px;height:16px;cursor:pointer}
 .bk-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+.bz-admin #view tr.bk-match td{background:#ECFDF3}
+.bz-admin #view tr.bk-match td:first-child{box-shadow:inset 3px 0 0 #16A34A}
