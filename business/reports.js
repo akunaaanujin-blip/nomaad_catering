@@ -63,6 +63,7 @@ function applyCustomAccounts(list) {
   ACCOUNTS.forEach(function (a) { var was = ACC[a[0]]; ACC[a[0]] = { code: a[0], name: a[1], type: a[2], cash: a[3] === 'cash', custom: was ? was.custom : false }; });
   (list || []).forEach(function (a) { if (ACC[a.code]) ACC[a.code].custom = true; });
 }
+var BUUHIA = 'Буухиа';   // хүргэлтийн компани — өглөгийн харилцагч
 function accName(c) {   // мөнгөний данс — тухайн компанид холбосон банкны нэрээр (findash.js cashLinkName)
   if (ACC[c] && ACC[c].cash && typeof cashLinkName === 'function') { var n = cashLinkName(c); if (n) return n; }
   return ACC[c] ? ACC[c].name : c;
@@ -160,6 +161,8 @@ function buildJournal(biz, R) {
       if (baseItem(x.item) === DISC_ITEM) { add(d, 'Борлуулалтын хөнгөлөлт', x.id, '6001', cash, -a, 'Хөнгөлөлт · баримт ' + (x.bill || ''), cust, x.bill); return; }
       if (a >= 0) {
         add(d, 'Борлуулалт', x.id, cash, '5101', a, item + ' × ' + x.qty + ' (' + (oo ? 'захиалга, авлага' : x.pay || 'Бэлэн') + ')', cust, x.bill);
+        // Захиалгын хүргэлтийн төлбөрийг буухиа авна — буухиад өгмөгц Дт 7207 Хүргэлтийн зардал / Кт 3101 Өглөг (Буухиа)
+        if (oo && isFee(item)) add(d, 'Буухиагийн хөлс', x.id, '7207', '3101', a, 'Хүргэлт · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
         if (c) add(d, 'Борлуулалт · өртөг', x.id, '6101', '1404', c, item + ' × ' + x.qty);
       } else {
         add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty), cust);
