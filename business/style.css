@@ -1491,3 +1491,5 @@ body.is-busy .btn,body.is-busy .b-btn.primary,body.is-busy button.mini{pointer-e
 .top select.biz-pick{width:auto;max-width:100%;font:inherit;color:inherit;background:transparent;border:1px solid rgba(127,127,127,.35);border-radius:8px;padding:2px 6px;margin:0;cursor:pointer}
 .top select.biz-pick option{color:#111}
 @media (max-width:600px){.top select.biz-pick{max-width:44vw;text-overflow:ellipsis}}
+/* Авлага, өглөг — харилцагчийн төрлийн бүлэг */
+.bz-admin #view tr.dcat td{background:#EEF3FA;font-weight:700;color:#1F3A5F;border-top:2px solid #C9D7EA;font-size:13.5px}

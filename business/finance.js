@@ -306,10 +306,22 @@ function openItems(E, accs, sign, to, loanKey) {
   });
   return { items: items, P: P };
 }
-var DEBT_ST = [['open', 'Нээлттэй'], ['none', 'Төлөөгүй'], ['part', 'Хэсэгчлэн төлсөн'], ['closed', 'Хаагдсан'], ['all', 'Бүгд']];
+var DEBT_ST = [['open', 'Хаагдаагүй'], ['part', 'Хэсэгчлэн төлсөн'], ['closed', 'Хаагдсан'], ['all', 'Бүгд']];
+// Харилцагчийн төрөл (бүлэг): захиалгын хэрэглэгчид, буухиа, StorePay, нийлүүлэгч, карго, компани хооронд, бусад
+function debtCat(k, g) {
+  var ords = {}; (window.adminOrders || []).forEach(function (o) { if (o.biz === state.biz) ords[o.id] = 1; });
+  if (g.w === BUUHIA) return 'Буухиа (хүргэлтийн хөлс)';
+  if (g.w === 'StorePay') return 'StorePay';
+  if (ALL_KEYS.some(function (b) { return BUSINESSES[b].name === g.w; })) return 'Компани хооронд';
+  if (g.L.some(function (it) { return ords[it.bill]; })) return k === 'r' ? 'Захиалгын авлага (хэрэглэгчид)' : 'Хэрэглэгчээс авсан урьдчилгаа';
+  var mv = moves.filter(function (m) { return m.biz === state.biz; });
+  if (mv.some(function (m) { return m.cargoPartner === g.w; })) return 'Карго';
+  if (mv.some(function (m) { return m.partner === g.w; }) || partners.some(function (p) { return p.biz === state.biz && p.name === g.w && p.kind === 'Нийлүүлэгч'; })) return 'Нийлүүлэгч';
+  return 'Бусад';
+}
 function debtStatus(it) { return it.closed ? 'closed' : it.paid > 0.5 ? 'part' : 'none'; }
 function repDebts(E, k, flt) {
-  flt = flt || 'open';
+  flt = flt === 'none' || !flt ? 'open' : flt;
   var keep = function (it) { var s2 = debtStatus(it); return flt === 'all' || (flt === 'open' ? s2 !== 'closed' : s2 === flt); };
   var T = DEBT_TABS[k], accs = debtAccs(k), td = todayStr(), oi = openItems(E, accs, T[3], td, k === 'l');
   // Нэг хүснэгт: харилцагч бүрийн нийт мөр (тод), доор нь тэр харилцагчийн баримтууд
@@ -317,12 +329,23 @@ function repDebts(E, k, flt) {
   var G = {}, order = [];
   oi.items.forEach(function (it) { if (!G[it.who]) { G[it.who] = []; order.push(it.who); } G[it.who].push(it); });
   Object.keys(oi.P).forEach(function (w) { if (!G[w] && oi.P[w].over > 0.5) { G[w] = []; order.push(w); } });   // зөвхөн илүү төлсөн
-  var rows = [], tot = { amt: 0, paid: 0, left: 0 };
+  var rows = [], tot = { amt: 0, paid: 0, left: 0 }, GL = [];
   order.map(function (w) {
     var L = G[w], p = oi.P[w] || { open: [], over: 0 }, left = L.reduce(function (a, it) { return a + it.amt - it.paid; }, 0) - (p.over || 0);
     return { w: w, L: L, left: left, open: L.filter(function (it) { return !it.closed; }) };
-  }).filter(function (g) { return g.L.some(keep) || (flt === 'open' && Math.abs(g.left) > 0.5 && !g.L.length); }).sort(function (a, b) { return b.left - a.left; }).forEach(function (g) {
-    var amt = g.L.reduce(function (a, it) { return a + it.amt; }, 0), paid = amt - g.left, old = g.open.length ? g.open.map(function (it) { return it.date; }).sort()[0] : '';
+  }).filter(function (g) { return g.L.some(keep) || (flt === 'open' && Math.abs(g.left) > 0.5 && !g.L.length); }).forEach(function (g) {
+    g.amt = g.L.reduce(function (a, it) { return a + it.amt; }, 0); g.cat = debtCat(k, g); GL.push(g);
+  });
+  // бүлэг (харилцагчийн төрөл) → харилцагч → баримт
+  var C = {}, cats = [];
+  GL.forEach(function (g) { if (!C[g.cat]) { C[g.cat] = { n: g.cat, G: [], amt: 0, left: 0 }; cats.push(C[g.cat]); } C[g.cat].G.push(g); C[g.cat].amt += g.amt; C[g.cat].left += g.left; });
+  cats.sort(function (a, b) { return b.left - a.left; });
+  cats.forEach(function (cg) {
+    rows.push({ _cls: 'dcat', who: cg.n, desc: cg.G.length + ' харилцагч', amt: r0(cg.amt), paid: r0(cg.amt - cg.left), left: r0(cg.left) });
+    cg.G.sort(function (a, b) { return b.left - a.left; }).forEach(pushG);
+  });
+  function pushG(g) {
+    var amt = g.amt, paid = amt - g.left, old = g.open.length ? g.open.map(function (it) { return it.date; }).sort()[0] : '';
     tot.amt += amt; tot.paid += paid; tot.left += g.left;
     rows.push({ _b: 1, _act: g.open.length && /^[rp]$/.test(k) ? '<label style="font-size:12px;font-weight:400;white-space:nowrap"><input type="checkbox" data-grp="' + esc(g.w) + '" onchange="debtSelGrp(this)"> бүгд</label>' : '',
       date: '', who: g.w, desc: g.open.length + ' хаагдаагүй баримт', amt: r0(amt), paid: r0(paid), left: r0(g.left), closed: '', st: old ? days(old) + ' хоног' : 'Хаагдсан',
@@ -332,7 +355,7 @@ function repDebts(E, k, flt) {
         _act: !it.closed && /^[rp]$/.test(k) ? '<input type="checkbox" class="dsel" data-grp="' + esc(g.w) + '" data-key="' + esc(it.key) + '" data-left="' + r0(it.amt - it.paid) + '"' + (debtSel[it.key] !== undefined ? ' checked' : '') + ' onchange="debtSelSet(this)" title="Олноор хаахад сонгох"> ' +
           '<button class="mini" style="color:var(--accent)" onclick="debtClose(\'' + k + '\',\'' + esc(it.key) + '\')">' + (k === 'r' ? 'Авлага хаах' : 'Өглөг хаах') + '</button>' : '' });
     });
-  });
+  }
   return { title: T[0] + ' — ' + DEBT_ST.filter(function (x) { return x[0] === flt; })[0][1].toLowerCase(), rows: rows, actions: /^[rp]$/.test(k),
     cols: [c('who', 'Харилцагч'), c('date', 'Огноо'), c('desc', 'Тайлбар'), m('amt', 'Дүн'), m('paid', 'Төлсөн'), m('left', 'Үлдэгдэл'), c('closed', 'Хаасан огноо'), c('st', 'Хугацаа')],
     total: { who: 'Нийт', amt: r0(tot.amt), paid: r0(tot.paid), left: r0(tot.left) } };
@@ -392,7 +415,7 @@ function debtsPre(E) {
   // Төлөвөөр ангилах: нээлттэй (төлөөгүй + хэсэгчлэн) · төлөөгүй · хэсэгчлэн төлсөн · хаагдсан · бүгд
   var oiC = openItems(E, debtAccs(k), DEBT_TABS[k][3], td, k === 'l').items, cnt = { open: 0, none: 0, part: 0, closed: 0, all: oiC.length };
   oiC.forEach(function (it) { var s2 = debtStatus(it); cnt[s2]++; if (s2 !== 'closed') cnt.open++; });
-  var cur = state.dst || 'open';
+  var cur = state.dst === 'none' || !state.dst ? 'open' : state.dst;
   var chk = '<div class="tabs dst" style="margin:0 0 10px">' + DEBT_ST.map(function (x) {
     return '<button class="' + (cur === x[0] ? 'on' : '') + '" onclick="state.dst=\'' + x[0] + '\';render()">' + x[1] + ' <small>' + cnt[x[0]] + '</small></button>'; }).join('') + '</div>';
   var bar = /^[rp]$/.test(k) ? '<div class="bk-bar"><button class="b-btn primary" id="dSelBtn" onclick="debtCloseSel()">Сонгосныг хаах (0)</button>' +
