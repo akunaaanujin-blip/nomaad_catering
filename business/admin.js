@@ -2151,6 +2151,8 @@ function saveOpening() {
     E.push({ biz: state.biz, date: d, dr: asset ? a : '4201', cr: asset ? '4201' : a, amount: Math.abs(v), partner: partner, desc: 'Эхний үлдэгдэл · ' + accName(a) });
   });
   if (!E.length) { toast('Дүн оруулна уу'); return; }
+  var dup = E.filter(function (e) { var a = e.dr === '4201' ? e.cr : e.dr; return journal.some(function (j) { return j.biz === state.biz && /^Эхний үлдэгдэл/.test(j.desc) && (j.dr === a || j.cr === a); }); });   // давхар бичихээс сэргийлнэ
+  if (dup.length && !confirm('Анхаар: ' + dup.map(function (e) { return accName(e.dr === '4201' ? e.cr : e.dr); }).join(', ') + ' дансанд эхний үлдэгдэл аль хэдийн бичигдсэн байна.\nДахин бичвэл давхардана. Үргэлжлүүлэх үү?')) return;
   if (!confirm(E.length + ' дансны эхний үлдэгдлийг ' + d + '-ны өдрөөр бичих үү?')) return;
   if (!API_URL) { E.forEach(function (e, i) { e.id = 'J' + Date.now() + '-' + i; journal.push(e); }); save('nb_demo_journal', journal); render(); toast('Бичигдлээ'); return; }
   post({ type: 'admin_journal', by: ownerName, entries: E }, function (err) { if (err) { toast(err === 'locked' ? 'Энэ огноо түгжигдсэн байна' : 'Алдаа: ' + err); return; } toast('Бичигдлээ'); refresh(); });
