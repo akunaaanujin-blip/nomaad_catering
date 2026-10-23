@@ -156,10 +156,12 @@ function bankView() {
         poOpts(biz).forEach(function (o) { opts.push(o.concat(['Бараа захиалга'])); });
         loanOpts(biz, false).forEach(function (o) { opts.push(o); });
         icOpts(biz, false).forEach(function (o) { opts.push(o.concat(['Компани хооронд'])); });
+        // Удирдлагын зарлага: компанийн данснаас удирдлагын зардлыг төлсөн — удирдлагын санхүүд 70xx зардлаар, компанид «компани хооронд».
+        // Нэрийг нь өөрчилсөн (жишээ нь 7004 «Удирдлагын зарлага») данс эхэнд.
+        if (biz !== 'mgmt' && BUSINESSES.mgmt) ACCOUNTS.filter(function (a) { return /^70/.test(a[0]) && !accHidden(a[0]); })
+          .sort(function (x, y) { return (ACC[y[0]].renamed ? 1 : 0) - (ACC[x[0]].renamed ? 1 : 0); }).forEach(function (a) {
+            opts.push(['MG:' + a[0], a[0] + ' ' + a[1].replace(/ \(удирдлага\)$/, ''), 'Удирдлагын зарлага → удирдлагын санхүүд']); });
         bankOutOpts().forEach(function (o) { opts.push(o); });
-        // Удирдлагын зарлага: компанийн данснаас удирдлагын зардлыг төлсөн — удирдлагын санхүүд 70xx зардлаар, компанид «компани хооронд»
-        if (biz !== 'mgmt' && BUSINESSES.mgmt) ACCOUNTS.filter(function (a) { return /^70/.test(a[0]) && !accHidden(a[0]); }).forEach(function (a) {
-          opts.push(['MG:' + a[0], a[0] + ' ' + a[1].replace(/ \(удирдлага\)$/, ''), 'Удирдлагын зарлага → удирдлагын санхүүд']); });
       }
       var def = cur || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : '');
       bankPick[l.id] = def;
