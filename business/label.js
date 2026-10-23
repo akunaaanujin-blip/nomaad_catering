@@ -57,26 +57,22 @@ function drawLabel(o, canvas) {
   var F = function (px, bold) { ctx.font = (bold ? 'bold ' : '') + px + 'px Arial, Helvetica, sans-serif'; };
   var big = H >= 400, y = P;
   // утас (том), нэр
-  F(big ? 46 : 38, true); ctx.fillText(String(o.phone || ''), P, y); y += big ? 52 : 42;
+  F(big ? 52 : 44, true); ctx.fillText(String(o.phone || ''), P, y); y += big ? 58 : 48;
   var who = [o.customer, o.phone2 ? '☎ ' + o.phone2 : ''].filter(Boolean).join(' · ');
   if (who) { F(big ? 22 : 18, true); wrapLines(ctx, who, W - 2 * P, 1).forEach(function (l) { ctx.fillText(l, P, y); y += big ? 26 : 21; }); }
   // хаяг
   var addr = [o.city && o.city !== 'Улаанбаатар' ? o.city : '', o.district, o.khoroo, o.address].filter(Boolean).join(', ');
-  F(big ? 21 : 17, false);
-  var footH = big ? 46 : 36, itemsH = big ? 60 : 22, room = H - y - footH - itemsH - 4, lh = big ? 25 : 20;
+  F(big ? 24 : 20, false);
+  var footH = big ? 30 : 24, itemsH = big ? 60 : 22, room = H - y - footH - itemsH - 4, lh = big ? 28 : 23;
   wrapLines(ctx, addr, W - 2 * P, Math.max(1, Math.floor(room / lh))).forEach(function (l) { ctx.fillText(l, P, y); y += lh; });
   // бараа
   var items = typeof ordItemsText === 'function' ? ordItemsText(o) : '';
   F(big ? 19 : 15, false);
   var iy = H - footH - itemsH; wrapLines(ctx, items, W - 2 * P, big ? 2 : 1).forEach(function (l) { ctx.fillText(l, P, iy); iy += big ? 23 : 18; });
-  // доод мөр: авах дүн эсвэл төлбөр орсон
+  // доод мөр: огноо, дэлгүүр (үнийн дүн шошгонд гарахгүй)
   ctx.fillRect(P, H - footH - 2, W - 2 * P, 2);
-  var cod = o.paid !== 'Орсон' && !o.confirmed ? Number(o.amount) || 0 : 0;
-  F(big ? 30 : 24, true);
-  var right = cod ? 'АВАХ ' + fmt(cod).replace('₮', '') + '₮' : 'ТӨЛӨГДСӨН';
-  ctx.fillText(right, W - P - ctx.measureText(right).width, H - footH + (big ? 8 : 6));
   F(big ? 16 : 13, false);
-  ctx.fillText(String(o.date || '').slice(5) + ' · ' + String(BIZ.name || '').slice(0, 14), P, H - footH + (big ? 14 : 10));
+  ctx.fillText(String(o.date || '').slice(5) + ' · ' + String(BIZ.name || '').slice(0, 14), P, H - footH + (big ? 8 : 6));
   return canvas;
 }
 
