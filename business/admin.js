@@ -1,3 +1,5 @@
+// Хадгалах явцын төлөв (post/refresh) — ачаалах үед fetchAll-аас өмнө тодорхойлогдсон байх ёстой
+var BUSY = { n: 0, p: 0, msg: '' }, INFLIGHT = {}, refreshing = false, refreshAgain = false;
 // ── УДИРДЛАГЫН САМБАР ──
 // Baaz-ийн бүтэцтэй: Миний компаниуд → (Борлуулалт · Бараа материал · Санхүү · Ажилчид), мөн нийт Ажилчид цэс.
 
@@ -101,7 +103,6 @@ function fetchAll(cb) {
 }
 function stamp() { $('updated').textContent = 'Шинэчилсэн: ' + timeStr(); }
 // ── Хадгалах явц: сервер 2–5 с, дахин унших ~5 с — энэ хооронд «Хадгалж байна…» харуулж, товчийг түгжинэ (давхар дарахаас сэргийлнэ) ──
-var BUSY = { n: 0, p: 0, msg: '' }, INFLIGHT = {}, refreshing = false, refreshAgain = false;
 function busySet(d, msg, isPost) {   // isPost — хадгалж байх үед л товчийг түгжинэ (шинэчлэх үед ажиллаж болно)
   BUSY.n = Math.max(0, BUSY.n + d); if (isPost) BUSY.p = Math.max(0, BUSY.p + d); if (msg) BUSY.msg = msg;
   if (BUSY.p) BUSY.msg = 'Хадгалж байна…';
