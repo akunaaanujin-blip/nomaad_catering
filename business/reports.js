@@ -177,11 +177,15 @@ function buildJournal(biz, R) {
       else add(d, 'Касс хаалт', x.id, '10003', '5201', x.diff, 'Кассын илүүдэл · ' + (x.staff || ''));
     }
   });
+  // «Засвар: бараа орлого → эхний үлдэгдэл #M…» журнал — тэр бараа орлогыг эхний үлдэгдэл (Дт 1404 / Кт 4201) болгоно; засварын мөр өөрөө журналд гарахгүй
+  var OPENFIX = {}, isOpenFix = function (j) { return j.biz === biz && /^Засвар: бараа орлого → эхний үлдэгдэл/.test(String(j.desc)); };
+  R.journal.forEach(function (j) { if (isOpenFix(j)) (String(j.desc).match(/#M[\w\-]+/g) || []).forEach(function (t) { OPENFIX[t.slice(1)] = 1; }); });
   R.moves.forEach(function (m) {
     if (m.biz !== biz) return;
     var d = String(m.date).slice(0, 10);
     var v = Math.abs(ce.mv[m.id] || 0);
     if (m.kind === 'Он нээлт') return;   // барааны үнэлгээ журналын «Он нээлт» (1404) мөрөнд орсон
+    if (m.kind === 'Орлого' && OPENFIX[m.id]) { add(d, 'Барааны эхний үлдэгдэл', m.id, '1404', '4201', v, m.item + ' × ' + m.qty + ' (бараа орлогоос засварласан)'); return; }
     if (m.kind === 'Эхний үлдэгдэл') add(d, 'Барааны эхний үлдэгдэл', m.id, '1404', '4201', v, m.item + ' × ' + m.qty);
     else if (m.kind === 'Орлого') {
       // Каргог тусдаа компанид төлдөг бол: барааны хэсэг нийлүүлэгчид, каргоны хэсэг карго компанид (өглөг / касс / харилцах)
@@ -202,7 +206,7 @@ function buildJournal(biz, R) {
     if (e.kind === 'Олгосон' || e.kind === 'Урьдчилгаа') add(e.date, 'Цалин · ' + e.kind, e.id, accrued ? '3301' : '7101', '1101', e.amount, e.name + ' · ' + e.month + (e.note ? ' · ' + e.note : ''));
   });
   R.journal.forEach(function (j) {
-    if (j.biz !== biz) return;
+    if (j.biz !== biz || isOpenFix(j)) return;
     add(j.date, j.no ? VOUCHER_NAMES[j.no.slice(0, 2)] + ' ' + j.no : /^Он нээлт/.test(j.desc) ? 'Он нээлт' : 'Журналын бичилт', j.id, j.dr, j.cr, j.amount, j.desc, j.partner);
   });
   // Үндсэн хөрөнгийн элэгдэл — сар бүрийн эцэст автоматаар (шулуун шугамаар, авсны дараа сараас). Гараар бичсэн сар байвал түүнийг авна.
