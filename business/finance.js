@@ -346,16 +346,22 @@ function repDebts(E, k, flt) {
   var C = {}, cats = [];
   GL.forEach(function (g) { if (!C[g.cat]) { C[g.cat] = { n: g.cat, G: [], amt: 0, left: 0 }; cats.push(C[g.cat]); } C[g.cat].G.push(g); C[g.cat].amt += g.amt; C[g.cat].left += g.left; });
   cats.sort(function (a, b) { return b.left - a.left; });
+  // Хураагддаг: төрлийн бүлэг (анх нээлттэй), харилцагч (анх хураасан — дарахад баримтууд нь задарна). Хайлт хийвэл бүгд задарна.
+  var OPEN = state.dOpen = state.dOpen || {}, SHUT = state.dShut = state.dShut || {};
   cats.forEach(function (cg) {
-    rows.push({ _cls: 'dcat', who: cg.n, desc: cg.G.length + ' харилцагч', amt: r0(cg.amt), paid: r0(cg.amt - cg.left), left: r0(cg.left) });
-    cg.G.sort(function (a, b) { return b.left - a.left; }).forEach(pushG);
+    var shut = SHUT[k + cg.n] && !q;
+    rows.push({ _cls: 'dcat', _on: 'debtTog(\'dShut\',\'' + jsq(k + cg.n) + '\')', who: (shut ? '▸ ' : '▾ ') + cg.n, desc: cg.G.length + ' харилцагч', amt: r0(cg.amt), paid: r0(cg.amt - cg.left), left: r0(cg.left) });
+    cg.G.sort(function (a, b) { return b.left - a.left; }).forEach(function (g) { g.shutCat = shut; pushG(g); });
   });
   function pushG(g) {
     var amt = g.amt, paid = amt - g.left, old = g.open.length ? g.open.map(function (it) { return it.date; }).sort()[0] : '';
     tot.amt += amt; tot.paid += paid; tot.left += g.left;
+    if (g.shutCat) return;
+    var opened = OPEN[k + g.w] || !!q;
     rows.push({ _b: 1, _act: g.open.length && /^[rp]$/.test(k) ? '<label style="font-size:12px;font-weight:400;white-space:nowrap"><input type="checkbox" data-grp="' + esc(g.w) + '" onchange="debtSelGrp(this)"> бүгд</label>' : '',
-      date: '', who: g.w, desc: g.open.length + ' хаагдаагүй баримт', amt: r0(amt), paid: r0(paid), left: r0(g.left), closed: '', st: old ? days(old) + ' хоног' : 'Хаагдсан',
+      _on: 'if(!/INPUT|LABEL|BUTTON/.test(event.target.tagName))debtTog(\'dOpen\',\'' + jsq(k + g.w) + '\')', date: '', who: (opened ? '▾ ' : '▸ ') + g.w, desc: g.open.length + ' хаагдаагүй баримт', amt: r0(amt), paid: r0(paid), left: r0(g.left), closed: '', st: old ? days(old) + ' хоног' : 'Хаагдсан',
       _d: { left: debtSpec(k, { who: g.w, acc: (oi.P[g.w] || {}).acc, np: (oi.P[g.w] || {}).np }, td) } });
+    if (!opened) return;
     g.L.filter(keep).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (it) {
       rows.push({ date: it.date, who: '', desc: it.desc, amt: r0(it.amt), paid: r0(it.paid), left: r0(it.amt - it.paid), closed: it.closed, st: it.closed ? 'Хаагдсан' : (it.paid > 0.5 ? 'Хэсэгчлэн · ' : '') + days(it.date) + ' хоног',
         _act: !it.closed && /^[rp]$/.test(k) ? '<input type="checkbox" class="dsel" data-grp="' + esc(g.w) + '" data-key="' + esc(it.key) + '" data-left="' + r0(it.amt - it.paid) + '"' + (debtSel[it.key] !== undefined ? ' checked' : '') + ' onchange="debtSelSet(this)" title="Олноор хаахад сонгох"> ' +
@@ -595,3 +601,5 @@ function debtSearch(v) {
   state.dq = v; clearTimeout(_dqT);
   _dqT = setTimeout(function () { render(); var i = document.getElementById('dQ'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 250);
 }
+
+function debtTog(kind, id) { var o = state[kind] = state[kind] || {}; if (o[id]) delete o[id]; else o[id] = 1; render(); }

@@ -65,6 +65,15 @@ function importBank(input) {
 }
 
 // ── Тааруулах ──
+// Банкны тулгалтын сонголт: харилцагч бүр нэг мөр (хамгийн хуучин баримтаас эхлэн FIFO хаагдана) — жишээ нь «Өглөг · Буухиа · ₮413,000 (59 баримт)»
+function debtByWho(list) {
+  var G = {}, out = [];
+  list.forEach(function (it) { var k = it.acc + '|' + it.who; if (!G[k]) { G[k] = { it: it, n: 0, left: 0 }; out.push(G[k]); } G[k].n++; G[k].left += it.left; });
+  return out.map(function (g) {
+    var it = g.it, kind = it.acc === '1201' ? 'Авлага' : /^35/.test(it.acc) ? 'Зээл' : 'Өглөг';
+    return ['D:' + it.acc + '|' + it.key, kind + ' · ' + it.who + ' · ' + fmt(r0(g.left)) + (g.n > 1 ? ' (' + g.n + ' баримт)' : ' (' + it.date + ')')];
+  });
+}
 function ordCust(o) { return (o.customer ? o.customer + ' ' : '') + o.phone; }
 // Захиалгын төлөх үлдэгдэл: баталгаажаагүй бол бүтэн дүн, хэсэгчлэн төлсөн бол авлагын үлдэгдэл (жишээ нь бараа 70,000 + хүргэлт 7,000-ыг тусад нь шилжүүлсэн)
 function ordDue(o) { return o.confirmed ? ((debtCache().ordLeft || {})[o.id] || 0) : Number(o.amount) || 0; }
@@ -132,12 +141,12 @@ function bankView() {
         if (s.kind === 'paid') opts.push(['P:' + s.o.id, 'Аль хэдийн баталгаажсан: ' + s.o.phone + ' (давхар бичихгүй)', 'Захиалгын төлбөр']);
         (window.adminOrders || []).filter(function (o) { return o.biz === biz && !ordDead(o) && ordOpen(o); }).forEach(function (o) {
           opts.push(['O:' + o.id, 'Захиалга ' + o.phone + ' · ' + (o.confirmed ? 'үлдэгдэл ' + fmt(ordDue(o)) + ' / ' : '') + fmt(o.amount) + ' · ' + o.status + (o.paid === 'Орсон' ? ' · ажилтан: орсон' : ''), 'Захиалгын төлбөр']); });
-        debtCache().rec.forEach(function (it) { opts.push(['D:' + it.acc + '|' + it.key, debtLabel(it), 'Авлага хаах']); });
+        debtByWho(debtCache().rec).forEach(function (o) { opts.push(o.concat(['Авлага хаах'])); });
         loanOpts(biz, true).forEach(function (o) { opts.push(o); });
         icOpts(biz, true).forEach(function (o) { opts.push(o.concat(['Компани хооронд'])); });
         BANK_IN.forEach(function (a) { opts.push([a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1], 'Бусад']); });
       } else {
-        debtCache().pay.forEach(function (it) { opts.push(['D:' + it.acc + '|' + it.key, debtLabel(it), 'Өглөг хаах']); });
+        debtByWho(debtCache().pay).forEach(function (o) { opts.push(o.concat(['Өглөг хаах'])); });
         poOpts(biz).forEach(function (o) { opts.push(o.concat(['Бараа захиалга'])); });
         loanOpts(biz, false).forEach(function (o) { opts.push(o); });
         icOpts(biz, false).forEach(function (o) { opts.push(o.concat(['Компани хооронд'])); });
@@ -404,6 +413,12 @@ function bankApplySel() {
 var debtSel = {}, dcState = null;
 function debtSelSet(el) { if (el.checked) debtSel[el.dataset.key] = Number(el.dataset.left) || 0; else delete debtSel[el.dataset.key]; debtSelCount(); }
 function debtSelGrp(el) {
+  var boxes = document.querySelectorAll('input.dsel[data-grp="' + el.dataset.grp + '"]');
+  if (!boxes.length) {   // харилцагч хураасан — баримтуудыг өгөгдлөөс сонгоно
+    var k = debtTabOf(state.sub.finance);
+    (k === 'r' ? debtItems(['1201'], 1) : debtItems(['3101'], -1)).filter(function (it) { return it.who === el.dataset.grp; }).forEach(function (it) { if (el.checked) debtSel[it.key] = it.left; else delete debtSel[it.key]; });
+    debtSelCount(); return;
+  }
   [].forEach.call(document.querySelectorAll('input.dsel[data-grp="' + el.dataset.grp + '"]'), function (c) { c.checked = el.checked; if (el.checked) debtSel[c.dataset.key] = Number(c.dataset.left) || 0; else delete debtSel[c.dataset.key]; });
   debtSelCount();
 }

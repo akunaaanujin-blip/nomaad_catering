@@ -1297,7 +1297,7 @@ function reportCard(rep, cancellable) {
   // r._d[багана] — тэр дүн дээр дарахад задрал (finance.js)
   var cell = function (cl, r) { var v = cellVal(cl, r[cl.k]); return r._d && r._d[cl.k] && v ? dl(r._d[cl.k], v) : v; };
   var body = rep.rows.length ? rep.rows.map(function (r) {
-    return '<tr' + (r._cls ? ' class="' + r._cls + '"' : r._b ? ' class="b"' : '') + (r._bill ? ' class="clk" onclick="openBillAdm(' + esc(JSON.stringify(r._bill)) + ')"' : '') + '>' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n' + (r[cl.k] < 0 ? ' neg' : '') + '"' : '') + '>' + cell(cl, r) + '</td>'; }).join('') +
+    return '<tr' + (r._cls ? ' class="' + r._cls + '"' : r._b ? ' class="b"' : '') + (r._on ? ' onclick="' + r._on + '" style="cursor:pointer"' : '') + (r._bill ? ' class="clk" onclick="openBillAdm(' + esc(JSON.stringify(r._bill)) + ')"' : '') + '>' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n' + (r[cl.k] < 0 ? ' neg' : '') + '"' : '') + '>' + cell(cl, r) + '</td>'; }).join('') +
       (rep.actions ? '<td class="n">' + (r._act || '') + '</td>' : '') +
       (rep.edit ? '<td class="n">' + (r._id ? '<button class="mini" onclick="' + rep.edit + '(' + esc(JSON.stringify(r._id)) + ')">Засах</button>' : '') + '</td>' : '') +
       (rep.print ? '<td class="n">' + (r._id ? '<button class="mini" style="color:var(--accent)" onclick="printVoucherId(' + esc(JSON.stringify(r._id)) + ')">Хэвлэх</button>' : '') + '</td>' : '') +
