@@ -1,6 +1,6 @@
 // ── ҮНДСЭН ХӨРӨНГӨ, ЭЛЭГДЭЛ ──
 // Бүртгэл нь Script Properties «ASSETS»-д (admin_setting 'assets'), мөнгөн дүн нь журналд «#FA<id>» лавлагаатай:
-// 2001 өртөг, 2002 хуримтлагдсан элэгдэл, 7304 элэгдлийн зардал, 7305 актласны гарз.
+// 2001 өртөг, 2002 хуримтлагдсан элэгдэл, 7113 элэгдлийн зардал, 7412 ҮХ хассаны гарз.
 // Элэгдэл сар бүрийн эцэст АВТОМАТААР бодогдоно (reports.js buildJournal — бүртгэлээс), гараар бичих шаардлагагүй.
 
 function faList(biz) { return (window.assets || []).filter(function (a) { return a.biz === biz; }); }
@@ -13,7 +13,7 @@ function faStat(A, E, upto) {   // acc — хуримтлагдсан элэгд
     if (!hasTag(e.desc, A.id) || (upto && e.date > upto)) return;
     if (e.cr === '2002') acc += e.amount; else if (e.dr === '2002') acc -= e.amount;
     var mm = String(e.desc).match(/Элэгдэл (\d{4}-\d{2})/);
-    if (mm && e.dr === '7304') months[mm[1]] = (months[mm[1]] || 0) + e.amount;
+    if (mm && e.dr === '7113') months[mm[1]] = (months[mm[1]] || 0) + e.amount;
   });
   return { acc: r0(acc), book: A.status === 'Актласан' ? 0 : r0(A.cost - acc), months: months };
 }
@@ -34,7 +34,7 @@ function assetsView() {
     return '<button class="' + (f === t[0] ? 'on' : '') + '" onclick="state.faF=\'' + t[0] + '\';render()">' + t[1] + '</button>'; }).join('') + '</div>';
   var b = balances(E, todayStr()), unreg = r0((b['2001'] || 0) + (b['2002'] || 0) - tot.book);
   return '<div class="kpis">' + kpi('Өртөг', fmt(tot.cost)) + kpi('Хуримтлагдсан элэгдэл', fmt(tot.acc)) + kpi('Үлдэгдэл өртөг', fmt(tot.book)) + kpi('Сарын элэгдэл', fmt(tot.mon)) + '</div>' +
-    '<p class="hint">Элэгдэл сар бүрийн эцэст автоматаар бодогдож санхүүд орно (Дт 7304 Элэгдлийн зардал / Кт 2002 Хуримтлагдсан элэгдэл) — гараар бичих шаардлагагүй. ' +
+    '<p class="hint">Элэгдэл сар бүрийн эцэст автоматаар бодогдож санхүүд орно (Дт 7113 Элэгдлийн зардал / Кт 2002 Хуримтлагдсан элэгдэл) — гараар бичих шаардлагагүй. ' +
     'Хөрөнгө бүртгэхэд авсны дараа сараас эхэлж, үлдэх өртөгт хүрэхэд зогсоно.</p>' + tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Хөрөнгө</th><th class="n">Өртөг</th><th class="n">Хугацаа</th><th class="n">Сарын элэгдэл</th>' +
     '<th class="n">Хуримтлагдсан</th><th class="n">Үлдэгдэл өртөг</th><th>Төлөв</th><th></th></tr>' +
     (rows || '<tr><td colspan="9" class="muted">Бүртгэл алга — «+ Хөрөнгө бүртгэх» дарж нэмнэ үү (тавилга, тоног төхөөрөмж, машин, компьютер г.м)</td></tr>') + '</table></div>' +
@@ -118,10 +118,10 @@ function faDispose(id) {
   if (!date) return;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > todayStr()) { toast('Огноо буруу'); return; }
   var s = faStat(A, Jc(), date);   // тэр өдөр хүртэлх элэгдэл
-  if (!confirm('Өртөг ' + fmt(A.cost) + ', хуримтлагдсан элэгдэл ' + fmt(s.acc) + '\nҮлдэгдэл өртөг ' + fmt(s.book) + ' гарзаар (7305) бичигдэнэ. Актлах уу?')) return;
+  if (!confirm('Өртөг ' + fmt(A.cost) + ', хуримтлагдсан элэгдэл ' + fmt(s.acc) + '\nҮлдэгдэл өртөг ' + fmt(s.book) + ' гарзаар (7412) бичигдэнэ. Актлах уу?')) return;
   var d = '#' + A.id + ' ' + A.name, E = [];
   if (s.acc > 0) E.push({ biz: A.biz, date: date, dr: '2002', cr: '2001', amount: s.acc, partner: '', desc: 'Актласан — элэгдэл хаасан ' + d });
-  if (s.book > 0) E.push({ biz: A.biz, date: date, dr: '7305', cr: '2001', amount: s.book, partner: '', desc: 'Актласан — үлдэгдэл өртөг гарз ' + d });
+  if (s.book > 0) E.push({ biz: A.biz, date: date, dr: '7412', cr: '2001', amount: s.book, partner: '', desc: 'Актласан — үлдэгдэл өртөг гарз ' + d });
   var list = (window.assets || []).map(function (x) { return x.id === id ? Object.assign({}, x, { status: 'Актласан', gone: date }) : x; });
   postEntries(E, function () { faSave(list, function () { toast('Актлагдлаа'); if (API_URL) refresh(); else render(); }); });
 }

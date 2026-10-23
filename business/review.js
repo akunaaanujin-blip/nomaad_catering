@@ -46,7 +46,7 @@ function rvCalc(f, t) {
       if (i && !out) o.cin += e.amount; else if (out && !i) o.cout += e.amount;
     });
     moves.forEach(function (m) { var d = String(m.date).slice(0, 10); if (m.biz === biz && m.kind === 'Хасалт' && d >= f && d <= t) { o.shrinkN++; o.shrink += -(ce.mv[m.id] || 0); } });
-    if (!o.shrink) o.shrink += (balances(E, t, f)['7302'] || 0);
+    if (!o.shrink) o.shrink += (balances(E, t, f)['7421'] || 0);
     // авлага, өглөг (нээлттэй)
     openItems(E, ['1201'], 1, t).items.forEach(function (it) { if (!it.closed) o.recv.push({ who: it.who, left: it.amt - it.paid, date: it.date, biz: biz }); });
     openItems(E, ['3101'], -1, t).items.forEach(function (it) { if (!it.closed) o.pay.push({ who: it.who, left: it.amt - it.paid, date: it.date, biz: biz }); });
@@ -133,7 +133,7 @@ function reviewView() {
     '<div class="rv-card"><h3>Хамгийн муу 10 бүтээгдэхүүн</h3>' + rvTable(pHead, worst.map(pRow)) + '</div></div>';
 
   // 3. Ашигт ажиллагаа
-  var EG = { rent: ['Түрээс', ['7201']], wage: ['Цалин (НДШ-тэй)', ['7101', '7102']], trans: ['Тээвэр, хүргэлт', ['7203', '7207']] };
+  var EG = { rent: ['Түрээс', ['7114', '7014']], wage: ['Цалин (НДШ-тэй)', ['7101', '7102', '7001', '7002']], trans: ['Тээвэр, хүргэлт', ['7117', '7124', '7017']] };
   var eg = function (O, k) { return EG[k][1].reduce(function (a, c2) { return a + (O.exps[c2] || 0); }, 0); };
   var other = function (O) { return O.expT - eg(O, 'rent') - eg(O, 'wage') - eg(O, 'trans'); };
   var eRow = function (label, v, pv) { return '<tr><td>' + label + '</td><td class="n">' + rvMoney(v) + '</td><td class="n">' + (A.sales ? rvPct(v / A.sales * 100) : '—') + '</td><td class="n">' + rvDelta(v, pv, true) + '</td></tr>'; };

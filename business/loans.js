@@ -24,7 +24,7 @@ function postEntries(E, cb) {
 function loanList(biz) { return (window.loans || []).filter(function (l) { return l.biz === biz && l.status !== 'Устгасан'; }); }
 function loanById(id) { return (window.loans || []).filter(function (l) { return l.id === id; })[0]; }
 function loanAcc(L) { return L.kind === 'Авсан' ? '3501' : '1210'; }
-function loanIntAcc(L) { return L.kind === 'Авсан' ? '7401' : '5202'; }
+function loanIntAcc(L) { return L.kind === 'Авсан' ? '7201' : '5202'; }   // 7201 Санхүүгийн зардал (Baaz)
 function loanStat(L, E) {   // got — орсон/олгосон, paid — төлөгдсөн үндсэн, intr — хүү
   var acc = loanAcc(L), ia = loanIntAcc(L), got = 0, paid = 0, intr = 0, last = '';
   (E || Jc()).forEach(function (e) {

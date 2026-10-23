@@ -7,11 +7,17 @@
 var bankLines = [], bankTab = 'todo', bankPick = {}, bankSel = {};
 var BANK_IN = [['5201', 'Бусад орлого'], ['5101', 'Борлуулалт (системээс гадуур)'], ['4101', 'Хөрөнгө оруулалт (эзэн, хөрөнгө оруулагч)'], ['1201', 'Авлага орж ирсэн'],
   ['3501', 'Зээл авсан (бүртгэлгүй)'], ['5202', 'Хүүгийн орлого'], ['1208', 'Захирал хувийн зарлагаа буцааж төлсөн'], ['10003', 'Кассаас тушаасан'], ['skip', 'Тулгахгүй (алгасах)']];
-var BANK_OUT = [['7205', 'Зар сурталчилгаа (boost)'], ['7301', 'Банкны шимтгэл, бусад зардал'], ['1404', 'Бараа татан авалт'], ['3101', 'Нийлүүлэгчид төлсөн'], ['7207', 'Хүргэлт (буухиа)'],
-  ['7201', 'Түрээс'], ['7202', 'Цахилгаан, ус'], ['3301', 'Цалин олгосон'], ['3403', 'НДШ төлсөн'], ['3404', 'ХХОАТ төлсөн'], ['1208', 'Захирлын хувийн зарлага'],
-  ['3501', 'Зээл төлсөн (бүртгэлгүй)'], ['7401', 'Зээлийн хүү'], ['4101', 'Эзэн мөнгө авсан'], ['10003', 'Касс руу бэлэн гаргасан'], ['skip', 'Тулгахгүй (алгасах)']];
-var BANK_RULES = [[/boost|реклам|фэйсбүүк|facebook|meta|зар/i, '7205'], [/хураамж|шимтгэл|fee/i, '7301'], [/түрээс/i, '7201'], [/цалин/i, '3301'], [/ндш|даатгал/i, '3403'],
-  [/цахилгаан|ус хангамж|дулаан/i, '7202'], [/буухиа|ebuuhia|хүргэлт/i, '7207'], [/зээл/i, '3501']];
+// Зарлагын «Тулгах баримт»: төлбөр, шилжүүлэг + Baaz-ын зардлын данс бүлгээрээ (дансны төлөвлөгөөнөөс)
+var BANK_PAY = [['1404', 'Бараа татан авалт'], ['3101', 'Нийлүүлэгчид төлсөн'], ['3301', 'Цалин олгосон'], ['3403', 'НДШ төлсөн'], ['3404', 'ХХОАТ төлсөн'],
+  ['1208', 'Захирлын хувийн зарлага'], ['3501', 'Зээл төлсөн (бүртгэлгүй)'], ['4101', 'Эзэн мөнгө авсан'], ['10003', 'Касс руу бэлэн гаргасан'], ['skip', 'Тулгахгүй (алгасах)']];
+function bankOutOpts() {
+  var grp = function (c) { return /^70/.test(c) ? 'Ерөнхий ба удирдлагын зардал' : /^71/.test(c) ? 'Борлуулалт, маркетингийн зардал' : 'Бусад зардал'; };
+  return BANK_PAY.map(function (a) { return [a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1], 'Төлбөр, шилжүүлэг']; })
+    .concat(ACCOUNTS.filter(function (a) { return a[2] === 'exp'; }).map(function (a) { return ['A:' + a[0], a[0] + ' ' + a[1], grp(a[0])]; }));
+}
+var BANK_RULES = [[/boost|реклам|фэйсбүүк|facebook|meta|зар/i, '7120'], [/хураамж|шимтгэл|fee/i, '7201'], [/түрээс/i, '7114'], [/цалин/i, '3301'],
+  [/шатахуун|бензин|benzin|petrovis|шунхлай|магнай/i, '7118'], [/unitel|mobicom|skytel|gmobile|интернет|univision/i, '7106'], [/ндш|даатгал/i, '3403'],
+  [/цахилгаан|ус хангамж|дулаан/i, '7111'], [/буухиа|ebuuhia|booklo|хүргэлт/i, '7124'], [/зээл/i, '3501']];
 
 // Данс → компани: эхлээд «Данс холбох»-оор холбосон (Script Properties), дараа нь config.js
 function bankAcctInfo(acct) {
@@ -150,7 +156,7 @@ function bankView() {
         poOpts(biz).forEach(function (o) { opts.push(o.concat(['Бараа захиалга'])); });
         loanOpts(biz, false).forEach(function (o) { opts.push(o); });
         icOpts(biz, false).forEach(function (o) { opts.push(o.concat(['Компани хооронд'])); });
-        BANK_OUT.forEach(function (a) { opts.push([a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1], 'Бусад']); });
+        bankOutOpts().forEach(function (o) { opts.push(o); });
       }
       var def = cur || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : '');
       bankPick[l.id] = def;
@@ -239,7 +245,7 @@ function bankApply(ids, quiet) {
     if (pick.indexOf('O:') === 0) {
       var o = (window.adminOrders || []).filter(function (x) { return x.id === pick.slice(2); })[0]; if (!o) return;
       var fee = /EB-?\s?\d{8}/i.test(l.desc) && o.amount > l.credit ? o.amount - l.credit : 0;
-      var pe = orderPayEntries(o, biz, acc, d, l.credit, fee, '7207', 'банк');
+      var pe = orderPayEntries(o, biz, acc, d, l.credit, fee, '7124', 'банк');
       entries = entries.concat(pe.entries);
       orderUpd.push({ id: o.id, fields: { confirmed: d + ' банк', saleDone: pe.saleDone, note: 'Банк ' + d } });
       o.paid = 'Орсон'; o.confirmed = d + ' банк'; if (pe.saleDone) o.saleDone = pe.saleDone;
@@ -302,26 +308,26 @@ function bankDebt(pick) {
   return c.rec.concat(c.pay).filter(function (x) { return x.acc === acc && x.key === key; })[0] || null;
 }
 // ═══════════ ЗАХИАЛГЫН ТӨЛБӨР (зөвхөн удирдлага) ═══════════
-// received — орж ирсэн мөнгө; diff — зөрүү (буухиагийн хөлс 7207 эсвэл хөнгөлөлт 6001); бичилт бүрийн утганд «#захиалгын ID» — буцаахад олдоно.
-// Буухиа хөлсөө суутгаж шилжүүлсэн: хэрэглэгчийн авлагаас хасаад буухиагийн өглөгөөс хаана (7207-оор дамжиж цэвэр 0 — давхар зардал болохгүй)
+// received — орж ирсэн мөнгө; diff — зөрүү (буухиагийн хөлс 7124 эсвэл хөнгөлөлт 6001); бичилт бүрийн утганд «#захиалгын ID» — буцаахад олдоно.
+// Буухиа хөлсөө суутгаж шилжүүлсэн: хэрэглэгчийн авлагаас хасаад буухиагийн өглөгөөс хаана (7124-оор дамжиж цэвэр 0 — давхар зардал болохгүй)
 function buuhiaNet(biz, d, amt, cust, tag) {
-  return [{ biz: biz, date: d, dr: '7207', cr: '1201', amount: amt, partner: cust, desc: 'Буухиагийн хөлс суутгасан' + tag },
-          { biz: biz, date: d, dr: '3101', cr: '7207', amount: amt, partner: BUUHIA, desc: 'Буухиагийн өглөгөөс суутгав' + tag }];
+  return [{ biz: biz, date: d, dr: '7124', cr: '1201', amount: amt, partner: cust, desc: 'Буухиагийн хөлс суутгасан' + tag },
+          { biz: biz, date: d, dr: '3101', cr: '7124', amount: amt, partner: BUUHIA, desc: 'Буухиагийн өглөгөөс суутгав' + tag }];
 }
 function orderPayEntries(o, biz, acc, d, received, diff, diffAcc, how) {
   var sold = String(o.saleDone || ''), E = [], sd, tag = ' · ' + o.phone + ' #' + o.id, cust = ordCust(o);
   if (sold === 'yes:Зээлээр' || sold === 'yes:Шилжүүлэг') {   // бараа өгсөн, мөнгө нь авлага (хуримтлалын аргачлал) → авлага хаагдана
     E.push({ biz: biz, date: d, dr: acc, cr: '1201', amount: received, partner: cust, desc: 'Захиалгын төлбөр (' + how + ')' + tag });
     // буухиа хөлсөө суутгаж шилжүүлсэн — хөлс нь хүргэх үед буухиагийн өглөгөөр бичигдсэн тул тэр өглөгөөс хаана (давхар зардал болохгүй)
-    if (diff && diffAcc === '7207') E = E.concat(buuhiaNet(biz, d, diff, cust, tag));
+    if (diff && diffAcc === '7124') E = E.concat(buuhiaNet(biz, d, diff, cust, tag));
     else if (diff) E.push({ biz: biz, date: d, dr: diffAcc, cr: '1201', amount: diff, partner: cust, desc: 'Хөнгөлөлт' + tag });
   } else if (sold === 'imported') {   // хуучин хүснэгтийн захиалга — борлуулалт энд бичигдэнэ
     E.push({ biz: biz, date: d, dr: acc, cr: '5101', amount: received, partner: '', desc: 'Захиалгын борлуулалт (хуучин)' + tag });
-    if (diff) E.push({ biz: biz, date: d, dr: diffAcc, cr: '5101', amount: diff, partner: '', desc: (diffAcc === '7207' ? 'Буухиагийн хөлс' : 'Хөнгөлөлт') + tag });
+    if (diff) E.push({ biz: biz, date: d, dr: diffAcc, cr: '5101', amount: diff, partner: '', desc: (diffAcc === '7124' ? 'Буухиагийн хөлс' : 'Хөнгөлөлт') + tag });
     sd = 'yes:bank';
   } else if (!/^yes:|^returned$/.test(sold)) {   // бараа хараахан өгөөгүй — урьдчилгаа; бараа өгөхөд орлого болно
     E.push({ biz: biz, date: d, dr: acc, cr: '3802', amount: received, partner: cust, desc: 'Захиалгын урьдчилгаа (' + how + ')' + tag });
-    if (diff) E.push({ biz: biz, date: d, dr: diffAcc, cr: '3802', amount: diff, partner: cust, desc: (diffAcc === '7207' ? 'Буухиагийн хөлс' : 'Хөнгөлөлт') + tag });
+    if (diff) E.push({ biz: biz, date: d, dr: diffAcc, cr: '3802', amount: diff, partner: cust, desc: (diffAcc === '7124' ? 'Буухиагийн хөлс' : 'Хөнгөлөлт') + tag });
   }
   return { entries: E.filter(function (e) { return e.amount > 0; }), saleDone: sd };
 }
@@ -331,7 +337,7 @@ function openPayOrder(id) {
   $('poInfo').textContent = payOrd.phone + (payOrd.customer ? ' · ' + payOrd.customer : '') + ' · ' + fmt(payOrd.amount) + ' · ' + payOrd.status;
   $('poDate').value = todayStr();
   $('poAcc').innerHTML = ACCOUNTS.filter(function (a) { return a[3] === 'cash'; }).map(function (a) { return '<option value="' + a[0] + '"' + (a[0] === '1101' ? ' selected' : '') + '>' + a[0] + ' ' + esc(a[1]) + '</option>'; }).join('');
-  $('poAmount').value = payOrd.amount; $('poDiff').value = '7207'; poCalc();
+  $('poAmount').value = payOrd.amount; $('poDiff').value = '7124'; poCalc();
   openSheet('payOrderSheet');
 }
 function poCalc() { var diff = payOrd ? payOrd.amount - (Number($('poAmount').value) || 0) : 0; $('poDiffWrap').style.display = diff > 0 ? 'block' : 'none'; $('poDiffAmt').textContent = fmt(diff); }
@@ -472,7 +478,7 @@ function debtClose(k, keys) {
       '<tr class="tot"><td>Нийт</td><td class="n">' + fmt(total) + '</td><td class="n" id="dcSum"></td></tr></table>' +
     '<p id="dcInfo" class="muted" style="font-size:12.5px;margin:6px 0"></p>' +
     (k === 'r' ? '<label for="dcWo">Хаагдаагүй үлдсэн хэсэг</label><select id="dcWo" onchange="dcAlloc(false)"><option value="">Авлага хэвээр үлдэнэ (дараа төлнө)</option>' +
-      '<option value="7207">Буухиа хөлсөө суутгасан — буухиагийн өглөгөөс хааж бүрэн хаах</option><option value="6001">Хөнгөлөлт болгож бүрэн хаах</option></select>' : '') +
+      '<option value="7124">Буухиа хөлсөө суутгасан — буухиагийн өглөгөөс хааж бүрэн хаах</option><option value="6001">Хөнгөлөлт болгож бүрэн хаах</option></select>' : '') +
     '<button class="btn" onclick="dcSave()">Хаах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
   dcAlloc(true);
 }
@@ -490,7 +496,7 @@ function dcAlloc(refill) {   // refill — дүнг хуучнаас нь (FIFO)
   var left = r0(S.total - sum), over = r0(amt - sum), wo = $('dcWo') ? $('dcWo').value : '';
   $('dcInfo').innerHTML = (amt ? 'Гүйлгээний дүн <b>' + fmt(amt) + '</b>. ' : 'Гүйлгээгээ сонгоно уу. ') +
     (over > 0.5 ? '<span style="color:#B45309">' + fmt(over) + ' хуваарилаагүй — эхний харилцагчийн илүү төлөлт (урьдчилгаа) болно.</span> ' : over < -0.5 ? '<span style="color:#E11D48">Хуваарилсан дүн гүйлгээнээс ' + fmt(-over) + '-өөр их байна.</span> ' : '') +
-    (left > 0.5 ? (wo ? fmt(left) + ' нь ' + (wo === '7207' ? 'буухиагийн хөлс' : 'хөнгөлөлт') + ' болж бүрэн хаагдана.' : fmt(left) + ' нь ' + (S.k === 'r' ? 'авлага' : 'өглөг') + ' хэвээр үлдэнэ.') : 'Бүгд бүрэн хаагдана.');
+    (left > 0.5 ? (wo ? fmt(left) + ' нь ' + (wo === '7124' ? 'буухиагийн хөлс' : 'хөнгөлөлт') + ' болж бүрэн хаагдана.' : fmt(left) + ' нь ' + (S.k === 'r' ? 'авлага' : 'өглөг') + ' хэвээр үлдэнэ.') : 'Бүгд бүрэн хаагдана.');
 }
 function dcSave() {
   var S = dcState; if (!S) return;
@@ -512,7 +518,7 @@ function dcSave() {
     if (A[i] > 0) E.push(R2 ? { biz: biz, date: d, dr: acc, cr: u.acc, amount: A[i], partner: pn, desc: (u.ord ? 'Захиалгын төлбөр' : 'Авлага төлөгдсөн') + ' · ' + src + ' ' + u.tag }
                             : { biz: biz, date: d, dr: u.acc, cr: acc, amount: A[i], partner: pn, desc: 'Өглөг төлсөн · ' + src + ' ' + u.tag });
     var rest = r0(u.due - A[i]);
-    if (wo && R2 && rest > 0.5) E = wo === '7207' ? E.concat(buuhiaNet(biz, d, rest, pn, ' · ' + u.desc + ' ' + u.tag))
+    if (wo && R2 && rest > 0.5) E = wo === '7124' ? E.concat(buuhiaNet(biz, d, rest, pn, ' · ' + u.desc + ' ' + u.tag))
                                                   : E.concat([{ biz: biz, date: d, dr: wo, cr: u.acc, amount: rest, partner: pn, desc: 'Хөнгөлөлт · ' + u.desc + ' ' + u.tag }]);
     if (u.ord && !u.ord.confirmed && A[i] > 0) ordUpd.push(u.ord);
   });
