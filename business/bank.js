@@ -280,7 +280,7 @@ function bankDebt(pick) {
 // received — орж ирсэн мөнгө; diff — зөрүү (буухиагийн хөлс 7207 эсвэл хөнгөлөлт 6001); бичилт бүрийн утганд «#захиалгын ID» — буцаахад олдоно.
 function orderPayEntries(o, biz, acc, d, received, diff, diffAcc, how) {
   var sold = String(o.saleDone || ''), E = [], sd, tag = ' · ' + o.phone + ' #' + o.id, cust = ordCust(o);
-  if (sold === 'yes:Зээлээр') {   // бараа өгсөн, мөнгө нь авлага → авлага хаагдана
+  if (sold === 'yes:Зээлээр' || sold === 'yes:Шилжүүлэг') {   // бараа өгсөн, мөнгө нь авлага (хуримтлалын аргачлал) → авлага хаагдана
     E.push({ biz: biz, date: d, dr: acc, cr: '1201', amount: received, partner: cust, desc: 'Захиалгын төлбөр (' + how + ')' + tag });
     if (diff) E.push({ biz: biz, date: d, dr: diffAcc, cr: '1201', amount: diff, partner: cust, desc: (diffAcc === '7207' ? 'Буухиагийн хөлс' : 'Хөнгөлөлт') + tag });
   } else if (sold === 'imported') {   // хуучин хүснэгтийн захиалга — борлуулалт энд бичигдэнэ

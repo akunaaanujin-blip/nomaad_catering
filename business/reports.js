@@ -140,20 +140,16 @@ function buildJournal(biz, R) {
     if (amount < 0) { var t = dr; dr = cr; cr = t; amount = -amount; }
     E.push({ date: date, doc: doc, ref: ref || '', dr: dr, cr: cr, amount: amount, desc: desc || '', partner: partner || '', bill: bill || '' });
   };
-  // Захиалгын борлуулалт (Cozy): ажилтан «Хүргэгдсэн» / «Шилжүүлэг» дарахад санхүүд бичигдэхгүй —
-  // удирдлага төлбөрийг баталгаажуулсны дараа (банкны хуулга «Захиалга», эсвэл «Төлбөр орсон») тэр өдрөөр бичигдэнэ.
+  // Захиалгын борлуулалт (Cozy) — хуримтлалын аргачлал: хүргэгдмэгц Дт 1201 Авлага / Кт 5101 (ажилтны «Шилжүүлэг» банк руу бичихгүй);
+  // мөнгө орж удирдлага тулгахад (bank.js orderPayEntries) Дт банк / Кт 1201 — авлага хаагдана.
   var ORD = {}; (R.orders || []).forEach(function (o) { if (o.biz === biz) ORD[o.id] = o; });
   R.records.forEach(function (x) {
     if (x.biz !== biz) return;
     if (R.closed && x.date <= R.closed) return;   // хаагдсан онд хамаарах хоцорч ирсэн бичлэг — он нээлтэд аль хэдийн тусгагдсан тул давхар бичихгүй
     var a = Number(x.amount) || 0, d = x.date;
-    if (x.type === 'sale' && ORD[x.bill] && x.pay !== 'Урьдчилгаа') {
-      var cf = String(ORD[x.bill].confirmed || '');
-      if (!/^\d{4}-\d{2}-\d{2}/.test(cf)) return;   // баталгаажаагүй — санхүүд хараахан ороогүй
-      if (cf.slice(0, 10) > d) d = cf.slice(0, 10);
-    }
     if (x.type === 'sale') {
-      var cash = SALE_ACC[x.pay] || '10003', cust = x.pay === 'StorePay' ? 'StorePay' : x.pay === 'Зээлээр' || x.pay === 'Урьдчилгаа' ? (x.customer || '(нэргүй харилцагч)') : '';
+      var oo = ORD[x.bill] && x.pay === 'Шилжүүлэг' ? ORD[x.bill] : null;
+      var cash = oo ? '1201' : SALE_ACC[x.pay] || '10003', cust = oo ? (oo.customer ? oo.customer + ' ' : '') + oo.phone : x.pay === 'StorePay' ? 'StorePay' : x.pay === 'Зээлээр' || x.pay === 'Урьдчилгаа' ? (x.customer || '(нэргүй харилцагч)') : '';
       var item = String(x.item).replace(/ \(буцаалт\)$/, '');
       var c = Math.abs(ce.rec[x.id] || 0);
       if (baseItem(x.item) === SPLIT_ITEM) {   // хуваан төлсөн: орлого өөрчлөгдөхгүй, мөнгө нэг хэлбэрээс нөгөөд
@@ -163,7 +159,7 @@ function buildJournal(biz, R) {
       }
       if (baseItem(x.item) === DISC_ITEM) { add(d, 'Борлуулалтын хөнгөлөлт', x.id, '6001', cash, -a, 'Хөнгөлөлт · баримт ' + (x.bill || ''), cust, x.bill); return; }
       if (a >= 0) {
-        add(d, 'Борлуулалт', x.id, cash, '5101', a, item + ' × ' + x.qty + ' (' + (x.pay || 'Бэлэн') + ')', cust, x.bill);
+        add(d, 'Борлуулалт', x.id, cash, '5101', a, item + ' × ' + x.qty + ' (' + (oo ? 'захиалга, авлага' : x.pay || 'Бэлэн') + ')', cust, x.bill);
         if (c) add(d, 'Борлуулалт · өртөг', x.id, '6101', '1404', c, item + ' × ' + x.qty);
       } else {
         add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty), cust);
