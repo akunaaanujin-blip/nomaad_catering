@@ -108,6 +108,9 @@ function showMain() {
   $('login').style.display = 'none';
   $('main').style.display = 'block';
   $('who').textContent = staffName + (isManager ? ' · менежер' : '');
+  var L = (session && session.bizes || []).filter(function (b) { return BUSINESSES[b]; });
+  if (L.length > 1) $('bizName').innerHTML = '<select class="biz-pick" aria-label="Дэлгүүр солих" onchange="location.href=this.value+\'.html\'">' + L.map(function (b) {
+    return '<option value="' + b + '"' + (b === BIZ_KEY ? ' selected' : '') + '>' + esc(BUSINESSES[b].name) + '</option>'; }).join('') + '</select>';
   $('today').textContent = todayStr();
   renderEbBadge();
   renderToday();
