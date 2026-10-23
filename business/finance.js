@@ -322,7 +322,10 @@ function debtCat(k, g) {
 function debtStatus(it) { return it.closed ? 'closed' : it.paid > 0.5 ? 'part' : 'none'; }
 function repDebts(E, k, flt) {
   flt = flt === 'none' || !flt ? 'open' : flt;
-  var keep = function (it) { var s2 = debtStatus(it); return flt === 'all' || (flt === 'open' ? s2 !== 'closed' : s2 === flt); };
+  var q = String(state.dq || '').toLowerCase().trim();   // хайлт — харилцагчийн нэр, утас, тайлбар
+  var hasQ = function (t) { return !q || String(t || '').toLowerCase().indexOf(q) >= 0; };
+  var keep0 = function (it) { var s2 = debtStatus(it); return flt === 'all' || (flt === 'open' ? s2 !== 'closed' : s2 === flt); };
+  var keep = function (it) { return keep0(it) && (hasQ(it.who) || hasQ(it.desc) || hasQ(it.date)); };
   var T = DEBT_TABS[k], accs = debtAccs(k), td = todayStr(), oi = openItems(E, accs, T[3], td, k === 'l');
   // Нэг хүснэгт: харилцагч бүрийн нийт мөр (тод), доор нь тэр харилцагчийн баримтууд
   var days = function (d) { return Math.round((new Date(td) - new Date(d)) / 864e5); };
@@ -333,7 +336,7 @@ function repDebts(E, k, flt) {
   order.map(function (w) {
     var L = G[w], p = oi.P[w] || { open: [], over: 0 }, left = L.reduce(function (a, it) { return a + it.amt - it.paid; }, 0) - (p.over || 0);
     return { w: w, L: L, left: left, open: L.filter(function (it) { return !it.closed; }) };
-  }).filter(function (g) { return g.L.some(keep) || (flt === 'open' && Math.abs(g.left) > 0.5 && !g.L.length); }).forEach(function (g) {
+  }).filter(function (g) { return g.L.some(keep) || (flt === 'open' && Math.abs(g.left) > 0.5 && !g.L.length && hasQ(g.w)); }).forEach(function (g) {
     g.amt = g.L.reduce(function (a, it) { return a + it.amt; }, 0); g.cat = debtCat(k, g); GL.push(g);
   });
   // бүлэг (харилцагчийн төрөл) → харилцагч → баримт
@@ -418,8 +421,10 @@ function debtsPre(E) {
   var cur = state.dst === 'none' || !state.dst ? 'open' : state.dst;
   var chk = '<div class="tabs dst" style="margin:0 0 10px">' + DEBT_ST.map(function (x) {
     return '<button class="' + (cur === x[0] ? 'on' : '') + '" onclick="state.dst=\'' + x[0] + '\';render()">' + x[1] + ' <small>' + cnt[x[0]] + '</small></button>'; }).join('') + '</div>';
-  var bar = /^[rp]$/.test(k) ? '<div class="bk-bar"><button class="b-btn primary" id="dSelBtn" onclick="debtCloseSel()">Сонгосныг хаах (0)</button>' +
-    '<span class="muted" style="font-size:12.5px">Олон баримтыг нэг гүйлгээгээр, эсвэл хэсэгчлэн хааж болно — чагтлаад дарна.</span></div>' : '';
+  var srch = '<div class="bk-bar"><input id="dQ" type="search" value="' + esc(state.dq || '') + '" placeholder="Хайх — харилцагчийн нэр, утас, тайлбар (жишээ: буухиа, 9911…)" ' +
+    'style="flex:1;min-width:240px;padding:8px 10px;border:1px solid #D7DEE8;border-radius:8px;font-size:14px" oninput="debtSearch(this.value)"></div>';
+  var bar = srch + (/^[rp]$/.test(k) ? '<div class="bk-bar"><button class="b-btn primary" id="dSelBtn" onclick="debtCloseSel()">Сонгосныг хаах (0)</button>' +
+    '<span class="muted" style="font-size:12.5px">Олон баримтыг нэг гүйлгээгээр, эсвэл хэсэгчлэн хааж болно — чагтлаад дарна.</span></div>' : '');
   setTimeout(function () { if (typeof debtSelCount === 'function') debtSelCount(); }, 0);
   return tabs + (k === 'c' && isOwner() ? icReconCard() : '') + chk + bar;   // харилцагчаар нэгтгэсэн жагсаалт нь доорх нэг хүснэгтэд (repDebts)
 }
@@ -576,4 +581,11 @@ function debtPay(k, key) {
   $('vcPurpose').value = it.acc; vcPurpose();
   var i = -1; vcItems.forEach(function (x, j) { if (x.key === key) i = j; });
   if (i >= 0) vcPick(i, true);
+}
+
+// Авлага, өглөгийн хайлт — бичих зуур дахин зурна, курсорыг алдахгүй
+var _dqT = null;
+function debtSearch(v) {
+  state.dq = v; clearTimeout(_dqT);
+  _dqT = setTimeout(function () { render(); var i = document.getElementById('dQ'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 250);
 }
