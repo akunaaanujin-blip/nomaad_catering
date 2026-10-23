@@ -482,9 +482,10 @@ function debtItems(accs, sign, loan) {
 }
 function debtCache() {   // render бүрт нэг удаа
   if (!_debtCache) {
-    var ords = {}; (window.adminOrders || []).forEach(function (o) { ords[o.id] = 1; });
-    _debtCache = { rec: debtItems(['1201'], 1).filter(function (it) { return !ords[it.bill]; }),   // захиалгын авлагыг «Захиалга»-аар тулгана
-                   pay: debtItems(['3101'], -1) };   // зээлийг «Зээл» бүртгэлээр (L:) тулгана
+    var ords = {}, all = debtItems(['1201'], 1), ordLeft = {}; (window.adminOrders || []).forEach(function (o) { ords[o.id] = 1; });
+    all.forEach(function (it) { if (ords[it.bill]) ordLeft[it.bill] = r0((ordLeft[it.bill] || 0) + it.left); });   // захиалга бүрийн үлдсэн авлага (хэсэгчлэн төлсөн)
+    _debtCache = { rec: all.filter(function (it) { return !ords[it.bill]; }),   // захиалгын авлагыг «Захиалга»-аар тулгана
+                   pay: debtItems(['3101'], -1), ordLeft: ordLeft };   // зээлийг «Зээл» бүртгэлээр (L:) тулгана
   }
   return _debtCache;
 }

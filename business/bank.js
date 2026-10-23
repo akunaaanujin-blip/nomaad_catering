@@ -66,18 +66,21 @@ function importBank(input) {
 
 // ── Тааруулах ──
 function ordCust(o) { return (o.customer ? o.customer + ' ' : '') + o.phone; }
+// Захиалгын төлөх үлдэгдэл: баталгаажаагүй бол бүтэн дүн, хэсэгчлэн төлсөн бол авлагын үлдэгдэл (жишээ нь бараа 70,000 + хүргэлт 7,000-ыг тусад нь шилжүүлсэн)
+function ordDue(o) { return o.confirmed ? ((debtCache().ordLeft || {})[o.id] || 0) : Number(o.amount) || 0; }
+function ordOpen(o) { return !o.confirmed || ordDue(o) > 0.5; }
 function bankMatch(l) {
   var phones = (l.desc.replace(/(\d{4})\s(\d{4})/g, '$1$2').match(/\d{8}/g) || []), eb = /EB-?\s?\d{8}/i.test(l.desc);
   var list = (window.adminOrders || []).filter(function (o) { return o.biz === l.biz && !ordDead(o); });
   var byPhone = list.filter(function (o) { return phones.indexOf(String(o.phone).replace(/\D/g, '')) >= 0 || phones.indexOf(String(o.phone2 || '').replace(/\D/g, '')) >= 0; });
-  // баталгаажаагүй захиалгууд; ажилтан «орсон» гэж тэмдэглэснийг эхэнд
-  var unpaid = byPhone.filter(function (o) { return !o.confirmed; }).sort(function (a, b) { return (b.paid === 'Орсон') - (a.paid === 'Орсон'); });
-  var exact = unpaid.filter(function (o) { return Math.abs(o.amount - l.credit) < 1; });
+  // баталгаажаагүй, эсвэл хэсэгчлэн төлөгдөж авлага нь үлдсэн захиалгууд; ажилтан «орсон» гэж тэмдэглэснийг эхэнд
+  var unpaid = byPhone.filter(ordOpen).sort(function (a, b) { return (b.paid === 'Орсон') - (a.paid === 'Орсон'); });
+  var exact = unpaid.filter(function (o) { return Math.abs(ordDue(o) - l.credit) < 1; });
   if (exact.length) return { kind: 'order', o: exact[0], sure: true, eb: eb };
   if (eb && unpaid.length) { var o2 = unpaid.filter(function (o) { return o.amount > l.credit; })[0]; if (o2) return { kind: 'order', o: o2, sure: true, eb: true, fee: o2.amount - l.credit }; }
   if (unpaid.length) return { kind: 'order', o: unpaid[0], sure: false, eb: eb, fee: eb ? unpaid[0].amount - l.credit : 0 };
   if (byPhone.length) return { kind: 'paid', o: byPhone[0] };   // аль хэдийн баталгаажсан
-  var amt = list.filter(function (o) { return !o.confirmed && Math.abs(o.amount - l.credit) < 1; });
+  var amt = list.filter(function (o) { return ordOpen(o) && Math.abs(ordDue(o) - l.credit) < 1; });
   if (amt.length === 1) return { kind: 'order', o: amt[0], sure: false };
   return null;
 }
@@ -124,8 +127,8 @@ function bankView() {
       var opts = [], cur = bankPick[l.id];   // [утга, нэр, бүлэг]
       if (l.credit) {
         if (s.kind === 'paid') opts.push(['P:' + s.o.id, 'Аль хэдийн баталгаажсан: ' + s.o.phone + ' (давхар бичихгүй)', 'Захиалгын төлбөр']);
-        (window.adminOrders || []).filter(function (o) { return o.biz === biz && !o.confirmed && !ordDead(o); }).forEach(function (o) {
-          opts.push(['O:' + o.id, 'Захиалга ' + o.phone + ' · ' + fmt(o.amount) + ' · ' + o.status + (o.paid === 'Орсон' ? ' · ажилтан: орсон' : ''), 'Захиалгын төлбөр']); });
+        (window.adminOrders || []).filter(function (o) { return o.biz === biz && !ordDead(o) && ordOpen(o); }).forEach(function (o) {
+          opts.push(['O:' + o.id, 'Захиалга ' + o.phone + ' · ' + (o.confirmed ? 'үлдэгдэл ' + fmt(ordDue(o)) + ' / ' : '') + fmt(o.amount) + ' · ' + o.status + (o.paid === 'Орсон' ? ' · ажилтан: орсон' : ''), 'Захиалгын төлбөр']); });
         debtCache().rec.forEach(function (it) { opts.push(['D:' + it.acc + '|' + it.key, debtLabel(it), 'Авлага хаах']); });
         loanOpts(biz, true).forEach(function (o) { opts.push(o); });
         icOpts(biz, true).forEach(function (o) { opts.push(o.concat(['Компани хооронд'])); });
