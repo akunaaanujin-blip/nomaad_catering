@@ -53,10 +53,12 @@ function importBank(input) {
     });
     if (!lines.length) { toast('Гүйлгээ олдсонгүй'); return; }
     var fresh = lines.filter(function (l) { return !bankLines.some(function (b) { return b.id === l.id; }); });
+    var del = {}; (window.bankDeleted || []).forEach(function (l) { del[l.id] = 1; });   // өмнө устгасан мөрийг дахин оруулбал сэргээнэ
+    var back = fresh.filter(function (l) { return del[l.id]; }).map(function (l) { return { id: l.id, status: 'Шинэ', link: '' }; });
     if (!API_URL) { fresh.forEach(function (l) { l.status = 'Шинэ'; bankLines.push(l); }); save('nb_demo_bank', bankLines); state.biz = biz; render(); toast(fresh.length + ' шинэ гүйлгээ'); return; }
-    post({ type: 'admin_bank', by: ownerName, lines: fresh }, function (err, d) {
+    post({ type: 'admin_bank', by: ownerName, lines: fresh.filter(function (l) { return !del[l.id]; }), updates: back }, function (err, d) {
       if (err) { toast('Алдаа: ' + err); return; }
-      toast(d.added + ' шинэ гүйлгээ орлоо (' + (lines.length - d.added) + ' өмнө нь орсон)'); refresh();
+      var n = d.added + back.length; toast(n + ' гүйлгээ орлоо (' + (lines.length - n) + ' өмнө нь орсон)'); refresh();
     });
   };
   rd.readAsArrayBuffer(f);
@@ -114,7 +116,8 @@ function bankView() {
   var head = '<div class="kpis">' + kpi('Тулгах гүйлгээ', todo.length) +
     (last ? kpi('Хуулгын үлдэгдэл (' + last.date.slice(0, 10) + ')', fmt(last.bal)) + kpi('Санхүүгийн ' + acc + ' үлдэгдэл', fmt(ledger), Math.abs(last.bal - ledger) < 1 ? '<span style="color:var(--green)">Таарч байна</span>' : '<span style="color:var(--red)">Зөрүү ' + fmt(last.bal - ledger) + '</span>') : '') + '</div>';
   var tabs = '<div class="tabs" style="margin-bottom:10px">' + [['todo', 'Тулгах'], ['done', 'Тулгасан'], ['all', 'Бүгд']].map(function (t) {
-    return '<button class="' + (bankTab === t[0] ? 'on' : '') + '" onclick="bankTab=\'' + t[0] + '\';render()">' + t[1] + '</button>'; }).join('') + '</div>';
+    return '<button class="' + (bankTab === t[0] ? 'on' : '') + '" onclick="bankTab=\'' + t[0] + '\';render()">' + t[1] + '</button>'; }).join('') +
+    (todo.length ? '<button style="margin-left:auto" onclick="bankDel(null)">Тулгаагүй ' + todo.length + ' гүйлгээг устгах</button>' : '') + '</div>';
   var rows = list.map(function (l) {
     var s = l.status === 'Шинэ' ? bankSuggest(l) : null, sel = '';
     if (s) {
@@ -148,7 +151,7 @@ function bankView() {
     }
     return '<tr><td>' + esc(l.date) + '</td><td>' + esc(l.desc) + '</td><td class="n" style="color:var(--green)">' + (l.credit ? '+' + fmt(l.credit).slice(1) : '') + '</td>' +
       '<td class="n neg">' + (l.debit ? '−' + fmt(l.debit).slice(1) : '') + '</td><td>' + (s ? sel : '<span class="tag">' + esc(l.status) + '</span> <small class="muted">' + esc(l.link) + '</small>') + '</td>' +
-      '<td class="n">' + (s ? '<button class="mini" style="color:var(--accent)" onclick="bankApply([\'' + jsq(l.id) + '\'])">Тулгах</button>' : '') + '</td></tr>';
+      '<td class="n" style="white-space:nowrap">' + (s ? '<button class="mini" style="color:var(--accent)" onclick="bankApply([\'' + jsq(l.id) + '\'])">Тулгах</button> <button class="mini" title="Хуулгаас устгах" onclick="bankDel([\'' + jsq(l.id) + '\'])">Устгах</button>' : '') + '</td></tr>';
   }).join('');
   return head + '<div class="card"><h2>Төлбөрийн мэдээлэл (хэрэглэгчид илгээх мессежид)</h2><div class="bar-row"><input id="payInfo" value="' + esc(pay) + '" placeholder="Жишээ: Хаан банк 53xxxxxxxx (Н.Анужин)" style="flex:1;min-width:220px">' +
     '<button class="b-btn" onclick="savePayInfo()">Хадгалах</button></div><p class="muted" style="font-size:12.5px;margin-top:6px">Ажилтан захиалга бүртгэхэд «Төлбөрийн мессеж»-д энэ данс, дүн, «Гүйлгээний утга: утасны дугаар» бичигдэнэ — тулгалт автоматаар таарна.</p></div>' +
@@ -336,4 +339,20 @@ function undoPayOrder(id) {
   js.forEach(function (j) { post({ type: 'admin_journal', cancelId: j.id }, function () { fin(); }); });
   if (bl.length) post({ type: 'admin_bank', by: ownerName, updates: bl.map(function (l) { return { id: l.id, status: 'Шинэ', link: '' }; }) }, function () { fin(); });
   post({ type: 'admin_order', id: o.id, by: ownerName, fields: fields }, function () { fin(); });
+}
+
+// Буруу / давхар оруулсан хуулгыг устгах — зөвхөн тулгаагүй («Шинэ») мөр (Sheet-д «Устгасан» төлөвтэй үлдэнэ, дахин оруулбал сэргэнэ).
+// Тулгасан мөр санхүүд бичигдсэн тул эхлээд тулгалтыг нь буцаана.
+function bankDel(ids) {
+  var biz = state.biz, L = bankLines.filter(function (l) { return l.biz === biz && l.status === 'Шинэ' && (!ids || ids.indexOf(l.id) >= 0); });
+  if (!L.length) return;
+  var ds = L.map(function (l) { return l.date.slice(0, 10); }).sort();
+  if (!confirm(L.length === 1 ? 'Энэ гүйлгээг хуулгаас устгах уу?\n' + L[0].date + ' · ' + L[0].desc + ' · ' + fmt(L[0].credit || -L[0].debit) :
+    'Тулгаагүй ' + L.length + ' гүйлгээг (' + ds[0] + ' — ' + ds[ds.length - 1] + ') хуулгаас устгах уу?\n\nТулгасан гүйлгээ хэвээр үлдэнэ. Дараа нь хуулгаа дахин оруулж болно.')) return;
+  var gone = {}; L.forEach(function (l) { gone[l.id] = 1; });
+  if (!API_URL) { bankLines = bankLines.filter(function (l) { return !gone[l.id]; }); save('nb_demo_bank', bankLines); render(); return; }
+  post({ type: 'admin_bank', by: ownerName, updates: L.map(function (l) { return { id: l.id, status: 'Устгасан', link: '' }; }) }, function (err) {
+    if (err) { toast('Алдаа: ' + err); return; }
+    toast(L.length + ' гүйлгээ устгагдлаа'); refresh();
+  });
 }

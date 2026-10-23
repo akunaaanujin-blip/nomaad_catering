@@ -1450,3 +1450,11 @@ body.pos10 .sheet .panel{border-radius:12px 12px 0 0}
 .fd-t tr.fd-g td{background:#F8FAFC}
 .fd-t tr.tot td{border-top:2px solid #E2E8F0}
 .fd-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+/* Дансны хуулга — данс хайх */
+.lp{padding:12px 14px;margin-bottom:12px}
+.lp-h{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:10px}
+.lp-h input{flex:1;min-width:220px;padding:8px 10px;border:1px solid #D7DEE8;border-radius:8px;font-size:14px}
+.lp-l{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px;max-height:260px;overflow:auto}
+.lp-i{display:flex;justify-content:space-between;gap:8px;text-align:left;padding:7px 10px;border:1px solid #E5E9F0;border-radius:8px;background:#fff;cursor:pointer;font-size:13px}
+.lp-i:hover{background:#F5F8FC}.lp-i.on{border-color:#2F5B8E;background:#EEF3FA}
+.lp-i em{font-style:normal;white-space:nowrap;color:#475569}.lp-i em.neg{color:#E11D48}

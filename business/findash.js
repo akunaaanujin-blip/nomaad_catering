@@ -230,3 +230,28 @@ function cashAccView() {
     '<tr class="tot"><td><b>Нийт</b></td><td class="n"><b>' + mny(tot.o) + '</b></td><td class="n"><b>+' + mny(tot.i) + '</b></td><td class="n"><b>−' + mny(tot.out) + '</b></td><td class="n"><b>' + mny(tot.c) + '</b></td><td></td></tr></table></div>' +
     (neg.length ? '<p class="muted" style="font-size:13px;margin:10px 0 0">Хасах үлдэгдэлтэй данс байна — эхний үлдэгдэл оруулаагүй эсвэл зарим гүйлгээ дутуу бичигдсэн байж магадгүй.</p>' : '') + '</div></div>';
 }
+
+// ── Дансны хуулга: данс хайж сонгох (код, нэрээр) — данс бүрийн үлдэгдэлтэй, дарахад тэр дансны хуулга ──
+function ledgerPicker() {
+  var b = balances(J(), todayStr()), used = {};
+  J().forEach(function (e) { used[e.dr] = 1; used[e.cr] = 1; });
+  var cash = cashCodes().reduce(function (a, k) { return a + (b[k] || 0); }, 0);
+  var item = function (code, name, v, on) {
+    return '<button class="lp-i' + (on ? ' on' : '') + '" data-q="' + esc((code + ' ' + name).toLowerCase()) + '" onclick="state.acc=\'' + code + '\';render()"><span><b>' + esc(code === 'cashall' ? '' : code) + '</b> ' + esc(name) +
+      '</span><em class="' + (v < -0.5 ? 'neg' : '') + '">' + (v === null ? '' : mny(v)) + '</em></button>';
+  };
+  var list = item('cashall', 'Бүх мөнгөний данс (касс + банк) — нэгдсэн', cash, state.acc === 'cashall') + ACCOUNTS.filter(function (a) { return a[0] !== '0000'; }).map(function (a) {
+    var v = (b[a[0]] || 0) * (debitNormal(a[0]) ? 1 : -1);
+    return { a: a, v: v, u: used[a[0]] };
+  }).sort(function (x, y) { return (y.u ? 1 : 0) - (x.u ? 1 : 0) || (x.a[0] < y.a[0] ? -1 : 1); }).map(function (x) {
+    return item(x.a[0], accName(x.a[0]), x.u ? x.v : null, state.acc === x.a[0]) ;
+  }).join('');
+  var cur = state.acc === 'cashall' ? 'Бүх мөнгөний данс (нэгдсэн)' : state.acc + ' ' + accName(state.acc);
+  return '<div class="card lp"><div class="lp-h"><span class="muted">Данс:</span> <b>' + esc(cur) + '</b>' +
+    '<input id="lpQ" type="search" placeholder="Данс хайх — код эсвэл нэр (жишээ: 1201, авлага, хаан)" oninput="lpFilter(this.value)"></div>' +
+    '<div class="lp-l" id="lpL">' + list + '</div><p class="muted" style="font-size:12px;margin:6px 0 0">Гүйлгээтэй данснууд эхэнд. Дансан дээр дарвал доор тэр дансны дэлгэрэнгүй хуулга гарна.</p></div>';
+}
+function lpFilter(q) {
+  q = String(q || '').toLowerCase().trim();
+  [].forEach.call(document.querySelectorAll('#lpL .lp-i'), function (el) { el.style.display = !q || el.dataset.q.indexOf(q) >= 0 ? '' : 'none'; });
+}

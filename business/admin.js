@@ -90,7 +90,7 @@ function fetchAll(cb) {
     Object.keys(stockData).forEach(function (b) { if (stockData[b]) [FEE_ITEM, DISC_ITEM, SPLIT_ITEM].forEach(function (k) { delete stockData[b][k]; }); });   // бараа биш мөрүүд
     journal = d.journal || []; partners = d.partners || []; sheetProducts = d.products || []; applyProducts(); meta = d.meta || {};
     reminders = d.reminders || []; window.adminOrders = d.orders || []; window.loans = d.loans || []; window.pos = d.pos || []; window.bankLinks = d.bankLinks || [];
-    bankLines = d.bank || []; window.payInfoAll = d.payInfo || {}; window.spAll = d.storepay || {}; window.salesTargets = d.targets || {}; tasks = d.tasks || []; taxCfg = d.taxcfg || {}; customDocs = d.docs || [];
+    window.bankDeleted = (d.bank || []).filter(function (l) { return l.status === 'Устгасан'; }); bankLines = (d.bank || []).filter(function (l) { return l.status !== 'Устгасан'; }); window.payInfoAll = d.payInfo || {}; window.spAll = d.storepay || {}; window.salesTargets = d.targets || {}; tasks = d.tasks || []; taxCfg = d.taxcfg || {}; customDocs = d.docs || [];
     accountsX = d.accountsX || []; applyCustomAccounts(accountsX); meta.lock = d.lock || '';
     window.kpiCfg = d.kpi || {}; window.assets = d.assets || []; window.minStock = d.minstock || {};
     window.digestCfg = d.digest || { on: false, to: '' }; window.priceLog = d.priceLog || []; window.stockCounts = d.counts || [];
@@ -1208,9 +1208,7 @@ function subBody() {
       return '<option' + (state.partner === n ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select></label></div>';
     if (!state.partner) return pre + '<p class="muted">Харилцагчаа сонгоно уу.</p>';
   }
-  if (mod === 'finance' && sub === 'ledger') pre = '<div class="filter"><label>Данс<select onchange="state.acc=this.value;render()">' +
-    '<option value="cashall"' + (state.acc === 'cashall' ? ' selected' : '') + '>Бүх мөнгөний данс (касс + банк) — нэгдсэн</option>' +
-    ACCOUNTS.map(function (a) { return '<option value="' + a[0] + '"' + (state.acc === a[0] ? ' selected' : '') + '>' + a[0] + ' ' + esc(accName(a[0])) + '</option>'; }).join('') + '</select></label></div>';
+  if (mod === 'finance' && sub === 'ledger') pre = ledgerPicker();
   if (mod === 'finance' && sub === 'entry') pre = '<p class="hint">Борлуулалт, зарлага, бараа, цалин санхүүд <b>автоматаар</b> бичигддэг. Энд зөвхөн бусад гүйлгээг (эхний үлдэгдэл, хөрөнгө оруулалт, зээл, банкинд тушаах, нийлүүлэгчид төлөх г.м) оруулна.</p>';
   if (sub === 'entry') rep.edit = 'editEntry';
   if (mod === 'sales' && /^(receipts|orders|item|disc)$/.test(sub)) pre += searchBox(sub === 'orders' ? 'Утас, нэр, бараагаар хайх…' : sub === 'item' ? 'Барааны нэрээр хайх…' : 'Бараа, хэрэглэгч, утас, ажилтан, ДДТД-аар хайх…');

@@ -308,15 +308,28 @@ function openItems(E, accs, sign, to, loanKey) {
 }
 function repDebts(E, k, showClosed) {
   var T = DEBT_TABS[k], accs = debtAccs(k), td = todayStr(), oi = openItems(E, accs, T[3], td, k === 'l');
-  var rows = oi.items.filter(function (it) { return showClosed || !it.closed; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (it) {
-    var days = Math.round((new Date(td) - new Date(it.date)) / 864e5);
-    return { date: it.date, who: it.who, desc: it.desc, amt: r0(it.amt), paid: r0(it.paid), left: r0(it.amt - it.paid), closed: it.closed, st: it.closed ? 'Хаагдсан' : days + ' хоног',
-      _d: { left: debtSpec(k, it, td) },
-      _act: !it.closed && /^[rp]$/.test(k) ? '<button class="mini" style="color:var(--accent)" onclick="debtPay(\'' + k + '\',\'' + esc(it.key) + '\')">' + (k === 'r' ? 'Төлбөр авах' : 'Төлөх') + '</button>' : '' };
+  // Нэг хүснэгт: харилцагч бүрийн нийт мөр (тод), доор нь тэр харилцагчийн баримтууд
+  var days = function (d) { return Math.round((new Date(td) - new Date(d)) / 864e5); };
+  var G = {}, order = [];
+  oi.items.forEach(function (it) { if (!G[it.who]) { G[it.who] = []; order.push(it.who); } G[it.who].push(it); });
+  Object.keys(oi.P).forEach(function (w) { if (!G[w] && oi.P[w].over > 0.5) { G[w] = []; order.push(w); } });   // зөвхөн илүү төлсөн
+  var rows = [], tot = { amt: 0, paid: 0, left: 0 };
+  order.map(function (w) {
+    var L = G[w], p = oi.P[w] || { open: [], over: 0 }, left = L.reduce(function (a, it) { return a + it.amt - it.paid; }, 0) - (p.over || 0);
+    return { w: w, L: L, left: left, open: L.filter(function (it) { return !it.closed; }) };
+  }).filter(function (g) { return showClosed || Math.abs(g.left) > 0.5; }).sort(function (a, b) { return b.left - a.left; }).forEach(function (g) {
+    var amt = g.L.reduce(function (a, it) { return a + it.amt; }, 0), paid = amt - g.left, old = g.open.length ? g.open.map(function (it) { return it.date; }).sort()[0] : '';
+    tot.amt += amt; tot.paid += paid; tot.left += g.left;
+    rows.push({ _b: 1, date: '', who: g.w, desc: g.open.length + ' хаагдаагүй баримт', amt: r0(amt), paid: r0(paid), left: r0(g.left), closed: '', st: old ? days(old) + ' хоног' : 'Хаагдсан',
+      _d: { left: debtSpec(k, { who: g.w, acc: (oi.P[g.w] || {}).acc, np: (oi.P[g.w] || {}).np }, td) } });
+    g.L.filter(function (it) { return showClosed || !it.closed; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (it) {
+      rows.push({ date: it.date, who: '', desc: it.desc, amt: r0(it.amt), paid: r0(it.paid), left: r0(it.amt - it.paid), closed: it.closed, st: it.closed ? 'Хаагдсан' : days(it.date) + ' хоног',
+        _act: !it.closed && /^[rp]$/.test(k) ? '<button class="mini" style="color:var(--accent)" onclick="debtPay(\'' + k + '\',\'' + esc(it.key) + '\')">' + (k === 'r' ? 'Төлбөр авах' : 'Төлөх') + '</button>' : '' });
+    });
   });
-  return { title: T[0] + ' — ' + (showClosed ? 'бүгд' : 'хаагдаагүй'), rows: rows, actions: /^[rp]$/.test(k),
-    cols: [c('date', 'Үүссэн огноо'), c('who', 'Харилцагч'), c('desc', 'Тайлбар'), m('amt', 'Дүн'), m('paid', 'Төлсөн'), m('left', 'Үлдэгдэл'), c('closed', 'Хаасан огноо'), c('st', 'Төлөв')],
-    total: { date: 'Нийт', amt: sum(rows, 'amt'), paid: sum(rows, 'paid'), left: sum(rows, 'left') } };
+  return { title: T[0] + ' — харилцагчаар' + (showClosed ? ' (хаагдсан орсон)' : ''), rows: rows, actions: /^[rp]$/.test(k),
+    cols: [c('who', 'Харилцагч'), c('date', 'Огноо'), c('desc', 'Тайлбар'), m('amt', 'Дүн'), m('paid', 'Төлсөн'), m('left', 'Үлдэгдэл'), c('closed', 'Хаасан огноо'), c('st', 'Хугацаа')],
+    total: { who: 'Нийт', amt: r0(tot.amt), paid: r0(tot.paid), left: r0(tot.left) } };
 }
 // Нэг харилцагчийн (зээлийн хувьд нэг дансны) хуулга
 function debtSpec(k, p, td) {
@@ -370,20 +383,8 @@ function debtsPre(E) {
   var tabs = '<div class="tabs" style="margin-bottom:10px">' + Object.keys(DEBT_TABS).map(function (x) {
     var v = debtAccs(x).reduce(function (a, c2) { return a + (b[c2] || 0); }, 0) * DEBT_TABS[x][3];
     return '<button class="' + (k === x ? 'on' : '') + '" onclick="state.dtab=\'' + x + '\';render()">' + DEBT_TABS[x][0] + ' <small>' + mny(v) + '</small></button>'; }).join('') + '</div>';
-  var T = DEBT_TABS[k], accs = debtAccs(k), oi = openItems(E, accs, T[3], td, k === 'l');
-  var who = Object.keys(oi.P).map(function (w) {
-    var p = oi.P[w], left = p.open.reduce(function (a, it) { return a + it.amt - it.paid; }, 0) - p.over;
-    var old = p.open.length ? Math.round((new Date(td) - new Date(p.open[0].date)) / 864e5) : 0;
-    return { w: w, left: left, old: old, sp: debtSpec(k, { acc: p.acc, np: p.np, who: w }, td) };
-  }).filter(function (x) { return Math.abs(x.left) > 0.5; }).sort(function (a, b) { return b.left - a.left; });
-  var tot = who.reduce(function (a, x) { return a + x.left; }, 0);
-  var card = '<div class="card"><h2>' + T[0] + ' — харилцагчаар <small class="muted" style="font-weight:400">' + T[1] + '</small></h2><table class="rep-t"><tr><th>Харилцагч</th><th class="n">Үлдэгдэл</th><th class="n">Хамгийн удсан</th></tr>' +
-    (who.length ? who.map(function (x) {
-      return '<tr><td>' + esc(x.w) + '</td><td class="n' + (x.left < 0 ? ' neg' : '') + '">' + dl(x.sp, mny(x.left)) +
-        (x.left < 0 ? ' <small class="muted">' + (k === 'c' ? 'тэднээс ирсэн' : 'илүү төлсөн') + '</small>' : '') + '</td><td class="n">' + (x.old ? x.old + ' хоног' : '') + '</td></tr>'; }).join('') +
-      '<tr class="tot"><td>Нийт</td><td class="n">' + dl({ acc: accs, to: td, sign: T[3], grp: k === 'l' ? 'acc' : 'partner', t: T[0] }, mny(tot)) + '</td><td></td></tr>' : '<tr><td class="muted" colspan="3">' + T[0] + ' алга</td></tr>') + '</table></div>';
   var chk = '<label style="display:inline-flex;gap:6px;align-items:center;font-size:13px;margin:4px 0 8px"><input type="checkbox"' + (state.dclosed ? ' checked' : '') + ' onchange="state.dclosed=this.checked;render()"> Хаагдсаныг (бүрэн төлөгдсөн) харуулах</label>';
-  return tabs + card + (k === 'c' && isOwner() ? icReconCard() : '') + chk;
+  return tabs + (k === 'c' && isOwner() ? icReconCard() : '') + chk;   // харилцагчаар нэгтгэсэн жагсаалт нь доорх нэг хүснэгтэд (repDebts)
 }
 
 // ═══════════ ЦАЛИН, НДШ (хуучин «НДШ Цалин», «ХХОАТ/НДШ тайлан») ═══════════
