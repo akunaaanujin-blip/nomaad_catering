@@ -2139,7 +2139,7 @@ function openingView() {
     '<div class="card"><div class="filter"><label>Огноо<input type="date" id="opDate" value="' + (have[0] ? have[0].date : todayStr()) + '"></label></div>' +
     '<div class="scroll"><table class="rep-t"><tr><th>Данс</th><th>Нэр</th><th>Харилцагч (авлага, өглөгт)</th><th class="n">Дүн</th></tr>' + accs.map(function (a) {
       var ex = have.filter(function (j) { return j.dr === a[0] || j.cr === a[0]; }).reduce(function (s, j) { return s + j.amount; }, 0);
-      return '<tr><td>' + a[0] + '</td><td>' + esc(a[1]) + '</td><td>' + (/^(1201|3101|1503|3501)$/.test(a[0]) ? '<input class="op-p" data-a="' + a[0] + '" placeholder="Нэр">' : '') + '</td>' +
+      return '<tr><td>' + a[0] + '</td><td>' + esc(accName(a[0])) + '</td><td>' + (/^(1201|3101|1503|3501)$/.test(a[0]) ? '<input class="op-p" data-a="' + a[0] + '" placeholder="Нэр">' : '') + '</td>' +
         '<td class="n"><input class="op-v" data-a="' + a[0] + '" type="number" inputmode="numeric" style="width:140px;text-align:right" placeholder="' + (ex ? r0(ex) : '0') + '"></td></tr>';
     }).join('') + '</table></div>' + (have.length ? '<p class="muted" style="margin-top:8px">Өмнө оруулсан ' + have.length + ' мөр байна — «Журналын бичилт»-ээс засна. Энд нэмэлтээр бичигдэнэ.</p>' : '') +
     '<div class="pg-act" style="margin-top:10px"><button class="b-btn primary" onclick="saveOpening()">Эхний үлдэгдэл бичих</button></div></div>';
