@@ -6,7 +6,7 @@
 var ORD_STATUS = ['Шинэ', 'Буухиад өгсөн', 'Хүргэгдсэн', 'Буцаасан', 'Цуцалсан'];
 var ORD_PAYTYPE = ['Шилжүүлэг', 'Хүргэлтээр бэлэн', 'Дансаар дараа'];
 var LS_ORD = 'nb_orders_' + (typeof BIZ_KEY !== 'undefined' ? BIZ_KEY : 'cozy');
-var orders = load(LS_ORD, []), ordTab = 'bills', ordEdit = null, ordCart = [];
+var orders = load(LS_ORD, []), ordTab = 'new', ordEdit = null, ordCart = [];
 
 // Хаягаас дүүрэг, хороо таних (буухиа «Дүүрэг / сум *» баганад)
 var DISTRICTS = [
@@ -336,7 +336,7 @@ function brSeq(list) {
 }
 
 // ── Жагсаалт ──
-var ORD_TABS = [['bills', 'Өнөөдрийн баримт'], ['new', 'Илгээх'], ['sent', 'Буухиад'], ['unpaid', 'Төлбөр ороогүй'], ['back', 'Буцаасан, цуцалсан'], ['all', 'Бүгд']];
+var ORD_TABS = [['new', 'Илгээх'], ['sent', 'Буухиад'], ['unpaid', 'Төлбөр ороогүй'], ['back', 'Буцаасан, цуцалсан'], ['all', 'Бүгд']];
 function ordFilter(o) {
   if (ordTab === 'bills') return false;   // өнөөдрийн баримт — тусдаа жагсаалт (todayList)
   if (ordTab === 'new') return o.status === 'Шинэ';
@@ -376,7 +376,6 @@ function renderOrders() {
     if (t === 'bills') { var k = {}; (typeof todayRecords === 'function' ? todayRecords() : []).forEach(function (r) { if (r.type === 'sale') k[billKey(r)] = 1; }); return Object.keys(k).length; }
     var keep = ordTab; ordTab = t; var n = orders.filter(ordFilter).length; ordTab = keep; return n; };
   var bills = ordTab === 'bills';
-  if ($('todayWrap')) { $('todayWrap').style.display = bills ? '' : 'none'; el.style.display = bills ? 'none' : ''; if ($('ordSearch')) $('ordSearch').style.display = bills ? 'none' : ''; }
   $('orderTabs').innerHTML = ORD_TABS.map(function (t) { return '<button class="' + (ordTab === t[0] ? 'on' : '') + '" onclick="ordTab=\'' + t[0] + '\';renderOrders()">' + t[1] + ' <small>' + cnt(t[0]) + '</small></button>'; }).join('');
   if (typeof renderNav === 'function') renderNav();
   var list = orders.filter(ordFilter).filter(ordMatch).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });

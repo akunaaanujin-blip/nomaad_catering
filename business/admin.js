@@ -285,11 +285,12 @@ function bizModules(biz) { return BUSINESSES[biz] && BUSINESSES[biz].finOnly ? M
 function openMgmt() { state.view = 'company'; state.biz = 'mgmt'; state.module = 'finance'; render(); window.scrollTo(0, 0); }
 // Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
 var MENU = {
-  sales: [['Өдөр тутам', ['receipts', 'orders', 'boost']], ['Тайлан', ['item', 'cat', 'staff', 'day', 'pay', 'disc', 'slow']], ['И-баримт', ['ebarimt']]],
-  products: [['Бараа материал', ['catalog', 'stock', 'counts', 'in', 'po']], ['Тайлан', ['move', 'prices']], ['Харилцагч', ['suppliers']]],
+  sales: [['Бүртгэл', ['receipts', 'orders']], ['Шинжилгээ', ['item', 'cat', 'staff', 'day', 'pay', 'disc', 'slow', 'boost']], ['Татвар', ['ebarimt']]],
+  products: [['Бүртгэл', ['catalog', 'stock', 'in', 'counts']], ['Худалдан авалт', ['po', 'suppliers']], ['Тайлан', ['move', 'prices']]],
   // Санхүү — цөөн, ойлгомжтой цэс. Нягтлангийн тайлан, тохиргоо нь тус бүр нэг хуудсанд цуглуулагдсан (finance.js HUBS)
   // Санхүү — Excel «Санхүүгийн бүртгэлийн файл»-ын дарааллаар дугаартай 10 хуудас; бусад нь «Бусад» нэг хуудсанд (finance.js HUBS.other)
-  finance: [['Санхүү', ['daily', 'cashacc', 'money', 'journal', 'ledger', 'bank', 'cashflow', 'expcat', 'debts', 'loans', 'payroll', 'months']], ['Хүсэлт', ['requests']], ['', ['other']]],
+  // Санхүү — албан санхүүгийн програмын бүлэглэл: Мөнгө · Тооцоо · Тайлан · Нягтлан
+  finance: [['Мөнгө', ['cashacc', 'bank', 'money']], ['Тооцоо', ['debts', 'loans', 'payroll', 'requests']], ['Тайлан', ['daily', 'expcat', 'cashflow', 'months']], ['Нягтлан', ['journal', 'ledger', 'other']]],
 };
 function subLabel(mod, k) { var x = (SUBS[mod] || []).filter(function (s) { return s[0] === k; })[0]; return x ? x[1] : k; }
 function subGroup(mod, k) { var g = (MENU[mod] || []).filter(function (g) { return g[1].indexOf(k) >= 0; })[0]; return g ? g[0] : mod === 'finance' && hubOf(k) ? HUBS[hubOf(k)][0] : ''; }
@@ -304,14 +305,18 @@ function subnavHtml() {
     var one = mod === 'staff' ? [['Ажилчид', 'Ажилчид, цалин']] : mod === 'review' ? [['review', 'Сарын тойм']] : mod === 'docs' ? [['docs', 'Маягт, загвар']] : [['reports', 'Бүх тайлан']];
     return head + '<ul class="sub-list"><li><button class="on">' + one[0][1] + '</button></li></ul>' + moduleSwitch();
   }
-  return head + MENU[mod].map(function (g) {
+  var shut = load('nb_sg_shut', {});   // хураасан бүлгүүд (энэ төхөөрөмжид)
+  return head + MENU[mod].map(function (g, gi) {
     var ks = g[1].filter(function (k) { return subVisible(state.biz, k); });
     if (!ks.length) return '';
-    return (g[0] ? '<div class="sub-group">' + g[0] + '</div>' : '<div class="sub-sep"></div>') + '<ul class="sub-list">' + ks.map(function (k) {
-      var on = state.sub[mod] === k || (mod === 'finance' && (hubOf(state.sub[mod]) === k || hubOf(hubOf(state.sub[mod])) === k));
-      var num = mod === 'finance' && g[0] === 'Санхүү' ? '<span class="fd-sn">' + (ks.indexOf(k) + 1) + '</span>' : '';
-      return '<li><button class="' + (on ? 'on' : '') + '" onclick="setSub(\'' + k + '\')">' + num + subLabel(mod, k) + navBadge(k) + '</button></li>';
-    }).join('') + '</ul>';
+    var isOn = function (k) { return state.sub[mod] === k || (mod === 'finance' && (hubOf(state.sub[mod]) === k || hubOf(hubOf(state.sub[mod])) === k)); };
+    var closed = shut[mod + gi] && !ks.some(isOn);
+    var badges = ks.reduce(function (a, k) { return a + navCount(k); }, 0);
+    return '<div class="sg' + (closed ? ' closed' : '') + '"><button class="sg-h" onclick="sgToggle(\'' + mod + gi + '\')"><span>' + g[0] + '</span>' +
+      (closed && badges ? '<i class="nb-badge">' + badges + '</i>' : '') + '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>' +
+      '<ul class="sub-list">' + ks.map(function (k) {
+        return '<li><button class="' + (isOn(k) ? 'on' : '') + '" onclick="setSub(\'' + k + '\')"><span class="si">' + subIco(k) + '</span><span class="sl">' + subLabel(mod, k) + '</span>' + navBadge(k) + '</button></li>';
+      }).join('') + '</ul></div>';
   }).join('') + moduleSwitch();
 }
 // Тухайн компанид хамааралгүй дэд хуудсыг нууна (захиалгагүй бол «Захиалга», И-баримтгүй бол «И-баримт тулгалт»)
@@ -338,7 +343,7 @@ function crumbHtml() {
   if (state.view === 'docs') return '<b>Маягт, загвар</b>';
   if (state.view === 'tax') return '<span>' + esc(ENTITIES[taxState.ent].name) + '</span><i>/</i><b>Татвар, тайлан</b>';
   var B = BUSINESSES[state.biz], mod = state.module, parts = [MODULES.filter(function (m) { return m[0] === mod; })[0][1]];
-  if (MENU[mod]) { var sg = subGroup(mod, state.sub[mod]); parts.push(mod === 'finance' && (!sg || sg === parts[0]) ? subLabel(mod, state.sub[mod]) : sg); }
+  if (MENU[mod]) { var sg = subGroup(mod, state.sub[mod]); if (sg && sg !== parts[0]) parts.push(sg); parts.push(subLabel(mod, state.sub[mod])); }   // Модуль / Бүлэг / Хуудас
   return '<span class="crumb-co"><span class="mono" style="--co:' + B.color + '">' + B.icon + '</span><span class="nm">' + esc(B.name) + '</span></span><i>/</i>' +
     parts.map(function (p, i) { return i === parts.length - 1 ? '<b>' + p + '</b>' : '<span>' + p + '</span>'; }).join('<i>/</i>');
 }
@@ -1140,10 +1145,35 @@ function repManual(biz, f, t) {
 var vcReq = '';   // зарлагын баримт аль мөнгөний хүсэлтийг төлж байгаа
 function pendRequests(biz) { return records.filter(function (x) { return x.type === 'request' && x.biz === biz && !x.status; }); }
 function pendCounts(biz) { return (window.stockCounts || []).filter(function (m) { return m.biz === biz; }); }
-function navBadge(k) {
-  var n = k === 'requests' ? pendRequests(state.biz).length : k === 'counts' ? pendCounts(state.biz).length : 0;
-  return n ? ' <i class="nb-badge">' + n + '</i>' : '';
+function navCount(k) {   // цэсийн тоо: хүлээгдэж буй хүсэлт, тооллого, тулгаагүй банкны гүйлгээ, илгээгээгүй захиалга
+  if (k === 'requests') return pendRequests(state.biz).length;
+  if (k === 'counts') return pendCounts(state.biz).length;
+  if (k === 'bank') return (typeof bankLines !== 'undefined' ? bankLines : []).filter(function (l) { return l.biz === state.biz && l.status === 'Шинэ'; }).length;
+  if (k === 'orders') return (window.adminOrders || []).filter(function (o) { return o.biz === state.biz && o.status === 'Шинэ'; }).length;
+  return 0;
 }
+function navBadge(k) { var n = navCount(k); return n ? '<i class="nb-badge">' + n + '</i>' : ''; }
+function sgToggle(id) { var s = load('nb_sg_shut', {}); if (s[id]) delete s[id]; else s[id] = 1; save('nb_sg_shut', s); render(); }
+// Дэд цэсийн жижиг дүрс (хуудас бүрийн утгаар)
+var SUB_ICO = {
+  doc: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M9.5 12h5M9.5 15.5h5"/>', cart: '<path d="M3 4h2l2.4 10.5h9.8L19.5 7H6.2"/><circle cx="9" cy="19" r="1.3"/><circle cx="17" cy="19" r="1.3"/>',
+  bars: '<path d="M4 20h16M7 16v-5M12 16V7M17 16v-8"/>', pie: '<path d="M12 3v9h9a9 9 0 11-9-9z"/>', user: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5"/>',
+  cal: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>', card: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/>',
+  tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/>', clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  bolt: '<path d="M13 3L5 13h6l-1 8 8-10h-6z"/>', receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>', box: '<path d="M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9"/>',
+  layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>', in: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M4 19h16"/>', check: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/>',
+  truck: '<path d="M3 6h11v10H3zM14 9h4l3 3v4h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/>', people: '<circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.4"/><path d="M3.5 19c.8-3 3-4.5 5.5-4.5s4.7 1.5 5.5 4.5M15 15c2.4 0 4.3 1.2 5 4"/>',
+  swap: '<path d="M4 8h13l-3.5-3.5M20 16H7l3.5 3.5"/>', trend: '<path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/>', wallet: '<path d="M4 7h14a2 2 0 012 2v9a2 2 0 01-2 2H4z"/><path d="M4 7l11-3v3M16 13.5h2"/>',
+  bank: '<path d="M3 9.5L12 4l9 5.5M5 10v7M9.5 10v7M14.5 10v7M19 10v7M3.5 20h17"/>', list: '<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
+  scale: '<path d="M12 4v16M5 20h14M6 7h12M6 7l-3 6a3 3 0 006 0zM18 7l-3 6a3 3 0 006 0z"/>', loan: '<circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2c-.5-.9-1.5-1.4-2.8-1.4-1.6 0-2.8.8-2.8 2s1.2 1.6 2.8 1.9 2.8.8 2.8 2-1.2 2-2.8 2c-1.3 0-2.4-.5-2.8-1.4M12 6.5v1.3M12 16.2v1.3"/>',
+  pay: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6.5 9v6M17.5 9v6"/>', hand: '<path d="M7 12V6.5a1.5 1.5 0 013 0V11M10 10V5a1.5 1.5 0 013 0v5M13 10V6.5a1.5 1.5 0 013 0V13c0 4-2.5 7-6 7-2.5 0-4-1.5-5-3.5L3.5 13a1.5 1.5 0 012.6-1.4L7 13"/>',
+  flow: '<path d="M4 7h10M4 12h16M4 17h7"/><path d="M17 4l3 3-3 3"/>', book: '<path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/>', more: '<circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/>'
+};
+var SUB_ICO_OF = { receipts: 'receipt', orders: 'cart', item: 'bars', cat: 'pie', staff: 'user', day: 'cal', pay: 'card', disc: 'tag', slow: 'clock', boost: 'bolt', ebarimt: 'doc',
+  catalog: 'box', stock: 'layers', in: 'in', counts: 'check', po: 'truck', suppliers: 'people', move: 'swap', prices: 'trend',
+  cashacc: 'wallet', bank: 'bank', money: 'list', debts: 'scale', loans: 'loan', payroll: 'pay', requests: 'hand', daily: 'cal', expcat: 'pie', cashflow: 'flow', months: 'bars',
+  journal: 'book', ledger: 'doc', other: 'more' };
+function subIco(k) { return '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + SUB_ICO[SUB_ICO_OF[k] || 'doc'] + '</svg>'; }
 function pendTags(biz) {
   var r = pendRequests(biz).length, c = pendCounts(biz).length;
   return (r ? ' <span class="tag r">Мөнгөний хүсэлт ' + r + '</span>' : '') + (c ? ' <span class="tag r">Тооллого ' + c + '</span>' : '');

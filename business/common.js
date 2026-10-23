@@ -126,3 +126,9 @@ function ensureXlsx(cb) { if (window.XLSX) cb(); else loadLib(XLSX_SRC, cb); }
     if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
   });
 })();
+
+// Хайлт, бичих талбарт хөтчийн хуучин бичсэн үгийн жагсаалт гаргахгүй (нууц үг, нэвтрэх талбараас бусад)
+document.addEventListener('focusin', function (e) {
+  var t = e.target;
+  if (t && t.tagName === 'INPUT' && !t.hasAttribute('autocomplete') && !/password|email|tel/.test(t.type) && !/user|login|name/i.test(t.id || '')) t.setAttribute('autocomplete', 'off');
+}, true);

@@ -126,8 +126,10 @@ function showMain() {
 // Хуудас бүрийн одоогийн хэсгүүдийг view-ээр (dash / orders) ялгаж харуулна; утсан дээр цэс ☰ товчоор нээгдэнэ.
 var shellView = 'dash';
 function navMenu() {   // зөвхөн хуудсууд — үйлдлийн товчнууд хуудас дотроо нэг л удаа
-  var g = [['dash', 'Борлуулалт', function () { showView('dash'); }], ['stock', 'Барааны үлдэгдэл', function () { showView('stock'); }],
-           ['count', 'Тооллого', function () { showView('count'); }], ['req', 'Мөнгөний хүсэлт', function () { showView('req'); }]];
+  var g = [['dash', 'Борлуулалт', function () { showView('dash'); }]];
+  if (BIZ.orders) g.push(['orders', 'Захиалга', function () { showView('orders'); }]);   // захиалга — дэлгүүрийн борлуулалтаас тусдаа хуудас
+  g = g.concat([['stock', 'Барааны үлдэгдэл', function () { showView('stock'); }],
+           ['count', 'Тооллого', function () { showView('count'); }], ['req', 'Мөнгөний хүсэлт', function () { showView('req'); }]]);
   if (BIZ.boost && $('boostView')) g.push(['boost', 'Boost', function () { showView('boost'); }]);
   return [{ t: '', items: g }];
 }
@@ -1078,10 +1080,13 @@ function renderToday() {
   renderAttend();
   if (BIZ.orders && typeof renderOrders === 'function') setTimeout(renderOrders, 0);   // табын тоо шинэчлэгдэнэ
   var t = todayTotals();
-  $('sumSales').textContent = fmt(t.sales);
+  // Захиалгаас үүссэн борлуулалт (баримтын дугаар = захиалгын ID) — дэлгүүрийн борлуулалтаас тусад нь
+  var isOrd = function (r) { return r.type === 'sale' && typeof orders !== 'undefined' && orders.some(function (o) { return o.id === r.bill; }); };
+  var ordSum = todayRecords().filter(isOrd).reduce(function (a, r) { return a + (Number(r.amount) || 0); }, 0);
+  if ($('sumShop')) { $('sumShop').textContent = fmt(t.sales - ordSum); $('sumOrd').textContent = fmt(ordSum); $('sumNet').textContent = fmt(t.sales - ordSum - t.exp); }
+  else { $('sumSales').textContent = fmt(t.sales); $('sumNet').textContent = fmt(t.sales - t.exp); }
   $('sumExp').textContent = fmt(t.exp);
-  $('sumNet').textContent = fmt(t.sales - t.exp);
-  var recs = todayRecords().filter(function (r) { return r.type !== 'attend' && r.type !== 'boost'; }).slice().reverse();
+  var recs = todayRecords().filter(function (r) { return r.type !== 'attend' && r.type !== 'boost' && !isOrd(r); }).slice().reverse();
   var hb = $('histBtn');
   if (!hb && $('todayList')) { $('todayList').insertAdjacentHTML('afterend', '<button class="btn ghost" id="histBtn" style="margin-top:8px" onclick="openEbHist()">Баримтын түүх (өмнөх өдрүүд)</button>'); hb = $('histBtn'); }
   if (hb) hb.style.display = ebEnabled() || load(LS_REC, []).some(function (r) { return r.ddtd; }) ? '' : 'none';
