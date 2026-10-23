@@ -13,7 +13,7 @@ var BANK_PAY = [['1404', 'Бараа татан авалт'], ['3101', 'Нийл
 function bankOutOpts() {
   var grp = function (c) { return /^70/.test(c) ? 'Ерөнхий ба удирдлагын зардал' : /^71/.test(c) ? 'Борлуулалт, маркетингийн зардал' : 'Бусад зардал'; };
   return BANK_PAY.map(function (a) { return [a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1], 'Төлбөр, шилжүүлэг']; })
-    .concat(ACCOUNTS.filter(function (a) { return a[2] === 'exp'; }).map(function (a) { return ['A:' + a[0], a[0] + ' ' + a[1], grp(a[0])]; }));
+    .concat(ACCOUNTS.filter(function (a) { return a[2] === 'exp' && !accHidden(a[0]); }).map(function (a) { return ['A:' + a[0], a[0] + ' ' + a[1], grp(a[0])]; }));
 }
 var BANK_RULES = [[/boost|реклам|фэйсбүүк|facebook|meta|зар/i, '7120'], [/хураамж|шимтгэл|fee/i, '7201'], [/түрээс/i, '7114'], [/цалин/i, '3301'],
   [/шатахуун|бензин|benzin|petrovis|шунхлай|магнай/i, '7118'], [/unitel|mobicom|skytel|gmobile|интернет|univision/i, '7106'], [/ндш|даатгал/i, '3403'],

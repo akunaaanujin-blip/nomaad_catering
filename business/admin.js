@@ -290,7 +290,7 @@ var MENU = {
   // Санхүү — цөөн, ойлгомжтой цэс. Нягтлангийн тайлан, тохиргоо нь тус бүр нэг хуудсанд цуглуулагдсан (finance.js HUBS)
   // Санхүү — Excel «Санхүүгийн бүртгэлийн файл»-ын дарааллаар дугаартай 10 хуудас; бусад нь «Бусад» нэг хуудсанд (finance.js HUBS.other)
   // Санхүү — албан санхүүгийн програмын бүлэглэл: Мөнгө · Тооцоо · Тайлан · Нягтлан
-  finance: [['Мөнгө', ['cashacc', 'bank', 'money']], ['Тооцоо', ['recv', 'payb', 'debts', 'loans', 'payroll', 'requests']], ['Тайлан', ['daily', 'expcat', 'cashflow', 'months']], ['Нягтлан', ['journal', 'ledger', 'other']]],
+  finance: [['Мөнгө', ['cashacc', 'bank', 'money']], ['Тооцоо', ['recv', 'payb', 'debts', 'loans', 'payroll', 'requests']], ['Тайлан', ['daily', 'expcat', 'cashflow', 'months']], ['Нягтлан', ['journal', 'ledger', 'accounts', 'other']]],
 };
 function subLabel(mod, k) { var x = (SUBS[mod] || []).filter(function (s) { return s[0] === k; })[0]; return x ? x[1] : k; }
 function subGroup(mod, k) { var g = (MENU[mod] || []).filter(function (g) { return g[1].indexOf(k) >= 0; })[0]; return g ? g[0] : mod === 'finance' && hubOf(k) ? HUBS[hubOf(k)][0] : ''; }
@@ -409,7 +409,7 @@ function companyView() {
   if (sub === 'entry') acts = '<button class="b-btn primary" onclick="openEntry()">+ Журналын бичилт</button>' + acts;
   if (sub === 'vouchers') acts = '<button class="b-btn primary" onclick="openVoucher(\'КО\')">+ Кассын орлого</button><button class="b-btn primary" onclick="openVoucher(\'КЗ\')">+ Кассын зарлага</button>' +
     '<button class="b-btn" onclick="openVoucher(\'ХО\')">+ Харилцахын орлого</button><button class="b-btn" onclick="openVoucher(\'ХЗ\')">+ Харилцахын зарлага</button>' + acts;
-  if (sub === 'accounts') acts = '<button class="b-btn primary" onclick="addAccount()">+ Данс нэмэх</button>' + acts;
+  if (sub === 'accounts') acts = '<button class="b-btn primary" onclick="accEdit()">+ Данс нэмэх</button>';
   if (sub === 'bank') acts = '<button class="b-btn primary" onclick="$(\'bankFile\').click()">Хуулга оруулах (Excel)</button><button class="b-btn" onclick="setSub(\'banklink\')">Данс холбох</button>';
   if (sub === 'loans') acts = '<button class="b-btn primary" onclick="openLoan(null,\'Авсан\')">+ Авсан зээл</button><button class="b-btn primary" onclick="openLoan(null,\'Өгсөн\')">+ Өгсөн зээл</button>';
   if (sub === 'cashacc') acts = '<button class="b-btn primary" onclick="openBankLink()">+ Банкны данс нэмэх</button><button class="b-btn" onclick="setSub(\'bank\')">Хуулга оруулах</button>';
@@ -1097,7 +1097,7 @@ function makeReport(mod, sub) {
   if (sub === 'balance') return repBalance(E, t);
   if (sub === 'cashflow') return repCashflow(E, f, t);
   if (sub === 'partners') return repPartners(E, t);
-  if (sub === 'accounts') return repAccounts();
+  if (sub === 'accounts') return accountsView();
   if (sub === 'gl') return repGL(E, f, t);
   if (sub === 'aging_r') return repAging(E, t, '1201');
   if (sub === 'aging_p') return repAging(E, t, '3101');
@@ -1172,7 +1172,7 @@ var SUB_ICO = {
 var SUB_ICO_OF = { recv: 'in', payb: 'pay', receipts: 'receipt', orders: 'cart', item: 'bars', cat: 'pie', staff: 'user', day: 'cal', pay: 'card', disc: 'tag', slow: 'clock', boost: 'bolt', ebarimt: 'doc',
   catalog: 'box', stock: 'layers', in: 'in', counts: 'check', po: 'truck', suppliers: 'people', move: 'swap', prices: 'trend',
   cashacc: 'wallet', bank: 'bank', money: 'list', debts: 'scale', loans: 'loan', payroll: 'pay', requests: 'hand', daily: 'cal', expcat: 'pie', cashflow: 'flow', months: 'bars',
-  journal: 'book', ledger: 'doc', other: 'more' };
+  journal: 'book', ledger: 'doc', accounts: 'list', other: 'more' };
 function subIco(k) { return '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + SUB_ICO[SUB_ICO_OF[k] || 'doc'] + '</svg>'; }
 function pendTags(biz) {
   var r = pendRequests(biz).length, c = pendCounts(biz).length;
@@ -1445,7 +1445,7 @@ var PRESETS = [
   ['collect', 'Авлага орж ирсэн', '1101', '1201'],
   ['withdraw', 'Эзэн мөнгө авсан', '4101', '1101'],
 ];
-function accOptions(sel) { return ACCOUNTS.map(function (a) { return '<option value="' + a[0] + '"' + (sel === a[0] ? ' selected' : '') + '>' + a[0] + ' ' + esc(a[1]) + '</option>'; }).join(''); }
+function accOptions(sel) { return ACCOUNTS.filter(function (a) { return !accHidden(a[0]) || a[0] === sel; }).map(function (a) { return '<option value="' + a[0] + '"' + (sel === a[0] ? ' selected' : '') + '>' + a[0] + ' ' + esc(a[1]) + '</option>'; }).join(''); }
 function partnerOptions() { return partners.filter(function (p) { return p.biz === state.biz; }).map(function (p) { return '<option value="' + esc(p.name) + '">'; }).join(''); }
 function openEntry() {
   entryEditId = '';
@@ -2184,19 +2184,82 @@ function previewDoc() { printHtml($('deName').value || 'Маягт', $('deBody')
 
 // ═══════════ НЭМЭЛТ ДАНС ═══════════
 var accountsX = [];
-function addAccount() {
-  var code = prompt('Дансны код (4–6 оронтой тоо). Жишээ: 110107 — Голомт банкны харилцах, 3502 — Хаан банкны зээл'); if (!code) return;
-  code = code.trim();
-  if (!/^\d{4,6}$/.test(code)) { toast('Код 4–6 оронтой тоо байна'); return; }
-  if (ACC[code] && !ACC[code].custom) { toast('Энэ код системд бий: ' + ACC[code].name); return; }
-  var name = prompt('Дансны нэр', ACC[code] ? ACC[code].name : ''); if (!name) return;
-  var T = { '1': 'asset', '2': 'asset', '3': 'liab', '4': 'equity', '5': 'rev', '6': 'cogs', '7': 'exp' };
-  var type = T[code[0]] || 'exp';
-  var cash = type === 'asset' && /^1[01]/.test(code) && confirm('Энэ нь мөнгөн хөрөнгийн данс уу (касс, банкны харилцах)?');
-  accountsX = accountsX.filter(function (a) { return a.code !== code; }).concat([{ code: code, name: name.trim(), type: type, cash: cash }]);
-  applyCustomAccounts(accountsX);
-  if (!API_URL) { save('nb_demo_accx', accountsX); render(); return; }
-  post({ type: 'admin_setting', key: 'accounts', value: accountsX }, function (err) { toast(err ? 'Алдаа: ' + err : 'Данс нэмэгдлээ'); refresh(); });
+function addAccount() { accEdit(); }
+// ═══════════ ДАНСНЫ ТӨЛӨВЛӨГӨӨ — нэмэх, засах, нуух, устгах ═══════════
+// Системийн данс: нэрийг засах, хэрэглээгүй бол нуух (устгахгүй). Нэмсэн данс: засах, хэрэглээгүй бол устгах.
+var ACC_TYPES = [['asset', 'Хөрөнгө'], ['liab', 'Өр төлбөр'], ['equity', 'Эздийн өмч'], ['rev', 'Орлого'], ['contra', 'Орлогын хасалт'], ['cogs', 'Борлуулсны өртөг'], ['exp', 'Зардал']];
+function accUsage() {   // бүх компанийн журналд данс бүр хэдэн удаа орсон
+  var u = {}; ALL_KEYS.forEach(function (b) { buildJournal(b, R()).forEach(function (e) { u[e.dr] = (u[e.dr] || 0) + 1; u[e.cr] = (u[e.cr] || 0) + 1; }); });
+  return u;
+}
+function accGroupName(a) {
+  if (a[2] === 'exp') return /^70/.test(a[0]) ? 'Зардал — ерөнхий ба удирдлагын' : /^71/.test(a[0]) ? 'Зардал — борлуулалт, маркетингийн' : 'Зардал — бусад';
+  return (ACC_TYPES.filter(function (t) { return t[0] === a[2]; })[0] || ['', 'Бусад'])[1];
+}
+function accountsView() {
+  var u = accUsage(), q = String(state.accQ || '').toLowerCase().trim(), G = {}, order = [];
+  ACCOUNTS.filter(function (a) { return a[0] !== '0000' && (!q || (a[0] + ' ' + a[1]).toLowerCase().indexOf(q) >= 0); }).forEach(function (a) {
+    var g = accGroupName(a); if (!G[g]) { G[g] = []; order.push(g); } G[g].push(a);
+  });
+  var rows = order.map(function (g) {
+    return '<tr class="dcat"><td colspan="5">' + g + ' <small style="font-weight:400">· ' + G[g].length + '</small></td></tr>' + G[g].map(function (a) {
+      var A = ACC[a[0]] || {}, n = u[a[0]] || 0;
+      var tags = (A.custom ? '<span class="tag b">Нэмсэн</span> ' : '') + (A.renamed ? '<span class="tag">Нэр өөрчилсөн</span> ' : '') + (A.hide ? '<span class="tag r">Нуусан</span> ' : '') + (A.cash ? '<span class="tag g">Мөнгө</span>' : '');
+      var acts = '<button class="mini" onclick="accEdit(\'' + a[0] + '\')">Засах</button> ' +
+        (A.custom ? '<button class="mini" onclick="accDel(\'' + a[0] + '\')"' + (n ? ' disabled title="Гүйлгээтэй данс устгах боломжгүй"' : '') + '>Устгах</button>' :
+          '<button class="mini" onclick="accHide(\'' + a[0] + '\')">' + (A.hide ? 'Харуулах' : 'Нуух') + '</button>');
+      return '<tr' + (A.hide ? ' style="opacity:.55"' : '') + '><td><b>' + a[0] + '</b></td><td>' + esc(a[1]) + ' ' + tags + '</td><td class="n">' + (n ? n + ' гүйлгээ' : '<small class="muted">хэрэглээгүй</small>') + '</td><td class="n" style="white-space:nowrap">' + acts + '</td></tr>';
+    }).join('');
+  }).join('');
+  return '<p class="hint">Системийн дансны нэрийг өөрчилж, хэрэглээгүйг нь нууж болно (нуусан данс сонголтод гарахгүй). Өөрийн нэмсэн дансыг засах, гүйлгээгүй бол устгах боломжтой. Baaz-ын стандарт дансны төлөвлөгөөтэй нийцнэ.</p>' +
+    '<div class="d-tool"><input id="accQ" type="search" value="' + esc(state.accQ || '') + '" placeholder="Данс хайх: код эсвэл нэр" oninput="state.accQ=this.value;clearTimeout(window._aqT);window._aqT=setTimeout(function(){render();var i=$(\'accQ\');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},250)"></div>' +
+    '<div class="card"><table class="rep-t"><tr><th>Код</th><th>Дансны нэр</th><th class="n">Хэрэглээ</th><th></th></tr>' + (rows || '<tr><td colspan="4" class="muted">Данс олдсонгүй</td></tr>') + '</table></div>';
+}
+function accSave(list, msg) {
+  if (JSON.stringify(list).length > 7800) { toast('Хэт олон өөрчлөлт — зарим нэмсэн дансаа устгана уу'); return; }
+  accountsX = list; applyCustomAccounts(accountsX); render();
+  if (!API_URL) { save('nb_demo_accx', accountsX); return; }
+  post({ type: 'admin_setting', key: 'accounts', value: accountsX }, function (err) { toast(err ? 'Алдаа: ' + err : msg); if (!err) refresh(); });
+}
+function accEdit(code) {
+  var A = code ? ACC[code] : null, x = code ? (accountsX.filter(function (a) { return a.code === code; })[0] || {}) : {};
+  gOpen('<h2>' + (A ? 'Данс засах' : 'Данс нэмэх') + '</h2>' +
+    '<div class="row2"><div><label for="acCode">Код</label><input id="acCode" inputmode="numeric" value="' + esc(code || '') + '"' + (A ? ' disabled' : ' placeholder="Жишээ: 7125, 110107"') + '></div>' +
+    '<div><label for="acType">Төрөл</label><select id="acType"' + (A && A.base ? ' disabled' : '') + '>' + ACC_TYPES.map(function (t) { return '<option value="' + t[0] + '"' + ((A ? A.type : 'exp') === t[0] ? ' selected' : '') + '>' + t[1] + '</option>'; }).join('') + '</select></div></div>' +
+    '<label for="acName">Дансны нэр</label><input id="acName" value="' + esc(A ? A.name : '') + '" placeholder="Жишээ: Интернет, утасны зардал">' +
+    '<label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="acCash"' + (A && A.cash ? ' checked' : '') + (A && A.base ? ' disabled' : '') + ' style="width:auto"> Мөнгөн хөрөнгийн данс (касс, банкны харилцах)</label>' +
+    (A && A.base ? '<p class="muted" style="font-size:12.5px">Системийн данс — зөвхөн нэрийг нь өөрчилнө. Код, төрөл өөрчлөгдөхгүй.' + (A.renamed ? ' <a class="link" onclick="accReset(\'' + code + '\')">Анхны нэр рүү буцаах</a>' : '') + '</p>' :
+      '<p class="muted" style="font-size:12.5px">Код: 1 — хөрөнгө, 3 — өр, 4 — өмч, 5 — орлого, 6 — өртөг, 7 — зардал гэж эхэлнэ. Зардлыг Baaz-ын адил 70xx (удирдлага), 71xx (борлуулалт) гэж ангилна.</p>') +
+    '<button class="btn" onclick="accEditSave(\'' + (code || '') + '\')">Хадгалах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
+}
+function accEditSave(code) {
+  var A = code ? ACC[code] : null, name = $('acName').value.trim();
+  if (!name) { toast('Дансны нэрээ бичнэ үү'); return; }
+  var list = accountsX.slice();
+  if (A && A.base) {
+    list = list.filter(function (a) { return a.code !== code; }).concat([Object.assign({}, accountsX.filter(function (a) { return a.code === code; })[0] || {}, { code: code, name: name })]);
+    gClose(); accSave(list, 'Дансны нэр өөрчлөгдлөө'); return;
+  }
+  var c = A ? code : $('acCode').value.trim(), type = $('acType').value, cash = $('acCash').checked;
+  if (!/^\d{4,6}$/.test(c)) { toast('Код 4–6 оронтой тоо байна'); return; }
+  if (!A && ACC[c]) { toast('Энэ код аль хэдийн бий: ' + ACC[c].name); return; }
+  if (cash && type !== 'asset') { toast('Мөнгөн данс нь «Хөрөнгө» төрөлтэй байна'); return; }
+  list = list.filter(function (a) { return a.code !== c; }).concat([{ code: c, name: name, type: type, cash: cash }]);
+  gClose(); accSave(list, A ? 'Данс засагдлаа' : 'Данс нэмэгдлээ');
+}
+function accReset(code) { gClose(); accSave(accountsX.filter(function (a) { return a.code !== code; }), 'Анхны нэр рүү буцлаа'); }
+function accHide(code) {
+  var A = ACC[code]; if (!A) return;
+  if (!A.hide && (accUsage()[code] || 0)) { toast('Гүйлгээтэй дансыг нуух боломжгүй'); return; }
+  var x = accountsX.filter(function (a) { return a.code === code; })[0], rest = accountsX.filter(function (a) { return a.code !== code; });
+  var nx = Object.assign({}, x || { code: code }, { hide: !A.hide });
+  accSave(nx.hide || nx.name ? rest.concat([nx]) : rest, A.hide ? 'Данс сонголтод дахин гарна' : 'Данс нуугдлаа');
+}
+function accDel(code) {
+  var A = ACC[code]; if (!A || !A.custom) return;
+  if (accUsage()[code]) { toast('Гүйлгээтэй дансыг устгах боломжгүй — эхлээд гүйлгээг нь өөр данс руу засна уу'); return; }
+  if (!confirm(code + ' ' + A.name + ' дансыг устгах уу?')) return;
+  accSave(accountsX.filter(function (a) { return a.code !== code; }), 'Данс устгагдлаа');
 }
 
 // ═══════════ ЭХНИЙ ҮЛДЭГДЭЛ ═══════════

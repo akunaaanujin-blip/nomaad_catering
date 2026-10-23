@@ -64,14 +64,21 @@ var ACCOUNTS = [
 var ACC = {};
 ACCOUNTS.forEach(function (a) { ACC[a[0]] = { code: a[0], name: a[1], type: a[2], cash: a[3] === 'cash' }; });
 // Удирдагчийн нэмсэн данс (жишээ: өөр банкны харилцах, тодорхой зээл) — Дансны төлөвлөгөө → «+ Данс нэмэх»
-var BASE_ACC_N = ACCOUNTS.length;
+var BASE_ACC_N = ACCOUNTS.length, BASE_ACC = ACCOUNTS.map(function (a) { return a.slice(); });   // анхны (системийн) данс
+// list: [{code, name, type, cash, hide}] — шинэ данс, эсвэл системийн дансны нэрийг өөрчлөх / нуух (Санхүү → Дансны төлөвлөгөө)
 function applyCustomAccounts(list) {
-  ACCOUNTS.splice(BASE_ACC_N);
-  (list || []).forEach(function (a) { if (!ACC[a.code] || ACC[a.code].custom) ACCOUNTS.push([a.code, a.name, a.type, a.cash ? 'cash' : '']); });
+  ACCOUNTS.length = 0; BASE_ACC.forEach(function (a) { ACCOUNTS.push(a.slice()); });
+  var base = {}; BASE_ACC.forEach(function (a) { base[a[0]] = 1; });
+  (list || []).forEach(function (a) {
+    if (base[a.code]) { ACCOUNTS.forEach(function (r) { if (r[0] === a.code && a.name) r[1] = a.name; }); return; }
+    ACCOUNTS.push([a.code, a.name, a.type, a.cash ? 'cash' : '']);
+  });
   ACCOUNTS.sort(function (x, y) { return x[0] === '0000' ? -1 : y[0] === '0000' ? 1 : x[0] < y[0] ? -1 : 1; });
-  ACCOUNTS.forEach(function (a) { var was = ACC[a[0]]; ACC[a[0]] = { code: a[0], name: a[1], type: a[2], cash: a[3] === 'cash', custom: was ? was.custom : false }; });
-  (list || []).forEach(function (a) { if (ACC[a.code]) ACC[a.code].custom = true; });
+  Object.keys(ACC).forEach(function (k) { if (!base[k]) delete ACC[k]; });
+  ACCOUNTS.forEach(function (a) { ACC[a[0]] = { code: a[0], name: a[1], type: a[2], cash: a[3] === 'cash', custom: !base[a[0]], base: !!base[a[0]] }; });
+  (list || []).forEach(function (a) { if (ACC[a.code]) { ACC[a.code].hide = !!a.hide; if (ACC[a.code].base && a.name) ACC[a.code].renamed = true; } });
 }
+function accHidden(code) { return !!(ACC[code] && ACC[code].hide); }
 var BUUHIA = 'Буухиа';
 // Хуучин зардлын код → Baaz код. Шинэ төлөвлөгөөнд байхгүй хуучин код үргэлж хөрвүүлэгдэнэ; давхцах 7201, 7401 нь
 // зөвхөн шилжүүлэлтийн мөчөөс (MIG_TS) өмнө бичигдсэн гараар бичилтэд хөрвүүлэгдэнэ (Sheet-ийн өгөгдлийг өөрчлөхгүй).
