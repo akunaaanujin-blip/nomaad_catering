@@ -407,11 +407,12 @@ function debtSelGrp(el) {
   [].forEach.call(document.querySelectorAll('input.dsel[data-grp="' + el.dataset.grp + '"]'), function (c) { c.checked = el.checked; if (el.checked) debtSel[c.dataset.key] = Number(c.dataset.left) || 0; else delete debtSel[c.dataset.key]; });
   debtSelCount();
 }
-function debtSelCount() {
-  var b = document.getElementById('dSelBtn'), ks = Object.keys(debtSel); if (!b) return;
-  b.textContent = 'Сонгосныг хаах (' + ks.length + (ks.length ? ' · ' + fmt(ks.reduce(function (a, k) { return a + debtSel[k]; }, 0)) : '') + ')';
+function debtSelCount() {   // сонгосон үед л доод талд «Сонгосныг хаах» мөр гарна
+  var bar = document.getElementById('dSelBar'), ks = Object.keys(debtSel); if (!bar) return;
+  bar.classList.toggle('on', ks.length > 0);
+  document.getElementById('dSelTxt').innerHTML = '<b>' + ks.length + '</b> баримт сонгосон · <b>' + fmt(ks.reduce(function (a, k) { return a + debtSel[k]; }, 0)) + '</b>';
 }
-function debtCloseSel() { var ks = Object.keys(debtSel); if (!ks.length) { toast('Хаах баримтаа чагтална уу'); return; } debtClose(state.dtab || 'r', ks); }
+function debtCloseSel() { var ks = Object.keys(debtSel); if (!ks.length) { toast('Хаах баримтаа чагтална уу'); return; } debtClose(debtTabOf(state.sub.finance), ks); }
 function debtClose(k, keys) {
   if (typeof keys === 'string') keys = [keys];
   var all = k === 'r' ? debtItems(['1201'], 1) : debtItems(['3101'], -1);

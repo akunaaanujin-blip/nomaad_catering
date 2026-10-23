@@ -18,10 +18,11 @@ function moneyType(x) {
   var o = String(x.other), isIn = (x.raw !== undefined ? x.raw : x.v) > 0;   // raw — тэмдэг солихоос өмнөх чиглэл (данс руу орсон бол +)
   if (ACC[o] && ACC[o].cash) return 'Данс хооронд';
   if (o === '5101' || o === '5102') return x.acc === '110106' ? 'Пос (карт) орлого' : 'Борлуулалтын орлого';
-  if (o === '1201') return 'Авлага төлөгдсөн';
+  if (o === '1201') return /#O\d|Захиалгын/.test(String(x.desc)) ? 'Захиалгын орлого' : 'Авлага төлөгдсөн';
   if (o === '3802') return 'Захиалгын урьдчилгаа';
   if (o === '6001') return 'Бараа буцаалт';
   if (/^35/.test(o)) return isIn ? 'Зээл авсан' : 'Зээл төлөлт';
+  if (o === '4201' && /^Эхний үлдэгдэл/.test(String(x.desc))) return 'Эхний үлдэгдэл';
   if (o === '4101' || o === '4201') return isIn ? 'Эзэн мөнгө оруулсан' : 'Эзэн мөнгө авсан';
   if (o === '3101' || o === '1404' || o === '6101' || o === '1503') return isIn ? 'Нийлүүлэгчээс буцаасан' : 'Бараа татан авалт';
   if (o === '7101' || o === '3301' || o === '1207') return 'Цалин';
@@ -153,12 +154,12 @@ function simpleView() {
     '<div class="grid2"><div class="card"><h2>Танд өртэй (авлага)</h2><table class="rep-t">' + (recv.length ? recv.slice(0, 8).map(function (x) {
         return line(esc(x.name), x.rec, { acc: ['1201'], partner: x.name, to: td, sign: 1, bal: true, t: x.name + ' — авлага' }); }).join('') +
       '<tr class="tot"><td>Нийт' + (recv.length > 8 ? ' (' + recv.length + ' харилцагч)' : '') + '</td><td class="n">' + dl({ acc: ['1201'], to: td, sign: 1, grp: 'partner', t: 'Авлага' }, mny(sum(recv, 'rec'))) + '</td></tr>' : '<tr><td class="muted">Авлага алга</td><td></td></tr>') + '</table>' +
-      '<div class="pg-act" style="margin-top:8px"><button class="b-btn" onclick="state.dtab=\'r\';setSub(\'debts\')">Дэлгэрэнгүй</button></div></div>' +
+      '<div class="pg-act" style="margin-top:8px"><button class="b-btn" onclick="setSub(\'recv\')">Дэлгэрэнгүй</button></div></div>' +
     '<div class="card"><h2>Таны өр (өглөг, зээл)</h2><table class="rep-t">' + pays.slice(0, 8).map(function (x) {
         return line(esc(x.name), x.pay, { acc: ['3101', '3802'], partner: x.name, to: td, sign: -1, bal: true, t: x.name + ' — өглөг' }); }).join('') +
       (loanBal > 0.5 ? line('Банкны зээл', loanBal, { acc: loans, to: td, sign: -1, grp: 'acc', t: 'Зээл' }) : '') +
       (payTot > 0.5 ? '<tr class="tot"><td>Нийт</td><td class="n">' + dl({ acc: ['3101', '3802'].concat(loans), to: td, sign: -1, grp: 'partner', t: 'Өглөг, зээл' }, mny(payTot)) + '</td></tr>' : '<tr><td class="muted">Өр алга</td><td></td></tr>') + '</table>' +
-      '<div class="pg-act" style="margin-top:8px"><button class="b-btn" onclick="state.dtab=\'p\';setSub(\'debts\')">Дэлгэрэнгүй</button><button class="b-btn" onclick="openRem(null,{kind:\'Өглөг төлөх\'})">Төлөх өдрөө сануулах</button></div></div></div>' +
+      '<div class="pg-act" style="margin-top:8px"><button class="b-btn" onclick="setSub(\'payb\')">Дэлгэрэнгүй</button><button class="b-btn" onclick="openRem(null,{kind:\'Өглөг төлөх\'})">Төлөх өдрөө сануулах</button></div></div></div>' +
     simpleTodo();
 }
 
@@ -279,6 +280,8 @@ var DEBT_TABS = { r: ['Авлага', 'Танд өгөх ёстой', ['1201'], 
   c: ['Компани хооронд', 'Бусад компани руу явуулсан (+) / тэднээс ирсэн (−)', ['1290'], 1], d: ['Захирлын зарлага', 'Захирлын хувийн зарлага (компаниас гарсан)', ['1208'], 1],
   a: ['Захиалгын урьдчилгаа', 'Мөнгө нь орсон, бараа нь хүргэгдээгүй', ['3802'], -1] };
 function debtAccs(k) { return DEBT_TABS[k][2]; }
+// Цэс: «Авлага», «Өглөг» тусдаа хуудас; «Бусад тооцоо» — компани хооронд, захирлын зарлага, захиалгын урьдчилгаа
+function debtTabOf(sub) { if (sub === 'recv') return 'r'; if (sub === 'payb') return 'p'; return /^[cda]$/.test(state.dtab) ? state.dtab : 'c'; }
 // Нэг бүрчлэн (FIFO): үүссэн өр бүрийг дараагийн төлөлтөөр хааж, хаасан огноог тэмдэглэнэ
 function openItems(E, accs, sign, to, loanKey) {
   var A = {}; accs.forEach(function (k) { A[k] = 1; });
@@ -411,22 +414,25 @@ function icReconCard() {
       }).join('') + '</table></div>' : '<p class="rep-note ok">Бүх шилжүүлэг хоёр талдаа бүртгэгдсэн.</p>') + '</div>';
 }
 function debtsPre(E) {
-  var k = state.dtab || 'r', td = todayStr(), b = balances(E, td);
-  var tabs = '<div class="tabs" style="margin-bottom:10px">' + Object.keys(DEBT_TABS).map(function (x) {
+  var sub = state.sub.finance, k = debtTabOf(sub), td = todayStr(), b = balances(E, td), T = DEBT_TABS[k];
+  // «Бусад тооцоо» дээр л таб (компани хооронд · захирлын зарлага · урьдчилгаа)
+  var tabs = sub === 'debts' ? '<div class="seg" style="margin-bottom:12px">' + ['c', 'd', 'a'].map(function (x) {
     var v = debtAccs(x).reduce(function (a, c2) { return a + (b[c2] || 0); }, 0) * DEBT_TABS[x][3];
-    return '<button class="' + (k === x ? 'on' : '') + '" onclick="state.dtab=\'' + x + '\';render()">' + DEBT_TABS[x][0] + ' <small>' + mny(v) + '</small></button>'; }).join('') + '</div>';
-  // Төлөвөөр ангилах: нээлттэй (төлөөгүй + хэсэгчлэн) · төлөөгүй · хэсэгчлэн төлсөн · хаагдсан · бүгд
-  var oiC = openItems(E, debtAccs(k), DEBT_TABS[k][3], td, k === 'l').items, cnt = { open: 0, none: 0, part: 0, closed: 0, all: oiC.length };
-  oiC.forEach(function (it) { var s2 = debtStatus(it); cnt[s2]++; if (s2 !== 'closed') cnt.open++; });
+    return '<button class="' + (k === x ? 'on' : '') + '" onclick="state.dtab=\'' + x + '\';render()">' + DEBT_TABS[x][0] + ' <small>' + mny(v) + '</small></button>'; }).join('') + '</div>' : '';
+  // Товч үзүүлэлт
+  var oiC = openItems(E, debtAccs(k), T[3], td, k === 'l').items, cnt = { open: 0, part: 0, closed: 0, all: oiC.length }, left = 0, late = 0, who = {};
+  oiC.forEach(function (it) { var s2 = debtStatus(it); cnt[s2]++; if (s2 !== 'closed') { cnt.open++; var l = it.amt - it.paid; left += l; who[it.who] = 1; if ((new Date(td) - new Date(it.date)) / 864e5 > 30) late += l; } });
+  var kp = function (lbl, v, cls) { return '<div class="dk2' + (cls ? ' ' + cls : '') + '"><small>' + lbl + '</small><b>' + v + '</b></div>'; };
+  var kpis = '<div class="dk2-row">' + kp(k === 'p' ? 'Төлөх үлдэгдэл' : k === 'r' ? 'Авах үлдэгдэл' : 'Үлдэгдэл', mny(left)) + kp('Хаагдаагүй баримт', cnt.open) +
+    kp('Харилцагч', Object.keys(who).length) + kp('30 хоногоос хэтэрсэн', mny(late), late > 0.5 ? 'warn' : '') + '</div>';
   var cur = state.dst === 'none' || !state.dst ? 'open' : state.dst;
-  var chk = '<div class="tabs dst" style="margin:0 0 10px">' + DEBT_ST.map(function (x) {
+  var seg = '<div class="seg">' + DEBT_ST.map(function (x) {
     return '<button class="' + (cur === x[0] ? 'on' : '') + '" onclick="state.dst=\'' + x[0] + '\';render()">' + x[1] + ' <small>' + cnt[x[0]] + '</small></button>'; }).join('') + '</div>';
-  var srch = '<div class="bk-bar"><input id="dQ" type="search" value="' + esc(state.dq || '') + '" placeholder="Хайх — харилцагчийн нэр, утас, тайлбар (жишээ: буухиа, 9911…)" ' +
-    'style="flex:1;min-width:240px;padding:8px 10px;border:1px solid #D7DEE8;border-radius:8px;font-size:14px" oninput="debtSearch(this.value)"></div>';
-  var bar = srch + (/^[rp]$/.test(k) ? '<div class="bk-bar"><button class="b-btn primary" id="dSelBtn" onclick="debtCloseSel()">Сонгосныг хаах (0)</button>' +
-    '<span class="muted" style="font-size:12.5px">Олон баримтыг нэг гүйлгээгээр, эсвэл хэсэгчлэн хааж болно — чагтлаад дарна.</span></div>' : '');
+  var tool = '<div class="d-tool">' + seg + '<input id="dQ" type="search" value="' + esc(state.dq || '') + '" placeholder="Хайх: нэр, утас, тайлбар" oninput="debtSearch(this.value)"></div>';
+  var selBar = /^[rp]$/.test(k) ? '<div class="d-sel" id="dSelBar"><span id="dSelTxt"></span><button class="b-btn primary" onclick="debtCloseSel()">' + (k === 'r' ? 'Сонгосныг хаах' : 'Сонгосныг төлөх') + '</button>' +
+    '<button class="b-btn" onclick="debtSel={};render()">Сонголт цуцлах</button></div>' : '';
   setTimeout(function () { if (typeof debtSelCount === 'function') debtSelCount(); }, 0);
-  return tabs + (k === 'c' && isOwner() ? icReconCard() : '') + chk + bar;   // харилцагчаар нэгтгэсэн жагсаалт нь доорх нэг хүснэгтэд (repDebts)
+  return tabs + kpis + tool + selBar + (k === 'c' && isOwner() ? icReconCard() : '');
 }
 
 // ═══════════ ЦАЛИН, НДШ (хуучин «НДШ Цалин», «ХХОАТ/НДШ тайлан») ═══════════
