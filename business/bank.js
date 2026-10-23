@@ -392,44 +392,117 @@ function bankApplySel() {
   bankApply(ok.map(function (l) { return l.id; }), true);
 }
 
-// ── Авлага / өглөг хаах: хэрхэн хаахыг асууна — харилцах данс бол банкны хуулгын тулгаагүй мөрөөс сонгож тулгана (давхардахгүй) ──
-var dcState = null;
-function debtClose(k, key) {
-  var it = (k === 'r' ? debtItems(['1201'], 1) : debtItems(['3101'], -1)).filter(function (x) { return x.key === key; })[0];
-  if (!it) { toast('Энэ өр аль хэдийн хаагдсан байна'); return; }
-  var ord = (window.adminOrders || []).filter(function (o) { return o.id === it.bill; })[0];
-  var digits = (String(it.who).match(/\d{8}/g) || []).concat(ord ? [String(ord.phone).replace(/\D/g, '')] : []);
-  var words = String(it.who).toLowerCase().split(/\s+/).filter(function (w) { return w.length >= 3 && !/^\d+$/.test(w); });
-  var due = ord && ordOpen(ord) ? ordDue(ord) : it.left;
+// ── Авлага / өглөг хаах: нэг эсвэл олон баримтыг нэг гүйлгээгээр, бүтэн эсвэл хэсэгчлэн ──
+// Харилцах бол банкны хуулгын тулгаагүй гүйлгээнээс сонгоно (тэр мөр «Тулгасан» болж давхардахгүй), бэлэн бол касс.
+var debtSel = {}, dcState = null;
+function debtSelSet(el) { if (el.checked) debtSel[el.dataset.key] = Number(el.dataset.left) || 0; else delete debtSel[el.dataset.key]; debtSelCount(); }
+function debtSelGrp(el) {
+  [].forEach.call(document.querySelectorAll('input.dsel[data-grp="' + el.dataset.grp + '"]'), function (c) { c.checked = el.checked; if (el.checked) debtSel[c.dataset.key] = Number(c.dataset.left) || 0; else delete debtSel[c.dataset.key]; });
+  debtSelCount();
+}
+function debtSelCount() {
+  var b = document.getElementById('dSelBtn'), ks = Object.keys(debtSel); if (!b) return;
+  b.textContent = 'Сонгосныг хаах (' + ks.length + (ks.length ? ' · ' + fmt(ks.reduce(function (a, k) { return a + debtSel[k]; }, 0)) : '') + ')';
+}
+function debtCloseSel() { var ks = Object.keys(debtSel); if (!ks.length) { toast('Хаах баримтаа чагтална уу'); return; } debtClose(state.dtab || 'r', ks); }
+function debtClose(k, keys) {
+  if (typeof keys === 'string') keys = [keys];
+  var all = k === 'r' ? debtItems(['1201'], 1) : debtItems(['3101'], -1);
+  var its = all.filter(function (x) { return keys.indexOf(x.key) >= 0; });
+  if (!its.length) { toast('Сонгосон баримт аль хэдийн хаагдсан байна'); return; }
+  var ords = {}; (window.adminOrders || []).forEach(function (o) { if (o.biz === state.biz) ords[o.id] = o; });
+  var U = {}, units = [];   // нэгж: захиалга (бүх мөр нь хамт) эсвэл нэг баримт
+  its.forEach(function (it) {
+    var o = ords[it.bill], id = o ? 'O' + o.id : 'K' + it.key;
+    if (!U[id]) { U[id] = { id: id, ord: o || null, who: it.who, acc: it.acc, date: it.date, desc: o ? 'Захиалга ' + o.phone : String(it.desc).split(' · ')[0].slice(0, 50), tag: '#' + (o ? o.id : debtTag(it)), due: 0, np: it.np }; units.push(U[id]); }
+    U[id].due = r0(U[id].due + it.left); if (it.date < U[id].date) U[id].date = it.date;
+  });
+  units.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+  var total = r0(units.reduce(function (a, u) { return a + u.due; }, 0));
+  var digits = [], words = [];
+  units.forEach(function (u) { digits = digits.concat(String(u.who).match(/\d{8}/g) || []); if (u.ord) digits.push(String(u.ord.phone).replace(/\D/g, ''));
+    words = words.concat(String(u.who).toLowerCase().split(/\s+/).filter(function (w) { return w.length >= 3 && !/^\d+$/.test(w); })); });
   var L = bankLines.filter(function (l) { return l.biz === state.biz && l.status === 'Шинэ' && (k === 'r' ? +l.credit > 0 : +l.debit > 0); }).map(function (l) {
     var d = String(l.desc).replace(/(\d{4})\s(\d{4})/g, '$1$2').toLowerCase(), amt = k === 'r' ? +l.credit : +l.debit, sc = 0;
     if (digits.some(function (x) { return x && d.indexOf(x) >= 0; }) || words.some(function (w) { return d.indexOf(w) >= 0; })) sc += 2;
-    if (Math.abs(amt - due) < 1) sc += 1;
+    if (Math.abs(amt - total) < 1) sc += 1;
     return { l: l, amt: amt, sc: sc };
   }).sort(function (a, b) { return b.sc - a.sc || (a.l.date < b.l.date ? 1 : -1); });
-  dcState = { k: k, key: key, it: it, ord: ord, due: due, L: L };
-  var rows = L.slice(0, 40).map(function (x, i) {
-    return '<label class="dc-l' + (x.sc >= 2 ? ' hit' : '') + '"><input type="radio" name="dcLine" value="' + i + '"' + (i === 0 && x.sc >= 2 ? ' checked' : '') + '>' +
+  dcState = { k: k, units: units, total: total, L: L };
+  var lines = L.slice(0, 60).map(function (x, i) {
+    return '<label class="dc-l' + (x.sc >= 2 ? ' hit' : '') + '"><input type="radio" name="dcLine" value="' + i + '"' + (i === 0 && x.sc >= 2 ? ' checked' : '') + ' onchange="dcAlloc(true)">' +
       '<span>' + esc(x.l.date.slice(0, 16)) + '</span><span class="dc-d">' + esc(x.l.desc) + '</span><b>' + fmt(x.amt) + '</b>' +
       (x.sc >= 2 ? '<em>' + (x.sc === 3 ? 'нэр/утас, дүн таарсан' : 'нэр/утас таарсан') + '</em>' : x.sc === 1 ? '<em class="g">дүн таарсан</em>' : '') + '</label>';
   }).join('');
-  gOpen('<h2>' + (k === 'r' ? 'Авлага хаах' : 'Өглөг хаах') + '</h2>' +
-    '<p style="margin:0 0 10px"><b>' + esc(it.who) + '</b> · үлдэгдэл <b>' + fmt(due) + '</b><br><small class="muted">' + esc(it.date) + ' · ' + esc(String(it.desc).slice(0, 80)) + '</small></p>' +
+  var urows = units.map(function (u, i) {
+    return '<tr><td>' + esc(u.who) + '<br><small class="muted">' + esc(u.date) + ' · ' + esc(u.desc) + '</small></td><td class="n">' + fmt(u.due) + '</td>' +
+      '<td class="n"><input class="dc-a" data-i="' + i + '" type="number" min="0" step="1" style="width:110px;text-align:right" oninput="dcAlloc(false)"></td></tr>';
+  }).join('');
+  gOpen('<h2>' + (k === 'r' ? 'Авлага хаах' : 'Өглөг хаах') + (units.length > 1 ? ' — ' + units.length + ' баримт' : '') + '</h2>' +
     '<label for="dcHow">Хэрхэн ' + (k === 'r' ? 'төлбөр орсон бэ' : 'төлсөн бэ') + '?</label><select id="dcHow" onchange="dcHowChange()">' +
-      '<option value="bank">Харилцах данс — банкны хуулгын тулгаагүй гүйлгээнээс сонгох</option><option value="cash">Бэлэн (касс) эсвэл бусад — баримт бичих</option></select>' +
-    '<div id="dcBank" style="margin-top:10px">' + (L.length ? '<div class="dc-list">' + rows + '</div>' + (L.length > 40 ? '<p class="muted" style="font-size:12px">Эхний 40-ийг харууллаа.</p>' : '') :
+      '<option value="bank">Харилцах данс — банкны хуулгын тулгаагүй гүйлгээнээс сонгох</option><option value="cash">Бэлэн мөнгө (касс)</option></select>' +
+    '<div id="dcBank" style="margin-top:8px">' + (L.length ? '<div class="dc-list">' + lines + '</div>' :
       '<p class="muted">Тулгаагүй ' + (k === 'r' ? 'орлогын' : 'зарлагын') + ' гүйлгээ алга — эхлээд банкны хуулгаа оруулна уу.</p>') + '</div>' +
+    '<div id="dcCash" style="display:none;margin-top:8px"><div class="row2"><div><label for="dcCashAmt">Дүн</label><input id="dcCashAmt" type="number" min="0" value="' + total + '" oninput="dcAlloc(true)"></div>' +
+      '<div><label for="dcCashDate">Огноо</label><input id="dcCashDate" type="date" value="' + todayStr() + '"></div></div></div>' +
+    '<table class="rep-t dc-t" style="margin-top:10px"><tr><th>' + (k === 'r' ? 'Авлага' : 'Өглөг') + '</th><th class="n">Үлдэгдэл</th><th class="n">Хаах дүн</th></tr>' + urows +
+      '<tr class="tot"><td>Нийт</td><td class="n">' + fmt(total) + '</td><td class="n" id="dcSum"></td></tr></table>' +
+    '<p id="dcInfo" class="muted" style="font-size:12.5px;margin:6px 0"></p>' +
+    (k === 'r' ? '<label for="dcWo">Хаагдаагүй үлдсэн хэсэг</label><select id="dcWo" onchange="dcAlloc(false)"><option value="">Авлага хэвээр үлдэнэ (дараа төлнө)</option>' +
+      '<option value="7207">Буухиагийн хөлс (хүргэлтийн зардал) болгож бүрэн хаах</option><option value="6001">Хөнгөлөлт болгож бүрэн хаах</option></select>' : '') +
     '<button class="btn" onclick="dcSave()">Хаах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
+  dcAlloc(true);
 }
-function dcHowChange() { var b = document.getElementById('dcBank'); if (b) b.style.display = $('dcHow').value === 'bank' ? '' : 'none'; }
+function dcHowChange() { var c = $('dcHow').value === 'cash'; $('dcBank').style.display = c ? 'none' : ''; $('dcCash').style.display = c ? '' : 'none'; dcAlloc(true); }
+function dcAmount() {   // сонгосон гүйлгээний / бэлэн мөнгөний дүн
+  var S = dcState; if ($('dcHow').value === 'cash') return Number($('dcCashAmt').value) || 0;
+  var r = document.querySelector('input[name=dcLine]:checked'); return r ? S.L[Number(r.value)].amt : 0;
+}
+function dcAlloc(refill) {   // refill — дүнг хуучнаас нь (FIFO) дахин хуваарилна
+  var S = dcState; if (!S) return;
+  var amt = dcAmount(), inp = document.querySelectorAll('input.dc-a');
+  if (refill) { var rest = amt; S.units.forEach(function (u, i) { var a = Math.min(u.due, Math.max(0, rest)); rest = r0(rest - a); inp[i].value = a ? r0(a) : ''; }); }
+  var sum = 0; [].forEach.call(inp, function (x) { sum += Number(x.value) || 0; }); sum = r0(sum);
+  $('dcSum').textContent = fmt(sum);
+  var left = r0(S.total - sum), over = r0(amt - sum), wo = $('dcWo') ? $('dcWo').value : '';
+  $('dcInfo').innerHTML = (amt ? 'Гүйлгээний дүн <b>' + fmt(amt) + '</b>. ' : 'Гүйлгээгээ сонгоно уу. ') +
+    (over > 0.5 ? '<span style="color:#B45309">' + fmt(over) + ' хуваарилаагүй — эхний харилцагчийн илүү төлөлт (урьдчилгаа) болно.</span> ' : over < -0.5 ? '<span style="color:#E11D48">Хуваарилсан дүн гүйлгээнээс ' + fmt(-over) + '-өөр их байна.</span> ' : '') +
+    (left > 0.5 ? (wo ? fmt(left) + ' нь ' + (wo === '7207' ? 'буухиагийн хөлс' : 'хөнгөлөлт') + ' болж бүрэн хаагдана.' : fmt(left) + ' нь ' + (S.k === 'r' ? 'авлага' : 'өглөг') + ' хэвээр үлдэнэ.') : 'Бүгд бүрэн хаагдана.');
+}
 function dcSave() {
   var S = dcState; if (!S) return;
-  if ($('dcHow').value === 'cash') { gClose(); debtPay(S.k, S.key); return; }   // хуучин арга — кассын / харилцахын баримт
-  var r = document.querySelector('input[name=dcLine]:checked'); if (!r) { toast('Банкны гүйлгээгээ сонгоно уу'); return; }
-  var x = S.L[Number(r.value)], l = x.l;
-  var pick = S.ord ? 'O:' + S.ord.id : 'D:' + S.it.acc + '|' + S.it.key;
-  var diff = x.amt - S.due;
-  if (!confirm(l.date.slice(0, 16) + ' · ' + fmt(x.amt) + '\n«' + l.desc + '»\n\n→ ' + S.it.who + ' (' + (S.k === 'r' ? 'авлага' : 'өглөг') + ' ' + fmt(S.due) + ')' +
-    (Math.abs(diff) >= 1 ? '\n\nЗөрүү ' + fmt(diff) + (diff < 0 ? ' — үлдсэн хэсэг нь ' + (S.k === 'r' ? 'авлага' : 'өглөг') + ' хэвээр үлдэнэ.' : ' — илүү төлсөн хэсэг нь урьдчилгаа болж харагдана.') : '') + '\n\nХаах уу?')) return;
-  bankPick[l.id] = pick; gClose(); bankApply([l.id], true);
+  var cash = $('dcHow').value === 'cash', amt = dcAmount(), x = null, acc, d;
+  if (cash) { acc = '10003'; d = $('dcCashDate').value || todayStr(); }
+  else {
+    var r = document.querySelector('input[name=dcLine]:checked'); if (!r) { toast('Банкны гүйлгээгээ сонгоно уу'); return; }
+    x = S.L[Number(r.value)]; d = x.l.date.slice(0, 10); var info = bankAcctInfo(x.l.acct); acc = info ? info.acc : '1101';
+  }
+  if (!(amt > 0)) { toast('Дүн оруулна уу'); return; }
+  var inp = document.querySelectorAll('input.dc-a'), A = S.units.map(function (u, i) { return Math.max(0, Number(inp[i].value) || 0); });
+  var sum = r0(A.reduce(function (a, v) { return a + v; }, 0));
+  if (sum > amt + 0.5) { toast('Хуваарилсан дүн гүйлгээнээс их байна'); return; }
+  var over = r0(amt - sum); if (over > 0.5) { var fi = A.findIndex(function (v) { return v > 0; }); A[fi < 0 ? 0 : fi] = r0(A[fi < 0 ? 0 : fi] + over); }   // илүү төлөлт — эхний харилцагчид
+  var wo = $('dcWo') ? $('dcWo').value : '', biz = state.biz, R2 = S.k === 'r', E = [], ordUpd = [];
+  var src = cash ? 'Бэлэн' : String(x.l.desc).slice(0, 80);
+  S.units.forEach(function (u, i) {
+    var pn = u.np ? '' : u.who;
+    if (A[i] > 0) E.push(R2 ? { biz: biz, date: d, dr: acc, cr: u.acc, amount: A[i], partner: pn, desc: (u.ord ? 'Захиалгын төлбөр' : 'Авлага төлөгдсөн') + ' · ' + src + ' ' + u.tag }
+                            : { biz: biz, date: d, dr: u.acc, cr: acc, amount: A[i], partner: pn, desc: 'Өглөг төлсөн · ' + src + ' ' + u.tag });
+    var rest = r0(u.due - A[i]);
+    if (wo && R2 && rest > 0.5) E.push({ biz: biz, date: d, dr: wo, cr: u.acc, amount: rest, partner: pn, desc: (wo === '7207' ? 'Буухиагийн хөлс' : 'Хөнгөлөлт') + ' · ' + u.desc + ' ' + u.tag });
+    if (u.ord && !u.ord.confirmed && A[i] > 0) ordUpd.push(u.ord);
+  });
+  if (!confirm((S.units.length > 1 ? S.units.length + ' баримтыг' : '«' + S.units[0].who + '»-ийн баримтыг') + ' ' + fmt(amt) + '-өөр хаах уу?\n' + (cash ? 'Касс · ' + d : x.l.date.slice(0, 16) + ' · «' + x.l.desc + '»') +
+    (over > 0.5 ? '\n\n' + fmt(over) + ' илүү төлөлт болно.' : '') + (!wo && r0(S.total - sum) > 0.5 ? '\n' + fmt(r0(S.total - sum)) + ' нь хаагдаагүй үлдэнэ.' : ''))) return;
+  gClose(); debtSel = {};
+  // серверийг хүлээлгүй харуулна
+  E.forEach(function (e, i) { journal.push(Object.assign({ id: 'tmp' + Date.now() + '-' + i, by: ownerName }, e)); });
+  if (x) { x.l.status = 'Тулгасан'; x.l.link = (R2 ? 'Авлага · ' : 'Өглөг · ') + S.units.map(function (u) { return u.who; }).join(', ').slice(0, 90); }
+  ordUpd.forEach(function (o) { o.confirmed = d + (cash ? ' гараар' : ' банк'); o.paid = 'Орсон'; });
+  _debtCache = null; render();
+  if (!API_URL) { save('nb_demo_journal', journal); save('nb_demo_bank', bankLines); save('nb_orders_cozy', window.adminOrders); return; }
+  var n = 1 + (x ? 1 : 0) + ordUpd.length, fin = function () { if (--n === 0) { toast('Хаагдлаа'); refresh(); } };
+  post({ type: 'admin_journal', by: ownerName, entries: E }, function (err) { if (err) toast('Алдаа: ' + err); fin(); });
+  if (x) post({ type: 'admin_bank', by: ownerName, updates: [{ id: x.l.id, status: 'Тулгасан', link: x.l.link }] }, function () { fin(); });
+  ordUpd.forEach(function (o) { post({ type: 'admin_order', id: o.id, by: ownerName, fields: { confirmed: o.confirmed, note: (cash ? 'Бэлэн ' : 'Банк ') + d } }, function () { fin(); }); });
 }
