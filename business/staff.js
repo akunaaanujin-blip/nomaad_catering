@@ -15,6 +15,7 @@ var LS_PROD = 'nb_products_' + BIZ_KEY;
 var session = sesLoad();
 if (!session || session.date !== todayStr()) session = null;
 if (session && API_URL && !session.token) session = null;   // v2.6-аас өмнөх (токенгүй) нэвтрэлт — дахин нэвтэрнэ
+if (session && API_URL && !session.bizes) session = null;   // 2026-10-23-аас өмнөх нэвтрэлт — дэлгүүрүүдийн жагсаалтгүй тул нэг удаа дахин нэвтэрнэ
 var staffName = session ? session.name : '';
 var isManager = !!(session && session.role === 'manager');
 var sheetProducts = load(LS_PROD, []);   // Sheet-ийн "Бараа" хуудасны мөрүүд (үнэ давхарлах)
