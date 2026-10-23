@@ -157,6 +157,9 @@ function bankView() {
         loanOpts(biz, false).forEach(function (o) { opts.push(o); });
         icOpts(biz, false).forEach(function (o) { opts.push(o.concat(['Компани хооронд'])); });
         bankOutOpts().forEach(function (o) { opts.push(o); });
+        // Удирдлагын зарлага: компанийн данснаас удирдлагын зардлыг төлсөн — удирдлагын санхүүд 70xx зардлаар, компанид «компани хооронд»
+        if (biz !== 'mgmt' && BUSINESSES.mgmt) ACCOUNTS.filter(function (a) { return /^70/.test(a[0]) && !accHidden(a[0]); }).forEach(function (a) {
+          opts.push(['MG:' + a[0], a[0] + ' ' + a[1].replace(/ \(удирдлага\)$/, ''), 'Удирдлагын зарлага → удирдлагын санхүүд']); });
       }
       var def = cur || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : '');
       bankPick[l.id] = def;
@@ -229,6 +232,7 @@ function bankApply(ids, quiet) {
       var what = p0.indexOf('O:') === 0 ? 'захиалга ' + (((window.adminOrders || []).filter(function (o) { return o.id === p0.slice(2); })[0]) || {}).phone + ' — төлбөрийг баталгаажуулж санхүүд бичнэ' :
                  p0.indexOf('P:') === 0 ? 'өмнө баталгаажсан захиалга (давхар бичихгүй)' :
                  p0.indexOf('D:') === 0 ? (bankDebt(p0) ? debtLabel(bankDebt(p0)) + ' — хаана' : 'өр / авлага') :
+                 p0.indexOf('MG:') === 0 ? 'удирдлагын зарлага: ' + accName(p0.slice(3)) + ' — удирдлагын санхүүд зардлаар, энэ компанид «Компани хооронд · ' + BUSINESSES.mgmt.name + '» болно' :
                  /^(IC|L|PO):/.test(p0) ? ([].filter.call(document.querySelectorAll('option'), function (o) { return o.value === p0; })[0] || {}).textContent || p0 :
                  p0.slice(2) + ' ' + accName(p0.slice(2));
       if (!confirm(l0.date + ' · ' + (l0.credit ? '+' + fmt(l0.credit) : '−' + fmt(l0.debit)) + '\n«' + l0.desc + '»\n\n→ ' + what + '\n\nТулгах уу?')) return;
@@ -250,6 +254,13 @@ function bankApply(ids, quiet) {
       orderUpd.push({ id: o.id, fields: { confirmed: d + ' банк', saleDone: pe.saleDone, note: 'Банк ' + d } });
       o.paid = 'Орсон'; o.confirmed = d + ' банк'; if (pe.saleDone) o.saleDone = pe.saleDone;
       updates.push({ id: id, status: 'Тулгасан', link: 'Захиалга ' + o.phone + ' #' + o.id });
+      return;
+    }
+    if (pick.indexOf('MG:') === 0 && !l.credit && biz !== 'mgmt') {   // удирдлагын зарлага: компани 1290 (Удирдлага) / удирдлага 70xx зардал, 1290 (компани)
+      var mc = pick.slice(3), mn = BUSINESSES.mgmt.name, cn = BUSINESSES[biz].name, txt = l.desc.slice(0, 100) || 'Удирдлагын зарлага';
+      entries.push({ biz: biz, date: d, dr: '1290', cr: acc, amount: amt, desc: txt + ' · Удирдлагын зарлага (' + accName(mc) + ')', partner: mn });
+      entries.push({ biz: 'mgmt', date: d, dr: mc, cr: '1290', amount: amt, desc: txt + ' · ' + cn + '-ийн данснаас төлсөн', partner: cn });
+      updates.push({ id: id, status: 'Тулгасан', link: 'Удирдлагын зарлага · ' + accName(mc) });
       return;
     }
     if (pick.indexOf('IC:') === 0) {   // компани хооронд (1290, харилцагч = нөгөө компани)
