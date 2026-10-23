@@ -306,7 +306,11 @@ function openItems(E, accs, sign, to, loanKey) {
   });
   return { items: items, P: P };
 }
-function repDebts(E, k, showClosed) {
+var DEBT_ST = [['open', 'Нээлттэй'], ['none', 'Төлөөгүй'], ['part', 'Хэсэгчлэн төлсөн'], ['closed', 'Хаагдсан'], ['all', 'Бүгд']];
+function debtStatus(it) { return it.closed ? 'closed' : it.paid > 0.5 ? 'part' : 'none'; }
+function repDebts(E, k, flt) {
+  flt = flt || 'open';
+  var keep = function (it) { var s2 = debtStatus(it); return flt === 'all' || (flt === 'open' ? s2 !== 'closed' : s2 === flt); };
   var T = DEBT_TABS[k], accs = debtAccs(k), td = todayStr(), oi = openItems(E, accs, T[3], td, k === 'l');
   // Нэг хүснэгт: харилцагч бүрийн нийт мөр (тод), доор нь тэр харилцагчийн баримтууд
   var days = function (d) { return Math.round((new Date(td) - new Date(d)) / 864e5); };
@@ -317,19 +321,19 @@ function repDebts(E, k, showClosed) {
   order.map(function (w) {
     var L = G[w], p = oi.P[w] || { open: [], over: 0 }, left = L.reduce(function (a, it) { return a + it.amt - it.paid; }, 0) - (p.over || 0);
     return { w: w, L: L, left: left, open: L.filter(function (it) { return !it.closed; }) };
-  }).filter(function (g) { return showClosed || Math.abs(g.left) > 0.5; }).sort(function (a, b) { return b.left - a.left; }).forEach(function (g) {
+  }).filter(function (g) { return g.L.some(keep) || (flt === 'open' && Math.abs(g.left) > 0.5 && !g.L.length); }).sort(function (a, b) { return b.left - a.left; }).forEach(function (g) {
     var amt = g.L.reduce(function (a, it) { return a + it.amt; }, 0), paid = amt - g.left, old = g.open.length ? g.open.map(function (it) { return it.date; }).sort()[0] : '';
     tot.amt += amt; tot.paid += paid; tot.left += g.left;
     rows.push({ _b: 1, _act: g.open.length && /^[rp]$/.test(k) ? '<label style="font-size:12px;font-weight:400;white-space:nowrap"><input type="checkbox" data-grp="' + esc(g.w) + '" onchange="debtSelGrp(this)"> бүгд</label>' : '',
       date: '', who: g.w, desc: g.open.length + ' хаагдаагүй баримт', amt: r0(amt), paid: r0(paid), left: r0(g.left), closed: '', st: old ? days(old) + ' хоног' : 'Хаагдсан',
       _d: { left: debtSpec(k, { who: g.w, acc: (oi.P[g.w] || {}).acc, np: (oi.P[g.w] || {}).np }, td) } });
-    g.L.filter(function (it) { return showClosed || !it.closed; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (it) {
-      rows.push({ date: it.date, who: '', desc: it.desc, amt: r0(it.amt), paid: r0(it.paid), left: r0(it.amt - it.paid), closed: it.closed, st: it.closed ? 'Хаагдсан' : days(it.date) + ' хоног',
+    g.L.filter(keep).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (it) {
+      rows.push({ date: it.date, who: '', desc: it.desc, amt: r0(it.amt), paid: r0(it.paid), left: r0(it.amt - it.paid), closed: it.closed, st: it.closed ? 'Хаагдсан' : (it.paid > 0.5 ? 'Хэсэгчлэн · ' : '') + days(it.date) + ' хоног',
         _act: !it.closed && /^[rp]$/.test(k) ? '<input type="checkbox" class="dsel" data-grp="' + esc(g.w) + '" data-key="' + esc(it.key) + '" data-left="' + r0(it.amt - it.paid) + '"' + (debtSel[it.key] !== undefined ? ' checked' : '') + ' onchange="debtSelSet(this)" title="Олноор хаахад сонгох"> ' +
           '<button class="mini" style="color:var(--accent)" onclick="debtClose(\'' + k + '\',\'' + esc(it.key) + '\')">' + (k === 'r' ? 'Авлага хаах' : 'Өглөг хаах') + '</button>' : '' });
     });
   });
-  return { title: T[0] + ' — харилцагчаар' + (showClosed ? ' (хаагдсан орсон)' : ''), rows: rows, actions: /^[rp]$/.test(k),
+  return { title: T[0] + ' — ' + DEBT_ST.filter(function (x) { return x[0] === flt; })[0][1].toLowerCase(), rows: rows, actions: /^[rp]$/.test(k),
     cols: [c('who', 'Харилцагч'), c('date', 'Огноо'), c('desc', 'Тайлбар'), m('amt', 'Дүн'), m('paid', 'Төлсөн'), m('left', 'Үлдэгдэл'), c('closed', 'Хаасан огноо'), c('st', 'Хугацаа')],
     total: { who: 'Нийт', amt: r0(tot.amt), paid: r0(tot.paid), left: r0(tot.left) } };
 }
@@ -385,7 +389,12 @@ function debtsPre(E) {
   var tabs = '<div class="tabs" style="margin-bottom:10px">' + Object.keys(DEBT_TABS).map(function (x) {
     var v = debtAccs(x).reduce(function (a, c2) { return a + (b[c2] || 0); }, 0) * DEBT_TABS[x][3];
     return '<button class="' + (k === x ? 'on' : '') + '" onclick="state.dtab=\'' + x + '\';render()">' + DEBT_TABS[x][0] + ' <small>' + mny(v) + '</small></button>'; }).join('') + '</div>';
-  var chk = '<label style="display:inline-flex;gap:6px;align-items:center;font-size:13px;margin:4px 0 8px"><input type="checkbox"' + (state.dclosed ? ' checked' : '') + ' onchange="state.dclosed=this.checked;render()"> Хаагдсаныг (бүрэн төлөгдсөн) харуулах</label>';
+  // Төлөвөөр ангилах: нээлттэй (төлөөгүй + хэсэгчлэн) · төлөөгүй · хэсэгчлэн төлсөн · хаагдсан · бүгд
+  var oiC = openItems(E, debtAccs(k), DEBT_TABS[k][3], td, k === 'l').items, cnt = { open: 0, none: 0, part: 0, closed: 0, all: oiC.length };
+  oiC.forEach(function (it) { var s2 = debtStatus(it); cnt[s2]++; if (s2 !== 'closed') cnt.open++; });
+  var cur = state.dst || 'open';
+  var chk = '<div class="tabs dst" style="margin:0 0 10px">' + DEBT_ST.map(function (x) {
+    return '<button class="' + (cur === x[0] ? 'on' : '') + '" onclick="state.dst=\'' + x[0] + '\';render()">' + x[1] + ' <small>' + cnt[x[0]] + '</small></button>'; }).join('') + '</div>';
   var bar = /^[rp]$/.test(k) ? '<div class="bk-bar"><button class="b-btn primary" id="dSelBtn" onclick="debtCloseSel()">Сонгосныг хаах (0)</button>' +
     '<span class="muted" style="font-size:12.5px">Олон баримтыг нэг гүйлгээгээр, эсвэл хэсэгчлэн хааж болно — чагтлаад дарна.</span></div>' : '';
   setTimeout(function () { if (typeof debtSelCount === 'function') debtSelCount(); }, 0);

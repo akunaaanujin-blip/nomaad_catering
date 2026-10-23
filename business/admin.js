@@ -1083,7 +1083,7 @@ function makeReport(mod, sub) {
   if (sub === 'months') return repMonths(E, yearOf());
   if (sub === 'payroll') return repPayroll(E, yearOf());
   if (sub === 'money') return repMoney(E, f, t);
-  if (sub === 'debts') return repDebts(E, state.dtab || 'r', !!state.dclosed);
+  if (sub === 'debts') return repDebts(E, state.dtab || 'r', state.dst || 'open');
   if (sub === 'journal') return repJournal(E, f, t);
   if (sub === 'trial') return repTrial(E, f, t);
   if (sub === 'ledger') return repLedger(E, f, t, state.acc);
