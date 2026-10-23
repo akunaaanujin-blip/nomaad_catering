@@ -1230,6 +1230,7 @@ function scanLink() {
 
 // Энгийн баримт хэвлэх (И-баримтгүй дэлгүүрт ч)
 function printBill(key) {
+  if (typeof lblPrintReceipt === 'function' && navigator.bluetooth) return lblPrintReceipt(billBlocks(billInfo(key)));   // шошгоны принтертэй дэлгүүрт (Cozy) Niimbot-оор
   var b = billInfo(key), w = window.open('', '_blank', 'width=380,height=600'); if (!w) { toast('Цонх нээгдсэнгүй — хөтчийн popup-ыг зөвшөөрнө үү'); return; }
   w.document.write('<!doctype html><meta charset="utf-8"><title>Баримт</title><style>body{font-family:Arial,sans-serif;font-size:13px;padding:14px;max-width:300px}h3{text-align:center;margin:0 0 4px}p{margin:2px 0;text-align:center;color:#555}table{width:100%;border-collapse:collapse;margin-top:10px}td{padding:3px 0;border-bottom:1px dashed #ccc}td.n{text-align:right}tr.t td{font-weight:bold;border-bottom:0;padding-top:6px}</style>' +
     '<h3>' + esc(BIZ.name) + '</h3><p>' + esc(b.date + ' ' + b.time) + '</p><p>Ажилтан: ' + esc(b.staff) + '</p><table>' +
@@ -1238,6 +1239,19 @@ function printBill(key) {
     '<tr class="t"><td>НИЙТ</td><td class="n">' + fmt(b.net) + '</td></tr></table><p style="margin-top:8px">' + b.pays.map(function (k) { return esc(k) + ' ' + fmt(b.payAmt[k]); }).join(' + ') + '</p>' +
     (b.ddtd ? '<p>ДДТД ' + esc(b.ddtd) + '</p>' : '') + '<p style="margin-top:10px">Баярлалаа!</p><script>window.print()<\/script>');
   w.document.close();
+}
+
+function billBlocks(b) {
+  var L = [{ t: BIZ.name, px: 24, bold: 1, c: 1 }, { t: b.date + ' ' + b.time, px: 16, c: 1 }, { t: 'Ажилтан: ' + b.staff, px: 16, c: 1 }];
+  if (b.customer) L.push({ t: 'Худалдан авагч: ' + b.customer, px: 16, c: 1 });
+  L.push({ line: 1 });
+  b.goods.forEach(function (x) { L.push({ t: x.item, px: 18, bold: 1 }, { l: x.qty + ' × ' + fmt(x.price), r: fmt(x.amount), px: 17 }); });
+  if (b.disc) L.push({ l: 'Хөнгөлөлт', r: '−' + fmt(b.disc), px: 17 });
+  if (b.ret) L.push({ l: 'Буцаалт', r: '−' + fmt(b.ret), px: 17 });
+  L.push({ line: 1 }, { l: 'НИЙТ', r: fmt(b.net), px: 24, bold: 1 }, { t: b.pays.map(function (k) { return k + ' ' + fmt(b.payAmt[k]); }).join(' + '), px: 16 });
+  if (b.ddtd) L.push({ t: 'ДДТД ' + b.ddtd, px: 14 });
+  L.push({ t: 'Баярлалаа!', px: 18, c: 1 });
+  return L;
 }
 
 // ── Modal ──

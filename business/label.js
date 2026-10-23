@@ -146,3 +146,41 @@ function lblAuto() { return !!load('nb_lbl_auto', false); }
 // Сангаа урьдчилан ачаална: Chrome Bluetooth-ийн сонголтын цонхыг зөвхөн товч дарсан агшинд нээдэг тул
 // сан товч дарсны дараа ачаалагдвал (жагсаалтын «Хэвлэх», «Хадгалаад шошго хэвлэх») холболт татгалзагдана
 if (navigator.bluetooth) loadLib(NIIM_SRC);
+
+// ── Баримт (энгийн, И-баримт) шошгон дээр: урт баримтыг сонгосон шошгоны өндрөөр хуудас болгон хуваана ──
+// blocks: {t, px, bold, c} мөр · {l, r, px, bold} зүүн/баруун · {line:1} зураас · {qr: qrcode объект}
+function lblReceiptCanvases(blocks) {
+  var sz = LBL_SIZES[lblSize()], W = sz[0], PH = sz[1], P = 8, m = document.createElement('canvas').getContext('2d'), ops = [], y = P;
+  var place = function (h) { var pg = Math.floor(y / PH); if (y + h > (pg + 1) * PH - P && h < PH - 2 * P) y = (pg + 1) * PH + P; var at = y; y += h; return at; };   // мөрийг хоёр шошгоны заагаар таслахгүй
+  var font = function (px, b) { return (b ? 'bold ' : '') + px + 'px Arial, Helvetica, sans-serif'; };
+  blocks.forEach(function (b) {
+    if (b.line) { var la = place(8); ops.push(function (c) { c.fillRect(P, la + 3, W - 2 * P, 2); }); return; }
+    if (b.qr) {
+      var q = b.qr, n = q.getModuleCount(), cell = Math.max(2, Math.floor(Math.min(W - 2 * P, PH - 2 * P - 6) / n)), s = n * cell, qa = place(s + 6);
+      ops.push(function (c) { var x0 = Math.round((W - s) / 2); for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (q.isDark(r, k)) c.fillRect(x0 + k * cell, qa + 3 + r * cell, cell, cell); });
+      return;
+    }
+    var f = font(b.px || 18, b.bold), lh = (b.px || 18) + 5; m.font = f;
+    if (b.r != null) {
+      var rt = String(b.r), rw = m.measureText(rt).width;
+      wrapLines(m, b.l, W - 2 * P - rw - 8, 3).forEach(function (l, i) { var at = place(lh); ops.push(function (c) { c.font = f; c.fillText(l, P, at); if (!i) c.fillText(rt, W - P - rw, at); }); });
+      return;
+    }
+    wrapLines(m, b.t, W - 2 * P, 6).forEach(function (l) { var at = place(lh); ops.push(function (c) { c.font = f; c.fillText(l, b.c ? (W - c.measureText(l).width) / 2 : P, at); }); });
+  });
+  var pages = Math.max(1, Math.ceil((y + P) / PH)), out = [];
+  for (var i = 0; i < pages; i++) {
+    var pc = document.createElement('canvas'); pc.width = W; pc.height = PH;
+    var c = pc.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, W, PH); c.fillStyle = '#000'; c.textBaseline = 'top'; c.translate(0, -i * PH);
+    ops.forEach(function (op) { op(c); }); out.push(pc);
+  }
+  return out;
+}
+function lblPrintReceipt(blocks) {
+  var go = function () {
+    var cs = lblReceiptCanvases(blocks);
+    toast('Баримт хэвлэж байна…' + (cs.length > 1 ? ' (' + cs.length + ' шошго)' : ''));
+    lblPrintCanvases(cs, function (err) { toast(err ? 'Хэвлэж чадсангүй: ' + err : '✓ Баримт хэвлэгдлээ'); });
+  };
+  if (niimOn()) go(); else niimConnect(go, function (e) { toast('Принтер холбогдсонгүй: ' + e); });
+}

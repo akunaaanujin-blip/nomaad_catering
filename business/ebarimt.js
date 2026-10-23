@@ -106,7 +106,9 @@ function ebSend(req, cb) {
 }
 
 // ── Баримт харуулах / хэвлэх ──
+var ebLast = null;
 function ebShowReceipt(res, lines) {
+  ebLast = { res: res, lines: lines };
   var qr = '';
   if (res.qrData && window.qrcode) {
     var q = qrcode(0, 'M');
@@ -137,7 +139,25 @@ function ebShowReceipt(res, lines) {
     '<div class="rc-ddtd">ДДТД: ' + esc(res.id) + '</div>';
   openSheet('receiptSheet');
 }
-function ebPrint() { window.print(); }
+function ebPrint() {
+  if (typeof lblPrintReceipt === 'function' && navigator.bluetooth && ebLast) return lblPrintReceipt(ebBlocks(ebLast.res, ebLast.lines));   // шошгоны принтертэй дэлгүүрт (Cozy) Niimbot-оор
+  window.print();
+}
+function ebBlocks(res, lines) {
+  var first = lines[0], L = [{ t: ebConfig().legalName || BIZ.name, px: 22, bold: 1, c: 1 }, { t: BIZ.name, px: 16, c: 1 },
+    { l: 'ТТД', r: res.merchantTin || '', px: 16 }, { l: 'Огноо', r: res.date || '', px: 16 }, { l: 'Худалдагч', r: staffName, px: 16 }];
+  if (first.buyerName) L.push({ l: 'Худалдан авагч', r: first.buyerName, px: 16 });
+  if (first.buyerTin) L.push({ l: 'Худ. авагч ТТД', r: first.buyerTin, px: 16 });
+  L.push({ line: 1 });
+  lines.forEach(function (r) { L.push({ t: r.item, px: 18, bold: 1 }, { l: r.qty + ' ' + r.unit + ' × ' + fmt(r.price), r: fmt(r.amount), px: 17 }); });
+  L.push({ line: 1 }, { l: 'НИЙТ', r: fmt(res.totalAmount), px: 24, bold: 1 });
+  if (res.totalVAT) L.push({ l: 'НӨАТ', r: fmt(res.totalVAT), px: 17 });
+  L.push({ l: 'Төлбөр', r: first.pay, px: 17 }, { line: 1 });
+  if (res.lottery) L.push({ t: 'Сугалаа: ' + res.lottery, px: 20, bold: 1, c: 1 });
+  if (res.qrData && window.qrcode) { var q = qrcode(0, 'M'); q.addData(res.qrData); q.make(); L.push({ qr: q }); }
+  L.push({ t: 'ДДТД: ' + res.id, px: 14, c: 1 });
+  return L;
+}
 function ebCloseReceipt() {
   closeSheet('receiptSheet');
   $('rcBody').innerHTML = '';   // сугалаа/QR-ийг санах ойноос арилгана
