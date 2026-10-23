@@ -1479,3 +1479,5 @@ body.is-busy .btn,body.is-busy .b-btn.primary,body.is-busy button.mini{pointer-e
 .bz-admin #view tr.bk-match td:first-child{box-shadow:inset 3px 0 0 #16A34A}
 .bz-admin #view tr.bk-fee td{background:#FFF1F3}
 .bz-admin #view tr.bk-fee td:first-child{box-shadow:inset 3px 0 0 #E11D48}
+.bz-admin #view tr.bk-boost td{background:#EFF6FF}
+.bz-admin #view tr.bk-boost td:first-child{box-shadow:inset 3px 0 0 #2563EB}
