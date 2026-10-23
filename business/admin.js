@@ -989,8 +989,9 @@ function saveStaff() {
   if (code) { if (!/^\d{4,8}$/.test(code)) { toast('Код 4-8 оронтой тоо байна'); return; } f.code = code; }
   var kp = Number($('sfKpi').value) || 0, sid = editId;
   if (kp < 0 || kp > 50) { toast('KPI хувь 0–50 хооронд'); return; }
-  post({ type: 'admin_staff', id: editId, fields: f }, function (err) {
+  post({ type: 'admin_staff', id: editId, fields: f }, function (err, d) {
     if (err) { toast(err === 'user_taken' ? 'Энэ нэвтрэх нэр бүртгэгдсэн байна' : 'Алдаа: ' + err); return; }
+    if (f.biz.indexOf(',') >= 0 && !(d && d.biz)) { alert('Хэд хэдэн дэлгүүр хадгалагдсангүй — Apps Script-ийн шинэ кодыг deploy хийгээгүй байна.\nDeploy → Manage deployments → New version хийгээд дахин хадгална уу.'); refresh(); return; }
     if (kp === kpiPct({ id: sid })) { closeSheet('staffSheet'); toast('✓ Хадгалагдлаа'); refresh(); return; }
     var cfg = JSON.parse(JSON.stringify(window.kpiCfg || {})); if (kp) cfg[sid] = kp; else delete cfg[sid];
     post({ type: 'admin_setting', key: 'kpi', value: cfg }, function (e2) {

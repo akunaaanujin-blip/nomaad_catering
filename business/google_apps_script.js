@@ -578,7 +578,7 @@ function adminStaff(d) {
   if (f.address !== undefined) set(15, String(f.address).slice(0, 150));
   if (f.ndJob !== undefined && /^(\d{4}-\d{2})?$/.test(String(f.ndJob))) set(21, String(f.ndJob));
   if (f.ndType !== undefined && /^\d{5}$/.test(String(f.ndType))) set(22, String(f.ndType));
-  return { status: 'ok' };
+  return { status: 'ok', biz: f.biz !== undefined ? cleanStaffBiz(f.biz) : s.biz };   // biz — шинэ сервер (олон дэлгүүр) суусныг удирдлага шалгана
 }
 // Удирдагч: хөдөлмөрийн гэрээ байгуулах / шинэчлэх. Дугаар ХГ-2026-001 гэх мэт он бүр шинээр дараална.
 function adminContract(d) {
