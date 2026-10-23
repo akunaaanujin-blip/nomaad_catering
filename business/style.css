@@ -1458,3 +1458,9 @@ body.pos10 .sheet .panel{border-radius:12px 12px 0 0}
 .lp-i{display:flex;justify-content:space-between;gap:8px;text-align:left;padding:7px 10px;border:1px solid #E5E9F0;border-radius:8px;background:#fff;cursor:pointer;font-size:13px}
 .lp-i:hover{background:#F5F8FC}.lp-i.on{border-color:#2F5B8E;background:#EEF3FA}
 .lp-i em{font-style:normal;white-space:nowrap;color:#475569}.lp-i em.neg{color:#E11D48}
+/* Хадгалах / шинэчлэх явц — давхар дарахаас сэргийлнэ */
+#busyPill{position:fixed;top:12px;left:50%;transform:translate(-50%,-80px);z-index:9999;background:#1F2937;color:#fff;padding:8px 16px;border-radius:999px;font-size:13.5px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.18);transition:transform .2s;pointer-events:none}
+#busyPill.on{transform:translate(-50%,0)}
+#busyPill.on::before{content:'';display:inline-block;width:12px;height:12px;margin-right:8px;vertical-align:-2px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:bpspin .8s linear infinite}
+@keyframes bpspin{to{transform:rotate(360deg)}}
+body.is-busy .btn,body.is-busy .b-btn.primary,body.is-busy button.mini{pointer-events:none;opacity:.55}

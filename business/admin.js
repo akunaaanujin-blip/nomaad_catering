@@ -100,8 +100,33 @@ function fetchAll(cb) {
   });
 }
 function stamp() { $('updated').textContent = 'Шинэчилсэн: ' + timeStr(); }
-function refresh() { fetchAll(function (ok) { if (ok) { render(); toast('Шинэчлэгдлээ'); } }); }
+// ── Хадгалах явц: сервер 2–5 с, дахин унших ~5 с — энэ хооронд «Хадгалж байна…» харуулж, товчийг түгжинэ (давхар дарахаас сэргийлнэ) ──
+var BUSY = { n: 0, p: 0, msg: '' }, INFLIGHT = {}, refreshing = false, refreshAgain = false;
+function busySet(d, msg, isPost) {   // isPost — хадгалж байх үед л товчийг түгжинэ (шинэчлэх үед ажиллаж болно)
+  BUSY.n = Math.max(0, BUSY.n + d); if (isPost) BUSY.p = Math.max(0, BUSY.p + d); if (msg) BUSY.msg = msg;
+  if (BUSY.p) BUSY.msg = 'Хадгалж байна…';
+  var el = document.getElementById('busyPill');
+  if (!el) { el = document.createElement('div'); el.id = 'busyPill'; document.body.appendChild(el); }
+  el.textContent = BUSY.msg || 'Хадгалж байна…'; el.className = BUSY.n ? 'on' : '';
+  document.body.classList.toggle('is-busy', BUSY.p > 0);
+}
+function refresh() {
+  if (refreshing) { refreshAgain = true; return; }   // давхар шинэчлэлийг нэг болгоно
+  refreshing = true; busySet(1, 'Шинэчилж байна…');
+  fetchAll(function (ok) {
+    refreshing = false; busySet(-1);
+    if (refreshAgain) { refreshAgain = false; refresh(); return; }
+    if (ok) { render(); toast('Шинэчлэгдлээ'); }
+  });
+}
 function post(body, cb) {
+  var key = JSON.stringify(body);   // яг ижил хүсэлт явж байхад дахин илгээхгүй
+  if (INFLIGHT[key]) { toast('Хадгалж байна — түр хүлээнэ үү'); return; }
+  INFLIGHT[key] = 1;
+  var btn = document.activeElement && /^(BUTTON|A)$/.test(document.activeElement.tagName) ? document.activeElement : null;
+  if (btn) btn.disabled = true;
+  busySet(1, 'Хадгалж байна…', true);
+  var done = function (err, d) { delete INFLIGHT[key]; if (btn) btn.disabled = false; busySet(-1, '', true); cb(err, d); };
   body.token = token;
   fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) })
     .then(function (r) { return r.json(); })
@@ -109,9 +134,9 @@ function post(body, cb) {
       var err = d && d.status === 'ok' ? null : (d && d.error) || 'error';
       if (err === 'auth') authLost();
       if (err === 'locked') { toast('Энэ хугацааны гүйлгээ түгжигдсэн байна (Санхүү → Гүйлгээ түгжих)'); err = 'locked'; }
-      cb(err, d);
+      done(err, d);
     })
-    .catch(function () { cb('network'); });
+    .catch(function () { done('network'); });
 }
 
 // ── Навигаци ──

@@ -268,6 +268,10 @@ function bankApply(ids, quiet) {
     loanCloseIds.forEach(function (lid) { var L = loanById(lid); if (L) L.status = 'Хаагдсан'; }); if (loanCloseIds.length) save('nb_demo_loans', window.loans);
     save('nb_demo_journal', journal); save('nb_demo_bank', bankLines); save('nb_orders_cozy', window.adminOrders); render(); toast(updates.length + ' гүйлгээ тулгагдлаа'); return;
   }
+  // Серверийг хүлээлгүй шууд харуулна (дахин тулгахаас сэргийлнэ) — шинэчлэлт ирэхэд жинхэнэ өгөгдлөөр солигдоно
+  updates.forEach(function (u) { bankLines.forEach(function (l) { if (l.id === u.id) { l.status = u.status; l.link = u.link; } }); delete bankPick[u.id]; });
+  entries.forEach(function (e, i) { journal.push(Object.assign({ id: 'tmp' + Date.now() + '-' + i, by: ownerName }, e)); });
+  render();
   var n = 1 + orderUpd.length + loanCloseIds.length + (entries.length ? 1 : 0), fin = function () { if (--n === 0) { toast(updates.length + ' гүйлгээ тулгагдлаа'); refresh(); } };
   loanCloseIds.forEach(function (lid) { post({ type: 'admin_loan', closeId: lid }, function () { fin(); }); });
   if (entries.length) post({ type: 'admin_journal', by: ownerName, entries: entries }, function (err) { if (err) toast('Журнал: ' + err); fin(); });
