@@ -147,39 +147,53 @@ function lblAuto() { return !!load('nb_lbl_auto', false); }
 // сан товч дарсны дараа ачаалагдвал (жагсаалтын «Хэвлэх», «Хадгалаад шошго хэвлэх») холболт татгалзагдана
 if (navigator.bluetooth) loadLib(NIIM_SRC);
 
-// ── Баримт (энгийн, И-баримт) шошгон дээр: урт баримтыг сонгосон шошгоны өндрөөр хуудас болгон хуваана ──
+// ── Баримт (энгийн, И-баримт) шошгон дээр: нэг баримт = нэг шошго, багтахгүй бол үсэг/QR-ыг жижигрүүлж багтаана ──
 // blocks: {t, px, bold, c} мөр · {l, r, px, bold} зүүн/баруун · {line:1} зураас · {qr: qrcode объект}
 function lblReceiptCanvases(blocks) {
-  var sz = LBL_SIZES[lblSize()], W = sz[0], PH = sz[1], P = 8, m = document.createElement('canvas').getContext('2d'), ops = [], y = P;
-  var place = function (h) { var pg = Math.floor(y / PH); if (y + h > (pg + 1) * PH - P && h < PH - 2 * P) y = (pg + 1) * PH + P; var at = y; y += h; return at; };   // мөрийг хоёр шошгоны заагаар таслахгүй
+  var sz = LBL_SIZES[lblSize()], W = sz[0], H = sz[1], P = 6, m = document.createElement('canvas').getContext('2d');
   var font = function (px, b) { return (b ? 'bold ' : '') + px + 'px Arial, Helvetica, sans-serif'; };
-  blocks.forEach(function (b) {
-    if (b.line) { var la = place(8); ops.push(function (c) { c.fillRect(P, la + 3, W - 2 * P, 2); }); return; }
-    if (b.qr) {
-      var q = b.qr, n = q.getModuleCount(), cell = Math.max(2, Math.floor(Math.min(W - 2 * P, PH - 2 * P - 6) / n)), s = n * cell, qa = place(s + 6);
-      ops.push(function (c) { var x0 = Math.round((W - s) / 2); for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (q.isDark(r, k)) c.fillRect(x0 + k * cell, qa + 3 + r * cell, cell, cell); });
-      return;
-    }
-    var f = font(b.px || 18, b.bold), lh = (b.px || 18) + 5; m.font = f;
-    if (b.r != null) {
-      var rt = String(b.r), rw = m.measureText(rt).width;
-      wrapLines(m, b.l, W - 2 * P - rw - 8, 3).forEach(function (l, i) { var at = place(lh); ops.push(function (c) { c.font = f; c.fillText(l, P, at); if (!i) c.fillText(rt, W - P - rw, at); }); });
-      return;
-    }
-    wrapLines(m, b.t, W - 2 * P, 6).forEach(function (l) { var at = place(lh); ops.push(function (c) { c.font = f; c.fillText(l, b.c ? (W - c.measureText(l).width) / 2 : P, at); }); });
-  });
-  var pages = Math.max(1, Math.ceil((y + P) / PH)), out = [];
-  for (var i = 0; i < pages; i++) {
-    var pc = document.createElement('canvas'); pc.width = W; pc.height = PH;
-    var c = pc.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, W, PH); c.fillStyle = '#000'; c.textBaseline = 'top'; c.translate(0, -i * PH);
-    ops.forEach(function (op) { op(c); }); out.push(pc);
-  }
-  return out;
+  var qb = blocks.filter(function (b) { return b.qr; })[0], n = qb ? qb.qr.getModuleCount() : 0;
+  // Намхан шошгон (50×30, 40×30) дээр QR баруун талд, бичвэр зүүн талд; өндөр шошгон дээр QR бичвэрийн доор
+  var side = n && H < 400, sideCell = side ? Math.max(2, Math.min(Math.floor((H - 2 * P) / n), Math.floor(W * 0.42 / n))) : 0;
+  var TW = side ? W - 2 * P - n * sideCell - 8 : W - 2 * P;
+  var layout = function (k, cell) {
+    var ops = [], y = P;
+    blocks.forEach(function (b) {
+      if (b.line) { var la = y; y += Math.max(4, Math.round(8 * k)); ops.push(function (c) { c.fillRect(P, la + 1, TW, 2); }); return; }
+      if (b.qr) {
+        var q = b.qr, s = n * (side ? sideCell : cell), cl = s / n;
+        var draw = function (c, x0, y0) { for (var r = 0; r < n; r++) for (var j = 0; j < n; j++) if (q.isDark(r, j)) c.fillRect(x0 + j * cl, y0 + r * cl, cl, cl); };
+        if (side) ops.push(function (c) { draw(c, W - P - s, Math.round((H - s) / 2)); });
+        else { var qa = y; y += s + 4; ops.push(function (c) { draw(c, Math.round((W - s) / 2), qa + 2); }); }
+        return;
+      }
+      var px = Math.max(9, Math.round((b.px || 18) * k)), f = font(px, b.bold), lh = px + Math.max(2, Math.round(5 * k)); m.font = f;
+      if (b.r != null) {
+        var rt = String(b.r), rw = m.measureText(rt).width;
+        wrapLines(m, b.l, TW - rw - 6, 2).forEach(function (l, i) { var at = y; y += lh; ops.push(function (c) { c.font = f; c.fillText(l, P, at); if (!i) c.fillText(rt, P + TW - rw, at); }); });
+        return;
+      }
+      wrapLines(m, b.t, TW, 2).forEach(function (l) { var at = y; y += lh; ops.push(function (c) { c.font = f; c.fillText(l, b.c ? P + (TW - c.measureText(l).width) / 2 : P, at); }); });
+    });
+    return { ops: ops, h: y + P };
+  };
+  // Доор QR: бичвэрээс үлдсэн зайд аль болох том (нэг цэг ≥ 2 dot). Багтахгүй бол үсгийг жижигрүүлнэ
+  var fit = function (k) {
+    if (!n || side) { var A = layout(k, 0); return { L: A, ok: A.h <= H }; }
+    var T = layout(k, 0).h, cell = Math.min(Math.floor((W - 2 * P) / n), Math.floor((H - T - 4) / n), 6);
+    return { L: layout(k, Math.max(2, cell)), ok: cell >= 2 };
+  };
+  var k = 1, F = fit(k);
+  while (!F.ok && k > 0.3) { k -= 0.05; F = fit(k); }
+  var pc = document.createElement('canvas'); pc.width = W; pc.height = H;
+  var c = pc.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); c.fillStyle = '#000'; c.textBaseline = 'top';
+  F.L.ops.forEach(function (op) { op(c); });
+  return [pc];
 }
 function lblPrintReceipt(blocks) {
   var go = function () {
     var cs = lblReceiptCanvases(blocks);
-    toast('Баримт хэвлэж байна…' + (cs.length > 1 ? ' (' + cs.length + ' шошго)' : ''));
+    toast('Баримт хэвлэж байна…');
     lblPrintCanvases(cs, function (err) { toast(err ? 'Хэвлэж чадсангүй: ' + err : '✓ Баримт хэвлэгдлээ'); });
   };
   if (niimOn()) go(); else niimConnect(go, function (e) { toast('Принтер холбогдсонгүй: ' + e); });
