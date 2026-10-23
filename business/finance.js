@@ -421,7 +421,7 @@ function repPayroll(E, y) {
 
 // ═══════════ НЯГТЛАНГИЙН ТАЙЛАН, ТОХИРГОО (нэг хуудсанд цуглуулсан) ═══════════
 var HUBS = {
-  acct: ['Нягтлангийн тайлан', [['Шалгалт', ['dash']], ['Журнал', ['entry', 'journal', 'trial', 'ledger', 'gl']], ['Мөнгө', ['cash', 'expenses']],
+  acct: ['Нягтлангийн тайлан', [['Шалгалт', ['dash']], ['Журнал', ['entry', 'trial', 'gl']], ['Мөнгө', ['cash', 'expenses']],
     ['Авлага, өглөг', ['partners', 'aging_r', 'aging_p', 'pstmt']], ['Санхүүгийн тайлан', ['balance', 'pl', 'equity']]]],
   other: ['Бусад', [['Тайлан', ['profit', 'acct']], ['Мөнгө', ['vouchers']], ['Сар бүр', ['monthly', 'assets']], ['Тохиргоо', ['setup']]]],
   setup: ['Тохиргоо', [['Эхлэх', ['opening', 'accounts', 'banklink']], ['Мэдэгдэл', ['digest']], ['Хамгаалалт', ['lock', 'close']], ['Тусламж', ['glossary']]]],

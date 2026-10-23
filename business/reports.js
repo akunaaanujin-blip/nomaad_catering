@@ -263,17 +263,19 @@ function repTrial(E, from, to) {
     note: ok ? 'Тэнцэж байна: дебет = кредит' : 'АНХААР: дебет, кредит тэнцэхгүй байна' };
 }
 function repLedger(E, from, to, code) {
-  var open = (balances(E, prevDay(from))[code] || 0), bal = open;
-  var dn = debitNormal(code), sign = dn ? 1 : -1;
+  var set = {}, all = code === 'cashall';   // «нэгдсэн» — бүх касс, банкны данс нэг хуулгад (данс хоорондын шилжүүлэг орохгүй)
+  (all ? cashCodes() : [code]).forEach(function (k) { set[k] = 1; });
+  var b0 = balances(E, prevDay(from)), open = Object.keys(set).reduce(function (a, k) { return a + (b0[k] || 0); }, 0), bal = open;
+  var dn = all || debitNormal(code), sign = dn ? 1 : -1;
   var rows = [{ date: from, doc: '', desc: 'Эхний үлдэгдэл', corr: '', d: '', c: '', bal: r0(open * sign) }];
   E.forEach(function (e) {
-    if (e.date < from || e.date > to || (e.dr !== code && e.cr !== code)) return;
-    var isD = e.dr === code;
+    if (e.date < from || e.date > to || !!set[e.dr] === !!set[e.cr]) return;
+    var isD = !!set[e.dr];
     bal += isD ? e.amount : -e.amount;
-    rows.push({ date: e.date, doc: e.doc, desc: e.desc, corr: (isD ? e.cr : e.dr) + ' ' + accName(isD ? e.cr : e.dr), d: isD ? e.amount : '', c: isD ? '' : e.amount, bal: r0(bal * sign) });
+    rows.push({ date: e.date, doc: e.doc, desc: e.desc, acc: all ? accName(isD ? e.dr : e.cr) : '', corr: (isD ? e.cr : e.dr) + ' ' + accName(isD ? e.cr : e.dr), d: isD ? e.amount : '', c: isD ? '' : e.amount, bal: r0(bal * sign) });
   });
-  return { title: 'Дансны хуулга · ' + code + ' ' + accName(code), cols: [c('date', 'Огноо'), c('doc', 'Баримт'), c('desc', 'Гүйлгээний утга'),
-    c('corr', 'Харьцсан данс'), m('d', 'Дебет'), m('c', 'Кредит'), m('bal', 'Үлдэгдэл')], rows: rows,
+  return { title: all ? 'Мөнгөний дансны нэгдсэн хуулга' : 'Дансны хуулга · ' + code + ' ' + accName(code), cols: [c('date', 'Огноо'), c('doc', 'Баримт')].concat(all ? [c('acc', 'Данс')] : [], [c('desc', 'Гүйлгээний утга'),
+    c('corr', 'Харьцсан данс'), m('d', all ? 'Орсон' : 'Дебет'), m('c', all ? 'Гарсан' : 'Кредит'), m('bal', 'Үлдэгдэл')]), rows: rows,
     total: { desc: 'Эцсийн үлдэгдэл', d: sum(rows, 'd'), c: sum(rows, 'c'), bal: r0(bal * sign) } };
 }
 function repCash(E, from, to) {

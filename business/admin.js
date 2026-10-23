@@ -20,7 +20,7 @@ var records = [], staff = [], salary = [], stockData = {}, moves = [], journal =
 var BASE_PRODUCTS = {};
 Object.keys(BUSINESSES).forEach(function (k) { BASE_PRODUCTS[k] = BUSINESSES[k].products.slice(); });
 var state = { view: 'companies', biz: '', module: 'sales', period: 'month', staffBiz: 'all', month: todayStr().slice(0, 7), q: '', stockF: 'in', showMoves: false,
-  sub: { sales: 'receipts', products: 'stock', finance: 'daily' }, from: todayStr().slice(0, 8) + '01', to: todayStr(), acc: '10003' };
+  sub: { sales: 'receipts', products: 'stock', finance: 'daily' }, from: todayStr().slice(0, 8) + '01', to: todayStr(), acc: 'cashall' };
 var editId = '', salId = '', salKind = 'Урьдчилгаа';
 var NAV = { idx: 0, key: '', restoring: false };   // дэлгэцийн түүх (← Буцах)
 
@@ -261,7 +261,7 @@ var MENU = {
   products: [['Бараа материал', ['catalog', 'stock', 'counts', 'in', 'po']], ['Тайлан', ['move', 'prices']], ['Харилцагч', ['suppliers']]],
   // Санхүү — цөөн, ойлгомжтой цэс. Нягтлангийн тайлан, тохиргоо нь тус бүр нэг хуудсанд цуглуулагдсан (finance.js HUBS)
   // Санхүү — Excel «Санхүүгийн бүртгэлийн файл»-ын дарааллаар дугаартай 10 хуудас; бусад нь «Бусад» нэг хуудсанд (finance.js HUBS.other)
-  finance: [['Санхүү', ['daily', 'cashacc', 'money', 'bank', 'cashflow', 'expcat', 'debts', 'loans', 'payroll', 'months']], ['Хүсэлт', ['requests']], ['', ['other']]],
+  finance: [['Санхүү', ['daily', 'cashacc', 'money', 'journal', 'ledger', 'bank', 'cashflow', 'expcat', 'debts', 'loans', 'payroll', 'months']], ['Хүсэлт', ['requests']], ['', ['other']]],
 };
 function subLabel(mod, k) { var x = (SUBS[mod] || []).filter(function (s) { return s[0] === k; })[0]; return x ? x[1] : k; }
 function subGroup(mod, k) { var g = (MENU[mod] || []).filter(function (g) { return g[1].indexOf(k) >= 0; })[0]; return g ? g[0] : mod === 'finance' && hubOf(k) ? HUBS[hubOf(k)][0] : ''; }
@@ -1107,20 +1107,22 @@ function pendTags(biz) {
   return (r ? ' <span class="tag r">Мөнгөний хүсэлт ' + r + '</span>' : '') + (c ? ' <span class="tag r">Тооллого ' + c + '</span>' : '');
 }
 function requestsView() {
-  var biz = state.biz, tab = state.reqTab || 'p';
-  var all = records.filter(function (x) { return x.type === 'request' && x.biz === biz; }).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
-  var list = tab === 'p' ? all.filter(function (x) { return !x.status; }) : all;
+  var biz = state.biz, tab = state.reqTab || 'a';   // шийдсэн хүсэлт энд үлдэнэ (Төлсөн / Татгалзсан табаар)
+  var all = records.filter(function (x) { return x.type === 'request' && x.biz === biz; });
+  all.sort(function (a, b) { return (!b.status) - (!a.status) || ((a.date + (a.time || '')) < (b.date + (b.time || '')) ? 1 : -1); });
+  var TB = { a: ['Бүгд', function () { return true; }], p: ['Хүлээгдэж', function (x) { return !x.status; }], d: ['Төлсөн', function (x) { return x.status === 'Төлсөн'; }], r: ['Татгалзсан', function (x) { return x.status === 'Татгалзсан'; }] };
+  var list = all.filter(TB[tab][1]);
   var st = function (s) { return !s ? '<span class="st y">Хүлээгдэж</span>' : s === 'Төлсөн' ? '<span class="st g">Төлсөн</span>' : '<span class="st r">' + esc(s) + '</span>'; };
   return '<p class="hint">Ажилтны илгээсэн мөнгөний хүсэлт. «Төлөх» дарахад зарлагын баримт бөглөгдөж нээгдэнэ — шалгаад хадгалахад хүсэлт «Төлсөн» болно.</p>' +
-    '<div class="tabs" style="margin-bottom:10px"><button class="' + (tab === 'p' ? 'on' : '') + '" onclick="state.reqTab=\'p\';render()">Хүлээгдэж (' + pendRequests(biz).length + ')</button>' +
-    '<button class="' + (tab === 'a' ? 'on' : '') + '" onclick="state.reqTab=\'a\';render()">Бүгд</button></div>' +
+    '<div class="tabs" style="margin-bottom:10px">' + Object.keys(TB).map(function (k) {
+      return '<button class="' + (tab === k ? 'on' : '') + '" onclick="state.reqTab=\'' + k + '\';render()">' + TB[k][0] + ' (' + all.filter(TB[k][1]).length + ')</button>'; }).join('') + '</div>' +
     '<div class="card"><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Ажилтан</th><th>Юунд</th><th>Хэнд (данс)</th><th>Тайлбар</th><th class="n">Дүн</th><th>Төлөв</th><th></th></tr>' +
     (list.length ? list.map(function (x) {
       return '<tr><td>' + esc(x.date.slice(5) + ' ' + (x.time || '')) + '</td><td>' + esc(x.staff || '') + '</td><td>' + esc(x.category || '') + '</td><td>' + esc(x.customer || '') + '</td>' +
         '<td>' + esc(String(x.note || '')) + '</td><td class="n"><b>' + fmt(x.amount) + '</b></td><td>' + st(x.status) + '</td><td class="n" style="white-space:normal;min-width:120px">' +
         (!x.status ? '<button class="mini" style="color:var(--accent)" onclick="reqPay(\'' + esc(x.id) + '\',\'ХЗ\')">Төлөх (банк)</button> <button class="mini" style="color:var(--accent)" onclick="reqPay(\'' + esc(x.id) + '\',\'КЗ\')">Касснаас</button> ' +
           '<button class="mini" onclick="reqReject(\'' + esc(x.id) + '\')">Татгалзах</button>' : '') + '</td></tr>';
-    }).join('') : '<tr><td colspan="8" class="muted">' + (tab === 'p' ? 'Хүлээгдэж буй хүсэлт алга' : 'Хүсэлт алга') + '</td></tr>') + '</table></div></div>';
+    }).join('') : '<tr><td colspan="8" class="muted">' + TB[tab][0] + ' хүсэлт алга</td></tr>') + '</table></div></div>';
 }
 function reqPay(id, kind) {
   var x = records.filter(function (r) { return r.id === id; })[0]; if (!x) return;
@@ -1207,7 +1209,8 @@ function subBody() {
     if (!state.partner) return pre + '<p class="muted">Харилцагчаа сонгоно уу.</p>';
   }
   if (mod === 'finance' && sub === 'ledger') pre = '<div class="filter"><label>Данс<select onchange="state.acc=this.value;render()">' +
-    ACCOUNTS.map(function (a) { return '<option value="' + a[0] + '"' + (state.acc === a[0] ? ' selected' : '') + '>' + a[0] + ' ' + esc(a[1]) + '</option>'; }).join('') + '</select></label></div>';
+    '<option value="cashall"' + (state.acc === 'cashall' ? ' selected' : '') + '>Бүх мөнгөний данс (касс + банк) — нэгдсэн</option>' +
+    ACCOUNTS.map(function (a) { return '<option value="' + a[0] + '"' + (state.acc === a[0] ? ' selected' : '') + '>' + a[0] + ' ' + esc(accName(a[0])) + '</option>'; }).join('') + '</select></label></div>';
   if (mod === 'finance' && sub === 'entry') pre = '<p class="hint">Борлуулалт, зарлага, бараа, цалин санхүүд <b>автоматаар</b> бичигддэг. Энд зөвхөн бусад гүйлгээг (эхний үлдэгдэл, хөрөнгө оруулалт, зээл, банкинд тушаах, нийлүүлэгчид төлөх г.м) оруулна.</p>';
   if (sub === 'entry') rep.edit = 'editEntry';
   if (mod === 'sales' && /^(receipts|orders|item|disc)$/.test(sub)) pre += searchBox(sub === 'orders' ? 'Утас, нэр, бараагаар хайх…' : sub === 'item' ? 'Барааны нэрээр хайх…' : 'Бараа, хэрэглэгч, утас, ажилтан, ДДТД-аар хайх…');
