@@ -22,6 +22,11 @@ const TZ           = 'Asia/Ulaanbaatar';
 const SHEET_ID     = '1Hkmo9ttsHfm6xfr49W0BpjkE2nnPPCL0dt2fP6rGyKI';   // NOMAAD Бизнесүүд — Бүртгэл
 
 const BIZ_NAMES = { meat: 'Махны дэлгүүр', cozy: 'Cozy Home Ulaanbaatar', travel: 'NOMAAD аяллын дэлгүүр', mgmt: 'Удирдлага' };   // mgmt — зөвхөн санхүү (удирдлагын данс)
+// Ажилтны «Бизнес» багана: 'cozy' · 'cozy,meat' (нэг эрхээр хэд хэдэн дэлгүүрт) · 'all' (бүх дэлгүүр)
+const STAFF_BIZ = ['meat', 'cozy', 'travel'];
+function staffBizes(b) { b = String(b || '').trim(); return b === 'all' ? STAFF_BIZ.slice() : b.split(',').map(function (x) { return x.trim(); }).filter(function (x) { return STAFF_BIZ.indexOf(x) >= 0; }); }
+function staffIn(s, b) { return staffBizes(s.biz).indexOf(String(b || '')) >= 0; }
+function cleanStaffBiz(v) { v = String(v || '').trim(); if (v === 'all') return 'all'; const L = staffBizes(v); return L.length && L.length === v.split(',').length ? L.join(',') : ''; }
 const TYPE_NAMES = { sale: 'Борлуулалт', expense: 'Зарлага', request: 'Мөнгөний хүсэлт', close: 'Касс хаалт', collect: 'Төлбөр орсон', attend: 'Ирц', boost: 'Boost' };   // boost — зөвхөн бүртгэл, санхүүд банкны хуулгаар орно
 const SHEET_PRICE = 'Үнийн түүх';
 const PRICE_HEAD = ['Огноо', 'biz', 'Бараа', 'Хуучин үнэ', 'Шинэ үнэ', 'Хэн'];
@@ -181,7 +186,7 @@ function adminWho(data) {
 // Менежер: зөвхөн өөрийн дэлгүүрийн борлуулалт, бараа, захиалга, банк, кассын баримт. Цалин, ажилчид, тохиргоо, зээл, удирдлагын санхүү — эзэнд.
 const MGR_TYPES = { admin_read: 1, admin_order: 1, admin_stock: 1, admin_product: 1, admin_bank: 1, admin_journal: 1, admin_partner: 1, admin_po: 1,
                     admin_task: 1, admin_reminder: 1, admin_record: 1, admin_import_cozy: 1, admin_setting: 1 };
-function mgrCan(who, b) { b = String(b || ''); return who.biz === 'all' ? (!!BIZ_NAMES[b] && b !== 'mgmt') : b === who.biz; }
+function mgrCan(who, b) { b = String(b || ''); return who.biz === 'all' ? (!!BIZ_NAMES[b] && b !== 'mgmt') : staffIn(who, b); }
 function mgrGuard(d, who) {
   if (!MGR_TYPES[d.type]) return 'role';
   const ok = function (b) { return mgrCan(who, b); };
@@ -276,7 +281,7 @@ function adminRead(d) {
   a.role = who.role; a.roleBiz = who.biz;
   if (who.role !== 'Эзэн') {   // менежер: зөвхөн өөрийн дэлгүүр
     const ok = function (b) { return mgrCan(who, b); }, keep = function (arr, f) { return (arr || []).filter(function (x) { return ok(f ? f(x) : x.biz); }); };
-    a.staff = keep(a.staff).map(function (s) { return { id: s.id, name: s.name, biz: s.biz, role: s.role, status: s.status, username: s.username }; });
+    a.staff = (a.staff || []).filter(function (s) { return staffBizes(s.biz).some(ok); }).map(function (s) { return { id: s.id, name: s.name, biz: s.biz, role: s.role, status: s.status, username: s.username }; });
     a.salary = []; a.loans = []; a.docs = []; a.assets = []; a.kpi = {}; a.digest = { on: false, to: '' };
     ['records', 'moves', 'journal', 'partners', 'bank', 'orders', 'tasks', 'products', 'pos', 'priceLog', 'bankLinks'].forEach(function (k) { a[k] = keep(a[k]); });
     a.reminders = keep(a.reminders, function (r) { return r.co; });
@@ -354,7 +359,7 @@ function checkStaff(tok) {
   if (p.length !== 4 || !BIZ_NAMES[p[1]] || !(Number(p[2]) > Date.now())) return null;
   if (staffSig(p.slice(0, 3).join('|')) !== p[3]) return null;
   const s = cacheGet('stf', staffRows).filter(function (x) { return x.id === p[0]; })[0];   // кэш — ажилтны өөрчлөлтөөр цэвэрлэгдэнэ
-  if (!s || s.status !== 'Тийм' || (s.biz !== p[1] && s.biz !== 'all')) return null;   // идэвхгүй болгомогц шууд хүчингүй
+  if (!s || s.status !== 'Тийм' || !staffIn(s, p[1])) return null;   // идэвхгүй болгомогц шууд хүчингүй
   return { staff: s, biz: p[1] };
 }
 
@@ -363,7 +368,7 @@ function doGet(e) {
   const p = e.parameter || {};
   let out;
   if (p.action === 'products') out = products(p.biz);
-  else if (p.action === 'login') out = login(p.biz, p.user, p.code);
+  else if (p.action === 'login') out = login(p.biz, p.user, p.code, p.multi === '1');
   else if (p.action === 'stock') out = BIZ_NAMES[p.biz] ? { status: 'ok', stock: stockPublic(p.biz) } : { status: 'error', error: 'biz' };
   else if (p.action === 'tin') out = tinInfo(p.q);
   else out = { status: 'ok', app: 'NOMAAD' };
@@ -485,7 +490,7 @@ function tinInfo(q) {
 }
 
 // ── Ажилтны нэвтрэлт ── Кодын жагсаалтыг хэзээ ч буцаахгүй. Зөвхөн "Тийм" төлөвтэй ажилтан нэвтэрнэ.
-function login(biz, user, code) {
+function login(biz, user, code, multi) {
   code = String(code || '').trim();
   user = String(user || '').trim().toLowerCase();
   if (!BIZ_NAMES[biz] || !USER_RE.test(user) || !/^\d{4,8}$/.test(code)) return { status: 'error', error: 'code' };
@@ -493,12 +498,16 @@ function login(biz, user, code) {
   const key = 'fail_' + biz + '_' + user;
   const fails = Number(cache.get(key) || 0);
   if (fails >= 10) return { status: 'error', error: 'locked' };
-  const s = cacheGet('stf', staffRows).filter(function (x) { return x.username === user && (x.biz === biz || x.biz === 'all'); })[0];
+  // multi — шинэ хуудас: эрхтэй бүх дэлгүүрийн токеныг нэг дор буцаана (хуудас хооронд дахин нэвтрэхгүй шилжинэ)
+  const s = cacheGet('stf', staffRows).filter(function (x) { return x.username === user && (multi ? staffBizes(x.biz).length : staffIn(x, biz)); })[0];
   if (s && s.code === code.padStart(4, '0')) {
     if (s.status === 'Хүлээгдэж') return { status: 'error', error: 'pending' };
     if (s.status === 'Тийм') {
       cache.remove(key);
-      return { status: 'ok', name: s.name, role: s.role === 'Худалдагч' ? 'seller' : 'manager', token: signStaff(s.id, biz) };
+      const out = { status: 'ok', name: s.name, role: s.role === 'Худалдагч' ? 'seller' : 'manager' };
+      if (staffIn(s, biz)) out.token = signStaff(s.id, biz);
+      if (multi) { out.tokens = {}; staffBizes(s.biz).forEach(function (b) { out.tokens[b] = b === biz && out.token ? out.token : signStaff(s.id, b); }); }
+      return out;
     }
   }
   cache.put(key, String(fails + 1), 600);
@@ -559,7 +568,7 @@ function adminStaff(d) {
     if (staffRows().some(function (x) { return x.username === u; })) return { status: 'error', error: 'user_taken' };
     set(14, u);
   }
-  if (f.biz && (BIZ_NAMES[f.biz] || f.biz === 'all')) set(1, f.biz);
+  if (f.biz !== undefined) { const b = cleanStaffBiz(f.biz); if (!b) return { status: 'error', error: 'biz' }; set(1, b); }
   if (f.position !== undefined) set(9, String(f.position).slice(0, 40));
   if (f.salary !== undefined) set(10, Number(f.salary) || 0);
   if (f.phone !== undefined) set(7, String(f.phone).slice(0, 15));
@@ -595,9 +604,9 @@ function adminSalary(d) {
   if (!SALARY_KINDS[e.kind] || !(Number(e.amount) > 0) || !/^\d{4}-\d{2}$/.test(String(e.month))) return { status: 'error', error: 'fields' };
   const s = staffRows().filter(function (x) { return x.id === e.staffId; })[0];
   if (!s) return { status: 'error', error: 'not_found' };
-  // «Бүх дэлгүүр»-ийн ажилтны цалинг аль компанийн зардал болохыг заана
-  const biz = s.biz === 'all' ? String(e.biz || '') : s.biz;
-  if (!BIZ_NAMES[biz]) return { status: 'error', error: 'biz' };
+  // Хэд хэдэн дэлгүүрийн ажилтны цалинг аль компанийн зардал болохыг заана
+  const L = staffBizes(s.biz), biz = L.length === 1 ? L[0] : String(e.biz || '');
+  if (!BIZ_NAMES[biz] || (s.biz !== 'all' && L.indexOf(biz) < 0)) return { status: 'error', error: 'biz' };
   const id = 'S' + Date.now();
   salarySheet().appendRow([id, Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), e.month, s.id, s.name, biz,
     e.kind, Number(e.amount), String(e.note || '').slice(0, 120)]);
@@ -1634,7 +1643,7 @@ function json(o) {
 function selfTest() {
   const s = staffRows().filter(function (x) { return x.status === 'Тийм'; })[0];
   if (!s) return Logger.log('Идэвхтэй ажилтан алга');
-  const biz = s.biz === 'all' ? 'meat' : s.biz, t = signStaff(s.id, biz);
+  const biz = staffBizes(s.biz)[0] || 'meat', t = signStaff(s.id, biz);
   const ok = !!checkStaff(t), fake = !!checkStaff(t.slice(0, -3) + 'abc'), none = !!checkStaff('');
   Logger.log('ТОКЕН ' + (ok && !fake && !none ? 'OK' : 'АЛДАА') + ' (зөв=' + ok + ', хуурамч=' + fake + ', хоосон=' + none + ')');
 }

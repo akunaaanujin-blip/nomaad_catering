@@ -4,9 +4,12 @@
 var BIZ = BUSINESSES[BIZ_KEY];
 var LS_REC = 'nb_records';     // энэ төхөөрөмж дээрх бүх бичлэг (өнөөдрийн жагсаалт + туршилтын горим)
 var LS_QUEUE = 'nb_queue';     // интернэт тасарсан үед илгээгдээгүй бичлэг
-var LS_SESSION = 'nb_session_' + BIZ_KEY;   // { name, role, date } — зөвхөн энэ цонхонд (хаавал дахин код асууна)
+var LS_SESSION = 'nb_session_' + BIZ_KEY;   // { name, role, date, token, bizes } — зөвхөн энэ цонхонд (хаавал дахин код асууна)
+function sesSave(v, biz) {
+  var k = 'nb_session_' + (biz || BIZ_KEY);
+  try { if (v) sessionStorage.setItem(k, JSON.stringify(v)); else sessionStorage.removeItem(k); } catch (e) {} try { localStorage.removeItem(k); } catch (e) {}
+}
 function sesLoad() { try { return JSON.parse(sessionStorage.getItem(LS_SESSION) || 'null'); } catch (e) { return null; } }
-function sesSave(v) { try { if (v) sessionStorage.setItem(LS_SESSION, JSON.stringify(v)); else sessionStorage.removeItem(LS_SESSION); } catch (e) {} try { localStorage.removeItem(LS_SESSION); } catch (e) {} }
 var LS_PROD = 'nb_products_' + BIZ_KEY;
 
 var session = sesLoad();
@@ -60,7 +63,7 @@ function doLogin() {
   }
   $('codeInput').disabled = true;
   $('loginMsg').textContent = 'Шалгаж байна...';
-  jsonp({ action: 'login', biz: BIZ_KEY, user: user, code: code }, function (err, data) {
+  jsonp({ action: 'login', biz: BIZ_KEY, user: user, code: code, multi: 1 }, function (err, data) {
     $('codeInput').disabled = false;
     if (err) { loginFail('Интернэт холболтоо шалгана уу'); return; }
     if (!data || data.status !== 'ok') {
@@ -73,8 +76,17 @@ function doLogin() {
   });
 }
 function loginOk(d) {
-  save(LS_USER, $('userInput').value.trim().toLowerCase());
-  session = { name: d.name, role: d.role, date: todayStr(), token: d.token || '' };
+  var user = $('userInput').value.trim().toLowerCase();
+  save(LS_USER, user);
+  // Хэд хэдэн дэлгүүрт эрхтэй бол бүгдэд нь нэг дор нэвтэрнэ — хуудас хооронд дахин код асуухгүй шилжинэ
+  var bizes = d.tokens ? Object.keys(d.tokens).filter(function (b) { return BUSINESSES[b]; }) : [BIZ_KEY];
+  bizes.forEach(function (b) {
+    if (b === BIZ_KEY) return;
+    sesSave({ name: d.name, role: d.role, date: todayStr(), token: d.tokens[b], bizes: bizes }, b);
+    save('nb_user_' + b, user);
+  });
+  if (bizes.indexOf(BIZ_KEY) < 0) { location.replace(bizes[0] + '.html'); return; }   // энэ дэлгүүрт эрхгүй — өөрийн дэлгүүр рүү
+  session = { name: d.name, role: d.role, date: todayStr(), token: (d.tokens && d.tokens[BIZ_KEY]) || d.token || '', bizes: bizes };
   sesSave(session);
   staffName = session.name;
   isManager = session.role === 'manager';
@@ -89,7 +101,7 @@ function loginFail(msg) {
 }
 function logout() {
   if (!confirm('Гарах уу? Дараагийн ажилтан өөрийн кодоор нэвтэрнэ.')) return;
-  sesSave(null);
+  Object.keys(BUSINESSES).forEach(function (b) { sesSave(null, b); });   // бусад дэлгүүрийн нэвтрэлтийг ч хаана
   location.reload();
 }
 function showMain() {
@@ -150,7 +162,14 @@ function renderNav() {
       return '<div class="ep-grp">' + (grp.t ? '<div class="ep-grp-t">' + esc(grp.t) + '</div>' : '') + grp.items.map(function (it, ii) {
         return '<a class="ep-it' + (it[0] === cur ? ' on' : '') + '" onclick="navGo(' + gi + ',' + ii + ')">' + esc(it[1]) + '</a>';
       }).join('') + '</div>';
-    }).join('') + '<div class="ep-foot">NOMAAD · ажилтны хуудас</div>';
+    }).join('') + bizSwitch() + '<div class="ep-foot">NOMAAD · ажилтны хуудас</div>';
+}
+function bizSwitch() {   // нэг эрхээр хэд хэдэн дэлгүүрт ажилладаг бол бусад дэлгүүр рүү шилжих
+  var L = (session && session.bizes || []).filter(function (b) { return b !== BIZ_KEY && BUSINESSES[b]; });
+  if (!L.length) return '';
+  return '<div class="ep-grp"><div class="ep-grp-t">Өөр дэлгүүр</div>' + L.map(function (b) {
+    return '<a class="ep-it" href="' + b + '.html">' + esc(BUSINESSES[b].name) + '</a>';
+  }).join('') + '</div>';
 }
 function navGo(gi, ii) { $('main').classList.remove('nav-open'); navMenu()[gi].items[ii][2](); }
 function showView(v, tab) {

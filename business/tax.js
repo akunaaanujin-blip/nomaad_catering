@@ -31,9 +31,10 @@ function jobInjury(code) {
   return j ? j[2] : TAX.ndDefaultInjury;
 }
 function pitCredit(income) { for (var i = 0; i < TAX.pitCredit.length; i++) if (income <= TAX.pitCredit[i][0]) return TAX.pitCredit[i][1]; return 0; }
+// Ажилтан эхний дэлгүүрийнхээ хуулийн этгээдэд нэг удаа тоологдоно («Бүх дэлгүүр» → Мах → Вайс бротерс)
 function entStaff(k) {
   var bs = entBiz(k);
-  return staff.filter(function (s) { return s.status === 'Тийм' && (bs.indexOf(s.biz) >= 0 || (s.biz === 'all' && k === 'weiss')) && (s.role !== 'Эзэн' || Number(s.salary) > 0); });
+  return staff.filter(function (s) { return s.status === 'Тийм' && bs.indexOf(staffBizes(s.biz)[0]) >= 0 && (s.role !== 'Эзэн' || Number(s.salary) > 0); });
 }
 function calcPay(s, month) {
   var e = salary.filter(function (x) { return x.staffId === s.id && x.month === month; });

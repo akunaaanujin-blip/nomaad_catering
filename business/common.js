@@ -13,6 +13,11 @@ function billKey(x) { return x.bill || (String(x.note || '').match(/ДДТД (\d
 // Цуцалсан (буухиад өгөхөөс өмнө) ба Буцаасан (хүргэлтээс буцсан) — аль аль нь идэвхгүй захиалга
 function ordDead(o) { return o.status === 'Цуцалсан' || o.status === 'Буцаасан'; }
 
+// Ажилтны «Бизнес»: 'cozy' · 'cozy,meat' (нэг эрхээр хэд хэдэн дэлгүүрт) · 'all' (бүх дэлгүүр)
+var STAFF_BIZ = ['meat', 'cozy', 'travel'];
+function staffBizes(b) { b = String(b || '').trim(); return b === 'all' ? STAFF_BIZ.slice() : b.split(',').map(function (x) { return x.trim(); }).filter(function (x) { return STAFF_BIZ.indexOf(x) >= 0; }); }
+function staffIn(s, b) { return staffBizes(s.biz).indexOf(b) >= 0; }
+
 function fmt(n) {
   n = Math.round(Number(n) || 0);
   return '₮' + n.toLocaleString('en-US');

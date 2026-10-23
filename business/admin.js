@@ -11,7 +11,7 @@ var ROLE = 'Эзэн', ROLE_BIZ = 'all';
 function isOwner() { return ROLE === 'Эзэн'; }
 function applyRole(role, biz) {
   ROLE = role || 'Эзэн'; ROLE_BIZ = biz || 'all';
-  KEYS = ORIG_ALL.filter(function (k) { return k !== 'mgmt' && (isOwner() || ROLE_BIZ === 'all' || k === ROLE_BIZ); });
+  KEYS = ORIG_ALL.filter(function (k) { return k !== 'mgmt' && (isOwner() || staffIn({ biz: ROLE_BIZ }, k)); });
   ALL_KEYS = isOwner() ? KEYS.concat(['mgmt']) : KEYS.slice();
   if (!isOwner()) { window.loans = []; window.assets = []; salary = []; }   // сервер ч менежерт эдгээрийг өгдөггүй
 }
@@ -188,7 +188,9 @@ function sums(list) {
   });
   return s;
 }
-function bizStaff(biz) { return staff.filter(function (s) { return s.biz === biz || s.biz === 'all'; }); }
+function bizStaff(biz) { return staff.filter(function (s) { return staffIn(s, biz); }); }
+// Хэд хэдэн дэлгүүрийн ажилтны цалин, гэрээ аль компанид бичигдэх: одоо нээсэн компани (эрхтэй бол) эсвэл эхнийх
+function staffHome(s) { var L = staffBizes(s.biz); return L.indexOf(state.biz) >= 0 ? state.biz : (L[0] || KEYS[0]); }
 function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
 
 // ── Үндсэн зураглал ──
@@ -817,12 +819,12 @@ function salaryOf(s, month) {
   return r;
 }
 function staffSales(s, month) {
-  return records.filter(function (x) { return x.type === 'sale' && x.staff === s.name && x.date.slice(0, 7) === month && (s.biz === 'all' || x.biz === s.biz); })
+  return records.filter(function (x) { return x.type === 'sale' && x.staff === s.name && x.date.slice(0, 7) === month && staffIn(s, x.biz); })
     .reduce(function (a, x) { return a + (Number(x.amount) || 0); }, 0);
 }
 function staffView(fixedBiz) {
   var bizF = fixedBiz || state.staffBiz;
-  var list = staff.filter(function (s) { return bizF === 'all' || s.biz === bizF || s.biz === 'all'; });
+  var list = staff.filter(function (s) { return bizF === 'all' || staffIn(s, bizF); });
   var pend = list.filter(function (s) { return s.status === 'Хүлээгдэж'; });
   var act = list.filter(function (s) { return s.status === 'Тийм'; });
   var off = list.filter(function (s) { return s.status === 'Үгүй'; });
@@ -868,7 +870,7 @@ function kpiPost(id) {
   var m = state.month, sales = staffSales(s, m), p = kpiPct(s), amt = Math.round(Math.max(0, sales) * p / 100);
   if (kpiPosted(s, m).length) { toast('Энэ сарын KPI бонус бичигдсэн байна'); return; }
   if (!(amt > 0)) return;
-  var biz = s.biz === 'all' ? (state.biz && state.biz !== 'mgmt' ? state.biz : KEYS[0]) : s.biz;
+  var biz = staffHome(s);
   if (!confirm(s.name + ' · ' + m + '\nБорлуулалт ' + fmt(sales) + ' × ' + p + '% = ' + fmt(amt) + '\n\n«KPI бонус» болгон цалинд бичих үү?')) return;
   post({ type: 'admin_salary', entry: { staffId: s.id, kind: 'KPI бонус', amount: amt, month: m, note: 'KPI ' + p + '% · борлуулалт ' + fmt(sales), biz: biz } }, function (err) {
     if (err) { toast('Алдаа: ' + err); return; }
@@ -901,7 +903,7 @@ function saveDelCode() {
   if (!v && !confirm('Код хоосон — захиалга устгах боломжгүй болно. Үргэлжлүүлэх үү?')) return;
   post({ type: 'admin_setting', key: 'delcode', value: v }, function (err, d) { if (err) { toast('Алдаа: ' + err); return; } $('delCode').value = ''; toast(d && d.set ? 'Устгах код хадгалагдлаа' : 'Устгах код унтарлаа'); });
 }
-function bizLabel(b) { return b === 'all' ? 'Бүх дэлгүүр' : (BUSINESSES[b] ? BUSINESSES[b].name : b); }
+function bizLabel(b) { return b === 'all' ? 'Бүх дэлгүүр' : String(b || '').split(',').map(function (k) { return BUSINESSES[k] ? BUSINESSES[k].name : k; }).join(' + '); }
 function pendCard(s) {
   return '<div class="pend"><div><b>' + esc(s.surname ? s.surname + ' ' : '') + esc(s.name) + '</b> <span class="muted">@' + esc(s.username || '') + '</span> · ' + bizLabel(s.biz) +
     '<small>Утас: ' + esc(s.phone) + (s.regno ? ' · ' + esc(s.regno) : '') + (s.position ? ' · ' + esc(s.position) : '') + ' · ' + esc(s.created) + '</small></div>' +
@@ -911,7 +913,7 @@ function pendCard(s) {
 }
 function staffGroups(act, m) {   // компани (байршил) бүрээр, өнгөөр нь ангилна
   return KEYS.concat(['all']).map(function (k) {
-    var L = act.filter(function (s) { return s.biz === k; }); if (!L.length) return '';
+    var L = act.filter(function (s) { return k === 'all' ? s.biz === 'all' : s.biz !== 'all' && staffIn(s, k); }); if (!L.length) return '';   // хэд хэдэн дэлгүүрийнх бүлэг бүрт харагдана
     var B = BUSINESSES[k] || { name: 'Бүх дэлгүүр', icon: '★', color: '#5B6B82' };
     return '<div class="st-grp" style="--co:' + B.color + '"><div class="st-grp-h"><span class="mono">' + B.icon + '</span><b>' + esc(B.name) + '</b><small>' + L.length + ' ажилтан</small></div>' +
       '<div class="st-grid">' + L.map(function (s) { return staffCard(s, m, B.color); }).join('') + '</div></div>';
@@ -956,8 +958,12 @@ function openStaff(id) {
   editId = id;
   $('sfTitle').textContent = (s.surname ? s.surname + ' ' : '') + s.name; $('sfName').value = s.name || '';
   $('sfSub').textContent = bizLabel(s.biz) + (s.created ? ' · бүртгүүлсэн ' + s.created : '');
-  $('sfBiz').innerHTML = ['all'].concat(KEYS).map(function (k) { return '<option value="' + k + '">' + esc(bizLabel(k)) + '</option>'; }).join('');
-  $('sfStatus').value = s.status; $('sfRole').value = s.role; $('sfBiz').value = s.biz;
+  $('sfBiz').innerHTML = ['all'].concat(KEYS).map(function (k) {
+    var on = k === 'all' ? s.biz === 'all' : s.biz !== 'all' && staffIn(s, k);
+    return '<label style="display:flex;gap:8px;align-items:center;margin:4px 0;color:var(--ink)"><input type="checkbox" value="' + k + '"' + (on ? ' checked' : '') +
+      ' style="width:auto" onchange="sfBizPick(this)"> ' + esc(bizLabel(k)) + '</label>';
+  }).join('');
+  $('sfStatus').value = s.status; $('sfRole').value = s.role;
   $('sfPos').value = s.position || ''; $('sfSalary').value = s.salary || ''; $('sfPhone').value = s.phone || '';
   $('sfBank').value = s.bank || ''; $('sfCode').value = ''; $('sfUser').value = s.username || '';
   $('sfKpi').value = kpiPct(s) || '';
@@ -965,12 +971,20 @@ function openStaff(id) {
   loadJobs(function () { $('sfJobs').innerHTML = ND_JOBS.map(function (j) { return '<option value="' + j[0] + '">' + esc(j[1]) + ' · ҮОМШӨ ' + j[2] + '%</option>'; }).join(''); sfJobInfo(); });
   openSheet('staffSheet');
 }
+function sfBizPick(el) {   // «Бүх дэлгүүр» ба тусгай дэлгүүрүүд хамт сонгогдохгүй
+  [].forEach.call($('sfBiz').querySelectorAll('input'), function (x) { if (x !== el && el.checked && (el.value === 'all' || x.value === 'all')) x.checked = false; });
+}
+function sfBizVal() {
+  var v = [].filter.call($('sfBiz').querySelectorAll('input'), function (x) { return x.checked; }).map(function (x) { return x.value; });
+  return v.indexOf('all') >= 0 ? 'all' : v.join(',');
+}
 function saveStaff() {
-  var f = { name: $('sfName').value.trim(), status: $('sfStatus').value, role: $('sfRole').value, biz: $('sfBiz').value, position: $('sfPos').value.trim(),
+  var f = { name: $('sfName').value.trim(), status: $('sfStatus').value, role: $('sfRole').value, biz: sfBizVal(), position: $('sfPos').value.trim(),
             salary: Number($('sfSalary').value) || 0, phone: $('sfPhone').value.trim(), bank: $('sfBank').value.trim(),
             username: $('sfUser').value.trim().toLowerCase(), address: $('sfAddr').value.trim(), ndType: $('sfNdType').value, ndJob: $('sfNdJob').value.trim() };
   if (f.ndJob && !/^\d{4}-\d{2}$/.test(f.ndJob)) { toast('НД мэргэжлийн кодыг жагсаалтаас сонгоно уу (жишээ 5223-11)'); return; }
   if (!/^[a-z0-9._]{3,20}$/.test(f.username)) { toast('Нэвтрэх нэр: латин жижиг үсэг, тоо, цэг (3-20)'); return; }
+  if (!f.biz) { toast('Ажиллах дэлгүүрээ сонгоно уу'); return; }
   var code = $('sfCode').value.trim();
   if (code) { if (!/^\d{4,8}$/.test(code)) { toast('Код 4-8 оронтой тоо байна'); return; } f.code = code; }
   var kp = Number($('sfKpi').value) || 0, sid = editId;
@@ -998,8 +1012,9 @@ function openSalary(id) {
   $('slAmount').value = ''; $('slNote').value = ''; $('slMonth').value = state.month;
   setKind($('slKind').children[0]);
   // «Бүх дэлгүүр»-ийн ажилтан бол цалин аль компанийн зардал болохыг сонгоно
-  $('slBizWrap').style.display = s.biz === 'all' ? 'block' : 'none';
-  $('slBiz').innerHTML = KEYS.map(function (k) { return '<option value="' + k + '"' + (k === state.biz ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('');
+  var L = staffBizes(s.biz).filter(function (k) { return KEYS.indexOf(k) >= 0; }), home = staffHome(s);
+  $('slBizWrap').style.display = L.length > 1 ? 'block' : 'none';
+  $('slBiz').innerHTML = (L.length ? L : KEYS).map(function (k) { return '<option value="' + k + '"' + (k === home ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('');
   var hist = salary.filter(function (e) { return e.staffId === id; }).slice().reverse().slice(0, 20);
   $('slHistory').innerHTML = hist.length ? hist.map(function (e) {
     var minus = e.kind !== 'Шагнал' && e.kind !== 'KPI бонус';
@@ -1781,7 +1796,7 @@ var ctId = '';
 function openContract(id) {
   var s = staff.filter(function (x) { return x.id === id; })[0]; if (!s) return;
   ctId = id;
-  var t = parseTerms(s), biz = s.biz === 'all' ? (state.biz || KEYS[0]) : s.biz;
+  var t = parseTerms(s), biz = t.biz || staffHome(s);
   var co = load('nb_company', {});
   $('ctTitle').textContent = 'Хөдөлмөрийн гэрээ · ' + (s.surname ? s.surname + ' ' : '') + s.name;
   $('ctSub').textContent = s.contractNo ? s.contractNo + ' · ' + s.contractDate + '-нд байгуулсан' : 'Шинэ гэрээ';
@@ -1799,7 +1814,7 @@ function openContract(id) {
 }
 function saveContract() {
   var s = staff.filter(function (x) { return x.id === ctId; })[0]; if (!s) return;
-  var biz = s.biz === 'all' ? (state.biz || KEYS[0]) : s.biz;
+  var biz = parseTerms(s).biz || staffHome(s);
   var t = { position: $('ctPos').value.trim(), salary: Number($('ctSalary').value), start: $('ctStart').value,
             end: $('ctType').value === 'fixed' ? $('ctEnd').value : '', probation: Number($('ctProb').value), hours: $('ctHours').value.trim(),
             payDays: $('ctPay').value.trim(), place: $('ctPlace').value.trim(), address: $('ctAddr').value.trim(),
@@ -1818,7 +1833,7 @@ function saveContract() {
   });
 }
 function printContract(s) {
-  var t = parseTerms(s), biz = t.biz || (s.biz === 'all' ? KEYS[0] : s.biz), E = (window.EBARIMT || {})[biz] || {};
+  var t = parseTerms(s), biz = t.biz || staffHome(s), E = (window.EBARIMT || {})[biz] || {};
   var coName = E.legalName || BUSINESSES[biz].name, reg = E.regNo ? '(регистр ' + esc(E.regNo) + ')' : '';
   var full = (s.surname ? s.surname + ' овогтой ' : '') + s.name;
   var w = window.open('', '_blank', 'width=820,height=900');
@@ -2043,7 +2058,7 @@ function openTask() {
 }
 function tkStaffOpts() {
   var b = $('tkBiz').value;
-  $('tkStaff').innerHTML = '<option value="all">Дэлгүүрийн бүх ажилтан</option>' + staff.filter(function (s) { return s.status === 'Тийм' && (s.biz === b || s.biz === 'all') && s.role !== 'Эзэн'; })
+  $('tkStaff').innerHTML = '<option value="all">Дэлгүүрийн бүх ажилтан</option>' + staff.filter(function (s) { return s.status === 'Тийм' && staffIn(s, b) && s.role !== 'Эзэн'; })
     .map(function (s) { return '<option value="' + s.id + '">' + esc(full(s)) + '</option>'; }).join('');
 }
 function saveTask() {
