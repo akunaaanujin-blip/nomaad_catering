@@ -132,7 +132,7 @@ function bankView() {
     (todo.length ? '<button style="margin-left:auto" onclick="bankDel(null)">Тулгаагүй ' + todo.length + ' гүйлгээг устгах</button>' : '') + '</div>' +
     (todo.length && bankTab !== 'done' ? '<div class="bk-bar"><button class="b-btn" onclick="bankSelSure()">Таарсныг сонгох' + (sure ? ' (' + sure + ')' : '') + '</button>' +
       '<button class="b-btn primary" id="bkSelBtn" onclick="bankApplySel()">Сонгосныг тулгах (' + Object.keys(bankSel).length + ')</button>' +
-      '<span class="muted" style="font-size:12.5px">Мөр бүрийн «Юутай тулгах» сонголтоор тулгана. Сонголтгүй мөр алгасагдана.</span></div>' : '');
+      '<span class="muted" style="font-size:12.5px">Мөр бүрийн «Тулгах баримт» сонголтоор тулгана. Сонголтгүй мөр алгасагдана.</span></div>' : '');
   var rows = list.map(function (l) {
     var s = l.status === 'Шинэ' ? bankSuggest(l) : null, sel = '';
     if (s) {
@@ -174,7 +174,7 @@ function bankView() {
   return head + '<div class="card"><h2>Төлбөрийн мэдээлэл (хэрэглэгчид илгээх мессежид)</h2><div class="bar-row"><input id="payInfo" value="' + esc(pay) + '" placeholder="Жишээ: Хаан банк 53xxxxxxxx (Н.Анужин)" style="flex:1;min-width:220px">' +
     '<button class="b-btn" onclick="savePayInfo()">Хадгалах</button></div><p class="muted" style="font-size:12.5px;margin-top:6px">Ажилтан захиалга бүртгэхэд «Төлбөрийн мессеж»-д энэ данс, дүн, «Гүйлгээний утга: утасны дугаар» бичигдэнэ — тулгалт автоматаар таарна.</p></div>' +
     spSettingsCard(biz) +
-    tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th class="bk-ck">' + (list.some(function (l) { return l.status === 'Шинэ'; }) ? '<input type="checkbox" title="Бүгдийг сонгох" onchange="bankSelAll(this.checked)">' : '') + '</th><th>Огноо</th><th>Гүйлгээний утга</th><th class="n">Орлого</th><th class="n">Зарлага</th><th>Юутай тулгах</th><th></th></tr>' +
+    tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th class="bk-ck">' + (list.some(function (l) { return l.status === 'Шинэ'; }) ? '<input type="checkbox" title="Бүгдийг сонгох" onchange="bankSelAll(this.checked)">' : '') + '</th><th>Огноо</th><th>Гүйлгээний утга</th><th class="n">Орлого</th><th class="n">Зарлага</th><th>Тулгах баримт</th><th></th></tr>' +
     (rows || '<tr><td colspan="7" class="muted">' + (all.length ? 'Тулгах гүйлгээ алга' : 'Хуулга оруулаагүй байна — «Хуулга оруулах» дарна уу') + '</td></tr>') + '</table></div></div>';
 }
 // StorePay merchant API — түлхүүрийг зөвхөн серверт хадгална (энд хэзээ ч буцааж харуулахгүй); хоосон талбар хуучныг хэвээр үлдээнэ
@@ -232,7 +232,7 @@ function bankApply(ids, quiet) {
   ids.forEach(function (id) {
     var l = bankLines.filter(function (x) { return x.id === id; })[0]; if (!l) return;
     var pick = bankPick[id] || '', info = bankAcctInfo(l.acct), acc = info ? info.acc : '1101', d = l.date.slice(0, 10), amt = l.credit || l.debit;
-    if (!pick) { if (!quiet) toast('Юутай тулгахаа сонгоно уу'); return; }
+    if (!pick) { if (!quiet) toast('Тулгах баримтаа сонгоно уу'); return; }
     if (pick === 'skip') { updates.push({ id: id, status: 'Алгассан', link: '' }); return; }
     if (pick === 'LN:new') return;   // нэг нэгээр нь (цонхоор) тулгана
     if (pick.indexOf('P:') === 0) { updates.push({ id: id, status: 'Тулгасан', link: 'Захиалга ' + pick.slice(2) + ' (өмнө бүртгэгдсэн)' }); return; }
@@ -386,7 +386,7 @@ function bankDel(ids) {
   });
 }
 
-// ── Олноор нь тулгах: сонгосон мөрүүдийг тус бүрийн «Юутай тулгах» сонголтоор нэг дор ──
+// ── Олноор нь тулгах: сонгосон мөрүүдийг тус бүрийн «Тулгах баримт» сонголтоор нэг дор ──
 function bankSelSet(el) { if (el.checked) bankSel[el.dataset.id] = 1; else delete bankSel[el.dataset.id]; bankSelCount(); }
 function bankSelCount() { var b = document.getElementById('bkSelBtn'); if (b) b.textContent = 'Сонгосныг тулгах (' + Object.keys(bankSel).length + ')'; }
 function bankSelAll(on) {
@@ -401,7 +401,7 @@ function bankApplySel() {
   var sel = bankLines.filter(function (l) { return bankSel[l.id] && l.biz === state.biz && l.status === 'Шинэ'; });
   if (!sel.length) { toast('Тулгах мөрөө сонгоно уу'); return; }
   var ok = sel.filter(function (l) { return bankPick[l.id] && bankPick[l.id] !== 'LN:new'; }), miss = sel.length - ok.length;
-  if (!ok.length) { toast('Сонгосон мөрүүдэд «Юутай тулгах» сонгогдоогүй байна'); return; }
+  if (!ok.length) { toast('Сонгосон мөрүүдэд «Тулгах баримт» сонгогдоогүй байна'); return; }
   var inn = ok.reduce(function (a, l) { return a + (+l.credit || 0); }, 0), out = ok.reduce(function (a, l) { return a + (+l.debit || 0); }, 0);
   if (!confirm(ok.length + ' гүйлгээг тулгах уу?\n\nОрлого: ' + fmt(inn) + '\nЗарлага: ' + fmt(out) + (miss ? '\n\n' + miss + ' мөрөнд сонголт байхгүй (эсвэл шинэ зээл) тул алгасна.' : ''))) return;
   ok.forEach(function (l) { delete bankSel[l.id]; });
