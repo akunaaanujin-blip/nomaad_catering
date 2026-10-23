@@ -1097,7 +1097,7 @@ function makeReport(mod, sub) {
   if (sub === 'balance') return repBalance(E, t);
   if (sub === 'cashflow') return repCashflow(E, f, t);
   if (sub === 'partners') return repPartners(E, t);
-  if (sub === 'accounts') return accountsView();
+  if (sub === 'accounts') return repAccounts();
   if (sub === 'gl') return repGL(E, f, t);
   if (sub === 'aging_r') return repAging(E, t, '1201');
   if (sub === 'aging_p') return repAging(E, t, '3101');
@@ -1249,6 +1249,7 @@ function subBody() {
   if (mod === 'finance' && sub === 'dash') return financeDash();
   if (mod === 'finance' && sub === 'simple') return simpleView();
   if (mod === 'finance' && sub === 'daily') return dailyView();
+  if (mod === 'finance' && sub === 'accounts') return accountsView();
   if (mod === 'finance' && sub === 'cashacc') return cashAccView();
   if (mod === 'finance' && sub === 'expcat') return expcatView();
   if (mod === 'finance' && sub === 'monthly') return monthlyView();
