@@ -1531,3 +1531,6 @@ body.is-busy .btn,body.is-busy .b-btn.primary,body.is-busy button.mini{pointer-e
 .d-sel .b-btn{background:#fff!important;color:#1F3A5F!important;border:0!important}
 .d-sel .b-btn.primary{background:#16A34A!important;color:#fff!important}
 @media(max-width:760px){.dk2-row{grid-template-columns:1fr 1fr}}
+/* Авлага, өглөг — нүд хуваагдахгүй, баруун талын сонголт тасрахгүй */
+.bz-admin #view .rep-t tr.b td:first-child,.bz-admin #view .rep-t td.n:last-child{white-space:nowrap}
+.bz-admin #view .rep-t td:last-child input[type=checkbox]{width:16px;height:16px;vertical-align:middle;margin-right:6px}

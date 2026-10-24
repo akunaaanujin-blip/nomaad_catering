@@ -359,18 +359,18 @@ function repDebts(E, k, flt) {
     tot.amt += amt; tot.paid += paid; tot.left += g.left;
     if (g.shutCat) return;
     var opened = OPEN[k + g.w] || !!q;
-    rows.push({ _b: 1, _act: g.open.length && /^[rp]$/.test(k) ? '<label style="font-size:12px;font-weight:400;white-space:nowrap"><input type="checkbox" data-grp="' + esc(g.w) + '" onchange="debtSelGrp(this)"> бүгд</label>' : '',
+    rows.push({ _b: 1, _act: g.open.length && /^[rp]$/.test(k) ? '<input type="checkbox" title="Энэ харилцагчийн бүх баримтыг сонгох" data-grp="' + esc(g.w) + '" onchange="debtSelGrp(this)">' : '',
       _on: 'if(!/INPUT|LABEL|BUTTON/.test(event.target.tagName))debtTog(\'dOpen\',\'' + jsq(k + g.w) + '\')', date: '', who: (opened ? '▾ ' : '▸ ') + g.w, desc: g.open.length + ' хаагдаагүй баримт', amt: r0(amt), paid: r0(paid), left: r0(g.left), closed: '', st: old ? days(old) + ' хоног' : 'Хаагдсан',
       _d: { left: debtSpec(k, { who: g.w, acc: (oi.P[g.w] || {}).acc, np: (oi.P[g.w] || {}).np }, td) } });
     if (!opened) return;
     g.L.filter(keep).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (it) {
-      rows.push({ date: it.date, who: '', desc: it.desc, amt: r0(it.amt), paid: r0(it.paid), left: r0(it.amt - it.paid), closed: it.closed, st: it.closed ? 'Хаагдсан' : (it.paid > 0.5 ? 'Хэсэгчлэн · ' : '') + days(it.date) + ' хоног',
+      rows.push({ date: String(it.date).slice(5), who: '', desc: it.desc, amt: r0(it.amt), paid: r0(it.paid), left: r0(it.amt - it.paid), st: it.closed ? 'Хаагдсан ' + String(it.closed).slice(5) : (it.paid > 0.5 ? 'Хэсэгчлэн · ' : '') + days(it.date) + ' хоног',
         _act: !it.closed && /^[rp]$/.test(k) ? '<input type="checkbox" class="dsel" data-grp="' + esc(g.w) + '" data-key="' + esc(it.key) + '" data-left="' + r0(it.amt - it.paid) + '"' + (debtSel[it.key] !== undefined ? ' checked' : '') + ' onchange="debtSelSet(this)" title="Олноор хаахад сонгох"> ' +
           '<button class="mini" style="color:var(--accent)" onclick="debtClose(\'' + k + '\',\'' + esc(it.key) + '\')">' + (k === 'r' ? 'Авлага хаах' : 'Өглөг хаах') + '</button>' : '' });
     });
   }
   return { title: T[0] + ' — ' + DEBT_ST.filter(function (x) { return x[0] === flt; })[0][1].toLowerCase(), rows: rows, actions: /^[rp]$/.test(k),
-    cols: [c('who', 'Харилцагч'), c('date', 'Огноо'), c('desc', 'Тайлбар'), m('amt', 'Дүн'), m('paid', 'Төлсөн'), m('left', 'Үлдэгдэл'), c('closed', 'Хаасан огноо'), c('st', 'Хугацаа')],
+    cols: [c('who', 'Харилцагч'), c('date', 'Огноо'), c('desc', 'Тайлбар'), m('amt', 'Дүн'), m('paid', 'Төлсөн'), m('left', 'Үлдэгдэл'), c('st', 'Төлөв')],
     total: { who: 'Нийт', amt: r0(tot.amt), paid: r0(tot.paid), left: r0(tot.left) } };
 }
 // Нэг харилцагчийн (зээлийн хувьд нэг дансны) хуулга
