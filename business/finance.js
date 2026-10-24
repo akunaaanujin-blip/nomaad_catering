@@ -326,10 +326,13 @@ function debtCat(k, g) {
 function debtStatus(it) { return it.closed ? 'closed' : it.paid > 0.5 ? 'part' : 'none'; }
 function repDebts(E, k, flt) {
   flt = flt === 'none' || !flt ? 'open' : flt;
-  var q = String(state.dq || '').toLowerCase().trim();   // хайлт — харилцагчийн нэр, утас, тайлбар
-  var hasQ = function (t) { return !q || String(t || '').toLowerCase().indexOf(q) >= 0; };
+  // хайлт — харилцагчийн нэр, утас, тайлбар, огноо («10-22», «10/22», «10.22», «22», «10 сар» г.м)
+  var q = String(state.dq || '').toLowerCase().trim(), qd = '';
+  var dm = q.match(/^(\d{1,2})\s*[\/.\-]\s*(\d{1,2})$/), mm = q.match(/^(\d{1,2})\s*(-?р)?\s*сар$/);
+  if (dm) qd = '-' + ('0' + dm[1]).slice(-2) + '-' + ('0' + dm[2]).slice(-2); else if (mm) qd = '-' + ('0' + mm[1]).slice(-2) + '-';
+  var hasQ = function (t) { var s = String(t || '').toLowerCase(); return !q || s.indexOf(q) >= 0 || (qd && ('-' + s).indexOf(qd) >= 0); };
   var keep0 = function (it) { var s2 = debtStatus(it); return flt === 'all' || (flt === 'open' ? s2 !== 'closed' : s2 === flt); };
-  var keep = function (it) { return keep0(it) && (hasQ(it.who) || hasQ(it.desc) || hasQ(it.date)); };
+  var keep = function (it) { return keep0(it) && (hasQ(it.who) || hasQ(it.desc) || hasQ(it.date) || hasQ(it.closed)); };
   var T = DEBT_TABS[k], accs = debtAccs(k), td = todayStr(), oi = openItems(E, accs, T[3], td, k === 'l');
   // Нэг хүснэгт: харилцагч бүрийн нийт мөр (тод), доор нь тэр харилцагчийн баримтууд
   var days = function (d) { return Math.round((new Date(td) - new Date(d)) / 864e5); };
@@ -435,7 +438,7 @@ function debtsPre(E) {
   var cur = state.dst === 'none' || !state.dst ? 'open' : state.dst;
   var seg = '<div class="seg">' + DEBT_ST.map(function (x) {
     return '<button class="' + (cur === x[0] ? 'on' : '') + '" onclick="state.dst=\'' + x[0] + '\';render()">' + x[1] + ' <small>' + cnt[x[0]] + '</small></button>'; }).join('') + '</div>';
-  var tool = '<div class="d-tool">' + seg + '<input id="dQ" type="search" value="' + esc(state.dq || '') + '" placeholder="Хайх: нэр, утас, тайлбар" oninput="debtSearch(this.value)"></div>';
+  var tool = '<div class="d-tool">' + seg + '<input id="dQ" type="search" value="' + esc(state.dq || '') + '" placeholder="Хайх: нэр, утас, тайлбар, огноо (10-22, 10 сар)" oninput="debtSearch(this.value)"></div>';
   var selBar = /^[rp]$/.test(k) ? '<div class="d-sel" id="dSelBar"><span id="dSelTxt"></span><button class="b-btn primary" onclick="debtCloseSel()">' + (k === 'r' ? 'Сонгосныг хаах' : 'Сонгосныг төлөх') + '</button>' +
     '<button class="b-btn" onclick="debtSel={};render()">Сонголт цуцлах</button></div>' : '';
   setTimeout(function () { if (typeof debtSelCount === 'function') debtSelCount(); }, 0);
