@@ -490,10 +490,14 @@ function debtClose(k, keys) {
     '<table class="rep-t dc-t" style="margin-top:10px"><tr><th>' + (k === 'r' ? 'Авлага' : 'Өглөг') + '</th><th class="n">Үлдэгдэл</th><th class="n">Хаах дүн</th></tr>' + urows +
       '<tr class="tot"><td>Нийт</td><td class="n">' + fmt(total) + '</td><td class="n" id="dcSum"></td></tr></table>' +
     '<p id="dcInfo" class="muted" style="font-size:12.5px;margin:6px 0"></p>' +
-    (k === 'r' ? '<label for="dcWo">Хаагдаагүй үлдсэн хэсэг</label><select id="dcWo" onchange="dcAlloc(false)"><option value="">Авлага хэвээр үлдэнэ (дараа төлнө)</option>' +
+    (k === 'r' ? '<label for="dcWo">Хаагдаагүй үлдсэн хэсэг</label><select id="dcWo" onchange="dcAlloc(true)"><option value="">Авлага хэвээр үлдэнэ (дараа төлнө)</option>' +
       '<option value="7124">Буухиа хөлсөө суутгасан — буухиагийн өглөгөөс хааж бүрэн хаах</option><option value="6001">Хөнгөлөлт болгож бүрэн хаах</option></select>' : '') +
     '<button class="btn" onclick="dcSave()">Хаах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
   dcAlloc(true);
+}
+function ordFeeAdm(o) {   // захиалгын «Хүргэлтийн төлбөр» мөрийн дүн (буухиагийн хөлс)
+  var it = o.items; if (typeof it === 'string') { try { it = JSON.parse(it); } catch (e) { it = []; } }
+  return (it || []).filter(function (i) { return isFee(i.name); }).reduce(function (a, i) { return a + (Number(i.price) || 0) * (Number(i.qty) || 1); }, 0);
 }
 function dcHowChange() { var c = $('dcHow').value === 'cash'; $('dcBank').style.display = c ? 'none' : ''; $('dcCash').style.display = c ? '' : 'none'; dcAlloc(true); }
 function dcAmount() {   // сонгосон гүйлгээний / бэлэн мөнгөний дүн
@@ -503,7 +507,10 @@ function dcAmount() {   // сонгосон гүйлгээний / бэлэн м
 function dcAlloc(refill) {   // refill — дүнг хуучнаас нь (FIFO) дахин хуваарилна
   var S = dcState; if (!S) return;
   var amt = dcAmount(), inp = document.querySelectorAll('input.dc-a');
-  if (refill) { var rest = amt; S.units.forEach(function (u, i) { var a = Math.min(u.due, Math.max(0, rest)); rest = r0(rest - a); inp[i].value = a ? r0(a) : ''; }); }
+  var wo0 = $('dcWo') ? $('dcWo').value : '';
+  if (refill && wo0 === '7124') {   // буухиа хөлсөө суутгасан: захиалга бүрээс өөрийнх нь хүргэлтийн хөлсийг хасна
+    S.units.forEach(function (u, i) { var a = Math.max(0, r0(u.due - (u.ord ? ordFeeAdm(u.ord) : 0))); inp[i].value = a ? a : ''; });
+  } else if (refill) { var rest = amt; S.units.forEach(function (u, i) { var a = Math.min(u.due, Math.max(0, rest)); rest = r0(rest - a); inp[i].value = a ? r0(a) : ''; }); }
   var sum = 0; [].forEach.call(inp, function (x) { sum += Number(x.value) || 0; }); sum = r0(sum);
   $('dcSum').textContent = fmt(sum);
   var left = r0(S.total - sum), over = r0(amt - sum), wo = $('dcWo') ? $('dcWo').value : '';
