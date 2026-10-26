@@ -1365,9 +1365,17 @@ function ebSettledByEb(list) {
   var m = {}; list.forEach(function (x) { var u = late(x); if (u && c[u] >= 2) m[x.code] = u; }); return m;
 }
 function ebRecRows() {   // буухиагийн «Харилцагчийн тайлан»-тай ижил: нийлээгүй хүргэгдсэн бүх хүргэлт (манай захиалгагүй ч), хөлс анхдагч 7,000
-  var done = ebSettled(), eb = ebSettledByEb(ebAdm.list || []), O = {}; (window.adminOrders || []).forEach(function (o) { O[o.id] = o; });
-  return (ebAdm.list || []).filter(function (x) { var o = O[x.id]; return x.st === 10 && !done[x.code] && !eb[x.code] && !(o && x.got > 0 && o.confirmed) && String(x.created).slice(0, 10) <= ebRecDate().replace(/-/g, '/'); })
-    .map(function (x) { var o = O[x.id] || null, fb = ebOrdAuto(o) ? ordFeeAdm(o) : 0; return { x: x, o: o, fb: fb, fee: ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000, on: ebAdm.off[x.code] ? 0 : 1 }; })
+  var done = ebSettled(), eb = ebSettledByEb(ebAdm.list || []), O = {}, byPh = {}, used = {};
+  (window.adminOrders || []).forEach(function (o) { O[o.id] = o; });
+  var rows = (ebAdm.list || []).filter(function (x) { var o = O[x.id]; return x.st === 10 && !done[x.code] && !eb[x.code] && !(o && x.got > 0 && o.confirmed) && String(x.created).slice(0, 10) <= ebRecDate().replace(/-/g, '/'); });
+  rows.forEach(function (x) { if (O[x.id]) used[x.id] = 1; });
+  // Хуучин (кодгүй) захиалгад буухиагийн хөлс хүргэх үед өглөгөөр бичигдсэн — кодгүй тул утсаар холбож, хөлсийг давхар бичихгүй (өглөгөөс хаана)
+  (window.adminOrders || []).forEach(function (o) { if (o.biz === state.biz && !o.ebCode && ebOrdAuto(o) && ordFeeAdm(o) > 0 && o.status === 'Хүргэгдсэн') (byPh[o.phone] = byPh[o.phone] || []).push(o); });
+  return rows.map(function (x) {
+      var o = O[x.id] || null;
+      if (!o) { var c = (byPh[x.phone] || []).filter(function (q) { return !used[q.id]; })[0]; if (c) { o = c; used[c.id] = 1; } }
+      var fb = ebOrdAuto(o) ? ordFeeAdm(o) : 0; return { x: x, o: o, fb: fb, fee: ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000, on: ebAdm.off[x.code] ? 0 : 1 };
+    })
     .sort(function (a, b) { return a.x.created < b.x.created ? -1 : 1; });
 }
 function ebRecBody() {
