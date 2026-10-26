@@ -319,18 +319,23 @@ function repTrial(E, from, to) {
 function repLedger(E, from, to, code) {
   var set = {}, all = code === 'cashall';   // «нэгдсэн» — бүх касс, банкны данс нэг хуулгад (данс хоорондын шилжүүлэг орохгүй)
   (all ? cashCodes() : [code]).forEach(function (k) { set[k] = 1; });
+  var ic = code === '1290';   // Компани хооронд: мөнгөний чиглэлээр — орсон мөнгө нэмэгдэж, гарсан мөнгө хасагдана; үлдэгдэл «авах / өгөх» гэж бичигдэнэ
   var b0 = balances(E, prevDay(from)), open = Object.keys(set).reduce(function (a, k) { return a + (b0[k] || 0); }, 0), bal = open;
   var dn = all || debitNormal(code), sign = dn ? 1 : -1;
-  var rows = [{ date: from, doc: '', desc: 'Эхний үлдэгдэл', corr: '', d: '', c: '', bal: r0(open * sign) }];   // time — борлуулалтын цаг, эсвэл тулгасан банкны гүйлгээний цаг
+  var side = function (v) { return v > 0.5 ? mny(r0(v)) + ' авах' : v < -0.5 ? mny(r0(-v)) + ' өгөх' : '0'; };   // v — авлагын (дебет) үлдэгдэл
+  var rows = [{ date: from, doc: '', desc: 'Эхний үлдэгдэл', corr: '', d: '', c: '', in: '', out: '', bal: ic ? side(open) : r0(open * sign) }];   // time — борлуулалтын цаг, эсвэл тулгасан банкны гүйлгээний цаг
   E.forEach(function (e) {
     if (e.date < from || e.date > to || !!set[e.dr] === !!set[e.cr]) return;
     var isD = !!set[e.dr];
     bal += isD ? e.amount : -e.amount;
-    rows.push({ date: e.date, time: e.time || bankTimeFor(e.date, isD ? e.amount : -e.amount), doc: e.doc, desc: e.desc, acc: all ? accName(isD ? e.dr : e.cr) : '', corr: (isD ? e.cr : e.dr) + ' ' + accName(isD ? e.cr : e.dr), d: isD ? e.amount : '', c: isD ? '' : e.amount, bal: r0(bal * sign) });
+    rows.push({ date: e.date, time: e.time || bankTimeFor(e.date, isD ? e.amount : -e.amount), doc: e.doc, desc: e.desc, acc: all ? accName(isD ? e.dr : e.cr) : '', corr: (isD ? e.cr : e.dr) + ' ' + accName(isD ? e.cr : e.dr),
+      d: isD ? e.amount : '', c: isD ? '' : e.amount, in: isD ? '' : e.amount, out: isD ? e.amount : '', bal: ic ? side(bal) : r0(bal * sign) });
   });
+  var amt = ic ? [m('in', 'Орсон мөнгө'), m('out', 'Гарсан мөнгө'), c('bal', 'Үлдэгдэл')] : [m('d', all ? 'Орсон' : 'Дебет'), m('c', all ? 'Гарсан' : 'Кредит'), m('bal', 'Үлдэгдэл')];
   return { title: all ? 'Мөнгөний дансны нэгдсэн хуулга' : 'Дансны хуулга · ' + code + ' ' + accName(code), cols: [c('date', 'Огноо'), c('time', 'Цаг'), c('doc', 'Баримт')].concat(all ? [c('acc', 'Данс')] : [], [c('desc', 'Гүйлгээний утга'),
-    c('corr', 'Харьцсан данс'), m('d', all ? 'Орсон' : 'Дебет'), m('c', all ? 'Гарсан' : 'Кредит'), m('bal', 'Үлдэгдэл')]), rows: rows,
-    total: { desc: 'Эцсийн үлдэгдэл', d: sum(rows, 'd'), c: sum(rows, 'c'), bal: r0(bal * sign) } };
+    c('corr', 'Харьцсан данс')], amt), rows: rows,
+    total: ic ? { desc: 'Эцсийн үлдэгдэл', in: sum(rows, 'in'), out: sum(rows, 'out'), bal: side(bal) } : { desc: 'Эцсийн үлдэгдэл', d: sum(rows, 'd'), c: sum(rows, 'c'), bal: r0(bal * sign) },
+    note: ic ? 'Компани хооронд: өөр компанид төлсөн мөнгө (гарсан) үлдэгдлийг тэднээс «авах» болгож, тэднээс ирсэн мөнгө (орсон) үүнийг бууруулна.' : undefined };
 }
 function repCash(E, from, to) {
   var codes = ACCOUNTS.filter(function (a) { return a[3] === 'cash'; }).map(function (a) { return a[0]; });
