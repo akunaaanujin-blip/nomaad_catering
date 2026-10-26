@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v5.6 (ebuuhia API: хүргэлт илгээх, төлөв татах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v5.7 (ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -114,6 +114,7 @@ function doPost(e) {
     if (data.type === 'admin_order') return json(isAdmin(data) ? adminOrder(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_task') return json(isAdmin(data) ? adminTask(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_setting') return json(isAdmin(data) ? adminSetting(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_eb') return json(isAdmin(data) ? ebAdmin(data) : { status: 'error', error: 'auth' });
     if (data.type === 'tasks') return json(staffTasks(data));
     if (data.type === 'record_receipt') return json(recordReceipt(data));
     if (data.type === 'barcode_set') return json(barcodeSet(data));
@@ -153,7 +154,7 @@ const CACHE_MAP = { eb_send: ['ord', 'rec', 'stk'], eb_sync: ['ord', 'rec', 'stk
   admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr'], admin_bank: ['bank', 'jr', 'ord'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_po: ['po', 'jr'],
   admin_staff: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
-const CACHE_READ = { requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
+const CACHE_READ = { requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1, admin_eb: 1 };
 function cacheKeysFor(d) {
   if (!d.type) return ['rec', 'stk'];   // ажилтны бичлэг (борлуулалт, зарлага, касс)
   if (CACHE_READ[d.type]) return null;
@@ -186,7 +187,7 @@ function adminWho(data) {
 }
 // Менежер: зөвхөн өөрийн дэлгүүрийн борлуулалт, бараа, захиалга, банк, кассын баримт. Цалин, ажилчид, тохиргоо, зээл, удирдлагын санхүү — эзэнд.
 const MGR_TYPES = { admin_read: 1, admin_order: 1, admin_stock: 1, admin_product: 1, admin_bank: 1, admin_journal: 1, admin_partner: 1, admin_po: 1,
-                    admin_task: 1, admin_reminder: 1, admin_record: 1, admin_import_cozy: 1, admin_setting: 1 };
+                    admin_task: 1, admin_reminder: 1, admin_record: 1, admin_import_cozy: 1, admin_setting: 1, admin_eb: 1 };
 function mgrCan(who, b) { b = String(b || ''); return who.biz === 'all' ? (!!BIZ_NAMES[b] && b !== 'mgmt') : staffIn(who, b); }
 function mgrGuard(d, who) {
   if (!MGR_TYPES[d.type]) return 'role';
@@ -230,6 +231,7 @@ function mgrGuard(d, who) {
     return 'role';
   }
   if (t === 'admin_import_cozy') return ok('cozy') ? '' : 'role';
+  if (t === 'admin_eb') return ok(d.biz) ? '' : 'role';
   if (t === 'admin_setting') return d.key === 'minstock' && ok(d.biz) ? '' : 'role';   // менежер зөвхөн өөрийн дэлгүүрийн доод үлдэгдлийг
   return 'role';
 }
@@ -1217,6 +1219,61 @@ function ebList(c) {   // сүүлийн 1 сарын хүргэлтүүд (ху
   }
   return out;
 }
+// ebuuhia-ийн хүргэлтийг нэг хэлбэрт оруулна (талбарын нэр өөр байж болох тул хэд хэдэн нэрээр хайна) + бүх анхны талбар (raw)
+function ebPick(x, keys) {
+  for (let i = 0; i < keys.length; i++) {
+    let v = x; keys[i].split('.').forEach(function (k) { v = v != null && typeof v === 'object' ? v[k] : undefined; });
+    if (v != null && v !== '' && typeof v !== 'object') return v;
+  }
+  return '';
+}
+function ebFlat(x, pre, out) {
+  Object.keys(x || {}).forEach(function (k) {
+    const v = x[k], key = pre ? pre + '.' + k : k;
+    if (v != null && typeof v === 'object' && !Array.isArray(v)) ebFlat(v, key, out);
+    else if (Array.isArray(v)) { if (v.length) out.push([key, v.map(function (y) { return y && typeof y === 'object' ? JSON.stringify(y) : String(y); }).join(', ').slice(0, 300)]); }
+    else if (v != null && v !== '') out.push([key, String(v).slice(0, 300)]);
+  });
+  return out;
+}
+function ebNorm(x) {
+  const so = x.status && typeof x.status === 'object' ? x.status : null;
+  const st = Number(so ? so.id || so.code : x.status) || 0;
+  const ad = x.address && typeof x.address === 'object' ? x.address : null;
+  const addr = ad ? [ad.city, ad.district, ad.committee, ad.addition].filter(function (y) { return y; }).join(', ') || String(ad.full || '') : String(ebPick(x, ['address', 'full_address', 'customer_address']));
+  return { code: String(ebPick(x, ['code', 'delivery_code', 'tracking_code'])), ext: String(ebPick(x, ['external_order_id'])), st: st,
+    name: EB_ST[st] || String(ebPick(x, ['status_name', 'status.name']) || ''),
+    created: String(ebPick(x, ['created_at', 'createdAt', 'registered_at'])).replace('T', ' ').slice(0, 16),
+    at: String(ebPick(x, ['delivered_at', 'status_changed_at', 'updated_at'])).replace('T', ' ').slice(0, 16),
+    cust: String(ebPick(x, ['customer.name', 'customer_name', 'receiver_name'])), phone: String(ebPick(x, ['customer.phone', 'customer_phone', 'phone', 'receiver_phone'])),
+    phone2: String(ebPick(x, ['customer.phone2', 'phone2'])), addr: addr,
+    item: String(ebPick(x, ['delivery.item_name', 'item_name'])), qty: Number(ebPick(x, ['delivery.quantity', 'quantity'])) || 0,
+    price: Number(ebPick(x, ['delivery.total_price', 'total_price', 'price'])) || 0, got: Number(ebPick(x, ['received_money', 'delivery.received_money'])) || 0,
+    fee: Number(ebPick(x, ['delivery_fee', 'delivery_price', 'shipping_fee', 'fee', 'delivery.fee'])) || 0,
+    driver: String(ebPick(x, ['driver.name', 'driver_name', 'driver'])), dphone: String(ebPick(x, ['driver.phone', 'driver_phone'])),
+    note: String(ebPick(x, ['delivery.description', 'description', 'note'])), type: String(ebPick(x, ['delivery.item_type', 'item_type'])),
+    reason: String(ebPick(x, ['return_reason', 'cancel_reason', 'reason', 'comment'])), raw: ebFlat(x, '', []).slice(0, 60) };
+}
+// Бүх хүргэлт → манай захиалгатай холбоно (external_order_id эсвэл код); biz-ийн захиалга эсвэл холбоогүйг буцаана
+function ebView(c, biz) {
+  const L = ebList(c).map(ebNorm), sh = orderSheet(), byExt = {}, byCode = {}, list = [], done = [];
+  orderRows().forEach(function (o) { byExt[o.id] = o; if (o.ebCode) byCode[String(o.ebCode)] = o; });
+  L.forEach(function (n) {
+    const o = byExt[n.ext] || byCode[n.code];
+    if (o && o.biz !== biz) return;
+    if (o) { n.id = o.id; n.our = o.status; if (!o.ebCode && n.code) sh.getRange(o.row, 23).setValue(n.code); if (n.st === 10 && o.status === 'Буухиад өгсөн') done.push(o.id); }
+    list.push(n);
+  });
+  return { list: list, done: done };
+}
+// Удирдлага: зөвхөн харах (төлөв бичихгүй)
+function ebAdmin(d) {
+  const c = ebCfg(); if (!c.key || !c.secret) return { status: 'error', error: 'eb_off' };
+  try { const L = ebList(c).map(ebNorm), byExt = {}, byCode = {};
+    orderRows().forEach(function (o) { byExt[o.id] = o; if (o.ebCode) byCode[String(o.ebCode)] = o; });
+    return { status: 'ok', list: L.filter(function (n) { const o = byExt[n.ext] || byCode[n.code]; if (o) { n.id = o.id; n.our = o.status; } return !o || o.biz === d.biz; }) };
+  } catch (err) { return { status: 'error', error: String(err.message || err).slice(0, 200) }; }
+}
 function ebuuhia(d) {
   const who = checkStaff(d.token); if (!who) return { status: 'error', error: 'auth' };
   const c = ebCfg(); if (!c.key || !c.secret) return { status: 'error', error: 'eb_off' };
@@ -1247,20 +1304,10 @@ function ebuuhia(d) {
       });
       return { status: 'ok', sent: sent, failed: failed, skipped: ship.skipped || [] };
     }
-    if (d.type === 'eb_sync') {   // ebuuhia-ийн төлөвийг татна; «Хүргэгдсэн» (10) бол манай захиалгыг автоматаар Хүргэгдсэн болгоно
-      const L = ebList(c), byExt = {}, byCode = {};
-      L.forEach(function (x) { if (x.external_order_id) byExt[String(x.external_order_id)] = x; if (x.code) byCode[String(x.code)] = x; });
-      const mine = orderRows().filter(function (o) { return o.biz === who.biz && (o.ebCode || byExt[o.id]); });
-      const sh = orderSheet(), out = [], done = [];
-      mine.forEach(function (o) {
-        const x = byExt[o.id] || byCode[String(o.ebCode)]; if (!x) { out.push({ id: o.id, code: o.ebCode, st: 0, name: 'Буухиад олдсонгүй' }); return; }
-        if (!o.ebCode && x.code) sh.getRange(o.row, 23).setValue(String(x.code));
-        const st = Number(x.status && typeof x.status === 'object' ? x.status.id || x.status.code : x.status) || 0;
-        out.push({ id: o.id, code: String(x.code || o.ebCode), st: st, name: EB_ST[st] || String(x.status_name || x.status || ''), got: Number(x.received_money) || 0, at: String(x.delivered_at || x.updated_at || '').slice(0, 16) });
-        if (st === 10 && o.status === 'Буухиад өгсөн') done.push(o.id);
-      });
-      let ship = null; if (done.length) ship = ordersShip({ token: d.token, ids: done, to: 'Хүргэгдсэн' });
-      return { status: 'ok', list: out, delivered: done.length, ship: ship };
+    if (d.type === 'eb_sync') {   // ebuuhia-ийн бүх хүргэлтийг (31 хоног) татна; «Хүргэгдсэн» (10) бол манай захиалгыг автоматаар Хүргэгдсэн болгоно
+      const v = ebView(c, who.biz);
+      let ship = null; if (v.done.length) ship = ordersShip({ token: d.token, ids: v.done, to: 'Хүргэгдсэн' });
+      return { status: 'ok', list: v.list, delivered: v.done.length, ship: ship };
     }
   } catch (err) { return { status: 'error', error: String(err.message || err).slice(0, 200) }; }
   return { status: 'error', error: 'type' };

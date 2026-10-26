@@ -285,7 +285,7 @@ function bizModules(biz) { return BUSINESSES[biz] && BUSINESSES[biz].finOnly ? M
 function openMgmt() { state.view = 'company'; state.biz = 'mgmt'; state.module = 'finance'; render(); window.scrollTo(0, 0); }
 // Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
 var MENU = {
-  sales: [['Бүртгэл', ['receipts', 'orders']], ['Шинжилгээ', ['item', 'cat', 'staff', 'day', 'pay', 'disc', 'slow', 'boost']], ['Татвар', ['ebarimt']]],
+  sales: [['Бүртгэл', ['receipts', 'orders', 'buuhia']], ['Шинжилгээ', ['item', 'cat', 'staff', 'day', 'pay', 'disc', 'slow', 'boost']], ['Татвар', ['ebarimt']]],
   products: [['Бүртгэл', ['catalog', 'stock', 'in', 'counts']], ['Худалдан авалт', ['po', 'suppliers']], ['Тайлан', ['move', 'prices']]],
   // Санхүү — цөөн, ойлгомжтой цэс. Нягтлангийн тайлан, тохиргоо нь тус бүр нэг хуудсанд цуглуулагдсан (finance.js HUBS)
   // Санхүү — Excel «Санхүүгийн бүртгэлийн файл»-ын дарааллаар дугаартай 10 хуудас; бусад нь «Бусад» нэг хуудсанд (finance.js HUBS.other)
@@ -323,6 +323,7 @@ function subnavHtml() {
 function subVisible(biz, k) {
   var B = BUSINESSES[biz] || {};
   if (k === 'orders' || k === 'customers') return !!B.orders;
+  if (k === 'buuhia') return !!B.orders && !!window.ebOnAll;
   if (k === 'daily') return !B.finOnly;   // удирдлагын өөрийн санхүүд борлуулалт байхгүй
   if (k === 'ebarimt') return B.ebarimt !== false;
   if (B.finOnly && /^(simple|months|profit|payroll|expenses|assets|requests)$/.test(k)) return false;   // Удирдлага: үр дүн, бараа, ажилчидгүй
@@ -398,7 +399,7 @@ function companyView() {
   if (mod === 'staff') return pageHead('Ажилчид', '') + staffView(state.biz);
   if (mod === 'review') return reviewView();
   if (mod === 'reports') return pageHead('Бүх тайлан', '<button class="b-btn primary" onclick="exportAll()">Бүх тайланг Excel-ээр татах</button>', true) + reportsModule();
-  var sub = state.sub[mod], noPeriod = /^(counts|requests|accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary|months|payroll|debts|acct|setup|loans|banklink|po|assets|customers|digest|other|recv|payb)$/.test(sub);   // авлага, өглөг — өнөөдрийн байдлаар (хугацаагаар шүүхгүй)
+  var sub = state.sub[mod], noPeriod = /^(counts|requests|accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary|months|payroll|debts|acct|setup|loans|banklink|po|assets|customers|digest|other|recv|payb|buuhia)$/.test(sub);   // авлага, өглөг — өнөөдрийн байдлаар (хугацаагаар шүүхгүй)
   var acts = /^(counts|requests|overview|dash|stock|close|bank|opening|lock|simple|monthly|glossary|acct|setup|loans|banklink|po|assets|digest|other|daily|expcat|cashacc)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
   if (sub === 'money') acts = '<button class="b-btn primary" onclick="openVoucher(\'ХО\')">+ Орлого (банк)</button><button class="b-btn primary" onclick="openVoucher(\'ХЗ\')">+ Зарлага (банк)</button>' +
     '<button class="b-btn" onclick="openVoucher(\'КО\')">+ Орлого (касс)</button><button class="b-btn" onclick="openVoucher(\'КЗ\')">+ Зарлага (касс)</button>' + acts;
@@ -1043,7 +1044,7 @@ function closeSheet(id) { $(id).classList.remove('show'); }
 
 // ═══════════ ДЭД ЦЭС, ТАЙЛАН (reports.js-ийн хөдөлгүүрээр) ═══════════
 var SUBS = {
-  sales: [['receipts', 'Баримтууд'], ['orders', 'Захиалга'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'],
+  sales: [['receipts', 'Баримтууд'], ['orders', 'Захиалга'], ['buuhia', 'Буухиа (хүргэлт)'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'],
           ['pay', 'Төлбөрийн хэлбэрээр'], ['disc', 'Хөнгөлөлт, буцаалт'], ['slow', 'Удаан эргэлттэй бараа'], ['boost', 'Boost бараагаар'], ['ebarimt', 'И-баримт тулгалт']],
   products: [['catalog', 'Барааны бүртгэл, үнэ'], ['counts', 'Тооллого батлах'], ['po', 'Бараа захиалга (Хятад)'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['prices', 'Үнийн түүх'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
   finance: [['requests', 'Мөнгөний хүсэлт'], ['simple', 'Захирлын самбар'], ['months', '12 сарын дүн'], ['daily', 'Өдрийн орлого'], ['cashacc', 'Мөнгөний данс'], ['profit', 'Барааны ашиг'], ['money', 'Гүйлгээ'], ['bank', 'Банкны хуулга'], ['vouchers', 'Кассын баримт'],
@@ -1263,6 +1264,7 @@ function subBody() {
   if (mod === 'finance' && sub === 'banklink') return bankLinkView();
   if (mod === 'finance' && sub === 'assets') return assetsView();
   if (mod === 'finance' && sub === 'digest') return digestView();
+  if (mod === 'sales' && sub === 'buuhia') return ebAdmView();
   if (mod === 'products' && sub === 'po') return poView();
   var rep = makeReport(mod, sub), pre = '', post = '';
   if (mod === 'finance') { var rr = range(); addDrill(sub, rep, rr[0], rr[1]); }
@@ -1286,6 +1288,32 @@ function subBody() {
   if (sub === 'entry') rep.edit = 'editEntry';
   if (mod === 'sales' && /^(receipts|orders|item|disc)$/.test(sub)) pre += searchBox(sub === 'orders' ? 'Утас, нэр, бараагаар хайх…' : sub === 'item' ? 'Барааны нэрээр хайх…' : 'Бараа, хэрэглэгч, утас, ажилтан, ДДТД-аар хайх…');
   return pre + reportCard(rep, { entry: 'cancelEntry', in: 'cancelMove', expenses: 'cancelRecord', boost: 'cancelRecord', vouchers: 'cancelEntry', catalog: 'openProduct' }[sub]) + post;
+}
+
+// Буухиа (ebuuhia) — удирдлагад зөвхөн харах; өгөгдлийг нээх бүрт (5 мин тутам) серверээр буухиагаас татна
+var ebAdm = { biz: '', list: null, at: '', t: 0, busy: false, err: '' };
+window.ebRedraw = function (keep) {
+  var el = document.getElementById('ebAdmBox'); if (el) el.innerHTML = ebAdmBody();
+  if (keep) { var q = document.getElementById('ebQ'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }
+};
+function ebAdmPull() {
+  if (ebAdm.busy) return; ebAdm.busy = true; ebAdm.biz = state.biz; ebAdm.t = Date.now(); ebRedraw();
+  post({ type: 'admin_eb', biz: state.biz }, function (err, d) {
+    ebAdm.busy = false;
+    ebAdm.err = err ? (err === 'eb_off' ? 'Буухиа API тохируулаагүй байна (Санхүү → Банкны хуулга → «Буухиа API»).' : 'Татаж чадсангүй: ' + err) : '';
+    if (!err) { ebAdm.list = d.list || []; ebAdm.at = new Date().toTimeString().slice(0, 5); }
+    ebRedraw();
+  });
+}
+function ebAdmBody() {
+  return '<div class="ord-bar"><p class="muted" style="margin:0;flex:1;font-size:12.5px">Буухиа дээрх хүргэлтүүд (сүүлийн 31 хоног) — мөр дээр дарахад бүх мэдээлэл харагдана. Илгээх, төлөв бичихийг ажилтны «Хүргэлт» цэсээс хийнэ.</p>' +
+    '<button class="b-btn ghost" onclick="ebAdmPull()"' + (ebAdm.busy ? ' disabled' : '') + '>' + (ebAdm.busy ? 'Татаж байна…' : 'Шинэчлэх') + '</button></div>' +
+    (ebAdm.err ? '<p style="color:#B91C1C">' + esc(ebAdm.err) + '</p>' : '') +
+    (ebAdm.list && ebAdm.biz === state.biz ? ebBoard(ebAdm.list, ebAdm.at) : '<p class="muted">' + (ebAdm.busy ? 'Буухиагаас татаж байна…' : '') + '</p>');
+}
+function ebAdmView() {
+  if (!ebAdm.busy && (ebAdm.biz !== state.biz || Date.now() - ebAdm.t > 5 * 60000)) { ebAdm.list = ebAdm.biz === state.biz ? ebAdm.list : null; setTimeout(ebAdmPull, 0); }
+  return '<div class="card" id="ebAdmBox">' + ebAdmBody() + '</div>';
 }
 
 function cellVal(col, v) {

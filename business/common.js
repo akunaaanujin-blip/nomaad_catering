@@ -132,3 +132,44 @@ document.addEventListener('focusin', function (e) {
   var t = e.target;
   if (t && t.tagName === 'INPUT' && !t.hasAttribute('autocomplete') && !/password|email|tel/.test(t.type) && !/user|login|name/i.test(t.id || '')) t.setAttribute('autocomplete', 'off');
 }, true);
+
+// ═══ Буухиа (ebuuhia) — хүргэлтийн жагсаалт: ажилтны «Хүргэлт», удирдлагын «Буухиа» хуудас хоёулаа ашиглана ═══
+// list — серверийн ebNorm хэлбэр. ebF — шүүлтүүр (төлөв, хайлт, нээсэн мөр). Дахин зурахдаа window.ebRedraw()-г дуудна.
+var EB_TABS = [['all', 'Бүгд'], [1, 'Бүртгэгдсэн'], [2, 'Хүлээн авсан'], [3, 'Жолоочид хуваарилсан'], [5, 'Хүлээгдэж буй'], [10, 'Хүргэгдсэн'], [11, 'Цуцалсан'], [12, 'Буцаасан']];
+var EB_CLS = { 1: 'n', 2: 'b', 3: 'b', 5: 'y', 10: 'g', 11: 'r', 12: 'r' };
+var EB_LBL = { code: 'Код', external_order_id: 'Манай захиалгын №', status: 'Төлөв', status_name: 'Төлөвийн нэр', created_at: 'Бүртгэсэн', updated_at: 'Шинэчилсэн', delivered_at: 'Хүргэсэн',
+  'customer.name': 'Хүлээн авагч', 'customer.phone': 'Утас', 'customer.phone2': 'Утас 2', 'address.city': 'Хот', 'address.district': 'Дүүрэг', 'address.committee': 'Хороо', 'address.addition': 'Дэлгэрэнгүй хаяг',
+  'delivery.item_name': 'Бараа', 'delivery.quantity': 'Тоо', 'delivery.description': 'Тайлбар', 'delivery.total_price': 'Авах дүн', 'delivery.item_type': 'Барааны төрөл', received_money: 'Авсан мөнгө',
+  delivery_fee: 'Хүргэлтийн хөлс', delivery_price: 'Хүргэлтийн хөлс', 'driver.name': 'Жолооч', 'driver.phone': 'Жолоочийн утас', driver_name: 'Жолооч', driver_phone: 'Жолоочийн утас', return_reason: 'Буцаасан шалтгаан', cancel_reason: 'Цуцалсан шалтгаан', comment: 'Тэмдэглэл' };
+var ebF = { st: 'all', q: '', open: '' };
+function ebHay(x) { return [x.code, x.ext, x.cust, x.phone, x.phone2, x.addr, x.item, x.driver, x.name, x.created, x.at, x.note].join(' ').toLowerCase(); }
+function ebBoard(list, at) {
+  list = (list || []).slice().sort(function (a, b) { return (b.created || '') < (a.created || '') ? -1 : 1; });
+  var cnt = {}; list.forEach(function (x) { cnt[x.st] = (cnt[x.st] || 0) + 1; });
+  var q = ebF.q.toLowerCase().trim();
+  var L = list.filter(function (x) { return (ebF.st === 'all' || String(x.st) === String(ebF.st)) && (!q || ebHay(x).indexOf(q) >= 0); });
+  var sum = function (k) { return L.reduce(function (a, x) { return a + (Number(x[k]) || 0); }, 0); };
+  var tabs = '<div class="eb-tabs">' + EB_TABS.map(function (t) {
+    var n = t[0] === 'all' ? list.length : cnt[t[0]] || 0;
+    if (t[0] !== 'all' && !n && String(ebF.st) !== String(t[0])) return '';
+    return '<button class="' + (String(ebF.st) === String(t[0]) ? 'on' : '') + '" onclick="ebF.st=\'' + t[0] + '\';ebF.open=\'\';ebRedraw()">' + t[1] + ' <small>' + n + '</small></button>';
+  }).join('') + '</div>';
+  var tool = '<div class="eb-tool"><input type="search" id="ebQ" placeholder="Код, утас, нэр, хаяг, бараа, огноогоор хайх…" value="' + esc(ebF.q) + '" oninput="ebF.q=this.value;ebRedraw(1)">' +
+    '<small class="muted">' + L.length + ' хүргэлт · авах ' + fmt(sum('price')) + ' · авсан ' + fmt(sum('got')) + (at ? ' · ' + esc(at) + '-д шинэчилсэн' : '') + '</small></div>';
+  if (!L.length) return tabs + tool + '<p class="muted" style="margin:14px 0">' + (list.length ? 'Илэрц алга.' : 'Сүүлийн 31 хоногт буухиад хүргэлт алга.') + '</p>';
+  var rows = L.map(function (x) {
+    var k = x.code || x.ext, open = ebF.open === k;
+    var tr = '<tr class="eb-r' + (open ? ' on' : '') + '" onclick="ebF.open=ebF.open===\'' + esc(k) + '\'?\'\':\'' + esc(k) + '\';ebRedraw()">' +
+      '<td><b class="mono2">' + esc(x.code || '—') + '</b><br><small class="muted">' + esc(x.created || '') + '</small></td>' +
+      '<td><b>' + esc(x.phone) + '</b>' + (x.cust && x.cust !== x.phone ? '<br><small class="muted">' + esc(x.cust) + '</small>' : '') + '</td>' +
+      '<td class="eb-addr">' + esc(x.addr) + '</td><td>' + esc(x.item) + (x.qty ? ' <small class="muted">· ' + x.qty + 'ш</small>' : '') + '</td>' +
+      '<td class="n">' + (x.price ? fmt(x.price) : '<small class="muted">0</small>') + '</td><td class="n">' + (x.got ? fmt(x.got) : '') + '</td>' +
+      '<td><span class="st ' + (EB_CLS[x.st] || 'y') + '">' + esc(x.name || '—') + '</span>' + (x.at && x.at !== x.created ? '<br><small class="muted">' + esc(x.at) + '</small>' : '') + '</td>' +
+      '<td>' + esc(x.driver) + (x.dphone ? '<br><small class="muted">' + esc(x.dphone) + '</small>' : '') + '</td></tr>';
+    if (open) tr += '<tr class="eb-d"><td colspan="8"><div class="eb-kv">' + (x.raw || []).map(function (p) {
+      return '<div><small>' + esc(EB_LBL[p[0]] || p[0]) + '</small><span>' + esc(p[0] === 'status' ? x.name : p[1]) + '</span></div>';
+    }).join('') + (x.id ? '<div><small>Манай систем</small><span>' + esc(x.our || '') + '</span></div>' : '<div><small>Манай систем</small><span class="muted">захиалгатай холбогдоогүй</span></div>') + '</div></td></tr>';
+    return tr;
+  }).join('');
+  return tabs + tool + '<div class="eb-wrap"><table class="tbl eb-t"><tr><th>Код · огноо</th><th>Хүлээн авагч</th><th>Хаяг</th><th>Бараа</th><th class="n">Авах</th><th class="n">Авсан</th><th>Төлөв</th><th>Жолооч</th></tr>' + rows + '</table></div>';
+}

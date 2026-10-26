@@ -494,39 +494,38 @@ function copyPayMsg(id) {
 // ═══════════ ХҮРГЭЛТ — Буухиа (ebuuhia API) ═══════════
 // «Шинэ» захиалгыг сонгоод «Буухиа руу илгээх» → сервер буухиад өгсөн болгож (борлуулалт бичигдэнэ) ebuuhia-д хүргэлт үүсгэнэ, кодыг хадгална.
 // «Буухиагаас төлөв татах» → ebuuhia-ийн төлөв, авсан мөнгө; хүргэгдсэн (10) захиалга автоматаар «Хүргэгдсэн» болно.
-var dlvSel = {}, dlvSync = {}, dlvBusy = false, dlvSyncAt = '';
+var dlvSel = {}, dlvSync = {}, dlvAll = null, dlvErr = '', dlvBusy = false, dlvSyncAt = '', dlvPulled = 0;
 function dlvWrap() {
   var w = document.getElementById('dlvView');
   if (!w) { var wrap = document.querySelector('#main .wrap'); if (!wrap) return null; w = document.createElement('div'); w.id = 'dlvView'; w.setAttribute('data-view', 'dlv'); w.style.display = 'none'; wrap.appendChild(w); }
   return w;
 }
 function dlvCod(o) { return o.paid === 'Орсон' || o.confirmed ? 0 : Number(o.amount) || 0; }
+window.ebRedraw = function (keep) {
+  renderDlv();
+  if (keep) { var q = document.getElementById('ebQ'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }
+};
 function renderDlv() {
   var w = dlvWrap(); if (!w) return;
+  if (!dlvBusy && Date.now() - dlvPulled > 5 * 60000 && window.API_URL !== '') { dlvPulled = Date.now(); setTimeout(dlvPull, 0); }   // нээхэд (5 мин тутам) буухиагаас автоматаар татна
   var fresh = orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending; }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
   var retry = orders.filter(function (o) { return o.status === 'Буухиад өгсөн' && !o.ebCode; });
-  var sent = orders.filter(function (o) { return o.ebCode; }).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
   var nSel = Object.keys(dlvSel).filter(function (k) { return dlvSel[k]; }).length;
-  var row = function (o, ck) {
-    return '<tr>' + (ck ? '<td style="width:28px"><input type="checkbox"' + (dlvSel[o.id] ? ' checked' : '') + ' onchange="dlvSel[\'' + o.id + '\']=this.checked;renderDlv()"></td>' : '') +
+  var row = function (o) {
+    return '<tr><td style="width:28px"><input type="checkbox"' + (dlvSel[o.id] ? ' checked' : '') + ' onchange="dlvSel[\'' + o.id + '\']=this.checked;renderDlv()"></td>' +
       '<td><b>' + esc(o.phone) + '</b>' + (o.customer ? '<br><small class="muted">' + esc(o.customer) + '</small>' : '') + '</td><td>' + esc([o.district, o.khoroo ? o.khoroo + '-р хороо' : ''].filter(Boolean).join(', ') || o.city || '') +
       (o.district ? '' : ' <small style="color:#B45309">дүүрэг хоосон</small>') + '</td><td>' + esc(ordItemsText(o)) + '</td><td class="n">' + fmt(o.amount) + '</td><td class="n">' + (dlvCod(o) ? fmt(dlvCod(o)) : '<small class="muted">төлсөн</small>') + '</td></tr>';
   };
-  var ST = { 10: 'g', 11: 'r', 12: 'r' };
-  w.innerHTML = '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиа руу илгээх <small class="muted" style="font-weight:400">«Шинэ» захиалга ' + fresh.length + '</small></h2>' +
+  w.innerHTML = (fresh.length ? '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиа руу илгээх <small class="muted" style="font-weight:400">«Шинэ» захиалга ' + fresh.length + '</small></h2>' +
       '<button class="btn sm" onclick="dlvSend()"' + (nSel && !dlvBusy ? '' : ' disabled') + '>Сонгосныг илгээх (' + nSel + ')</button></div>' +
-      (fresh.length ? '<div style="overflow-x:auto;margin-top:8px"><table class="tbl dlv-t"><tr><th><input type="checkbox" onchange="fresh_all(this.checked)"></th><th>Хүлээн авагч</th><th>Хаяг</th><th>Бараа</th><th class="n">Дүн</th><th class="n">Буухиа авах</th></tr>' +
-        fresh.map(function (o) { return row(o, true); }).join('') + '</table></div>' : '<p class="muted" style="margin-top:8px">Илгээх шинэ захиалга алга.</p>') +
-      '<p class="muted" style="font-size:12.5px;margin-top:8px">Илгээхэд захиалга «Буухиад өгсөн» болж, борлуулалт бичигдэнэ. «Буухиа авах» — хүргэхдээ хэрэглэгчээс авах мөнгө (төлбөр орсон бол 0).</p></div>' +
+      '<div style="overflow-x:auto;margin-top:8px"><table class="tbl dlv-t"><tr><th><input type="checkbox" onchange="fresh_all(this.checked)"></th><th>Хүлээн авагч</th><th>Хаяг</th><th>Бараа</th><th class="n">Дүн</th><th class="n">Буухиа авах</th></tr>' +
+        fresh.map(row).join('') + '</table></div>' +
+      '<p class="muted" style="font-size:12.5px;margin-top:8px">Илгээхэд захиалга «Буухиад өгсөн» болж, борлуулалт бичигдэнэ. «Буухиа авах» — хүргэхдээ хэрэглэгчээс авах мөнгө (төлбөр орсон бол 0).</p></div>' : '') +
     (retry.length ? '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиад өгсөн боловч кодгүй <small class="muted" style="font-weight:400">' + retry.length + '</small></h2>' +
-      '<button class="btn sm ghost2" onclick="dlvSend(' + "'retry'" + ')">Буухиад дахин илгээх</button></div><p class="muted" style="font-size:12.5px">Excel-ээр гараар оруулсан бол дахин илгээх хэрэггүй — «Төлөв татах» дарахад утсаар нь олж холбоно.</p></div>' : '') +
-    '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиад байгаа <small class="muted" style="font-weight:400">' + sent.length + (dlvSyncAt ? ' · ' + dlvSyncAt + '-д шинэчилсэн' : '') + '</small></h2>' +
-      '<button class="btn sm" onclick="dlvPull()"' + (dlvBusy ? ' disabled' : '') + '>Буухиагаас төлөв татах</button></div>' +
-      (sent.length ? '<div style="overflow-x:auto;margin-top:8px"><table class="tbl dlv-t"><tr><th>Хүлээн авагч</th><th>Код</th><th>Манай төлөв</th><th>Буухиа</th><th class="n">Авах</th><th class="n">Авсан</th></tr>' + sent.map(function (o) {
-        var s = dlvSync[o.id];
-        return '<tr><td><b>' + esc(o.phone) + '</b></td><td>' + esc(o.ebCode) + '</td><td>' + esc(o.status) + '</td><td>' + (s ? '<span class="st ' + (ST[s.st] || 'y') + '">' + esc(s.name) + '</span>' + (s.at ? '<br><small class="muted">' + esc(s.at) + '</small>' : '') : '<small class="muted">—</small>') + '</td>' +
-          '<td class="n">' + (dlvCod(o) ? fmt(dlvCod(o)) : '0') + '</td><td class="n">' + (s && s.got ? fmt(s.got) : '') + '</td></tr>';
-      }).join('') + '</table></div>' : '<p class="muted" style="margin-top:8px">Буухиагаар илгээсэн хүргэлт алга.</p>') + '</div>';
+      '<button class="btn sm ghost2" onclick="dlvSend(' + "'retry'" + ')">Буухиад дахин илгээх</button></div><p class="muted" style="font-size:12.5px">Excel-ээр гараар оруулсан бол дахин илгээх хэрэггүй — шинэчлэхэд кодоор нь холбогдоно.</p></div>' : '') +
+    '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиа</h2>' +
+      '<button class="btn sm ghost2" onclick="dlvPull()"' + (dlvBusy ? ' disabled' : '') + '>' + (dlvBusy ? 'Татаж байна…' : 'Шинэчлэх') + '</button></div>' +
+      (dlvErr ? '<p style="color:#B91C1C;margin:8px 0">' + esc(dlvErr) + '</p>' : '') + (dlvAll ? ebBoard(dlvAll, dlvSyncAt) : '<p class="muted" style="margin-top:8px">' + (dlvBusy ? 'Буухиагаас татаж байна…' : 'Шинэчлэх дарна уу.') + '</p>') + '</div>';
 }
 function fresh_all(on) { orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending; }).forEach(function (o) { dlvSel[o.id] = on; }); renderDlv(); }
 function dlvSend(mode) {
@@ -546,12 +545,12 @@ function dlvSend(mode) {
   });
 }
 function dlvPull() {
-  if (dlvBusy) return; dlvBusy = true; renderDlv(); toast('Буухиагаас төлөв татаж байна…');
+  if (dlvBusy) return; dlvBusy = true; renderDlv();
   ordPost({ type: 'eb_sync' }, function (err, d) {
     dlvBusy = false;
-    if (err) { alert(err === 'eb_off' ? 'Буухиа API тохируулаагүй байна (удирдлага → Банкны хуулга → «Буухиа API»).' : 'Татаж чадсангүй: ' + err); renderDlv(); return; }
-    dlvSync = {}; (d.list || []).forEach(function (x) { dlvSync[x.id] = x; }); dlvSyncAt = new Date().toTimeString().slice(0, 5);
-    toast('Төлөв шинэчлэгдлээ' + (d.delivered ? ' · ' + d.delivered + ' захиалга «Хүргэгдсэн» боллоо' : ''));
-    loadOrders(); if (d.delivered && typeof syncToday === 'function') syncToday(); setTimeout(renderDlv, 3500); renderDlv();
+    if (err) { dlvErr = err === 'eb_off' ? 'Буухиа API тохируулаагүй байна (удирдлага → Банкны хуулга → «Буухиа API»).' : 'Татаж чадсангүй: ' + err; renderDlv(); return; }
+    dlvErr = ''; dlvAll = d.list || []; dlvSync = {}; dlvAll.forEach(function (x) { if (x.id) dlvSync[x.id] = x; }); dlvSyncAt = new Date().toTimeString().slice(0, 5); dlvPulled = Date.now();
+    if (d.delivered) { toast(d.delivered + ' захиалга «Хүргэгдсэн» боллоо'); loadOrders(); if (typeof syncToday === 'function') syncToday(); }
+    renderDlv();
   });
 }
