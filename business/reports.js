@@ -400,8 +400,8 @@ function repCashflow(E, from, to) {
   var open = balances(E, prevDay(from)), close = balances(E, to), sc = function (b) { return A.reduce(function (s, k) { return s + (b[k] || 0); }, 0); };
   var rows = [{ name: 'Эхний үлдэгдэл (касс + харилцах)', v: r0(sc(open)), _b: 1 }, { name: 'Орсон мөнгө', v: r0(tin), _b: 1 }];
   ki.forEach(function (k) { rows.push({ name: '   ' + k, v: r0(I[k]), k: k, dir: 1 }); });
-  rows.push({ name: 'Гарсан мөнгө', v: -r0(tout), _b: 1 });
-  ko.forEach(function (k) { rows.push({ name: '   ' + k, v: -r0(O[k]), k: k, dir: -1 }); });
+  rows.push({ name: 'Гарсан мөнгө', v: r0(tout), _b: 1 });
+  ko.forEach(function (k) { rows.push({ name: '   ' + k, v: r0(O[k]), k: k, dir: -1 }); });   // гарсан мөнгийг эерэг тоогоор (улаан биш) — цэвэр дүн л сөрөг бол улаан
   rows.push({ name: 'Цэвэр мөнгөн гүйлгээ (орсон − гарсан)', v: r0(tin - tout), _b: 1 });
   rows.push({ name: 'Эцсийн үлдэгдэл (касс + харилцах)', v: r0(sc(close)), _b: 1 });
   var ok = Math.abs(sc(open) + tin - tout - sc(close)) < 1;
