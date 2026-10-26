@@ -140,9 +140,9 @@ var EB_CLS = { 1: 'n', 2: 'b', 3: 'b', 5: 'y', 10: 'g', 11: 'r', 12: 'r' };
 var EB_LBL = { code: 'Код', external_order_id: 'Манай захиалгын №', status: 'Төлөв', status_name: 'Төлөвийн нэр', created_at: 'Бүртгэсэн', updated_at: 'Шинэчилсэн', delivered_at: 'Хүргэсэн',
   'customer.name': 'Хүлээн авагч', 'customer.phone': 'Утас', 'customer.phone2': 'Утас 2', 'address.city': 'Хот', 'address.district': 'Дүүрэг', 'address.committee': 'Хороо', 'address.addition': 'Дэлгэрэнгүй хаяг',
   'delivery.item_name': 'Бараа', 'delivery.quantity': 'Тоо', 'delivery.description': 'Тайлбар', 'delivery.total_price': 'Авах дүн', 'delivery.item_type': 'Барааны төрөл', received_money: 'Авсан мөнгө',
-  delivery_fee: 'Хүргэлтийн хөлс', delivery_price: 'Хүргэлтийн хөлс', 'driver.name': 'Жолооч', 'driver.phone': 'Жолоочийн утас', driver_name: 'Жолооч', driver_phone: 'Жолоочийн утас', return_reason: 'Буцаасан шалтгаан', cancel_reason: 'Цуцалсан шалтгаан', comment: 'Тэмдэглэл' };
+  item_name: 'Бараа', quantity: 'Тоо', total_price: 'Авах дүн', verified: 'Баталгаажсан', driver_desc: 'Жолоочийн утас, машин', closed_at: 'Хаагдсан', delivery_fee: 'Хүргэлтийн хөлс', delivery_price: 'Хүргэлтийн хөлс', 'driver.name': 'Жолооч', 'driver.phone': 'Жолоочийн утас', driver_name: 'Жолооч', driver_phone: 'Жолоочийн утас', return_reason: 'Буцаасан шалтгаан', cancel_reason: 'Цуцалсан шалтгаан', comment: 'Тэмдэглэл' };
 var ebF = { st: 'all', q: '', open: '' };
-function ebHay(x) { return [x.code, x.ext, x.cust, x.phone, x.phone2, x.addr, x.item, x.driver, x.name, x.created, x.at, x.note].join(' ').toLowerCase(); }
+function ebHay(x) { return [x.code, x.ext, x.cust, x.phone, x.phone2, x.addr, x.item, x.driver, x.dphone, x.name, x.created, x.at, x.note, x.our].join(' ').toLowerCase(); }
 function ebBoard(list, at) {
   list = (list || []).slice().sort(function (a, b) { return (b.created || '') < (a.created || '') ? -1 : 1; });
   var cnt = {}; list.forEach(function (x) { cnt[x.st] = (cnt[x.st] || 0) + 1; });
@@ -165,11 +165,11 @@ function ebBoard(list, at) {
       '<td class="eb-addr">' + esc(x.addr) + '</td><td>' + esc(x.item) + (x.qty ? ' <small class="muted">· ' + x.qty + 'ш</small>' : '') + '</td>' +
       '<td class="n">' + (x.price ? fmt(x.price) : '<small class="muted">0</small>') + '</td><td class="n">' + (x.got ? fmt(x.got) : '') + '</td>' +
       '<td><span class="st ' + (EB_CLS[x.st] || 'y') + '">' + esc(x.name || '—') + '</span>' + (x.at && x.at !== x.created ? '<br><small class="muted">' + esc(x.at) + '</small>' : '') + '</td>' +
-      '<td>' + esc(x.driver) + (x.dphone ? '<br><small class="muted">' + esc(x.dphone) + '</small>' : '') + '</td></tr>';
-    if (open) tr += '<tr class="eb-d"><td colspan="8"><div class="eb-kv">' + (x.raw || []).map(function (p) {
+      '<td>' + esc(x.driver) + (x.dphone ? '<br><small class="muted">' + esc(x.dphone) + '</small>' : '') + '</td><td>' + (x.ok === 'Тийм' ? 'Тийм' : x.ok ? '<small class="muted">' + esc(x.ok) + '</small>' : '') + '</td></tr>';
+    if (open) tr += '<tr class="eb-d"><td colspan="9"><div class="eb-kv">' + (x.raw || []).map(function (p) {
       return '<div><small>' + esc(EB_LBL[p[0]] || p[0]) + '</small><span>' + esc(p[0] === 'status' ? x.name : p[1]) + '</span></div>';
     }).join('') + (x.id ? '<div><small>Манай систем</small><span>' + esc(x.our || '') + '</span></div>' : '<div><small>Манай систем</small><span class="muted">захиалгатай холбогдоогүй</span></div>') + '</div></td></tr>';
     return tr;
   }).join('');
-  return tabs + tool + '<div class="eb-wrap"><table class="tbl eb-t"><tr><th>Код · огноо</th><th>Хүлээн авагч</th><th>Хаяг</th><th>Бараа</th><th class="n">Авах</th><th class="n">Авсан</th><th>Төлөв</th><th>Жолооч</th></tr>' + rows + '</table></div>';
+  return tabs + tool + '<div class="eb-wrap"><table class="tbl eb-t"><tr><th>Код · огноо</th><th>Хүлээн авагч</th><th>Хаяг</th><th>Бараа</th><th class="n">Авах</th><th class="n">Авсан</th><th>Төлөв</th><th>Жолооч</th><th>Баталгаажсан</th></tr>' + rows + '</table></div>';
 }

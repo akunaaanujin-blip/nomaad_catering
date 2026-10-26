@@ -1227,12 +1227,16 @@ function ebPick(x, keys) {
   }
   return '';
 }
+function ebTime(v) {   // буухиа UTC-ээр өгдөг → Улаанбаатарын цаг, буухиагийн сайттай ижил «2026/10/25 16:17»
+  if (!v) return '';
+  const d = new Date(v); return isNaN(d.getTime()) ? String(v).slice(0, 16) : Utilities.formatDate(d, TZ, 'yyyy/MM/dd HH:mm');
+}
 function ebFlat(x, pre, out) {
   Object.keys(x || {}).forEach(function (k) {
     const v = x[k], key = pre ? pre + '.' + k : k;
     if (v != null && typeof v === 'object' && !Array.isArray(v)) ebFlat(v, key, out);
     else if (Array.isArray(v)) { if (v.length) out.push([key, v.map(function (y) { return y && typeof y === 'object' ? JSON.stringify(y) : String(y); }).join(', ').slice(0, 300)]); }
-    else if (v != null && v !== '') out.push([key, String(v).slice(0, 300)]);
+    else if (v != null && v !== '') out.push([key, /_at$/.test(k) ? ebTime(v) : typeof v === 'boolean' ? (v ? 'Тийм' : 'Үгүй') : String(v).slice(0, 300)]);
   });
   return out;
 }
@@ -1241,38 +1245,50 @@ function ebNorm(x) {
   const st = Number(so ? so.id || so.code : x.status) || 0;
   const ad = x.address && typeof x.address === 'object' ? x.address : null;
   const addr = ad ? [ad.city, ad.district, ad.committee, ad.addition].filter(function (y) { return y; }).join(', ') || String(ad.full || '') : String(ebPick(x, ['address', 'full_address', 'customer_address']));
+  const cr = ebPick(x, ['created_at', 'createdAt', 'registered_at']), vf = ebPick(x, ['verified']);
   return { code: String(ebPick(x, ['code', 'delivery_code', 'tracking_code'])), ext: String(ebPick(x, ['external_order_id'])), st: st,
     name: EB_ST[st] || String(ebPick(x, ['status_name', 'status.name']) || ''),
-    created: String(ebPick(x, ['created_at', 'createdAt', 'registered_at'])).replace('T', ' ').slice(0, 16),
-    at: String(ebPick(x, ['delivered_at', 'status_changed_at', 'updated_at'])).replace('T', ' ').slice(0, 16),
+    created: ebTime(cr), day: cr ? ebTime(cr).slice(0, 10).replace(/\//g, '-') : '',
+    at: ebTime(ebPick(x, ['closed_at', 'delivered_at', 'status_changed_at', 'updated_at'])),
     cust: String(ebPick(x, ['customer.name', 'customer_name', 'receiver_name'])), phone: String(ebPick(x, ['customer.phone', 'customer_phone', 'phone', 'receiver_phone'])),
     phone2: String(ebPick(x, ['customer.phone2', 'phone2'])), addr: addr,
     item: String(ebPick(x, ['delivery.item_name', 'item_name'])), qty: Number(ebPick(x, ['delivery.quantity', 'quantity'])) || 0,
     price: Number(ebPick(x, ['delivery.total_price', 'total_price', 'price'])) || 0, got: Number(ebPick(x, ['received_money', 'delivery.received_money'])) || 0,
     fee: Number(ebPick(x, ['delivery_fee', 'delivery_price', 'shipping_fee', 'fee', 'delivery.fee'])) || 0,
-    driver: String(ebPick(x, ['driver.name', 'driver_name', 'driver'])), dphone: String(ebPick(x, ['driver.phone', 'driver_phone'])),
+    driver: String(ebPick(x, ['driver.name', 'driver_name', 'driver'])), dphone: String(ebPick(x, ['driver_desc', 'driver.phone', 'driver_phone'])),
+    ok: vf === '' ? '' : vf === true || vf === 'true' || vf === 1 ? 'Тийм' : 'Үгүй',
     note: String(ebPick(x, ['delivery.description', 'description', 'note'])), type: String(ebPick(x, ['delivery.item_type', 'item_type'])),
     reason: String(ebPick(x, ['return_reason', 'cancel_reason', 'reason', 'comment'])), raw: ebFlat(x, '', []).slice(0, 60) };
 }
-// Бүх хүргэлт → манай захиалгатай холбоно (external_order_id эсвэл код); biz-ийн захиалга эсвэл холбоогүйг буцаана
-function ebView(c, biz) {
-  const L = ebList(c).map(ebNorm), sh = orderSheet(), byExt = {}, byCode = {}, list = [], done = [];
-  orderRows().forEach(function (o) { byExt[o.id] = o; if (o.ebCode) byCode[String(o.ebCode)] = o; });
-  L.forEach(function (n) {
-    const o = byExt[n.ext] || byCode[n.code];
-    if (o && o.biz !== biz) return;
-    if (o) { n.id = o.id; n.our = o.status; if (!o.ebCode && n.code) sh.getRange(o.row, 23).setValue(n.code); if (n.st === 10 && o.status === 'Буухиад өгсөн') done.push(o.id); }
-    list.push(n);
+// Хүргэлтийг манай захиалгатай холбоно: external_order_id → код → (буухиагийн сайтаас гараар үүсгэсэн бол) утас + огноогоор.
+// Утсаар: тухайн дэлгүүрийн буухиад өгсөн/хүргэгдсэн/буцаасан, кодгүй захиалгаас хүргэлтийн өдөр буюу түүнээс өмнөх хамгийн сүүлийнх. write=true бол кодыг захиалгад бичнэ.
+function ebLink(L, biz, write) {
+  const rows = orderRows(), byExt = {}, byCode = {}, byPhone = {}, used = {}, sh = write ? orderSheet() : null, done = [];
+  rows.forEach(function (o) { byExt[o.id] = o; if (o.ebCode) byCode[String(o.ebCode)] = o; });
+  rows.forEach(function (o) {
+    if (o.biz !== biz || o.ebCode || !/^(Буухиад өгсөн|Хүргэгдсэн|Буцаасан)$/.test(o.status)) return;
+    const ph = String(o.phone).replace(/\D/g, ''); if (ph) (byPhone[ph] = byPhone[ph] || []).push(o);
   });
-  return { list: list, done: done };
+  const out = [];
+  L.slice().sort(function (a, b) { return a.created < b.created ? -1 : 1; }).forEach(function (n) {
+    let o = byExt[n.ext] || byCode[n.code];
+    if (!o) {
+      const c = (byPhone[String(n.phone).replace(/\D/g, '')] || []).filter(function (x) { return !used[x.id] && (!n.day || String(x.date) <= n.day); });
+      o = c.sort(function (a, b) { return String(b.date) < String(a.date) ? -1 : 1; })[0];
+      if (o) { used[o.id] = 1; if (write && n.code) sh.getRange(o.row, 23).setValue(n.code); }
+    }
+    if (o && o.biz !== biz) return;
+    if (o) { n.id = o.id; n.our = o.status; if (write && !o.ebCode && n.code && !used[o.id]) sh.getRange(o.row, 23).setValue(n.code); if (n.st === 10 && o.status === 'Буухиад өгсөн') done.push(o.id); }
+    out.push(n);
+  });
+  return { list: out, done: done };
 }
-// Удирдлага: зөвхөн харах (төлөв бичихгүй)
+function ebView(c, biz) { return ebLink(ebList(c).map(ebNorm), biz, true); }
+// Удирдлага: зөвхөн харах (төлөв, код бичихгүй)
 function ebAdmin(d) {
   const c = ebCfg(); if (!c.key || !c.secret) return { status: 'error', error: 'eb_off' };
-  try { const L = ebList(c).map(ebNorm), byExt = {}, byCode = {};
-    orderRows().forEach(function (o) { byExt[o.id] = o; if (o.ebCode) byCode[String(o.ebCode)] = o; });
-    return { status: 'ok', list: L.filter(function (n) { const o = byExt[n.ext] || byCode[n.code]; if (o) { n.id = o.id; n.our = o.status; } return !o || o.biz === d.biz; }) };
-  } catch (err) { return { status: 'error', error: String(err.message || err).slice(0, 200) }; }
+  try { return { status: 'ok', list: ebLink(ebList(c).map(ebNorm), String(d.biz), false).list }; }
+  catch (err) { return { status: 'error', error: String(err.message || err).slice(0, 200) }; }
 }
 function ebuuhia(d) {
   const who = checkStaff(d.token); if (!who) return { status: 'error', error: 'auth' };
