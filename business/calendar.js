@@ -138,7 +138,7 @@ function repOrders(biz) {
       ? '<button class="mini" onclick="undoPayOrder(\'' + o.id + '\')">Буцаах</button>'
       : '<button class="mini" style="color:var(--green)" onclick="openPayOrder(\'' + o.id + '\')">Баталгаажуулах</button>' + (bc ? ' <button class="mini" title="Банкны хуулгын таарсан гүйлгээгээр шууд" onclick="ordBankMatch(\'' + o.id + '\')">Хуулгаар</button>' : '');
     if (billed[o.id]) act = '<button class="mini" onclick="openBillAdm(\'' + o.id + '\')">Баримт</button>' + act;
-    return { date: o.date + ' ' + o.time, phone: o.phone, customer: o.customer, items: items(o), status: o.status, payType: o.payType, paid: o.paid || 'Ороогүй',
+    return { date: o.date + ' ' + o.time, phone: o.phone, customer: o.customer, items: items(o), status: ordStLabel(o), payType: o.payType, paid: o.paid || 'Ороогүй',
              conf: o.confirmed ? 'Баталгаажсан' : '—', bank: bk, amount: o.amount, staff: o.staff, _act: act };
   });
   var unpaid = all.filter(ordFilt('wait')).reduce(function (a, o) { return a + o.amount; }, 0), nBank = all.filter(function (o) { return !o.confirmed && !ordDead(o) && cand[o.id]; }).length;
@@ -181,7 +181,7 @@ function openCust(k) {
     '<div class="scroll" style="max-height:60vh"><table class="rep-t"><tr><th>Огноо</th><th>Бараа</th><th>Хаяг</th><th>Төлөв</th><th class="n">Дүн</th></tr>' +
     x.list.slice().sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; }).map(function (o) {
       return '<tr><td>' + esc(o.date) + '</td><td>' + esc(admOrdItems(o)) + '</td><td>' + esc(((o.district ? o.district + ', ' : '') + (o.address || '')).slice(0, 70)) + '</td>' +
-        '<td>' + esc(o.status) + (o.confirmed ? ' · баталгаажсан' : '') + '</td><td class="n">' + fmt(o.amount) + '</td></tr>';
+        '<td>' + esc(ordStLabel(o)) + (o.confirmed ? ' · баталгаажсан' : '') + '</td><td class="n">' + fmt(o.amount) + '</td></tr>';
     }).join('') + '</table></div><button class="btn ghost" onclick="gClose()">Хаах</button>');
 }
 // Баталгаажаагүй захиалга бүрт таарах банкны хуулгын гүйлгээ (утас, дүн, EB-кодоор) — «Банкны хуулга» хуудасны санал болгосонтой ижил

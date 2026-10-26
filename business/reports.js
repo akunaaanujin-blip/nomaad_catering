@@ -455,17 +455,22 @@ function repSalesBy(R, biz, from, to, by) {
   if (by === 'day') rows.sort(function (a, b) { return a.key < b.key ? 1 : -1; });
   var ce = costEngine(biz, R), cg = {};
   list.forEach(function (x) { var k = kf(x); cg[k] = (cg[k] || 0) + (ce.rec[x.id] || 0); });
-  var nb = {};   // өдрөөр: «Тоо» нь захиалгын (баримтын) тоо — өдөр бүрийн ялгаатай баримт
-  if (by === 'day') list.forEach(function (x) { if (isAdj(x.item) || (Number(x.amount) || 0) < 0) return; var d = nb[x.date] = nb[x.date] || {}; d[x.bill || x.id] = 1; });
+  // өдрөөр: захиалга (тэр өдөр үүссэн) ба борлуулалт (тэр өдөр гарсан баримт) хамт
+  var nb = {}, no = {}, hasOrd = false;
+  if (by === 'day') {
+    list.forEach(function (x) { if (isAdj(x.item) || (Number(x.amount) || 0) < 0) return; var d = nb[x.date] = nb[x.date] || {}; d[x.bill || x.id] = 1; });
+    (R.orders || []).forEach(function (o) { if (o.biz !== biz || ordDead(o) || o.date < from || o.date > to) return; hasOrd = true; no[o.date] = (no[o.date] || 0) + 1; if (!rows.some(function (r) { return r.key === o.date; })) rows.push({ key: o.date, qty: 0, amount: 0, ret: 0, net: 0 }); });
+    rows.sort(function (a, b) { return a.key < b.key ? 1 : -1; });
+  }
   rows = rows.map(function (o) {
-    var r = { key: o.key, qty: by === 'day' ? Object.keys(nb[o.key] || {}).length : r0(o.qty), amount: r0(o.amount), ret: r0(o.ret), net: r0(o.net) };
+    var r = { key: o.key, qty: by === 'day' ? Object.keys(nb[o.key] || {}).length : r0(o.qty), ord: no[o.key] || '', amount: r0(o.amount), ret: r0(o.ret), net: r0(o.net) };
     if (by === 'item') { var cs = cg[o.key] || 0; r.cogs = cs ? r0(cs) : ''; r.margin = cs ? r0(o.net - cs) : ''; }
     return r;
   });
-  var cols = [c('key', { item: 'Бараа', cat: 'Ангилал', staff: 'Худалдагч', day: 'Огноо', pay: 'Төлбөр' }[by]), m('qty', by === 'day' ? 'Захиалгын тоо' : 'Тоо'), m('amount', 'Борлуулалт'), m('ret', 'Буцаалт'), m('net', 'Цэвэр')];
+  var cols = [c('key', { item: 'Бараа', cat: 'Ангилал', staff: 'Худалдагч', day: 'Огноо', pay: 'Төлбөр' }[by]), m('qty', by === 'day' ? 'Борлуулалтын баримт' : 'Тоо')].concat(by === 'day' && hasOrd ? [m('ord', 'Шинэ захиалга')] : []).concat([m('amount', 'Борлуулалт'), m('ret', 'Буцаалт'), m('net', 'Цэвэр')]);
   if (by === 'item') { cols.push(m('cogs', 'Өртөг')); cols.push(m('margin', 'Нийт ашиг')); }
   var tot = { key: 'Нийт', amount: sum(rows, 'amount'), ret: sum(rows, 'ret'), net: sum(rows, 'net') };
-  if (by === 'day') tot.qty = sum(rows, 'qty');
+  if (by === 'day') { tot.qty = sum(rows, 'qty'); tot.ord = sum(rows, 'ord'); }
   if (by === 'item') { tot.cogs = sum(rows, 'cogs'); tot.margin = sum(rows, 'margin'); }
   return { title: title, cols: cols, rows: rows, total: tot };
 }
@@ -474,12 +479,12 @@ function groupBills(list) {
   var g = {}, order = [];
   list.forEach(function (x) {
     var k = billKey(x);
-    var o = g[k]; if (!o) { o = g[k] = { key: k, date: x.date, time: x.time || '', staff: x.staff || '', customer: '', items: [], lines: [], gross: 0, disc: 0, ret: 0, net: 0, pays: {}, ddtd: '' }; order.push(k); }
+    var o = g[k]; if (!o) { o = g[k] = { key: k, date: x.date, time: x.time || '', staff: x.staff || '', customer: '', items: [], lines: [], retItems: [], gross: 0, disc: 0, ret: 0, net: 0, pays: {}, ddtd: '' }; order.push(k); }
     var a = Number(x.amount) || 0, isRet = / \(буцаалт\)$/.test(x.item);
     o.lines.push(x); o.net += a;
     if (baseItem(x.item) === DISC_ITEM) o.disc += -a;
     else if (isAdj(x.item)) {}
-    else if (isRet) o.ret += -a;
+    else if (isRet) { o.ret += -a; if (!/^Хүргэлтийн төлбөр/.test(x.item)) o.retItems.push(String(x.item).replace(/ \(буцаалт\)$/, '')); }
     else { o.gross += a; o.items.push(x.item + (Number(x.qty) !== 1 ? ' ×' + x.qty : '')); }
     if (!isRet) o.pays[x.pay || 'Бэлэн'] = (o.pays[x.pay || 'Бэлэн'] || 0) + a;
     var dd = x.ddtd || (String(x.note || '').match(/ДДТД (\d+)/) || [])[1]; if (dd) o.ddtd = dd;
@@ -493,8 +498,8 @@ function repReceipts(R, biz, from, to) {
   var ords = {}; (window.adminOrders || []).forEach(function (o) { ords[o.id] = o; });
   var custOf = function (o) { var d = ords[o.key]; return o.customer || (d ? (d.customer ? d.customer + ' ' : '') + d.phone : ''); };   // Cozy захиалгын баримтад захиалгаас
   var rows = groupBills(salesIn(R, biz, from, to)).map(function (o) {
-    return { date: o.date + ' ' + o.time, staff: o.staff, items: o.items.join(', '), customer: custOf(o), pay: payText(o.pays), disc: o.disc ? r0(o.disc) : '', ret: o.ret ? r0(o.ret) : '',
-             ebarimt: o.ddtd || '—', amount: r0(o.net), _bill: o.key, order: ords[o.key] ? ords[o.key].status + (ords[o.key].confirmed ? ' · баталгаажсан' : '') : '' };
+    return { date: o.date + ' ' + o.time, staff: o.staff, items: o.items.join(', ') || (o.retItems.length ? 'Буцаалт: ' + o.retItems.join(', ') : ''), customer: custOf(o), pay: payText(o.pays), disc: o.disc ? r0(o.disc) : '', ret: o.ret ? r0(o.ret) : '',
+             ebarimt: o.ddtd || '—', amount: r0(o.net), _bill: o.key, order: ords[o.key] ? ordStLabel(ords[o.key]) + (ords[o.key].confirmed ? ' · баталгаажсан' : '') : '' };
   }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
   var oc = rows.some(function (r) { return r.order; }) ? [c('order', 'Захиалга')] : [];   // Cozy: захиалгаас үүссэн баримтын хүргэлтийн төлөв
   return { title: 'Баримтын жагсаалт', cols: [c('date', 'Огноо'), c('staff', 'Худалдагч'), c('items', 'Бараа'), c('customer', 'Хэрэглэгч')].concat(oc).concat([c('pay', 'Төлбөр'), m('disc', 'Хөнгөлөлт'), m('ret', 'Буцаалт'), c('ebarimt', 'И-баримт'), m('amount', 'Дүн')]),
