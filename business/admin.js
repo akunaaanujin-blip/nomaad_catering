@@ -1366,57 +1366,54 @@ function ebSettledByEb(list) {
 }
 function ebRecRows() {   // буухиагийн «Харилцагчийн тайлан»-тай ижил: нийлээгүй хүргэгдсэн бүх хүргэлт (манай захиалгагүй ч), хөлс анхдагч 7,000
   var done = ebSettled(), eb = ebSettledByEb(ebAdm.list || []), O = {}; (window.adminOrders || []).forEach(function (o) { O[o.id] = o; });
-  return (ebAdm.list || []).filter(function (x) { var o = O[x.id]; return x.st === 10 && !done[x.code] && !eb[x.code] && !(o && x.got > 0 && o.confirmed); })
+  return (ebAdm.list || []).filter(function (x) { var o = O[x.id]; return x.st === 10 && !done[x.code] && !eb[x.code] && !(o && x.got > 0 && o.confirmed) && String(x.created).slice(0, 10) <= ebRecDate().replace(/-/g, '/'); })
     .map(function (x) { var o = O[x.id] || null, fb = o ? ordFeeAdm(o) : 0; return { x: x, o: o, fb: fb, fee: ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000, on: ebAdm.off[x.code] ? 0 : 1 }; })
     .sort(function (a, b) { return a.x.created < b.x.created ? -1 : 1; });
 }
 function ebRecBody() {
   var R = ebRecRows(), on = R.filter(function (r) { return r.on; });
   var got = r0(on.reduce(function (a, r) { return a + r.x.got; }, 0)), fee = r0(on.reduce(function (a, r) { return a + r.fee; }, 0)), net = r0(got - fee);
-  if (!R.length) return '<p class="muted">Тооцоо нийлэх хүргэгдсэн хүргэлт алга (бүгд нийлсэн эсвэл төлбөр нь баталгаажсан).</p>';
-  var L = (bankLines || []).filter(function (l) { return l.biz === state.biz && l.status === 'Шинэ' && (net >= 0 ? +l.credit > 0 : +l.debit > 0); })
-    .map(function (l) { var a = net >= 0 ? +l.credit : +l.debit; return { l: l, a: a, d: Math.abs(a - Math.abs(net)), hit: /буухиа|ebuuhia|элч/i.test(l.desc) }; })
-    .sort(function (a, b) { return a.d - b.d || (b.hit - a.hit); }).slice(0, 30);
-  if (ebAdm.line == null && L.length && L[0].d < 1) ebAdm.line = L[0].l.id;
+  var dateBar = '<div class="bar-row" style="margin:0 0 8px;gap:8px;align-items:center"><label style="display:flex;gap:6px;align-items:center;margin:0">Тооцоо нийлэх огноо <input type="date" value="' + esc(ebRecDate()) + '" onchange="ebAdm.date=this.value;ebRedraw()"></label>' +
+    '<small class="muted">тэр өдөр хүртэлх нийлээгүй бүх хүргэлт</small></div>';
+  if (!R.length) return dateBar + '<p class="muted">Тооцоо нийлэх хүргэгдсэн хүргэлт алга.</p>';
   var rows = R.map(function (r) {
     return '<tr><td><input type="checkbox"' + (r.on ? ' checked' : '') + ' onchange="ebAdm.off[\'' + r.x.code + '\']=!this.checked;ebRedraw()"></td><td>' + esc(r.x.created) + '</td><td><b class="mono2">' + esc(r.x.code) + '</b></td>' +
       '<td>' + esc(r.x.phone) + (r.o ? '' : '<br><small class="muted">захиалгагүй</small>') + '</td><td class="n">' + (r.x.got ? fmt(r.x.got) : '<small class="muted">үнийн дүнгүй</small>') + '</td>' +
       '<td class="n"><input type="number" min="0" value="' + r.fee + '" style="width:84px;text-align:right" onchange="ebAdm.fee[\'' + r.x.code + '\']=Number(this.value)||0;ebRedraw()"></td>' +
       '<td class="n">' + fmt(r0(r.x.got - r.fee)) + '</td></tr>';
   }).join('');
-  var pick = L.map(function (x) {
-    return '<label class="dc-l' + (x.d < 1 ? ' hit' : '') + '"><input type="radio" name="ebLine"' + (ebAdm.line === x.l.id ? ' checked' : '') + ' onchange="ebAdm.line=\'' + x.l.id + '\';ebRedraw()">' +
-      '<span>' + esc(x.l.date.slice(0, 16)) + '</span><span class="dc-d">' + esc(x.l.desc) + '</span><b>' + fmt(x.a) + '</b>' + (x.d < 1 ? '<em>дүн таарсан</em>' : '') + '</label>';
-  }).join('');
-  var sel = L.filter(function (x) { return x.l.id === ebAdm.line; })[0], diff = sel ? r0(sel.a - Math.abs(net)) : null;
-  return '<p class="muted" style="font-size:12.5px;margin:0 0 8px">Буухиагийн «Харилцагчийн тайлан» (нийлээгүй хүргэлтүүд)-тай ижил. Буухиагийн шилжүүлсэн мөнгийг (эсвэл бидний төлсөн хөлсийг) хүргэлт бүрээр нь тулгана. Тухайн шилжүүлэгт ороогүй мөрийг чагтыг авна. «Хөлс» — буухиагийн авсан хүргэлтийн хөлс.</p>' +
+  return dateBar + '<p class="muted" style="font-size:12.5px;margin:0 0 8px">Буухиагийн «Харилцагчийн тайлан» (нийлээгүй хүргэлтүүд)-тай ижил. Тооцоо нийлэхэд буухиатай авлага (эсвэл өглөг) үүснэ — мөнгө орж ирэхэд Санхүү → Авлага (эсвэл Өглөг) хуудаснаас «Буухиа»-г банкны гүйлгээгээр хаана. «Хөлс» — буухиагийн авсан хүргэлтийн хөлс.</p>' +
     '<div class="eb-wrap"><table class="tbl eb-t"><tr><th></th><th>Огноо</th><th>Код</th><th>Утас</th><th class="n">Авсан мөнгө</th><th class="n">Хөлс</th><th class="n">Цэвэр</th></tr>' + rows +
     '<tr class="tot"><td></td><td colspan="3"><b>' + on.length + ' хүргэлт</b></td><td class="n"><b>' + fmt(got) + '</b></td><td class="n"><b>' + fmt(fee) + '</b></td><td class="n"><b>' + fmt(net) + '</b></td></tr></table></div>' +
-    '<p style="margin:10px 0 6px"><b>' + (net >= 0 ? 'Буухиа бидэнд шилжүүлэх: ' + fmt(net) : 'Бид буухиад төлөх: ' + fmt(-net)) + '</b> — банкны ' + (net >= 0 ? 'орлогын' : 'зарлагын') + ' гүйлгээгээ сонгоно уу:</p>' +
-    (L.length ? '<div class="dc-list">' + pick + '</div>' : '<p class="muted">Тулгаагүй гүйлгээ алга — эхлээд банкны хуулгаа оруулна уу.</p>') +
-    (sel && Math.abs(diff) >= 1 ? '<p style="color:#B45309;margin:6px 0">Гүйлгээ тооцооноос ' + fmt(Math.abs(diff)) + '-өөр ' + (diff > 0 ? 'их' : 'бага') + ' байна — мөр эсвэл хөлсөө шалгана уу.</p>' : '') +
-    '<div class="bar-row" style="margin-top:10px"><button class="b-btn" onclick="ebRecSave()"' + (sel && Math.abs(diff) < 1 && on.length ? '' : ' disabled') + '>Тооцоо нийлж хаах</button><button class="b-btn ghost" onclick="ebAdm.rec=false;ebRedraw()">Болих</button></div>';
+    '<p style="margin:10px 0 6px"><b>' + (net >= 0 ? 'Буухиа бидэнд шилжүүлэх: ' + fmt(net) + ' (авлага)' : 'Бид буухиад төлөх: ' + fmt(-net) + ' (өглөг)') + '</b></p>' +
+    '<div class="bar-row" style="margin-top:10px"><button class="b-btn" onclick="ebRecSave()"' + (on.length ? '' : ' disabled') + '>Тооцоо нийлэх</button><button class="b-btn ghost" onclick="ebAdm.rec=false;ebRedraw()">Болих</button></div>';
 }
+function ebRecDate() { return ebAdm.date || todayStr(); }
+// Тооцоо нийлэх: буухиа нь хэрэглэгчийн авлагыг өөр дээрээ авч (Дт 1201 Буухиа / Кт 1201 хэрэглэгч), хөлсөө түүнээс суутгана (Дт 3101 Буухиа эсвэл 7124 / Кт 1201 Буухиа).
+// Үлдэгдэл: эерэг — буухиагийн бидэнд төлөх авлага; сөрөг — бидний буухиад төлөх өглөг рүү шилжинэ. Мөнгө орж/гарахад Авлага/Өглөг хуудаснаас хаана.
 function ebRecSave() {
-  var R = ebRecRows().filter(function (r) { return r.on; }), l = (bankLines || []).filter(function (x) { return x.id === ebAdm.line; })[0];
-  if (!R.length || !l) return;
-  var info = bankAcctInfo(l.acct), acc = info ? info.acc : '1101', d = l.date.slice(0, 10), biz = state.biz, E = [], ordUpd = [];
-  R.forEach(function (r) {   // захиалгагүй хүргэлт: хөлс нь өглөгөөр бичигдээгүй тул шууд зардал (7124)
+  var R = ebRecRows().filter(function (r) { return r.on; }); if (!R.length) return;
+  var d = ebRecDate(), biz = state.biz, E = [], ordUpd = [], net = 0;
+  R.forEach(function (r) {
     var tag = ' · ' + r.x.phone + (r.o ? ' #' + r.o.id : '') + ' #EB:' + r.x.code, cust = r.o ? ordCust(r.o) : r.x.phone;
-    if (r.x.got > 0) { E.push({ biz: biz, date: d, dr: acc, cr: '1201', amount: r.x.got, partner: cust, desc: 'Буухиа тооцоо · авсан мөнгө' + tag }); if (r.o && !r.o.confirmed) ordUpd.push(r.o); }
+    if (r.x.got > 0) {   // хэрэглэгчийн авлага буухиад шилжинэ (бичилт нэг л харилцагчтай тул 1299 түр дансаар дамжина, үлдэгдэл 0)
+      E.push({ biz: biz, date: d, dr: '1299', cr: '1201', amount: r.x.got, partner: cust, desc: 'Буухиа тооцоо · хэрэглэгч буухиад төлсөн' + tag });
+      E.push({ biz: biz, date: d, dr: '1201', cr: '1299', amount: r.x.got, partner: BUUHIA, desc: 'Буухиа тооцоо · авсан мөнгө' + tag });
+      if (r.o && !r.o.confirmed) ordUpd.push(r.o);
+    }
     var fromPay = Math.min(r.fee, r.fb), extra = r0(r.fee - r.fb);
-    if (fromPay > 0) E.push({ biz: biz, date: d, dr: '3101', cr: acc, amount: fromPay, partner: BUUHIA, desc: 'Буухиа тооцоо · хөлс' + tag });
-    if (extra > 0) E.push({ biz: biz, date: d, dr: '7124', cr: acc, amount: extra, partner: '', desc: 'Буухиа тооцоо · нэмэлт хөлс' + tag });
+    if (fromPay > 0) E.push({ biz: biz, date: d, dr: '3101', cr: '1201', amount: fromPay, partner: BUUHIA, desc: 'Буухиа тооцоо · хөлс' + tag });
+    if (extra > 0) E.push({ biz: biz, date: d, dr: '7124', cr: '1201', amount: extra, partner: BUUHIA, desc: 'Буухиа тооцоо · хөлс' + (r.o ? ' (нэмэлт)' : ' (захиалгагүй)') + tag });
     if (extra < 0) E.push({ biz: biz, date: d, dr: '3101', cr: '7124', amount: -extra, partner: BUUHIA, desc: 'Буухиа тооцоо · хөлс бага авсан' + tag });
+    net = r0(net + r.x.got - r.fee);
   });
-  if (!confirm(R.length + ' хүргэлтийн тооцоог «' + l.desc + '» (' + fmt(+l.credit || +l.debit) + ') гүйлгээгээр хаах уу?')) return;
+  if (net < 0) E.push({ biz: biz, date: d, dr: '1201', cr: '3101', amount: -net, partner: BUUHIA, desc: 'Буухиа тооцоо ' + d + ' · бидний төлөх үлдэгдэл өглөг рүү' });
+  if (!confirm(R.length + ' хүргэлтийн тооцоог ' + d + '-нд нийлэх үү?\n' + (net >= 0 ? 'Буухиа бидэнд ' + fmt(net) + ' шилжүүлнэ (авлага).' : 'Бид буухиад ' + fmt(-net) + ' төлнө (өглөг).'))) return;
   E.forEach(function (e, i) { journal.push(Object.assign({ id: 'tmp' + Date.now() + '-' + i, by: ownerName }, e)); });
-  l.status = 'Тулгасан'; l.link = 'Буухиа тооцоо · ' + R.length + ' хүргэлт';
-  ordUpd.forEach(function (o) { o.confirmed = d + ' банк'; o.paid = 'Орсон'; });
-  ebAdm.rec = false; ebAdm.line = null; ebAdm.off = {}; ebAdm.fee = {}; _debtCache = null; ebRedraw();
-  var n = 2 + ordUpd.length, fin = function () { if (--n === 0) { toast('Тооцоо нийлж хаагдлаа'); refresh(); } };
+  ordUpd.forEach(function (o) { o.confirmed = d + ' буухиа'; o.paid = 'Орсон'; });
+  ebAdm.rec = false; ebAdm.off = {}; ebAdm.fee = {}; _debtCache = null; ebRedraw();
+  var n = 1 + ordUpd.length, fin = function () { if (--n === 0) { toast('Тооцоо нийлэгдлээ — ' + (net >= 0 ? 'буухиагийн авлага ' + fmt(net) : 'буухиад төлөх ' + fmt(-net))); refresh(); } };
   post({ type: 'admin_journal', by: ownerName, entries: E }, function (err) { if (err) toast('Алдаа: ' + err); fin(); });
-  post({ type: 'admin_bank', by: ownerName, updates: [{ id: l.id, status: 'Тулгасан', link: l.link }] }, function () { fin(); });
   ordUpd.forEach(function (o) { post({ type: 'admin_order', id: o.id, by: ownerName, fields: { confirmed: o.confirmed, note: 'Буухиа тооцоо ' + d } }, function () { fin(); }); });
 }
 function ebAdmView() {
