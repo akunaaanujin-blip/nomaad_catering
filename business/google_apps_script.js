@@ -150,14 +150,15 @@ function doPost(e) {
 // ── Серверийн кэш (хурд): удирдлагын уншилт хуудас тус бүрийг 5 мин кэшлэнэ, бичилт хийхэд тэр хуудсыг л цэвэрлэнэ ──
 // Sheet-ийг гараар засвал 5 минутын дотор шинэчлэгдэнэ.
 const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf'];
-const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_send: ['ord', 'rec', 'stk'], eb_sync: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
+const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_send: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
   admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr'], admin_bank: ['bank', 'jr', 'ord'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_po: ['po', 'jr'],
   admin_staff: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
-const CACHE_READ = { requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
+const CACHE_READ = { eb_sync: 1, requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
 function cacheKeysFor(d) {
   if (!d.type) return ['rec', 'stk'];   // ажилтны бичлэг (борлуулалт, зарлага, касс)
   if (CACHE_READ[d.type]) return null;
+  if (d.type === 'admin_eb' && d.op !== 'send' && d.op !== 'del') return null;   // төлөв татах — бичвэл ebuuhia() өөрөө кэш цэвэрлэнэ
   return CACHE_MAP[d.type] || CACHE_ALL;   // мэдэгдэхгүй бичилт (он хаах г.м) — бүгдийг
 }
 const CACHE_OFF = { stk: 1, mov: 1 };   // ТҮР УНТРААСАН: нөөцийн кэш (сайжруулалт дуустал) — дахин асаахдаа энэ жагсаалтаас хасна
@@ -1208,7 +1209,14 @@ function ebErr(r) {   // буухиагийн бүтэн алдаа: код + т
   return (code + (msg && msg !== code ? ' — ' + msg : '') + ' [' + r.code + ']').slice(0, 300);
 }
 function ebObj(d) { return d && (d.data && !Array.isArray(d.data) ? d.data : d.delivery || d); }
-function ebList(c) {   // сүүлийн 1 сарын хүргэлтүүд (хуудаслаж, ихдээ 500)
+function ebList(c, fresh) {   // сүүлийн 1 сарын хүргэлтүүд (хуудаслаж, ихдээ 500); 60 секунд кэшлэнэ (ажилтан, удирдлага зэрэг нээхэд дахин татахгүй)
+  const cc = CacheService.getScriptCache();
+  if (!fresh) { const hit = cc.get('eb_list'); if (hit) { try { return JSON.parse(hit); } catch (e) {} } }
+  const out = ebListRaw(c), js = JSON.stringify(out);
+  if (js.length < 95000) cc.put('eb_list', js, 60); else cc.remove('eb_list');
+  return out;
+}
+function ebListRaw(c) {
   const out = [];
   for (let off = 0; off < 500; off += 100) {
     const r = ebCall(c, 'get', '/api/partner/v1/deliveries?limit=100&offset=' + off);
@@ -1263,7 +1271,8 @@ function ebNorm(x) {
 // Хүргэлтийг манай захиалгатай холбоно: external_order_id → код → (буухиагийн сайтаас гараар үүсгэсэн бол) утас + огноогоор.
 // Утсаар: тухайн дэлгүүрийн буухиад өгсөн/хүргэгдсэн/буцаасан, кодгүй захиалгаас хүргэлтийн өдөр буюу түүнээс өмнөх хамгийн сүүлийнх. write=true бол кодыг захиалгад бичнэ.
 function ebLink(L, biz, write) {
-  const rows = orderRows(), byExt = {}, byCode = {}, byPhone = {}, used = {}, sh = write ? orderSheet() : null, done = [];
+  const rows = cacheGet('ord', orderRows), byExt = {}, byCode = {}, byPhone = {}, used = {}, sh = write ? orderSheet() : null, done = [];
+  let wrote = false;
   rows.forEach(function (o) { byExt[o.id] = o; if (o.ebCode) byCode[String(o.ebCode)] = o; });
   rows.forEach(function (o) {
     if (o.biz !== biz || o.ebCode || !/^(Буухиад өгсөн|Хүргэгдсэн|Буцаасан)$/.test(o.status)) return;
@@ -1275,15 +1284,16 @@ function ebLink(L, biz, write) {
     if (!o) {
       const c = (byPhone[String(n.phone).replace(/\D/g, '')] || []).filter(function (x) { return !used[x.id] && (!n.day || String(x.date) <= n.day); });
       o = c.sort(function (a, b) { return String(b.date) < String(a.date) ? -1 : 1; })[0];
-      if (o) { used[o.id] = 1; if (write && n.code) sh.getRange(o.row, 23).setValue(n.code); }
+      if (o) { used[o.id] = 1; if (write && n.code) { sh.getRange(o.row, 23).setValue(n.code); wrote = true; } }
     }
     if (o && o.biz !== biz) return;
-    if (o) { n.id = o.id; n.our = o.status; n.sd = String(o.saleDone || ''); if (write && !o.ebCode && n.code && !used[o.id]) sh.getRange(o.row, 23).setValue(n.code); if (n.st === 10 && o.status === 'Буухиад өгсөн') done.push(o.id); }
+    if (o) { n.id = o.id; n.our = o.status; n.sd = String(o.saleDone || ''); if (write && !o.ebCode && n.code && !used[o.id]) { sh.getRange(o.row, 23).setValue(n.code); wrote = true; } if (n.st === 10 && o.status === 'Буухиад өгсөн') done.push(o.id); }
     out.push(n);
   });
+  if (wrote) cacheDrop(['ord']);
   return { list: out, done: done };
 }
-function ebView(c, biz) { return ebLink(ebList(c).map(ebNorm), biz, true); }
+function ebView(c, biz, fresh) { return ebLink(ebList(c, fresh).map(ebNorm), biz, true); }
 // Удирдлага: зөвхөн харах (төлөв, код бичихгүй)
 // Удирдлага: ажилтантай ижил үйлдэл (илгээх, төлөв татах, устгах) — op: send | del | sync
 function ebAdmin(d) {
@@ -1320,6 +1330,7 @@ function ebuuhia(d, asWho) {
         if (r.code < 300 && code) { sh.getRange(o.row, 23).setValue(String(code)); sent.push({ id: o.id, phone: o.phone, code: String(code) }); }
         else failed.push({ id: o.id, phone: o.phone, why: ebErr(r) });
       });
+      if (sent.length) CacheService.getScriptCache().remove('eb_list');
       return { status: 'ok', sent: sent, failed: failed, skipped: ship.skipped || [] };
     }
     if (d.type === 'eb_del') {   // зөвхөн «Бүртгэгдсэн» (1) хүргэлтийг буухиагаас устгана; манай захиалгын кодыг арилгана (дахин илгээж болно)
@@ -1328,11 +1339,12 @@ function ebuuhia(d, asWho) {
       if (r.code >= 300) return { status: 'error', error: ebErr(r) };
       const o = orderRows().filter(function (x) { return x.biz === who.biz && String(x.ebCode) === code; })[0];
       if (o) orderSheet().getRange(o.row, 23).setValue('');
+      CacheService.getScriptCache().remove('eb_list');
       return { status: 'ok', id: o ? o.id : '' };
     }
     if (d.type === 'eb_sync') {   // ebuuhia-ийн бүх хүргэлтийг (31 хоног) татна; «Хүргэгдсэн» (10) бол манай захиалгыг автоматаар Хүргэгдсэн болгоно
-      const v = ebView(c, who.biz);
-      let ship = null; if (v.done.length) ship = ordersShipAs({ ids: v.done, to: 'Хүргэгдсэн' }, who);
+      const v = ebView(c, who.biz, !!d.fresh);
+      let ship = null; if (v.done.length) { ship = ordersShipAs({ ids: v.done, to: 'Хүргэгдсэн' }, who); cacheDrop(['ord', 'rec', 'stk']); }
       return { status: 'ok', list: v.list, delivered: v.done.length, ship: ship };
     }
   } catch (err) { return { status: 'error', error: String(err.message || err).slice(0, 200) }; }
