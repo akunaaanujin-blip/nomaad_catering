@@ -1291,7 +1291,7 @@ function subBody() {
 }
 
 // Буухиа (ebuuhia) — удирдлага: шинэ захиалгыг илгээх, төлөв татах (хүргэгдсэнийг автоматаар хаана), «Бүртгэгдсэн»-ийг устгах
-var ebAdm = { biz: '', list: null, at: '', t: 0, busy: false, err: '', sel: {}, rec: false, off: {}, fee: {}, line: null };
+var ebAdm = { biz: '', list: null, at: '', t: 0, busy: false, err: '', sel: {}, rec: false, off: {}, fee: {}, line: null, from: '' };
 window.ebRedraw = function (keep) {
   var el = document.getElementById('ebAdmBox'); if (el) el.innerHTML = ebAdmBody();
   if (keep) { var q = document.getElementById('ebQ'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }
@@ -1357,23 +1357,26 @@ function ebAdmBody() {
 // Үнийн дүнгүй (бидэнд төлсөн): хөлсийг буухиа бидэнээс авна — дараагийн шилжүүлгээс суутгах эсвэл бид төлнө.
 // Нэг шилжүүлэг (эсвэл төлбөр) = Σ авсан мөнгө − Σ хөлс. Хүргэлт бүрээр: Дт банк / Кт 1201 (авсан), Дт 3101 Буухиа / Кт банк (хөлс) → банкны цэвэр дүн тэнцэнэ.
 function ebSettled() { var m = {}; (journal || []).forEach(function (j) { (String(j.desc).match(/#EB:[\w-]+/g) || []).forEach(function (t) { m[t.slice(4)] = 1; }); }); return m; }
-function ebRecRows() {
+function ebRecRows() {   // буухиагийн «Харилцагчийн тайлан»-тай ижил: хүргэгдсэн бүх хүргэлт (манай захиалгатай холбогдоогүй ч), хөлс анхдагч 7,000
   var done = ebSettled(), O = {}; (window.adminOrders || []).forEach(function (o) { O[o.id] = o; });
-  return (ebAdm.list || []).filter(function (x) { var o = O[x.id]; return x.st === 10 && o && !done[x.code] && !(x.got > 0 && o.confirmed); })
-    .map(function (x) { var o = O[x.id], fb = ordFeeAdm(o); return { x: x, o: o, fb: fb, fee: ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : (fb || 7000), on: ebAdm.off[x.code] ? 0 : 1 }; })
-    .sort(function (a, b) { return a.x.at < b.x.at ? -1 : 1; });
+  var from = (ebAdm.from || '').replace(/-/g, '/');
+  return (ebAdm.list || []).filter(function (x) { var o = O[x.id]; return x.st === 10 && !done[x.code] && !(o && x.got > 0 && o.confirmed) && (!from || String(x.created) >= from); })
+    .map(function (x) { var o = O[x.id] || null, fb = o ? ordFeeAdm(o) : 0; return { x: x, o: o, fb: fb, fee: ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000, on: ebAdm.off[x.code] ? 0 : 1 }; })
+    .sort(function (a, b) { return a.x.created < b.x.created ? -1 : 1; });
 }
 function ebRecBody() {
   var R = ebRecRows(), on = R.filter(function (r) { return r.on; });
   var got = r0(on.reduce(function (a, r) { return a + r.x.got; }, 0)), fee = r0(on.reduce(function (a, r) { return a + r.fee; }, 0)), net = r0(got - fee);
-  if (!R.length) return '<p class="muted">Тооцоо нийлэх хүргэгдсэн хүргэлт алга (бүгд нийлсэн эсвэл төлбөр нь баталгаажсан).</p>';
+  var fromBar = '<div class="bar-row" style="margin:0 0 8px;gap:8px;align-items:center"><label style="display:flex;gap:6px;align-items:center;margin:0">Бүртгэсэн огноо (буухиа) <input type="date" value="' + esc(ebAdm.from || '') + '" onchange="ebAdm.from=this.value;ebAdm.line=null;ebRedraw()"></label>' +
+    '<small class="muted">буухиагийн «Харилцагчийн тайлан»-гийн хамгийн эхний огноог сонгоно — түүнээс өмнөх нь нийлсэн</small></div>';
+  if (!R.length) return fromBar + '<p class="muted">Тооцоо нийлэх хүргэгдсэн хүргэлт алга (бүгд нийлсэн эсвэл төлбөр нь баталгаажсан).</p>';
   var L = (bankLines || []).filter(function (l) { return l.biz === state.biz && l.status === 'Шинэ' && (net >= 0 ? +l.credit > 0 : +l.debit > 0); })
     .map(function (l) { var a = net >= 0 ? +l.credit : +l.debit; return { l: l, a: a, d: Math.abs(a - Math.abs(net)), hit: /буухиа|ebuuhia|элч/i.test(l.desc) }; })
     .sort(function (a, b) { return a.d - b.d || (b.hit - a.hit); }).slice(0, 30);
   if (ebAdm.line == null && L.length && L[0].d < 1) ebAdm.line = L[0].l.id;
   var rows = R.map(function (r) {
-    return '<tr><td><input type="checkbox"' + (r.on ? ' checked' : '') + ' onchange="ebAdm.off[\'' + r.x.code + '\']=!this.checked;ebRedraw()"></td><td>' + esc(r.x.at || r.x.created) + '</td><td><b class="mono2">' + esc(r.x.code) + '</b></td>' +
-      '<td>' + esc(r.x.phone) + '</td><td class="n">' + (r.x.got ? fmt(r.x.got) : '<small class="muted">үнийн дүнгүй</small>') + '</td>' +
+    return '<tr><td><input type="checkbox"' + (r.on ? ' checked' : '') + ' onchange="ebAdm.off[\'' + r.x.code + '\']=!this.checked;ebRedraw()"></td><td>' + esc(r.x.created) + '</td><td><b class="mono2">' + esc(r.x.code) + '</b></td>' +
+      '<td>' + esc(r.x.phone) + (r.o ? '' : '<br><small class="muted">захиалгагүй</small>') + '</td><td class="n">' + (r.x.got ? fmt(r.x.got) : '<small class="muted">үнийн дүнгүй</small>') + '</td>' +
       '<td class="n"><input type="number" min="0" value="' + r.fee + '" style="width:84px;text-align:right" onchange="ebAdm.fee[\'' + r.x.code + '\']=Number(this.value)||0;ebRedraw()"></td>' +
       '<td class="n">' + fmt(r0(r.x.got - r.fee)) + '</td></tr>';
   }).join('');
@@ -1382,8 +1385,8 @@ function ebRecBody() {
       '<span>' + esc(x.l.date.slice(0, 16)) + '</span><span class="dc-d">' + esc(x.l.desc) + '</span><b>' + fmt(x.a) + '</b>' + (x.d < 1 ? '<em>дүн таарсан</em>' : '') + '</label>';
   }).join('');
   var sel = L.filter(function (x) { return x.l.id === ebAdm.line; })[0], diff = sel ? r0(sel.a - Math.abs(net)) : null;
-  return '<p class="muted" style="font-size:12.5px;margin:0 0 8px">Буухиагийн шилжүүлсэн мөнгийг (эсвэл бидний төлсөн хөлсийг) хүргэлт бүрээр нь тулгана. Тухайн шилжүүлэгт ороогүй мөрийг чагтыг авна. «Хөлс» — буухиагийн авсан хүргэлтийн хөлс.</p>' +
-    '<div class="eb-wrap"><table class="tbl eb-t"><tr><th></th><th>Хүргэсэн</th><th>Код</th><th>Утас</th><th class="n">Авсан мөнгө</th><th class="n">Хөлс</th><th class="n">Цэвэр</th></tr>' + rows +
+  return fromBar + '<p class="muted" style="font-size:12.5px;margin:0 0 8px">Буухиагийн шилжүүлсэн мөнгийг (эсвэл бидний төлсөн хөлсийг) хүргэлт бүрээр нь тулгана. Тухайн шилжүүлэгт ороогүй мөрийг чагтыг авна. «Хөлс» — буухиагийн авсан хүргэлтийн хөлс.</p>' +
+    '<div class="eb-wrap"><table class="tbl eb-t"><tr><th></th><th>Огноо</th><th>Код</th><th>Утас</th><th class="n">Авсан мөнгө</th><th class="n">Хөлс</th><th class="n">Цэвэр</th></tr>' + rows +
     '<tr class="tot"><td></td><td colspan="3"><b>' + on.length + ' хүргэлт</b></td><td class="n"><b>' + fmt(got) + '</b></td><td class="n"><b>' + fmt(fee) + '</b></td><td class="n"><b>' + fmt(net) + '</b></td></tr></table></div>' +
     '<p style="margin:10px 0 6px"><b>' + (net >= 0 ? 'Буухиа бидэнд шилжүүлэх: ' + fmt(net) : 'Бид буухиад төлөх: ' + fmt(-net)) + '</b> — банкны ' + (net >= 0 ? 'орлогын' : 'зарлагын') + ' гүйлгээгээ сонгоно уу:</p>' +
     (L.length ? '<div class="dc-list">' + pick + '</div>' : '<p class="muted">Тулгаагүй гүйлгээ алга — эхлээд банкны хуулгаа оруулна уу.</p>') +
@@ -1394,9 +1397,9 @@ function ebRecSave() {
   var R = ebRecRows().filter(function (r) { return r.on; }), l = (bankLines || []).filter(function (x) { return x.id === ebAdm.line; })[0];
   if (!R.length || !l) return;
   var info = bankAcctInfo(l.acct), acc = info ? info.acc : '1101', d = l.date.slice(0, 10), biz = state.biz, E = [], ordUpd = [];
-  R.forEach(function (r) {
-    var tag = ' · ' + r.x.phone + ' #' + r.o.id + ' #EB:' + r.x.code, cust = ordCust(r.o);
-    if (r.x.got > 0) { E.push({ biz: biz, date: d, dr: acc, cr: '1201', amount: r.x.got, partner: cust, desc: 'Буухиа тооцоо · авсан мөнгө' + tag }); if (!r.o.confirmed) ordUpd.push(r.o); }
+  R.forEach(function (r) {   // захиалгагүй хүргэлт: хөлс нь өглөгөөр бичигдээгүй тул шууд зардал (7124)
+    var tag = ' · ' + r.x.phone + (r.o ? ' #' + r.o.id : '') + ' #EB:' + r.x.code, cust = r.o ? ordCust(r.o) : r.x.phone;
+    if (r.x.got > 0) { E.push({ biz: biz, date: d, dr: acc, cr: '1201', amount: r.x.got, partner: cust, desc: 'Буухиа тооцоо · авсан мөнгө' + tag }); if (r.o && !r.o.confirmed) ordUpd.push(r.o); }
     var fromPay = Math.min(r.fee, r.fb), extra = r0(r.fee - r.fb);
     if (fromPay > 0) E.push({ biz: biz, date: d, dr: '3101', cr: acc, amount: fromPay, partner: BUUHIA, desc: 'Буухиа тооцоо · хөлс' + tag });
     if (extra > 0) E.push({ biz: biz, date: d, dr: '7124', cr: acc, amount: extra, partner: '', desc: 'Буухиа тооцоо · нэмэлт хөлс' + tag });
