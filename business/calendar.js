@@ -131,19 +131,21 @@ function repOrders(biz) {
   var list = all.filter(ordFilt(state.ordF || 'wait'));
   var items = function (o) { try { var arr = typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []); return arr.map(function (i) { return i.name + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); } catch (e) { return String(o.items); } };
   var billed = {}; (window.records || []).forEach(function (x) { if (x.type === 'sale' && x.bill) billed[x.bill] = 1; });
+  var cand = ordBankCands(biz);   // захиалга бүрт таарах банкны хуулгын гүйлгээ
   var rows = list.map(function (o) {
+    var bc = cand[o.id], bk = o.confirmed ? '' : bc ? 'таарсан · ' + bc.l.date.slice(5, 10) + ' ' + fmt(bc.l.credit) + (bc.sure ? '' : ' (шалгах)') : 'хуулгад алга';
     var act = ordDead(o) ? '' : o.confirmed
       ? '<button class="mini" onclick="undoPayOrder(\'' + o.id + '\')">Буцаах</button>'
-      : '<button class="mini" style="color:var(--green)" onclick="openPayOrder(\'' + o.id + '\')">Баталгаажуулах</button>';
+      : (bc ? '<button class="mini" style="color:var(--green)" onclick="ordBankMatch(\'' + o.id + '\')">Хуулгаар баталгаажуулах</button> ' : '') + '<button class="mini" ' + (bc ? '' : 'style="color:var(--green)" ') + 'onclick="openPayOrder(\'' + o.id + '\')">' + (bc ? 'Гараар' : 'Баталгаажуулах') + '</button>';
     if (billed[o.id]) act = '<button class="mini" onclick="openBillAdm(\'' + o.id + '\')">Баримт</button>' + act;
     return { date: o.date + ' ' + o.time, phone: o.phone, customer: o.customer, items: items(o), status: o.status, payType: o.payType, paid: o.paid || 'Ороогүй',
-             conf: o.confirmed ? 'Баталгаажсан' : '—', amount: o.amount, staff: o.staff, _act: act };
+             conf: o.confirmed ? 'Баталгаажсан' : '—', bank: bk, amount: o.amount, staff: o.staff, _act: act };
   });
-  var unpaid = all.filter(ordFilt('wait')).reduce(function (a, o) { return a + o.amount; }, 0);
+  var unpaid = all.filter(ordFilt('wait')).reduce(function (a, o) { return a + o.amount; }, 0), nBank = all.filter(function (o) { return !o.confirmed && !ordDead(o) && cand[o.id]; }).length;
   return { title: 'Захиалга', rows: rows, actions: true,
-    cols: [c('date', 'Огноо'), c('phone', 'Утас'), c('customer', 'Захиалагч'), c('items', 'Бараа'), c('status', 'Хүргэлт'), c('payType', 'Төлбөрийн хэлбэр'), c('paid', 'Ажилтан: төлбөр'), c('conf', 'Удирдлага'), m('amount', 'Дүн'), c('staff', 'Ажилтан')],
+    cols: [c('date', 'Огноо'), c('phone', 'Утас'), c('customer', 'Захиалагч'), c('items', 'Бараа'), c('status', 'Хүргэлт'), c('payType', 'Төлбөрийн хэлбэр'), c('paid', 'Ажилтан: төлбөр'), c('conf', 'Удирдлага'), c('bank', 'Банкны хуулга'), m('amount', 'Дүн'), c('staff', 'Ажилтан')],
     total: { date: rows.length + ' захиалга', amount: sum(rows, 'amount') },
-    note: 'Баталгаажаагүй нийт: ' + fmt(unpaid) + '. Ажилтны «Төлбөр орсон» нь зөвхөн тэмдэглэл — санхүүд бичигдэхгүй. «Банкны хуулга»-аар тулгах (эсвэл энд «Баталгаажуулах») үед л санхүүд орно.' };
+    note: 'Баталгаажаагүй нийт: ' + fmt(unpaid) + (nBank ? ' · банкны хуулгаас таарсан ' + nBank + ' захиалга — «Хуулгаар баталгаажуулах» дарна' : '') + '. Ажилтны «Төлбөр орсон» нь зөвхөн тэмдэглэл — санхүүд бичигдэхгүй. «Банкны хуулга»-аар тулгах (эсвэл энд «Баталгаажуулах») үед л санхүүд орно.' };
 }
 // ── Харилцагчид (утасны дугаараар): хэдэн удаа, хэдийг захиалсан ──
 function phoneKey(p) { return String(p || '').replace(/\D/g, '').slice(-8); }
@@ -181,6 +183,20 @@ function openCust(k) {
       return '<tr><td>' + esc(o.date) + '</td><td>' + esc(admOrdItems(o)) + '</td><td>' + esc(((o.district ? o.district + ', ' : '') + (o.address || '')).slice(0, 70)) + '</td>' +
         '<td>' + esc(o.status) + (o.confirmed ? ' · баталгаажсан' : '') + '</td><td class="n">' + fmt(o.amount) + '</td></tr>';
     }).join('') + '</table></div><button class="btn ghost" onclick="gClose()">Хаах</button>');
+}
+// Баталгаажаагүй захиалга бүрт таарах банкны хуулгын гүйлгээ (утас, дүн, EB-кодоор) — «Банкны хуулга» хуудасны санал болгосонтой ижил
+function ordBankCands(biz) {
+  var out = {};
+  (typeof bankLines !== 'undefined' ? bankLines : []).forEach(function (l) {
+    if (l.biz !== biz || l.status !== 'Шинэ' || !(+l.credit > 0)) return;
+    var m = bankMatch(l); if (!m || m.kind !== 'order' || !m.o) return;
+    var cur = out[m.o.id]; if (!cur || (m.sure && !cur.sure)) out[m.o.id] = { l: l, sure: !!m.sure };
+  });
+  return out;
+}
+function ordBankMatch(id) {
+  var c = ordBankCands(state.biz)[id]; if (!c) { toast('Таарах гүйлгээ олдсонгүй'); return; }
+  bankPick[c.l.id] = 'O:' + id; bankApply([c.l.id]);
 }
 // Захиалгын шүүлтүүр: check — ажилтан «орсон» гэсэн ч баталгаажаагүй; wait — баталгаажаагүй бүгд; conf — баталгаажсан
 function ordFilt(f) {
