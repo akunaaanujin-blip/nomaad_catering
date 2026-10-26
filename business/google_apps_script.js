@@ -1200,7 +1200,11 @@ function ebCall(c, method, path, body, idem) {
   let j = {}; try { j = JSON.parse(r.getContentText() || '{}'); } catch (e) { j = { error: String(r.getContentText()).slice(0, 200) }; }
   return { code: r.getResponseCode(), data: j };
 }
-function ebErr(r) { const d = r.data || {}; return String(d.code && typeof d.code === 'string' && !/^K\d/.test(d.code) ? d.code : d.error && (d.error.code || d.error.message || d.error) || d.message || ('http ' + r.code)).slice(0, 150); }
+function ebErr(r) {   // буухиагийн бүтэн алдаа: код + тайлбар (түлхүүр, нууц утгыг агуулахгүй)
+  const d = r.data || {}, e = d.error && typeof d.error === 'object' ? d.error : d;
+  const code = String(e.code || (typeof d.error === 'string' ? d.error : '') || ('http ' + r.code)), msg = String(e.message || e.detail || d.message || '');
+  return (code + (msg && msg !== code ? ' — ' + msg : '') + ' [' + r.code + ']').slice(0, 300);
+}
 function ebObj(d) { return d && (d.data && !Array.isArray(d.data) ? d.data : d.delivery || d); }
 function ebList(c) {   // сүүлийн 1 сарын хүргэлтүүд (хуудаслаж, ихдээ 500)
   const out = [];
@@ -1270,7 +1274,11 @@ function ebSetting(d) {
   if (v.off) { delete c.key; delete c.secret; }
   PropertiesService.getScriptProperties().setProperty('EBUUHIA', JSON.stringify(c));
   const out = { status: 'ok', on: ebOn() };
-  if (d.test && out.on) { try { const r = ebCall(c, 'get', '/api/partner/v1/ping'); out.test = r.code < 300 ? 'ok' : ebErr(r); } catch (e) { out.test = String(e.message || e).slice(0, 200); } }
+  if (d.test && out.on) {
+    try { const r = ebCall(c, 'get', '/api/partner/v1/ping'); out.test = r.code < 300 ? 'ok' : ebErr(r); } catch (e) { out.test = String(e.message || e).slice(0, 200); }
+    // оношлогоо: түлхүүрийн урт, эхлэл (нууцыг буцаахгүй), серверийн цаг
+    out.diag = 'key ' + String(c.key).length + ' тэмдэгт, ' + String(c.key).slice(0, 8) + '… · secret ' + String(c.secret).length + ' тэмдэгт · сервер ' + new Date().toISOString().slice(0, 19) + 'Z';
+  }
   return out;
 }
 

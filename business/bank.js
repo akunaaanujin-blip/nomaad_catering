@@ -232,7 +232,7 @@ function ebSave(test, off) {
   post({ type: 'admin_setting', key: 'ebuuhia', value: v, test: !!test }, function (err, d) {
     if (err) { $('ebMsg').textContent = 'Алдаа: ' + err; return; }
     window.ebOnAll = !!d.on; $('ebSecret').value = ''; $('ebKey').value = '';
-    $('ebMsg').textContent = (d.on ? 'Асаалттай' : 'Түлхүүр дутуу — асаагүй') + (d.test ? (d.test === 'ok' ? ' · Буухиатай амжилттай холбогдлоо' : ' · Холболтын алдаа: ' + d.test) : '');
+    $('ebMsg').textContent = (d.on ? 'Асаалттай' : 'Түлхүүр дутуу — асаагүй') + (d.test ? (d.test === 'ok' ? ' · Буухиатай амжилттай холбогдлоо' : ' · Холболтын алдаа: ' + d.test + (d.diag ? ' (' + d.diag + ')' : '')) : '');
   });
 }
 function BIZ_NAMES_C(b) { return (BUSINESSES[b] && BUSINESSES[b].name) || b; }
