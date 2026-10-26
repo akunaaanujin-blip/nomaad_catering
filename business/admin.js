@@ -1496,7 +1496,7 @@ function ebRecPanel() {
   var n = ebRecRows().length, nd = ebCheck().done.length;
   return '<div style="margin-top:12px">' + ebCheckBanner() +
     '<div class="ord-bar"><h3 style="margin:0;flex:1">Нийлээгүй хүргэлт <small class="muted" style="font-weight:400">' + n + '</small></h3></div>' + ebRecBody() +
-    '<div class="ord-bar" style="margin-top:20px"><h3 style="margin:0;flex:1">Нийлсэн тайлан <small class="muted" style="font-weight:400">' + nd + '</small></h3></div>' + ebRecDoneBody() + '</div>';
+    '<details style="margin-top:20px"' + (ebAdm.doneOpen ? ' open' : '') + ' ontoggle="ebAdm.doneOpen=this.open"><summary style="cursor:pointer"><b>Нийлсэн тайлан</b> <small class="muted">' + nd + ' хүргэлт · дарж дэлгэнэ</small></summary><div style="margin-top:8px">' + ebRecDoneBody() + '</div></details></div>';
 }
 function ebAdmView() {
   if (!ebAdm.busy && (ebAdm.biz !== state.biz || Date.now() - ebAdm.t > 5 * 60000)) { ebAdm.list = ebAdm.biz === state.biz ? ebAdm.list : null; setTimeout(ebAdmPull, 0); }

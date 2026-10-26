@@ -136,7 +136,7 @@ function repOrders(biz) {
     var bc = cand[o.id], bk = o.confirmed ? '' : bc ? 'таарсан · ' + bc.l.date.slice(5, 10) + ' ' + fmt(bc.l.credit) + (bc.sure ? '' : ' (шалгах)') : 'хуулгад алга';
     var act = ordDead(o) ? '' : o.confirmed
       ? '<button class="mini" onclick="undoPayOrder(\'' + o.id + '\')">Буцаах</button>'
-      : (bc ? '<button class="mini" style="color:var(--green)" onclick="ordBankMatch(\'' + o.id + '\')">Хуулгаар баталгаажуулах</button> ' : '') + '<button class="mini" ' + (bc ? '' : 'style="color:var(--green)" ') + 'onclick="openPayOrder(\'' + o.id + '\')">' + (bc ? 'Гараар' : 'Баталгаажуулах') + '</button>';
+      : '<button class="mini" style="color:var(--green)" onclick="openPayOrder(\'' + o.id + '\')">Баталгаажуулах</button>' + (bc ? ' <button class="mini" title="Банкны хуулгын таарсан гүйлгээгээр шууд" onclick="ordBankMatch(\'' + o.id + '\')">Хуулгаар</button>' : '');
     if (billed[o.id]) act = '<button class="mini" onclick="openBillAdm(\'' + o.id + '\')">Баримт</button>' + act;
     return { date: o.date + ' ' + o.time, phone: o.phone, customer: o.customer, items: items(o), status: o.status, payType: o.payType, paid: o.paid || 'Ороогүй',
              conf: o.confirmed ? 'Баталгаажсан' : '—', bank: bk, amount: o.amount, staff: o.staff, _act: act };
