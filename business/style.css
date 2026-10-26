@@ -1534,3 +1534,9 @@ body.is-busy .btn,body.is-busy .b-btn.primary,body.is-busy button.mini{pointer-e
 /* Авлага, өглөг — нүд хуваагдахгүй, баруун талын сонголт тасрахгүй */
 .bz-admin #view .rep-t tr.b td:first-child,.bz-admin #view .rep-t td.n:last-child{white-space:nowrap}
 .bz-admin #view .rep-t td:last-child input[type=checkbox]{width:16px;height:16px;vertical-align:middle;margin-right:6px}
+/* Ажилтан — Хүргэлт (буухиа) */
+.dlv-t{width:100%;border-collapse:collapse;font-size:13.5px}
+.dlv-t th{text-align:left;font-size:12px;color:#64748B;font-weight:600;padding:7px 6px;border-bottom:1px solid #E2E8F0;white-space:nowrap}
+.dlv-t td{padding:8px 6px;border-bottom:1px solid #F1F5F9;vertical-align:top}
+.dlv-t .n{text-align:right;white-space:nowrap}
+.dlv-t input[type=checkbox]{width:16px;height:16px}

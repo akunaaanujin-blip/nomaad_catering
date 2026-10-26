@@ -197,7 +197,7 @@ function bankView() {
   }).join('');
   return head + '<div class="card"><h2>Төлбөрийн мэдээлэл (хэрэглэгчид илгээх мессежид)</h2><div class="bar-row"><input id="payInfo" value="' + esc(pay) + '" placeholder="Жишээ: Хаан банк 53xxxxxxxx (Н.Анужин)" style="flex:1;min-width:220px">' +
     '<button class="b-btn" onclick="savePayInfo()">Хадгалах</button></div><p class="muted" style="font-size:12.5px;margin-top:6px">Ажилтан захиалга бүртгэхэд «Төлбөрийн мессеж»-д энэ данс, дүн, «Гүйлгээний утга: утасны дугаар» бичигдэнэ — тулгалт автоматаар таарна.</p></div>' +
-    spSettingsCard(biz) +
+    spSettingsCard(biz) + ebSettingsCard(biz) +
     tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th class="bk-ck">' + (list.some(function (l) { return l.status === 'Шинэ'; }) ? '<input type="checkbox" title="Бүгдийг сонгох" onchange="bankSelAll(this.checked)">' : '') + '</th><th>Огноо</th><th>Гүйлгээний утга</th><th class="n">Орлого</th><th class="n">Зарлага</th><th>Тулгах баримт</th><th></th></tr>' +
     (rows || '<tr><td colspan="7" class="muted">' + (all.length ? 'Тулгах гүйлгээ алга' : 'Хуулга оруулаагүй байна — «Хуулга оруулах» дарна уу') + '</td></tr>') + '</table></div></div>';
 }
@@ -212,6 +212,28 @@ function spSettingsCard(biz) {
     '<div class="row2"><div><label>Store ID (' + esc(BIZ_NAMES_C(biz)) + ')</label><input id="spStore" inputmode="numeric" placeholder="' + (on ? 'тохируулсан — солих бол бичнэ' : 'жишээ: 1234') + '"></div><div></div></div>' +
     '<div class="bar-row" style="margin-top:10px"><button class="b-btn" onclick="spSave(true)">Хадгалаад шалгах</button>' + (on ? '<button class="b-btn ghost" onclick="spSave(false,true)">Энэ компанид унтраах</button>' : '') +
     '<small class="muted" id="spMsg"></small></div></div>';
+}
+// Буухиа (ebuuhia) API — X-Api-Key, Secret зөвхөн серверт хадгалагдана (дахин харагдахгүй). Захиалгатай компанид л.
+function ebSettingsCard(biz) {
+  if (typeof isOwner === 'function' && !isOwner()) return '';
+  if (!(BUSINESSES[biz] || {}).orders) return '';
+  var on = !!window.ebOnAll;
+  return '<div class="card"><h2>Буухиа (ebuuhia) API <small class="muted" style="font-weight:400">' + (on ? '· асаалттай' : '· тохируулаагүй') + '</small></h2>' +
+    '<p class="muted" style="font-size:12.5px;margin:-4px 0 10px">ebuuhia-аас ирсэн X-Api-Key, Secret-ийг энд өөрөө хуулж тавина. Зөвхөн серверт хадгалагдаж, дахин харагдахгүй. Асаасны дараа ажилтны хуудасны «Хүргэлт» цэсээс захиалгыг буухиа руу шууд илгээнэ.</p>' +
+    '<div class="row2"><div><label>X-Api-Key</label><input id="ebKey" autocomplete="off" placeholder="' + (on ? 'тохируулсан — солих бол бичнэ' : 'eb_live_…') + '"></div>' +
+    '<div><label>Secret</label><input id="ebSecret" type="password" autocomplete="new-password" placeholder="' + (on ? 'тохируулсан — солих бол бичнэ' : '') + '"></div></div>' +
+    '<div class="bar-row" style="margin-top:10px"><button class="b-btn" onclick="ebSave(true)">Хадгалаад шалгах</button>' + (on ? '<button class="b-btn ghost" onclick="ebSave(false,true)">Унтраах</button>' : '') +
+    '<small class="muted" id="ebMsg"></small></div></div>';
+}
+function ebSave(test, off) {
+  var v = { key: $('ebKey').value, secret: $('ebSecret').value }; if (off) { if (!confirm('Буухиа API-г унтраах уу?')) return; v = { off: true }; }
+  if (!API_URL) { toast('Google Sheet-тэй холбогдсон үед ажиллана'); return; }
+  $('ebMsg').textContent = 'Хадгалж байна…';
+  post({ type: 'admin_setting', key: 'ebuuhia', value: v, test: !!test }, function (err, d) {
+    if (err) { $('ebMsg').textContent = 'Алдаа: ' + err; return; }
+    window.ebOnAll = !!d.on; $('ebSecret').value = ''; $('ebKey').value = '';
+    $('ebMsg').textContent = (d.on ? 'Асаалттай' : 'Түлхүүр дутуу — асаагүй') + (d.test ? (d.test === 'ok' ? ' · Буухиатай амжилттай холбогдлоо' : ' · Холболтын алдаа: ' + d.test) : '');
+  });
 }
 function BIZ_NAMES_C(b) { return (BUSINESSES[b] && BUSINESSES[b].name) || b; }
 function spSave(test, off) {

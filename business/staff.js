@@ -127,7 +127,8 @@ function showMain() {
 var shellView = 'dash';
 function navMenu() {   // зөвхөн хуудсууд — үйлдлийн товчнууд хуудас дотроо нэг л удаа
   var g = [['dash', 'Борлуулалт', function () { showView('dash'); }]];
-  if (BIZ.orders) g.push(['orders', 'Захиалга', function () { showView('orders'); }]);   // захиалга — дэлгүүрийн борлуулалтаас тусдаа хуудас
+  if (BIZ.orders) g.push(['orders', 'Захиалга', function () { showView('orders'); }]);
+  if (BIZ.orders && typeof renderDlv === 'function') g.push(['dlv', 'Хүргэлт', function () { showView('dlv'); }]);   // буухиа (ebuuhia API)   // захиалга — дэлгүүрийн борлуулалтаас тусдаа хуудас
   g = g.concat([['stock', 'Барааны үлдэгдэл', function () { showView('stock'); }],
            ['count', 'Тооллого', function () { showView('count'); }], ['req', 'Мөнгөний хүсэлт', function () { showView('req'); }]]);
   if (BIZ.boost && $('boostView')) g.push(['boost', 'Boost', function () { showView('boost'); }]);
@@ -186,11 +187,12 @@ function showView(v, tab) {
     el.style.display = (el.getAttribute('data-view') || 'dash') === v ? '' : 'none';
   });
   var w = document.querySelector('#main .wrap'); if (w) w.classList.toggle('ep-wide', v === 'orders');
-  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : v === 'stock' ? 'Барааны үлдэгдэл' : v === 'boost' ? 'Boost' : v === 'count' ? 'Тооллого' : v === 'req' ? 'Мөнгөний хүсэлт' : 'Борлуулалт';
+  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : v === 'stock' ? 'Барааны үлдэгдэл' : v === 'boost' ? 'Boost' : v === 'count' ? 'Тооллого' : v === 'req' ? 'Мөнгөний хүсэлт' : v === 'dlv' ? 'Хүргэлт' : 'Борлуулалт';
   if (v === 'stock') renderStockPage();
   if (v === 'count') renderCount();
   if (v === 'req') loadRequests();
   if (v === 'boost') renderBoost();
+  if (v === 'dlv') renderDlv();
   renderNav(); window.scrollTo(0, 0);
 }
 
