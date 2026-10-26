@@ -159,6 +159,7 @@ function ebBoard(list, at) {
     .sort(function (a, b) { return (b.created || '') < (a.created || '') ? -1 : 1; });
   var cnt = {}; list.forEach(function (x) { cnt[x.st] = (cnt[x.st] || 0) + 1; if (ebIn(x, 'back')) cnt.back = (cnt.back || 0) + 1; });
   if (ebF.st === '11' || ebF.st === '12') ebF.st = 'back';
+  if (ebF.st === 'rec' && !window.ebRecPanel) ebF.st = 'all';
   var q = ebF.q.toLowerCase().trim();
   var L = list.filter(function (x) { return ebIn(x, ebF.st) && (!q || ebHay(x).indexOf(q) >= 0); });
   var sum = function (k) { return L.reduce(function (a, x) { return a + (Number(x[k]) || 0); }, 0); };
@@ -166,7 +167,8 @@ function ebBoard(list, at) {
     var n = t[0] === 'all' ? list.length : cnt[t[0]] || 0;
     if (t[0] !== 'all' && !n && String(ebF.st) !== String(t[0])) return '';
     return '<button class="' + (String(ebF.st) === String(t[0]) ? 'on' : '') + '" onclick="ebF.st=\'' + t[0] + '\';ebF.open=\'\';ebRedraw()">' + t[1] + ' <small>' + n + '</small></button>';
-  }).join('') + '</div>';
+  }).join('') + (window.ebRecPanel ? '<button class="' + (ebF.st === 'rec' ? 'on' : '') + '" onclick="ebF.st=\'rec\';ebF.open=\'\';ebRedraw()">Тооцоо нийлэх' + (window.ebRecCount ? ' <small>' + window.ebRecCount() + '</small>' : '') + '</button>' : '') + '</div>';
+  if (ebF.st === 'rec') return tabs + window.ebRecPanel();
   var tool = '<div class="eb-tool"><input type="search" id="ebQ" placeholder="Код, утас, нэр, хаяг, бараа, огноогоор хайх…" value="' + esc(ebF.q) + '" oninput="ebF.q=this.value;ebRedraw(1)">' +
     '<small class="muted">' + L.length + ' хүргэлт · авах ' + fmt(sum('price')) + ' · авсан ' + fmt(sum('got')) + (at ? ' · ' + esc(at) + '-д шинэчилсэн' : '') + '</small></div>';
   if (!L.length) return tabs + tool + '<p class="muted" style="margin:14px 0">' + (list.length ? 'Илэрц алга.' : 'Сүүлийн 31 хоногт буухиад хүргэлт алга.') + '</p>';
