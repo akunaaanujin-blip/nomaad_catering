@@ -447,7 +447,7 @@ function ensureDlv() {
     '<div class="pe-row"><label for="dPhone2">Нэмэлт утас</label><input id="dPhone2" inputmode="tel" maxlength="12"></div>' +
     '<label for="dAddr" class="d-lbl">Хаяг * <small class="muted">(хороолол, байр, тоот, орц, код)</small></label><textarea id="dAddr" rows="2" oninput="dlvAddr()"></textarea>' +
     '<div class="d-row3"><select id="dDist"><option value="">Дүүрэг</option>' + dist.map(function (d) { return '<option>' + d + '</option>'; }).join('') + '</select><input id="dKhoroo" placeholder="Хороо"><input id="dCity" value="Улаанбаатар" placeholder="Хот / аймаг"></div>' +
-    '<div class="d-row3"><label>Хүргэх өдөр<input id="dDate" type="date"></label><label>Хүргэлт (₮)<input id="dFee" type="number" inputmode="numeric" min="0" oninput="calcSale()"></label><label>Төлбөр<select id="dPaid"><option>Ороогүй</option><option>Орсон</option></select></label></div>' +
+    '<div class="d-row3"><label>Хүргэх өдөр<input id="dDate" type="date"></label><label>Хүргэлт (₮)<input id="dFee" type="number" inputmode="numeric" min="0" oninput="calcSale()"><span class="or-print" style="display:flex;gap:4px;margin:4px 0 0;font-size:12px"><input type="checkbox" id="dFeeFree" onchange="dFeeFreeTog()">Хүргэлтгүй</span></label><label>Төлбөр<select id="dPaid"><option>Ороогүй</option><option>Орсон</option></select></label></div>' +
     '<input id="dNote" placeholder="Хүргэлтийн тайлбар (заавал биш)">' +
     '<label class="or-print"><input type="checkbox" id="dPrint" onchange="lblWarn()"> Хадгалаад шошго хэвлэх <small class="muted lbl-warn"></small></label></div>');
 }
@@ -469,7 +469,7 @@ function setMode(m) {
   if (typeof lblWarn === 'function') lblWarn();
   if (sale.cart) calcSale();
 }
-function dlvReset() { ['dPhone', 'dName', 'dPhone2', 'dAddr', 'dKhoroo', 'dNote', 'dFee'].forEach(function (k) { if ($(k)) $(k).value = ''; }); if ($('dDist')) $('dDist').value = ''; if ($('dCity')) $('dCity').value = 'Улаанбаатар'; if ($('dHint')) $('dHint').textContent = ''; }
+function dlvReset() { if ($('dFeeFree')) { $('dFeeFree').checked = false; $('dFee').disabled = false; } ['dPhone', 'dName', 'dPhone2', 'dAddr', 'dKhoroo', 'dNote', 'dFee'].forEach(function (k) { if ($(k)) $(k).value = ''; }); if ($('dDist')) $('dDist').value = ''; if ($('dCity')) $('dCity').value = 'Улаанбаатар'; if ($('dHint')) $('dHint').textContent = ''; }
 function dlvAddr() {
   var t = $('dAddr').value;
   if (typeof guessDistrict === 'function' && !$('dDist').value) $('dDist').value = guessDistrict(t);
@@ -655,6 +655,7 @@ function discAmt() {
   return Math.min(g, Math.round(sale.discU === '%' ? g * Math.min(v, 100) / 100 : v));
 }
 function cartTotal() { return cartGross() - discAmt() + dlvFee(); }   // төлөх дүн (хөнгөлөлтийн дараа, хүргэлттэй бол хүргэлтийн төлбөр нэмэгдэнэ)
+function dFeeFreeTog() { var c = $('dFeeFree').checked; $('dFee').disabled = c; $('dFee').value = c ? 0 : (typeof FEE_DEFAULT !== 'undefined' ? FEE_DEFAULT : 7000); calcSale(); }
 function dlvFee() { return sale && sale.mode === 'dlv' && $('dFee') ? Math.max(0, Math.round(Number($('dFee').value) || 0)) : 0; }
 function setDiscU(u) {
   sale.discU = u; var b = $('discU'); if (b) [].forEach.call(b.children, function (x) { x.classList.toggle('on', x.dataset.u === u); });

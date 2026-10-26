@@ -153,6 +153,7 @@ function openOrder(id) {
   ordEdit = o ? JSON.parse(JSON.stringify(o)) : null;
   ordCart = o ? ordGoods(o) : [];
   $('orFee').value = o ? ordFee(o) : FEE_DEFAULT;
+  $('orFeeFree').checked = !!o && !ordFee(o); $('orFee').disabled = $('orFeeFree').checked;
   $('orTitle').textContent = o ? 'Захиалга · ' + o.phone : '＋ Шинэ захиалга';
   if ($('orPhoneHint')) $('orPhoneHint').innerHTML = '';
   $('orCustomer').value = o ? o.customer || '' : ''; $('orPhone').value = o ? o.phone : ''; $('orPhone2').value = o ? o.phone2 || '' : '';
@@ -187,6 +188,7 @@ function renderOrdCart() {
   }).join('') : '<li class="muted">Бараа сонгоно уу</li>';
   $('orTotal').textContent = fmt(ordCartTotal());
 }
+function ordFeeFree() { var c = $('orFeeFree').checked; $('orFee').disabled = c; $('orFee').value = c ? 0 : FEE_DEFAULT; renderOrdCart(); }
 function ordFeeVal() { return Math.max(0, Math.round(Number($('orFee').value) || 0)); }
 function ordCartTotal() { return ordCart.reduce(function (a, l) { return a + l.qty * l.price; }, 0) + ordFeeVal(); }
 function ordAddrInput() {

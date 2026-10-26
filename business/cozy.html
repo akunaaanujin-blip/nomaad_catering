@@ -130,6 +130,7 @@
     <div class="chips" id="orChips"></div>
     <ul class="list cart" id="orCart"></ul>
     <div class="fee-row"><label for="orFee">Хүргэлтийн төлбөр (₮)</label><input id="orFee" type="number" inputmode="numeric" min="0" value="7000" oninput="renderOrdCart()"></div>
+    <label class="or-print" style="margin:4px 0 0"><input type="checkbox" id="orFeeFree" onchange="ordFeeFree()"> Хүргэлтийн төлбөргүй</label>
     <p style="text-align:right;margin-top:6px">Нийт (хүргэлттэй): <b id="orTotal">₮0</b></p>
     <label for="orAddress">Хаяг * <span class="muted" style="font-weight:400">(хороолол, байр, тоот, орц, код)</span></label>
     <textarea id="orAddress" rows="2" oninput="ordAddrInput()"></textarea>
@@ -307,9 +308,9 @@
 <script src="common.js?v=20261026l"></script>
 <script>var BIZ_KEY = 'cozy';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261026q"></script>
+<script src="staff.js?v=20261026r"></script>
 <script src="ebarimt.js?v=20261023d"></script>
-<script src="orders.js?v=20261026n"></script>
+<script src="orders.js?v=20261026o"></script>
 <script src="label.js?v=20261023e"></script>
 </body>
 </html>
