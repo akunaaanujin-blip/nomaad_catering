@@ -371,7 +371,7 @@ function orderPayEntries(o, biz, acc, d, received, diff, diffAcc, how) {
   if (sold === 'yes:Зээлээр' || sold === 'yes:Шилжүүлэг') {   // бараа өгсөн, мөнгө нь авлага (хуримтлалын аргачлал) → авлага хаагдана
     E.push({ biz: biz, date: d, dr: acc, cr: '1201', amount: received, partner: cust, desc: 'Захиалгын төлбөр (' + how + ')' + tag });
     // буухиа хөлсөө суутгаж шилжүүлсэн — хүргэлтийн зардал (хуучин захиалгад хүргэх үед бичигдсэн өглөгөөс хаана)
-    if (diff && diffAcc === '7124') E = E.concat(buuhiaNet(biz, d, diff, cust, tag, ebFeeAuto(o.date)));
+    if (diff && diffAcc === '7124') E = E.concat(buuhiaNet(biz, d, diff, cust, tag, ebOrdAuto(o)));
     else if (diff) E.push({ biz: biz, date: d, dr: diffAcc, cr: '1201', amount: diff, partner: cust, desc: 'Хөнгөлөлт' + tag });
   } else if (sold === 'imported') {   // хуучин хүснэгтийн захиалга — борлуулалт энд бичигдэнэ
     E.push({ biz: biz, date: d, dr: acc, cr: '5101', amount: received, partner: '', desc: 'Захиалгын борлуулалт (хуучин)' + tag });
@@ -577,7 +577,7 @@ function dcSave() {
     if (A[i] > 0) E.push(R2 ? { biz: biz, date: d, dr: acc, cr: u.acc, amount: A[i], partner: pn, desc: (u.ord ? 'Захиалгын төлбөр' : 'Авлага төлөгдсөн') + ' · ' + src + ' ' + u.tag }
                             : { biz: biz, date: d, dr: u.acc, cr: acc, amount: A[i], partner: pn, desc: 'Өглөг төлсөн · ' + src + ' ' + u.tag });
     var rest = r0(u.due - A[i]);
-    if (wo && R2 && rest > 0.5) E = wo === '7124' ? E.concat(buuhiaNet(biz, d, rest, pn, ' · ' + u.desc + ' ' + u.tag, !!u.ord && ebFeeAuto(u.ord.date)))
+    if (wo && R2 && rest > 0.5) E = wo === '7124' ? E.concat(buuhiaNet(biz, d, rest, pn, ' · ' + u.desc + ' ' + u.tag, !!u.ord && ebOrdAuto(u.ord)))
                                                   : E.concat([{ biz: biz, date: d, dr: wo, cr: u.acc, amount: rest, partner: pn, desc: 'Хөнгөлөлт · ' + u.desc + ' ' + u.tag }]);
     if (u.ord && !u.ord.confirmed && A[i] > 0) ordUpd.push(u.ord);
   });
