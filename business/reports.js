@@ -171,13 +171,14 @@ function avgCost(ce, item) { var o = ce.items[item]; return o ? (o.q > 0 ? o.v /
 
 // ── Журнал үүсгэх ── R = { records, moves, salary, journal, stock, staff }
 function buildJournal(biz, R) {
-  var E = [];
+  var E = [], rt = {};   // rt: борлуулалт, зарлагын бичлэгийн цаг (бичилтийн ref = бичлэгийн ID)
+  R.records.forEach(function (x) { if (x.time) rt[x.id] = x.time; });
   var ce = costEngine(biz, R), tracked = !!ce.since;
   var add = function (date, doc, ref, dr, cr, amount, desc, partner, bill) {
     amount = Math.round((Number(amount) || 0) * 100) / 100;
     if (!amount) return;
     if (amount < 0) { var t = dr; dr = cr; cr = t; amount = -amount; }
-    E.push({ date: date, doc: doc, ref: ref || '', dr: dr, cr: cr, amount: amount, desc: desc || '', partner: partner || '', bill: bill || '' });
+    E.push({ date: date, doc: doc, ref: ref || '', dr: dr, cr: cr, amount: amount, desc: desc || '', partner: partner || '', bill: bill || '', time: rt[ref] || '' });
   };
   // Захиалгын борлуулалт (Cozy) — хуримтлалын аргачлал: хүргэгдмэгц Дт 1201 Авлага / Кт 5101 (ажилтны «Шилжүүлэг» банк руу бичихгүй);
   // мөнгө орж удирдлага тулгахад (bank.js orderPayEntries) Дт банк / Кт 1201 — авлага хаагдана.
@@ -320,14 +321,14 @@ function repLedger(E, from, to, code) {
   (all ? cashCodes() : [code]).forEach(function (k) { set[k] = 1; });
   var b0 = balances(E, prevDay(from)), open = Object.keys(set).reduce(function (a, k) { return a + (b0[k] || 0); }, 0), bal = open;
   var dn = all || debitNormal(code), sign = dn ? 1 : -1;
-  var rows = [{ date: from, doc: '', desc: 'Эхний үлдэгдэл', corr: '', d: '', c: '', bal: r0(open * sign) }];
+  var rows = [{ date: from, doc: '', desc: 'Эхний үлдэгдэл', corr: '', d: '', c: '', bal: r0(open * sign) }];   // time — борлуулалтын цаг, эсвэл тулгасан банкны гүйлгээний цаг
   E.forEach(function (e) {
     if (e.date < from || e.date > to || !!set[e.dr] === !!set[e.cr]) return;
     var isD = !!set[e.dr];
     bal += isD ? e.amount : -e.amount;
-    rows.push({ date: e.date, doc: e.doc, desc: e.desc, acc: all ? accName(isD ? e.dr : e.cr) : '', corr: (isD ? e.cr : e.dr) + ' ' + accName(isD ? e.cr : e.dr), d: isD ? e.amount : '', c: isD ? '' : e.amount, bal: r0(bal * sign) });
+    rows.push({ date: e.date, time: e.time || bankTimeFor(e.date, isD ? e.amount : -e.amount), doc: e.doc, desc: e.desc, acc: all ? accName(isD ? e.dr : e.cr) : '', corr: (isD ? e.cr : e.dr) + ' ' + accName(isD ? e.cr : e.dr), d: isD ? e.amount : '', c: isD ? '' : e.amount, bal: r0(bal * sign) });
   });
-  return { title: all ? 'Мөнгөний дансны нэгдсэн хуулга' : 'Дансны хуулга · ' + code + ' ' + accName(code), cols: [c('date', 'Огноо'), c('doc', 'Баримт')].concat(all ? [c('acc', 'Данс')] : [], [c('desc', 'Гүйлгээний утга'),
+  return { title: all ? 'Мөнгөний дансны нэгдсэн хуулга' : 'Дансны хуулга · ' + code + ' ' + accName(code), cols: [c('date', 'Огноо'), c('time', 'Цаг'), c('doc', 'Баримт')].concat(all ? [c('acc', 'Данс')] : [], [c('desc', 'Гүйлгээний утга'),
     c('corr', 'Харьцсан данс'), m('d', all ? 'Орсон' : 'Дебет'), m('c', all ? 'Гарсан' : 'Кредит'), m('bal', 'Үлдэгдэл')]), rows: rows,
     total: { desc: 'Эцсийн үлдэгдэл', d: sum(rows, 'd'), c: sum(rows, 'c'), bal: r0(bal * sign) } };
 }

@@ -53,7 +53,7 @@ function drillLines(s, E) {
     if (s.partner !== undefined && (e.partner || '(харилцагч заагаагүй)') !== s.partner) return;
     if (s.tag && !hasTag(e.desc, s.tag)) return;   // зээл / захиалгын «#ID»
     var raw = inD ? e.amount : -e.amount;
-    var x = { date: e.date, doc: e.doc, desc: e.desc, partner: e.partner, acc: inD ? e.dr : e.cr, other: inD ? e.cr : e.dr, raw: raw, v: raw * (s.sign || 1) };
+    var x = { date: e.date, time: e.time || '', doc: e.doc, desc: e.desc, partner: e.partner, acc: inD ? e.dr : e.cr, other: inD ? e.cr : e.dr, raw: raw, v: raw * (s.sign || 1) };
     if (s.other && s.other.indexOf(x.other) < 0) return;
     if (from && e.date < from) { if (s.bal) open += x.v; return; }
     if (s.dir && x.v * s.dir <= 0) return;
@@ -246,15 +246,21 @@ function repProfit(Rr, biz, f, t) {
 }
 
 // ═══════════ ОРЛОГО, ЗАРЛАГА (хуучин хүснэгтийн банкны хуудас шиг) ═══════════
+// Гүйлгээний цаг: борлуулалтын цаг, эсвэл тулгасан банкны гүйлгээний цаг (ижил өдөр, ижил дүн)
+function bankTimeFor(date, v) {
+  if (typeof bankLines === 'undefined') return '';
+  var m = bankLines.filter(function (l) { return l.biz === state.biz && String(l.date).slice(0, 10) === date && Math.abs((+l.credit || +l.debit) - Math.abs(v)) < 0.5 && (v > 0) === (+l.credit > 0); })[0];
+  return m ? String(m.date).slice(11, 16) : '';
+}
 function moneyAccs() { var s = state.macc || 'all'; return s === 'all' ? cashCodes() : [s]; }
 function repMoney(E, f, t) {
   var A = moneyAccs(), all = A.length > 1, d = drillLines({ acc: A, from: f, to: t, sign: 1, grp: 'type', bal: true }, E), run = d.open;
   var rows = [{ date: f, desc: 'Эхний үлдэгдэл', bal: r0(d.open), _b: 1 }];
   d.lines.forEach(function (x) {
     run += x.v;
-    rows.push({ date: x.date, acc: accName(x.acc), desc: x.desc, partner: x.partner, type: x.key, in: x.v > 0 ? r0(x.v) : '', out: x.v < 0 ? r0(-x.v) : '', bal: r0(run) });
+    rows.push({ date: x.date, time: x.time || bankTimeFor(x.date, x.v), acc: accName(x.acc), desc: x.desc, partner: x.partner, type: x.key, in: x.v > 0 ? r0(x.v) : '', out: x.v < 0 ? r0(-x.v) : '', bal: r0(run) });
   });
-  var cols = [c('date', 'Огноо')].concat(all ? [c('acc', 'Данс')] : [], [c('desc', 'Гүйлгээний утга'), c('partner', 'Харилцагч'), c('type', 'Төрөл'), m('in', 'Орлого'), m('out', 'Зарлага'), m('bal', 'Үлдэгдэл')]);
+  var cols = [c('date', 'Огноо'), c('time', 'Цаг'), c('acc', 'Харилцах данс')].concat([c('desc', 'Гүйлгээний утга'), c('partner', 'Харилцагч'), c('type', 'Төрөл'), m('in', 'Орлого'), m('out', 'Зарлага'), m('bal', 'Үлдэгдэл')]);
   var tin = sum(rows, 'in'), tout = sum(rows, 'out');
   return { title: 'Орлого, зарлага · ' + (all ? 'бүх данс' : A[0] + ' ' + accName(A[0])), rows: rows, cols: cols,
     total: { desc: 'Эцсийн үлдэгдэл', in: tin, out: tout, bal: r0(run),
