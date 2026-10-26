@@ -21,7 +21,7 @@ var records = [], staff = [], salary = [], stockData = {}, moves = [], journal =
 // config.js / products.js-ийн үндсэн жагсаалтыг хадгалж, «Бараа» хуудасны засварыг дээр нь давхарлана
 var BASE_PRODUCTS = {};
 Object.keys(BUSINESSES).forEach(function (k) { BASE_PRODUCTS[k] = BUSINESSES[k].products.slice(); });
-var state = { view: 'companies', biz: '', module: 'sales', period: 'month', staffBiz: 'all', month: todayStr().slice(0, 7), q: '', stockF: 'in', showMoves: false,
+var state = { view: 'companies', biz: '', module: 'sales', period: 'month', staffBiz: 'all', staffSt: 'all', month: todayStr().slice(0, 7), q: '', stockF: 'in', showMoves: false,
   sub: { sales: 'receipts', products: 'stock', finance: 'daily' }, from: todayStr().slice(0, 8) + '01', to: todayStr(), acc: 'cashall' };
 var editId = '', salId = '', salKind = 'Урьдчилгаа';
 var NAV = { idx: 0, key: '', restoring: false };   // дэлгэцийн түүх (← Буцах)
@@ -160,6 +160,7 @@ function setSub(s) {
   state.sub[state.module] = s; render(); window.scrollTo(0, 0);
 }
 function setStaffBiz(b) { state.staffBiz = b; render(); }
+function setStaffSt(t) { state.staffSt = t; render(); }
 function setMonth(m) { state.month = m; render(); }
 
 function range() {
@@ -841,19 +842,24 @@ function staffView(fixedBiz) {
     return '<button class="' + (state.staffBiz === t[0] ? 'on' : '') + '" onclick="setStaffBiz(\'' + t[0] + '\')">' + esc(t[1]) + '</button>';
   }).join('') + '</div>';
   var reg = 'register.html' + (fixedBiz ? '?biz=' + fixedBiz : '');
+  var sf = state.staffSt || 'all', showP = sf === 'all' || sf === 'pend', showA = sf === 'all' || sf === 'act', showO = sf === 'all' || sf === 'off';
+  var stTabs = '<div class="tabs" style="margin-bottom:10px">' + [['all', 'Бүгд', list.length], ['act', 'Идэвхтэй', act.length], ['pend', 'Хүлээгдэж буй', pend.length], ['off', 'Идэвхгүй', off.length]].map(function (t) {
+    return '<button class="' + (sf === t[0] ? 'on' : '') + '" onclick="setStaffSt(\'' + t[0] + '\')">' + t[1] + ' <small>' + t[2] + '</small></button>';
+  }).join('') + '</div>';
   return '<div class="card bar-row">' + (fixedBiz ? '<h2 style="margin:0">Ажилчид</h2>' : filt) +
     '<label class="month">Сар <input type="month" value="' + m + '" onchange="setMonth(this.value)"></label></div>' +
     (!API_URL ? '<div class="card muted">Ажилчдын бүртгэл Google Sheet-тэй холбогдсон үед ажиллана.</div>' : '') +
     '<div class="kpis">' + kpi('Идэвхтэй ажилтан', act.length + (pend.length ? ' <span class="tag r">+' + pend.length + '</span>' : '')) +
-    kpi('Цалингийн сан (' + m + ')', fmt(tot.base)) + kpi('Олгосон', fmt(tot.paid)) + kpi('Олгох үлдэгдэл', fmt(tot.left)) + '</div>' +
-    (pend.length ? '<div class="card"><h2>Баталгаажуулалт хүлээж буй (' + pend.length + ')</h2>' + pend.map(pendCard).join('') + '</div>' : '') +
-    '<div class="card"><div class="bar-row"><h2 style="margin:0">Ажилчид (' + act.length + ')</h2>' +
+    kpi('Цалингийн сан (' + m + ')', fmt(tot.base)) + kpi('Олгосон', fmt(tot.paid)) + kpi('Олгох үлдэгдэл', fmt(tot.left)) + '</div>' + stTabs +
+    (showP && pend.length ? '<div class="card"><h2>Баталгаажуулалт хүлээж буй (' + pend.length + ')</h2>' + pend.map(pendCard).join('') + '</div>' : '') +
+    (showA ? '<div class="card"><div class="bar-row"><h2 style="margin:0">Ажилчид (' + act.length + ')</h2>' +
     '<a class="link" href="' + reg + '" target="_blank">＋ Бүртгүүлэх хуудас</a></div>' +
-    (act.length ? staffGroups(act, m) : '<p class="muted">Ажилтан алга</p>') + '</div>' +
-    (off.length ? '<details class="card"><summary>Идэвхгүй (' + off.length + ')</summary>' + off.map(function (s) {
+    (act.length ? staffGroups(act, m) : '<p class="muted">Ажилтан алга</p>') + '</div>' : '') +
+    (showO && off.length ? '<details class="card"' + (sf === 'off' ? ' open' : '') + '><summary>Идэвхгүй (' + off.length + ')</summary>' + off.map(function (s) {
       return '<div class="st-off">' + esc(s.surname ? s.surname + ' ' : '') + esc(s.name) + ' · ' + bizLabel(s.biz) +
         ' <button class="mini" onclick="openStaff(\'' + s.id + '\')">Засах</button></div>';
-    }).join('') + '</details>' : '');
+    }).join('') + '</details>' : '') +
+    (sf !== 'all' && !(sf === 'act' ? act : sf === 'pend' ? pend : off).length ? '<div class="card muted">Энэ төлөвтэй ажилтан алга</div>' : '');
 }
 function staffPage() {
   var tab = isOwner() ? state.staffTab || 'pay' : 'att';
