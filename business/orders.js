@@ -329,7 +329,7 @@ function renderOrders() {
       '<td class="c-a" data-l="Хаяг">' + esc([o.city && o.city !== 'Улаанбаатар' ? o.city : '', o.district, o.address].filter(Boolean).join(' ')).slice(0, 80) + '</td>' +
       '<td class="c-i" data-l="Бараа">' + esc(ordItemsText(o)) + '</td>' +
       '<td class="c-m num" data-l="Дүн">' + fmt(o.amount) + (fee ? '<small>хүргэлт ' + fmt(fee) + '</small>' : '') + '</td>' +
-      '<td class="c-s" data-l="Төлөв"><span class="st ' + (STC[o.status] || 'b') + '">' + esc(o.status) + '</span>' + ret +
+      '<td class="c-s" data-l="Төлөв"><span class="st ' + (STC[o.status] || 'b') + '">' + esc(ordStName(o)) + '</span>' + ret +
         '<small><span class="st ' + (o.confirmed || o.paid === 'Орсон' ? 'g' : 'n') + '">' + (o.confirmed ? 'Төлбөр баталгаажсан' : 'Төлбөр ' + esc((o.paid || 'Ороогүй').toLowerCase())) + '</span></small></td>' +
       '<td class="c-x" data-l="">' + (o.pending ? '' : '<button class="mini lbl-q" onclick="lblQuick([\'' + o.id + '\'])" title="Шошго хэвлэх">Хэвлэх</button>') + acts + '</td></tr>';
   }).join('');
@@ -411,10 +411,11 @@ function renderDlv() {
       (o.district ? '' : ' <small style="color:#B45309">дүүрэг хоосон</small>') + '</td><td>' + esc(ordItemsText(o)) + '</td><td class="n">' + fmt(o.amount) + '</td><td class="n">' + (dlvCod(o) ? fmt(dlvCod(o)) : '<small class="muted">төлсөн</small>') + '</td></tr>';
   };
   w.innerHTML = (fresh.length ? '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиа руу илгээх <small class="muted" style="font-weight:400">«Шинэ» захиалга ' + fresh.length + '</small></h2>' +
-      '<button class="btn sm" onclick="dlvSend()"' + (nSel && !dlvBusy ? '' : ' disabled') + '>Сонгосныг илгээх (' + nSel + ')</button></div>' +
+      '<button class="btn sm ghost2" onclick="dlvOther()"' + (nSel && !dlvBusy ? '' : ' disabled') + '>Бусад хүргэлтээр (' + nSel + ')</button>' +
+      '<button class="btn sm" onclick="dlvSend()"' + (nSel && !dlvBusy ? '' : ' disabled') + '>Буухиа руу илгээх (' + nSel + ')</button></div>' +
       '<div style="overflow-x:auto;margin-top:8px"><table class="tbl dlv-t"><tr><th><input type="checkbox" onchange="fresh_all(this.checked)"></th><th>Хүлээн авагч</th><th>Хаяг</th><th>Бараа</th><th class="n">Дүн</th><th class="n">Буухиа авах</th></tr>' +
         fresh.map(row).join('') + '</table></div>' +
-      '<p class="muted" style="font-size:12.5px;margin-top:8px">Илгээхэд захиалга «Буухиад өгсөн» болж, борлуулалт бичигдэнэ. «Буухиа авах» — хүргэхдээ хэрэглэгчээс авах мөнгө (төлбөр орсон бол 0).</p></div>' : '') +
+      '<p class="muted" style="font-size:12.5px;margin-top:8px">«Бусад хүргэлтээр» — буухиад өгөхгүй (өөрсдөө эсвэл өөр хүргэлтээр); буухиагийн хөлс бичигдэхгүй. Илгээхэд захиалга «Буухиад өгсөн» болж, борлуулалт бичигдэнэ. «Буухиа авах» — хүргэхдээ хэрэглэгчээс авах мөнгө (төлбөр орсон бол 0).</p></div>' : '') +
     (retry.length ? '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиад өгсөн боловч кодгүй <small class="muted" style="font-weight:400">' + retry.length + '</small></h2>' +
       '<button class="btn sm ghost2" onclick="dlvSend(' + "'retry'" + ')">Буухиад дахин илгээх</button></div><p class="muted" style="font-size:12.5px">Excel-ээр гараар оруулсан бол дахин илгээх хэрэггүй — шинэчлэхэд кодоор нь холбогдоно.</p></div>' : '') +
     '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиа</h2>' +
@@ -445,6 +446,20 @@ window.ebDel = function (code) {
     toast('Буухиагаас устгагдлаа'); loadOrders(); dlvPull();
   });
 };
+// Буухиад өгөхгүй захиалга — өөрсдөө / бусад хүргэлтээр гаргана (борлуулалт бичигдэнэ, буухиагийн хөлс бичигдэхгүй)
+function dlvOther() {
+  var ids = Object.keys(dlvSel).filter(function (k) { return dlvSel[k]; });
+  if (!ids.length || dlvBusy || !confirm(ids.length + ' захиалгыг бусад хүргэлтээр (буухиагүй) гаргах уу?\nБорлуулалт бичигдэнэ.')) return;
+  dlvBusy = true; renderDlv();
+  ordPost({ type: 'eb_other', ids: ids }, function (err, d) {
+    dlvBusy = false;
+    if (err) { alert('Хадгалж чадсангүй: ' + err); renderDlv(); return; }
+    dlvSel = {};
+    if (d.skipped.length) alert('Үлдэгдэл хүрэлцэхгүй тул «Шинэ» хэвээр ' + d.skipped.length + ':\n' + d.skipped.map(function (x) { return (x.phone || '') + ': ' + x.why; }).join('\n'));
+    toast(d.shipped.length + ' захиалга бусад хүргэлтээр гарлаа'); loadOrders(); if (typeof syncToday === 'function') syncToday(); setTimeout(renderDlv, 3000);
+  });
+}
+function ordStName(o) { return o.ebCode === 'бусад' && o.status === 'Буухиад өгсөн' ? 'Бусад хүргэлтэд' : o.status; }
 function fresh_all(on) { orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending; }).forEach(function (o) { dlvSel[o.id] = on; }); renderDlv(); }
 function dlvSend(mode, given) {
   var ids = given || mode === 'retry' ? orders.filter(function (o) { return o.status === 'Буухиад өгсөн' && !o.ebCode; }).map(function (o) { return o.id; })

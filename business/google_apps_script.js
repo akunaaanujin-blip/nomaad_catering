@@ -123,7 +123,7 @@ function doPost(e) {
     if (data.type === 'order_save') return json(orderSave(data));
     if (data.type === 'order_delete') return json(orderDelete(data));
     if (data.type === 'orders_ship') return json(ordersShip(data));
-    if (data.type === 'eb_send' || data.type === 'eb_sync' || data.type === 'eb_del') return json(ebuuhia(data));
+    if (data.type === 'eb_send' || data.type === 'eb_sync' || data.type === 'eb_del' || data.type === 'eb_other') return json(ebuuhia(data));
     if (data.type === 'staff_today') return json(staffToday(data));
     if (data.type === 'requests') return json(staffRequests(data));
     if (data.type === 'stock_count') return json(stockCount(data));
@@ -150,7 +150,7 @@ function doPost(e) {
 // ── Серверийн кэш (хурд): удирдлагын уншилт хуудас тус бүрийг 5 мин кэшлэнэ, бичилт хийхэд тэр хуудсыг л цэвэрлэнэ ──
 // Sheet-ийг гараар засвал 5 минутын дотор шинэчлэгдэнэ.
 const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf'];
-const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_send: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
+const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_other: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_send: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
   admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr'], admin_bank: ['bank', 'jr', 'ord'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_po: ['po', 'jr'],
   admin_staff: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
@@ -158,7 +158,7 @@ const CACHE_READ = { eb_sync: 1, requests: 1, staff_today: 1, admin_read: 1, adm
 function cacheKeysFor(d) {
   if (!d.type) return ['rec', 'stk'];   // ажилтны бичлэг (борлуулалт, зарлага, касс)
   if (CACHE_READ[d.type]) return null;
-  if (d.type === 'admin_eb' && d.op !== 'send' && d.op !== 'del') return null;   // төлөв татах — бичвэл ebuuhia() өөрөө кэш цэвэрлэнэ
+  if (d.type === 'admin_eb' && d.op !== 'send' && d.op !== 'del' && d.op !== 'other') return null;   // төлөв татах — бичвэл ebuuhia() өөрөө кэш цэвэрлэнэ
   return CACHE_MAP[d.type] || CACHE_ALL;   // мэдэгдэхгүй бичилт (он хаах г.м) — бүгдийг
 }
 const CACHE_OFF = { stk: 1, mov: 1 };   // ТҮР УНТРААСАН: нөөцийн кэш (сайжруулалт дуустал) — дахин асаахдаа энэ жагсаалтаас хасна
@@ -1187,7 +1187,7 @@ function storePaySetting(d) {
 // ═══════════ EBUUHIA (Буухиа) — партнерын API v1 ═══════════
 // Түлхүүр Script Property EBUUHIA = {key, secret} — ЗӨВХӨН энд (репод, хөтөчид буцаахгүй). Хүсэлт бүрийг HMAC-SHA256-аар гарын үсэг зурна:
 //   METHOD \n PATH(+query) \n X-Timestamp \n X-Nonce \n Idempotency-Key \n sha256hex(body)
-const EB_API = 'https://api.ebuuhia.com', EB_ST = { 1: 'Бүртгэгдсэн', 2: 'Хүлээн авсан', 3: 'Жолоочид хуваарилсан', 5: 'Хүлээгдэж буй', 10: 'Хүргэгдсэн', 11: 'Цуцалсан', 12: 'Буцаасан' };
+const EB_OTHER = 'бусад', EB_API = 'https://api.ebuuhia.com', EB_ST = { 1: 'Бүртгэгдсэн', 2: 'Хүлээн авсан', 3: 'Жолоочид хуваарилсан', 5: 'Хүлээгдэж буй', 10: 'Хүргэгдсэн', 11: 'Цуцалсан', 12: 'Буцаасан' };
 function ebCfg() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('EBUUHIA') || '{}'); } catch (e) { return {}; } }
 function ebOn() { const c = ebCfg(); return !!(c.key && c.secret); }
 function ebHex(b) { return b.map(function (x) { return ('0' + (x & 255).toString(16)).slice(-2); }).join(''); }
@@ -1300,10 +1300,19 @@ function ebAdmin(d) {
   if (!BIZ_NAMES[d.biz]) return { status: 'error', error: 'fields' };
   const s = staffRows().filter(function (x) { return x.id === d._who.id; })[0];
   const who = { biz: String(d.biz), staff: { name: s ? s.name : 'Удирдлага' } };
-  return ebuuhia(Object.assign({}, d, { type: d.op === 'send' ? 'eb_send' : d.op === 'del' ? 'eb_del' : 'eb_sync' }), who);
+  return ebuuhia(Object.assign({}, d, { type: d.op === 'send' ? 'eb_send' : d.op === 'del' ? 'eb_del' : d.op === 'other' ? 'eb_other' : 'eb_sync' }), who);
 }
 function ebuuhia(d, asWho) {
   const who = asWho || checkStaff(d.token); if (!who) return { status: 'error', error: 'auth' };
+  if (d.type === 'eb_other') {   // буухиад өгөхгүй — өөрсдөө / бусад хүргэлтээр: борлуулалт бичигдэж «Буухиад өгсөн» төлөвтэй, код = «бусад» (буухиагийн хөлс бичигдэхгүй)
+    const want = {}; (Array.isArray(d.ids) ? d.ids : []).slice(0, 50).forEach(function (x) { want[String(x)] = 1; });
+    const ids = orderRows().filter(function (o) { return want[o.id] && o.biz === who.biz && !o.ebCode && o.status === 'Шинэ'; }).map(function (o) { return o.id; });
+    if (!ids.length) return { status: 'ok', shipped: [], skipped: [] };
+    const ship = ordersShipAs({ ids: ids, to: 'Буухиад өгсөн' }, who), sh = orderSheet(), done = {};
+    (ship.shipped || []).forEach(function (x) { done[x.id] = 1; });
+    orderRows().forEach(function (o) { if (done[o.id]) sh.getRange(o.row, 23).setValue(EB_OTHER); });
+    return { status: 'ok', shipped: ship.shipped || [], skipped: ship.skipped || [] };
+  }
   const c = ebCfg(); if (!c.key || !c.secret) return { status: 'error', error: 'eb_off' };
   try {
     if (d.type === 'eb_send') {   // шинэ захиалгыг буухиад өгнө (борлуулалт бичигдэнэ), дараа нь ebuuhia-д хүргэлт үүсгэнэ
