@@ -1453,7 +1453,7 @@ function ebAutoBook(fresh) {
   E.forEach(function (e, i) { journal.push(Object.assign({ id: 'tmp' + Date.now() + '-' + i, by: ownerName }, e)); });
   _debtCache = null; ebRedraw();
   var k = 1 + ordUpd.length, fin = function () { if (--k === 0) { ebAdm.booking = false; toast('Буухиа нийлсэн ' + n + ' хүргэлтийн тооцоо бичигдлээ — ' + (tot >= 0 ? 'буухиагийн авлага ' + fmt(tot) : 'буухиад төлөх ' + fmt(-tot))); refresh(); } };
-  post({ type: 'admin_journal', by: ownerName, entries: E }, function (err) { if (err) toast('Алдаа: ' + err); fin(); });
+  post({ type: 'admin_journal', by: ownerName, entries: E }, function (err) { if (err && err !== 'eb_dup') toast('Алдаа: ' + err); fin(); });   // eb_dup — өөр таб аль хэдийн бичсэн, refresh-ээр зөв журнал ирнэ
   ordUpd.forEach(function (o) { post({ type: 'admin_order', id: o.id, by: ownerName, fields: { confirmed: o.confirmed, note: 'Буухиа тооцоо ' + o.confirmed.slice(0, 10) } }, function () { fin(); }); });
 }
 // Манай 3101 «Буухиа» өглөг — захиалга бүрээр (журналаас)

@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v5.7 (ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v5.8 (буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -782,6 +782,13 @@ function adminJournal(d) {
     for (let i = 0; i < list.length; i++) {
       const x = list[i];
       if (!BIZ_NAMES[x.biz] || !/^\d{4}-\d{2}-\d{2}$/.test(String(x.date)) || !/^\d{4,6}$/.test(String(x.dr)) || !/^\d{4,6}$/.test(String(x.cr)) || x.dr === x.cr || !(Number(x.amount) > 0)) return { status: 'error', error: 'fields', index: i };
+    }
+    // v5.8: буухиа тооцоо — ижил хүргэлтийн (#EB:код) тооцоо журналд аль хэдийн байвал бүхэлд нь хүлээж авахгүй (2 таб/төхөөрөмж давхар бичихээс)
+    const ebTag = function (t) { return /^Буухиа тооцоо/.test(String(t)) ? String(t).match(/#EB:[\w-]+/g) || [] : []; };
+    const newEb = {}; list.forEach(function (x) { ebTag(x.desc).forEach(function (k) { newEb[k] = 1; }); });
+    if (Object.keys(newEb).length) {
+      const dup = []; journalRows().forEach(function (j) { ebTag(j.desc).forEach(function (k) { if (newEb[k] && dup.indexOf(k) < 0) dup.push(k); }); });
+      if (dup.length) return { status: 'error', error: 'eb_dup', codes: dup.map(function (k) { return k.slice(4); }) };
     }
     const now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), by = String(d.by || '').slice(0, 40), sh = journalSheet();
     const rows = list.map(function (x, i) { return ['J' + Date.now() + '-' + i, x.date, BIZ_NAMES[x.biz], String(x.dr), String(x.cr), Number(x.amount), String(x.partner || '').slice(0, 80),
