@@ -226,7 +226,9 @@ function ebSettingsCard(biz) {
     '<small class="muted" id="ebMsg"></small></div></div>';
 }
 function ebSave(test, off) {
-  var v = { key: $('ebKey').value, secret: $('ebSecret').value }; if (off) { if (!confirm('Буухиа API-г унтраах уу?')) return; v = { off: true }; }
+  var v = { key: $('ebKey').value.trim(), secret: $('ebSecret').value.trim() };
+  if (!off && ((v.key && v.key.length < 20) || (v.secret && v.secret.length < 16))) { $('ebMsg').textContent = 'Түлхүүр хэт богино байна (key ' + v.key.length + ', secret ' + v.secret.length + ' тэмдэгт) — буухиагаас ирсэн утгыг бүтнээр нь хуулж тавина уу'; return; }
+  if (off) { if (!confirm('Буухиа API-г унтраах уу?')) return; v = { off: true }; }
   if (!API_URL) { toast('Google Sheet-тэй холбогдсон үед ажиллана'); return; }
   $('ebMsg').textContent = 'Хадгалж байна…';
   post({ type: 'admin_setting', key: 'ebuuhia', value: v, test: !!test }, function (err, d) {
