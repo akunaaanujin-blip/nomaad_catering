@@ -383,13 +383,37 @@ function orderPayEntries(o, biz, acc, d, received, diff, diffAcc, how) {
   }
   return { entries: E.filter(function (e) { return e.amount > 0; }), saleDone: sd };
 }
-var payOrd = null;
+var payOrd = null, poPick = null;
+// Сонгосон дансанд тулгагдаагүй үлдсэн орлогууд — захиалгын дүн, утсаар таарсныг эхэнд
+function poLines() {
+  var el = $('poLines'); if (!el || !payOrd) return;
+  var acc = $('poAcc').value, ph = String(payOrd.phone || '').replace(/\D/g, '');
+  var L = (bankLines || []).filter(function (l) { return l.biz === state.biz && l.status === 'Шинэ' && +l.credit > 0 && ((bankAcctInfo(l.acct) || {}).acc || '1101') === acc; })
+    .map(function (l) { return { l: l, d: Math.abs(+l.credit - payOrd.amount), hit: ph && l.desc.replace(/\s/g, '').indexOf(ph) >= 0 }; })
+    .sort(function (a, b) { return (b.hit - a.hit) || (a.d - b.d); }).slice(0, 40);
+  if (!L.length) { poPick = null; el.innerHTML = '<p class="muted" style="font-size:12.5px;margin:6px 0">Энэ дансанд тулгагдаагүй орлого алга — доор гараар бүртгэнэ.</p>'; return; }
+  if (poPick && !L.some(function (x) { return x.l.id === poPick; })) poPick = null;
+  el.innerHTML = '<label style="margin-top:8px">Тулгагдаагүй орлогууд (' + L.length + ') — таарахыг сонгоно уу</label><div class="dc-list" style="max-height:200px;overflow:auto">' +
+    '<label class="dc-l"><input type="radio" name="poLine"' + (poPick ? '' : ' checked') + ' onchange="poSelLine(null)"><span class="dc-d">Хуулгаас сонгохгүй (гараар бүртгэнэ)</span></label>' +
+    L.map(function (x) {
+      return '<label class="dc-l' + (x.d < 1 ? ' hit' : '') + '"><input type="radio" name="poLine"' + (poPick === x.l.id ? ' checked' : '') + ' onchange="poSelLine(\'' + x.l.id + '\')"><span>' + esc(x.l.date.slice(0, 16)) + '</span><span class="dc-d">' + esc(x.l.desc) + '</span><b>' + fmt(+x.l.credit) + '</b>' + (x.d < 1 ? '<em>дүн таарсан</em>' : x.hit ? '<em>утас таарсан</em>' : '') + '</label>';
+    }).join('') + '</div>';
+}
+function poSelLine(id) {
+  poPick = id; var l = id ? (bankLines || []).filter(function (x) { return x.id === id; })[0] : null;
+  if (l) { $('poAmount').value = +l.credit; $('poDate').value = l.date.slice(0, 10); }
+  poCalc();
+}
 function openPayOrder(id) {
   payOrd = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!payOrd) return;
   $('poInfo').textContent = payOrd.phone + (payOrd.customer ? ' · ' + payOrd.customer : '') + ' · ' + fmt(payOrd.amount) + ' · ' + payOrd.status;
   $('poDate').value = todayStr();
   $('poAcc').innerHTML = ACCOUNTS.filter(function (a) { return a[3] === 'cash'; }).map(function (a) { return '<option value="' + a[0] + '"' + (a[0] === '1101' ? ' selected' : '') + '>' + a[0] + ' ' + esc(a[1]) + '</option>'; }).join('');
   $('poAmount').value = payOrd.amount; $('poDiff').value = '7124'; poCalc();
+  poPick = null; var bc = typeof ordBankCands === 'function' ? ordBankCands(state.biz)[payOrd.id] : null;
+  if (bc) { var bi = bankAcctInfo(bc.l.acct); if (bi && [].some.call($('poAcc').options, function (o) { return o.value === bi.acc; })) $('poAcc').value = bi.acc; }
+  if (bc) poSelLine(bc.l.id);
+  poLines();
   openSheet('payOrderSheet');
 }
 function poCalc() { var diff = payOrd ? payOrd.amount - (Number($('poAmount').value) || 0) : 0; $('poDiffWrap').style.display = diff > 0 ? 'block' : 'none'; $('poDiffAmt').textContent = fmt(diff); }
@@ -405,7 +429,10 @@ function savePayOrder() {
     o.paid = 'Орсон'; o.confirmed = fields.confirmed; if (pe.saleDone) o.saleDone = pe.saleDone;
     save('nb_demo_journal', journal); save('nb_orders_cozy', window.adminOrders); closeSheet('payOrderSheet'); render(); toast('Баталгаажлаа'); return;
   }
-  var go2 = function () { post({ type: 'admin_order', id: o.id, by: ownerName, fields: fields }, function (err) { if (err) { toast('Алдаа: ' + err); return; } closeSheet('payOrderSheet'); toast('Төлбөр бүртгэгдлээ'); refresh(); }); };
+  var bl = poPick ? (bankLines || []).filter(function (x) { return x.id === poPick; })[0] : null;
+  var go2 = function () { post({ type: 'admin_order', id: o.id, by: ownerName, fields: fields }, function (err) { if (err) { toast('Алдаа: ' + err); return; }
+    if (bl) { bl.status = 'Тулгасан'; bl.link = 'Захиалга ' + o.phone + ' #' + o.id; post({ type: 'admin_bank', by: ownerName, updates: [{ id: bl.id, status: 'Тулгасан', link: bl.link }] }, function () {}); }
+    closeSheet('payOrderSheet'); toast(bl ? 'Төлбөр бүртгэгдэж, банкны гүйлгээ тулгагдлаа' : 'Төлбөр бүртгэгдлээ'); refresh(); }); };
   if (pe.entries.length) post({ type: 'admin_journal', by: ownerName, entries: pe.entries }, function (err) { if (err) { if (err !== 'locked') toast('Алдаа: ' + err); return; } go2(); });
   else go2();
 }
