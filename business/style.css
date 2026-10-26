@@ -1557,3 +1557,9 @@ body.is-busy .btn,body.is-busy .b-btn.primary,body.is-busy button.mini{pointer-e
 .eb-kv div{display:flex;flex-direction:column;min-width:0}
 .eb-kv small{color:#6B7280;font-size:11.5px}.eb-kv span{font-size:13px;overflow-wrap:anywhere}
 .mono2{font-variant-numeric:tabular-nums;letter-spacing:.2px}
+.eb-modal{position:fixed;inset:0;background:rgba(17,24,39,.35);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
+.eb-box{background:#fff;border-radius:12px;padding:18px;width:100%;max-width:440px;box-shadow:0 10px 30px rgba(0,0,0,.15)}
+.eb-box h3{margin:0 0 6px;font-size:16px}
+.eb-rx-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.eb-rx-row select{flex:1;min-width:0;padding:8px;border:1px solid #D1D5DB;border-radius:8px;font:inherit}
+.eb-rx-row input{width:70px;padding:8px;border:1px solid #D1D5DB;border-radius:8px;font:inherit}

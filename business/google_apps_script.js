@@ -123,7 +123,7 @@ function doPost(e) {
     if (data.type === 'order_save') return json(orderSave(data));
     if (data.type === 'order_delete') return json(orderDelete(data));
     if (data.type === 'orders_ship') return json(ordersShip(data));
-    if (data.type === 'eb_send' || data.type === 'eb_sync') return json(ebuuhia(data));
+    if (data.type === 'eb_send' || data.type === 'eb_sync' || data.type === 'eb_recv') return json(ebuuhia(data));
     if (data.type === 'staff_today') return json(staffToday(data));
     if (data.type === 'requests') return json(staffRequests(data));
     if (data.type === 'stock_count') return json(stockCount(data));
@@ -150,7 +150,7 @@ function doPost(e) {
 // ── Серверийн кэш (хурд): удирдлагын уншилт хуудас тус бүрийг 5 мин кэшлэнэ, бичилт хийхэд тэр хуудсыг л цэвэрлэнэ ──
 // Sheet-ийг гараар засвал 5 минутын дотор шинэчлэгдэнэ.
 const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf'];
-const CACHE_MAP = { eb_send: ['ord', 'rec', 'stk'], eb_sync: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
+const CACHE_MAP = { eb_recv: ['mov', 'stk'], eb_send: ['ord', 'rec', 'stk'], eb_sync: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
   admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr'], admin_bank: ['bank', 'jr', 'ord'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_po: ['po', 'jr'],
   admin_staff: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
@@ -1265,6 +1265,7 @@ function ebNorm(x) {
 function ebLink(L, biz, write) {
   const rows = orderRows(), byExt = {}, byCode = {}, byPhone = {}, used = {}, sh = write ? orderSheet() : null, done = [];
   rows.forEach(function (o) { byExt[o.id] = o; if (o.ebCode) byCode[String(o.ebCode)] = o; });
+  const rc = {}; stockMovesAll().forEach(function (m) { const x = m.biz === biz && m.note.match(/#EB:([\w-]+) /); if (x) rc[x[1]] = 1; });   // холбогдоогүй буцаалтыг хүлээн авсан
   rows.forEach(function (o) {
     if (o.biz !== biz || o.ebCode || !/^(Буухиад өгсөн|Хүргэгдсэн|Буцаасан)$/.test(o.status)) return;
     const ph = String(o.phone).replace(/\D/g, ''); if (ph) (byPhone[ph] = byPhone[ph] || []).push(o);
@@ -1278,6 +1279,7 @@ function ebLink(L, biz, write) {
       if (o) { used[o.id] = 1; if (write && n.code) sh.getRange(o.row, 23).setValue(n.code); }
     }
     if (o && o.biz !== biz) return;
+    if (!o && rc[n.code]) n.rc = 1;
     if (o) { n.id = o.id; n.our = o.status; n.sd = String(o.saleDone || ''); if (write && !o.ebCode && n.code && !used[o.id]) sh.getRange(o.row, 23).setValue(n.code); if (n.st === 10 && o.status === 'Буухиад өгсөн') done.push(o.id); }
     out.push(n);
   });
@@ -1319,6 +1321,19 @@ function ebuuhia(d) {
         else failed.push({ id: o.id, phone: o.phone, why: ebErr(r) });
       });
       return { status: 'ok', sent: sent, failed: failed, skipped: ship.skipped || [] };
+    }
+    if (d.type === 'eb_recv') {   // манай захиалгатай холбогдоогүй буцаасан/цуцалсан хүргэлтийн барааг гарт авсан → дэлгүүрийн үлдэгдэлд нэмнэ (Тооллого +, Дт1404/Кт5201)
+      const code = String(d.code || '').replace(/[^\w-]/g, '').slice(0, 40);
+      if (!code) return { status: 'error', error: 'fields' };
+      if (stockMovesAll().some(function (m) { return m.biz === who.biz && m.note.indexOf('#EB:' + code + ' ') >= 0; })) return { status: 'error', error: 'already' };
+      const known = {}; productRows().forEach(function (p) { if (p.biz === who.biz) known[p.name.toLowerCase()] = p.name; });
+      const items = (Array.isArray(d.items) ? d.items : []).slice(0, 20).map(function (i) { return { name: known[String(i.name || '').trim().toLowerCase()], qty: Number(i.qty) }; });
+      if (!items.length || items.some(function (i) { return !i.name || !(i.qty > 0) || i.qty > 999; })) return { status: 'error', error: 'fields' };
+      const at = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), ph = String(d.phone || '').replace(/\D/g, '').slice(0, 12);
+      const rows = items.map(function (i, k) { return ['M' + Date.now() + '-r' + k, at, BIZ_NAMES[who.biz], 'Дэлгүүр', i.name, 'Тооллого', i.qty, '', who.staff.name,
+        ('Буухиа буцаалт #EB:' + code + ' ' + ph).slice(0, 120), who.biz, '', '', '', '', '', '', '', '', '']; });
+      const sh = stockSheet(); sh.getRange(sh.getLastRow() + 1, 1, rows.length, STOCK_HEAD.length).setValues(rows);
+      return { status: 'ok', added: rows.length };
     }
     if (d.type === 'eb_sync') {   // ebuuhia-ийн бүх хүргэлтийг (31 хоног) татна; «Хүргэгдсэн» (10) бол манай захиалгыг автоматаар Хүргэгдсэн болгоно
       const v = ebView(c, who.biz);

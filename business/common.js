@@ -141,7 +141,8 @@ function ebIn(x, t) { return t === 'all' || (t === 'back' ? x.st === 11 || x.st 
 // window.ebRecv байвал (ажилтны хуудас) товч, үгүй бол (удирдлага) зөвхөн төлөв.
 function ebBack(x) {
   if (x.st !== 11 && x.st !== 12) return '';
-  if (!x.id) return '<br><small class="muted">захиалга холбогдоогүй</small>';
+  if (!x.id) return x.rc ? '<br><small style="color:#15803D">Бараа хүлээн авсан</small>'   // захиалгагүй — барааг шууд үлдэгдэлд нэмнэ
+    : window.ebRecvX ? '<br><button class="mini" onclick="event.stopPropagation();ebRecvX(\'' + esc(x.code) + '\')">Хүлээн авсан</button>' : '<br><small style="color:#B45309">Бараа ирээгүй</small>';
   if (x.sd === 'returned') return '<br><small style="color:#15803D">Бараа хүлээн авсан</small>';
   if (!/^yes:/.test(x.sd || '')) return '<br><small class="muted">үлдэгдлээс хасаагүй</small>';
   return window.ebRecv ? '<br><button class="mini" onclick="event.stopPropagation();ebRecv(\'' + esc(x.id) + '\')">Хүлээн авсан</button>' : '<br><small style="color:#B45309">Бараа ирээгүй</small>';

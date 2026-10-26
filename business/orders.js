@@ -540,6 +540,47 @@ window.ebRecv = function (id) {
     toast('Хүлээн авлаа — бараа үлдэгдэлд нэмэгдлээ'); if (typeof loadStock === 'function') loadStock(); renderDlv();
   });
 };
+// Захиалгатай холбогдоогүй буцаалт: буухиагийн барааны нэрээс манай барааг тааруулж санал болгоно → ажилтан шалгаад «Хүлээн авах» → дэлгүүрийн үлдэгдэлд нэмэгдэнэ
+var ebRx = null;
+function ebGuess(item) {
+  var P = products.map(function (p) { return p.name; }), low = function (s) { return String(s).toLowerCase().replace(/\s+/g, ' ').trim(); };
+  return String(item || '').split(/[,;]/).map(function (part) {
+    var m = part.match(/(?:x\s*|×\s*)?(\d+)\s*(?:ш|ширхэг)?\s*$/i), qty = m ? Number(m[1]) || 1 : 1, t = low(m ? part.slice(0, m.index) : part);
+    if (!t) return null;
+    var hit = P.filter(function (n) { return low(n) === t; })[0] || P.filter(function (n) { return low(n).indexOf(t) >= 0 || t.indexOf(low(n)) >= 0; })[0] || '';
+    return { name: hit, qty: qty, src: part.trim() };
+  }).filter(Boolean);
+}
+window.ebRecvX = function (code) {
+  var x = (dlvAll || []).filter(function (y) { return y.code === code; })[0]; if (!x) return;
+  ebRx = { x: x, items: ebGuess(x.item) }; if (!ebRx.items.length) ebRx.items = [{ name: '', qty: 1, src: '' }];
+  ebRxDraw();
+};
+function ebRxDraw() {
+  var el = document.getElementById('ebRx');
+  if (!ebRx) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'ebRx'; el.className = 'eb-modal'; document.body.appendChild(el); }
+  var opts = function (sel) { return '<option value="">— Бараа сонгох —</option>' + products.map(function (p) { return '<option' + (p.name === sel ? ' selected' : '') + '>' + esc(p.name) + '</option>'; }).join(''); };
+  el.innerHTML = '<div class="eb-box"><h3>Буцаалт хүлээн авах · ' + esc(ebRx.x.phone) + '</h3>' +
+    '<p class="muted" style="margin:0 0 10px;font-size:13px">Буухиа: ' + esc(ebRx.x.item || '—') + '. Гарт ирсэн барааг шалгаад хүлээн авна — дэлгүүрийн үлдэгдэлд нэмэгдэнэ.</p>' +
+    ebRx.items.map(function (i, k) {
+      return '<div class="eb-rx-row"><select onchange="ebRx.items[' + k + '].name=this.value">' + opts(i.name) + '</select>' +
+        '<input type="number" min="1" value="' + i.qty + '" onchange="ebRx.items[' + k + '].qty=Number(this.value)||1">' +
+        (ebRx.items.length > 1 ? '<button class="mini" onclick="ebRx.items.splice(' + k + ',1);ebRxDraw()">✕</button>' : '') + '</div>';
+    }).join('') +
+    '<button class="link" onclick="ebRx.items.push({name:\'\',qty:1});ebRxDraw()">＋ Бараа нэмэх</button>' +
+    '<div class="bar-row" style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end"><button class="btn sm ghost2" onclick="ebRx=null;ebRxDraw()">Болих</button><button class="btn sm" id="ebRxOk" onclick="ebRxSave()">Хүлээн авах</button></div></div>';
+}
+function ebRxSave() {
+  var L = ebRx.items.filter(function (i) { return i.name; });
+  if (!L.length || L.length < ebRx.items.length) { toast('Бараагаа сонгоно уу'); return; }
+  var x = ebRx.x; $('ebRxOk').disabled = true;
+  ordPost({ type: 'eb_recv', code: x.code, phone: x.phone, items: L.map(function (i) { return { name: i.name, qty: i.qty }; }) }, function (err) {
+    if (err && err !== 'already') { $('ebRxOk').disabled = false; toast('Хадгалж чадсангүй: ' + err); return; }
+    x.rc = 1; ebRx = null; ebRxDraw(); toast(err ? 'Аль хэдийн хүлээн авсан байна' : 'Хүлээн авлаа — бараа үлдэгдэлд нэмэгдлээ');
+    if (typeof loadStock === 'function') loadStock(); renderDlv();
+  });
+}
 function fresh_all(on) { orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending; }).forEach(function (o) { dlvSel[o.id] = on; }); renderDlv(); }
 function dlvSend(mode) {
   var ids = mode === 'retry' ? orders.filter(function (o) { return o.status === 'Буухиад өгсөн' && !o.ebCode; }).map(function (o) { return o.id; })
