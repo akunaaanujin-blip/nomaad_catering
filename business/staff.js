@@ -281,12 +281,11 @@ function renderStockPage() {
   Object.keys(pend).forEach(function (k) { names[k] = 1; });
   var q = stkQ.toLowerCase().trim();
   var rows = Object.keys(names).filter(function (n) { return !isNonGoods(n) && (!q || n.toLowerCase().indexOf(q) >= 0); }).sort().map(function (n) {
-    var s = (stock && stock[n]) || { shop: 0, wh: 0 }, tot = Math.round(((s.shop || 0) + (s.wh || 0)) * 1000) / 1000, pd = pend[n] || 0;
-    var cls = pd > tot ? ' class="neg"' : '';
-    return '<tr' + cls + '><td>' + esc(n) + '</td><td class="num">' + (s.shop || 0) + '</td><td class="num">' + (s.wh || 0) + '</td><td class="num"><b>' + tot + '</b></td><td class="num">' + (pd || '') + '</td><td class="num"><b>' + Math.round((tot - pd) * 1000) / 1000 + '</b></td></tr>';
+    var s = (stock && stock[n]) || { shop: 0, wh: 0 };
+    return '<tr><td>' + esc(n) + '</td><td class="num"><b>' + (s.shop || 0) + '</b></td><td class="num">' + (s.wh || 0) + '</td></tr>';
   });
   el.innerHTML = stock || Object.keys(pend).length
-    ? '<table class="rep-t"><tr><th>Бараа</th><th class="num">Дэлгүүр</th><th class="num">Агуулах</th><th class="num">Нийт</th><th class="num">Захиалгад</th><th class="num">Боломжит</th></tr>' + rows.join('') + '</table>'
+    ? '<table class="rep-t"><tr><th>Бараа</th><th class="num">Дэлгүүр</th><th class="num">Агуулах</th></tr>' + rows.join('') + '</table>'
     : '<p class="muted">Үлдэгдэл бүртгэгдээгүй байна.</p>';
 }
 // ── Бараа ──
@@ -1084,8 +1083,9 @@ function renderToday() {
   var t = todayTotals();
   // Захиалгаас үүссэн борлуулалт (баримтын дугаар = захиалгын ID) — дэлгүүрийн борлуулалтаас тусад нь
   var isOrd = function (r) { return r.type === 'sale' && typeof orders !== 'undefined' && orders.some(function (o) { return o.id === r.bill; }); };
-  var ordSum = todayRecords().filter(isOrd).reduce(function (a, r) { return a + (Number(r.amount) || 0); }, 0);
-  if ($('sumShop')) { $('sumShop').textContent = fmt(t.sales - ordSum); $('sumOrd').textContent = fmt(ordSum); $('sumNet').textContent = fmt(t.sales - ordSum - t.exp); }
+  var oR = todayRecords().filter(isOrd), ordSum = oR.reduce(function (a, r) { return a + (Number(r.amount) || 0); }, 0);
+  var ordOut = oR.reduce(function (a, r) { return a + Math.max(0, Number(r.amount) || 0); }, 0), ordBack = ordOut - ordSum;   // өнөөдөр гаргасан / буцааж авсан
+  if ($('sumShop')) { $('sumShop').textContent = fmt(t.sales - ordSum); $('sumOrd').innerHTML = fmt(ordOut) + (ordBack ? '<small class="sum-sub">буцаалт −' + fmt(ordBack) + '</small>' : ''); $('sumNet').textContent = fmt(t.sales - ordSum - t.exp); }
   else { $('sumSales').textContent = fmt(t.sales); $('sumNet').textContent = fmt(t.sales - t.exp); }
   $('sumExp').textContent = fmt(t.exp);
   var recs = todayRecords().filter(function (r) { return r.type !== 'attend' && r.type !== 'boost' && !isOrd(r); }).slice().reverse();
