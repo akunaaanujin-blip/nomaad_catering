@@ -1371,6 +1371,13 @@ function ebLink() {
   L.forEach(function (x) { if (O[x.id]) { M[x.code] = O[x.id]; used[x.id] = 1; } });
   orders.forEach(function (o) { if (o.biz === state.biz && !o.ebCode && ebOrdAuto(o) && ordFeeAdm(o) > 0 && o.status === 'Хүргэгдсэн') (byPh[o.phone] = byPh[o.phone] || []).push(o); });
   L.forEach(function (x) { if (!M[x.code]) { var c = (byPh[x.phone] || []).filter(function (q) { return !used[q.id]; })[0]; if (c) { M[x.code] = c; used[c.id] = 1; } } });
+  // утасгүй хуучин захиалга: хаягийн тоонууд (байр, давхар, тоот) 2-оос олон давхцвал холбоно
+  var nums = function (t) { return String(t || '').match(/\d+/g) || []; };
+  (byPh[''] || []).forEach(function (o) {
+    if (used[o.id]) return; var on = nums(o.address);
+    var x = L.filter(function (y) { return !M[y.code] && nums(y.addr).filter(function (n) { return on.indexOf(n) >= 0; }).length >= 2; })[0];
+    if (x) { M[x.code] = o; used[o.id] = 1; }
+  });
   return M;
 }
 function ebRecRows() {   // буухиагийн «Харилцагчийн тайлан»-тай ижил: нийлээгүй хүргэгдсэн бүх хүргэлт (манай захиалгагүй ч), хөлс анхдагч 7,000
