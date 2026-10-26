@@ -1078,6 +1078,7 @@ function adminOrder(d) {
     if (f.confirmed) sh.getRange(o.row, 18).setValue('Орсон');
   }
   if (f.saleDone !== undefined) sh.getRange(o.row, 21).setValue(String(f.saleDone).slice(0, 30));
+  if (f.ebCode === 'бусад' && !o.ebCode) sh.getRange(o.row, 23).setValue('бусад');   // буухиад өгөөгүй (өөрсдөө хүргэсэн) гэж тэмдэглэх — зөвхөн кодгүй захиалгад
   if (f.note) sh.getRange(o.row, 19).setValue(String(o.note || '') + ' ' + String(f.note).slice(0, 100));
   sh.getRange(o.row, 20).setValue(Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + ' ' + String(d.by || 'Удирдлага'));
   return { status: 'ok' };
