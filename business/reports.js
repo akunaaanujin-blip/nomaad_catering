@@ -82,7 +82,7 @@ function applyCustomAccounts(list) {
 function accHidden(code) { return !!(ACC[code] && ACC[code].hide); }
 var BUUHIA = 'Буухиа';
 // Буухиагийн өглөг зөвхөн «Буухиа тооцоо» нийлэх үед үүснэ. Үүнээс өмнөх огноотой захиалгад хөлсийг хүргэх үед өглөгөөр бичдэг байсан (хуучин хаалтууд таарахын тулд хэвээр).
-var EB_PAY_FROM = '2026-10-27';
+var EB_PAY_FROM = '2026-10-25';
 function ebFeeAuto(d) { return !!d && String(d).slice(0, 10) < EB_PAY_FROM; }
 var EB_FEE_DATE = {};   // захиалгын ID → хүргэлтийн хөлсний борлуулалт бичигдсэн (буухиад өгсөн) огноо; buildJournal дүүргэнэ
 function ebOrdAuto(o) { return !!o && ebFeeAuto(EB_FEE_DATE[o.id] || o.date); }
@@ -201,13 +201,13 @@ function buildJournal(biz, R) {
       var ownFee = isFee(item) && ORD[x.bill] && ORD[x.bill].ebCode === 'бусад';   // буухиад өгөөгүй (өөрсдөө / бусад) хүргэлтийн төлбөр — хүргэлтийн үйлчилгээний орлого
       if (a >= 0) {
         add(d, 'Борлуулалт', x.id, cash, ownFee ? '5102' : '5101', a, item + ' × ' + x.qty + ' (' + (oo ? 'захиалга, авлага' : x.pay || 'Бэлэн') + ')', cust, x.bill);
-        // Хуучин (EB_PAY_FROM-оос өмнөх) захиалга: буухиа хүргэсний дараа (статус «Хүргэгдсэн» — буухиагийн тайлан зөвхөн хүргэгдсэнийг тооцдог) Дт 7124 / Кт 3101 Өглөг (Буухиа). Шинэд өглөг зөвхөн тооцоо нийлэхэд үүснэ
-        if (oo && isFee(item) && oo.ebCode !== 'бусад' && oo.status === 'Хүргэгдсэн' && ebFeeAuto(d)) add(d, 'Буухиагийн хөлс', x.id, '7124', '3101', a, 'Хүргэлт · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
+        // Хуучин (EB_PAY_FROM-оос өмнө буухиад өгсөн) захиалга: буухиад өгмөгц Дт 7124 / Кт 3101 Өглөг (Буухиа). Шинэд өглөг зөвхөн тооцоо нийлэхэд үүснэ
+        if (oo && isFee(item) && oo.ebCode !== 'бусад' && ebFeeAuto(d)) add(d, 'Буухиагийн хөлс', x.id, '7124', '3101', a, 'Хүргэлт · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
         if (c) add(d, 'Борлуулалт · өртөг', x.id, '6101', '1404', c, item + ' × ' + x.qty);
       } else {
         add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty), cust);
         // буцаасан/цуцалсан хүргэлтэд буухиа хөлс авдаггүй — хүргэх үед бичсэн өглөгийг буцаана
-        if (oo && isFee(item) && oo.ebCode !== 'бусад' && oo.status === 'Хүргэгдсэн' && ebFeeAuto(EB_FEE_DATE[oo.id] || d)) add(d, 'Буухиагийн хөлс (буцаалт)', x.id, '3101', '7124', -a, 'Хүргэлт буцаасан · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
+        if (oo && isFee(item) && oo.ebCode !== 'бусад' && ebFeeAuto(EB_FEE_DATE[oo.id] || d)) add(d, 'Буухиагийн хөлс (буцаалт)', x.id, '3101', '7124', -a, 'Хүргэлт буцаасан · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
         if (c) add(d, 'Буцаалт · өртөг', x.id, '1404', '6101', c, item);
       }
     } else if (x.type === 'collect') {   // зээлээр (захиалга) зарсны мөнгө орсон → авлага хаагдана
