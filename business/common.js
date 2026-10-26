@@ -154,7 +154,8 @@ var EB_LBL = { code: 'Код', external_order_id: 'Манай захиалгын
 var ebF = { st: 'all', q: '', open: '' };
 function ebHay(x) { return [x.code, x.ext, x.cust, x.phone, x.phone2, x.addr, x.item, x.driver, x.dphone, x.name, x.created, x.at, x.note, x.our].join(' ').toLowerCase(); }
 function ebBoard(list, at) {
-  list = (list || []).slice().sort(function (a, b) { return (b.created || '') < (a.created || '') ? -1 : 1; });
+  list = (list || []).filter(function (x) { return x.id || (x.st !== 11 && x.st !== 12); })   // захиалгатай холбогдоогүй буцаасан/цуцалсныг харуулахгүй
+    .sort(function (a, b) { return (b.created || '') < (a.created || '') ? -1 : 1; });
   var cnt = {}; list.forEach(function (x) { cnt[x.st] = (cnt[x.st] || 0) + 1; if (ebIn(x, 'back')) cnt.back = (cnt.back || 0) + 1; });
   if (ebF.st === '11' || ebF.st === '12') ebF.st = 'back';
   var q = ebF.q.toLowerCase().trim();
