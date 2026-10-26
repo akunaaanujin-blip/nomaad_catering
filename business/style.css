@@ -1314,7 +1314,7 @@ body:not(.bz-admin) .pos-foot .btn{background:linear-gradient(135deg,#15803D,#22
   .rv-note textarea{border:1px solid #ccc;resize:none}
 }
 
-/* ═══════════ v10 · Оньс / Бааз маягийн POS (зөвхөн cozy.html — body.pos10) ═══════════
+/* ═══════════ v10 · Оньс / Бааз маягийн POS (гурван ажилтны хуудас — body.pos10) ═══════════
    Цагаан хавтгай гадаргуу, нэг цэнхэр өнгө, нимгэн хүрээ, 8px радиус, градиентгүй. Агуулга, бүтэц өөрчлөгдөхгүй. */
 body.pos10{--p:#2378F0;--p-d:#1A63CC;--p-50:#EAF2FE;--ink:#1D2939;--mut:#667085;--ln:#E4E7EC;--bg:#F4F6F9;--ok:#12A150;--bad:#E5484D;
   background:var(--bg);color:var(--ink);font-family:'Inter',-apple-system,'Segoe UI',Roboto,sans-serif}

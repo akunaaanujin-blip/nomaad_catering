@@ -10,6 +10,10 @@ var BUSINESSES = {
     icon: 'М',
     color: '#8B1E2D',
     unit: 'кг',
+    orders: true,                          // Facebook захиалга → буухиа хүргэлт (гурван дэлгүүрт ижил)
+    warehouse: true,                       // үлдэгдэл: дэлгүүр + агуулах
+    barcode: true,                         // утасны камераар баркод уншуулах
+    boost: true,                           // ажилтан boost-ийн төлбөрийг бараа бүрээр бичнэ (зөвхөн бүртгэл)
     products: [
       { name: 'Үхрийн мах', unit: 'кг', price: 22000, cls: '2111100' },
       { name: 'Хонины мах', unit: 'кг', price: 18000, cls: '2111500' },
@@ -42,7 +46,10 @@ var BUSINESSES = {
     icon: 'N',
     color: '#1E4D3B',
     unit: 'ш',
-    warehouse: true,
+    orders: true,                          // Facebook захиалга → буухиа хүргэлт (гурван дэлгүүрт ижил)
+    warehouse: true,                       // үлдэгдэл: дэлгүүр + агуулах
+    barcode: true,                         // утасны камераар баркод уншуулах
+    boost: true,                           // ажилтан boost-ийн төлбөрийг бараа бүрээр бичнэ (зөвхөн бүртгэл)
     products: (typeof TRAVEL_PRODUCTS !== 'undefined') ? TRAVEL_PRODUCTS : [],   // products.js
     expenses: ['Бараа татан авалт', 'Тээвэр', 'Цалин', 'Түрээс', 'Засвар', 'Бусад'],
   },

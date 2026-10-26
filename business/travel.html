@@ -15,7 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20261026q">
 </head>
-<body>
+<body class="pos10">
 <div class="demo" id="demo" style="display:none">Туршилтын горим — мэдээлэл зөвхөн энэ төхөөрөмжид хадгалагдаж байна</div>
 
 <!-- Нэвтрэх -->
@@ -50,11 +50,19 @@
     </div>
     <div class="card">
       <h2>Өнөөдрийн дүн</h2>
-      <div class="sum">
-        <div><span class="muted">Борлуулалт</span><b class="g" id="sumSales">₮0</b></div>
+      <div class="sum sum4">
+        <div><span class="muted">Дэлгүүрийн борлуулалт</span><b class="g" id="sumShop">₮0</b></div>
+        <div><span class="muted">Захиалга (өнөөдөр гаргасан)</span><b class="b" id="sumOrd">₮0</b></div>
         <div><span class="muted">Зарлага</span><b class="r" id="sumExp">₮0</b></div>
-        <div><span class="muted">Цэвэр</span><b id="sumNet">₮0</b></div>
+        <div><span class="muted">Цэвэр (дэлгүүр)</span><b id="sumNet">₮0</b></div>
       </div>
+    </div>
+    <div class="card"><h2>Өнөөдрийн борлуулалтын баримт <small class="muted" style="font-weight:400">дэлгүүрээр зарсан</small></h2><ul class="list" id="todayList"></ul></div>
+    <div class="card" data-view="orders">
+      <div class="ord-bar"><button class="btn sm" onclick="openSale('dlv')">＋ Захиалга</button><button class="btn sm ghost2" onclick="openBuuhia()">Буухиа руу шилжүүлэх</button><button class="btn sm ghost2 lbl-conn" onclick="niimOn()?niimDisconnect():niimConnect()">Принтер холбох</button><button class="link" onclick="loadOrders()">Шинэчлэх</button></div>
+      <div class="tabs ord-tabs" id="orderTabs" style="margin-top:8px"></div>
+      <input id="ordSearch" type="search" placeholder="Утас, нэр, хаяг, бараагаар хайх…" oninput="ordQ=this.value;renderOrders()" style="margin-top:8px">
+      <div id="orderList" style="margin-top:8px"></div>
     </div>
     <div data-view="stock" id="stockView" style="display:none">
       <div class="card">
@@ -63,13 +71,87 @@
         <p class="muted" style="margin-top:8px">«Захиалгад» — «Шинэ» захиалгад байгаа тоо; «Буухиад өгсөн» болоход борлуулалт бичигдэж нөөцөөс хасагдана. Захиалгад нөөцөөс их байвал мөр улаанаар харагдана.</p>
       </div>
     </div>
+    <div data-view="boost" id="boostView" style="display:none">
+      <div class="card">
+        <label for="bItem">Бараа (олныг сонгож болно)</label>
+        <input id="bItem" list="boostItems" placeholder="Бараа хайж сонгох…" autocomplete="off" onchange="boostAdd()"><datalist id="boostItems"></datalist>
+        <div class="chips" id="bSel" style="margin-top:6px"></div>
+        <label for="bAmt">Төлсөн дүн</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="bAmt" type="number" inputmode="decimal" min="0" step="0.01" oninput="boostCalc()" style="flex:1">
+          <div class="chips" id="bCur" style="margin:0"></div>
+        </div>
+        <div id="bRateWrap"><label for="bRate">Ханш (1$ = ₮)</label><input id="bRate" type="number" inputmode="decimal" min="0" oninput="boostCalc()"></div>
+        <label>Хэдэн хоног</label>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <div class="chips" id="bDays" style="margin:0"></div>
+          <input id="bDayN" type="number" inputmode="numeric" min="1" placeholder="хоног" oninput="boost.days=Number(this.value)||0;boostChips()" style="width:90px">
+        </div>
+        <label for="bNote">Тайлбар (заавал биш)</label>
+        <input id="bNote" placeholder="Жишээ: FB пост, reel">
+        <p class="muted" id="bCalc" style="margin-top:8px"></p>
+        <button class="btn" style="margin-top:6px" onclick="saveBoost()">Хадгалах</button>
+        <p class="muted" style="margin-top:8px">Олон бараа сонговол дүн бараанд тэнцүү хуваагдана. Кассын мөнгөнөөс хасагдахгүй — зөвхөн бүртгэл.</p>
+      </div>
+      <h3 style="margin:14px 0 6px">Сүүлийн 30 хоног</h3>
+      <ul class="list card" id="boostList"></ul>
+    </div>
     <div class="pending" id="pending"></div>
     <div class="pending" id="ebWarn"></div>
 
-    <div class="card">
-      <h2>Өнөөдрийн бичлэгүүд</h2>
-      <ul class="list" id="todayList"></ul>
+  </div>
+</div>
+
+<!-- Буухиа руу шилжүүлэх -->
+<div class="sheet" id="buuSheet" onclick="if(event.target===this)closeSheet('buuSheet')">
+  <div class="panel">
+    <h2>Буухиа руу шилжүүлэх</h2>
+    <div class="bar-row"><label class="bu-date">Өдөр <input type="date" id="buDate" onchange="buRender()"></label></div>
+    <div class="bar-row"><label class="bu-all"><input type="checkbox" id="buAll" checked onchange="buToggleAll(this.checked)"> Бүгдийг сонгох</label><span class="muted">Сонгосон: <b id="buN">0</b></span></div>
+    <div class="bu-list" id="buList"></div>
+    <button class="btn" onclick="buSend()">Сонгосныг буухиа руу илгээх</button>
+    <p class="muted" style="font-size:13px;margin-top:6px">Буухиад хүргэлт шууд үүснэ. Төлбөр ороогүй захиалгын дүнг буухиа хүлээн авагчаас авч шилжүүлнэ.</p>
+    <button class="btn sm ghost2" style="width:100%;margin-top:8px" onclick="var ids=buChecked();if(!ids.length){toast('Захиалгаа сонгоно уу');return;}closeSheet('buuSheet');openLabels(ids)">Сонгосныг шошгоор хэвлэх</button>
+    <button class="btn ghost" onclick="closeSheet('buuSheet')">Болих</button>
+  </div>
+</div>
+
+<!-- Захиалга -->
+<div class="sheet" id="orderSheet" onclick="if(event.target===this)closeSheet('orderSheet')">
+  <div class="panel">
+    <h2 id="orTitle">＋ Шинэ захиалга</h2>
+    <div class="row2">
+      <div><label for="orPhone">Утас *</label><input id="orPhone" inputmode="tel" placeholder="99112233" oninput="ordPhoneHint()"></div>
+      <div><label for="orPhone2">Нэмэлт утас</label><input id="orPhone2" inputmode="tel"></div>
     </div>
+    <small id="orPhoneHint" class="muted" style="display:block;margin-top:-4px;min-height:16px"></small>
+    <label for="orCustomer">Захиалагч (Facebook нэр)</label><input id="orCustomer">
+    <label>Бараа</label>
+    <div class="chips" id="orChips"></div>
+    <ul class="list cart" id="orCart"></ul>
+    <div class="fee-row"><label for="orFee">Хүргэлтийн төлбөр (₮)</label><input id="orFee" type="number" inputmode="numeric" min="0" value="7000" oninput="renderOrdCart()"></div>
+    <label class="or-print" style="margin:4px 0 0"><input type="checkbox" id="orFeeFree" onchange="ordFeeFree()"> Хүргэлтийн төлбөргүй</label>
+    <p style="text-align:right;margin-top:6px">Нийт (хүргэлттэй): <b id="orTotal">₮0</b></p>
+    <label for="orAddress">Хаяг * <span class="muted" style="font-weight:400">(хороолол, байр, тоот, орц, код)</span></label>
+    <textarea id="orAddress" rows="2" oninput="ordAddrInput()"></textarea>
+    <p class="muted" id="orProvince" style="display:none;font-size:13px">Орон нутаг руу унаанд тавих захиалга — тайлбарт унааны мэдээллээ бичнэ үү.</p>
+    <div class="row2">
+      <div><label for="orDistrict">Дүүрэг</label><select id="orDistrict"><option value="">— Сонгох —</option><option>Баянзүрх</option><option>Баянгол</option><option>Сүхбаатар</option><option>Чингэлтэй</option><option>Хан-Уул</option><option>Сонгинохайрхан</option><option>Налайх</option><option>Багануур</option><option>Багахангай</option></select></div>
+      <div><label for="orKhoroo">Хороо</label><input id="orKhoroo" placeholder="11-р хороо"></div>
+    </div>
+    <div class="row2">
+      <div><label for="orCity">Хот / аймаг</label><input id="orCity" value="Улаанбаатар"></div>
+      <div><label for="orDate">Хүргэх өдөр</label><input id="orDate" type="date"></div>
+    </div>
+    <div class="row2">
+      <div><label for="orPayType">Төлбөрийн хэлбэр</label><select id="orPayType"><option>Шилжүүлэг</option><option>Хүргэлтээр бэлэн</option><option>Дансаар дараа</option></select></div>
+      <div><label for="orPaid">Төлбөр <span id="orPaidHint" class="muted" style="font-weight:400"></span></label><select id="orPaid"><option>Ороогүй</option><option>Орсон</option></select></div>
+    </div>
+    <div id="orStatusWrap"><label for="orStatus">Хүргэлтийн төлөв</label><select id="orStatus"><option>Шинэ</option><option>Буухиад өгсөн</option><option>Хүргэгдсэн</option><option>Буцаасан</option><option>Цуцалсан</option></select></div>
+    <label for="orNote">Тэмдэглэл (хүргэлтийн тайлбар)</label><input id="orNote" placeholder="Жишээ: ажлын цагаар залгаад хүргэх">
+    <label class="or-print"><input type="checkbox" id="orPrint" onchange="lblWarn()"> Хадгалаад шошго хэвлэх <small class="muted lbl-warn"></small></label>
+    <button class="btn" onclick="submitOrder()">Хадгалах</button>
+    <button class="btn ghost" onclick="closeSheet('orderSheet')">Болих</button>
   </div>
 </div>
 
@@ -90,14 +172,6 @@
         </div>
         <div class="pos-cats" id="saleCats" style="display:none"></div>
         <div class="pos-tiles" id="saleChips"></div>
-        <details class="custom-item pos-custom">
-          <summary>Жагсаалтад байхгүй бараа</summary>
-          <div class="row2" style="margin-top:8px">
-            <input id="saleItem" placeholder="Барааны нэр">
-            <input id="salePrice" type="number" inputmode="numeric" min="0" placeholder="Үнэ (₮)">
-          </div>
-          <button class="btn sm ghost2" style="margin-top:8px" onclick="addCustom()">Сагсанд нэмэх</button>
-        </details>
       </section>
       <!-- Сагс, төлбөр -->
       <section class="pos-right">
@@ -230,11 +304,13 @@
 
 <div class="toast" id="toast"></div>
 <script src="products.js?v=20261022o"></script>
-<script src="config.js?v=20261022w"></script>
+<script src="config.js?v=20261026s"></script>
 <script src="common.js?v=20261026l"></script>
 <script>var BIZ_KEY = 'travel';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="staff.js?v=20261026r"></script>
 <script src="ebarimt.js?v=20261023d"></script>
+<script src="orders.js?v=20261026o"></script>
+<script src="label.js?v=20261023e"></script>
 </body>
 </html>
