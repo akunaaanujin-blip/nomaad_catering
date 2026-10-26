@@ -1417,7 +1417,7 @@ function ebRecBody() {   // зөвхөн харах — тооцоог буух�
 // Буухиа тайлангаа нийлсэн (ebSettledByEb) ч манай журналд #EB тэмдэггүй хүргэлтийн тооцоог нийлсэн өдрөөр нь бичнэ.
 // EB_AUTO_FROM-оос өмнөх багцууд хуучин аргаар (хүргэх үеийн өглөг, банкаар) бичигдсэн тул орхино.
 var EB_AUTO_FROM = '2026/10/26';
-function ebAutoBook() {
+function ebAutoBook(fresh) {
   if (ebAdm.booking || !ebAdm.list || !(window.adminOrders || []).length || !(journal || []).length) return;   // журнал ачаалаагүй бол давхар бичихгүй
   var done = ebSettled(), eb = ebSettledByEb(ebAdm.list), O = {}, M = ebLink(), B = {};
   window.adminOrders.forEach(function (o) { O[o.id] = o; });
@@ -1428,6 +1428,8 @@ function ebAutoBook() {
     (B[t.slice(0, 10)] = B[t.slice(0, 10)] || []).push({ x: x, o: mo, fb: ebOrdAuto(mo) ? ordFeeAdm(mo) : 0, fee: ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000 });
   });
   var days = Object.keys(B); if (!days.length) return;
+  // өөр таб/төхөөрөмж аль хэдийн бичсэн байж магадгүй — журналыг серверээс шинээр татаад дахин шалгана
+  if (!fresh) { ebAdm.booking = true; fetchAll(function (ok) { ebAdm.booking = false; if (ok) ebAutoBook(true); }); return; }
   var biz = state.biz, E = [], ordUpd = [], tot = 0, n = 0;
   days.forEach(function (day) {
     var d = day.replace(/\//g, '-'), net = 0;
