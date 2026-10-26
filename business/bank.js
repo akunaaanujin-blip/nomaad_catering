@@ -58,13 +58,26 @@ function importBank(input) {
       lines.push({ id: acct + '|' + dt + '|' + cr + '|' + db + '|' + desc.slice(0, 40), acct: acct, date: dt, credit: cr, debit: db, bal: num(r[cBal]), desc: desc, party: String(r[cParty] || '').trim(), biz: biz });
     });
     if (!lines.length) { toast('Гүйлгээ олдсонгүй'); return; }
-    var fresh = lines.filter(function (l) { return !bankLines.some(function (b) { return b.id === l.id; }); });
+    // Давхардлаас сэргийлнэ: тухайн дансны хамгийн сүүлд оруулсан гүйлгээнээс хойшхыг л авна (илүү урт хуулга явуулсан ч)
+    var mine = bankLines.filter(function (b) { return String(b.acct).slice(-4) === String(acct).slice(-4); });
+    var lastL = mine.slice().sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }).pop(), last = lastL ? lastL.date : '';
+    var have = {}; mine.forEach(function (b) { have[b.id] = 1; });
+    var fresh = lines.filter(function (l) { return !have[l.id] && (!last || l.date >= last); });
+    var older = lines.filter(function (l) { return !have[l.id] && last && l.date < last; }).length;
+    if (!fresh.length) { toast('Шинэ гүйлгээ алга — энэ дансны хуулга ' + last.slice(0, 16) + ' хүртэл аль хэдийн орсон'); return; }
+    fresh.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+    // Үлдэгдлийн гинж: шинэ эхний гүйлгээний өмнөх үлдэгдэл = сүүлд оруулсан үлдэгдэл байх ёстой (дутуу гүйлгээ илрүүлнэ)
+    var f0 = fresh[0], before = Math.round((Number(f0.bal) - Number(f0.credit) + Number(f0.debit)) * 100) / 100;
+    var gap = lastL && lastL.date !== f0.date && Math.abs(before - Number(lastL.bal)) > 0.5;
+    if (!confirm('****' + String(acct).slice(-4) + ' дансны хуулга\n\n' + fresh.length + ' шинэ гүйлгээ оруулна (' + f0.date.slice(0, 16) + ' — ' + fresh[fresh.length - 1].date.slice(0, 16) + ').' +
+      (last ? '\nСүүлд оруулсан: ' + last.slice(0, 16) + '.' : '') + (older ? '\n' + older + ' гүйлгээ өмнө оруулсан хугацаанд тул алгасна.' : '') +
+      (gap ? '\n\nАНХААР: үлдэгдэл таарахгүй байна (сүүлийн ' + fmt(lastL.bal) + ', шинэ хуулгын эхэнд ' + fmt(before) + ') — хооронд нь гүйлгээ дутуу байж магадгүй.' : '') + '\n\nОруулах уу?')) return;
     var del = {}; (window.bankDeleted || []).forEach(function (l) { del[l.id] = 1; });   // өмнө устгасан мөрийг дахин оруулбал сэргээнэ
     var back = fresh.filter(function (l) { return del[l.id]; }).map(function (l) { return { id: l.id, status: 'Шинэ', link: '' }; });
     if (!API_URL) { fresh.forEach(function (l) { l.status = 'Шинэ'; bankLines.push(l); }); save('nb_demo_bank', bankLines); state.biz = biz; render(); toast(fresh.length + ' шинэ гүйлгээ'); return; }
     post({ type: 'admin_bank', by: ownerName, lines: fresh.filter(function (l) { return !del[l.id]; }), updates: back }, function (err, d) {
       if (err) { toast('Алдаа: ' + err); return; }
-      var n = d.added + back.length; toast(n + ' гүйлгээ орлоо (' + (lines.length - n) + ' өмнө нь орсон)'); refresh();
+      var n = d.added + back.length; toast(n + ' шинэ гүйлгээ орлоо' + (older ? ' · ' + older + ' хуучныг алгаслаа' : '')); refresh();
     });
   };
   rd.readAsArrayBuffer(f);
