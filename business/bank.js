@@ -112,8 +112,26 @@ function bankMatch(l) {
   if (amt.length === 1) return { kind: 'order', o: amt[0], sure: false };
   return null;
 }
+// Дэлгүүр дээр «Шилжүүлэг»-ээр хийсэн борлуулалт (захиалгагүй): орлого нь борлуулах үед банкны дансанд аль хэдийн бичигдсэн тул хуулгийн мөрийг зөвхөн тулгасан гэж тэмдэглэнэ (шинэ бичилтгүй)
+function shopBills(biz) {
+  var ords = {}, done = {}, g = {};
+  (window.adminOrders || []).forEach(function (o) { ords[o.id] = 1; });
+  (bankLines || []).forEach(function (l) { var m = String(l.link || '').match(/Дэлгүүрийн борлуулалт.*#(\S+)/); if (m) done[m[1]] = 1; });
+  (window.records || []).forEach(function (x) {
+    if (x.biz !== biz || x.type !== 'sale' || x.pay !== 'Шилжүүлэг') return;
+    var k = x.bill || x.id; if (ords[k]) return;
+    var b = g[k] || (g[k] = { key: k, date: x.date, amt: 0 }); b.amt += Number(x.amount) || 0; if (x.date < b.date) b.date = x.date;
+  });
+  return Object.keys(g).map(function (k) { return g[k]; }).filter(function (b) { return b.amt > 0.5 && !done[b.key]; });
+}
+function shopMatch(l) {
+  var dd = function (a, b) { return Math.abs((new Date(String(a).slice(0, 10)) - new Date(String(b).slice(0, 10))) / 864e5); };
+  var c = shopBills(l.biz).filter(function (b) { return Math.abs(b.amt - l.credit) < 1; }).sort(function (a, b) { return dd(a.date, l.date) - dd(b.date, l.date); });
+  if (!c.length) return null;
+  return { kind: 'shop', v: 'S:' + c[0].key, b: c[0], sure: dd(c[0].date, l.date) <= 5 && (c.length === 1 || dd(c[1].date, l.date) > 5) };
+}
 function bankSuggest(l) {
-  if (l.credit) { var m = bankMatch(l); if (m) return m; var dc = debtByName(l, debtCache().rec); if (dc) return dc; var lc = loanSuggest(l); if (lc) return lc; return { kind: 'acc', acc: '' }; }
+  if (l.credit) { var m = bankMatch(l); if (m) return m; var sh = shopMatch(l); if (sh) return sh; var dc = debtByName(l, debtCache().rec); if (dc) return dc; var lc = loanSuggest(l); if (lc) return lc; return { kind: 'acc', acc: '' }; }
   var dd = debtByName(l, debtCache().pay); if (dd) return dd;
   var ln = loanSuggest(l); if (ln) return ln;
   var r = BANK_RULES.filter(function (x) { return x[0].test(l.desc); })[0];
@@ -142,7 +160,7 @@ function bankView() {
   var last = all.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0];
   var info = last ? bankAcctInfo(last.acct) : null, acc = info ? info.acc : '1101';
   var ledger = balances(J(), todayStr())[acc] || 0;
-  var sure = todo.filter(function (l) { var s = bankSuggest(l); return (s.kind === 'order' && s.sure) || s.kind === 'paid'; }).length;
+  var sure = todo.filter(function (l) { var s = bankSuggest(l); return (s.kind === 'order' && s.sure) || (s.kind === 'shop' && s.sure) || s.kind === 'paid'; }).length;
   var pay = (window.payInfoAll || {})[biz] || '';
   var head = '<div class="kpis">' + kpi('Тулгах гүйлгээ', todo.length) +
     (last ? kpi('Хуулгын үлдэгдэл (' + last.date.slice(0, 10) + ')', fmt(last.bal)) + kpi('Санхүүгийн ' + acc + ' үлдэгдэл', fmt(ledger), Math.abs(last.bal - ledger) < 1 ? '<span style="color:var(--green)">Таарч байна</span>' : '<span style="color:var(--red)">Зөрүү ' + fmt(last.bal - ledger) + '</span>') : '') + '</div>';
@@ -160,6 +178,7 @@ function bankView() {
         if (s.kind === 'paid') opts.push(['P:' + s.o.id, 'Аль хэдийн баталгаажсан: ' + s.o.phone + ' (давхар бичихгүй)', 'Захиалгын төлбөр']);
         (window.adminOrders || []).filter(function (o) { return o.biz === biz && !ordDead(o) && ordOpen(o); }).forEach(function (o) {
           opts.push(['O:' + o.id, 'Захиалга ' + o.phone + ' · ' + (o.confirmed ? 'үлдэгдэл ' + fmt(ordDue(o)) + ' / ' : '') + fmt(o.amount) + ' · ' + o.status + (o.paid === 'Орсон' ? ' · ажилтан: орсон' : ''), 'Захиалгын төлбөр']); });
+        shopBills(biz).forEach(function (b) { opts.push(['S:' + b.key, 'Дэлгүүр · ' + b.date + ' · ' + fmt(b.amt) + ' · шилжүүлэг (орлого бүртгэлтэй)', 'Дэлгүүрийн борлуулалт']); });
         debtByWho(debtCache().rec).forEach(function (o) { opts.push(o.concat(['Авлага хаах'])); });
         loanOpts(biz, true).forEach(function (o) { opts.push(o); });
         icOpts(biz, true).forEach(function (o) { opts.push(o.concat(['Компани хооронд'])); });
@@ -176,7 +195,7 @@ function bankView() {
             opts.push(['MG:' + a[0], a[0] + ' ' + a[1].replace(/ \(удирдлага\)$/, ''), 'Удирдлагын зарлага → удирдлагын санхүүд']); });
         bankOutOpts().forEach(function (o) { opts.push(o); });
       }
-      var def = cur || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : '');
+      var def = cur || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id : s.kind === 'shop' ? s.v : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : '');
       bankPick[l.id] = def;
       var iv = loanIntSuggest(def, l);
       var groups = [], byG = {};
@@ -186,9 +205,10 @@ function bankView() {
       }).join('') + '</select>' +
         '<small class="muted bk-int" id="bi_' + esc(l.id) + '" style="display:' + (iv === null ? 'none' : 'block') + '">' + esc(iv || '') + '</small>' +
         (s.kind === 'order' ? ' <small class="muted">санал: ' + (s.sure ? 'утас, дүн таарсан' : 'шалгаж сонгоно уу') + (s.fee > 0 ? ' · буухиагийн хөлс ' + fmt(s.fee) : '') + '</small>' : '') +
-        (s.kind === 'debt' ? ' <small class="muted">санал: нэр таарсан — шалгаж сонгоно уу</small>' : '');
+        (s.kind === 'debt' ? ' <small class="muted">санал: нэр таарсан — шалгаж сонгоно уу</small>' : '') +
+        (s.kind === 'shop' ? ' <small class="muted">санал: дэлгүүрийн борлуулалт (' + (s.sure ? 'дүн, огноо таарсан' : 'дүн таарсан — огноо шалгана уу') + ')</small>' : '');
     }
-    var match = s && ((s.kind === 'order' && s.sure) || s.kind === 'paid');   // утас, дүн таарсан — ногооноор
+    var match = s && ((s.kind === 'order' && s.sure) || (s.kind === 'shop' && s.sure) || s.kind === 'paid');   // утас, дүн таарсан — ногооноор
     var fee = !l.credit && /хураамж|хураа$|шимтгэл/i.test(String(l.desc).trim());   // банкны хураамж — ягаан
     var boost = !l.credit && /boost|буст|реклам|facebook|фэйсбүүк|meta/i.test(String(l.desc));   // Boost (зар сурталчилгаа) — цэнхэр
     return '<tr' + (match ? ' class="bk-match" title="Утас, дүн таарсан"' : fee ? ' class="bk-fee" title="Банкны хураамж"' : boost ? ' class="bk-boost" title="Boost (зар сурталчилгаа)"' : '') + '><td class="bk-ck">' + (s ? '<input type="checkbox" data-id="' + esc(l.id) + '"' + (bankSel[l.id] ? ' checked' : '') + ' onchange="bankSelSet(this)">' : '') + '</td><td>' + esc(l.date) + '</td><td>' + esc(l.desc) + '</td><td class="n" style="color:var(--green)">' + (l.credit ? '+' + fmt(l.credit).slice(1) : '') + '</td>' +
@@ -257,7 +277,7 @@ function savePayInfo() {
   post({ type: 'admin_setting', biz: state.biz, payInfo: v }, function (err) { toast(err ? 'Алдаа: ' + err : 'Хадгалагдлаа'); });
 }
 function bankApplyAll() {
-  var ids = bankLines.filter(function (l) { if (l.biz !== state.biz || l.status !== 'Шинэ') return false; var s = bankSuggest(l); return (s.kind === 'order' && s.sure) || s.kind === 'paid'; }).map(function (l) { return l.id; });
+  var ids = bankLines.filter(function (l) { if (l.biz !== state.biz || l.status !== 'Шинэ') return false; var s = bankSuggest(l); return (s.kind === 'order' && s.sure) || (s.kind === 'shop' && s.sure) || s.kind === 'paid'; }).map(function (l) { return l.id; });
   if (!ids.length) { toast('Таарсан гүйлгээ алга'); return; }
   if (!confirm(ids.length + ' таарсан гүйлгээг тулгах уу?')) return;
   bankApply(ids, true);
@@ -270,6 +290,7 @@ function bankApply(ids, quiet) {
     if (l0 && p0 && p0 !== 'skip') {
       var what = p0.indexOf('O:') === 0 ? 'захиалга ' + (((window.adminOrders || []).filter(function (o) { return o.id === p0.slice(2); })[0]) || {}).phone + ' — төлбөрийг баталгаажуулж санхүүд бичнэ' :
                  p0.indexOf('P:') === 0 ? 'өмнө баталгаажсан захиалга (давхар бичихгүй)' :
+                 p0.indexOf('S:') === 0 ? 'дэлгүүрийн борлуулалттай тулгана (орлого аль хэдийн бүртгэлтэй — шинэ бичилт үүсэхгүй)' :
                  p0.indexOf('D:') === 0 ? (bankDebt(p0) ? debtLabel(bankDebt(p0)) + ' — хаана' : 'өр / авлага') :
                  p0.indexOf('MG:') === 0 ? 'удирдлагын зарлага: ' + accName(p0.slice(3)) + ' — удирдлагын санхүүд зардлаар, энэ компанид «Компани хооронд · ' + BUSINESSES.mgmt.name + '» болно' :
                  /^(IC|L|PO):/.test(p0) ? ([].filter.call(document.querySelectorAll('option'), function (o) { return o.value === p0; })[0] || {}).textContent || p0 :
@@ -284,6 +305,7 @@ function bankApply(ids, quiet) {
     if (!pick) { if (!quiet) toast('Тулгах баримтаа сонгоно уу'); return; }
     if (pick === 'skip') { updates.push({ id: id, status: 'Алгассан', link: '' }); return; }
     if (pick === 'LN:new') return;   // нэг нэгээр нь (цонхоор) тулгана
+    if (pick.indexOf('S:') === 0) { updates.push({ id: id, status: 'Тулгасан', link: 'Дэлгүүрийн борлуулалт · ' + d + ' #' + pick.slice(2) }); return; }   // орлого борлуулах үед бичигдсэн — шинэ бичилтгүй
     if (pick.indexOf('P:') === 0) { updates.push({ id: id, status: 'Тулгасан', link: 'Захиалга ' + pick.slice(2) + ' (өмнө бүртгэгдсэн)' }); return; }
     if (pick.indexOf('O:') === 0) {
       var o = (window.adminOrders || []).filter(function (x) { return x.id === pick.slice(2); })[0]; if (!o) return;
@@ -479,7 +501,7 @@ function bankSelAll(on) {
   bankSelCount();
 }
 function bankSelSure() {   // утас, дүн таарсан захиалгын төлбөрүүдийг сонгоно
-  bankLines.forEach(function (l) { if (l.biz !== state.biz || l.status !== 'Шинэ') return; var s = bankSuggest(l); if ((s.kind === 'order' && s.sure) || s.kind === 'paid') bankSel[l.id] = 1; });
+  bankLines.forEach(function (l) { if (l.biz !== state.biz || l.status !== 'Шинэ') return; var s = bankSuggest(l); if ((s.kind === 'order' && s.sure) || (s.kind === 'shop' && s.sure) || s.kind === 'paid') bankSel[l.id] = 1; });
   render();
 }
 function bankApplySel() {
