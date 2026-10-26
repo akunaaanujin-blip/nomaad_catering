@@ -1386,11 +1386,15 @@ function ebLink() {
   });
   return M;
 }
-function ebRecRows() {   // буухиагийн «Харилцагчийн тайлан»-тай ижил: нийлээгүй хүргэгдсэн бүх хүргэлт (манай захиалгагүй ч), хөлс анхдагч 7,000
+function ebRecRows() {   // буухиагийн «Харилцагчийн тайлан»-тай ижил: буухиа нийлээгүй бүх хүргэлт (манай захиалгагүй, цуцалсан ч), хөлс анхдагч 7,000
+  // k: 'open' — нийлэх; 'booked' — манай журналд өмнө бичсэн (дахин бичихгүй); 'cancel' — цуцалсан, хөлсгүй
   var done = ebSettled(), eb = ebSettledByEb(ebAdm.list || []), O = {}, M = ebLink();
   (window.adminOrders || []).forEach(function (o) { O[o.id] = o; });
-  return (ebAdm.list || []).filter(function (x) { var o = O[x.id]; return x.st === 10 && !done[x.code] && !eb[x.code] && !(o && x.got > 0 && o.confirmed) && String(x.created).slice(0, 10) <= ebRecDate().replace(/-/g, '/'); })
-    .map(function (x) { var o = M[x.code] || null, fb = ebOrdAuto(o) ? ordFeeAdm(o) : 0; return { x: x, o: o, fb: fb, fee: ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000, on: ebAdm.off[x.code] ? 0 : 1 }; })
+  return (ebAdm.list || []).filter(function (x) { var o = O[x.id]; return (x.st === 10 || x.st === 11) && !eb[x.code] && !(o && x.got > 0 && o.confirmed) && String(x.created).slice(0, 10) <= ebRecDate().replace(/-/g, '/'); })
+    .map(function (x) {
+      var k = x.st === 11 ? 'cancel' : done[x.code] ? 'booked' : 'open', o = M[x.code] || null, fb = ebOrdAuto(o) ? ordFeeAdm(o) : 0;
+      return { x: x, o: o, fb: fb, k: k, fee: k === 'cancel' ? 0 : ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000, on: k === 'open' && !ebAdm.off[x.code] ? 1 : 0 };
+    })
     .sort(function (a, b) { return a.x.created < b.x.created ? -1 : 1; });
 }
 function ebRecCount() { return ebAdm.list ? ebRecRows().length : ''; }
@@ -1400,15 +1404,19 @@ function ebRecBody() {
   var dateBar = '<div class="bar-row" style="margin:0 0 8px;gap:8px;align-items:center"><label style="display:flex;gap:6px;align-items:center;margin:0">Тооцоо нийлэх огноо <input type="date" value="' + esc(ebRecDate()) + '" onchange="ebAdm.date=this.value;ebRedraw()"></label>' +
     '<small class="muted">тэр өдөр хүртэлх нийлээгүй бүх хүргэлт</small></div>';
   if (!R.length) return dateBar + '<p class="muted">Тооцоо нийлэх хүргэгдсэн хүргэлт алга.</p>';
+  var nb = R.filter(function (r) { return r.k === 'booked'; }), nc = R.filter(function (r) { return r.k === 'cancel'; }).length, nf = R.length - on.length - nb.length - nc;
+  var ext = (nb.length ? ' · манай журналд өмнө бичсэн ' + nb.length + ' (' + fmt(nb.reduce(function (a, r) { return a + r.fee; }, 0)) + ', дахин бичихгүй)' : '') + (nc ? ' · цуцалсан ' + nc + ' (хөлсгүй)' : '') + (nf ? ' · сонгоогүй ' + nf : '');
   var rows = R.map(function (r, i) {
-    return '<tr><td><input type="checkbox"' + (r.on ? ' checked' : '') + ' onchange="ebAdm.off[\'' + r.x.code + '\']=!this.checked;ebRedraw()"></td><td class="n">' + (i + 1) + '</td><td>' + esc(r.x.created) + '</td><td><b>' + esc(r.x.phone) + '</b>' + (r.o ? '' : '<br><small class="muted">захиалгагүй</small>') + '</td><td>' + esc(r.x.driver || '') + '</td><td><b class="mono2">' + esc(r.x.code) + '</b></td>' +
+    var op = r.k === 'open', note = r.k === 'booked' ? 'манай журналд бичсэн' : r.k === 'cancel' ? 'цуцалсан' : r.o ? '' : 'захиалгагүй';
+    return '<tr' + (op ? '' : ' style="color:#6B7280"') + '><td>' + (op ? '<input type="checkbox"' + (r.on ? ' checked' : '') + ' onchange="ebAdm.off[\'' + r.x.code + '\']=!this.checked;ebRedraw()">' : '') + '</td><td class="n">' + (i + 1) + '</td><td>' + esc(r.x.created) + '</td><td><b>' + esc(r.x.phone) + '</b>' + (note ? '<br><small class="muted">' + note + '</small>' : '') + '</td><td>' + esc(r.x.driver || '') + '</td><td><b class="mono2">' + esc(r.x.code) + '</b></td>' +
       '<td class="eb-addr">' + esc(r.x.addr || '') + '</td><td class="n">' + (r.x.price ? fmt(r.x.price) : '<small class="muted">0</small>') + '</td><td class="n">' + (r.x.got ? fmt(r.x.got) : '<small class="muted">0</small>') + '</td>' +
-      '<td class="n"><input type="number" min="0" value="' + r.fee + '" style="width:84px;text-align:right" onchange="ebAdm.fee[\'' + r.x.code + '\']=Number(this.value)||0;ebRedraw()"></td>' +
+      '<td class="n">' + (op ? '<input type="number" min="0" value="' + r.fee + '" style="width:84px;text-align:right" onchange="ebAdm.fee[\'' + r.x.code + '\']=Number(this.value)||0;ebRedraw()">' : fmt(r.fee)) + '</td>' +
       '<td class="n">' + fmt(r0(r.x.got - r.fee)) + '</td><td><small>' + esc(r.x.name || '') + '</small></td></tr>';
   }).join('');
   return dateBar + '<p class="muted" style="font-size:12.5px;margin:0 0 8px">Буухиагийн «Харилцагчийн тайлан» (нийлээгүй хүргэлтүүд)-тай ижил. Тооцоо нийлэхэд буухиатай авлага (эсвэл өглөг) үүснэ — мөнгө орж ирэхэд Санхүү → Авлага (эсвэл Өглөг) хуудаснаас «Буухиа»-г банкны гүйлгээгээр хаана. «Хөлс» — буухиагийн авсан хүргэлтийн хөлс.</p>' +
     '<div class="eb-wrap"><table class="tbl eb-t"><tr><th></th><th>#</th><th>Огноо</th><th>Хэрэглэгч</th><th>Жолооч</th><th>Хүргэлт ID</th><th>Хаяг</th><th class="n">Дүн</th><th class="n">Авсан</th><th class="n">Хүргэлт</th><th class="n">Цэвэр</th><th>Төлөв</th></tr>' + rows +
     '<tr class="tot"><td></td><td colspan="7"><b>' + on.length + ' хүргэлт</b></td><td class="n"><b>' + fmt(got) + '</b></td><td class="n"><b>' + fmt(fee) + '</b></td><td class="n"><b>' + fmt(net) + '</b></td><td></td></tr></table></div>' +
+    (R.length > on.length ? '<p class="muted" style="font-size:12.5px;margin:8px 0 0">Буухиагийн тайланд ' + R.length + ' хүргэлт: нийлэх ' + on.length + ext + '</p>' : '') +
     '<p style="margin:10px 0 6px"><b>' + (net >= 0 ? 'Буухиа бидэнд шилжүүлэх: ' + fmt(net) + ' (авлага)' : 'Бид буухиад төлөх: ' + fmt(-net) + ' (өглөг)') + '</b></p>' +
     '<div class="bar-row" style="margin-top:10px"><button class="b-btn" onclick="ebRecSave()"' + (on.length ? '' : ' disabled') + '>Тооцоо нийлэх</button><button class="b-btn ghost" onclick="ebF.st=\'all\';ebRedraw()">Болих</button></div>';
 }
@@ -1461,7 +1469,8 @@ function ebCheck() {
   var linked = {}; Object.keys(M).forEach(function (c) { linked[M[c].id] = 1; });
   var missing = owe.filter(function (x) { var o = M[x.code]; return !((o && P[o.id] > 0.5) || P['EB:' + x.code] > 0.5); });
   var extra = Object.keys(P).filter(function (k) { return P[k] > 0.5 && (/^O\d/.test(k) ? !linked[k] : /^EB:/.test(k) ? !L.some(function (x) { return 'EB:' + x.code === k; }) : true); });
-  var open = ebRecRows(), done = L.filter(function (x) { return tag[x.code] || eb[x.code]; });
+  var open = ebRecRows(), inOpen = {}; open.forEach(function (r) { inOpen[r.x.code] = 1; });
+  var done = L.filter(function (x) { return eb[x.code] || (tag[x.code] && !inOpen[x.code]); });
   return { L: L, owe: owe, expect: expect, ours: ours, diff: r0(ours - expect), missing: missing, extra: extra, P: P, M: M, open: open, done: done, tag: tag, eb: eb,
     ok: Math.abs(ours - expect) < 1 && !missing.length && !extra.length };
 }
