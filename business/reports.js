@@ -455,14 +455,17 @@ function repSalesBy(R, biz, from, to, by) {
   if (by === 'day') rows.sort(function (a, b) { return a.key < b.key ? 1 : -1; });
   var ce = costEngine(biz, R), cg = {};
   list.forEach(function (x) { var k = kf(x); cg[k] = (cg[k] || 0) + (ce.rec[x.id] || 0); });
+  var nb = {};   // өдрөөр: «Тоо» нь захиалгын (баримтын) тоо — өдөр бүрийн ялгаатай баримт
+  if (by === 'day') list.forEach(function (x) { if (isAdj(x.item) || (Number(x.amount) || 0) < 0) return; var d = nb[x.date] = nb[x.date] || {}; d[x.bill || x.id] = 1; });
   rows = rows.map(function (o) {
-    var r = { key: o.key, qty: r0(o.qty), amount: r0(o.amount), ret: r0(o.ret), net: r0(o.net) };
+    var r = { key: o.key, qty: by === 'day' ? Object.keys(nb[o.key] || {}).length : r0(o.qty), amount: r0(o.amount), ret: r0(o.ret), net: r0(o.net) };
     if (by === 'item') { var cs = cg[o.key] || 0; r.cogs = cs ? r0(cs) : ''; r.margin = cs ? r0(o.net - cs) : ''; }
     return r;
   });
-  var cols = [c('key', { item: 'Бараа', cat: 'Ангилал', staff: 'Худалдагч', day: 'Огноо', pay: 'Төлбөр' }[by]), m('qty', 'Тоо'), m('amount', 'Борлуулалт'), m('ret', 'Буцаалт'), m('net', 'Цэвэр')];
+  var cols = [c('key', { item: 'Бараа', cat: 'Ангилал', staff: 'Худалдагч', day: 'Огноо', pay: 'Төлбөр' }[by]), m('qty', by === 'day' ? 'Захиалгын тоо' : 'Тоо'), m('amount', 'Борлуулалт'), m('ret', 'Буцаалт'), m('net', 'Цэвэр')];
   if (by === 'item') { cols.push(m('cogs', 'Өртөг')); cols.push(m('margin', 'Нийт ашиг')); }
   var tot = { key: 'Нийт', amount: sum(rows, 'amount'), ret: sum(rows, 'ret'), net: sum(rows, 'net') };
+  if (by === 'day') tot.qty = sum(rows, 'qty');
   if (by === 'item') { tot.cogs = sum(rows, 'cogs'); tot.margin = sum(rows, 'margin'); }
   return { title: title, cols: cols, rows: rows, total: tot };
 }
