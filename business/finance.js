@@ -531,8 +531,8 @@ function addDrill(sub, rep, f, t) {
     r._d = { rec: { acc: ['1201', '1503'], partner: r.name, to: t, sign: 1, bal: true, t: r.name + ' — авлага' }, pay: { acc: ['3101', '3802'], partner: r.name, to: t, sign: -1, bal: true, t: r.name + ' — өглөг' } };
   });
   if (sub === 'cashflow') rep.rows.forEach(function (r) {
-    var mm = String(r.name).match(/^(Орлого|Зарлага): (\d{4,6}) /); if (!mm) return;
-    r._d = { v: { acc: cash, other: [mm[2]], from: f, to: t, sign: 1, dir: mm[1] === 'Орлого' ? 1 : -1, grp: 'cat', t: r.name } };
+    if (!r.k) return;
+    r._d = { v: { acc: cash, from: f, to: t, sign: r.dir, dir: 1, grp: 'type', only: r.k, t: r.k } };
   });
   return rep;
 }

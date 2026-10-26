@@ -392,22 +392,21 @@ function repBalance(E, to) {   // үлдэгдэл «to» огноогоор; а
     note: ok ? 'Тэнцэж байна: хөрөнгө = өр төлбөр + эздийн өмч' : 'АНХААР: баланс тэнцэхгүй байна' };
 }
 function repCashflow(E, from, to) {
-  var codes = {}; ACCOUNTS.forEach(function (a) { if (a[3] === 'cash') codes[a[0]] = 1; });
-  var g = {};
-  E.forEach(function (e) {
-    if (e.date < from || e.date > to) return;
-    var inCash = codes[e.dr], outCash = codes[e.cr];
-    if (inCash && outCash) return;   // дотоод шилжүүлэг
-    if (!inCash && !outCash) return;
-    var other = inCash ? e.cr : e.dr, key = (inCash ? 'Орлого: ' : 'Зарлага: ') + other + ' ' + accName(other);
-    g[key] = (g[key] || 0) + (inCash ? e.amount : -e.amount);
-  });
-  var rows = Object.keys(g).sort().map(function (k) { return { name: k, v: r0(g[k]) }; });
-  var open = balances(E, prevDay(from)), close = balances(E, to), sc = function (b) { return Object.keys(codes).reduce(function (s, k) { return s + (b[k] || 0); }, 0); };
-  rows.unshift({ name: 'Эхний үлдэгдэл (касс + харилцах)', v: r0(sc(open)), _b: 1 });
-  rows.push({ name: 'Цэвэр мөнгөн гүйлгээ', v: r0(sc(close) - sc(open)), _b: 1 });
+  // Орсон / гарсан мөнгийг «төрлөөр» (борлуулалт, авлага, бараа татан авалт, цалин, түрээс…) — дансны кодоор биш. Данс хоорондын шилжүүлэг, 0 дүнг оруулахгүй.
+  var A = cashCodes(), L = drillLines({ acc: A, from: from, to: to, sign: 1, grp: 'type' }, E).lines, I = {}, O = {};
+  L.forEach(function (x) { if (x.v > 0) I[x.key] = (I[x.key] || 0) + x.v; else O[x.key] = (O[x.key] || 0) - x.v; });
+  var part = function (o) { return Object.keys(o).filter(function (k) { return Math.abs(o[k]) >= 0.5; }).sort(function (a, b) { return o[b] - o[a]; }); };
+  var ki = part(I), ko = part(O), tin = ki.reduce(function (a, k) { return a + I[k]; }, 0), tout = ko.reduce(function (a, k) { return a + O[k]; }, 0);
+  var open = balances(E, prevDay(from)), close = balances(E, to), sc = function (b) { return A.reduce(function (s, k) { return s + (b[k] || 0); }, 0); };
+  var rows = [{ name: 'Эхний үлдэгдэл (касс + харилцах)', v: r0(sc(open)), _b: 1 }, { name: 'Орсон мөнгө', v: r0(tin), _b: 1 }];
+  ki.forEach(function (k) { rows.push({ name: '   ' + k, v: r0(I[k]), k: k, dir: 1 }); });
+  rows.push({ name: 'Гарсан мөнгө', v: -r0(tout), _b: 1 });
+  ko.forEach(function (k) { rows.push({ name: '   ' + k, v: -r0(O[k]), k: k, dir: -1 }); });
+  rows.push({ name: 'Цэвэр мөнгөн гүйлгээ (орсон − гарсан)', v: r0(tin - tout), _b: 1 });
   rows.push({ name: 'Эцсийн үлдэгдэл (касс + харилцах)', v: r0(sc(close)), _b: 1 });
-  return { title: 'Мөнгөн гүйлгээний тайлан', cols: [c('name', 'Үзүүлэлт'), m('v', 'Дүн')], rows: rows };
+  var ok = Math.abs(sc(open) + tin - tout - sc(close)) < 1;
+  return { title: 'Мөнгөн гүйлгээний тайлан', cols: [c('name', 'Үзүүлэлт'), m('v', 'Дүн')], rows: rows, check: ok,
+    note: ok ? 'Эхний үлдэгдэл + орсон − гарсан = эцсийн үлдэгдэл (тэнцэж байна). Мөр дээр дарвал гүйлгээнүүд гарна.' : 'АНХААР: эхний үлдэгдэл + орсон − гарсан нь эцсийн үлдэгдэлтэй тэнцэхгүй байна.' };
 }
 function repPartners(E, to) {
   var p = {};

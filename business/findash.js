@@ -235,6 +235,7 @@ function cashAccView() {
 function ledgerPicker() {
   var b = balances(J(), todayStr()), used = {};
   J().forEach(function (e) { used[e.dr] = 1; used[e.cr] = 1; });
+  var zeros = 0;   // гүйлгээгүй, эсвэл үлдэгдэл 0 дансыг нууна (сонгосон нь үлдэнэ)
   var cash = cashCodes().reduce(function (a, k) { return a + (b[k] || 0); }, 0);
   var item = function (code, name, v, on) {
     return '<button class="lp-i' + (on ? ' on' : '') + '" data-q="' + esc((code + ' ' + name).toLowerCase()) + '" onclick="state.acc=\'' + code + '\';render()"><span><b>' + esc(code === 'cashall' ? '' : code) + '</b> ' + esc(name) +
@@ -243,13 +244,14 @@ function ledgerPicker() {
   var list = item('cashall', 'Бүх мөнгөний данс (касс + банк) — нэгдсэн', cash, state.acc === 'cashall') + ACCOUNTS.filter(function (a) { return a[0] !== '0000'; }).map(function (a) {
     var v = (b[a[0]] || 0) * (debitNormal(a[0]) ? 1 : -1);
     return { a: a, v: v, u: used[a[0]] };
-  }).sort(function (x, y) { return (y.u ? 1 : 0) - (x.u ? 1 : 0) || (x.a[0] < y.a[0] ? -1 : 1); }).map(function (x) {
+  }).filter(function (x) { var keep = x.u && (Math.abs(x.v) >= 0.5 || state.accZero) || state.acc === x.a[0]; if (!keep) zeros++; return keep; })
+    .sort(function (x, y) { return (x.a[0] < y.a[0] ? -1 : 1); }).map(function (x) {
     return item(x.a[0], accName(x.a[0]), x.u ? x.v : null, state.acc === x.a[0]) ;
   }).join('');
   var cur = state.acc === 'cashall' ? 'Бүх мөнгөний данс (нэгдсэн)' : state.acc + ' ' + accName(state.acc);
   return '<div class="card lp"><div class="lp-h"><span class="muted">Данс:</span> <b>' + esc(cur) + '</b>' +
     '<input id="lpQ" type="search" placeholder="Данс хайх — код эсвэл нэр (жишээ: 1201, авлага, хаан)" oninput="lpFilter(this.value)"></div>' +
-    '<div class="lp-l" id="lpL">' + list + '</div><p class="muted" style="font-size:12px;margin:6px 0 0">Гүйлгээтэй данснууд эхэнд. Дансан дээр дарвал доор тэр дансны дэлгэрэнгүй хуулга гарна.</p></div>';
+    '<div class="lp-l" id="lpL">' + list + '</div><p class="muted" style="font-size:12px;margin:6px 0 0">Зөвхөн гүйлгээтэй, үлдэгдэлтэй данс. Данс дээр дарвал доор тэр дансны хуулга гарна. ' + (zeros ? zeros + ' данс (гүйлгээгүй / 0 үлдэгдэл) нуугдсан. ' : '') + '<label style="margin-left:6px"><input type="checkbox"' + (state.accZero ? ' checked' : '') + ' onchange="state.accZero=this.checked;render()"> 0 үлдэгдэлтэй, гүйлгээтэйг харуулах</label></p></div>';
 }
 function lpFilter(q) {
   q = String(q || '').toLowerCase().trim();
