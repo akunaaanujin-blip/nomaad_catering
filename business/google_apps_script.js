@@ -123,7 +123,7 @@ function doPost(e) {
     if (data.type === 'order_save') return json(orderSave(data));
     if (data.type === 'order_delete') return json(orderDelete(data));
     if (data.type === 'orders_ship') return json(ordersShip(data));
-    if (data.type === 'eb_send' || data.type === 'eb_sync') return json(ebuuhia(data));
+    if (data.type === 'eb_send' || data.type === 'eb_sync' || data.type === 'eb_del') return json(ebuuhia(data));
     if (data.type === 'staff_today') return json(staffToday(data));
     if (data.type === 'requests') return json(staffRequests(data));
     if (data.type === 'stock_count') return json(stockCount(data));
@@ -150,11 +150,11 @@ function doPost(e) {
 // ── Серверийн кэш (хурд): удирдлагын уншилт хуудас тус бүрийг 5 мин кэшлэнэ, бичилт хийхэд тэр хуудсыг л цэвэрлэнэ ──
 // Sheet-ийг гараар засвал 5 минутын дотор шинэчлэгдэнэ.
 const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf'];
-const CACHE_MAP = { eb_send: ['ord', 'rec', 'stk'], eb_sync: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
+const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_send: ['ord', 'rec', 'stk'], eb_sync: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
   admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr'], admin_bank: ['bank', 'jr', 'ord'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_po: ['po', 'jr'],
   admin_staff: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
-const CACHE_READ = { requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1, admin_eb: 1 };
+const CACHE_READ = { requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
 function cacheKeysFor(d) {
   if (!d.type) return ['rec', 'stk'];   // ажилтны бичлэг (борлуулалт, зарлага, касс)
   if (CACHE_READ[d.type]) return null;
@@ -1285,13 +1285,15 @@ function ebLink(L, biz, write) {
 }
 function ebView(c, biz) { return ebLink(ebList(c).map(ebNorm), biz, true); }
 // Удирдлага: зөвхөн харах (төлөв, код бичихгүй)
+// Удирдлага: ажилтантай ижил үйлдэл (илгээх, төлөв татах, устгах) — op: send | del | sync
 function ebAdmin(d) {
-  const c = ebCfg(); if (!c.key || !c.secret) return { status: 'error', error: 'eb_off' };
-  try { return { status: 'ok', list: ebLink(ebList(c).map(ebNorm), String(d.biz), false).list }; }
-  catch (err) { return { status: 'error', error: String(err.message || err).slice(0, 200) }; }
+  if (!BIZ_NAMES[d.biz]) return { status: 'error', error: 'fields' };
+  const s = staffRows().filter(function (x) { return x.id === d._who.id; })[0];
+  const who = { biz: String(d.biz), staff: { name: s ? s.name : 'Удирдлага' } };
+  return ebuuhia(Object.assign({}, d, { type: d.op === 'send' ? 'eb_send' : d.op === 'del' ? 'eb_del' : 'eb_sync' }), who);
 }
-function ebuuhia(d) {
-  const who = checkStaff(d.token); if (!who) return { status: 'error', error: 'auth' };
+function ebuuhia(d, asWho) {
+  const who = asWho || checkStaff(d.token); if (!who) return { status: 'error', error: 'auth' };
   const c = ebCfg(); if (!c.key || !c.secret) return { status: 'error', error: 'eb_off' };
   try {
     if (d.type === 'eb_send') {   // шинэ захиалгыг буухиад өгнө (борлуулалт бичигдэнэ), дараа нь ebuuhia-д хүргэлт үүсгэнэ
@@ -1299,7 +1301,7 @@ function ebuuhia(d) {
       let list = orderRows().filter(function (o) { return want[o.id] && o.biz === who.biz && !o.ebCode && (o.status === 'Шинэ' || o.status === 'Буухиад өгсөн'); });
       const fresh = list.filter(function (o) { return o.status === 'Шинэ'; }).map(function (o) { return o.id; });
       let ship = { shipped: [], skipped: [] };
-      if (fresh.length) ship = ordersShip({ token: d.token, ids: fresh, to: 'Буухиад өгсөн' });
+      if (fresh.length) ship = ordersShipAs({ ids: fresh, to: 'Буухиад өгсөн' }, who);
       const skip = {}; (ship.skipped || []).forEach(function (x) { skip[x.id] = x.why; });
       list = orderRows().filter(function (o) { return want[o.id] && o.biz === who.biz && !o.ebCode && o.status === 'Буухиад өгсөн' && !skip[o.id]; });
       const sh = orderSheet(), sent = [], failed = [];
@@ -1320,9 +1322,17 @@ function ebuuhia(d) {
       });
       return { status: 'ok', sent: sent, failed: failed, skipped: ship.skipped || [] };
     }
+    if (d.type === 'eb_del') {   // зөвхөн «Бүртгэгдсэн» (1) хүргэлтийг буухиагаас устгана; манай захиалгын кодыг арилгана (дахин илгээж болно)
+      const code = String(d.code || '').replace(/[^\w-]/g, '').slice(0, 40); if (!code) return { status: 'error', error: 'fields' };
+      const r = ebCall(c, 'delete', '/api/partner/v1/deliveries/' + encodeURIComponent(code));
+      if (r.code >= 300) return { status: 'error', error: ebErr(r) };
+      const o = orderRows().filter(function (x) { return x.biz === who.biz && String(x.ebCode) === code; })[0];
+      if (o) orderSheet().getRange(o.row, 23).setValue('');
+      return { status: 'ok', id: o ? o.id : '' };
+    }
     if (d.type === 'eb_sync') {   // ebuuhia-ийн бүх хүргэлтийг (31 хоног) татна; «Хүргэгдсэн» (10) бол манай захиалгыг автоматаар Хүргэгдсэн болгоно
       const v = ebView(c, who.biz);
-      let ship = null; if (v.done.length) ship = ordersShip({ token: d.token, ids: v.done, to: 'Хүргэгдсэн' });
+      let ship = null; if (v.done.length) ship = ordersShipAs({ ids: v.done, to: 'Хүргэгдсэн' }, who);
       return { status: 'ok', list: v.list, delivered: v.done.length, ship: ship };
     }
   } catch (err) { return { status: 'error', error: String(err.message || err).slice(0, 200) }; }
@@ -1887,6 +1897,9 @@ function cleanupOct22() {
 function ordersShip(d) {
   const who = checkStaff(d.token);
   if (!who) return { status: 'error', error: 'auth' };
+  return ordersShipAs(d, who);
+}
+function ordersShipAs(d, who) {
   const to = d.to === 'Хүргэгдсэн' ? 'Хүргэгдсэн' : 'Буухиад өгсөн', want = {};
   (Array.isArray(d.ids) ? d.ids : []).slice(0, 300).forEach(function (x) { want[String(x)] = 1; });
   const list = orderRows().filter(function (o) { return want[o.id] && o.biz === who.biz; });

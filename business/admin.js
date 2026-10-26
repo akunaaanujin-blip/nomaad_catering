@@ -1290,24 +1290,61 @@ function subBody() {
   return pre + reportCard(rep, { entry: 'cancelEntry', in: 'cancelMove', expenses: 'cancelRecord', boost: 'cancelRecord', vouchers: 'cancelEntry', catalog: 'openProduct' }[sub]) + post;
 }
 
-// Буухиа (ebuuhia) — удирдлагад зөвхөн харах; өгөгдлийг нээх бүрт (5 мин тутам) серверээр буухиагаас татна
-var ebAdm = { biz: '', list: null, at: '', t: 0, busy: false, err: '' };
+// Буухиа (ebuuhia) — удирдлага: шинэ захиалгыг илгээх, төлөв татах (хүргэгдсэнийг автоматаар хаана), «Бүртгэгдсэн»-ийг устгах
+var ebAdm = { biz: '', list: null, at: '', t: 0, busy: false, err: '', sel: {} };
 window.ebRedraw = function (keep) {
   var el = document.getElementById('ebAdmBox'); if (el) el.innerHTML = ebAdmBody();
   if (keep) { var q = document.getElementById('ebQ'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }
 };
+function ebAdmErr(err) { return err === 'eb_off' ? 'Буухиа API тохируулаагүй байна (Санхүү → Банкны хуулга → «Буухиа API»).' : String(err); }
 function ebAdmPull() {
   if (ebAdm.busy) return; ebAdm.busy = true; ebAdm.biz = state.biz; ebAdm.t = Date.now(); ebRedraw();
-  post({ type: 'admin_eb', biz: state.biz }, function (err, d) {
+  post({ type: 'admin_eb', op: 'sync', biz: state.biz }, function (err, d) {
     ebAdm.busy = false;
-    ebAdm.err = err ? (err === 'eb_off' ? 'Буухиа API тохируулаагүй байна (Санхүү → Банкны хуулга → «Буухиа API»).' : 'Татаж чадсангүй: ' + err) : '';
-    if (!err) { ebAdm.list = d.list || []; ebAdm.at = new Date().toTimeString().slice(0, 5); }
+    ebAdm.err = err ? 'Татаж чадсангүй: ' + ebAdmErr(err) : '';
+    if (!err) { ebAdm.list = d.list || []; ebAdm.at = new Date().toTimeString().slice(0, 5); if (d.delivered) { toast(d.delivered + ' захиалга «Хүргэгдсэн» боллоо'); refresh(); } }
     ebRedraw();
   });
 }
+function ebAdmItems(o) {
+  var L = o.items; if (typeof L === 'string') { try { L = JSON.parse(L || '[]'); } catch (e) { L = []; } }
+  return (L || []).filter(function (i) { return i.name !== FEE_ITEM && i.name !== DISC_ITEM && i.name !== SPLIT_ITEM; }).map(function (i) { return i.name + ((Number(i.qty) || 1) > 1 ? ' ×' + i.qty : ''); }).join(', ');
+}
+function ebAdmFresh() { return (window.adminOrders || []).filter(function (o) { return o.biz === state.biz && !o.ebCode && (o.status === 'Шинэ' || o.status === 'Буухиад өгсөн'); })
+  .sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; }); }
+function ebAdmSend() {
+  var ids = Object.keys(ebAdm.sel).filter(function (k) { return ebAdm.sel[k]; });
+  if (!ids.length || ebAdm.busy || !confirm(ids.length + ' захиалгыг буухиа руу илгээх үү?')) return;
+  ebAdm.busy = true; ebRedraw();
+  post({ type: 'admin_eb', op: 'send', biz: state.biz, ids: ids }, function (err, d) {
+    ebAdm.busy = false;
+    if (err) { alert('Илгээж чадсангүй: ' + ebAdmErr(err)); ebRedraw(); return; }
+    ebAdm.sel = {};
+    alert(d.sent.length + ' хүргэлт буухиад үүслээ.' + (d.failed.length ? '\n\nИлгээгдээгүй ' + d.failed.length + ':\n' + d.failed.map(function (x) { return x.phone + ': ' + x.why; }).join('\n') : '') +
+      (d.skipped.length ? '\n\nҮлдэгдэл хүрэлцэхгүй тул «Шинэ» хэвээр ' + d.skipped.length + ':\n' + d.skipped.map(function (x) { return (x.phone || '') + ': ' + x.why; }).join('\n') : ''));
+    refresh(); ebAdmPull();
+  });
+}
+window.ebDel = function (code) {
+  if (ebAdm.busy || !confirm('Буухиагаас ' + code + ' хүргэлтийг устгах уу?')) return;
+  ebAdm.busy = true; ebRedraw();
+  post({ type: 'admin_eb', op: 'del', biz: state.biz, code: code }, function (err) {
+    ebAdm.busy = false;
+    if (err) { alert('Устгаж чадсангүй: ' + ebAdmErr(err)); ebRedraw(); return; }
+    toast('Буухиагаас устгагдлаа'); refresh(); ebAdmPull();
+  });
+};
 function ebAdmBody() {
-  return '<div class="ord-bar"><p class="muted" style="margin:0;flex:1;font-size:12.5px">Буухиа дээрх хүргэлтүүд (сүүлийн 31 хоног) — мөр дээр дарахад бүх мэдээлэл харагдана. Илгээх, төлөв бичихийг ажилтны «Хүргэлт» цэсээс хийнэ.</p>' +
-    '<button class="b-btn ghost" onclick="ebAdmPull()"' + (ebAdm.busy ? ' disabled' : '') + '>' + (ebAdm.busy ? 'Татаж байна…' : 'Шинэчлэх') + '</button></div>' +
+  var fresh = ebAdmFresh(), nSel = fresh.filter(function (o) { return ebAdm.sel[o.id]; }).length;
+  var send = fresh.length ? '<div class="eb-send"><div class="ord-bar"><h3 style="margin:0;flex:1">Буухиа руу илгээх <small class="muted" style="font-weight:400">' + fresh.length + '</small></h3>' +
+    '<button class="b-btn" onclick="ebAdmSend()"' + (nSel && !ebAdm.busy ? '' : ' disabled') + '>Сонгосныг илгээх (' + nSel + ')</button></div>' +
+    '<div class="eb-wrap"><table class="tbl eb-t"><tr><th style="width:28px"><input type="checkbox" onchange="ebAdmFresh().forEach(function(o){ebAdm.sel[o.id]=this.checked},this);ebRedraw()"></th><th>Огноо</th><th>Хүлээн авагч</th><th>Хаяг</th><th>Бараа</th><th class="n">Дүн</th><th>Манай төлөв</th></tr>' +
+    fresh.map(function (o) {
+      return '<tr><td><input type="checkbox"' + (ebAdm.sel[o.id] ? ' checked' : '') + ' onchange="ebAdm.sel[\'' + o.id + '\']=this.checked;ebRedraw()"></td><td>' + esc(o.date) + '</td><td><b>' + esc(o.phone) + '</b>' + (o.customer ? '<br><small class="muted">' + esc(o.customer) + '</small>' : '') + '</td>' +
+        '<td class="eb-addr">' + esc([o.district, o.address].filter(Boolean).join(', ')) + (o.district ? '' : ' <small style="color:#B45309">дүүрэг хоосон</small>') + '</td><td>' + esc(ebAdmItems(o)) + '</td><td class="n">' + fmt(o.amount) + '</td><td>' + esc(o.status) + '</td></tr>';
+    }).join('') + '</table></div></div>' : '';
+  return send + '<div class="ord-bar" style="margin-top:' + (send ? '18px' : '0') + '"><h3 style="margin:0;flex:1">Буухиа дээрх хүргэлтүүд</h3>' +
+    '<button class="b-btn ghost" onclick="ebAdmPull()"' + (ebAdm.busy ? ' disabled' : '') + '>' + (ebAdm.busy ? 'Хүлээнэ үү…' : 'Шинэчлэх') + '</button></div>' +
     (ebAdm.err ? '<p style="color:#B91C1C">' + esc(ebAdm.err) + '</p>' : '') +
     (ebAdm.list && ebAdm.biz === state.biz ? ebBoard(ebAdm.list, ebAdm.at) : '<p class="muted">' + (ebAdm.busy ? 'Буухиагаас татаж байна…' : '') + '</p>');
 }

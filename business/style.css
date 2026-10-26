@@ -1557,3 +1557,44 @@ body.is-busy .btn,body.is-busy .b-btn.primary,body.is-busy button.mini{pointer-e
 .eb-kv div{display:flex;flex-direction:column;min-width:0}
 .eb-kv small{color:#6B7280;font-size:11.5px}.eb-kv span{font-size:13px;overflow-wrap:anywhere}
 .mono2{font-variant-numeric:tabular-nums;letter-spacing:.2px}
+
+/* ═══ Cozy ажилтны сайт — буухиа (ebuuhia.com)-гийн өнгө, хэлбэр: нил ягаан цэс, Nunito Sans, цайвар саарал дэвсгэр, 12px карт, өнгөт пилл төлөв ═══ */
+body.pos10{--p:#6A5ADF;--p-d:#5747C9;--p-50:#EEEBFC;--ink:#000;--mut:#6B7280;--ln:#E5E7EB;--bg:#F8F9FA;--ok:#40C057;--bad:#FB4242;font-family:'Nunito Sans',-apple-system,'Segoe UI',Roboto,sans-serif}
+body.pos10 .ep-nav{background:#6A5ADF;border-right:0}
+body.pos10 .ep-brand{color:#000;border-bottom-color:rgba(255,255,255,.35)}
+body.pos10 .ep-brand .mono{background:#fff!important;color:#6A5ADF!important}
+body.pos10 .ep-grp-t{color:rgba(0,0,0,.55)}
+body.pos10 .ep-it{color:#000;font-weight:400;font-size:15.5px;height:44px;border-radius:12px}
+body.pos10 .ep-it:hover{background:rgba(255,255,255,.25)}
+body.pos10 .ep-it.on{background:rgba(255,255,255,.4);color:#000;font-weight:700}
+body.pos10 .ep-it.on::after{display:none}
+body.pos10 .ep-it svg{color:#000}
+body.pos10 .ep-foot{color:rgba(0,0,0,.6)}
+body.pos10 .ep-burger{background:#EEEBFC;color:#6A5ADF}
+body.pos10 .top h1,body.pos10 .ep-title{font-weight:800;color:#000}
+body.pos10 .card,body.pos10 .card:nth-of-type(n){border:0;border-radius:12px;box-shadow:none}
+body.pos10 .card h2{font-weight:800;font-size:16px;color:#000}
+body.pos10 .btn,body.pos10 .btn.sm{border-radius:9px;font-weight:600}
+body.pos10 .btn.ghost,body.pos10 .btn.ghost2,body.pos10 .btn.sm.ghost2{background:#fff;color:#6A5ADF;border:1px solid #E0E7FF}
+body.pos10 .btn.ghost2:hover{background:#F5F3FF}
+body.pos10 input:focus,body.pos10 select:focus,body.pos10 textarea:focus{box-shadow:0 0 0 3px rgba(106,90,223,.18)}
+body.pos10 .ptile:hover{box-shadow:0 2px 8px rgba(106,90,223,.15)}
+body.pos10 .big:hover{border-color:#D4CEF7;background:#FCFBFF}
+body.pos10 .ep-tbl-wrap{border:0;border-radius:12px;background:#fff}
+body.pos10 .ep-tbl th{background:#fff;color:#020817;font-weight:700;font-size:14px}
+body.pos10 .ep-tbl tbody tr:hover td{background:#F8F7FF}
+body.pos10 .eb-tabs button.on{color:#6A5ADF;border-bottom-color:#6A5ADF}
+body.pos10 .eb-t th{font-weight:700;color:#020817;font-size:14px}
+body.pos10 .eb-t td{border-bottom:1px solid #E5E7EB}
+body.pos10 .eb-r.on td,body.pos10 .eb-r:hover td{background:#F8F7FF}
+/* төлөв — буухиагийнх шиг өнгөт пилл (том үсгээр) */
+body.pos10 .eb-t .st,body.pos10 .ep-tbl td.c-s>.st{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.2px;color:#fff;background:#868E96}
+body.pos10 .eb-t .st::before,body.pos10 .ep-tbl td.c-s>.st::before{display:none}
+body.pos10 .eb-t .st.g,body.pos10 .ep-tbl td.c-s>.st.g{background:#40C057}
+body.pos10 .eb-t .st.r,body.pos10 .ep-tbl td.c-s>.st.r{background:#FB4242}
+body.pos10 .eb-t .st.y,body.pos10 .ep-tbl td.c-s>.st.y{background:#FAB005}
+body.pos10 .eb-t .st.b,body.pos10 .ep-tbl td.c-s>.st.b{background:#6A5ADF}
+body.pos10 .eb-t .st.n{background:#868E96}
+.st.c::before{background:#F5627E}
+body.pos10 .eb-t .st.c{background:#F5627E}
+.eb-send{margin-bottom:6px}
