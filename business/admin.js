@@ -1367,7 +1367,7 @@ function ebSettledByEb(list) {
 function ebRecRows() {   // буухиагийн «Харилцагчийн тайлан»-тай ижил: нийлээгүй хүргэгдсэн бүх хүргэлт (манай захиалгагүй ч), хөлс анхдагч 7,000
   var done = ebSettled(), eb = ebSettledByEb(ebAdm.list || []), O = {}; (window.adminOrders || []).forEach(function (o) { O[o.id] = o; });
   return (ebAdm.list || []).filter(function (x) { var o = O[x.id]; return x.st === 10 && !done[x.code] && !eb[x.code] && !(o && x.got > 0 && o.confirmed) && String(x.created).slice(0, 10) <= ebRecDate().replace(/-/g, '/'); })
-    .map(function (x) { var o = O[x.id] || null, fb = o ? ordFeeAdm(o) : 0; return { x: x, o: o, fb: fb, fee: ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000, on: ebAdm.off[x.code] ? 0 : 1 }; })
+    .map(function (x) { var o = O[x.id] || null, fb = o && ebFeeAuto(o.date) ? ordFeeAdm(o) : 0; return { x: x, o: o, fb: fb, fee: ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000, on: ebAdm.off[x.code] ? 0 : 1 }; })
     .sort(function (a, b) { return a.x.created < b.x.created ? -1 : 1; });
 }
 function ebRecBody() {
@@ -1389,7 +1389,8 @@ function ebRecBody() {
     '<div class="bar-row" style="margin-top:10px"><button class="b-btn" onclick="ebRecSave()"' + (on.length ? '' : ' disabled') + '>Тооцоо нийлэх</button><button class="b-btn ghost" onclick="ebAdm.rec=false;ebRedraw()">Болих</button></div>';
 }
 function ebRecDate() { return ebAdm.date || todayStr(); }
-// Тооцоо нийлэх: буухиа нь хэрэглэгчийн авлагыг өөр дээрээ авч (Дт 1201 Буухиа / Кт 1201 хэрэглэгч), хөлсөө түүнээс суутгана (Дт 3101 Буухиа эсвэл 7124 / Кт 1201 Буухиа).
+// Тооцоо нийлэх: буухиа нь хэрэглэгчийн авлагыг өөр дээрээ авч (Дт 1201 Буухиа / Кт 1201 хэрэглэгч), хөлсөө түүнээс суутгана (Дт 7124 / Кт 1201 Буухиа; хуучин захиалгад Дт 3101).
+// Буухиагийн өглөг зөвхөн энд үүснэ (хүргэх үед бичигдэхгүй).
 // Үлдэгдэл: эерэг — буухиагийн бидэнд төлөх авлага; сөрөг — бидний буухиад төлөх өглөг рүү шилжинэ. Мөнгө орж/гарахад Авлага/Өглөг хуудаснаас хаана.
 function ebRecSave() {
   var R = ebRecRows().filter(function (r) { return r.on; }); if (!R.length) return;
@@ -1403,7 +1404,7 @@ function ebRecSave() {
     }
     var fromPay = Math.min(r.fee, r.fb), extra = r0(r.fee - r.fb);
     if (fromPay > 0) E.push({ biz: biz, date: d, dr: '3101', cr: '1201', amount: fromPay, partner: BUUHIA, desc: 'Буухиа тооцоо · хөлс' + tag });
-    if (extra > 0) E.push({ biz: biz, date: d, dr: '7124', cr: '1201', amount: extra, partner: BUUHIA, desc: 'Буухиа тооцоо · хөлс' + (r.o ? ' (нэмэлт)' : ' (захиалгагүй)') + tag });
+    if (extra > 0) E.push({ biz: biz, date: d, dr: '7124', cr: '1201', amount: extra, partner: BUUHIA, desc: 'Буухиа тооцоо · хөлс' + (r.fb ? ' (нэмэлт)' : r.o ? '' : ' (захиалгагүй)') + tag });
     if (extra < 0) E.push({ biz: biz, date: d, dr: '3101', cr: '7124', amount: -extra, partner: BUUHIA, desc: 'Буухиа тооцоо · хөлс бага авсан' + tag });
     net = r0(net + r.x.got - r.fee);
   });

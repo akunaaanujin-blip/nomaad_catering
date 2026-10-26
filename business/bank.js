@@ -359,8 +359,10 @@ function bankDebt(pick) {
 }
 // ═══════════ ЗАХИАЛГЫН ТӨЛБӨР (зөвхөн удирдлага) ═══════════
 // received — орж ирсэн мөнгө; diff — зөрүү (буухиагийн хөлс 7124 эсвэл хөнгөлөлт 6001); бичилт бүрийн утганд «#захиалгын ID» — буцаахад олдоно.
-// Буухиа хөлсөө суутгаж шилжүүлсэн: хэрэглэгчийн авлагаас хасаад буухиагийн өглөгөөс хаана (7124-оор дамжиж цэвэр 0 — давхар зардал болохгүй)
-function buuhiaNet(biz, d, amt, cust, tag) {
+// Буухиа хөлсөө суутгаж шилжүүлсэн: хэрэглэгчийн авлагаас хасаж хүргэлтийн зардал (7124) болгоно.
+// old — хүргэх үед өглөг бичигдсэн хуучин захиалга: тэр өглөгөөс хаана (7124-оор дамжиж цэвэр 0 — давхар зардал болохгүй)
+function buuhiaNet(biz, d, amt, cust, tag, old) {
+  if (!old) return [{ biz: biz, date: d, dr: '7124', cr: '1201', amount: amt, partner: cust, desc: 'Буухиагийн хөлс суутгасан' + tag }];
   return [{ biz: biz, date: d, dr: '7124', cr: '1201', amount: amt, partner: cust, desc: 'Буухиагийн хөлс суутгасан' + tag },
           { biz: biz, date: d, dr: '3101', cr: '7124', amount: amt, partner: BUUHIA, desc: 'Буухиагийн өглөгөөс суутгав' + tag }];
 }
@@ -368,8 +370,8 @@ function orderPayEntries(o, biz, acc, d, received, diff, diffAcc, how) {
   var sold = String(o.saleDone || ''), E = [], sd, tag = ' · ' + o.phone + ' #' + o.id, cust = ordCust(o);
   if (sold === 'yes:Зээлээр' || sold === 'yes:Шилжүүлэг') {   // бараа өгсөн, мөнгө нь авлага (хуримтлалын аргачлал) → авлага хаагдана
     E.push({ biz: biz, date: d, dr: acc, cr: '1201', amount: received, partner: cust, desc: 'Захиалгын төлбөр (' + how + ')' + tag });
-    // буухиа хөлсөө суутгаж шилжүүлсэн — хөлс нь хүргэх үед буухиагийн өглөгөөр бичигдсэн тул тэр өглөгөөс хаана (давхар зардал болохгүй)
-    if (diff && diffAcc === '7124') E = E.concat(buuhiaNet(biz, d, diff, cust, tag));
+    // буухиа хөлсөө суутгаж шилжүүлсэн — хүргэлтийн зардал (хуучин захиалгад хүргэх үед бичигдсэн өглөгөөс хаана)
+    if (diff && diffAcc === '7124') E = E.concat(buuhiaNet(biz, d, diff, cust, tag, ebFeeAuto(o.date)));
     else if (diff) E.push({ biz: biz, date: d, dr: diffAcc, cr: '1201', amount: diff, partner: cust, desc: 'Хөнгөлөлт' + tag });
   } else if (sold === 'imported') {   // хуучин хүснэгтийн захиалга — борлуулалт энд бичигдэнэ
     E.push({ biz: biz, date: d, dr: acc, cr: '5101', amount: received, partner: '', desc: 'Захиалгын борлуулалт (хуучин)' + tag });
@@ -528,7 +530,7 @@ function debtClose(k, keys) {
       '<tr class="tot"><td>Нийт</td><td class="n">' + fmt(total) + '</td><td class="n" id="dcSum"></td></tr></table>' +
     '<p id="dcInfo" class="muted" style="font-size:12.5px;margin:6px 0"></p>' +
     (k === 'r' ? '<label for="dcWo">Хаагдаагүй үлдсэн хэсэг</label><select id="dcWo" onchange="dcAlloc(true)"><option value="">Авлага хэвээр үлдэнэ (дараа төлнө)</option>' +
-      '<option value="7124">Буухиа хөлсөө суутгасан — буухиагийн өглөгөөс хааж бүрэн хаах</option><option value="6001">Хөнгөлөлт болгож бүрэн хаах</option></select>' : '') +
+      '<option value="7124">Буухиа хөлсөө суутгасан — хүргэлтийн зардал болгож бүрэн хаах</option><option value="6001">Хөнгөлөлт болгож бүрэн хаах</option></select>' : '') +
     '<button class="btn" onclick="dcSave()">Хаах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
   dcAlloc(true);
 }
@@ -575,7 +577,7 @@ function dcSave() {
     if (A[i] > 0) E.push(R2 ? { biz: biz, date: d, dr: acc, cr: u.acc, amount: A[i], partner: pn, desc: (u.ord ? 'Захиалгын төлбөр' : 'Авлага төлөгдсөн') + ' · ' + src + ' ' + u.tag }
                             : { biz: biz, date: d, dr: u.acc, cr: acc, amount: A[i], partner: pn, desc: 'Өглөг төлсөн · ' + src + ' ' + u.tag });
     var rest = r0(u.due - A[i]);
-    if (wo && R2 && rest > 0.5) E = wo === '7124' ? E.concat(buuhiaNet(biz, d, rest, pn, ' · ' + u.desc + ' ' + u.tag))
+    if (wo && R2 && rest > 0.5) E = wo === '7124' ? E.concat(buuhiaNet(biz, d, rest, pn, ' · ' + u.desc + ' ' + u.tag, !!u.ord && ebFeeAuto(u.ord.date)))
                                                   : E.concat([{ biz: biz, date: d, dr: wo, cr: u.acc, amount: rest, partner: pn, desc: 'Хөнгөлөлт · ' + u.desc + ' ' + u.tag }]);
     if (u.ord && !u.ord.confirmed && A[i] > 0) ordUpd.push(u.ord);
   });
