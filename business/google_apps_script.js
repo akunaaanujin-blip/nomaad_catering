@@ -1278,7 +1278,7 @@ function ebLink(L, biz, write) {
       if (o) { used[o.id] = 1; if (write && n.code) sh.getRange(o.row, 23).setValue(n.code); }
     }
     if (o && o.biz !== biz) return;
-    if (o) { n.id = o.id; n.our = o.status; if (write && !o.ebCode && n.code && !used[o.id]) sh.getRange(o.row, 23).setValue(n.code); if (n.st === 10 && o.status === 'Буухиад өгсөн') done.push(o.id); }
+    if (o) { n.id = o.id; n.our = o.status; n.sd = String(o.saleDone || ''); if (write && !o.ebCode && n.code && !used[o.id]) sh.getRange(o.row, 23).setValue(n.code); if (n.st === 10 && o.status === 'Буухиад өгсөн') done.push(o.id); }
     out.push(n);
   });
   return { list: out, done: done };

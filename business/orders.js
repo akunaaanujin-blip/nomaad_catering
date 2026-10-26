@@ -527,6 +527,19 @@ function renderDlv() {
       '<button class="btn sm ghost2" onclick="dlvPull()"' + (dlvBusy ? ' disabled' : '') + '>' + (dlvBusy ? 'Татаж байна…' : 'Шинэчлэх') + '</button></div>' +
       (dlvErr ? '<p style="color:#B91C1C;margin:8px 0">' + esc(dlvErr) + '</p>' : '') + (dlvAll ? ebBoard(dlvAll, dlvSyncAt) : '<p class="muted" style="margin-top:8px">' + (dlvBusy ? 'Буухиагаас татаж байна…' : 'Шинэчлэх дарна уу.') + '</p>') + '</div>';
 }
+// Буухиа буцаасан/цуцалсан барааг гарт авмагц: захиалга «Буцаасан» болж, борлуулалт буцаагдан бараа үлдэгдэлд нэмэгдэнэ (ordBook receive)
+window.ebRecv = function (id) {
+  var o = orders.filter(function (x) { return x.id === id; })[0];
+  if (!o) { toast('Захиалга олдсонгүй — «Шинэчлэх» дарна уу'); return; }
+  if (!/^yes:/.test(o.saleDone || '')) { toast(o.saleDone === 'returned' ? 'Аль хэдийн хүлээн авсан' : 'Энэ захиалга үлдэгдлээс хасагдаагүй'); return; }
+  if (!confirm('Захиалга ' + o.phone + '-ийн бараа буцаж ирсэн үү?\n\n' + ordItemsText(o) + '\n\nЗахиалга «Буцаасан» болж, бараа үлдэгдэлд нэмэгдэнэ.')) return;
+  var n = Object.assign({}, o, { status: ordDead(o) ? o.status : 'Буцаасан', receive: true });
+  ordBook(n, o);
+  saveOrder(n, function (saved) {
+    (dlvAll || []).forEach(function (x) { if (x.id === id) { x.sd = saved.saleDone; x.our = saved.status; } });
+    toast('Хүлээн авлаа — бараа үлдэгдэлд нэмэгдлээ'); if (typeof loadStock === 'function') loadStock(); renderDlv();
+  });
+};
 function fresh_all(on) { orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending; }).forEach(function (o) { dlvSel[o.id] = on; }); renderDlv(); }
 function dlvSend(mode) {
   var ids = mode === 'retry' ? orders.filter(function (o) { return o.status === 'Буухиад өгсөн' && !o.ebCode; }).map(function (o) { return o.id; })
