@@ -1080,6 +1080,7 @@ function attend(kind) {
 }
 function renderToday() {
   renderAttend();
+  renderPast();
   if (BIZ.orders && typeof renderOrders === 'function') setTimeout(renderOrders, 0);   // табын тоо шинэчлэгдэнэ
   var t = todayTotals();
   // Захиалгаас үүссэн борлуулалт (баримтын дугаар = захиалгын ID) — дэлгүүрийн борлуулалтаас тусад нь
@@ -1125,6 +1126,33 @@ function renderToday() {
     }
     return '<li><span>Касс хаасан<small>' + r.time + ' · Тоолсон ' + fmt(r.counted) +
       '</small></span><span class="amt">' + (r.diff ? (r.diff > 0 ? '+' : '−') + fmt(Math.abs(r.diff)) : '✓') + '</span></li>';
+  }).join('');
+}
+// ── Өмнөх борлуулалт: энэ төхөөрөмж дээрх сүүлийн 60 хоногийн дэлгүүрийн борлуулалт, өдрөөр ──
+var pastDay = '';
+function renderPast() {
+  var tl = $('todayList'); if (!tl) return;
+  if (!$('pastCard')) tl.parentNode.insertAdjacentHTML('afterend', '<div class="card" id="pastCard"><h2>Өмнөх борлуулалт</h2><div class="tabs" id="pastDays"></div><div id="pastSum" class="muted" style="margin:8px 0"></div><ul class="list" id="pastList"></ul></div>');
+  if ($('pastCard') && typeof shellView !== 'undefined' && shellView && shellView !== 'dash') $('pastCard').style.display = 'none';
+  var td = todayStr(), isOrd = function (r) { return typeof orders !== 'undefined' && orders.some(function (o) { return o.id === r.bill; }); };
+  var recs = load(LS_REC, []).filter(function (r) { return r.biz === BIZ_KEY && r.type === 'sale' && r.date < td && !isOrd(r); });
+  var days = []; recs.forEach(function (r) { if (days.indexOf(r.date) < 0) days.push(r.date); });
+  days.sort().reverse();
+  if (!days.length) { $('pastDays').innerHTML = ''; $('pastSum').textContent = ''; $('pastList').innerHTML = '<li class="muted">Өмнөх өдрүүдэд борлуулалт алга</li>'; return; }
+  if (days.indexOf(pastDay) < 0) pastDay = days[0];
+  var yd = todayStr(new Date(Date.now() - 864e5));
+  $('pastDays').innerHTML = days.slice(0, 14).map(function (d) {
+    return '<button class="' + (d === pastDay ? 'on' : '') + '" onclick="pastDay=\'' + d + '\';renderPast()">' + (d === yd ? 'Өчигдөр' : d.slice(5)) + '</button>';
+  }).join('') + (days.length > 14 ? '<select style="width:auto" onchange="pastDay=this.value;renderPast()"><option value="">Бусад…</option>' + days.slice(14).map(function (d) { return '<option' + (d === pastDay ? ' selected' : '') + '>' + d + '</option>'; }).join('') + '</select>' : '');
+  var seen = {}, keys = [];
+  recs.filter(function (r) { return r.date === pastDay; }).reverse().forEach(function (r) { var k = billKey(r); if (!seen[k]) { seen[k] = 1; keys.push(k); } });
+  var bills = keys.map(billInfo), tot = bills.reduce(function (a, b) { return a + b.net; }, 0);
+  $('pastSum').innerHTML = esc(pastDay) + ' · ' + bills.length + ' баримт · нийт <b>' + fmt(tot) + '</b>';
+  $('pastList').innerHTML = bills.map(function (b) {
+    return '<li class="bill-row" onclick="openBill(\'' + jsqS(b.key) + '\')"><span><b>' + esc(b.items.slice(0, 3).join(', ') + (b.items.length > 3 ? ' +' + (b.items.length - 3) : '')) + '</b>' +
+      '<small>' + esc(b.time) + ' · ' + esc(b.pays.join(' + ')) + (b.staff ? ' · ' + esc(b.staff) : '') + (b.customer ? ' · ' + esc(b.customer) : '') + (b.disc ? ' · хөнгөлөлт ' + fmt(b.disc) : '') +
+      (b.retAll ? ' · <b>буцаагдсан</b>' : b.ret ? ' · хэсэгчлэн буцаасан' : '') + '</small></span>' +
+      '<span class="amt ' + (b.net < 0 ? 'r' : 'g') + '">' + (b.net < 0 ? '−' + fmt(-b.net) : fmt(b.net)) + '</span></li>';
   }).join('');
 }
 function jsqS(v) { return String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
