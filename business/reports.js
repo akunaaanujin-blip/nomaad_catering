@@ -480,13 +480,14 @@ function repSalesBy(R, biz, from, to, by) {
   return { title: title, cols: cols, rows: rows, total: tot };
 }
 // Баримтаар бүлэглэх (удирдлага): бараа, хөнгөлөлт, буцаалт, төлбөрийн хэлбэр тус бүр
-function groupBills(list) {
+// byDate — өөр өдөр бичсэн мөрийг (жишээ нь хожим буцаасан) тэр өдрийн тусдаа мөр болгоно; өдрийн дүн санхүүгийн журналтай таарна
+function groupBills(list, byDate) {
   var g = {}, order = [];
   list.forEach(function (x) {
-    var k = billKey(x);
-    var o = g[k]; if (!o) { o = g[k] = { key: k, date: x.date, time: x.time || '', staff: x.staff || '', customer: '', items: [], lines: [], retItems: [], gross: 0, disc: 0, ret: 0, net: 0, pays: {}, ddtd: '' }; order.push(k); }
+    var k = billKey(x), gk = byDate ? k + '|' + x.date : k;
+    var o = g[gk]; if (!o) { o = g[gk] = { key: k, date: x.date, time: x.time || '', staff: x.staff || '', customer: '', items: [], lines: [], retItems: [], gross: 0, disc: 0, ret: 0, net: 0, fee: 0, pays: {}, ddtd: '' }; order.push(gk); }
     var a = Number(x.amount) || 0, isRet = / \(буцаалт\)$/.test(x.item);
-    o.lines.push(x); o.net += a;
+    o.lines.push(x); o.net += a; if (isFee(x.item)) o.fee += a;
     if (baseItem(x.item) === DISC_ITEM) o.disc += -a;
     else if (isAdj(x.item)) {}
     else if (isRet) { o.ret += -a; if (!/^Хүргэлтийн төлбөр/.test(x.item)) o.retItems.push(String(x.item).replace(/ \(буцаалт\)$/, '')); }
@@ -502,13 +503,14 @@ function payText(pays) { return Object.keys(pays).filter(function (k) { return p
 function repReceipts(R, biz, from, to) {
   var ords = {}; (window.adminOrders || []).forEach(function (o) { ords[o.id] = o; });
   var custOf = function (o) { var d = ords[o.key]; return o.customer || (d ? (d.customer ? d.customer + ' ' : '') + d.phone : ''); };   // Cozy захиалгын баримтад захиалгаас
-  var rows = groupBills(salesIn(R, biz, from, to)).map(function (o) {
-    return { date: o.date + ' ' + o.time, staff: o.staff, items: o.items.join(', ') || (o.retItems.length ? 'Буцаалт: ' + o.retItems.join(', ') : ''), customer: custOf(o), pay: payText(o.pays), disc: o.disc ? r0(o.disc) : '', ret: o.ret ? r0(o.ret) : '',
+  var ce = costEngine(biz, R), costOf = function (o) { return o.lines.reduce(function (s, x) { var v = Math.abs(ce.rec[x.id] || 0); return s + (Number(x.amount) < 0 ? -v : v); }, 0); };
+  var rows = groupBills(salesIn(R, biz, from, to), true).map(function (o) {
+    return { date: o.date + ' ' + o.time, staff: o.staff, items: o.items.join(', ') || (o.retItems.length ? 'Буцаалт: ' + o.retItems.join(', ') : ''), customer: custOf(o), pay: payText(o.pays), disc: o.disc ? r0(o.disc) : '', ret: o.ret ? r0(o.ret) : '', fee: o.fee ? r0(o.fee) : '', cost: r0(costOf(o)) || '',
              ebarimt: o.ddtd || '—', amount: r0(o.net), _bill: o.key, order: ords[o.key] ? ordStLabel(ords[o.key]) + (ords[o.key].confirmed ? ' · баталгаажсан' : '') : '' };
   }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
   var oc = rows.some(function (r) { return r.order; }) ? [c('order', 'Захиалга')] : [];   // Cozy: захиалгаас үүссэн баримтын хүргэлтийн төлөв
-  return { title: 'Баримтын жагсаалт', cols: [c('date', 'Огноо'), c('staff', 'Худалдагч'), c('items', 'Бараа'), c('customer', 'Хэрэглэгч')].concat(oc).concat([c('pay', 'Төлбөр'), m('disc', 'Хөнгөлөлт'), m('ret', 'Буцаалт'), c('ebarimt', 'И-баримт'), m('amount', 'Дүн')]),
-    rows: rows, total: { items: rows.length + ' баримт', disc: sum(rows, 'disc'), ret: sum(rows, 'ret'), amount: sum(rows, 'amount') }, note: 'Мөр дээр дарахад баримтын дэлгэрэнгүй нээгдэнэ.' };
+  return { title: 'Баримтын жагсаалт', cols: [c('date', 'Огноо'), c('staff', 'Худалдагч'), c('items', 'Бараа'), c('customer', 'Хэрэглэгч')].concat(oc).concat([c('pay', 'Төлбөр'), m('disc', 'Хөнгөлөлт'), m('ret', 'Буцаалт'), m('fee', 'Хүргэлт'), c('ebarimt', 'И-баримт'), m('amount', 'Дүн'), m('cost', 'Өртөг')]),
+    rows: rows, total: { items: rows.length + ' баримт', disc: sum(rows, 'disc'), ret: sum(rows, 'ret'), fee: sum(rows, 'fee'), amount: sum(rows, 'amount'), cost: sum(rows, 'cost') }, note: 'Мөр дээр дарахад баримтын дэлгэрэнгүй нээгдэнэ.' };
 }
 // Boost бараагаар: ажилтны бичсэн зар сурталчилгааны төлбөр (зөвхөн бүртгэл — санхүүд банкны хуулгаар 7205)
 // Boost бүрийн үр дүн: boost явсан өдрүүдийн борлуулалт ↔ түүнээс өмнөх ижил урттай үе; тэр хугацаанд тухайн бараагаар ирсэн захиалга → нэг захиалгын зардал

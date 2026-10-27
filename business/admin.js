@@ -360,6 +360,7 @@ function companiesView() {
     var B = BUSINESSES[k], E = (window.EBARIMT || {})[k] || {};
     var today = sums(records.filter(function (x) { return x.biz === k && x.date === t; }));
     var month = sums(records.filter(function (x) { return x.biz === k && x.date >= m; }));
+    var pm = plData(buildJournal(k, R()), m, t);   // цэвэр ашиг — санхүүтэй ижил (өртөг, зардал, бусад орлого орсон)
     var st = bizStaff(k);
     var active = st.filter(function (s) { return s.status === 'Тийм'; }).length;
     var pend = st.filter(function (s) { return s.status === 'Хүлээгдэж'; }).length;
@@ -369,7 +370,7 @@ function companiesView() {
       '<div class="co-stats">' +
       '<div><span>Өнөөдөр</span><b>' + fmt(today.sales) + '</b></div>' +
       '<div><span>Энэ сар</span><b>' + fmt(month.sales) + '</b></div>' +
-      '<div><span>Цэвэр (сар)</span><b style="color:' + (month.sales - month.exp >= 0 ? 'var(--green)' : 'var(--red)') + '">' + fmt(month.sales - month.exp) + '</b></div>' +
+      '<div><span>Цэвэр ашиг (сар)</span><b style="color:' + (pm.profit >= 0 ? 'var(--green)' : 'var(--red)') + '">' + (pm.profit < 0 ? '−' : '') + fmt(Math.abs(pm.profit)) + '</b></div>' +
       '<div><span>Ажилчид</span><b>' + active + (pend ? ' <span class="tag r">+' + pend + ' хүлээгдэж</span>' : '') + '</b></div>' +
       '</div>' +
       '<div class="co-meta"><span class="tag">Хэвийн</span>' + (E.merchantTin ? ' <span class="tag b">И-баримт</span>' : '') + pendTags(k) +
@@ -1553,7 +1554,7 @@ function journalCheck(E, f, t) {
   var miss = sales.filter(function (x) { return Math.abs((posted[x.id] || 0) - Math.abs(Number(x.amount))) > 0.5; });
   var sAmt = sales.reduce(function (a, x) { return a + Number(x.amount); }, 0);
   var rev = 0;   // зөвхөн борлуулалтын бичлэгээс үүссэн орлого (гараар/банкаар бичсэн 5101-ийг тооцохгүй)
-  E.forEach(function (e) { if (e.date >= f && e.date <= t) { if (e.doc === 'Борлуулалт' && e.cr === '5101') rev += e.amount; if (e.doc === 'Борлуулалтын буцаалт' && e.dr === '6001') rev -= e.amount;
+  E.forEach(function (e) { if (e.date >= f && e.date <= t) { if (e.doc === 'Борлуулалт' && (e.cr === '5101' || e.cr === '5102')) rev += e.amount; if (e.doc === 'Борлуулалтын буцаалт' && e.dr === '6001') rev -= e.amount;
     if (e.doc === 'Борлуулалтын хөнгөлөлт') rev += e.dr === '6001' ? -e.amount : e.amount;
     if (e.doc === 'Төлбөр хуваалт') rev += e.cr === '5101' ? e.amount : -e.amount; } });
   var exps = records.filter(function (x) { return x.biz === state.biz && x.type === 'expense' && x.date >= f && x.date <= t && Number(x.amount); });
@@ -1588,7 +1589,7 @@ function financeDash() {
     (ck.noCost.length ? line(false, '<b>' + ck.noCost.length + '</b> бараа өртөггүйгээр зарагдсан — нийт ашиг хэт өндөр гарна. Орлого авахдаа өртгийг оруулна уу: ' + esc(ck.noCost.slice(0, 5).join(', ')) + (ck.noCost.length > 5 ? '…' : '')) : '') +
     (ck.late ? line(false, '<b>' + ck.late + '</b> бичлэг хаагдсан онд (' + meta.closed.slice(0, 4) + ') хамаарах боловч дараа нь ирсэн — тайланд ороогүй. «Журналын бичилт»-ээр гараар тусгана уу.') : '') +
     (ck.salAll.length ? line(false, '<b>' + ck.salAll.length + '</b> цалингийн гүйлгээ компани заагаагүй (Бүх дэлгүүр) тул санхүүд ороогүй') : '') + '</ul>' +
-    '<p class="muted" style="margin-top:8px">Борлуулалт: Дт касс/пос/харилцах — Кт 5101 орлого, мөн Дт 6101 өртөг — Кт 1404 бараа. Буцаалт: Дт 6001 — Кт касс. Зарлага: Дт зардлын данс — Кт 10003 касс.</p></div>' +
+    '<p class="muted" style="margin-top:8px">Борлуулалт: Дт касс/пос/харилцах — Кт 5101 орлого, мөн Дт 6101 өртөг — Кт 1404 бараа. Буцаалт: Дт 6001 буцаалт — Кт касс/харилцах (захиалгад 1201 авлага), мөн Дт 1404 бараа — Кт 6101 өртөг (бараа агуулахад буцаж орно). Ажилтны кассаас гаргасан зарлага: Дт зардлын данс — Кт 10003 касс; дансаар төлсөн зардал банкны хуулгаар Кт 1101 харилцах.</p></div>' +
     '<div class="grid2"><div class="card"><h2>Орлогын тайлан (товч)</h2>' + miniTable(repPL(E, r[0], r[1])) + '</div>' +
     '<div class="card"><h2>Касс хаалт</h2><div class="scroll"><table>' + closesTable(r) + '</table></div></div></div>';
 }

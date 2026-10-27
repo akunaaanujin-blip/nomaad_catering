@@ -141,27 +141,29 @@ function fdForecast(E, y) {
 function dailyView() {
   var r = range(), f = r[0], t = r[1], E = J(), d0 = new Date(f + 'T00:00:00'), d1 = new Date(t + 'T00:00:00');
   if ((d1 - d0) / 864e5 > 92) { d0 = new Date(d1 - 91 * 864e5); f = todayStr(d0); }
-  var I = {}, C = {}, inc = ['5101', '5102', '6001', '5201', '5202'], cst = ['6101'].concat(accsOf('exp'));
+  var I = {}, O = {}, C = {}, inc = ['5101', '5102', '6001'], oth = ['5201', '5202'], cst = ['6101'].concat(accsOf('exp'));
   drillLines({ acc: inc, from: f, to: t, sign: -1 }, E).lines.forEach(function (x) { I[x.date] = (I[x.date] || 0) + x.v; });
+  drillLines({ acc: oth, from: f, to: t, sign: -1 }, E).lines.forEach(function (x) { O[x.date] = (O[x.date] || 0) + x.v; });   // хүүгийн орлого гэх мэт — борлуулалтаас тусад нь
   drillLines({ acc: cst, from: f, to: t, sign: 1 }, E).lines.forEach(function (x) { C[x.date] = (C[x.date] || 0) + x.v; });
-  var days = [], WD = ['Ня', 'Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя'], run = 0, ti = 0, tc = 0, best = null;
+  var days = [], WD = ['Ня', 'Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя'], run = 0, ti = 0, to = 0, tc = 0, best = null;
   for (var d = new Date(d0); d <= d1; d.setDate(d.getDate() + 1)) days.push(todayStr(d));
+  var hasO = Object.keys(O).length > 0;
   var rows = days.map(function (k) {
-    var i = I[k] || 0, c = C[k] || 0; run += i; ti += i; tc += c; if (i && (!best || i > I[best])) best = k;
+    var i = I[k] || 0, o = O[k] || 0, c = C[k] || 0; run += i; ti += i; to += o; tc += c; if (i && (!best || i > I[best])) best = k;
     var spec = function (acc, sign, title) { return { acc: acc, from: k, to: k, sign: sign, grp: 'item', t: title + ' · ' + k }; };
-    return '<tr' + (!i && !c ? ' class="muted"' : '') + '><td>' + k.slice(5) + ' <small class="muted">' + WD[new Date(k + 'T00:00:00').getDay()] + '</small></td>' +
-      '<td class="n">' + (i ? dl(spec(inc, -1, 'Орлого'), mny(i)) : '') + '</td><td class="n">' + (c ? dl(spec(cst, 1, 'Зардал'), mny(c)) : '') + '</td>' +
-      '<td class="n' + (i - c < 0 ? ' neg' : '') + '">' + (i || c ? mny(i - c) : '') + '</td><td class="n">' + mny(run) + '</td></tr>';
+    return '<tr' + (!i && !c && !o ? ' class="muted"' : '') + '><td>' + k.slice(5) + ' <small class="muted">' + WD[new Date(k + 'T00:00:00').getDay()] + '</small></td>' +
+      '<td class="n">' + (i ? dl(spec(inc, -1, 'Орлого'), mny(i)) : '') + '</td>' + (hasO ? '<td class="n">' + (o ? dl(spec(oth, -1, 'Бусад орлого'), mny(o)) : '') + '</td>' : '') + '<td class="n">' + (c ? dl(spec(cst, 1, 'Зардал'), mny(c)) : '') + '</td>' +
+      '<td class="n' + (i + o - c < 0 ? ' neg' : '') + '">' + (i || c || o ? mny(i + o - c) : '') + '</td><td class="n">' + mny(run) + '</td></tr>';
   }).join('');
   var act = days.filter(function (k) { return I[k]; }).length;
   window.__fin = { daily: { l: days.map(function (k) { return k.slice(5); }), v: days.map(function (k) { return Math.round(I[k] || 0); }) } };
   return '<div class="fd"><div class="fd-kg">' +
-    fdCard('in', FD_C.in, 'Нийт орлого', mny(ti)) + fdCard('out', FD_C.out, 'Нийт зардал', mny(tc)) +
+    fdCard('in', FD_C.in, 'Борлуулалт (цэвэр)', mny(ti), to ? '<em class="fd-ch">+ бусад орлого ' + mny(to) + '</em>' : '') + fdCard('out', FD_C.out, 'Нийт зардал', mny(tc)) +
     fdCard('profit', FD_C.profit, 'Өдрийн дундаж орлого', mny(act ? ti / act : 0), '<em class="fd-ch">' + act + ' өдөр орлоготой</em>') +
     fdCard('pct', '#A855F7', 'Хамгийн их орлоготой өдөр', best ? best.slice(5) : '—', best ? '<em class="fd-ch">' + mny(I[best]) + '</em>' : '') + '</div>' +
     '<div class="fd-c" style="margin-bottom:16px"><h3><span class="fd-n" style="background:' + FD_C.in + '">1</span>Өдөр бүрийн орлого</h3><div class="fd-box"><canvas id="fdDaily"></canvas></div></div>' +
-    '<div class="fd-c"><h3><span class="fd-n" style="background:' + FD_C.out + '">2</span>Өдрөөр</h3><table class="fd-t"><tr><th>Өдөр</th><th class="n">Орлого</th><th class="n">Зардал</th><th class="n">Цэвэр</th><th class="n">Хуримтлагдсан орлого</th></tr>' + rows +
-    '<tr class="tot"><td><b>Нийт</b></td><td class="n"><b>' + mny(ti) + '</b></td><td class="n"><b>' + mny(tc) + '</b></td><td class="n"><b>' + mny(ti - tc) + '</b></td><td></td></tr></table></div></div>';
+    '<div class="fd-c"><h3><span class="fd-n" style="background:' + FD_C.out + '">2</span>Өдрөөр</h3><table class="fd-t"><tr><th>Өдөр</th><th class="n">Борлуулалт</th>' + (hasO ? '<th class="n">Бусад орлого</th>' : '') + '<th class="n">Зардал</th><th class="n">Цэвэр</th><th class="n">Хуримтлагдсан орлого</th></tr>' + rows +
+    '<tr class="tot"><td><b>Нийт</b></td><td class="n"><b>' + mny(ti) + '</b></td>' + (hasO ? '<td class="n"><b>' + mny(to) + '</b></td>' : '') + '<td class="n"><b>' + mny(tc) + '</b></td><td class="n"><b>' + mny(ti + to - tc) + '</b></td><td></td></tr></table></div></div>';
 }
 
 // ── Зардлын задаргаа: бүлэг → ангилал, TOP 10 ──
