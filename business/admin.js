@@ -403,7 +403,8 @@ function companyView() {
   if (mod === 'reports') return pageHead('Бүх тайлан', '<button class="b-btn primary" onclick="exportAll()">Бүх тайланг Excel-ээр татах</button>', true) + reportsModule();
   var sub = state.sub[mod], noPeriod = /^(counts|requests|accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary|months|payroll|debts|acct|setup|loans|banklink|po|assets|customers|digest|other|recv|payb|buuhia)$/.test(sub);   // авлага, өглөг — өнөөдрийн байдлаар (хугацаагаар шүүхгүй)
   var acts = /^(counts|requests|overview|dash|stock|close|bank|opening|lock|simple|monthly|glossary|acct|setup|loans|banklink|po|assets|digest|other|daily|expcat|cashacc)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
-  if (sub === 'money') acts = '<button class="b-btn primary" onclick="openVoucher(\'ХО\')">+ Орлого (банк)</button><button class="b-btn primary" onclick="openVoucher(\'ХЗ\')">+ Зарлага (банк)</button>' +
+  // Харилцахын (банкны) гүйлгээг гараар бичихгүй — зөвхөн банкны хуулгаар тулгана (давхар бичигдэхээс сэргийлнэ)
+  if (sub === 'money') acts = '<button class="b-btn primary" onclick="setSub(\'bank\')">Банкны хуулгаар тулгах</button>' +
     '<button class="b-btn" onclick="openVoucher(\'КО\')">+ Орлого (касс)</button><button class="b-btn" onclick="openVoucher(\'КЗ\')">+ Зарлага (касс)</button>' + acts;
   if (sub === 'recv' || sub === 'payb' || sub === 'debts') acts = '<button class="b-btn primary" onclick="openRem(null,{kind:state.sub.finance===\'recv\'?\'Авлага нэхэх\':\'Өглөг төлөх\'})">+ Сануулга</button><button class="b-btn" onclick="openPartner()">+ Харилцагч</button>' +
     '<button class="b-btn" onclick="openEntry()">Гараар бичих</button>' + acts;
@@ -411,7 +412,7 @@ function companyView() {
     '<button class="b-btn" onclick="openTax(entOf(state.biz),\'tt11\')">ТТ-11</button>' + acts;
   if (sub === 'entry') acts = '<button class="b-btn primary" onclick="openEntry()">+ Журналын бичилт</button>' + acts;
   if (sub === 'vouchers') acts = '<button class="b-btn primary" onclick="openVoucher(\'КО\')">+ Кассын орлого</button><button class="b-btn primary" onclick="openVoucher(\'КЗ\')">+ Кассын зарлага</button>' +
-    '<button class="b-btn" onclick="openVoucher(\'ХО\')">+ Харилцахын орлого</button><button class="b-btn" onclick="openVoucher(\'ХЗ\')">+ Харилцахын зарлага</button>' + acts;
+    '<button class="b-btn" onclick="setSub(\'bank\')">Харилцах: банкны хуулгаар</button>' + acts;
   if (sub === 'accounts') acts = '<button class="b-btn primary" onclick="accEdit()">+ Данс нэмэх</button>';
   if (sub === 'bank') acts = '<button class="b-btn primary" onclick="$(\'bankFile\').click()">Хуулга оруулах (Excel)</button><button class="b-btn" onclick="setSub(\'banklink\')">Данс холбох</button>';
   if (sub === 'loans') acts = '<button class="b-btn primary" onclick="openLoan(null,\'Авсан\')">+ Авсан зээл</button><button class="b-btn primary" onclick="openLoan(null,\'Өгсөн\')">+ Өгсөн зээл</button>';
@@ -1152,6 +1153,7 @@ function repManual(biz, f, t) {
 // ── Ажилтны хүсэлтүүд: мөнгөний хүсэлт (Санхүү), тооллого (Бараа материал) — удирдлага мөр бүрийг баталгаажуулна ──
 var vcReq = '';   // зарлагын баримт аль мөнгөний хүсэлтийг төлж байгаа
 function pendRequests(biz) { return records.filter(function (x) { return x.type === 'request' && x.biz === biz && !x.status; }); }
+function reqOpen(biz) { return records.filter(function (x) { return x.type === 'request' && x.biz === biz && x.status === 'Батлагдсан'; }); }   // баталсан, банкны хуулгаар тулгагдахыг хүлээж буй
 function pendCounts(biz) { return (window.stockCounts || []).filter(function (m) { return m.biz === biz; }); }
 function navCount(k) {   // цэсийн тоо: хүлээгдэж буй хүсэлт, тооллого, тулгаагүй банкны гүйлгээ, илгээгээгүй захиалга
   if (k === 'requests') return pendRequests(state.biz).length;
@@ -1190,18 +1192,18 @@ function requestsView() {
   var biz = state.biz, tab = state.reqTab || 'a';   // шийдсэн хүсэлт энд үлдэнэ (Төлсөн / Татгалзсан табаар)
   var all = records.filter(function (x) { return x.type === 'request' && x.biz === biz; });
   all.sort(function (a, b) { return (!b.status) - (!a.status) || ((a.date + (a.time || '')) < (b.date + (b.time || '')) ? 1 : -1); });
-  var TB = { a: ['Бүгд', function () { return true; }], p: ['Хүлээгдэж', function (x) { return !x.status; }], d: ['Төлсөн', function (x) { return x.status === 'Төлсөн'; }], r: ['Татгалзсан', function (x) { return x.status === 'Татгалзсан'; }] };
+  var TB = { a: ['Бүгд', function () { return true; }], p: ['Хүлээгдэж', function (x) { return !x.status; }], o: ['Батлагдсан', function (x) { return x.status === 'Батлагдсан'; }], d: ['Төлсөн', function (x) { return x.status === 'Төлсөн'; }], r: ['Татгалзсан', function (x) { return x.status === 'Татгалзсан'; }] };
   var list = all.filter(TB[tab][1]);
-  var st = function (s) { return !s ? '<span class="st y">Хүлээгдэж</span>' : s === 'Төлсөн' ? '<span class="st g">Төлсөн</span>' : '<span class="st r">' + esc(s) + '</span>'; };
-  return '<p class="hint">Ажилтны илгээсэн мөнгөний хүсэлт. «Төлөх» дарахад зарлагын баримт бөглөгдөж нээгдэнэ — шалгаад хадгалахад хүсэлт «Төлсөн» болно.</p>' +
+  var st = function (s) { return !s ? '<span class="st y">Хүлээгдэж</span>' : s === 'Батлагдсан' ? '<span class="st b">Батлагдсан · хуулга хүлээж буй</span>' : s === 'Төлсөн' ? '<span class="st g">Төлсөн</span>' : '<span class="st r">' + esc(s) + '</span>'; };
+  return '<p class="hint">Ажилтны мөнгөний хүсэлт: «Батлах» → банкны аппаар шилжүүлнэ → «Банкны хуулга»-д тэр гүйлгээг энэ хүсэлттэй тулгахад зардлаар бичигдэж «Төлсөн» болно. Батлахад санхүүд юу ч бичигдэхгүй. Кассаас бэлнээр өгсөн бол «Касснаас».</p>' +
     '<div class="tabs" style="margin-bottom:10px">' + Object.keys(TB).map(function (k) {
       return '<button class="' + (tab === k ? 'on' : '') + '" onclick="state.reqTab=\'' + k + '\';render()">' + TB[k][0] + ' (' + all.filter(TB[k][1]).length + ')</button>'; }).join('') + '</div>' +
     '<div class="card"><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Ажилтан</th><th>Юунд</th><th>Хэнд (данс)</th><th>Тайлбар</th><th class="n">Дүн</th><th>Төлөв</th><th></th></tr>' +
     (list.length ? list.map(function (x) {
       return '<tr><td>' + esc(x.date.slice(5) + ' ' + (x.time || '')) + '</td><td>' + esc(x.staff || '') + '</td><td>' + esc(x.category || '') + '</td><td>' + esc(x.customer || '') + '</td>' +
         '<td>' + esc(String(x.note || '')) + '</td><td class="n"><b>' + fmt(x.amount) + '</b></td><td>' + st(x.status) + '</td><td class="n" style="white-space:normal;min-width:120px">' +
-        (!x.status ? '<button class="mini" style="color:var(--accent)" onclick="reqPay(\'' + esc(x.id) + '\',\'ХЗ\')">Төлөх (банк)</button> <button class="mini" style="color:var(--accent)" onclick="reqPay(\'' + esc(x.id) + '\',\'КЗ\')">Касснаас</button> ' +
-          '<button class="mini" onclick="reqReject(\'' + esc(x.id) + '\')">Татгалзах</button>' : '') + '</td></tr>';
+        (!x.status ? '<button class="mini" style="color:var(--accent)" onclick="reqSetStatus(\'' + esc(x.id) + '\',\'Батлагдсан\')">Батлах</button> ' : '') +
+        (!x.status || x.status === 'Батлагдсан' ? '<button class="mini" onclick="reqPay(\'' + esc(x.id) + '\',\'КЗ\')">Касснаас</button> <button class="mini" onclick="reqReject(\'' + esc(x.id) + '\')">Татгалзах</button>' : '') + '</td></tr>';
     }).join('') : '<tr><td colspan="8" class="muted">' + TB[tab][0] + ' хүсэлт алга</td></tr>') + '</table></div></div>';
 }
 function reqPay(id, kind) {

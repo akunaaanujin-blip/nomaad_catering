@@ -597,7 +597,7 @@ function vcTags() { return Object.keys(vcSel).map(function (k) { return '#' + de
 function debtPay(k, key) {
   var it = (k === 'r' ? debtItems(['1201'], 1) : debtItems(['3101'], -1)).filter(function (x) { return x.key === key; })[0];
   if (!it) { toast('Энэ өр аль хэдийн хаагдсан байна'); return; }
-  openVoucher(k === 'r' ? 'ХО' : 'ХЗ');
+  openVoucher(k === 'r' ? 'КО' : 'КЗ');   // банкаар төлсөн бол «Банкны хуулга»-д тулгана (гараар харилцахын баримт бичихгүй)
   if (![].some.call($('vcPurpose').options, function (o) { return o.value === it.acc; }))
     $('vcPurpose').insertAdjacentHTML('beforeend', '<option value="' + it.acc + '">' + esc(accName(it.acc)) + ' төлсөн — ' + it.acc + '</option>');
   $('vcPurpose').value = it.acc; vcPurpose();

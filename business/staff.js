@@ -850,7 +850,7 @@ function submitExpense() {
   if (shellView === 'req') setTimeout(loadRequests, 1500);
 }
 // ── Мөнгөний хүсэлтүүд (төлөвтэй) ──
-var REQ_ST = { '': ['Хүлээгдэж', 'y'], 'Төлсөн': ['Төлсөн', 'g'], 'Татгалзсан': ['Татгалзсан', 'r'] };
+var REQ_ST = { '': ['Хүлээгдэж', 'y'], 'Батлагдсан': ['Батлагдсан', 'b'], 'Төлсөн': ['Төлсөн', 'g'], 'Татгалзсан': ['Татгалзсан', 'r'] };
 function renderRequests(list) {
   var el = $('reqList'); if (!el) return;
   list = (list || []).slice().sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
