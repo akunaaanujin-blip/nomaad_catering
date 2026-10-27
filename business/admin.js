@@ -1308,6 +1308,7 @@ function ebAdmPull(fresh) {
   post({ type: 'admin_eb', op: 'sync', biz: state.biz, fresh: !!fresh }, function (err, d) {
     ebAdm.busy = false;
     ebAdm.err = err ? 'Татаж чадсангүй: ' + ebAdmErr(err) : '';
+    if (err === 'auth') { ebAdm.err = ''; ebAdm.t = 0; }   // нэвтрэлт дууссан — дахин нэвтэрмэгц шууд татна, хуучин алдаа үлдэхгүй
     if (!err) { ebAdm.list = d.list || []; ebAdm.at = new Date().toTimeString().slice(0, 5); if (d.delivered) { toast(d.delivered + ' захиалга «Хүргэгдсэн» боллоо'); refresh(); } ebAutoBook(); }
     ebRedraw();
   });
