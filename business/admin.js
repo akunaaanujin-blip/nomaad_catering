@@ -1425,7 +1425,8 @@ function ebAutoBook(fresh) {
   window.adminOrders.forEach(function (o) { O[o.id] = o; });
   ebAdm.list.forEach(function (x) {
     var t = eb[x.code], o = O[x.id];
-    if (x.st !== 10 || !t || t < EB_AUTO_FROM || done[x.code] || (o && x.got > 0 && o.confirmed)) return;
+    if (x.st !== 10 || !t || t < EB_AUTO_FROM || (meta.closed && t.slice(0, 10).replace(/\//g, '-') <= meta.closed) || done[x.code] ||   // хаасан (шинээр эхэлсэн) хугацааных дахин бичигдэхгүй
+        (o && x.got > 0 && o.confirmed)) return;
     var mo = M[x.code] || null;
     (B[t.slice(0, 10)] = B[t.slice(0, 10)] || []).push({ x: x, o: mo, fb: ebOrdAuto(mo) ? ordFeeAdm(mo) : 0, fee: ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000 });
   });
