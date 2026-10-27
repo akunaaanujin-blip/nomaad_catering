@@ -1957,13 +1957,12 @@ function printVoucher(e, no) {
 // оны эцсийн үлдэгдэл шинэ оны эхэнд «Он нээлт» болж орно. Ингэснээр Sheet жилээс жилд дүүрэхгүй, самбар хурдан хэвээр.
 function closableYears() {
   var cur = todayStr().slice(0, 4), ys = {};
-  records.concat(journal).forEach(function (x) { var y = String(x.date || '').slice(0, 4); if (y && y < cur && (!meta.closed || y > meta.closed.slice(0, 4))) ys[y] = 1; });
-  moves.forEach(function (x) { var y = String(x.date || '').slice(0, 4); if (y && y < cur && (!meta.closed || y > meta.closed.slice(0, 4))) ys[y] = 1; });
+  records.concat(journal, moves).forEach(function (x) { var dd = String(x.date || '').slice(0, 10), y = dd.slice(0, 4); if (y && y < cur && (!meta.closed || dd > meta.closed)) ys[y] = 1; });   // шинээр эхэлсэн (он дундуур хаасан) оныг ч хаана
   return Object.keys(ys).sort();
 }
 function closeView() {
   var years = closableYears(), y = years[0];
-  var info = '<div class="kpis">' + kpi('Хаагдсан он', meta.closed ? meta.closed.slice(0, 4) + ' он хүртэл' : 'Хаагаагүй') +
+  var info = '<div class="kpis">' + kpi('Хаагдсан', meta.closed ? (/-12-31$/.test(meta.closed) ? meta.closed.slice(0, 4) + ' он хүртэл' : meta.closed + ' хүртэл') : 'Хаагаагүй') +
     kpi('Сүүлийн нөөц хуулбар', meta.lastBackup || '<span style="color:var(--red)">Аваагүй</span>') +
     kpi('Үндсэн Sheet дэх мөр', fmt(records.length + moves.length + journal.length + salary.length).slice(1)) + '</div>';
   var backup = '<div class="card"><h2>Нөөц хуулбар</h2><p class="muted">Долоо хоног бүрийн Даваа гарагт Sheet бүтнээрээ Google Drive-д «NOMAAD нөөц огноо» нэрээр автоматаар хуулагдана. ' +
@@ -1972,7 +1971,7 @@ function closeView() {
   var close = '<div class="card"><h2>Он хаах</h2>';
   if (!y) close += '<p class="muted">Хаах өнгөрсөн он алга. ' + (todayStr().slice(0, 4)) + ' оныг ' + (Number(todayStr().slice(0, 4)) + 1) + ' оны 1-р сард хаана.</p></div>';
   else {
-    var rows = KEYS.map(function (k) {
+    var rows = ALL_KEYS.map(function (k) {
       var p = yearClosePayload(k, R(), y);
       return '<tr><td>' + esc(BUSINESSES[k].name) + '</td><td class="n">' + p.open.length + '</td><td class="n">' + p.stock.length + '</td><td class="n">' + fmt(p.profit) +
         '</td><td class="n">' + fmt(p.check.inv1404) + '</td><td>' + (Math.abs(p.check.dr) < 1 ? '<span class="tag">Тэнцсэн</span>' : '<span class="tag r">Тэнцээгүй</span>') + '</td></tr>';
@@ -1986,7 +1985,7 @@ function closeView() {
       '<p class="hint" style="margin-top:10px">Хаахын өмнө: бүх дэлгүүрийн интернэт холбогдсон, ' + y + ' оны бичлэгүүд бүгд илгээгдсэн, санхүүгийн хянах самбарын шалгалт ногоон байх ёстой.</p>' +
       '<div class="pg-act"><button class="b-btn primary" onclick="doCloseYear(\'' + y + '\')">' + y + ' оныг хаах</button></div></div>';
   }
-  return info + backup + close;
+  return info + backup + freshView() + close;
 }
 function doBackup() {
   if (!API_URL) { meta.lastBackup = todayStr() + ' ' + timeStr(); save('nb_demo_meta', meta); render(); return; }
@@ -1998,7 +1997,7 @@ function doBackup() {
 }
 function doCloseYear(y) {
   var payload = { open: [], stock: [] }, bad = [];
-  KEYS.forEach(function (k) {
+  ALL_KEYS.forEach(function (k) {   // Удирдлагын санхүү ч (сервер бүх компанийн мөрийг хасдаг)
     var p = yearClosePayload(k, R(), y);
     if (Math.abs(p.check.dr) >= 1) bad.push(BUSINESSES[k].name);
     payload.open = payload.open.concat(p.open); payload.stock = payload.stock.concat(p.stock);
@@ -2008,7 +2007,7 @@ function doCloseYear(y) {
   // 1) тайлангуудыг татах
   var keep = { biz: state.biz, period: state.period, from: state.from, to: state.to };
   state.period = 'custom'; state.from = y + '-01-01'; state.to = y + '-12-31';
-  KEYS.forEach(function (k) { state.biz = k; try { exportAll(); } catch (e) {} });
+  ALL_KEYS.forEach(function (k) { state.biz = k; try { exportAll(); } catch (e) {} });
   state.biz = keep.biz; state.period = keep.period; state.from = keep.from; state.to = keep.to;
   // 2) сервер: архив + хасах + он нээлт
   var start = (Number(y) + 1) + '-01-01', end = y + '-12-31';
@@ -2025,6 +2024,154 @@ function doCloseYear(y) {
   post({ type: 'admin_close', year: y, by: ownerName, open: payload.open, stock: payload.stock }, function (err, d) {
     if (err || !d.archive) { alert('Он хааж чадсангүй: ' + (err || 'шинэ хувилбар суугаагүй')); return; }
     alert(y + ' он хаагдлаа.\nАрхив: ' + d.archive + '\nХасагдсан мөр: борлуулалт ' + d.removed.records + ', хөдөлгөөн ' + d.removed.moves + ', журнал ' + d.removed.journal + ', цалин ' + d.removed.salary);
+    refresh();
+  });
+}
+
+// ═══════════ ШИНЭЭР ЭХЛЭХ ═══════════
+// Өчигдөр хүртэлх бүх гүйлгээ архивт хуулагдаад үндсэн Sheet-ээс хасагдана; өнөөдрөөс нягтлан баталсан эхний үлдэгдлээр эхэлнэ.
+// Үлдэгдлийн ноорог системээс гарна — удирдлага бодит тоогоор (банкны үлдэгдэл, тооллого, харилцагчийн тооцоо) засаж, нягтлан батална.
+// Ноорог энэ төхөөрөмжид хадгалагдана. 1404 бараа = барааны жагсаалтын нийт, 4601 = тэнцүүлэх дүн (автоматаар).
+var FRESH_KEY = 'nb_fresh_draft';
+function freshDraft(rebuild) {
+  var t = todayStr(), d = load(FRESH_KEY, null);
+  if (!rebuild && d && d.start === t) return d;
+  d = { start: t, cutoff: prevDay(t), biz: {}, acct: '', ok: false, backup: '' };
+  ALL_KEYS.forEach(function (k) {
+    var p = closePayloadAt(k, R(), d.cutoff, d.cutoff + ' хүртэлх');
+    d.biz[k] = {
+      open: p.open.filter(function (e) { return [e.dr, e.cr].indexOf('1404') < 0 && [e.dr, e.cr].indexOf('4601') < 0; }).map(function (e) {
+        var v = e.dr === '0000' ? -e.amount : e.amount;
+        return { acc: e.dr === '0000' ? e.cr : e.dr, partner: e.partner || '', desc: e.desc, v: v, sys: v };
+      }),
+      stock: p.stock.map(function (m) { return { loc: m.loc, item: m.item, qty: m.qty, cost: m.cost, sq: m.qty, sc: m.cost }; })
+    };
+  });
+  save(FRESH_KEY, d); return d;
+}
+function freshTotals(B) {
+  var inv = r0(B.stock.reduce(function (s, m) { return s + (Number(m.qty) || 0) * (Number(m.cost) || 0); }, 0));
+  var net = r0(B.open.reduce(function (s, l) { return s + (Number(l.v) || 0); }, 0) + inv);
+  var g = function (f) { return r0(B.open.filter(f).reduce(function (s, l) { return s + l.v; }, 0)); };
+  return { inv: inv, re: -net, cash: g(function (l) { return ACC[l.acc] && ACC[l.acc].cash; }), ar: g(function (l) { return l.acc === '1201'; }), ap: -g(function (l) { return l.acc === '3101'; }) };
+}
+function freshPayload(d) {
+  var open = [], stock = [];
+  Object.keys(d.biz).forEach(function (k) {
+    var B = d.biz[k], T = freshTotals(B);
+    var push = function (acc, v, partner, desc) { v = r0(v); if (Math.abs(v) < 0.01) return; open.push(v > 0 ? { biz: k, dr: acc, cr: '0000', amount: v, partner: partner, desc: desc } : { biz: k, dr: '0000', cr: acc, amount: -v, partner: partner, desc: desc }); };
+    B.open.forEach(function (l) { push(l.acc, l.v, l.partner, l.desc || accName(l.acc)); });
+    push('1404', T.inv, '', accName('1404'));
+    push('4601', T.re, '', accName('4601') + ' (эхний үлдэгдлийн тэнцүүлэлт)');
+    B.stock.forEach(function (m) { if (Number(m.qty)) stock.push({ biz: k, loc: m.loc, item: m.item, qty: Number(m.qty), cost: Number(m.cost) || 0 }); });
+  });
+  return { open: open, stock: stock };
+}
+function freshSave(d) { save(FRESH_KEY, d); render(); }
+function freshSet(k, kind, i, f, val) {
+  var d = freshDraft(), row = d.biz[k][kind][i];
+  if (kind === 'open' && f === 'amt') row.v = debitNormal(row.acc) ? Number(val) || 0 : -(Number(val) || 0);
+  else if (f === 'qty' || f === 'cost') row[f] = Number(val) || 0;
+  else row[f] = String(val || '').trim();
+  d.ok = false; freshSave(d);
+}
+function freshDel(k, kind, i) { var d = freshDraft(); d.biz[k][kind].splice(i, 1); d.ok = false; freshSave(d); }
+function freshAdd(k, kind) {
+  var d = freshDraft();
+  if (kind === 'open') d.biz[k].open.push({ acc: $('frAcc').value, partner: $('frPt').value.trim(), desc: accName($('frAcc').value), v: 0, sys: 0 });
+  else d.biz[k].stock.push({ loc: 'Дэлгүүр', item: $('frItem').value.trim(), qty: 0, cost: 0, sq: 0, sc: 0 });
+  d.ok = false; freshSave(d);
+}
+function freshView() {
+  var d = freshDraft(), k = d.biz[state.freshBiz] ? state.freshBiz : d.biz[state.biz] ? state.biz : ALL_KEYS[0], B = d.biz[k];
+  var name = function (x) { return x === 'mgmt' ? 'Удирдлага' : BUSINESSES[x].name; };
+  var sum = ALL_KEYS.map(function (x) {
+    var T = freshTotals(d.biz[x]);
+    return '<tr' + (x === k ? ' class="b"' : '') + ' style="cursor:pointer" onclick="state.freshBiz=\'' + x + '\';render()"><td>' + esc(name(x)) + '</td><td class="n">' + fmt(T.cash) + '</td><td class="n">' + fmt(T.ar) + '</td><td class="n">' + fmt(T.ap) +
+      '</td><td class="n">' + fmt(T.inv) + '</td><td class="n">' + d.biz[x].stock.length + '</td><td class="n">' + fmt(T.re) + '</td></tr>';
+  }).join('');
+  var inp = function (v, on, w) { return '<input type="number" step="any" value="' + r0(v) + '" style="width:' + (w || 120) + 'px;text-align:right" onchange="' + on + '">'; };
+  var lines = B.open.map(function (l, i) {
+    var nat = debitNormal(l.acc) ? l.v : -l.v, sys = debitNormal(l.acc) ? l.sys : -l.sys;
+    return '<tr><td>' + l.acc + ' ' + esc(accName(l.acc)) + '</td><td><input value="' + esc(l.partner) + '" style="width:160px" onchange="freshSet(\'' + k + '\',\'open\',' + i + ',\'partner\',this.value)"></td>' +
+      '<td class="n muted">' + fmt(sys) + '</td><td class="n">' + inp(nat, 'freshSet(\'' + k + '\',\'open\',' + i + ',\'amt\',this.value)') + '</td><td><button class="mini" onclick="freshDel(\'' + k + '\',\'open\',' + i + ')">×</button></td></tr>';
+  }).join('');
+  var accOpts = ACCOUNTS.filter(function (a) { return /^(asset|liab|equity)$/.test(a[2]) && !/^(0000|1404|4601)$/.test(a[0]); })
+    .map(function (a) { return '<option value="' + a[0] + '">' + a[0] + ' ' + esc(accName(a[0])) + '</option>'; }).join('');
+  var stk = B.stock.map(function (m, i) {
+    var on = function (f) { return 'freshSet(\'' + k + '\',\'stock\',' + i + ',\'' + f + '\',this.value)'; };
+    return '<tr><td>' + esc(m.item) + '</td><td><select onchange="' + on('loc') + '">' + ['Дэлгүүр', 'Агуулах'].map(function (L) { return '<option' + (m.loc === L ? ' selected' : '') + '>' + L + '</option>'; }).join('') + '</select></td>' +
+      '<td class="n muted">' + r0(m.sq) + '</td><td class="n">' + inp(m.qty, on('qty'), 80) + '</td><td class="n muted">' + fmt(m.sc) + '</td><td class="n">' + inp(m.cost, on('cost'), 100) + '</td>' +
+      '<td class="n">' + fmt(r0(m.qty * m.cost)) + '</td><td><button class="mini" onclick="freshDel(\'' + k + '\',\'stock\',' + i + ')">×</button></td></tr>';
+  }).join('');
+  var T = freshTotals(B), ready = d.ok && d.acct && d.backup;
+  return '<div class="card"><h2>Шинээр эхлэх (' + d.start + '-ээс)</h2>' +
+    '<ol class="steps"><li><b>Нөөц:</b> бүх компанийн бүх хугацааны тайлан Excel-ээр татагдаж, Sheet бүтнээрээ Drive-д хуулагдана.' + (d.backup ? ' <span class="tag">Авсан ' + esc(d.backup) + '</span>' : '') + '</li>' +
+    '<li><b>Эхний үлдэгдэл:</b> доорх ноорог системийн ' + d.cutoff + '-ны үлдэгдэл. Банкны үлдэгдэл, тооллогын тоо, өртөг, харилцагчийн тооцоог бодит тоогоор засна («Систем» багана — харьцуулах).</li>' +
+    '<li><b>Нягтлан:</b> «Акт хэвлэх»-ээр хэвлэж нягтлан бодогчоор шалгуулж, баталсныг тэмдэглэнэ.</li>' +
+    '<li><b>Шинээр эхлэх:</b> ' + d.cutoff + ' хүртэлх борлуулалт, зарлага, барааны хөдөлгөөн, журнал, цалин, банкны хуулга, дууссан захиалга үндсэн Sheet-ээс хасагдаж (архивт үлдэнэ), үлдэгдэл ' + d.start + '-нд «Он нээлт» болж орно. Хүргэгдээгүй захиалга үлдэнэ.</li></ol>' +
+    '<div class="pg-act"><button class="b-btn primary" onclick="freshBackup()">1. Нөөц авах (Excel + Drive)</button><button class="b-btn" onclick="if(confirm(\'Засварууд арилж, системийн дүнгээр дахин гарна. Үргэлжлүүлэх үү?\')){freshDraft(true);render()}">Ноорог дахин гаргах</button>' +
+    '<button class="b-btn" onclick="freshPrint()">3. Акт хэвлэх</button></div>' +
+    '<div class="scroll" style="margin-top:12px"><table class="rep-t"><tr><th>Компани</th><th class="n">Мөнгө</th><th class="n">Авлага</th><th class="n">Өглөг</th><th class="n">Бараа</th><th class="n">Барааны мөр</th><th class="n">Хуримтлагдсан ашиг (тэнцүүлэлт)</th></tr>' + sum + '</table></div>' +
+    '<p class="hint">Мөр дээр дарж компанийг сонгоно. Засаж буй: <b>' + esc(name(k)) + '</b></p>' +
+    '<h3>Мөнгө, авлага, өглөг, бусад данс</h3><div class="scroll"><table class="rep-t"><tr><th>Данс</th><th>Харилцагч</th><th class="n">Систем</th><th class="n">Бодит үлдэгдэл</th><th></th></tr>' + (lines || '<tr><td colspan="5" class="muted">Мөр алга</td></tr>') +
+    '<tr><td><select id="frAcc">' + accOpts + '</select></td><td><input id="frPt" placeholder="Харилцагч (авлага, өглөгт)" style="width:160px"></td><td></td><td></td><td><button class="mini" onclick="freshAdd(\'' + k + '\',\'open\')">+ Нэмэх</button></td></tr></table></div>' +
+    '<h3>Бараа (тооллогоор)</h3><div class="scroll"><table class="rep-t"><tr><th>Бараа</th><th>Байршил</th><th class="n">Систем тоо</th><th class="n">Бодит тоо</th><th class="n">Систем өртөг</th><th class="n">Нэгж өртөг</th><th class="n">Дүн</th><th></th></tr>' + (stk || '<tr><td colspan="8" class="muted">Бараа алга</td></tr>') +
+    '<tr class="tot"><td colspan="6">Нийт (1404)</td><td class="n">' + fmt(T.inv) + '</td><td></td></tr>' +
+    '<tr><td colspan="7"><input id="frItem" placeholder="Барааны нэр (жагсаалтад байхгүй бол)" style="width:260px"></td><td><button class="mini" onclick="freshAdd(\'' + k + '\',\'stock\')">+ Нэмэх</button></td></tr></table></div>' +
+    '<div class="filter" style="margin-top:14px"><label>Баталсан нягтлан бодогч<input id="frAcct" value="' + esc(d.acct) + '" onchange="var d=freshDraft();d.acct=this.value.trim();freshSave(d)"></label>' +
+    '<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" style="width:auto"' + (d.ok ? ' checked' : '') + ' onchange="var d=freshDraft();d.ok=this.checked;freshSave(d)"> Нягтлан актыг шалгаж баталсан</label></div>' +
+    '<div class="pg-act" style="margin-top:10px"><button class="b-btn primary"' + (ready ? '' : ' disabled title="Нөөц авах, нягтлангийн нэр, баталсан тэмдэглэгээ шаардлагатай"') + ' onclick="doFresh()">4. Шинээр эхлэх</button></div></div>';
+}
+function freshBackup() {
+  var d = freshDraft(), keep = { biz: state.biz, period: state.period, from: state.from, to: state.to };
+  if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин дарна уу'); ensureXlsx(function () {}); return; }
+  state.period = 'all';
+  ALL_KEYS.forEach(function (k) { state.biz = k; try { exportAll(); } catch (e) {} });
+  state.biz = keep.biz; state.period = keep.period; state.from = keep.from; state.to = keep.to;
+  d.backup = todayStr() + ' ' + timeStr(); save(FRESH_KEY, d);
+  doBackup();
+}
+function freshPrint() {
+  var d = freshDraft(), name = function (x) { return x === 'mgmt' ? 'Удирдлага' : BUSINESSES[x].name; };
+  var html = ALL_KEYS.map(function (k) {
+    var B = d.biz[k], T = freshTotals(B);
+    var ol = B.open.filter(function (l) { return Math.abs(l.v) >= 0.01; }).map(function (l) {
+      return '<tr><td>' + l.acc + ' ' + esc(accName(l.acc)) + '</td><td>' + esc(l.partner) + '</td><td class="n">' + fmt(debitNormal(l.acc) ? l.v : -l.v) + '</td></tr>'; }).join('');
+    var sl = B.stock.filter(function (m) { return Number(m.qty); }).map(function (m) {
+      return '<tr><td>' + esc(m.item) + '</td><td>' + m.loc + '</td><td class="n">' + r0(m.qty) + '</td><td class="n">' + fmt(m.cost) + '</td><td class="n">' + fmt(r0(m.qty * m.cost)) + '</td></tr>'; }).join('');
+    return '<h2>' + esc(name(k)) + '</h2><table><tr><th>Данс</th><th>Харилцагч</th><th>Дүн</th></tr>' + ol +
+      '<tr><td>1404 ' + esc(accName('1404')) + '</td><td></td><td class="n">' + fmt(T.inv) + '</td></tr><tr><td>4601 ' + esc(accName('4601')) + ' (тэнцүүлэлт)</td><td></td><td class="n">' + fmt(T.re) + '</td></tr></table>' +
+      (sl ? '<h3>Барааны үлдэгдэл</h3><table><tr><th>Бараа</th><th>Байршил</th><th>Тоо</th><th>Нэгж өртөг</th><th>Дүн</th></tr>' + sl + '<tr><td colspan="4"><b>Нийт</b></td><td class="n"><b>' + fmt(T.inv) + '</b></td></tr></table>' : '');
+  }).join('');
+  var w = window.open('', '_blank');
+  if (!w) { toast('Попап хаагдсан байна — зөвшөөрөөд дахин дарна уу'); return; }
+  w.document.write('<!doctype html><meta charset="utf-8"><title>Эхний үлдэгдлийн акт ' + d.start + '</title><style>body{font:13px system-ui;margin:24px}table{border-collapse:collapse;width:100%;margin:6px 0 14px}td,th{border:1px solid #999;padding:4px 6px;text-align:left}.n{text-align:right}h2{margin:18px 0 4px}.sg{margin-top:40px;line-height:2.6}</style>' +
+    '<h1>Эхний үлдэгдлийн акт</h1><p>' + d.start + '-ны өдрийн байдлаар (' + d.cutoff + ' хүртэлх гүйлгээ архивт). Дүн — дансны хэвийн талаар (хөрөнгө: дебет, өр, өмч: кредит).</p>' + html +
+    '<div class="sg">Бэлтгэсэн: ____________________ ' + esc(ownerName || '') + '<br>Хянаж баталсан нягтлан бодогч: ____________________ ' + esc(d.acct || '') + '<br>Огноо: ' + d.start + '</div>');
+  w.document.close(); w.focus(); w.print();
+}
+function doFresh() {
+  var d = freshDraft();
+  if (!(d.ok && d.acct && d.backup)) { toast('Нөөц авах, нягтлангийн батламж шаардлагатай'); return; }
+  var P = freshPayload(d);
+  if (prompt(d.cutoff + ' хүртэлх БҮХ гүйлгээ үндсэн Sheet-ээс хасагдана (архив хуулбар Drive-д үлдэнэ).\nБаталгаажуулахын тулд «ШИНЭЭР» гэж бичнэ үү:') !== 'ШИНЭЭР') { toast('Цуцаллаа'); return; }
+  if (!API_URL) {   // туршилтын горим — серверийн үйлдлийг давтана
+    var old = function (x) { return String(x).slice(0, 10) <= d.cutoff; }, live = { 'Хүргэгдсэн': 1, 'Буцаасан': 1, 'Цуцалсан': 1 };
+    records = records.filter(function (x) { return !old(x.date); }); moves = moves.filter(function (x) { return !old(x.date); });
+    journal = journal.filter(function (x) { return !old(x.date); }); salary = salary.filter(function (x) { return !old(x.date); });
+    window.adminOrders = (window.adminOrders || []).filter(function (o) { return !old(o.date) || !live[o.status]; });
+    P.open.forEach(function (e, i) { journal.push({ id: 'J' + Date.now() + '-' + i, date: d.start, biz: e.biz, dr: e.dr, cr: e.cr, amount: e.amount, partner: e.partner, desc: 'Он нээлт ' + d.start + ' · ' + e.desc, by: ownerName }); });
+    P.stock.forEach(function (m, i) { moves.push({ id: 'M' + Date.now() + '-o' + i, date: d.start + ' 00:00', biz: m.biz, loc: m.loc, item: m.item, kind: 'Он нээлт', qty: m.qty, cost: m.cost, by: ownerName, note: 'Шинээр эхлэх ' + d.start, pay: '', partner: '' }); });
+    meta.closed = d.cutoff; save('nb_records', records); save('nb_demo_moves', moves); save('nb_demo_journal', journal); save('nb_demo_meta', meta); save('nb_orders_cozy', window.adminOrders);
+    save(FRESH_KEY, null); toast('Шинээр эхэллээ'); render(); return;
+  }
+  toast('Шинээр эхлүүлж байна — 1-2 минут болно...');
+  post({ type: 'admin_reset', cutoff: d.cutoff, start: d.start, by: ownerName, open: P.open, stock: P.stock }, function (err, r) {
+    if (err || !r.archive) { alert('Чадсангүй: ' + (err || 'серверийн шинэ хувилбар (v6.0) суугаагүй')); return; }
+    save(FRESH_KEY, null);
+    alert('Шинээр эхэллээ (' + d.start + ').\nАрхив: ' + r.archive + '\nХасагдсан: борлуулалт ' + r.removed.records + ', хөдөлгөөн ' + r.removed.moves + ', журнал ' + r.removed.journal +
+      ', цалин ' + r.removed.salary + ', банк ' + r.removed.bank + ', захиалга ' + r.removed.orders);
     refresh();
   });
 }

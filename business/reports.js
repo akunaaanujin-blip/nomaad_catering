@@ -653,8 +653,10 @@ function sum(rows, k) { return r0(rows.reduce(function (s, r) { return s + (Numb
 // ═══════════ ОН ХААХ: оны эцсийн үлдэгдлийг шинэ оны «Он нээлт» болгох ═══════════
 // Орлого/зардлын дансууд хаагдаж 4601 «Хуримтлагдсан ашиг»-т нэмэгдэнэ. Хөрөнгө, өр, өмчийн данс бүрийн үлдэгдэл
 // 0000 нэгтгэлийн данстай хос бичилтээр шилжинэ (0000-ын нийлбэр үргэлж 0). Авлага, өглөгийг харилцагч тус бүрээр.
-function yearClosePayload(biz, R, year) {
-  var end = year + '-12-31', E = buildJournal(biz, R), b = balances(E, end), open = [];
+function yearClosePayload(biz, R, year) { return closePayloadAt(biz, R, year + '-12-31', year + ' оны'); }
+// «end» өдрийн эцсийн үлдэгдэл (он хаах, шинээр эхлэх) — label: 4601-д нэмэгдсэн ашгийн үе
+function closePayloadAt(biz, R, end, label) {
+  var E = buildJournal(biz, R), b = balances(E, end), open = [];
   var line = function (acc, bal, partner, desc) {
     bal = r0(bal);
     if (Math.abs(bal) < 0.01) return;
@@ -677,7 +679,7 @@ function yearClosePayload(biz, R, year) {
     var k = a[0];
     if (k === '0000' || !/^(asset|liab|equity)$/.test(a[2])) return;
     if (byPartner[k]) { Object.keys(byPartner[k]).forEach(function (key) { var pt = key.split('\u0001'); line(k, byPartner[k][key], pt[0], a[1] + (pt[1] ? ' #' + pt[1] : '')); }); return; }
-    line(k, (b[k] || 0) + (k === '4601' ? pl : 0), '', k === '4601' ? a[1] + ' (' + year + ' оны ашиг нэмэгдсэн)' : a[1]);
+    line(k, (b[k] || 0) + (k === '4601' ? pl : 0), '', k === '4601' ? a[1] + ' (' + label + ' ашиг нэмэгдсэн)' : a[1]);
   });
   // Бараа: байршил тус бүрийн тоо, дундаж өртөг
   var ce = costEngine(biz, R, end), loc = {};

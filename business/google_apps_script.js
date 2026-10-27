@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v5.9 (ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v6.0 (шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -133,6 +133,7 @@ function doPost(e) {
     if (data.type === 'admin_contract') return json(isAdmin(data) ? adminContract(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_backup') return json(isAdmin(data) ? adminBackup() : { status: 'error', error: 'auth' });
     if (data.type === 'admin_close') return json(isAdmin(data) ? adminClose(data) : { status: 'error', error: 'auth' });
+    if (data.type === 'admin_reset') return json(isAdmin(data) ? adminReset(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_product') return json(isAdmin(data) ? adminProduct(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_record') return json(isAdmin(data) ? adminRecord(data) : { status: 'error', error: 'auth' });
     if (data.type === 'admin_partner') return json(isAdmin(data) ? adminPartner(data) : { status: 'error', error: 'auth' });
@@ -950,12 +951,60 @@ function adminClose(d) {
   props.setProperty('CLOSED', end);
   return { status: 'ok', archive: copy.getUrl(), removed: removed, opened: { journal: open.length, stock: stock.length } };
 }
-// Огноо (2-р багана) нь «end»-ээс хойшхи мөрүүдийг л үлдээнэ (нэг дор дахин бичнэ — мөр мөрөөр устгахаас хурдан)
-function pruneSheet(sh, width, end) {
+// ═══════════ ШИНЭЭР ЭХЛЭХ ═══════════
+// Он хаахтай ижил, гэхдээ дурын огноогоор: «cutoff» хүртэлх бүх гүйлгээ (борлуулалт, хөдөлгөөн, журнал, цалин, банкны хуулга,
+// дууссан захиалга) архивт хуулагдаад үндсэн Sheet-ээс хасагдана; удирдлага (нягтлан баталсан) эхний үлдэгдлийг «start»-д «Он нээлт» болгон бичнэ.
+// Хүргэгдээгүй (идэвхтэй) захиалга үлдэнэ.
+function adminReset(d) {
+  const today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), end = String(d.cutoff || ''), start = String(d.start || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(end) || !/^\d{4}-\d{2}-\d{2}$/.test(start) || end >= today || start <= end || start > today) return { status: 'error', error: 'date' };
+  const props = PropertiesService.getScriptProperties();
+  if ((props.getProperty('CLOSED') || '') >= end) return { status: 'error', error: 'closed' };
+  const open = d.open || [], stock = d.stock || [];
+  for (let i = 0; i < open.length; i++) {
+    const e = open[i];
+    if (!BIZ_NAMES[e.biz] || !/^\d{4,6}$/.test(String(e.dr)) || !/^\d{4,6}$/.test(String(e.cr)) || !(Number(e.amount) > 0)) return { status: 'error', error: 'fields', index: i };
+  }
+  for (let i = 0; i < stock.length; i++) {
+    const m = stock[i];
+    if (!BIZ_NAMES[m.biz] || !STOCK_LOCS[m.loc] || !String(m.item || '').trim() || !isFinite(Number(m.qty)) || !Number(m.qty)) return { status: 'error', error: 'fields', index: i };
+  }
+  const copy = backupCopy('NOMAAD архив ' + end + ' хүртэл (шинээр эхлэхээс өмнөх бүрэн хуулбар)');
+  const st = ORDER_KEYS.indexOf('status'), DONE = { 'Хүргэгдсэн': 1, 'Буцаасан': 1, 'Цуцалсан': 1 };
+  const removed = {
+    records: pruneSheet(logSheet(), LOG_HEAD.length, end),
+    moves: pruneSheet(stockSheet(), STOCK_HEAD.length, end),
+    journal: pruneSheet(journalSheet(), JOURNAL_HEAD.length, end),
+    salary: pruneSheet(salarySheet(), SALARY_HEAD.length, end),
+    bank: pruneSheet(bankSheet(), BANK_HEAD.length, end, 2),
+    orders: pruneSheet(orderSheet(), ORDER_HEAD.length, end, 1, function (v) { return !DONE[String(v[st] || '').trim()]; }),
+  };
+  const by = String(d.by || '').slice(0, 40), now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
+  if (open.length) {
+    const rows = open.map(function (e, i) {
+      return ['J' + Date.now() + '-' + i, start, BIZ_NAMES[e.biz], String(e.dr), String(e.cr), Number(e.amount), String(e.partner || '').slice(0, 80),
+        ('Он нээлт ' + start + ' · ' + String(e.desc || '')).slice(0, 200), by, now, e.biz, '', ''];
+    });
+    const sh = journalSheet();
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, JOURNAL_HEAD.length).setValues(rows);
+  }
+  if (stock.length) {
+    const rows = stock.map(function (m, i) {
+      return ['M' + Date.now() + '-o' + i, start + ' 00:00', BIZ_NAMES[m.biz], m.loc, String(m.item).trim().slice(0, 80), 'Он нээлт', Number(m.qty),
+        Math.max(0, Math.round((Number(m.cost) || 0) * 100) / 100) || '', by, 'Шинээр эхлэх ' + start + ' · эхний үлдэгдэл', m.biz, '', '', '', '', '', '', '', '', ''];
+    });
+    const sh = stockSheet();
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, STOCK_HEAD.length).setValues(rows);
+  }
+  props.setProperty('CLOSED', end);
+  return { status: 'ok', archive: copy.getUrl(), removed: removed, opened: { journal: open.length, stock: stock.length } };
+}
+// Огноо (2-р багана, эсвэл «col») нь «end»-ээс хойшхи мөрүүдийг л үлдээнэ (нэг дор дахин бичнэ — мөр мөрөөр устгахаас хурдан). keepFn — хуучин ч үлдээх мөр
+function pruneSheet(sh, width, end, col, keepFn) {
   const last = sh.getLastRow();
   if (last < 2) return 0;
-  const rng = sh.getRange(2, 1, last - 1, width), vals = rng.getValues();
-  const keep = vals.filter(function (v) { return fmtDate(v[1], 'yyyy-MM-dd').slice(0, 10) > end; });
+  const rng = sh.getRange(2, 1, last - 1, width), vals = rng.getValues(), c = col == null ? 1 : col;
+  const keep = vals.filter(function (v) { return fmtDate(v[c], 'yyyy-MM-dd').slice(0, 10) > end || (keepFn && keepFn(v)); });
   const n = vals.length - keep.length;
   if (!n) return 0;
   rng.clearContent();
