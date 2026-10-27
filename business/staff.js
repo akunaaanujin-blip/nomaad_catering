@@ -151,10 +151,10 @@ function buildShell() {
     wrap.insertAdjacentHTML('afterbegin', '<h2 class="ep-title" id="epTitle"></h2>');
     var pend = $('pending');   // тооллого, мөнгөний хүсэлтийн хуудсууд (гурван дэлгүүрт ижил тул энд үүсгэнэ)
     var html = '<div data-view="count" id="countView" style="display:none"><div class="card">' +
-        '<div class="cnt-bar">' + (BIZ.warehouse ? '<label>Байршил<select id="cntLoc"><option>Дэлгүүр</option><option>Агуулах</option></select></label>' : '') +
+        '<div class="cnt-bar">' + (BIZ.warehouse ? '<label>Байршил<select id="cntLoc" onchange="renderCount()"><option>Дэлгүүр</option><option>Агуулах</option></select></label>' : '') +
         '<input type="search" id="cntQ" placeholder="Бараагаар хайх…" oninput="renderCount()"></div>' +
         '<div id="cntList" style="margin-top:8px;overflow-x:auto"></div>' +
-        '<p class="muted" style="margin-top:8px">Бараа бүрийг тоолоод бодит тоог бичнэ. Тоолоогүй барааг хоосон үлдээнэ. Илгээсний дараа удирдлага баталж, үлдэгдэл засагдана.</p>' +
+        '<p class="muted" style="margin-top:8px">«Байх ёстой» — системийн үлдэгдэл. Бараа бүрийг тоолоод бодит тоог «Тооллого»-д бичнэ. Тоолоогүй барааг хоосон үлдээнэ. Илгээсний дараа удирдлага баталж, үлдэгдэл засагдана.</p>' +
         '<button class="btn" onclick="submitCount()">Тооллого илгээх</button></div></div>' +
       '<div data-view="req" id="reqView" style="display:none"><div class="card"><div class="ord-bar"><button class="btn sm" onclick="openExpense()">＋ Мөнгөний хүсэлт</button>' +
         '<button class="link" onclick="loadRequests()">Шинэчлэх</button></div><ul class="list" id="reqList" style="margin-top:8px"></ul></div></div>';
@@ -871,7 +871,7 @@ function loadRequests() {
       renderRequests(d.requests.concat(local.filter(function (r) { return !ids[r.id]; })));   // илгээгдээгүй нь «Хүлээгдэж»
     }).catch(function () {});
 }
-// ── Тооллого: бодит тоог бичнэ (системийн тоог харуулахгүй — сохор тооллого), удирдлага батална ──
+// ── Тооллого: «Байх ёстой» (системийн үлдэгдэл, сонгосон байршлаар) ба бодит тоолсон тоо, зөрүү; удирдлага батална ──
 var cntVals = {};
 function renderCount() {
   var el = $('cntList'); if (!el) return;
@@ -880,11 +880,15 @@ function renderCount() {
   Object.keys(stock || {}).forEach(function (k) { if (!(k in names)) names[k] = BIZ.unit || ''; });
   var rows = Object.keys(names).filter(function (n) { return !isNonGoods(n) && (!q || n.toLowerCase().indexOf(q) >= 0); }).sort();
   var done = Object.keys(cntVals).filter(function (k) { return cntVals[k] !== ''; }).length;
-  el.innerHTML = '<table class="rep-t cnt-t"><tr><th>Бараа</th><th class="num">Тоолсон</th></tr>' + rows.map(function (n) {
-    return '<tr><td>' + esc(n) + ' <small class="muted">' + esc(names[n]) + '</small></td><td class="num"><input class="cnt-in" type="number" inputmode="decimal" min="0" step="any" value="' + esc(cntVals[n] == null ? '' : cntVals[n]) +
-      '" oninput="cntVals[' + esc(JSON.stringify(n)) + ']=this.value;cntNote()"></td></tr>'; }).join('') + '</table>' +
+  var k = $('cntLoc') && $('cntLoc').value === 'Агуулах' ? 'wh' : 'shop';
+  el.innerHTML = '<table class="rep-t cnt-t"><tr><th>Бараа</th><th class="num">Байх ёстой</th><th class="num">Тооллого</th><th class="num">Зөрүү</th></tr>' + rows.map(function (n, i) {
+    var sys = Math.round((((stock || {})[n] || {})[k] || 0) * 1000) / 1000;
+    return '<tr><td>' + esc(n) + ' <small class="muted">' + esc(names[n]) + '</small></td><td class="num">' + sys + '</td><td class="num"><input class="cnt-in" type="number" inputmode="decimal" min="0" step="any" value="' + esc(cntVals[n] == null ? '' : cntVals[n]) +
+      '" oninput="cntVals[' + esc(JSON.stringify(n)) + ']=this.value;cntDiff(' + i + ',this.value,' + sys + ');cntNote()"></td><td class="num" id="cntD' + i + '">' + cntDiffTxt(cntVals[n], sys) + '</td></tr>'; }).join('') + '</table>' +
     '<p class="muted" id="cntN" style="margin-top:6px">' + (done ? done + ' бараа тоолсон' : '') + '</p>';
 }
+function cntDiffTxt(v, sys) { if (v == null || v === '' || !isFinite(Number(v))) return ''; var d = Math.round((Number(v) - sys) * 1000) / 1000; return d ? '<b style="color:' + (d < 0 ? 'var(--red,#DC2626)' : 'var(--green,#16A34A)') + '">' + (d > 0 ? '+' : '') + d + '</b>' : '<span class="muted">0</span>'; }
+function cntDiff(i, v, sys) { var c = $('cntD' + i); if (c) c.innerHTML = cntDiffTxt(v, sys); }
 function cntNote() { var n = Object.keys(cntVals).filter(function (k) { return cntVals[k] !== ''; }).length, el = $('cntN'); if (el) el.textContent = n ? n + ' бараа тоолсон' : ''; }
 function submitCount() {
   var items = cntItems();
