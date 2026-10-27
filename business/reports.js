@@ -91,6 +91,7 @@ function ebOrdAuto(o) { return !!o && ebFeeAuto(EB_FEE_DATE[o.id] || o.date); }
 var OLD_EXP = { '7201': '7114', '7202': '7111', '7203': '7117', '7204': '7123', '7205': '7120', '7206': '7112', '7207': '7124', '7301': '7122',
   '7302': '7421', '7303': '7404', '7304': '7113', '7305': '7412', '7401': '7201' }, MIG_TS = 1792753755735;
 function accMig(code, id) {
+  if (code === '0') return '0000';   // Sheet «0000»-ийг тоо 0 болгон хадгалсан (он нээлтийн нэгтгэл)
   var n = OLD_EXP[code]; if (!n) return code;
   if (code !== '7201' && code !== '7401') return n;
   var ts = Number((String(id || '').match(/^J(\d{13})/) || [])[1]) || 0;   // журналын ID = үүсгэсэн мөч (мс)

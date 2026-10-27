@@ -937,8 +937,9 @@ function adminClose(d) {
       return ['J' + Date.now() + '-' + i, start, BIZ_NAMES[e.biz], String(e.dr), String(e.cr), Number(e.amount), String(e.partner || '').slice(0, 80),
         ('Он нээлт ' + start.slice(0, 4) + ' · ' + String(e.desc || '')).slice(0, 200), by, now, e.biz, '', ''];
     });
-    const sh = journalSheet();
-    sh.getRange(sh.getLastRow() + 1, 1, rows.length, JOURNAL_HEAD.length).setValues(rows);
+    const sh = journalSheet(), r0w = sh.getLastRow() + 1;
+    sh.getRange(r0w, 4, rows.length, 2).setNumberFormat('@');   // «0000» тоо 0 болохгүй
+    sh.getRange(r0w, 1, rows.length, JOURNAL_HEAD.length).setValues(rows);
   }
   if (stock.length) {
     const rows = stock.map(function (m, i) {
@@ -985,8 +986,9 @@ function adminReset(d) {
       return ['J' + Date.now() + '-' + i, start, BIZ_NAMES[e.biz], String(e.dr), String(e.cr), Number(e.amount), String(e.partner || '').slice(0, 80),
         ('Он нээлт ' + start + ' · ' + String(e.desc || '')).slice(0, 200), by, now, e.biz, '', ''];
     });
-    const sh = journalSheet();
-    sh.getRange(sh.getLastRow() + 1, 1, rows.length, JOURNAL_HEAD.length).setValues(rows);
+    const sh = journalSheet(), r0w = sh.getLastRow() + 1;
+    sh.getRange(r0w, 4, rows.length, 2).setNumberFormat('@');   // «0000» тоо 0 болохгүй
+    sh.getRange(r0w, 1, rows.length, JOURNAL_HEAD.length).setValues(rows);
   }
   if (stock.length) {
     const rows = stock.map(function (m, i) {
