@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v5.8 (буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v5.9 (ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -2011,14 +2011,18 @@ function stockCount(d) {
   return { status: 'ok', diff: rows.length, same: same };
 }
 // Ажилтны «Өнөөдрийн дүн / баримт» — төхөөрөмжийн хуулбар биш, серверийн өнөөдрийн бичлэг (цуцалсан нь орохгүй)
+// v5.9: past=1 — өмнөх өдрүүдийн (≤60 хоног, өнөөдрөөс бусад) бүх ажилтны борлуулалт («Өмнөх борлуулалт» карт)
 function staffToday(d) {
   const who = checkStaff(d.token);
   if (!who) return { status: 'error', error: 'auth' };
-  const today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), sh = logSheet(), last = sh.getLastRow(), out = [];
+  const today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), sh = logSheet(), last = sh.getLastRow(), out = [], past = !!d.past;
+  const from = Utilities.formatDate(new Date(Date.now() - Math.min(60, Math.max(1, Number(d.days) || 60)) * 864e5), TZ, 'yyyy-MM-dd');
   if (last >= 2) sh.getRange(2, 1, last - 1, LOG_HEAD.length).getValues().forEach(function (r) {
-    if (String(r[15]) !== who.biz || String(r[18]) === 'Устгасан' || fmtDate(r[1], 'yyyy-MM-dd') !== today) return;
+    if (String(r[15]) !== who.biz || String(r[18]) === 'Устгасан') return;
+    const date = fmtDate(r[1], 'yyyy-MM-dd');
+    if (past ? (date >= today || date < from || String(r[16]) !== 'sale') : date !== today) return;
     const t = String(r[16]), note = String(r[14] || ''), m = note.match(/ДДТД\s*(\d{10,40})/);
-    out.push({ id: String(r[0]), date: today, time: fmtDate(r[2], 'HH:mm'), biz: who.biz, type: t, staff: String(r[5]),
+    out.push({ id: String(r[0]), date: date, time: fmtDate(r[2], 'HH:mm'), biz: who.biz, type: t, staff: String(r[5]),
       item: t === 'expense' || t === 'request' ? '' : String(r[6]), category: t === 'expense' || t === 'request' ? String(r[6]) : '', status: String(r[18] || ''), qty: Number(r[7]) || 0, unit: String(r[8] || ''),
       price: Number(r[9]) || 0, amount: Number(r[10]) || 0, pay: String(r[11] || ''), counted: Number(r[12]) || 0, diff: Number(r[13]) || 0,
       note: note, bill: String(r[17] || ''), customer: String(r[19] || ''), ddtd: m ? m[1] : '' });

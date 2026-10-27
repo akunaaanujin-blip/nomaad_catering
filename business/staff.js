@@ -116,6 +116,7 @@ function showMain() {
   renderEbBadge();
   renderToday();
   syncToday(); if (!syncTimer) syncTimer = setInterval(syncToday, 2 * 60000);   // өнөөдрийн дүн серверээс
+  syncPast();   // өмнөх өдрүүдийн бүх ажилтны борлуулалт
   if (typeof ebCheckInfo === 'function') { ebCheckInfo(); setInterval(ebCheckInfo, 30 * 60000); }
   if (BIZ.orders && typeof loadOrders === 'function') loadOrders();   // Cozy: захиалгууд
   loadTasks();
@@ -1037,6 +1038,25 @@ function syncToday() {
     })
     .catch(function () {});
 }
+// Өмнөх өдрүүдийн (60 хоног) бүх ажилтны борлуулалт серверээс — энэ дэлгүүрийн өмнөх өдрийн борлуулалтыг солино (илгээгдээгүйг үлдээнэ)
+var pastLoading = false, pastErr = false;
+function syncPast() {
+  if (!API_URL || !session || !session.token || pastLoading) return;
+  pastLoading = true; pastErr = false; renderPast();
+  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'staff_today', token: session.token, past: 1, days: 60 }) })
+    .then(function (res) { return res.json(); })
+    .then(function (d) {
+      pastLoading = false;
+      if (!d || d.status !== 'ok') { pastErr = true; renderPast(); return; }
+      var d0 = todayStr(), q = {}, byId = {}, all = load(LS_REC, []);
+      load(LS_QUEUE, []).forEach(function (r) { q[r.id] = 1; });
+      all.forEach(function (r) { byId[r.id] = r; });
+      var keep = all.filter(function (r) { return !(r.biz === BIZ_KEY && r.type === 'sale' && r.date < d0) || q[r.id]; });
+      d.records.forEach(function (s) { if (q[s.id] || s.type !== 'sale' || !(s.date < d0)) return; var l = byId[s.id]; keep.push(l ? Object.assign({}, l, s, { ddtd: l.ddtd || s.ddtd }) : s); });
+      save(LS_REC, keep); renderPast();
+    })
+    .catch(function () { pastLoading = false; pastErr = true; renderPast(); });
+}
 function updatePending(n) {
   var el = $('pending');
   if (!el) return;
@@ -1128,17 +1148,18 @@ function renderToday() {
       '</small></span><span class="amt">' + (r.diff ? (r.diff > 0 ? '+' : '−') + fmt(Math.abs(r.diff)) : '✓') + '</span></li>';
   }).join('');
 }
-// ── Өмнөх борлуулалт: энэ төхөөрөмж дээрх сүүлийн 60 хоногийн дэлгүүрийн борлуулалт, өдрөөр ──
+// ── Өмнөх борлуулалт: сүүлийн 60 хоногийн бүх ажилтны дэлгүүрийн борлуулалт (серверээс, syncPast), өдрөөр ──
 var pastDay = '';
 function renderPast() {
   var tl = $('todayList'); if (!tl) return;
-  if (!$('pastCard')) tl.parentNode.insertAdjacentHTML('afterend', '<div class="card" id="pastCard"><h2>Өмнөх борлуулалт</h2><div class="tabs" id="pastDays"></div><div id="pastSum" class="muted" style="margin:8px 0"></div><ul class="list" id="pastList"></ul></div>');
+  if (!$('pastCard')) tl.parentNode.insertAdjacentHTML('afterend', '<div class="card" id="pastCard"><h2>Өмнөх борлуулалт ' + (API_URL ? '<button class="link" style="float:right;font-size:13px;font-weight:500" onclick="syncPast()">Шинэчлэх</button>' : '') + '</h2><div class="tabs" id="pastDays"></div><div id="pastSum" class="muted" style="margin:8px 0"></div><ul class="list" id="pastList"></ul></div>');
   if ($('pastCard') && typeof shellView !== 'undefined' && shellView && shellView !== 'dash') $('pastCard').style.display = 'none';
   var td = todayStr(), isOrd = function (r) { return typeof orders !== 'undefined' && orders.some(function (o) { return o.id === r.bill; }); };
   var recs = load(LS_REC, []).filter(function (r) { return r.biz === BIZ_KEY && r.type === 'sale' && r.date < td && !isOrd(r); });
   var days = []; recs.forEach(function (r) { if (days.indexOf(r.date) < 0) days.push(r.date); });
   days.sort().reverse();
-  if (!days.length) { $('pastDays').innerHTML = ''; $('pastSum').textContent = ''; $('pastList').innerHTML = '<li class="muted">Өмнөх өдрүүдэд борлуулалт алга</li>'; return; }
+  var st = pastLoading ? 'Серверээс татаж байна…' : pastErr ? 'Серверээс татаж чадсангүй — энэ төхөөрөмж дээрх бичлэгийг харуулж байна' : '';
+  if (!days.length) { $('pastDays').innerHTML = ''; $('pastSum').textContent = st; $('pastList').innerHTML = pastLoading ? '' : '<li class="muted">Өмнөх өдрүүдэд борлуулалт алга</li>'; return; }
   if (days.indexOf(pastDay) < 0) pastDay = days[0];
   var yd = todayStr(new Date(Date.now() - 864e5));
   $('pastDays').innerHTML = days.slice(0, 14).map(function (d) {
@@ -1147,7 +1168,7 @@ function renderPast() {
   var seen = {}, keys = [];
   recs.filter(function (r) { return r.date === pastDay; }).reverse().forEach(function (r) { var k = billKey(r); if (!seen[k]) { seen[k] = 1; keys.push(k); } });
   var bills = keys.map(billInfo), tot = bills.reduce(function (a, b) { return a + b.net; }, 0);
-  $('pastSum').innerHTML = esc(pastDay) + ' · ' + bills.length + ' баримт · нийт <b>' + fmt(tot) + '</b>';
+  $('pastSum').innerHTML = esc(pastDay) + ' · ' + bills.length + ' баримт · нийт <b>' + fmt(tot) + '</b>' + (st ? '<br><small>' + esc(st) + '</small>' : '');
   $('pastList').innerHTML = bills.map(function (b) {
     return '<li class="bill-row" onclick="openBill(\'' + jsqS(b.key) + '\')"><span><b>' + esc(b.items.slice(0, 3).join(', ') + (b.items.length > 3 ? ' +' + (b.items.length - 3) : '')) + '</b>' +
       '<small>' + esc(b.time) + ' · ' + esc(b.pays.join(' + ')) + (b.staff ? ' · ' + esc(b.staff) : '') + (b.customer ? ' · ' + esc(b.customer) : '') + (b.disc ? ' · хөнгөлөлт ' + fmt(b.disc) : '') +
