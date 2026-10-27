@@ -1611,7 +1611,7 @@ function closesTable(r) {
 function allReportList() {   // [модуль, тайлан, нэр] — тойм/самбар/карт/гар бичилтээс бусад бүх тайлан
   var out = [];
   ['sales', 'products', 'finance'].forEach(function (mod) {
-    SUBS[mod].forEach(function (s) { if (subVisible(state.biz, s[0]) && !/^(overview|dash|card|entry|close|bank|opening|lock|pstmt|simple|monthly|glossary|acct|setup)$/.test(s[0])) out.push([mod, s[0], s[1]]); });
+    SUBS[mod].forEach(function (s) { if (subVisible(state.biz, s[0]) && !/^(overview|dash|card|entry|close|bank|opening|lock|pstmt|simple|monthly|glossary|acct|setup|buuhia)$/.test(s[0])) out.push([mod, s[0], s[1]]); });
   });
   return out;
 }
@@ -1649,8 +1649,9 @@ function exportCurrent() {
 function exportAll() {
   if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин оролдоно уу'); ensureXlsx(function () {}); return; }
   var wb = XLSX.utils.book_new(), used = {};
+  var bad = [];
   allReportList().forEach(function (x) {
-    var rep = makeReport(x[0], x[1]);
+    var rep; try { rep = makeReport(x[0], x[1]); } catch (e) { bad.push(x[2]); return; }   // нэг тайлан алдаатай ч бусад нь татагдана
     if (!rep) return;
     var nm = ({ sales: 'Борлуулалт', products: 'Бараа', finance: 'Санхүү' }[x[0]] + ' · ' + x[2]).replace(/[\\/?*\[\]:]/g, '').slice(0, 28), k = nm, i = 2;
     while (used[k]) k = nm.slice(0, 25) + ' ' + i++;
@@ -1658,7 +1659,8 @@ function exportAll() {
     XLSX.utils.book_append_sheet(wb, repAoa(rep), k);
   });
   XLSX.writeFile(wb, xlsxName('бүх тайлан'));
-  toast('Excel файл татагдлаа');
+  toast(bad.length ? 'Excel татагдлаа — гаргаж чадаагүй: ' + bad.join(', ') : 'Excel файл татагдлаа');
+  return bad;
 }
 
 // ── Журналын бичилт (гараар) ──
@@ -2127,8 +2129,10 @@ function freshBackup() {
   var d = freshDraft(), keep = { biz: state.biz, period: state.period, from: state.from, to: state.to };
   if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин дарна уу'); ensureXlsx(function () {}); return; }
   state.period = 'all';
-  ALL_KEYS.forEach(function (k) { state.biz = k; try { exportAll(); } catch (e) {} });
+  var fail = [];
+  ALL_KEYS.forEach(function (k) { state.biz = k; try { var bad = exportAll(); if (bad && bad.length) fail.push(BUSINESSES[k].name + ': ' + bad.join(', ')); } catch (e) { fail.push(BUSINESSES[k].name + ': ' + e.message); } });
   state.biz = keep.biz; state.period = keep.period; state.from = keep.from; state.to = keep.to;
+  if (fail.length) { alert('Зарим Excel татагдсангүй:\n' + fail.join('\n') + '\nНөөцийг дуусгаагүй гэж тооцлоо.'); doBackup(); return; }
   d.backup = todayStr() + ' ' + timeStr(); save(FRESH_KEY, d);
   doBackup();
 }
