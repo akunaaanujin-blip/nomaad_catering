@@ -1646,18 +1646,22 @@ function exportCurrent() {
   XLSX.utils.book_append_sheet(wb, repAoa(rep), 'Тайлан');
   XLSX.writeFile(wb, xlsxName(rep.title));
 }
-function exportAll() {
-  if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин оролдоно уу'); ensureXlsx(function () {}); return; }
-  var wb = XLSX.utils.book_new(), used = {};
+// Одоогийн компанийн бүх тайланг wb-д нэмнэ (pre — хуудасны нэрийн угтвар, олон компани нэг файлд). Алдаатай тайлангийн нэрсийг буцаана
+function addAllReports(wb, used, pre) {
   var bad = [];
   allReportList().forEach(function (x) {
     var rep; try { rep = makeReport(x[0], x[1]); } catch (e) { bad.push(x[2]); return; }   // нэг тайлан алдаатай ч бусад нь татагдана
     if (!rep) return;
-    var nm = ({ sales: 'Борлуулалт', products: 'Бараа', finance: 'Санхүү' }[x[0]] + ' · ' + x[2]).replace(/[\\/?*\[\]:]/g, '').slice(0, 28), k = nm, i = 2;
+    var nm = ((pre || '') + { sales: 'Борлуулалт', products: 'Бараа', finance: 'Санхүү' }[x[0]] + ' · ' + x[2]).replace(/[\\/?*\[\]:]/g, '').slice(0, 28), k = nm, i = 2;
     while (used[k]) k = nm.slice(0, 25) + ' ' + i++;
     used[k] = 1;
     XLSX.utils.book_append_sheet(wb, repAoa(rep), k);
   });
+  return bad;
+}
+function exportAll() {
+  if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин оролдоно уу'); ensureXlsx(function () {}); return; }
+  var wb = XLSX.utils.book_new(), bad = addAllReports(wb, {}, '');
   XLSX.writeFile(wb, xlsxName('бүх тайлан'));
   toast(bad.length ? 'Excel татагдлаа — гаргаж чадаагүй: ' + bad.join(', ') : 'Excel файл татагдлаа');
   return bad;
@@ -2108,7 +2112,7 @@ function freshView() {
   }).join('');
   var T = freshTotals(B), ready = d.ok && d.acct && d.backup;
   return '<div class="card"><h2>Шинээр эхлэх (' + d.start + '-ээс)</h2>' +
-    '<ol class="steps"><li><b>Нөөц:</b> бүх компанийн бүх хугацааны тайлан Excel-ээр татагдаж, Sheet бүтнээрээ Drive-д хуулагдана.' + (d.backup ? ' <span class="tag">Авсан ' + esc(d.backup) + '</span>' : '') + '</li>' +
+    '<ol class="steps"><li><b>Нөөц:</b> бүх компанийн бүх хугацааны тайлан нэг Excel файлд («М/А/C/У» угтвартай хуудсууд) татагдаж, Sheet бүтнээрээ Drive-д хуулагдана.' + (d.backup ? ' <span class="tag">Авсан ' + esc(d.backup) + '</span>' : '') + '</li>' +
     '<li><b>Эхний үлдэгдэл:</b> доорх ноорог системийн ' + d.cutoff + '-ны үлдэгдэл. Банкны үлдэгдэл, тооллогын тоо, өртөг, харилцагчийн тооцоог бодит тоогоор засна («Систем» багана — харьцуулах).</li>' +
     '<li><b>Нягтлан:</b> «Акт хэвлэх»-ээр хэвлэж нягтлан бодогчоор шалгуулж, баталсныг тэмдэглэнэ.</li>' +
     '<li><b>Шинээр эхлэх:</b> ' + d.cutoff + ' хүртэлх борлуулалт, зарлага, барааны хөдөлгөөн, журнал, цалин, банкны хуулга, дууссан захиалга үндсэн Sheet-ээс хасагдаж (архивт үлдэнэ), үлдэгдэл ' + d.start + '-нд «Он нээлт» болж орно. Хүргэгдээгүй захиалга үлдэнэ.</li></ol>' +
@@ -2129,9 +2133,10 @@ function freshBackup() {
   var d = freshDraft(), keep = { biz: state.biz, period: state.period, from: state.from, to: state.to };
   if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин дарна уу'); ensureXlsx(function () {}); return; }
   state.period = 'all';
-  var fail = [];
-  ALL_KEYS.forEach(function (k) { state.biz = k; try { var bad = exportAll(); if (bad && bad.length) fail.push(BUSINESSES[k].name + ': ' + bad.join(', ')); } catch (e) { fail.push(BUSINESSES[k].name + ': ' + e.message); } });
+  var fail = [], wb = XLSX.utils.book_new(), used = {}, PRE = { meat: 'М ', travel: 'А ', cozy: 'C ', mgmt: 'У ' };   // бүх компани нэг файлд — Chrome олон файл татахыг хориглодог
+  ALL_KEYS.forEach(function (k) { state.biz = k; try { var bad = addAllReports(wb, used, PRE[k] || k + ' '); if (bad.length) fail.push(BUSINESSES[k].name + ': ' + bad.join(', ')); } catch (e) { fail.push(BUSINESSES[k].name + ': ' + e.message); } });
   state.biz = keep.biz; state.period = keep.period; state.from = keep.from; state.to = keep.to;
+  if (!fail.length) XLSX.writeFile(wb, 'NOMAAD бүх компани нөөц ' + todayStr() + '.xlsx');
   if (fail.length) { alert('Зарим Excel татагдсангүй:\n' + fail.join('\n') + '\nНөөцийг дуусгаагүй гэж тооцлоо.'); doBackup(); return; }
   d.backup = todayStr() + ' ' + timeStr(); save(FRESH_KEY, d);
   doBackup();
