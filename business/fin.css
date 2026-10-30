@@ -178,3 +178,26 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var
   .bz-admin .card.rep .scroll{overflow:visible;max-height:none}
 }
 .fn-pre{margin:0;padding:10px;background:var(--surface-alt);border-radius:8px;font-size:12px;white-space:pre-wrap;max-height:300px;overflow:auto}
+/* Цэс v2: бүлгийн багана + сонгосон бүлгийн хуудсуудын самбар */
+.bz-admin .bz,.bz-admin .bz.has-sub{grid-template-columns:304px 1fr}
+.bz-admin .subnav{display:flex;flex-direction:column;padding:0}
+.fn-2{display:flex;flex:1;min-height:0}
+.fn-col{width:84px;flex:none;background:var(--sidebar);display:flex;flex-direction:column;gap:2px;padding:8px 6px;overflow-y:auto}
+.fn-gb{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:none;color:#AFC0D4;font:inherit;font-size:11.5px;font-weight:500;padding:9px 2px;border-radius:8px;cursor:pointer;text-align:center;line-height:1.2}
+.fn-gb .fn-i{color:inherit;width:auto}.fn-gb .fn-i svg{width:20px;height:20px}
+.fn-gb:hover{background:rgba(255,255,255,.08);color:#fff}
+.fn-gb.on{color:#fff}
+.fn-gb.sel{background:rgba(255,255,255,.14);color:#fff;box-shadow:inset 3px 0 0 #8FB8E0}
+.fn-gb .fn-badge{position:absolute;top:4px;right:8px;margin:0;padding:0 5px;font-size:10px}
+.fn-panel{flex:1;min-width:0;overflow-y:auto;padding:6px 8px 24px;background:var(--surface);border-right:1px solid var(--border)}
+.fn-ph{font-size:16px;font-weight:600;color:var(--text);padding:10px 8px 8px}
+.fn-panel ul{list-style:none;margin:0;padding:0}
+.fn-panel li button{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;font:inherit;font-size:13.5px;color:var(--text-2);padding:7px 10px;border-radius:6px;cursor:pointer;text-align:left}
+.fn-panel li button:hover{background:var(--surface-alt);color:var(--text)}
+.fn-panel li button.on{background:var(--primary-soft);color:var(--primary);font-weight:500;box-shadow:inset 3px 0 0 var(--primary)}
+.fn-panel li.fn-sub{font-size:11.5px;color:var(--text-3);padding:12px 10px 4px;text-transform:none}
+.bz-admin .subnav{border-right:0}
+.fn-brand{background:var(--sidebar);border-bottom:1px solid rgba(255,255,255,.08)}
+.fn-brand b{color:#fff}
+.fn-logo{background:rgba(255,255,255,.12)}
+@media(max-width:760px){.bz-admin .bz,.bz-admin .bz.has-sub{grid-template-columns:1fr}.bz-admin .subnav{width:304px}}

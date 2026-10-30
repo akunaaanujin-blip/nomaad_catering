@@ -66,6 +66,7 @@ function navOk(biz, k) {
   return true;
 }
 function navGo(k) {
+  state.navG = null;   // самбар нээгдсэн хуудасны бүлэгт шилжинэ
   if (k === 'home' || k === 'review') { state.view = 'company'; state.module = k; }
   else if (k === 'v:staff') { state.staffBiz = state.biz || state.staffBiz; state.view = 'staff'; }
   else if (k === 'v:cal') { openCal(); return; }
@@ -83,27 +84,32 @@ subnavHtml = function () {
     return brand + '<div class="fn-g"><div class="fn-h"><span>Компаниуд</span></div><ul>' + ALL_KEYS.filter(function (k) { return BUSINESSES[k]; }).map(function (k) {
       return '<li><button onclick="state.module=\'home\';go(\'company\',\'' + k + '\')"><span class="fn-i">' + ico('home') + '</span><span>' + esc(BUSINESSES[k].name) + '</span></button></li>'; }).join('') + '</ul></div>';
   }
-  var shut = load('nb_fn_shut', {}), biz = state.biz;
-  return brand + MNAV.map(function (g, gi) {
-    var items = g[2].filter(function (it) { return it[0] === '—' || navOk(biz, it[0]); });
-    var real = items.filter(function (it) { return it[0] !== '—'; });
-    if (!real.length) return '';
-    var on = real.some(function (it) { return navItemOn(it[0]); });
-    var badge = real.reduce(function (a, it) { return a + navCountOf(it[0]); }, 0);
-    if (real.length === 1 && g[0] === real[0][1]) {   // нэг хуудастай бүлэг (Нүүр) — шууд холбоос
-      return '<div class="fn-g"><button class="fn-top' + (on ? ' on' : '') + '" onclick="navGo(\'' + real[0][0] + '\')"><span class="fn-i">' + ico(g[1]) + '</span><span>' + g[0] + '</span></button></div>';
-    }
-    var closed = shut[gi] && !on;
-    return '<div class="fn-g' + (closed ? ' closed' : '') + '"><button class="fn-h" onclick="fnToggle(' + gi + ')"><span class="fn-i">' + ico(g[1]) + '</span><span>' + g[0] + '</span>' +
-      (closed && badge ? '<i class="fn-badge">' + badge + '</i>' : '') + '<svg class="fn-car" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button><ul>' +
-      items.map(function (it) {
-        if (it[0] === '—') return '<li class="fn-sub">' + it[1] + '</li>';
-        var n = navCountOf(it[0]);
-        return '<li><button class="' + (navItemOn(it[0]) ? 'on' : '') + '" onclick="navGo(\'' + it[0] + '\')"><span>' + it[1] + '</span>' + (n ? '<i class="fn-badge">' + n + '</i>' : '') + '</button></li>';
-      }).join('') + '</ul></div>';
+  // Зүүн багана: 8 бүлэг (icon + нэр); хажууд нь сонгосон бүлгийн хуудсууд самбар болж нээгдэнэ (нэг удаад нэг бүлэг)
+  var biz = state.biz, G = MNAV.map(function (g, gi) {
+    var items = g[2].filter(function (it) { return it[0] === '—' || navOk(biz, it[0]); }), real = items.filter(function (it) { return it[0] !== '—'; });
+    return { g: g, gi: gi, items: items, real: real, on: real.some(function (it) { return navItemOn(it[0]); }), badge: real.reduce(function (a, it) { return a + navCountOf(it[0]); }, 0) };
+  }).filter(function (x) { return x.real.length; });
+  var act = G.filter(function (x) { return x.on; })[0];
+  if (state.navG == null || !G.some(function (x) { return x.gi === state.navG; })) state.navG = act ? act.gi : G[0].gi;
+  var cur = G.filter(function (x) { return x.gi === state.navG; })[0];
+  var col = G.map(function (x) {
+    return '<button class="fn-gb' + (x.gi === state.navG ? ' sel' : '') + (x.on ? ' on' : '') + '" onclick="fnOpen(' + x.gi + ')" title="' + x.g[0] + '"><span class="fn-i">' + ico(x.g[1]) + '</span><span>' + x.g[0] + '</span>' +
+      (x.badge ? '<i class="fn-badge">' + x.badge + '</i>' : '') + '</button>';
   }).join('');
+  var panel = '<div class="fn-ph">' + cur.g[0] + '</div><ul>' + cur.items.map(function (it) {
+    if (it[0] === '—') return '<li class="fn-sub">' + it[1] + '</li>';
+    var n = navCountOf(it[0]);
+    return '<li><button class="' + (navItemOn(it[0]) ? 'on' : '') + '" onclick="navGo(\'' + it[0] + '\')"><span>' + it[1] + '</span>' + (n ? '<i class="fn-badge">' + n + '</i>' : '') + '</button></li>';
+  }).join('') + '</ul>';
+  return brand + '<div class="fn-2"><nav class="fn-col">' + col + '</nav><div class="fn-panel">' + panel + '</div></div>';
 };
-function fnToggle(i) { var s = load('nb_fn_shut', {}); if (s[i]) delete s[i]; else s[i] = 1; save('nb_fn_shut', s); render(); }
+// Бүлэг дарахад самбар нь солигдоно (хуудас солихгүй); нэг хуудастай бүлэг бол шууд нээнэ
+function fnOpen(gi) {
+  var g = MNAV[gi], real = g[2].filter(function (it) { return it[0] !== '—' && navOk(state.biz, it[0]); });
+  state.navG = gi;
+  if (real.length === 1) { navGo(real[0][0]); return; }
+  $('subnav').innerHTML = subnavHtml();
+}
 railHtml = function () { return ''; };
 hubBar = function () { return ''; };
 
