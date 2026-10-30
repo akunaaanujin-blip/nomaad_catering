@@ -483,11 +483,16 @@ function openBillAdm(key) {
 function goOrder(id) {
   var d = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!d) return;
   closeSheet('billAdmSheet'); state.ordF = 'all'; setSub('orders');
-  var inp = document.querySelector('#view .filter .search'); if (inp) { inp.value = d.phone; rowSearch(inp); }
+  var inp = document.querySelector('#view .fn-q .search'); if (inp) { inp.value = d.phone; rowSearch(inp); }
 }
 // Хайлт: хүснэгтийн мөрийг шууд шүүнэ (дахин зурахгүй). Хайж байхад «Нийт» мөр нуугдана.
 function searchBox(ph) {
-  return '<div class="filter" style="margin-bottom:10px"><label>Хайх<input class="search" type="search" placeholder="' + ph + '" oninput="rowSearch(this)" style="min-width:280px"></label><small class="muted" id="srCount" style="align-self:center"></small></div>';
+  return '<div class="fn-flt fn-q"><input class="search" type="search" placeholder="' + ph + '" oninput="rowSearch(this)"><small class="muted" id="srCount"></small></div>';
+}
+// Хуудас доторх төлвийн шүүлтүүр (нэг мөрөнд, тоотой): opts = [[түлхүүр, нэр, тоо, тайлбар]], js — 'state.x=%' (% → түлхүүр)
+function stBar(label, opts, cur, js) {
+  return '<div class="fn-flt"><span class="fn-fl">' + label + '</span><div class="fn-seg">' + opts.map(function (o) {
+    return '<button class="' + (cur === o[0] ? 'on' : '') + '"' + (o[3] ? ' title="' + esc(o[3]) + '"' : '') + ' onclick="' + js.replace('%', o[0]) + ';render()">' + o[1] + (o[2] != null ? ' <span class="fn-n">(' + o[2] + ')</span>' : '') + '</button>'; }).join('') + '</div></div>';
 }
 // Хайлтын үг: том/жижиг, ө/о, ү/у, ё/е, мянгатын таслал ялгахгүй
 function nz(t) { return String(t || '').toLowerCase().replace(/ө/g, 'о').replace(/ү/g, 'у').replace(/ё/g, 'е').replace(/(\d),(?=\d{3})/g, '$1'); }
@@ -537,7 +542,7 @@ function gsItems(q) {
 function gsOpen(b, mod, sub, q) {
   if (state.view !== 'company' || state.biz !== b) go('company', b);
   state.module = mod; setSub(sub);
-  if (q) { var inp = document.querySelector('#view .filter .search'); if (inp) { inp.value = q; rowSearch(inp); } }
+  if (q) { var inp = document.querySelector('#view .fn-q .search'); if (inp) { inp.value = q; rowSearch(inp); } }
 }
 function gsRun(q) {
   var box = $('gsRes'); if (!box) return;
@@ -706,10 +711,7 @@ function productsModule() {
   return banner + how +
     '<div class="kpis">' + kpi('Бараа', rows.length) + kpi('Үлдэгдэл · өртгөөр', fmt(costVal)) + kpi('Үлдэгдэл · зарах үнээр', fmt(stockVal)) +
     kpi('Цөөн үлдсэн (≤' + LOW_STOCK + ')', cntLow) + kpi('Дууссан', cntOut) + '</div>' +
-    '<div class="card"><div class="bar-row"><div class="tabs">' +
-    [['all', 'Бүгд'], ['in', 'Үлдэгдэлтэй'], ['low', 'Цөөн'], ['out', 'Дууссан']].map(function (t) {
-      return '<button class="' + (state.stockF === t[0] ? 'on' : '') + '" onclick="state.stockF=\'' + t[0] + '\';render()">' + t[1] + '</button>';
-    }).join('') + '</div>' +
+    '<div class="card"><div class="bar-row">' + stBar('Үлдэгдэл', [['all', 'Бүгд', rows.length], ['in', 'Үлдэгдэлтэй'], ['low', 'Цөөн', cntLow], ['out', 'Дууссан', cntOut]], state.stockF, "state.stockF='%'") +
     '<div class="bar-row" style="gap:6px"><input class="search" placeholder="Бараа хайх…" value="' + esc(state.q) + '" oninput="state.q=this.value;render();this.focus();this.setSelectionRange(this.value.length,this.value.length)">' +
     '</div></div>' +
     '<div class="scroll" style="margin-top:10px"><table class="stock"><tr><th>Бараа</th><th class="hide-sm">Ангилал</th><th class="n">Үнэ</th>' +
@@ -929,9 +931,7 @@ function staffView(fixedBiz) {
   }).join('') + '</div>';
   var reg = 'register.html' + (fixedBiz ? '?biz=' + fixedBiz : '');
   var sf = state.staffSt || 'all', showP = sf === 'all' || sf === 'pend', showA = sf === 'all' || sf === 'act', showO = sf === 'all' || sf === 'off';
-  var stTabs = '<div class="tabs" style="margin-bottom:10px">' + [['all', 'Бүгд', list.length], ['act', 'Идэвхтэй', act.length], ['pend', 'Хүлээгдэж буй', pend.length], ['off', 'Идэвхгүй', off.length]].map(function (t) {
-    return '<button class="' + (sf === t[0] ? 'on' : '') + '" onclick="setStaffSt(\'' + t[0] + '\')">' + t[1] + ' <small>' + t[2] + '</small></button>';
-  }).join('') + '</div>';
+  var stTabs = stBar('Төлөв', [['all', 'Бүгд', list.length], ['act', 'Идэвхтэй', act.length], ['pend', 'Хүлээгдэж буй', pend.length], ['off', 'Идэвхгүй', off.length]], sf, "state.staffSt='%'");
   return '<div class="card bar-row">' + (fixedBiz ? '<h2 style="margin:0">Ажилчид</h2>' : filt) +
     '<label class="month">Сар <input type="month" value="' + m + '" onchange="setMonth(this.value)"></label></div>' +
     (!API_URL ? '<div class="card muted">Ажилчдын бүртгэл Google Sheet-тэй холбогдсон үед ажиллана.</div>' : '') +
@@ -1281,8 +1281,7 @@ function requestsView() {
   var list = all.filter(TB[tab][1]);
   var st = function (s) { return !s ? '<span class="st y">Хүлээгдэж</span>' : s === 'Батлагдсан' ? '<span class="st b">Батлагдсан · хуулга хүлээж буй</span>' : s === 'Төлсөн' ? '<span class="st g">Төлсөн</span>' : '<span class="st r">' + esc(s) + '</span>'; };
   return '<p class="hint">Ажилтны мөнгөний хүсэлт: «Батлах» → банкны аппаар шилжүүлнэ → «Банкны хуулга»-д тэр гүйлгээг энэ хүсэлттэй тулгахад зардлаар бичигдэж «Төлсөн» болно. Батлахад санхүүд юу ч бичигдэхгүй. Кассаас бэлнээр өгсөн бол «Касснаас».</p>' +
-    '<div class="tabs" style="margin-bottom:10px">' + Object.keys(TB).map(function (k) {
-      return '<button class="' + (tab === k ? 'on' : '') + '" onclick="state.reqTab=\'' + k + '\';render()">' + TB[k][0] + ' (' + all.filter(TB[k][1]).length + ')</button>'; }).join('') + '</div>' +
+    stBar('Төлөв', Object.keys(TB).map(function (k) { return [k, TB[k][0], all.filter(TB[k][1]).length]; }), tab, "state.reqTab='%'") +
     '<div class="card"><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Ажилтан</th><th>Юунд</th><th>Хэнд (данс)</th><th>Тайлбар</th><th class="n">Дүн</th><th>Төлөв</th><th></th></tr>' +
     (list.length ? list.map(function (x) {
       return '<tr><td>' + esc(x.date.slice(5) + ' ' + (x.time || '')) + '</td><td>' + esc(x.staff || '') + '</td><td>' + esc(x.category || '') + '</td><td>' + esc(x.customer || '') + '</td>' +
@@ -1397,9 +1396,9 @@ function subBody() {
   if (mod === 'finance' && sub === 'money') pre = moneyPre(J(), range()[0], range()[1]);
   if (mod === 'finance' && (sub === 'debts' || sub === 'recv' || sub === 'payb')) pre = debtsPre(J());
   if (mod === 'sales' && sub === 'customers') pre = '<div class="filter"><label>Хайх<input class="search" placeholder="Утас эсвэл нэр…" value="' + esc(state.cq || '') + '" oninput="state.cq=this.value;render();var e=document.querySelector(\'.filter .search\');e.focus();e.setSelectionRange(e.value.length,e.value.length)"></label></div>';
-  if (mod === 'sales' && sub === 'orders') pre = '<div class="tabs" style="margin-bottom:10px">' + [['wait', 'Төлөөгүй'], ['check', 'Ажилтан «орсон» гэсэн'], ['conf', 'Төлсөн'], ['all', 'Бүгд']].map(function (t) {
-    var n = (window.adminOrders || []).filter(function (o) { return o.biz === state.biz; }).filter(ordFilt(t[0])).length;
-    return '<button class="' + ((state.ordF || 'wait') === t[0] ? 'on' : '') + '" onclick="state.ordF=\'' + t[0] + '\';render()">' + t[1] + ' <small>' + n + '</small></button>'; }).join('') + '</div>';
+  if (mod === 'sales' && sub === 'orders') { var oAll = (window.adminOrders || []).filter(function (o) { return o.biz === state.biz; }), oN = function (k) { return oAll.filter(ordFilt(k)).length; };
+    pre = stBar('Төлбөр', [['wait', 'Төлөөгүй', oN('wait'), 'Удирдлага төлбөрийг нь баталгаажуулаагүй бүх захиалга'], ['check', 'Шалгах', oN('check'), 'Ажилтан «төлбөр орсон» гэж тэмдэглэсэн — банкны хуулгаар шалгаж баталгаажуулна'],
+      ['conf', 'Төлсөн', oN('conf'), 'Удирдлага баталгаажуулсан'], ['all', 'Бүгд', oAll.length]], state.ordF || 'wait', "state.ordF='%'"); }
   if (mod === 'finance' && sub === 'pstmt') {
     var names = {}; J().forEach(function (e) { if (e.partner && /^(1201|1503|3101)$/.test(e.dr + '') || e.partner && /^(1201|1503|3101)$/.test(e.cr + '')) names[e.partner] = 1; });
     partners.filter(function (p) { return p.biz === state.biz; }).forEach(function (p) { names[p.name] = 1; });

@@ -201,3 +201,18 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var
 .fn-brand b{color:#fff}
 .fn-logo{background:rgba(255,255,255,.12)}
 @media(max-width:760px){.bz-admin .bz,.bz-admin .bz.has-sub{grid-template-columns:1fr}.bz-admin .subnav{width:304px}}
+/* Хуудас доторх шүүлтүүр: «Төлөв: [Төлөөгүй (5)] [Шалгах (2)] …» + хайлт нэг мөрөнд */
+.fn-flt{display:inline-flex;align-items:center;gap:8px;margin:0 12px 12px 0;vertical-align:middle;flex-wrap:wrap}
+.fn-fl{font-size:12px;color:var(--text-2);font-weight:500}
+.fn-seg{display:inline-flex;background:var(--neutral-soft);border-radius:8px;padding:3px;gap:2px;flex-wrap:wrap}
+.fn-seg button{height:30px;border:0;background:none;border-radius:6px;padding:0 12px;font:inherit;font-size:13px;color:var(--text-2);cursor:pointer;white-space:nowrap}
+.fn-seg button:hover{color:var(--text)}
+.fn-seg button.on{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 1px 2px rgba(15,23,42,.08)}
+.fn-n{color:var(--text-3);font-weight:400}
+.fn-seg button.on .fn-n{color:var(--text-2)}
+.fn-q input{width:300px;max-width:100%;height:36px}
+.fn-q small{font-size:12px}
+.fn-fr{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+.fn-fr .fn-flt{margin-bottom:8px}
+.bz-admin .bar-row .fn-flt{margin-bottom:0}
+@media(max-width:760px){.fn-q,.fn-q input{width:100%}.fn-flt{display:flex}}

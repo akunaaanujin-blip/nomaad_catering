@@ -30,8 +30,7 @@ function assetsView() {
       '<td>' + (gone ? '<span class="tag">Актласан</span>' : ended ? '<span class="tag">Бүрэн элэгдсэн</span>' : '<span class="tag b">Ашиглаж буй</span>') + '</td>' +
       '<td class="n" style="white-space:nowrap">' + (gone ? '' : '<button class="mini" onclick="openAsset(\'' + A.id + '\')">Засах</button><button class="mini" onclick="faDispose(\'' + A.id + '\')">Актлах</button>') + '</td></tr>';
   }).join('');
-  var tabs = '<div class="tabs" style="margin-bottom:10px">' + [['active', 'Ашиглаж буй'], ['gone', 'Актласан'], ['all', 'Бүгд']].map(function (t) {
-    return '<button class="' + (f === t[0] ? 'on' : '') + '" onclick="state.faF=\'' + t[0] + '\';render()">' + t[1] + '</button>'; }).join('') + '</div>';
+  var tabs = stBar('Төлөв', [['active', 'Ашиглаж буй'], ['gone', 'Актласан'], ['all', 'Бүгд']], f, "state.faF='%'");
   var b = balances(E, todayStr()), unreg = r0((b['2001'] || 0) + (b['2002'] || 0) - tot.book);
   return '<div class="kpis">' + kpi('Өртөг', fmt(tot.cost)) + kpi('Хуримтлагдсан элэгдэл', fmt(tot.acc)) + kpi('Үлдэгдэл өртөг', fmt(tot.book)) + kpi('Сарын элэгдэл', fmt(tot.mon)) + '</div>' +
     '<p class="hint">Элэгдэл сар бүрийн эцэст автоматаар бодогдож санхүүд орно (Дт 7113 Элэгдлийн зардал / Кт 2002 Хуримтлагдсан элэгдэл) — гараар бичих шаардлагагүй. ' +

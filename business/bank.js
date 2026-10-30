@@ -167,9 +167,8 @@ function bankView() {
   var pay = (window.payInfoAll || {})[biz] || '';
   var head = '<div class="kpis">' + kpi('Тулгах гүйлгээ', todo.length) +
     (last ? kpi('Хуулгын үлдэгдэл (' + last.date.slice(0, 10) + ')', fmt(last.bal)) + kpi('Санхүүгийн ' + acc + ' үлдэгдэл', fmt(ledger), Math.abs(last.bal - ledger) < 1 ? '<span style="color:var(--green)">Таарч байна</span>' : '<span style="color:var(--red)">Зөрүү ' + fmt(last.bal - ledger) + '</span>') : '') + '</div>';
-  var tabs = '<div class="tabs" style="margin-bottom:10px">' + [['todo', 'Тулгах'], ['done', 'Тулгасан'], ['all', 'Бүгд']].map(function (t) {
-    return '<button class="' + (bankTab === t[0] ? 'on' : '') + '" onclick="bankTab=\'' + t[0] + '\';render()">' + t[1] + '</button>'; }).join('') +
-    (todo.length ? '<button style="margin-left:auto" onclick="bankDel(null)">Тулгаагүй ' + todo.length + ' гүйлгээг устгах</button>' : '') + '</div>' +
+  var tabs = '<div class="fn-fr">' + stBar('Төлөв', [['todo', 'Тулгаагүй', todo.length], ['done', 'Тулгасан', all.length - todo.length], ['all', 'Бүгд', all.length]], bankTab, "bankTab='%'") +
+    (todo.length ? '<button class="b-btn danger" style="margin-left:auto" onclick="bankDel(null)">Тулгаагүй ' + todo.length + ' гүйлгээг устгах</button>' : '') + '</div>' +
     (todo.length && bankTab !== 'done' ? '<div class="bk-bar"><button class="b-btn" onclick="bankSelSure()">Таарсныг сонгох' + (sure ? ' (' + sure + ')' : '') + '</button>' +
       '<button class="b-btn primary" id="bkSelBtn" onclick="bankApplySel()">Сонгосныг тулгах (' + Object.keys(bankSel).length + ')</button>' +
       '<span class="muted" style="font-size:12.5px">Мөр бүрийн «Тулгах баримт» сонголтоор тулгана. Сонголтгүй мөр алгасагдана.</span></div>' : '');
