@@ -22,7 +22,7 @@ var records = [], staff = [], salary = [], stockData = {}, moves = [], journal =
 var BASE_PRODUCTS = {};
 Object.keys(BUSINESSES).forEach(function (k) { BASE_PRODUCTS[k] = BUSINESSES[k].products.slice(); });
 var state = { view: 'companies', biz: '', module: 'sales', period: 'month', staffBiz: 'all', staffSt: 'all', month: todayStr().slice(0, 7), q: '', stockF: 'in', showMoves: false,
-  sub: { sales: 'receipts', products: 'stock', finance: 'daily' }, from: todayStr().slice(0, 8) + '01', to: todayStr(), acc: 'cashall' };
+  sub: { sales: 'shop', products: 'stock', finance: 'daily' }, from: todayStr().slice(0, 8) + '01', to: todayStr(), acc: 'cashall' };
 var editId = '', salId = '', salKind = 'Урьдчилгаа';
 var NAV = { idx: 0, key: '', restoring: false };   // дэлгэцийн түүх (← Буцах)
 
@@ -286,7 +286,7 @@ function bizModules(biz) { return BUSINESSES[biz] && BUSINESSES[biz].finOnly ? M
 function openMgmt() { state.view = 'company'; state.biz = 'mgmt'; state.module = 'finance'; render(); window.scrollTo(0, 0); }
 // Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
 var MENU = {
-  sales: [['Бүртгэл', ['receipts', 'orders', 'buuhia']], ['Шинжилгээ', ['item', 'cat', 'staff', 'day', 'pay', 'disc', 'slow', 'boost']], ['Татвар', ['ebarimt']]],
+  sales: [['Бүртгэл', ['shop', 'receipts', 'orders', 'buuhia']], ['Шинжилгээ', ['item', 'cat', 'staff', 'day', 'pay', 'disc', 'slow', 'boost']], ['Татвар', ['ebarimt']]],
   products: [['Бүртгэл', ['catalog', 'stock', 'in', 'counts']], ['Худалдан авалт', ['po', 'suppliers']], ['Тайлан', ['move', 'prices']]],
   // Санхүү — цөөн, ойлгомжтой цэс. Нягтлангийн тайлан, тохиргоо нь тус бүр нэг хуудсанд цуглуулагдсан (finance.js HUBS)
   // Санхүү — Excel «Санхүүгийн бүртгэлийн файл»-ын дарааллаар дугаартай 10 хуудас; бусад нь «Бусад» нэг хуудсанд (finance.js HUBS.other)
@@ -564,6 +564,18 @@ function gsKey(e) {
 document.addEventListener('keydown', function (e) {   // «/» — хайлт руу
   if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName) && $('gsQ')) { e.preventDefault(); $('gsQ').focus(); }
 });
+// Дэлгүүрийн борлуулалт: дүн (баримт, нийт, төлбөрийн хэлбэрээр) + харах хэлбэр
+function shopHead(rep) {
+  var r = range(), ids = {}; (window.adminOrders || []).forEach(function (o) { ids[o.id] = 1; });
+  var B = groupBills(salesIn(R(), state.biz, r[0], r[1]).filter(function (x) { return !ids[x.bill]; }), true), P = {}, net = 0, n = 0;
+  B.forEach(function (o) { net += o.net; if (o.gross > 0) n++; Object.keys(o.pays).forEach(function (k) { P[k] = (P[k] || 0) + o.pays[k]; }); });
+  var v = state.shopV || 'bill';
+  return '<div class="kpis">' + kpi('Баримт', n) + kpi('Борлуулалт', fmt(net), n ? 'дундаж ' + fmt(Math.round(net / n)) : '') +
+    Object.keys(P).filter(function (k) { return Math.abs(P[k]) >= 1; }).sort(function (a, b) { return P[b] - P[a]; }).slice(0, 4).map(function (k) { return kpi(k, fmt(P[k])); }).join('') + '</div>' +
+    '<div class="tabs" style="margin:10px 0">' + [['bill', 'Баримтаар'], ['item', 'Бараагаар'], ['day', 'Өдрөөр'], ['staff', 'Худалдагчаар']].map(function (t) {
+      return '<button class="' + (v === t[0] ? 'on' : '') + '" onclick="state.shopV=\'' + t[0] + '\';render()">' + t[1] + '</button>'; }).join('') + '</div>' +
+    (BUSINESSES[state.biz].orders ? '<p class="muted" style="margin:0 0 8px;font-size:12.5px">Онлайн захиалгаас үүссэн баримт энд орохгүй — «Захиалга»-аас харна. Бүгдийг «Бүх баримт»-аас.</p>' : '');
+}
 function kpi(label, val, sub) {
   return '<div class="biz"><div class="muted">' + label + '</div><div class="rev">' + val + '</div>' + (sub ? '<div class="muted">' + sub + '</div>' : '') + '</div>';
 }
@@ -1123,7 +1135,7 @@ function closeSheet(id) { $(id).classList.remove('show'); }
 
 // ═══════════ ДЭД ЦЭС, ТАЙЛАН (reports.js-ийн хөдөлгүүрээр) ═══════════
 var SUBS = {
-  sales: [['receipts', 'Баримтууд'], ['orders', 'Захиалга'], ['buuhia', 'Буухиа (хүргэлт)'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'],
+  sales: [['shop', 'Дэлгүүрийн борлуулалт'], ['receipts', 'Бүх баримт'], ['orders', 'Захиалга'], ['buuhia', 'Буухиа (хүргэлт)'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'],
           ['pay', 'Төлбөрийн хэлбэрээр'], ['disc', 'Хөнгөлөлт, буцаалт'], ['slow', 'Удаан эргэлттэй бараа'], ['boost', 'Boost бараагаар'], ['ebarimt', 'И-баримт тулгалт']],
   products: [['catalog', 'Барааны бүртгэл, үнэ'], ['counts', 'Тооллого батлах'], ['po', 'Бараа захиалга (Хятад)'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['prices', 'Үнийн түүх'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
   finance: [['requests', 'Мөнгөний хүсэлт'], ['simple', 'Захирлын самбар'], ['months', '12 сарын дүн'], ['daily', 'Өдрийн орлого'], ['cashacc', 'Мөнгөний данс'], ['profit', 'Барааны ашиг'], ['money', 'Гүйлгээ'], ['bank', 'Банкны хуулга'], ['vouchers', 'Кассын баримт'],
@@ -1147,6 +1159,7 @@ function makeReport(mod, sub) {
   var biz = state.biz, r = range(), f = r[0], t = r[1];
   if (mod === 'sales') {
     if (sub === 'receipts') return repReceipts(R(), biz, f, t);
+    if (sub === 'shop') return repShop(R(), biz, f, t, state.shopV);
     if (sub === 'orders') return repOrders(biz);
     if (sub === 'customers') return repCustomers(biz);
     if (sub === 'ebarimt') return repEbarimt(R(), biz, f, t);
@@ -1250,7 +1263,7 @@ var SUB_ICO = {
   pay: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6.5 9v6M17.5 9v6"/>', hand: '<path d="M7 12V6.5a1.5 1.5 0 013 0V11M10 10V5a1.5 1.5 0 013 0v5M13 10V6.5a1.5 1.5 0 013 0V13c0 4-2.5 7-6 7-2.5 0-4-1.5-5-3.5L3.5 13a1.5 1.5 0 012.6-1.4L7 13"/>',
   flow: '<path d="M4 7h10M4 12h16M4 17h7"/><path d="M17 4l3 3-3 3"/>', book: '<path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/>', more: '<circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/>'
 };
-var SUB_ICO_OF = { recv: 'in', payb: 'pay', receipts: 'receipt', orders: 'cart', item: 'bars', cat: 'pie', staff: 'user', day: 'cal', pay: 'card', disc: 'tag', slow: 'clock', boost: 'bolt', ebarimt: 'doc',
+var SUB_ICO_OF = { recv: 'in', payb: 'pay', shop: 'card', receipts: 'receipt', orders: 'cart', item: 'bars', cat: 'pie', staff: 'user', day: 'cal', pay: 'card', disc: 'tag', slow: 'clock', boost: 'bolt', ebarimt: 'doc',
   catalog: 'box', stock: 'layers', in: 'in', counts: 'check', po: 'truck', suppliers: 'people', move: 'swap', prices: 'trend',
   cashacc: 'wallet', bank: 'bank', money: 'list', debts: 'scale', loans: 'loan', payroll: 'pay', requests: 'hand', daily: 'cal', expcat: 'pie', cashflow: 'flow', months: 'bars',
   journal: 'book', ledger: 'doc', accounts: 'list', acct: 'book', api: 'swap', other: 'more' };
@@ -1394,7 +1407,8 @@ function subBody() {
   if (mod === 'finance' && sub === 'ledger') pre = ledgerPicker();
   if (mod === 'finance' && sub === 'entry') pre = '<p class="hint">Борлуулалт, зарлага, бараа, цалин санхүүд <b>автоматаар</b> бичигддэг. Энд зөвхөн бусад гүйлгээг (эхний үлдэгдэл, хөрөнгө оруулалт, зээл, банкинд тушаах, нийлүүлэгчид төлөх г.м) оруулна.</p>';
   if (sub === 'entry') rep.edit = 'editEntry';
-  if (mod === 'sales' && /^(receipts|orders|item|disc)$/.test(sub)) pre += searchBox(sub === 'orders' ? 'Утас, нэр, бараагаар хайх…' : sub === 'item' ? 'Барааны нэрээр хайх…' : 'Бараа, хэрэглэгч, утас, ажилтан, ДДТД-аар хайх…');
+  if (mod === 'sales' && sub === 'shop') pre = shopHead(rep);
+  if (mod === 'sales' && /^(shop|receipts|orders|item|disc)$/.test(sub)) pre += searchBox(sub === 'shop' ? 'Бараа, худалдагч, хэрэглэгч, төлбөр, ДДТД-аар хайх…' : sub === 'orders' ? 'Утас, нэр, бараагаар хайх…' : sub === 'item' ? 'Барааны нэрээр хайх…' : 'Бараа, хэрэглэгч, утас, ажилтан, ДДТД-аар хайх…');
   else if (sub !== 'ledger' && rep && rep.rows && rep.rows.length > 8) pre += searchBox('Энэ хүснэгтээс хайх — нэр, утас, дүн, огноо, тайлбар…');   // урт хүснэгт бүрт
   return pre + reportCard(rep, { entry: 'cancelEntry', in: 'cancelMove', expenses: 'cancelRecord', boost: 'cancelRecord', vouchers: 'cancelEntry', catalog: 'openProduct' }[sub]) + post;
 }
