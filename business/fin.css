@@ -1,0 +1,167 @@
+/* ═══════════ Санхүүгийн програм — удирдлагын загвар (style.css-ийн дараа, зөвхөн body.bz-admin) ═══════════
+   Өнгө зөвхөн утга илэрхийлнэ: орлого ногоон, зардал улаан, анхааруулга шар, бусад саарал / брэнд. */
+:root{
+  --bg:#F6F7F9;--surface:#FFFFFF;--surface-alt:#F9FAFB;--border:#E5E7EB;--border-strong:#D1D5DB;
+  --text:#111827;--text-2:#4B5563;--text-3:#9CA3AF;
+  --primary:#1F4E79;--primary-hover:#183E61;--primary-soft:#E8EFF6;--sidebar:#13263D;
+  --income:#15803D;--income-soft:#E8F5EC;--expense:#B91C1C;--expense-soft:#FDECEC;
+  --warning:#B45309;--warning-soft:#FEF3E2;--info:#1D4ED8;--info-soft:#E8EEFD;--neutral-soft:#F3F4F6;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) body.bz-admin{
+    --bg:#0F141A;--surface:#161C24;--surface-alt:#1C232D;--border:#2A3340;--border-strong:#364152;
+    --text:#E5E7EB;--text-2:#A3ADBB;--text-3:#6B7685;
+    --primary:#5B9BD5;--primary-hover:#7AB0E0;--primary-soft:#1A2A3C;--sidebar:#0B1118;
+    --income:#4ADE80;--income-soft:#13261B;--expense:#F87171;--expense-soft:#2A1616;
+    --warning:#FBBF24;--warning-soft:#2A2112;--info:#93B4F8;--info-soft:#17203A;--neutral-soft:#1C232D;
+  }
+}
+:root[data-theme="dark"] body.bz-admin{
+  --bg:#0F141A;--surface:#161C24;--surface-alt:#1C232D;--border:#2A3340;--border-strong:#364152;
+  --text:#E5E7EB;--text-2:#A3ADBB;--text-3:#6B7685;
+  --primary:#5B9BD5;--primary-hover:#7AB0E0;--primary-soft:#1A2A3C;--sidebar:#0B1118;
+  --income:#4ADE80;--income-soft:#13261B;--expense:#F87171;--expense-soft:#2A1616;
+  --warning:#FBBF24;--warning-soft:#2A2112;--info:#93B4F8;--info-soft:#17203A;--neutral-soft:#1C232D;
+}
+/* хуучин хувьсагчдыг шинэ утгад холбоно */
+body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var(--bg);--b-line:var(--border);--b-ink:var(--text);--b-mut:var(--text-2);
+  --accent:var(--primary);--ink:var(--text);--muted:var(--text-2);--line:var(--border);--green:var(--income);--red:var(--expense);
+  background:var(--bg);color:var(--text);font-family:"Inter","Noto Sans",system-ui,sans-serif;font-size:14px}
+.bz-admin b,.bz-admin strong,.bz-admin th,.bz-admin h1,.bz-admin h2,.bz-admin h3{font-weight:600}
+.bz-admin .muted{color:var(--text-2)}
+.bz-admin .hint,.bz-admin .rep-help{display:none}
+
+/* ── Байршил: нэг цэс (icon rail-гүй) ── */
+.bz-admin .rail{display:none!important}
+.bz-admin .bz,.bz-admin .bz.has-sub{grid-template-columns:248px 1fr}
+.bz-admin .subnav{display:block;background:var(--surface);border-right:1px solid var(--border);padding:0 0 24px}
+.fn-brand{display:flex;align-items:center;gap:10px;height:52px;padding:0 16px;border-bottom:1px solid var(--border);cursor:pointer;position:sticky;top:0;background:var(--surface);z-index:1}
+.fn-brand b{font-size:14px;letter-spacing:.04em;color:var(--text)}
+.fn-logo{display:grid;place-items:center;width:28px;height:28px;border-radius:6px;background:var(--sidebar);color:#fff;font-weight:600;font-size:14px}
+.fn-g{padding:6px 8px 2px}
+.fn-g ul{list-style:none;margin:0;padding:0 0 4px}
+.fn-g.closed ul{display:none}
+.fn-h,.fn-top{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;font:inherit;font-size:13px;font-weight:600;color:var(--text);padding:8px 8px;border-radius:6px;cursor:pointer;text-align:left}
+.fn-h:hover,.fn-top:hover{background:var(--surface-alt)}
+.fn-h .fn-car{margin-left:auto;color:var(--text-3);transition:transform .15s}
+.fn-g.closed .fn-car{transform:rotate(-90deg)}
+.fn-i{display:grid;place-items:center;width:20px;color:var(--text-2)}
+.fn-i svg{width:18px;height:18px}
+.fn-top.on{background:var(--primary-soft);color:var(--primary);box-shadow:inset 3px 0 0 var(--primary)}
+.fn-top.on .fn-i{color:var(--primary)}
+.fn-g li button{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;font:inherit;font-size:13px;color:var(--text-2);padding:6px 8px 6px 38px;border-radius:6px;cursor:pointer;text-align:left}
+.fn-g li button:hover{background:var(--surface-alt);color:var(--text)}
+.fn-g li button.on{background:var(--primary-soft);color:var(--primary);font-weight:500;box-shadow:inset 3px 0 0 var(--primary)}
+.fn-g li.fn-sub{font-size:11.5px;color:var(--text-3);padding:8px 8px 2px 38px}
+.fn-badge{margin-left:auto;font-style:normal;background:var(--expense);color:#fff;font-size:11px;font-weight:600;border-radius:999px;padding:1px 7px;min-width:18px;text-align:center}
+
+/* ── Дээд мөр ── */
+.bz-admin .bz-head{height:52px;gap:10px;padding:0 16px;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:none!important}
+.bz-admin .bz-crumb{flex:none;overflow:visible}
+.fn-co{height:34px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;font-size:14px;font-weight:500;padding:0 30px 0 10px;max-width:240px}
+.fn-per{display:flex;align-items:center;gap:6px}
+.fn-per select,.fn-per input{height:34px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;font-size:13px;padding:0 8px}
+.fn-per input{width:136px}
+.bz-admin .gs{margin-left:auto;flex:0 1 300px}
+.bz-admin .gs input{height:34px;border-radius:8px;background:var(--surface-alt);border-color:var(--border);color:var(--text)}
+.bz-admin .gs-res{background:var(--surface);border-color:var(--border)}
+.bz-admin .gs-i{color:var(--text)}
+.bz-admin .gs-i.on,.bz-admin .gs-i:hover{background:var(--primary-soft)}
+.fn-bellw{position:relative}
+.fn-bell,.fn-ib{position:relative;display:grid;place-items:center;width:34px;height:34px;border:0;background:none;border-radius:8px;color:var(--text-2);cursor:pointer}
+.fn-bell:hover,.fn-ib:hover{background:var(--surface-alt);color:var(--text)}
+.fn-bell svg{width:20px;height:20px}
+.fn-bell .fn-badge{position:absolute;top:2px;right:0;margin:0;padding:0 5px;font-size:10px}
+.fn-pop{position:absolute;right:0;top:40px;width:340px;max-width:92vw;max-height:70vh;overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(15,23,42,.12);z-index:60;padding:6px}
+.fn-al{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;font:inherit;font-size:13px;color:var(--text);padding:8px 10px;border-radius:8px;cursor:pointer}
+.fn-al:hover{background:var(--surface-alt)}
+.fn-al span{flex:1}
+.fn-al b{font-weight:500;color:var(--primary);white-space:nowrap;font-size:12px}
+.fn-al.bad span::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--expense);margin-right:8px;vertical-align:middle}
+.bz-admin .bz-user{margin-left:4px;gap:2px;font-weight:500}
+.bz-admin .bz-user #ownerName{margin:0 6px;color:var(--text-2);font-size:13px}
+.bz-admin .bz-content{background:var(--bg)}
+
+/* ── Хуудасны дээд хэсэг ── */
+.bz-admin .pg-head{align-items:flex-start;margin-bottom:14px}
+.bz-admin .pg-head h1{font-size:20px;font-weight:600;color:var(--text);margin:0}
+.pg-desc{margin:4px 0 0;font-size:13px;color:var(--text-2);max-width:720px}
+.fn-tabs{margin:-4px 0 12px}
+
+/* ── Карт, KPI ── */
+.bz-admin .card,.bz-admin .co-card,.bz-admin .st-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:none}
+.bz-admin .card h2{font-size:16px;font-weight:600;color:var(--text);margin:0 0 10px}
+.bz-admin .kpis{border:0;background:none;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.bz-admin .kpis .biz{background:var(--surface);border:1px solid var(--border)!important;border-radius:12px;padding:14px 16px}
+.bz-admin .kpis .biz .muted:first-child{font-size:12px;text-transform:none;letter-spacing:0}
+.bz-admin .kpis .biz .rev{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.fn-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+.fn-kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.fn-kpi small{display:block;font-size:12px;color:var(--text-2);margin-bottom:6px}
+.fn-kpi b{display:block;white-space:nowrap;font-size:clamp(18px,2.2vw,28px);font-weight:600;font-variant-numeric:tabular-nums;color:var(--text)}
+.fn-kpi b.pos{color:var(--income)}.fn-kpi b.neg{color:var(--expense)}
+.fn-todo{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;margin-bottom:6px;font-size:14px}
+.fn-todo span:nth-child(2){flex:1}
+.fn-todo.warn{background:var(--warning-soft)}
+.fn-todo.bad{background:var(--expense-soft)}
+.fn-todo.ok{color:var(--text-2)}
+.fn-ck{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;font-size:12px;font-weight:600;flex:none;background:var(--warning);color:#fff}
+.fn-todo.bad .fn-ck{background:var(--expense)}
+.fn-todo.ok .fn-ck{background:var(--income-soft);color:var(--income)}
+.fn-chart{width:100%;height:170px;display:block}
+.fn-chart text{font-size:10px;fill:var(--text-3)}
+.fn-leg{display:flex;gap:14px;font-size:12px;color:var(--text-2);margin:-4px 0 8px}
+.fn-leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.fn-ell{max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nw{white-space:nowrap}
+
+/* ── Хүснэгт ── */
+.bz-admin table{font-size:13px}
+.bz-admin th{background:var(--surface-alt);color:var(--text-2);font-size:12px;font-weight:500;text-transform:none;letter-spacing:0;border-bottom:1px solid var(--border);height:36px;padding:0 10px}
+.bz-admin td{height:44px;padding:4px 10px;border-bottom:1px solid var(--border);color:var(--text)}
+.bz-admin tr:hover td{background:var(--surface-alt)}
+.bz-admin th.n,.bz-admin td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bz-admin td.neg,.bz-admin .neg{color:var(--expense)}
+.bz-admin tr.tot td,.bz-admin tr.b td{font-weight:600;border-top:1px solid var(--border-strong)}
+
+/* ── Товч, оролт ── */
+.bz-admin .b-btn,.bz-admin .btn{height:36px;border-radius:8px;font:inherit;font-size:14px;font-weight:500;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;
+  background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.bz-admin .b-btn:hover{background:var(--surface-alt)}
+.bz-admin .b-btn.primary,.bz-admin .btn{background:var(--primary);border-color:var(--primary);color:#fff}
+.bz-admin .b-btn.primary:hover,.bz-admin .btn:hover{background:var(--primary-hover)}
+.bz-admin .btn.ghost{background:var(--surface);color:var(--text);border-color:var(--border)}
+.bz-admin .b-btn.danger,.bz-admin .btn.danger{background:var(--expense);border-color:var(--expense);color:#fff}
+.bz-admin .mini{border-radius:6px;border-color:var(--border);color:var(--text);background:var(--surface)}
+.bz-admin input,.bz-admin select,.bz-admin textarea{border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)}
+.bz-admin input:not([type=checkbox]):not([type=radio]),.bz-admin select{min-height:36px}
+.bz-admin input:focus,.bz-admin select:focus,.bz-admin textarea:focus{outline:none;border-color:var(--primary)}
+.bz-admin .filter{background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.bz-admin .tabs button{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text-2);font-size:13px;font-weight:500}
+.bz-admin .tabs button.on{background:var(--primary-soft);border-color:var(--primary-soft);color:var(--primary)}
+
+/* ── Шошго, төлөв ── */
+.bz-admin .tag,.bz-admin .st{background:var(--neutral-soft);color:var(--text-2);border-radius:6px;font-size:12px;font-weight:500;padding:2px 8px}
+.bz-admin .tag.g,.bz-admin .st.g{background:var(--income-soft);color:var(--income)}
+.bz-admin .tag.r,.bz-admin .st.r{background:var(--expense-soft);color:var(--expense)}
+.bz-admin .tag.y,.bz-admin .st.y{background:var(--warning-soft);color:var(--warning)}
+.bz-admin .tag.b,.bz-admin .st.b{background:var(--info-soft);color:var(--info)}
+.bz-admin .alert{background:var(--warning-soft);border:1px solid var(--border);border-left:3px solid var(--warning);border-radius:8px;color:var(--text)}
+.bz-admin .alert.bad{background:var(--expense-soft);border-left-color:var(--expense)}
+.bz-admin .sheet .panel{background:var(--surface);color:var(--text)}
+
+/* ── Утас ── */
+@media(max-width:760px){
+  .bz-admin .bz,.bz-admin .bz.has-sub{grid-template-columns:1fr}
+  .bz-admin .subnav{position:fixed;left:0;top:0;bottom:0;width:280px;z-index:30;transform:translateX(-100%);transition:transform .2s}
+  .bz-admin .nav-open .subnav{transform:none}
+  .bz-admin .bz-menu{display:inline-block}
+  .bz-admin .bz-content{padding:14px 12px 40px}
+  .bz-admin .bz-head{flex-wrap:wrap;height:auto;min-height:52px;padding:8px 12px;row-gap:8px}
+  .fn-per{order:9;width:100%}.fn-per input{flex:1;width:auto}
+  .bz-admin .gs{order:8;flex:1 1 100%}
+  .bz-admin .bz-head .bz-user{display:flex;margin-left:auto}.bz-admin .bz-user #ownerName,.bz-admin .bz-user small{display:none}
+  .fn-co{max-width:150px}
+  .fn-kpis{grid-template-columns:1fr 1fr}
+  .fn-kpi b{font-size:22px}
+}

@@ -1641,7 +1641,8 @@ function ebAdmView() {
 
 function cellVal(col, v) {
   if (v === '' || v == null) return '';
-  if (col.num) return typeof v === 'number' ? (v < 0 ? '−' + fmt(-v).slice(1) : fmt(v).slice(1)) : esc(v);
+  if (col.num) return typeof v === 'number' ? (Math.abs(v) < 0.5 ? '<span class="muted">—</span>' : v < 0 ? '−' + fmt(-v).slice(1) : fmt(v).slice(1)) : esc(v);
+  if (/^(\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?|\d{2}:\d{2}|\+?\d{4} ?\d{4})$/.test(String(v))) return '<span class="nw">' + esc(v) + '</span>';   // огноо, цаг, утас тасрахгүй
   return esc(v);
 }
 function reportCard(rep, cancellable) {
@@ -1654,7 +1655,7 @@ function reportCard(rep, cancellable) {
       (rep.edit ? '<td class="n">' + (r._id ? '<button class="mini" onclick="' + rep.edit + '(' + esc(JSON.stringify(r._id)) + ')">Засах</button>' : '') + '</td>' : '') +
       (rep.print ? '<td class="n">' + (r._id ? '<button class="mini" style="color:var(--accent)" onclick="printVoucherId(' + esc(JSON.stringify(r._id)) + ')">Хэвлэх</button>' : '') + '</td>' : '') +
       (cancellable ? '<td class="n">' + (r._id ? '<button class="mini" onclick="' + cancellable + '(' + esc(JSON.stringify(r._id)) + ')">' + (cancellable === 'openProduct' ? 'Засах' : 'Цуцлах') + '</button>' : '') + '</td>' : '') + '</tr>';
-  }).join('') : '<tr><td colspan="' + rep.cols.length + '" class="muted">Мэдээлэл алга</td></tr>';
+  }).join('') : '<tr><td colspan="' + rep.cols.length + '" class="muted">Энэ хугацаанд бичлэг алга.</td></tr>';
   var foot = rep.total ? '<tr class="tot">' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n"' : '') + '>' + cell(cl, rep.total) + '</td>'; }).join('') + (rep.actions ? '<td></td>' : '') + (rep.edit ? '<td></td>' : '') + (rep.print ? '<td></td>' : '') + (cancellable ? '<td></td>' : '') + '</tr>' : '';
   var r = range();
   return '<div class="card rep"><div class="rep-cap"><b>' + esc(rep.title) + '</b><span>' + esc(BUSINESSES[state.biz].name) + ' · ' + (rep.noRange ? 'бүх хугацаа' : r[0] + ' — ' + r[1]) + ' · ' + rep.rows.length + ' мөр</span></div>' +
@@ -1788,7 +1789,7 @@ function exportAll() {
 // ── Журналын бичилт (гараар) ──
 var PRESETS = [
   ['', 'Өөрөө сонгох', '', ''],
-  ['owner', 'Эзэн мөнгө оруулсан (харилцах)', '1101', '4101'],
+  ['owner', 'Эзэмшигч мөнгө оруулсан (харилцах)', '1101', '4101'],
   ['open', 'Харилцах дансны эхний үлдэгдэл', '1101', '4201'],
   ['opencash', 'Кассын эхний үлдэгдэл', '10003', '4201'],
   ['deposit', 'Кассын мөнгийг банкинд тушаасан', '1101', '10003'],
@@ -1801,7 +1802,7 @@ var PRESETS = [
   ['util', 'Цахилгаан, ус төлсөн (харилцахаас)', '7111', '1101'],
   ['credit', 'Зээлээр зарсан (авлага үүссэн)', '1201', '5101'],
   ['collect', 'Авлага орж ирсэн', '1101', '1201'],
-  ['withdraw', 'Эзэн мөнгө авсан', '4101', '1101'],
+  ['withdraw', 'Эзэмшигч мөнгө авсан', '4101', '1101'],
 ];
 function accOptions(sel) { return ACCOUNTS.filter(function (a) { return !accHidden(a[0]) || a[0] === sel; }).map(function (a) { return '<option value="' + a[0] + '"' + (sel === a[0] ? ' selected' : '') + '>' + a[0] + ' ' + esc(a[1]) + '</option>'; }).join(''); }
 function partnerOptions() { return partners.filter(function (p) { return p.biz === state.biz; }).map(function (p) { return '<option value="' + esc(p.name) + '">'; }).join(''); }
@@ -1981,7 +1982,7 @@ var V_PURPOSE = {
         ['7101', 'Цалин'], ['7102', 'НДШ'], ['7114', 'Түрээс'], ['7201', 'Зээлийн хүү, банкны шимтгэл'], ['7111', 'Цахилгаан, ус, дулаан'], ['7118', 'Шатахуун'],
         ['7117', 'Тээвэр'], ['7123', 'Сав, баглаа'], ['7120', 'Зар сурталчилгаа'], ['7112', 'Засвар'], ['7124', 'Хүргэлт'], ['7105', 'Бичиг хэрэг'], ['7106', 'Утас, интернет'],
         ['3403', 'НДШ төлсөн (нийгмийн даатгалд)'], ['3404', 'ХХОАТ төлсөн (татварт)'], ['3301', 'Цалин олгосон (бодогдсон цалингаас)'],
-        ['7122', 'Бусад зардал'], ['2001', 'Үндсэн хөрөнгө худалдаж авсан'], ['3501', 'Зээл төлсөн'], ['4101', 'Эзэн мөнгө авсан'],
+        ['7122', 'Бусад зардал'], ['2001', 'Үндсэн хөрөнгө худалдаж авсан'], ['3501', 'Зээл төлсөн'], ['4101', 'Эзэмшигч мөнгө авсан'],
         ['1101', 'Банкинд тушаасан (харилцах руу)'], ['10003', 'Касс руу бэлэн мөнгө гаргасан'], ['1207', 'Ажилтанд өгсөн (авлага)'], ['6001', 'Худалдан авагчид мөнгө буцаасан']],
 };
 var vKind = 'КО';
