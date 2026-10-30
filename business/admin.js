@@ -551,7 +551,11 @@ function hasWarehouse(biz) {
 function minOf(biz, name) { return Number(((window.minStock || {})[biz] || {})[name]) || 0; }
 function onOrder(biz) {   // ирээгүй бараа захиалгын тоо
   var o = {};
-  (window.pos || []).forEach(function (P) { if (P.biz === biz && P.status === 'Захиалсан') (P.items || []).forEach(function (i) { o[i.name] = (o[i.name] || 0) + (Number(i.qty) || 0); }); });
+  (window.pos || []).forEach(function (P) {
+    if (P.biz !== biz || P.status !== 'Захиалсан') return;
+    var rq = poRecvQty(P);   // хэсэгчлэн ирсэн бол ирсэн тоог хасна
+    (P.items || []).forEach(function (i) { var q = Math.max(0, (Number(i.qty) || 0) - (rq[i.name] || 0)); if (q) o[i.name] = (o[i.name] || 0) + q; });
+  });
   return o;
 }
 function needList(biz) {

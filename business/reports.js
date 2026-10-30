@@ -135,7 +135,7 @@ function expenseAcc(cat, biz, tracked) {
 // Ингэснээр 1404 «Бараа» дансны үлдэгдэл = барааны үлдэгдлийн өртөг үргэлж таарна.
 // until (заавал биш): тухайн өдрийн эцэс хүртэлх байдлыг тооцно (он хаахад)
 function costEngine(biz, R, until) {
-  var key = biz + '|' + R.records.length + '|' + R.moves.length + '|' + (until || '');
+  var key = biz + '|' + R.records.length + '|' + R.moves.length + '|' + (R.journal || []).length + '|' + (until || '');
   if (R._ce && R._ce[key]) return R._ce[key];
   var since = '';
   R.moves.forEach(function (m) { if (m.biz === biz) { var d = String(m.date).slice(0, 16); if (!since || d < since) since = d; } });
@@ -146,12 +146,35 @@ function costEngine(biz, R, until) {
     var t = x.date + ' ' + (x.time || '00:00');
     if (t >= since) ev.push({ t: t, x: x });
   });
+  // Бараа захиалгын ирсний дараах карго (журнал Дт 1404 «… ирэлт N · карго … #PO…») — тэр ирэлтийн бараанд үнийн жингээр өртөг нэмнэ
+  var SHIP = {};
+  R.moves.forEach(function (m) {
+    if (m.biz !== biz || m.kind !== 'Орлого' || m.pay !== 'Захиалга') return;
+    var tg = String(m.note || '').match(/#PO\d+/); if (!tg) return;
+    var k = tg[0] + '|' + poShipNo(m.note); (SHIP[k] = SHIP[k] || []).push(m);
+  });
+  (R.journal || []).forEach(function (j) {
+    if (j.biz !== biz || j.dr !== '1404' || !/карго/i.test(j.desc) || (R.closed && j.date <= R.closed)) return;
+    var tg = String(j.desc || '').match(/#PO\d+/), L = tg && SHIP[tg[0] + '|' + poShipNo(j.desc)];
+    if (L) ev.push({ t: j.date + ' 23:59', j: j, sm: L });
+  });
   if (until) ev = ev.filter(function (e) { return e.t.slice(0, 10) <= until; });
   ev.sort(function (a, b) { return a.t < b.t ? -1 : a.t > b.t ? 1 : (a.m ? -1 : 1); });   // ижил минутад хөдөлгөөн түрүүлнэ
-  var it = {}, rec = {}, mv = {}, noCost = {};
+  var it = {}, rec = {}, mv = {}, noCost = {}, adj = [];
   var get = function (k) { return it[k] = it[k] || { q: 0, v: 0, avg: 0 }; };
   var out = function (o, q) { var c = o.q > 0 ? o.v / o.q : o.avg; o.avg = c; o.q -= q; o.v -= q * c; if (Math.abs(o.q) < 1e-9) { o.q = 0; o.v = 0; } return q * c; };
   ev.forEach(function (e) {
+    if (e.j) {   // ирсний дараах карго: бараа нь үлдэгдэлд байвал өртөгт нэмнэ, зарагдаад дууссан бол шууд борлуулсан барааны өртөгт (6101)
+      var W = e.sm.map(function (m) { return (Number(m.qty) || 0) * (Number(m.buy) || Number(m.cost) || 0); }), tw = W.reduce(function (a, b) { return a + b; }, 0);
+      if (!(tw > 0)) { W = e.sm.map(function (m) { return Number(m.qty) || 0; }); tw = W.reduce(function (a, b) { return a + b; }, 0); }
+      var rest = e.j.amount;
+      e.sm.forEach(function (m, k) {
+        var a = k === e.sm.length - 1 ? rest : Math.round(e.j.amount * W[k] / (tw || 1) * 100) / 100, o = get(m.item);
+        rest = Math.round((rest - a) * 100) / 100;
+        if (o.q > 0) { o.v += a; o.avg = o.v / o.q; } else if (a) adj.push({ date: e.j.date, ref: e.j.id, item: m.item, amount: a });
+      });
+      return;
+    }
     if (e.m) {
       var m = e.m, o = get(m.item), q = Number(m.qty) || 0;
       if (q > 0 && (m.kind === 'Орлого' || m.kind === 'Эхний үлдэгдэл' || m.kind === 'Он нээлт')) {
@@ -165,7 +188,7 @@ function costEngine(biz, R, until) {
       else if (q2 < 0) { var a2 = o2.q > 0 ? o2.v / o2.q : o2.avg; o2.q += -q2; o2.v += -q2 * a2; rec[x.id] = q2 * a2; }
     }
   });
-  var res = { items: it, rec: rec, mv: mv, noCost: noCost, since: since.slice(0, 10) };
+  var res = { items: it, rec: rec, mv: mv, noCost: noCost, adj: adj, since: since.slice(0, 10) };
   R._ce = R._ce || {}; R._ce[key] = res;
   return res;
 }
@@ -247,6 +270,7 @@ function buildJournal(biz, R) {
       else add(d, m.kind, m.id, '1404', '5201', v, m.item + ' +' + m.qty);
     }
   });
+  ce.adj.forEach(function (a) { add(a.date, 'Карго · зарагдсан бараа', a.ref, '6101', '1404', a.amount, 'Карго · ' + a.item + ' (бараа нь зарагдсан тул өртөгт)'); });
   R.salary.forEach(function (e) {
     if (e.biz !== biz) return;   // «Бүх дэлгүүр»-ийн ажилтны цалинг олгохдоо компани сонгоно
     // Тухайн сарын цалин бодогдсон (журналд «Цалин бодолт ГГГГ-СС») бол олголт нь цалингийн өглөгийг (3301) хаана, үгүй бол шууд зардал
