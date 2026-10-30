@@ -128,7 +128,7 @@ function post(body, cb) {
   if (btn) btn.disabled = true;
   busySet(1, 'Хадгалж байна…', true);
   var done = function (err, d) { delete INFLIGHT[key]; if (btn) btn.disabled = false; busySet(-1, '', true); cb(err, d); };
-  body.token = token;
+  body.token = token; if (body.by == null && /^admin_/.test(body.type)) body.by = ownerName;   // түүхэнд «хэн»
   fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) })
     .then(function (r) { return r.json(); })
     .then(function (d) {
@@ -1344,7 +1344,8 @@ function countBulk(ok, all) {
   var next = function () {
     if (i >= list.length) { state.cntSel = {}; toast((ok ? 'Баталлаа' : 'Татгалзлаа') + ': ' + (list.length - bad.length) + (bad.length ? ' · амжилтгүй ' + bad.length + ' (' + bad.join(', ') + ')' : '')); refresh(); return; }
     var m = list[i++];
-    post(ok ? { type: 'admin_stock', approveId: m.id, by: ownerName } : { type: 'admin_stock', cancelId: m.id, by: ownerName }, function (err) {
+    var wt = 'Тооллого · ' + m.item + ' ' + (m.qty > 0 ? '+' : '') + m.qty + ' (' + m.loc + ')';
+    post(ok ? { type: 'admin_stock', approveId: m.id, by: ownerName, what: wt } : { type: 'admin_stock', cancelId: m.id, by: ownerName, what: wt }, function (err) {
       if (err) bad.push(m.item); next();
     });
   };
@@ -1358,7 +1359,8 @@ function countAct(id, ok, quiet) {
     if (ok) { moves.push(m); save('nb_demo_moves', moves); var st = stockData[m.biz] = stockData[m.biz] || {}, it = st[m.item] = st[m.item] || { shop: 0, wh: 0 }; it[m.loc === 'Агуулах' ? 'wh' : 'shop'] += m.qty; save('nb_demo_stock', stockData); }
     window.stockCounts = all.filter(function (x) { return x.status === 'Хүлээгдэж'; }); if (!quiet) { render(); toast(ok ? 'Баталлаа' : 'Татгалзлаа'); } return;
   }
-  post(ok ? { type: 'admin_stock', approveId: id, by: ownerName } : { type: 'admin_stock', cancelId: id, by: ownerName }, function (err, d) {
+  var cm = (window.stockCounts || []).filter(function (x) { return x.id === id; })[0], wt = cm ? 'Тооллого · ' + cm.item + ' ' + (cm.qty > 0 ? '+' : '') + cm.qty + ' (' + cm.loc + ')' : '';
+  post(ok ? { type: 'admin_stock', approveId: id, by: ownerName, what: wt } : { type: 'admin_stock', cancelId: id, by: ownerName, what: wt }, function (err, d) {
     if (err) { toast(err === 'negative' ? 'Батлах боломжгүй — үлдэгдэл хасах болно (' + ((d && d.item) || '') + ')' : 'Алдаа: ' + err); return; }
     toast(ok ? 'Баталлаа — үлдэгдэл засагдлаа' : 'Татгалзлаа'); refresh();
   });
@@ -1835,6 +1837,7 @@ function saveEntry() {
   if (e.dr === e.cr) { toast('Дебет, кредит данс өөр байх ёстой'); return; }
   if (!(e.amount > 0)) { toast('Дүнгээ оруулна уу'); return; }
   if (!e.desc) { toast('Гүйлгээний утгаа бичнэ үү'); return; }
+  var bd = backdateReason(e.date, e.desc); if (bd === null) return; e.desc = bd;
   if (!API_URL) {
     if (entryEditId) { var oid = entryEditId; journal = journal.filter(function (x) { return x.id !== oid; }); entryEditId = ''; }
     e.id = 'J' + Date.now(); e.by = ownerName; journal.push(e); save('nb_demo_journal', journal);
@@ -1850,7 +1853,8 @@ function saveEntry() {
 function cancelEntry(id) {
   if (!confirm('Энэ журналын бичилтийг цуцлах уу? (Sheet-д «Устгасан» төлөвтэй үлдэнэ)')) return;
   if (!API_URL) { journal = journal.filter(function (j) { return j.id !== id; }); save('nb_demo_journal', journal); render(); return; }
-  post({ type: 'admin_journal', cancelId: id }, function (err) {
+  var jx = journal.filter(function (j) { return j.id === id; })[0];
+  post({ type: 'admin_journal', cancelId: id, what: jx ? jx.date + ' · ' + jx.dr + '/' + jx.cr + ' · ' + fmt(jx.amount) + ' · ' + jx.desc : '' }, function (err) {
     if (err) { toast('Алдаа: ' + err); return; }
     toast('Цуцлагдлаа'); refresh();
   });
@@ -1891,7 +1895,7 @@ function cancelRecord(id) {
   var what = x.type === 'sale' ? x.item + ' · ' + fmt(x.amount) : x.type === 'expense' ? x.category + ' · ' + fmt(x.amount) : x.type === 'boost' ? 'Boost · ' + x.item + ' · ' + fmt(x.amount) : 'Касс хаалт';
   if (!confirm('Энэ бичлэгийг цуцлах уу?\n' + x.date + ' ' + x.time + ' · ' + what + (x.type === 'boost' ? '' : '\n\nСанхүү, үлдэгдлээс хасагдана.'))) return;
   if (!API_URL) { records = records.filter(function (r) { return r.id !== id; }); save('nb_records', records); render(); return; }
-  post({ type: 'admin_record', cancelId: id, by: ownerName }, function (err) {
+  post({ type: 'admin_record', cancelId: id, by: ownerName, what: x.date + ' ' + x.time + ' · ' + what }, function (err) {
     if (err) { toast(err === 'ebarimt' ? 'И-баримттай борлуулалтыг дэлгүүрээс «Баримт буцаах»-аар буцаана' : 'Алдаа: ' + err); return; }
     toast('Цуцлагдлаа'); refresh();
   });
@@ -1904,7 +1908,7 @@ function cancelMove(id) {
   }
   if (!confirm('Энэ хөдөлгөөнийг цуцлах уу?\n' + m.date + ' · ' + m.kind + ' · ' + m.item + ' ' + m.qty + '\n\nҮлдэгдэл, санхүүгээс хасагдана.')) return;
   if (!API_URL) { moves = moves.filter(function (x) { return x.id !== id; }); save('nb_demo_moves', moves); render(); return; }
-  post({ type: 'admin_stock', cancelId: id }, function (err, d) {
+  post({ type: 'admin_stock', cancelId: id, what: m.date + ' · ' + m.kind + ' · ' + m.item + ' ' + m.qty }, function (err, d) {
     if (err === 'negative') { toast('Цуцалбал үлдэгдэл хасах болно: ' + ((d && d.item) || '')); return; }
     if (err) { toast('Алдаа: ' + err); return; }
     toast('Цуцлагдлаа'); refresh();
@@ -2033,6 +2037,7 @@ function saveVoucher() {
   var e = { biz: state.biz, date: $('vcDate').value, dr: V.dir === 'in' ? V.acc : other, cr: V.dir === 'in' ? other : V.acc, amount: amt,
             partner: partner, desc: vcDescWithTags($('vcDesc').value.trim() || purpose[1], picked ? vcTags() : ''), vkind: vKind };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date)) { toast('Огноо оруулна уу'); return; }
+  var bd = backdateReason(e.date, e.desc); if (bd === null) return; e.desc = bd;
   var req = vcReq; vcReq = '';
   var done = function (no) { closeSheet('voucherSheet'); toast(no + ' бүртгэгдлээ'); if (req) reqSetStatus(req, 'Төлсөн', no); if (confirm(no + ' баримтыг хэвлэх үү?')) printVoucher(e, no); };
   if (!API_URL) {

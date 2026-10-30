@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v6.1 (мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v6.2 (өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -102,45 +102,9 @@ function doPost(e) {
       if (who.role !== 'Эзэн') { const g = mgrGuard(data, who); if (g) return json({ status: 'error', error: g }); }
       data._who = who;
     }
-    if (data.type === 'register') return json(register(data));
-    if (data.type === 'admin_login') return json(adminLogin(data));
-    if (data.type === 'admin_read') return json(isAdmin(data) ? adminRead(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_staff') return json(isAdmin(data) ? adminStaff(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_salary') return json(isAdmin(data) ? adminSalary(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_stock') return json(isAdmin(data) ? adminStock(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_journal') return json(isAdmin(data) ? adminJournal(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_doc') return json(isAdmin(data) ? adminDoc(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_bank') return json(isAdmin(data) ? adminBank(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_order') return json(isAdmin(data) ? adminOrder(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_task') return json(isAdmin(data) ? adminTask(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_setting') return json(isAdmin(data) ? adminSetting(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_eb') return json(isAdmin(data) ? ebAdmin(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'tasks') return json(staffTasks(data));
-    if (data.type === 'record_receipt') return json(recordReceipt(data));
-    if (data.type === 'barcode_set') return json(barcodeSet(data));
-    if (data.type === 'task_done') return json(staffTaskDone(data));
-    if (data.type === 'admin_reminder') return json(isAdmin(data) ? adminReminder(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'order_save') return json(orderSave(data));
-    if (data.type === 'order_delete') return json(orderDelete(data));
-    if (data.type === 'orders_ship') return json(ordersShip(data));
-    if (data.type === 'eb_send' || data.type === 'eb_sync' || data.type === 'eb_del' || data.type === 'eb_other') return json(ebuuhia(data));
-    if (data.type === 'staff_today') return json(staffToday(data));
-    if (data.type === 'requests') return json(staffRequests(data));
-    if (data.type === 'stock_count') return json(stockCount(data));
-    if (data.type === 'orders') return json(ordersFor(data));
-    if (data.type === 'order_hist') return json(orderHist(data));
-    if (data.type === 'admin_import_cozy') return json(isAdmin(data) ? importCozy(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_contract') return json(isAdmin(data) ? adminContract(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_backup') return json(isAdmin(data) ? adminBackup() : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_close') return json(isAdmin(data) ? adminClose(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_reset') return json(isAdmin(data) ? adminReset(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_product') return json(isAdmin(data) ? adminProduct(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_record') return json(isAdmin(data) ? adminRecord(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_partner') return json(isAdmin(data) ? adminPartner(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_loan') return json(isAdmin(data) ? adminLoan(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_po') return json(isAdmin(data) ? adminPo(data) : { status: 'error', error: 'auth' });
-    if (data.type === 'admin_digest') return json(isAdmin(data) ? adminDigest(data) : { status: 'error', error: 'auth' });
-    return json(saveRecords(data));
+    const res = route(data);
+    if (res && res.status === 'ok') try { audit(data, res); } catch (eA) {}   // өөрчлөлтийн түүх (амжилттай бичилт)
+    return json(res);
   } catch (err) {
     return json({ status: 'error', error: err.message });
   } finally {
@@ -148,14 +112,140 @@ function doPost(e) {
     lock.releaseLock();
   }
 }
+// Хүсэлтийг төрлөөр нь гүйцэтгэнэ (doPost — түгжээ, эрх, түүх)
+function route(data) {
+  if (data.type === 'register') return register(data);
+  if (data.type === 'admin_login') return adminLogin(data);
+  if (data.type === 'admin_read') return isAdmin(data) ? adminRead(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_staff') return isAdmin(data) ? adminStaff(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_salary') return isAdmin(data) ? adminSalary(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_stock') return isAdmin(data) ? adminStock(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_journal') return isAdmin(data) ? adminJournal(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_doc') return isAdmin(data) ? adminDoc(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_bank') return isAdmin(data) ? adminBank(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_order') return isAdmin(data) ? adminOrder(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_task') return isAdmin(data) ? adminTask(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_setting') return isAdmin(data) ? adminSetting(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_eb') return isAdmin(data) ? ebAdmin(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'tasks') return staffTasks(data);
+  if (data.type === 'record_receipt') return recordReceipt(data);
+  if (data.type === 'barcode_set') return barcodeSet(data);
+  if (data.type === 'task_done') return staffTaskDone(data);
+  if (data.type === 'admin_reminder') return isAdmin(data) ? adminReminder(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'order_save') return orderSave(data);
+  if (data.type === 'order_delete') return orderDelete(data);
+  if (data.type === 'orders_ship') return ordersShip(data);
+  if (data.type === 'eb_send' || data.type === 'eb_sync' || data.type === 'eb_del' || data.type === 'eb_other') return ebuuhia(data);
+  if (data.type === 'staff_today') return staffToday(data);
+  if (data.type === 'requests') return staffRequests(data);
+  if (data.type === 'stock_count') return stockCount(data);
+  if (data.type === 'orders') return ordersFor(data);
+  if (data.type === 'order_hist') return orderHist(data);
+  if (data.type === 'admin_import_cozy') return isAdmin(data) ? importCozy(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_contract') return isAdmin(data) ? adminContract(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_backup') return isAdmin(data) ? adminBackup() : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_close') return isAdmin(data) ? adminClose(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_reset') return isAdmin(data) ? adminReset(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_product') return isAdmin(data) ? adminProduct(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_record') return isAdmin(data) ? adminRecord(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_partner') return isAdmin(data) ? adminPartner(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_loan') return isAdmin(data) ? adminLoan(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_po') return isAdmin(data) ? adminPo(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_digest') return isAdmin(data) ? adminDigest(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_audit') return isAdmin(data) ? adminAudit(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_restore') return isAdmin(data) ? adminRestore(data) : { status: 'error', error: 'auth' };
+  return saveRecords(data);
+}
+
+// ═══════════ ӨӨРЧЛӨЛТИЙН ТҮҮХ ═══════════
+// Удирдлагын бүх бичилт, захиалга, тооллого: хэн · хэзээ · юу (амжилттай болсныг л). Нууц утга (түлхүүр, код, нууц үг) бичигдэхгүй.
+// Ажилтны борлуулалт, зарлагын мөр өөрөө ажилтан, цагтай тул энд давхар бичихгүй.
+const SHEET_AUDIT = 'Түүх', AUDIT_HEAD = ['Цаг', 'Хэн', 'Компани', 'Үйлдэл', 'Тайлбар', 'Төрөл', 'ID', 'Дэлгэрэнгүй'];
+const AUDIT_SKIP = { register: 1, admin_login: 1, record_receipt: 1, barcode_set: 1, admin_backup: 1, admin_audit: 1, admin_restore: 0 };
+function auditSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_AUDIT);
+  if (!sh) { sh = ss.insertSheet(SHEET_AUDIT); sh.appendRow(AUDIT_HEAD); sh.setFrozenRows(1); }
+  return sh;
+}
+function auditLabel(d) {
+  const t = d.type, n = function (a) { return Array.isArray(a) ? a.length : 0; };
+  if (t === 'admin_journal') return d.cancelId ? 'Журналын бичилт цуцалсан' : 'Журналд бичсэн' + (n(d.entries) > 1 ? ' (' + n(d.entries) + ')' : '');
+  if (t === 'admin_record') return d.statusId ? 'Мөнгөний хүсэлт: ' + d.status : d.cancelId ? 'Баримт / зарлага цуцалсан' : 'Бичлэг засварласан';
+  if (t === 'admin_stock') return d.approveId ? 'Тооллого баталсан' : d.cancelId ? 'Барааны хөдөлгөөн цуцалсан / тооллого татгалзсан' : 'Барааны хөдөлгөөн бичсэн (' + n(d.moves) + ')';
+  if (t === 'admin_restore') return 'Хогийн савнаас сэргээсэн';
+  if (t === 'admin_setting') return 'Тохиргоо: ' + String(d.key || '');
+  if (t === 'order_save') return d.order && d.order.id ? 'Захиалга засварласан' : 'Захиалга бүртгэсэн';
+  if (t === 'order_delete') return 'Захиалга бүр устгасан';
+  if (t === 'orders_ship') return 'Захиалга → ' + String(d.to || '');
+  if (t === 'stock_count') return 'Тооллого илгээсэн';
+  if (t === 'admin_eb' || /^eb_/.test(t)) return 'Буухиа: ' + String(d.op || t.replace('eb_', ''));
+  return ({ admin_bank: 'Банкны хуулга', admin_product: 'Бараа, үнэ', admin_partner: 'Харилцагч', admin_loan: 'Зээл', admin_po: 'Бараа захиалга', admin_staff: 'Ажилтан',
+    admin_salary: 'Цалин', admin_order: 'Захиалгын төлбөр', admin_task: 'Даалгавар', admin_reminder: 'Сануулга', admin_doc: 'Маягт', admin_contract: 'Гэрээ', admin_close: 'Он хаасан',
+    admin_reset: 'Шинээр эхэлсэн', admin_import_cozy: 'Cozy импорт', admin_digest: 'Өдрийн тойм', task_done: 'Даалгавар биелүүлсэн', requests: 'Мөнгөний хүсэлт' })[t] || t;
+}
+function auditClean(v, depth) {   // нууц талбарыг хасаж, урт жагсаалтыг богиносгоно
+  if (depth > 3) return '…';
+  if (Array.isArray(v)) { const a = v.slice(0, 20).map(function (x) { return auditClean(x, depth + 1); }); if (v.length > 20) a.push('… +' + (v.length - 20)); return a; }
+  if (v && typeof v === 'object') {
+    const o = {};
+    Object.keys(v).forEach(function (k) { if (/^(token|_who|code|pin|pass|password|secret|appPass|key2)$/i.test(k)) return; o[k] = auditClean(v[k], depth + 1); });
+    return o;
+  }
+  return typeof v === 'string' ? v.slice(0, 200) : v;
+}
+function audit(d, res) {
+  const t = String(d.type || '');
+  if (!t || AUDIT_SKIP[t] || CACHE_READ[t] || (t === 'admin_eb' && !/^(send|del|other)$/.test(String(d.op || '')))) return;
+  if (t === 'requests' && !d.add) return;
+  let who = '', biz = String(d.biz || (d.entry && d.entry.biz) || (d.order && d.order.biz) || '');
+  if (d._who) who = String(d.by || d._who.id || '');
+  else { const s = checkStaff(d.token); if (s) { who = s.staff.name; biz = biz || s.biz; } }
+  const det = auditClean(d, 0);
+  if (t === 'admin_setting') { delete det.value; if (/^(lock|review|targets)$/.test(String(d.key))) det.value = auditClean(d.value, 1); }   // түлхүүр, нууц тохиргоог бичихгүй
+  delete det.type; delete det.by;
+  const id = String(d.cancelId || d.approveId || d.statusId || d.restoreId || (d.order && d.order.id) || '');
+  auditSheet().appendRow([Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss'), who.slice(0, 40), biz, auditLabel(d), String(d.what || '').slice(0, 200), t, id, JSON.stringify(det).slice(0, 3000)]);
+}
+// Түүх унших: сүүлийн N мөр (шинэ нь эхэнд), from — огнооноос хойш
+function adminAudit(d) {
+  const sh = auditSheet(), last = sh.getLastRow(); if (last < 2) return { status: 'ok', rows: [] };
+  const lim = Math.min(Number(d.limit) || 500, 3000), start = Math.max(2, last - lim + 1);
+  const rows = sh.getRange(start, 1, last - start + 1, AUDIT_HEAD.length).getValues().reverse()
+    .filter(function (r) { return !d.from || String(r[0]) >= String(d.from); })
+    .map(function (r) { return { at: String(r[0]), who: String(r[1]), biz: String(r[2]), what: String(r[3]), note: String(r[4]), type: String(r[5]), id: String(r[6]), det: String(r[7]) }; });
+  return { status: 'ok', rows: rows };
+}
+// ═══════════ ХОГИЙН САВ: цуцалсан бичлэгийг (30 хоногийн дотор) сэргээх ═══════════
+// kind: rec — баримт/зарлага (Бүртгэл, 19-р багана), mov — барааны хөдөлгөөн (14), jr — журнал (12). Түгжсэн хугацааных сэргэхгүй.
+function adminRestore(d) {
+  const K = { rec: [logSheet(), 19, 2], mov: [stockSheet(), 14, 2], jr: [journalSheet(), 12, 2] }[d.kind];
+  if (!K) return { status: 'error', error: 'fields' };
+  const sh = K[0], last = sh.getLastRow(); if (last < 2) return { status: 'error', error: 'not_found' };
+  const v = sh.getRange(2, 1, last - 1, Math.max(K[1], 3)).getValues();
+  for (let i = 0; i < v.length; i++) {
+    if (String(v[i][0]) !== String(d.restoreId)) continue;
+    if (String(v[i][K[1] - 1]) !== 'Устгасан') return { status: 'error', error: 'state' };
+    if (lockedDate(fmtDate(v[i][K[2] - 1], 'yyyy-MM-dd'))) return { status: 'error', error: 'locked' };
+    if (d.kind === 'mov') {   // сэргээхэд үлдэгдэл хасах болохгүй
+      const mv = stockMovesAll().filter(function (m) { return m.id === String(d.restoreId); })[0];
+      if (mv && mv.kind === 'Тооллого' && !/баталсан/.test(String(mv.note))) return { status: 'error', error: 'state' };   // татгалзсан тооллого сэргэхгүй (баталгаагүй үлдэгдэлд орно)
+      if (mv && Number(mv.qty) < 0) { const bad = stockNegative(mv.biz, [{ loc: mv.loc, item: mv.item, qty: Number(mv.qty) }]); if (bad) return { status: 'error', error: 'negative', item: bad }; }
+    }
+    sh.getRange(i + 2, K[1]).setValue('');
+    return { status: 'ok' };
+  }
+  return { status: 'error', error: 'not_found' };
+}
+
 // ── Серверийн кэш (хурд): удирдлагын уншилт хуудас тус бүрийг 5 мин кэшлэнэ, бичилт хийхэд тэр хуудсыг л цэвэрлэнэ ──
 // Sheet-ийг гараар засвал 5 минутын дотор шинэчлэгдэнэ.
 const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf'];
 const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_other: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_send: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
   admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr'], admin_bank: ['bank', 'jr', 'ord'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_po: ['po', 'jr'],
-  admin_staff: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
-const CACHE_READ = { eb_sync: 1, requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
+  admin_restore: ['rec', 'stk', 'mov', 'jr'], admin_staff: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
+const CACHE_READ = { admin_audit: 1, eb_sync: 1, requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
 function cacheKeysFor(d) {
   if (!d.type) return ['rec', 'stk'];   // ажилтны бичлэг (борлуулалт, зарлага, касс)
   if (CACHE_READ[d.type]) return null;

@@ -177,3 +177,4 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var
   .bz-admin .card.rep .rep-t tr.tot{background:var(--surface-alt)}
   .bz-admin .card.rep .scroll{overflow:visible;max-height:none}
 }
+.fn-pre{margin:0;padding:10px;background:var(--surface-alt);border-radius:8px;font-size:12px;white-space:pre-wrap;max-height:300px;overflow:auto}

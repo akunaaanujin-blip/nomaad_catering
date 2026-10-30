@@ -26,14 +26,17 @@ var MNAV = [
     ['v:tax:ebalance', 'Жилийн тайлан (e-Balance)'], ['v:tax:entpl', 'Нэгтгэсэн орлогын тайлан'], ['sales/ebarimt', 'И-баримт']]],
   ['Тохиргоо', 'gear', [['v:staff', 'Ажилчид, эрх'], ['finance/accounts', 'Дансны төлөвлөгөө'], ['finance/opening', 'Эхний үлдэгдэл'], ['finance/lock', 'Гүйлгээ түгжих'],
     ['finance/close', 'Он хаах, нөөц'], ['finance/api', 'Холболт (буухиа, StorePay)'], ['finance/banklink', 'Банкны данс холбох'], ['finance/digest', 'Өдрийн тойм и-мэйл'],
-    ['v:docs', 'Маягт, загвар'], ['finance/glossary', 'Нэр томьёо']]],
+    ['finance/audit', 'Өөрчлөлтийн түүх'], ['finance/trash', 'Хогийн сав'], ['v:docs', 'Маягт, загвар'], ['finance/glossary', 'Нэр томьёо']]],
 ];
 // Нэг өгөгдлийн өөр харагдац — хуудас доторх таб (4-өөс ихгүй)
 var PAGE_TABS = { journal: [['journal', 'Бүх бичилт'], ['entry', 'Гараар бичсэн']], aging_r: [['aging_r', 'Авлага'], ['aging_p', 'Өглөг']] };
 PAGE_TABS.entry = PAGE_TABS.journal; PAGE_TABS.aging_p = PAGE_TABS.aging_r;
 var NAV_ALIAS = { entry: 'journal', aging_p: 'aging_r' };   // таб бүхий хуудсын цэсний зүйл
 
-// Үг хэллэг (хуудасны гарчиг = цэсний нэр)
+// Үг хэллэг (хуудасны гарчиг = цэсний нэр); шинэ хуудсууд
+SUBS.finance.push(['audit', 'Өөрчлөлтийн түүх'], ['trash', 'Хогийн сав']);
+REP_HELP.audit = 'Хэн, хэзээ, юу өөрчилсөн — удирдлагын бүх бичилт, захиалга, тооллого.';
+REP_HELP.trash = 'Сүүлийн 30 хоногт цуцалсан баримт, барааны хөдөлгөөн, журналын бичилт. Сэргээвэл санхүү, үлдэгдэлд дахин тусна.';
 (function () {
   var L = {};
   MNAV.forEach(function (g) { g[2].forEach(function (it) { var m = it[0].match(/^(\w+)\/(\w+)$/); if (m) L[m[2]] = it[1]; }); });
@@ -56,6 +59,7 @@ function navOk(biz, k) {
   var B = BUSINESSES[biz] || {};
   if (B.finOnly && !/^(finance\/|v:|home$)/.test(k)) return false;   // Удирдлага: зөвхөн санхүү
   if (B.finOnly && /^v:tax:/.test(k)) return false;
+  if (/^finance\/(audit|trash)$/.test(k)) return isOwner();
   var m = k.match(/^(\w+)\/(\w+)$/); if (m) return subVisible(biz, m[2]);
   if (k === 'v:staff' || k === 'v:docs') return isOwner();
   if (/^v:tax:/.test(k)) return isOwner();
@@ -131,6 +135,8 @@ var _companyView = companyView;
 companyView = function () {
   if (!state.module || state.module === 'reports' || state.module === 'mgmt') state.module = 'home';
   if (state.module === 'home') return homeView();
+  if (state.module === 'finance' && state.sub.finance === 'audit') return pageHead('Өөрчлөлтийн түүх', '<button class="b-btn" onclick="audLoad(true)">Шинэчлэх</button>') + auditView();
+  if (state.module === 'finance' && state.sub.finance === 'trash') return pageHead('Хогийн сав', '') + trashView();
   if (state.module === 'finance' && /^(acct|other|setup|simple)$/.test(state.sub.finance)) state.sub.finance = 'daily';   // хассан нэгтгэл хуудас
   return _companyView();
 };
@@ -262,6 +268,73 @@ document.addEventListener('input', function (e) {
   if (!n || !n.classList || !n.classList.contains('fn-num')) { n = document.createElement('small'); n.className = 'fn-num'; t.insertAdjacentElement('afterend', n); }
   n.textContent = isFinite(v) && Math.abs(v) >= 1000 ? (v < 0 ? '−' : '') + fmt(Math.abs(v)) : '';
 });
+
+// Огноо үнэн: өнөөдрөөс өмнөх огноогоор гараар бичихэд шалтгаан заавал (тайлбарт «[хойш огноолсон: …]»). null — болих
+function backdateReason(date, desc) {
+  if (!date || date >= todayStr() || /\[хойш огноолсон:/.test(desc || '')) return desc;
+  var r = prompt('Огноо ' + date + ' — өнөөдрөөс өмнөх (хойш огноолсон).\nШалтгааныг бичнэ үү (жишээ: баримт хоцорч ирсэн):');
+  if (r === null) return null;
+  r = r.trim(); if (!r) { toast('Хойш огноолох шалтгаан заавал'); return null; }
+  return (desc ? desc + ' ' : '') + '[хойш огноолсон: ' + r.slice(0, 80) + ']';
+}
+
+// ═══════════ ТҮҮХ, ХОГИЙН САВ (Тохиргоо) ═══════════
+var AUD = { rows: null, at: 0, busy: false, err: '', open: '' };
+function audLoad(force) {
+  if (!API_URL) { AUD.rows = []; AUD.err = 'Google Sheet-тэй холбогдсон үед түүх хадгалагдана (туршилтын горимд байхгүй).'; return; }
+  if (AUD.busy || (!force && AUD.rows && Date.now() - AUD.at < 60000)) return;
+  AUD.busy = true;
+  post({ type: 'admin_audit', limit: 2000, from: todayStr(new Date(Date.now() - 90 * 864e5)) }, function (err, d) {
+    AUD.busy = false; AUD.at = Date.now();
+    if (err) { AUD.err = err === 'type' ? 'Серверийг шинэчлэх (Apps Script v6.2 deploy) шаардлагатай.' : 'Алдаа: ' + err; AUD.rows = AUD.rows || []; }
+    else { AUD.err = ''; AUD.rows = d.rows || []; }
+    if (state.view === 'company' && /^(audit|trash)$/.test(state.sub.finance)) render();
+  });
+}
+function audMine(r) { return !r.biz || r.biz === state.biz; }
+function auditView() {
+  audLoad();
+  if (!AUD.rows) return '<p class="muted">Ачаалж байна…</p>';
+  var L = AUD.rows.filter(audMine);
+  var body = L.map(function (r, i) {
+    var k = r.at + '|' + i, on = AUD.open === k, det = '';
+    if (on) { try { det = '<tr><td colspan="4"><pre class="fn-pre">' + esc(JSON.stringify(JSON.parse(r.det), null, 2)) + '</pre></td></tr>'; } catch (e) { det = '<tr><td colspan="4"><pre class="fn-pre">' + esc(r.det) + '</pre></td></tr>'; } }
+    return '<tr style="cursor:pointer" onclick="AUD.open=AUD.open===\'' + k + '\'?\'\':\'' + k + '\';render()"><td data-l="Цаг" class="nw">' + esc(r.at.slice(0, 16)) + '</td><td data-l="Хэн">' + esc(r.who || '—') + '</td><td data-l="Үйлдэл">' + esc(r.what) + '</td><td data-l="Тайлбар" class="fn-ell" title="' + esc(r.note) + '">' + esc(r.note || (r.id ? '#' + r.id : '')) + '</td></tr>' + det;
+  }).join('');
+  return (AUD.err ? '<div class="alert">' + esc(AUD.err) + '</div>' : '') + searchBox('Хэн, үйлдэл, тайлбараар хайх…') +
+    '<div class="card rep"><div class="rep-cap"><b>Өөрчлөлтийн түүх</b><span>сүүлийн 90 хоног · ' + L.length + ' мөр · мөр дээр дарахад дэлгэрэнгүй</span></div><div class="scroll"><table class="rep-t"><tr><th>Цаг</th><th>Хэн</th><th>Үйлдэл</th><th>Тайлбар</th></tr>' +
+    (body || '<tr><td colspan="4" class="muted">Түүх алга.</td></tr>') + '</table></div></div>';
+}
+// Хогийн сав: сүүлийн 30 хоногт цуцалсан баримт, хөдөлгөөн, журнал (татгалзсан тооллого орохгүй) — «Сэргээх»
+function trashItems() {
+  var lim = todayStr(new Date(Date.now() - 30 * 864e5)), back = {};
+  (AUD.rows || []).forEach(function (r) { if (r.type === 'admin_restore') back[r.id] = 1; });
+  return (AUD.rows || []).filter(function (r) {
+    if (!audMine(r) || r.at.slice(0, 10) < lim || !r.id || back[r.id]) return false;
+    if (r.type === 'admin_record') return /цуцалсан/.test(r.what);
+    if (r.type === 'admin_journal') return /цуцалсан/.test(r.what);
+    if (r.type === 'admin_stock') return /цуцалсан/.test(r.what) && !/^Тооллого/.test(r.note);
+    return false;
+  }).map(function (r) { return { r: r, kind: r.type === 'admin_record' ? 'rec' : r.type === 'admin_stock' ? 'mov' : 'jr' }; });
+}
+function trashView() {
+  audLoad();
+  if (!AUD.rows) return '<p class="muted">Ачаалж байна…</p>';
+  var L = trashItems(), K = { rec: 'Баримт, зарлага', mov: 'Барааны хөдөлгөөн', jr: 'Журнал' };
+  return (AUD.err ? '<div class="alert">' + esc(AUD.err) + '</div>' : '') +
+    '<div class="card rep"><div class="rep-cap"><b>Хогийн сав</b><span>сүүлийн 30 хоногт цуцалсан · ' + L.length + '</span></div><div class="scroll"><table class="rep-t"><tr><th>Цуцалсан</th><th>Хэн</th><th>Төрөл</th><th>Юу</th><th></th></tr>' +
+    (L.map(function (x) {
+      return '<tr><td data-l="Цуцалсан" class="nw">' + esc(x.r.at.slice(0, 16)) + '</td><td data-l="Хэн">' + esc(x.r.who || '—') + '</td><td data-l="Төрөл">' + K[x.kind] + '</td><td data-l="Юу">' + esc(x.r.note || '#' + x.r.id) + '</td>' +
+        '<td class="n"><button class="mini" onclick="trashRestore(\'' + x.kind + '\',\'' + esc(x.r.id) + '\',' + esc(JSON.stringify(x.r.note || '')) + ')">Сэргээх</button></td></tr>';
+    }).join('') || '<tr><td colspan="5" class="muted">Хогийн сав хоосон.</td></tr>') + '</table></div></div>';
+}
+function trashRestore(kind, id, what) {
+  if (!confirm('Сэргээх үү?\n' + (what || id) + '\n\nСанхүү, үлдэгдэлд дахин тусна.')) return;
+  post({ type: 'admin_restore', kind: kind, restoreId: id, what: what }, function (err, d) {
+    if (err) { toast(err === 'locked' ? 'Түгжсэн хугацааны бичлэг — сэргээх боломжгүй' : err === 'negative' ? 'Сэргээвэл үлдэгдэл хасах болно: ' + ((d && d.item) || '') : err === 'state' ? 'Энэ бичлэгийг сэргээх боломжгүй' : 'Алдаа: ' + err); return; }
+    toast('Сэргээлээ'); AUD.at = 0; audLoad(true); refresh();
+  });
+}
 
 // admin.js ачаалах үед нэвтэрсэн бол аль хэдийн зурагдсан — шинэ цэсээр дахин зурна
 if ($('main') && $('main').style.display !== 'none') render();
