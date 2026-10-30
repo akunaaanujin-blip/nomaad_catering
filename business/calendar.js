@@ -126,6 +126,19 @@ function remCancel(id) {
 }
 
 // ── Cozy захиалгын тойм (удирдлага) ──
+// Хоёр тусдаа төлөв (өнгө зөвхөн утгаар): захиалга — Шинэ саарал, Хүргэлтэд цэнхэр, Хүргэгдсэн ногоон, Цуцалсан саарал, Буцаасан улаан;
+// төлбөр — Төлөөгүй шар, Төлсөн (удирдлага баталгаажуулсан) ногоон, Буцаан олгосон улаан. Ажилтны «орсон» тэмдэглэл нь баталгаажтал шар.
+function stTag(txt, cls) { return { __html: '<span class="st ' + cls + '">' + esc(txt) + '</span>', toString: function () { return txt; } }; }
+function ordStTag(o) {
+  var s = o.status, L = { 'Шинэ': ['Шинэ', 'n'], 'Буухиад өгсөн': [o.ebCode === 'бусад' ? 'Хүргэлтэд (бусад)' : 'Хүргэлтэд', 'b'], 'Хүргэгдсэн': ['Хүргэгдсэн', 'g'], 'Цуцалсан': ['Цуцалсан', 'n'], 'Буцаасан': ['Буцаасан', 'r'] }[s] || [s || '—', 'n'];
+  return stTag(L[0], L[1]);
+}
+function payStTag(o) {
+  if (o.saleDone === 'returned' && o.confirmed) return stTag('Буцаан олгосон', 'r');
+  if (o.confirmed) return stTag('Төлсөн', 'g');
+  if (ordDead(o)) return stTag('—', 'n');
+  return stTag(o.paid === 'Орсон' ? 'Төлөөгүй · ажилтан «орсон»' : 'Төлөөгүй', 'y');
+}
 function repOrders(biz) {
   var all = (window.adminOrders || []).filter(function (o) { return o.biz === biz; }).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
   var list = all.filter(ordFilt(state.ordF || 'wait'));
@@ -138,12 +151,12 @@ function repOrders(biz) {
       ? '<button class="mini" onclick="undoPayOrder(\'' + o.id + '\')">Буцаах</button>'
       : '<button class="mini" style="color:var(--green)" onclick="openPayOrder(\'' + o.id + '\')">Баталгаажуулах</button>' + (bc ? ' <button class="mini" title="Банкны хуулгын таарсан гүйлгээгээр шууд" onclick="ordBankMatch(\'' + o.id + '\')">Хуулгаар</button>' : '');
     if (billed[o.id]) act = '<button class="mini" onclick="openBillAdm(\'' + o.id + '\')">Баримт</button>' + act;
-    return { date: o.date + ' ' + o.time, phone: o.phone, customer: o.customer, items: items(o), status: ordStLabel(o), payType: o.payType, paid: o.paid || 'Ороогүй',
-             conf: o.confirmed ? 'Баталгаажсан' : '—', bank: bk, amount: o.amount, staff: o.staff, _act: act };
+    return { date: o.date + ' ' + o.time, phone: o.phone, customer: o.customer, items: items(o), status: ordStTag(o), pay: payStTag(o), payType: o.payType,
+             bank: bk, amount: o.amount, staff: o.staff, _act: act };
   });
   var unpaid = all.filter(ordFilt('wait')).reduce(function (a, o) { return a + o.amount; }, 0), nBank = all.filter(function (o) { return !o.confirmed && !ordDead(o) && cand[o.id]; }).length;
   return { title: 'Захиалга', rows: rows, actions: true,
-    cols: [c('date', 'Огноо'), c('phone', 'Утас'), c('customer', 'Захиалагч'), c('items', 'Бараа'), c('status', 'Хүргэлт'), c('payType', 'Төлбөрийн хэлбэр'), c('paid', 'Ажилтан: төлбөр'), c('conf', 'Удирдлага'), c('bank', 'Банкны хуулга'), m('amount', 'Дүн'), c('staff', 'Ажилтан')],
+    cols: [c('date', 'Огноо'), c('phone', 'Утас'), c('customer', 'Захиалагч'), c('items', 'Бараа'), c('status', 'Захиалгын төлөв'), c('pay', 'Төлбөрийн төлөв'), c('payType', 'Төлбөрийн хэлбэр'), c('bank', 'Банкны хуулга'), m('amount', 'Дүн'), c('staff', 'Ажилтан')],
     total: { date: rows.length + ' захиалга', amount: sum(rows, 'amount') },
     note: 'Баталгаажаагүй нийт: ' + fmt(unpaid) + (nBank ? ' · банкны хуулгаас таарсан ' + nBank + ' захиалга — «Хуулгаар баталгаажуулах» дарна' : '') + '. Ажилтны «Төлбөр орсон» нь зөвхөн тэмдэглэл — санхүүд бичигдэхгүй. «Банкны хуулга»-аар тулгах (эсвэл энд «Баталгаажуулах») үед л санхүүд орно.' };
 }

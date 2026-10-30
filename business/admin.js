@@ -1338,7 +1338,7 @@ function countBulk(ok, all) {
   var sel = state.cntSel || {}, list = pendCounts(state.biz).filter(function (m) { return all || sel[m.id]; })
     .sort(function (a, b) { return b.qty - a.qty; });
   if (!list.length) return;
-  if (!confirm(list.length + ' тооллогыг ' + (ok ? 'батлах' : 'татгалзах') + ' уу?')) return;
+  if (list.length > 1 ? !confirmTyped(list.length, list.length + ' тооллогыг ' + (ok ? 'батлах' : 'татгалзах') + ' уу?') : !confirm('Тооллогыг ' + (ok ? 'батлах' : 'татгалзах') + ' уу?')) return;
   if (!API_URL) { list.forEach(function (m) { countAct(m.id, ok, 1); }); state.cntSel = {}; render(); return; }
   var i = 0, bad = [];
   var next = function () {
@@ -1395,7 +1395,7 @@ function subBody() {
   if (mod === 'finance' && sub === 'money') pre = moneyPre(J(), range()[0], range()[1]);
   if (mod === 'finance' && (sub === 'debts' || sub === 'recv' || sub === 'payb')) pre = debtsPre(J());
   if (mod === 'sales' && sub === 'customers') pre = '<div class="filter"><label>Хайх<input class="search" placeholder="Утас эсвэл нэр…" value="' + esc(state.cq || '') + '" oninput="state.cq=this.value;render();var e=document.querySelector(\'.filter .search\');e.focus();e.setSelectionRange(e.value.length,e.value.length)"></label></div>';
-  if (mod === 'sales' && sub === 'orders') pre = '<div class="tabs" style="margin-bottom:10px">' + [['wait', 'Баталгаажаагүй'], ['check', 'Ажилтан «орсон» гэсэн'], ['conf', 'Баталгаажсан'], ['all', 'Бүгд']].map(function (t) {
+  if (mod === 'sales' && sub === 'orders') pre = '<div class="tabs" style="margin-bottom:10px">' + [['wait', 'Төлөөгүй'], ['check', 'Ажилтан «орсон» гэсэн'], ['conf', 'Төлсөн'], ['all', 'Бүгд']].map(function (t) {
     var n = (window.adminOrders || []).filter(function (o) { return o.biz === state.biz; }).filter(ordFilt(t[0])).length;
     return '<button class="' + ((state.ordF || 'wait') === t[0] ? 'on' : '') + '" onclick="state.ordF=\'' + t[0] + '\';render()">' + t[1] + ' <small>' + n + '</small></button>'; }).join('') + '</div>';
   if (mod === 'finance' && sub === 'pstmt') {
@@ -1641,6 +1641,7 @@ function ebAdmView() {
 
 function cellVal(col, v) {
   if (v === '' || v == null) return '';
+  if (v.__html) return v.__html;   // төлвийн шошго (stTag)
   if (col.num) return typeof v === 'number' ? (Math.abs(v) < 0.5 ? '<span class="muted">—</span>' : v < 0 ? '−' + fmt(-v).slice(1) : fmt(v).slice(1)) : esc(v);
   if (/^(\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?|\d{2}:\d{2}|\+?\d{4} ?\d{4})$/.test(String(v))) return '<span class="nw">' + esc(v) + '</span>';   // огноо, цаг, утас тасрахгүй
   return esc(v);
@@ -1650,13 +1651,13 @@ function reportCard(rep, cancellable) {
   // r._d[багана] — тэр дүн дээр дарахад задрал (finance.js)
   var cell = function (cl, r) { var v = cellVal(cl, r[cl.k]); return r._d && r._d[cl.k] && v ? dl(r._d[cl.k], v) : v; };
   var body = rep.rows.length ? rep.rows.map(function (r) {
-    return '<tr' + (r._cls ? ' class="' + r._cls + '"' : r._b ? ' class="b"' : '') + (r._on ? ' onclick="' + r._on + '" style="cursor:pointer"' : '') + (r._bill ? ' class="clk" onclick="openBillAdm(' + esc(JSON.stringify(r._bill)) + ')"' : '') + '>' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n' + (r[cl.k] < 0 ? ' neg' : '') + '"' : '') + '>' + cell(cl, r) + '</td>'; }).join('') +
+    return '<tr' + (r._cls ? ' class="' + r._cls + '"' : r._b ? ' class="b"' : '') + (r._on ? ' onclick="' + r._on + '" style="cursor:pointer"' : '') + (r._bill ? ' class="clk" onclick="openBillAdm(' + esc(JSON.stringify(r._bill)) + ')"' : '') + '>' + rep.cols.map(function (cl) { return '<td data-l="' + esc(cl.label) + '"' + (cl.num ? ' class="n' + (r[cl.k] < 0 ? ' neg' : '') + '"' : '') + '>' + cell(cl, r) + '</td>'; }).join('') +
       (rep.actions ? '<td class="n">' + (r._act || '') + '</td>' : '') +
       (rep.edit ? '<td class="n">' + (r._id ? '<button class="mini" onclick="' + rep.edit + '(' + esc(JSON.stringify(r._id)) + ')">Засах</button>' : '') + '</td>' : '') +
       (rep.print ? '<td class="n">' + (r._id ? '<button class="mini" style="color:var(--accent)" onclick="printVoucherId(' + esc(JSON.stringify(r._id)) + ')">Хэвлэх</button>' : '') + '</td>' : '') +
       (cancellable ? '<td class="n">' + (r._id ? '<button class="mini" onclick="' + cancellable + '(' + esc(JSON.stringify(r._id)) + ')">' + (cancellable === 'openProduct' ? 'Засах' : 'Цуцлах') + '</button>' : '') + '</td>' : '') + '</tr>';
   }).join('') : '<tr><td colspan="' + rep.cols.length + '" class="muted">Энэ хугацаанд бичлэг алга.</td></tr>';
-  var foot = rep.total ? '<tr class="tot">' + rep.cols.map(function (cl) { return '<td' + (cl.num ? ' class="n"' : '') + '>' + cell(cl, rep.total) + '</td>'; }).join('') + (rep.actions ? '<td></td>' : '') + (rep.edit ? '<td></td>' : '') + (rep.print ? '<td></td>' : '') + (cancellable ? '<td></td>' : '') + '</tr>' : '';
+  var foot = rep.total ? '<tr class="tot">' + rep.cols.map(function (cl) { return '<td data-l="' + esc(cl.label) + '"' + (cl.num ? ' class="n"' : '') + '>' + cell(cl, rep.total) + '</td>'; }).join('') + (rep.actions ? '<td></td>' : '') + (rep.edit ? '<td></td>' : '') + (rep.print ? '<td></td>' : '') + (cancellable ? '<td></td>' : '') + '</tr>' : '';
   var r = range();
   return '<div class="card rep"><div class="rep-cap"><b>' + esc(rep.title) + '</b><span>' + esc(BUSINESSES[state.biz].name) + ' · ' + (rep.noRange ? 'бүх хугацаа' : r[0] + ' — ' + r[1]) + ' · ' + rep.rows.length + ' мөр</span></div>' +
     (rep.note ? '<p class="rep-note' + (rep.check === false ? ' bad' : rep.check ? ' ok' : '') + '">' + esc(rep.note) + '</p>' : '') +
@@ -1690,22 +1691,23 @@ function financeDash() {
   var g = function (k) { return b[k] || 0; };
   var ck = journalCheck(E, r[0], r[1]);
   var okAll = !ck.miss.length && ck.revOk && !ck.eMiss.length && ck.tb && ck.bs && ck.invOk && !ck.noCost.length && !ck.salAll.length && !ck.late;
-  var line = function (ok, text) { return '<li><span class="ck ' + (ok ? 'ok' : 'bad') + '">' + (ok ? '✓' : '!') + '</span>' + text + '</li>'; };
+  var line = function (ok, text, fix) { return '<li><span class="ck ' + (ok ? 'ok' : 'bad') + '">' + (ok ? '✓' : '✕') + '</span>' + text + (!ok && fix ? ' <button class="link" onclick="navGo(\'' + fix + '\')">Засах →</button>' : '') + '</li>'; };
+  var neq = function (a, la, b, lb) { var d = r0(a - b); return Math.abs(d) < 1 ? la + ' ' + fmt(a) + ' = ' + lb + ' ' + fmt(b) : la + ' ' + fmt(a) + ' ≠ ' + lb + ' ' + fmt(b) + ' · <b class="neg">зөрүү ' + fmt(Math.abs(d)) + '</b>'; };
   return remAlerts() + archiveAlerts() + '<div class="kpis">' +
     kpi('Цэвэр борлуулалт', fmt(p.net)) + kpi('Нийт ашиг', fmt(p.gross), p.net ? Math.round(p.gross / p.net * 100) + '%' : '') +
     kpi('Цэвэр ашиг', '<span style="color:' + (p.profit >= 0 ? 'var(--green)' : 'var(--red)') + '">' + (p.profit < 0 ? '−' : '') + fmt(Math.abs(p.profit)) + '</span>') +
     kpi('Үйл ажиллагааны зардал', fmt(p.expT)) + '</div>' +
-    '<div class="kpis">' + kpi('Касс', fmt(g('10003'))) + kpi('Пос (карт)', fmt(g('110106'))) + kpi('Харилцах', fmt(g('1101'))) +
+    '<div class="kpis">' + kpi('Касс', fmt(g('10003'))) + kpi('Карт (POS)', fmt(g('110106'))) + kpi('Харилцах', fmt(g('1101'))) +
     kpi('Барааны үлдэгдэл', fmt(g('1404'))) + kpi('Өглөг', fmt(-g('3101'))) + kpi('Авлага', fmt(g('1201'))) + '</div>' +
     (g('10003') < 0 ? '<div class="card notice">Касс хасах үлдэгдэлтэй байна (' + fmt(g('10003')) + '). Кассын эхний үлдэгдлийг «Журналын бичилт» → «Эхний үлдэгдэл» (Дт 10003 — Кт 4201)-ээр оруулна уу.</div>' : '') +
     '<div class="card"><h2>Санхүүд бичигдсэн эсэх шалгалт · ' + r[0] + ' — ' + r[1] + '</h2>' +
     '<p class="rep-note ' + (okAll ? 'ok' : 'bad') + '">' + (okAll ? 'Бүх гүйлгээ санхүүд бүрэн, зөв бичигдсэн байна.' : 'Анхаарах зүйл байна — доорх жагсаалтыг шалгана уу.') + '</p><ul class="cklist">' +
-    line(!ck.miss.length, '<b>' + ck.n + '</b> борлуулалт/буцаалтын мөрөөс <b>' + (ck.n - ck.miss.length) + '</b> нь журналд бичигдсэн' + (ck.miss.length ? ' — ' + ck.miss.length + ' мөр дутуу' : '')) +
-    line(ck.revOk, 'Борлуулалтын дүн ' + fmt(ck.sAmt) + ' = санхүүгийн цэвэр орлого ' + fmt(ck.rev)) +
-    line(!ck.eMiss.length, '<b>' + ck.eN + '</b> зарлагын мөр бүгд журналд' + (ck.eMiss.length ? ' — ' + ck.eMiss.length + ' дутуу' : '')) +
-    line(ck.tb, 'Гүйлгээ баланс: дебет = кредит') + line(ck.bs, 'Санхүүгийн байдал: хөрөнгө = өр төлбөр + өмч') +
-    (ck.invVal || !ck.invOk ? line(ck.invOk, 'Барааны данс (1404) = барааны үлдэгдлийн өртөг ' + fmt(ck.invVal)) : '') +
-    (ck.noCost.length ? line(false, '<b>' + ck.noCost.length + '</b> бараа өртөггүйгээр зарагдсан — нийт ашиг хэт өндөр гарна. Орлого авахдаа өртгийг оруулна уу: ' + esc(ck.noCost.slice(0, 5).join(', ')) + (ck.noCost.length > 5 ? '…' : '')) : '') +
+    line(!ck.miss.length, '<b>' + ck.n + '</b> борлуулалт/буцаалтын мөрөөс <b>' + (ck.n - ck.miss.length) + '</b> нь журналд бичигдсэн' + (ck.miss.length ? ' — ' + ck.miss.length + ' мөр дутуу' : ''), 'sales/receipts') +
+    line(ck.revOk, neq(ck.sAmt, 'Борлуулалтын дүн', ck.rev, 'санхүүгийн цэвэр орлого'), 'finance/journal') +
+    line(!ck.eMiss.length, '<b>' + ck.eN + '</b> зарлагын мөр бүгд журналд' + (ck.eMiss.length ? ' — ' + ck.eMiss.length + ' дутуу' : ''), 'finance/expenses') +
+    line(ck.tb, ck.tb ? 'Гүйлгээ баланс: дебет = кредит' : 'Гүйлгээ баланс: дебет ≠ кредит', 'finance/trial') + line(ck.bs, ck.bs ? 'Санхүүгийн байдал: хөрөнгө = өр төлбөр + өмч' : 'Санхүүгийн байдал: хөрөнгө ≠ өр төлбөр + өмч', 'finance/balance') +
+    (ck.invVal || !ck.invOk ? line(ck.invOk, neq(g('1404'), 'Барааны данс (1404)', ck.invVal, 'барааны үлдэгдлийн өртөг'), 'products/stock') : '') +
+    (ck.noCost.length ? line(false, '<b>' + ck.noCost.length + '</b> бараа өртөггүйгээр зарагдсан — нийт ашиг хэт өндөр гарна. Орлого авахдаа өртгийг оруулна уу: ' + esc(ck.noCost.slice(0, 5).join(', ')) + (ck.noCost.length > 5 ? '…' : ''), 'products/catalog') : '') +
     (ck.late ? line(false, '<b>' + ck.late + '</b> бичлэг хаагдсан онд (' + meta.closed.slice(0, 4) + ') хамаарах боловч дараа нь ирсэн — тайланд ороогүй. «Журналын бичилт»-ээр гараар тусгана уу.') : '') +
     (ck.salAll.length ? line(false, '<b>' + ck.salAll.length + '</b> цалингийн гүйлгээ компани заагаагүй (Бүх дэлгүүр) тул санхүүд ороогүй') : '') + '</ul>' +
     '<p class="muted" style="margin-top:8px">Борлуулалт: Дт касс/пос/харилцах — Кт 5101 орлого, мөн Дт 6101 өртөг — Кт 1404 бараа. Буцаалт: Дт 6001 буцаалт — Кт касс/харилцах (захиалгад 1201 авлага), мөн Дт 1404 бараа — Кт 6101 өртөг (бараа агуулахад буцаж орно). Ажилтны кассаас гаргасан зарлага: Дт зардлын данс — Кт 10003 касс; дансаар төлсөн зардал банкны хуулгаар Кт 1101 харилцах.</p></div>' +
@@ -1750,7 +1752,7 @@ function reportsModule() {
 function repAoa(rep) {
   var r = range(), aoa = [[rep.title], [BUSINESSES[state.biz].name + ' · ' + r[0] + ' — ' + r[1]], []];
   aoa.push(rep.cols.map(function (cl) { return cl.label; }));
-  rep.rows.forEach(function (row) { aoa.push(rep.cols.map(function (cl) { var v = row[cl.k]; return v == null ? '' : v; })); });
+  rep.rows.forEach(function (row) { aoa.push(rep.cols.map(function (cl) { var v = row[cl.k]; return v == null ? '' : v.__html ? String(v) : v; })); });
   if (rep.total) aoa.push(rep.cols.map(function (cl) { var v = rep.total[cl.k]; return v == null ? '' : v; }));
   if (rep.note) { aoa.push([]); aoa.push([rep.note]); }
   var ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -2812,7 +2814,8 @@ function lockView() {
 }
 function saveLock() {
   var v = $('lockDate').value;
-  if (v && !confirm(v + ' хүртэлх бүх гүйлгээг түгжих үү?')) return;
+  if (v) { var nL = J().filter(function (e) { return e.date <= v; }).length;
+    if (!confirmTyped(nL, v + ' хүртэлх ' + nL + ' гүйлгээг түгжих үү? Түгжсэн хугацааны гүйлгээг засах, цуцлах боломжгүй — зөвхөн засварын бичилтээр залруулна.')) return; }
   if (!API_URL) { meta.lock = v; save('nb_demo_lock', v); render(); return; }
   post({ type: 'admin_setting', key: 'lock', value: v }, function (err) { toast(err ? 'Алдаа: ' + err : 'Хадгалагдлаа'); refresh(); });
 }

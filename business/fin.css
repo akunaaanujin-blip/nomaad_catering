@@ -158,10 +158,22 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var
   .bz-admin .bz-menu{display:inline-block}
   .bz-admin .bz-content{padding:14px 12px 40px}
   .bz-admin .bz-head{flex-wrap:wrap;height:auto;min-height:52px;padding:8px 12px;row-gap:8px}
-  .fn-per{order:9;width:100%}.fn-per input{flex:1;width:auto}
+  .fn-per{order:9;width:100%}.fn-per input{flex:1;width:auto;min-width:0}.fn-per select{flex:none;width:118px}
   .bz-admin .gs{order:8;flex:1 1 100%}
   .bz-admin .bz-head .bz-user{display:flex;margin-left:auto}.bz-admin .bz-user #ownerName,.bz-admin .bz-user small{display:none}
   .fn-co{max-width:150px}
   .fn-kpis{grid-template-columns:1fr 1fr}
   .fn-kpi b{font-size:22px}
+}
+.fn-num{display:block;font-size:12px;color:var(--text-2);margin:2px 0 0;font-variant-numeric:tabular-nums;min-height:0}
+/* Гар утсанд: тайлангийн хүснэгт → карт жагсаалт (мөр бүр карт, багана бүр «нэр: утга») */
+@media(max-width:760px){
+  .bz-admin .card.rep .rep-t,.bz-admin .card.rep .rep-t tbody{display:block}
+  .bz-admin .card.rep .rep-t tr:first-child:has(th){display:none}
+  .bz-admin .card.rep .rep-t tr{display:block;border:1px solid var(--border);border-radius:12px;padding:8px 12px;margin-bottom:8px;background:var(--surface)}
+  .bz-admin .card.rep .rep-t td{display:flex;justify-content:space-between;gap:12px;height:auto;min-height:0;padding:4px 0;border:0;text-align:right}
+  .bz-admin .card.rep .rep-t td::before{content:attr(data-l);color:var(--text-2);font-size:12px;text-align:left;flex:none;max-width:45%}
+  .bz-admin .card.rep .rep-t td:empty,.bz-admin .card.rep .rep-t td[data-l=""]::before{display:none}
+  .bz-admin .card.rep .rep-t tr.tot{background:var(--surface-alt)}
+  .bz-admin .card.rep .scroll{overflow:visible;max-height:none}
 }

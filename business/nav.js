@@ -238,5 +238,30 @@ function homeView() {
   return '<div class="pg-head"><div><h1>Нүүр</h1><p class="pg-desc">' + esc(B.name) + ' · ' + t + ' — өнөөдөр юу хийх, энэ сарын дүн.</p></div></div>' + todo + kpis + chart + tx;
 }
 
+// ═══════════ Аюулгүй байдал, хурдан оруулах ═══════════
+// Бөөнөөр устгах, түгжих: тоог бичиж баталгаажуулна
+function confirmTyped(n, msg) {
+  var v = prompt(msg + '\n\nЭнэ үйлдлийг буцаах боломжгүй. Баталгаажуулахын тулд «' + n + '» гэж бичнэ үү:');
+  if (v === null) return false;
+  if (String(v).replace(/\D/g, '') === String(n)) return true;
+  toast('Тоо таарсангүй — үйлдэл хийгдсэнгүй'); return false;
+}
+// Цонхон дотор: Enter = үндсэн товч (хадгалах), Esc = хаах; тоон талбарт мянгатын таслалтай дүн доор нь
+document.addEventListener('keydown', function (e) {
+  var sh = [].slice.call(document.querySelectorAll('.sheet.show')).pop(); if (!sh) return;
+  if (e.key === 'Escape') { e.preventDefault(); sh.classList.remove('show'); return; }
+  var t = e.target;
+  if (e.key === 'Enter' && !e.shiftKey && t && t.tagName === 'INPUT' && !/^(checkbox|radio|file|search)$/.test(t.type) && sh.contains(t) && !t.getAttribute('onkeydown')) {
+    var b = [].slice.call(sh.querySelectorAll('.panel .btn:not(.ghost)')).filter(function (x) { return x.offsetParent && !x.disabled; })[0];
+    if (b) { e.preventDefault(); b.click(); }
+  }
+});
+document.addEventListener('input', function (e) {
+  var t = e.target; if (!t || t.tagName !== 'INPUT' || t.type !== 'number' || !t.closest('.sheet')) return;
+  var n = t.nextElementSibling, v = Number(t.value);
+  if (!n || !n.classList || !n.classList.contains('fn-num')) { n = document.createElement('small'); n.className = 'fn-num'; t.insertAdjacentElement('afterend', n); }
+  n.textContent = isFinite(v) && Math.abs(v) >= 1000 ? (v < 0 ? '−' : '') + fmt(Math.abs(v)) : '';
+});
+
 // admin.js ачаалах үед нэвтэрсэн бол аль хэдийн зурагдсан — шинэ цэсээр дахин зурна
 if ($('main') && $('main').style.display !== 'none') render();

@@ -509,8 +509,8 @@ function bankDel(ids) {
   var biz = state.biz, L = bankLines.filter(function (l) { return l.biz === biz && l.status === 'Шинэ' && (!ids || ids.indexOf(l.id) >= 0); });
   if (!L.length) return;
   var ds = L.map(function (l) { return l.date.slice(0, 10); }).sort();
-  if (!confirm(L.length === 1 ? 'Энэ гүйлгээг хуулгаас устгах уу?\n' + L[0].date + ' · ' + L[0].desc + ' · ' + fmt(L[0].credit || -L[0].debit) :
-    'Тулгаагүй ' + L.length + ' гүйлгээг (' + ds[0] + ' — ' + ds[ds.length - 1] + ') хуулгаас устгах уу?\n\nТулгасан гүйлгээ хэвээр үлдэнэ. Дараа нь хуулгаа дахин оруулж болно.')) return;
+  if (L.length === 1 ? !confirm('Энэ гүйлгээг хуулгаас устгах уу?\n' + L[0].date + ' · ' + L[0].desc + ' · ' + fmt(L[0].credit || -L[0].debit)) :
+    !confirmTyped(L.length, 'Тулгаагүй ' + L.length + ' гүйлгээг (' + ds[0] + ' — ' + ds[ds.length - 1] + ') хуулгаас устгах уу?\nТулгасан гүйлгээ хэвээр үлдэнэ. Дараа нь хуулгаа дахин оруулж болно.')) return;
   var gone = {}; L.forEach(function (l) { gone[l.id] = 1; });
   if (!API_URL) { bankLines = bankLines.filter(function (l) { return !gone[l.id]; }); save('nb_demo_bank', bankLines); render(); return; }
   post({ type: 'admin_bank', by: ownerName, updates: L.map(function (l) { return { id: l.id, status: 'Устгасан', link: '' }; }) }, function (err) {
