@@ -91,6 +91,9 @@ function ebOrdAuto(o) { return !!o && ebFeeAuto(EB_FEE_DATE[o.id] || o.date); }
 // зөвхөн шилжүүлэлтийн мөчөөс (MIG_TS) өмнө бичигдсэн гараар бичилтэд хөрвүүлэгдэнэ (Sheet-ийн өгөгдлийг өөрчлөхгүй).
 var OLD_EXP = { '7201': '7114', '7202': '7111', '7203': '7117', '7204': '7123', '7205': '7120', '7206': '7112', '7207': '7124', '7301': '7122',
   '7302': '7421', '7303': '7404', '7304': '7113', '7305': '7412', '7401': '7201' }, MIG_TS = 1792753755735;
+// «Шинээр эхлэх»-ийн тэнцүүлэх мөрийг (2026-10-27) 4601 «Хуримтлагдсан ашиг»-т бичсэн байсан — энэ нь ашиг биш,
+// эхний үлдэгдлийн зөрүү тул 4201 «Эздийн өмчийн бусад хэсэг (эхний үлдэгдэл)» болгож уншина (Sheet өөрчлөхгүй)
+function isOpenBal(j) { return (j.dr === '4601' || j.cr === '4601') && /эхний үлдэгдлийн тэнцүүлэлт/.test(String(j.desc)); }
 function accMig(code, id) {
   if (code === '0') return '0000';   // Sheet «0000»-ийг тоо 0 болгон хадгалсан (он нээлтийн нэгтгэл)
   var n = OLD_EXP[code]; if (!n) return code;
@@ -134,6 +137,7 @@ function expenseAcc(cat, biz, tracked) {
 // Үйл явдлыг цаг хугацааны дарааллаар явуулж, борлуулалт/хасалт бүрийг тухайн үеийн дундаж өртгөөр үнэлнэ.
 // Ингэснээр 1404 «Бараа» дансны үлдэгдэл = барааны үлдэгдлийн өртөг үргэлж таарна.
 // until (заавал биш): тухайн өдрийн эцэс хүртэлх байдлыг тооцно (он хаахад)
+var COST_FALLBACK = 0.85;
 function costEngine(biz, R, until) {
   var key = biz + '|' + R.records.length + '|' + R.moves.length + '|' + (R.journal || []).length + '|' + (until || '');
   if (R._ce && R._ce[key]) return R._ce[key];
@@ -160,8 +164,12 @@ function costEngine(biz, R, until) {
   });
   if (until) ev = ev.filter(function (e) { return e.t.slice(0, 10) <= until; });
   ev.sort(function (a, b) { return a.t < b.t ? -1 : a.t > b.t ? 1 : (a.m ? -1 : 1); });   // ижил минутад хөдөлгөөн түрүүлнэ
-  var it = {}, rec = {}, mv = {}, noCost = {}, adj = [];
+  var it = {}, rec = {}, mv = {}, noCost = {}, adj = [], est = {};
   var get = function (k) { return it[k] = it[k] || { q: 0, v: 0, avg: 0 }; };
+  // Өртөг тодорхойгүй (орлогод өртөг бичээгүй, эсвэл үлдэгдэлгүй зарсан) бол өртөг = борлуулах үнэ × 0.85 (COST_FALLBACK)
+  var PR = {}; ((typeof BUSINESSES !== 'undefined' && BUSINESSES[biz] && BUSINESSES[biz].products) || []).forEach(function (p) { if (Number(p.price) > 0) PR[p.name] = Number(p.price); });
+  R.records.forEach(function (x) { if (x.biz === biz && x.type === 'sale' && Number(x.qty) > 0 && Number(x.amount) > 0 && !PR[baseItem(x.item)]) PR[baseItem(x.item)] = x.amount / x.qty; });
+  var fb = function (name) { var c = Math.round((PR[name] || 0) * COST_FALLBACK); if (c) est[name] = 1; return c; };
   var out = function (o, q) { var c = o.q > 0 ? o.v / o.q : o.avg; o.avg = c; o.q -= q; o.v -= q * c; if (Math.abs(o.q) < 1e-9) { o.q = 0; o.v = 0; } return q * c; };
   ev.forEach(function (e) {
     if (e.j) {   // ирсний дараах карго: бараа нь үлдэгдэлд байвал өртөгт нэмнэ, зарагдаад дууссан бол шууд борлуулсан барааны өртөгт (6101)
@@ -178,17 +186,20 @@ function costEngine(biz, R, until) {
     if (e.m) {
       var m = e.m, o = get(m.item), q = Number(m.qty) || 0;
       if (q > 0 && (m.kind === 'Орлого' || m.kind === 'Эхний үлдэгдэл' || m.kind === 'Он нээлт')) {
-        var c = m.cost || (o.q > 0 ? o.v / o.q : o.avg);
+        var c = m.cost || (o.q > 0 ? o.v / o.q : o.avg) || fb(m.item);
         o.q += q; o.v += q * c; o.avg = o.q ? o.v / o.q : c; mv[m.id] = q * c;
-      } else if (q > 0) { var a = o.q > 0 ? o.v / o.q : o.avg; o.q += q; o.v += q * a; mv[m.id] = q * a; }   // тооллогын илүүдэл
+      } else if (q > 0) { var a = (o.q > 0 ? o.v / o.q : o.avg) || fb(m.item); o.q += q; o.v += q * a; mv[m.id] = q * a; }   // тооллогын илүүдэл
       else mv[m.id] = -out(o, -q);
     } else {
       var x = e.x, name = String(x.item).replace(/ \(буцаалт\)$/, ''), o2 = get(name), q2 = Number(x.qty) || 0;
-      if (q2 > 0) { var cg = out(o2, q2); rec[x.id] = cg; if (!cg) noCost[name] = (noCost[name] || 0) + q2; }
+      if (q2 > 0) {
+        if (!(o2.q > 0 ? o2.v : o2.avg)) { o2.avg = fb(name); if (o2.q > 0) o2.v = o2.q * o2.avg; }   // өртөггүй үлдэгдэл / үлдэгдэлгүй борлуулалт
+        var cg = out(o2, q2); rec[x.id] = cg; if (!cg) noCost[name] = (noCost[name] || 0) + q2;
+      }
       else if (q2 < 0) { var a2 = o2.q > 0 ? o2.v / o2.q : o2.avg; o2.q += -q2; o2.v += -q2 * a2; rec[x.id] = q2 * a2; }
     }
   });
-  var res = { items: it, rec: rec, mv: mv, noCost: noCost, adj: adj, since: since.slice(0, 10) };
+  var res = { items: it, rec: rec, mv: mv, noCost: noCost, adj: adj, est: est, since: since.slice(0, 10) };
   R._ce = R._ce || {}; R._ce[key] = res;
   return res;
 }
@@ -266,8 +277,9 @@ function buildJournal(biz, R) {
       if (cg) add(d, 'Бараа орлого · карго', m.id, '1404', PAY_ACC[m.cargoPay] || '3101', cg, 'Карго · ' + m.item + ' × ' + m.qty + ' (' + m.cargoPay + ')', m.cargoPartner);
     }
     else if (m.kind === 'Тооллого' || m.kind === 'Хасалт') {
+      // Тооллогын илүүдэл орлого биш — дутагдал, хорогдлын (7421) зардлыг бууруулна (ихэнхдээ өмнөх тооллого / бүртгэлийн алдааны засвар)
       if (m.qty < 0) add(d, m.kind, m.id, '7421', '1404', v, m.item + ' ' + m.qty);
-      else add(d, m.kind, m.id, '1404', '5201', v, m.item + ' +' + m.qty);
+      else add(d, m.kind, m.id, '1404', '7421', v, m.item + ' +' + m.qty + ' (илүүдэл)');
     }
   });
   ce.adj.forEach(function (a) { add(a.date, 'Карго · зарагдсан бараа', a.ref, '6101', '1404', a.amount, 'Карго · ' + a.item + ' (бараа нь зарагдсан тул өртөгт)'); });
@@ -279,6 +291,8 @@ function buildJournal(biz, R) {
   });
   R.journal.forEach(function (j) {
     if (j.biz !== biz || isOpenFix(j)) return;
+    if (isOpenBal(j)) j = { id: j.id, date: j.date, no: j.no, partner: j.partner, amount: j.amount, dr: j.dr === '4601' ? '4201' : j.dr, cr: j.cr === '4601' ? '4201' : j.cr,
+      desc: String(j.desc).replace(/Хуримтлагдсан ашиг \(эхний/, ACC['4201'].name + ' (эхний') };
     add(j.date, j.no ? VOUCHER_NAMES[j.no.slice(0, 2)] + ' ' + j.no : /^Он нээлт/.test(j.desc) ? 'Он нээлт' : 'Журналын бичилт', j.id, accMig(j.dr, j.id), accMig(j.cr, j.id), j.amount, j.desc, j.partner);
   });
   // Үндсэн хөрөнгийн элэгдэл — сар бүрийн эцэст автоматаар (шулуун шугамаар, авсны дараа сараас). Гараар бичсэн сар байвал түүнийг авна.
@@ -342,6 +356,14 @@ function repTrial(E, from, to) {
     m('c', 'Кредит гүйлгээ'), m('cd', 'Эцсийн Дт'), m('cc', 'Эцсийн Кт')], rows: rows, total: tot, check: ok,
     note: ok ? 'Тэнцэж байна: дебет = кредит' : 'АНХААР: дебет, кредит тэнцэхгүй байна' };
 }
+var EQ_NOTE = {
+  '4101': 'Өмч (эздийн оруулсан) — эзэн бизнест өөрийн мөнгө, хөрөнгийг оруулсан дүн (банкны хуулгад «Хөрөнгө оруулалт»). Эзэн мөнгө авбал буурна.',
+  '4201': 'Эздийн өмчийн бусад хэсэг (эхний үлдэгдэл) — системийг ашиглаж эхлэхэд (2026-10-27 «Шинээр эхлэх») байсан мөнгө, бараа, авлагаас өрийг хассан дүн. ' +
+    'Өмнө нь эзэн оруулсан хөрөнгө ба өмнөх үеийн ашиг хоёрыг ялгах баримтгүй тул энд нэгтгэж бичнэ. Жишээ: Cozy-ийн 2,741,712₮ эхний барааны үлдэгдэл (Дт 1404 Бараа / Кт 4201). ' +
+    'Энэ нь орлого, ашиг биш — зөвхөн эхлэх өдрийн цэвэр хөрөнгө. Нягтлан ялгаж чадвал «Журналын бичилт»-ээр 4101 эсвэл 4601 руу шилжүүлж болно.',
+  '4601': 'Хуримтлагдсан ашиг — өмнөх онуудын цэвэр ашгийн (орлого − өртөг − зардал) хуримтлагдсан дүн. Оны дундуур энэ дансны үлдэгдэл өөрчлөгдөхгүй: ' +
+    'тухайн оны ашиг «Орлогын тайлан»-д харагдаж, он хаахад (Тохиргоо → Он хаах) энд нэмэгдэнэ. Балансад «Хуримтлагдсан ашиг» = энэ данс + тухайн оны ашиг.',
+};
 function repLedger(E, from, to, code) {
   var set = {}, all = code === 'cashall';   // «нэгдсэн» — бүх касс, банкны данс нэг хуулгад (данс хоорондын шилжүүлэг орохгүй)
   (all ? cashCodes() : [code]).forEach(function (k) { set[k] = 1; });
@@ -361,7 +383,7 @@ function repLedger(E, from, to, code) {
   return { title: all ? 'Мөнгөний дансны нэгдсэн хуулга' : 'Дансны хуулга · ' + code + ' ' + accName(code), cols: [c('date', 'Огноо'), c('time', 'Цаг'), c('doc', 'Баримт')].concat(all ? [c('acc', 'Данс')] : [], [c('desc', 'Гүйлгээний утга'),
     c('corr', 'Харьцсан данс')], amt), rows: rows,
     total: ic ? { desc: 'Эцсийн үлдэгдэл', in: sum(rows, 'in'), out: sum(rows, 'out'), bal: side(bal) } : { desc: 'Эцсийн үлдэгдэл', d: sum(rows, 'd'), c: sum(rows, 'c'), bal: r0(bal * sign) },
-    note: ic ? 'Компани хооронд: өөр компанид төлсөн мөнгө (гарсан) үлдэгдлийг тэднээс «авах» болгож, тэднээс ирсэн мөнгө (орсон) үүнийг бууруулна.' : undefined };
+    note: EQ_NOTE[code] ? EQ_NOTE[code] : ic ? 'Компани хооронд: өөр компанид төлсөн мөнгө (гарсан) үлдэгдлийг тэднээс «авах» болгож, тэднээс ирсэн мөнгө (орсон) үүнийг бууруулна.' : undefined };
 }
 function repCash(E, from, to) {
   var codes = ACCOUNTS.filter(function (a) { return a[3] === 'cash'; }).map(function (a) { return a[0]; });

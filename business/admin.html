@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261026q">
+<link rel="stylesheet" href="style.css?v=20261030a">
 </head>
 <body class="bz-admin">
 <div class="demo" id="demo" style="display:none">Туршилтын горим — зөвхөн энэ төхөөрөмж дээр бичигдсэн мэдээлэл харагдана (код: 0000)</div>
@@ -40,6 +40,7 @@
     <header class="bz-head">
       <button class="bz-menu" onclick="toggleNav(true)" aria-label="Цэс">☰ Цэс</button>
       <div class="bz-crumb" id="crumb"></div>
+      <div class="gs"><input id="gsQ" type="search" autocomplete="off" placeholder="Хайх: хуудас, бараа, утас, данс…  ( / )" oninput="gsRun(this.value)" onfocus="gsRun(this.value)" onblur="setTimeout(function(){$('gsRes').style.display='none'},150)" onkeydown="gsKey(event)"><div class="gs-res" id="gsRes"></div></div>
       <div class="bz-user"><small id="updated"></small><span id="ownerName"></span></div>
     </header>
     <main class="bz-content" id="view"></main>
@@ -387,14 +388,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="products.js?v=20261022o"></script>
 <script src="config.js?v=20261026s"></script>
-<script src="common.js?v=20261027a"></script>
-<script src="reports.js?v=20261030a"></script>
+<script src="common.js?v=20261030b"></script>
+<script src="reports.js?v=20261030b"></script>
 <script src="tax.js?v=20261024e"></script>
-<script src="finhelp.js?v=20261030a"></script>
-<script src="finance.js?v=20261027c"></script>
+<script src="finhelp.js?v=20261030b"></script>
+<script src="finance.js?v=20261030b"></script>
 <script src="findash.js?v=20261027b"></script>
 <script src="calendar.js?v=20261026c"></script>
-<script src="bank.js?v=20261027a"></script>
+<script src="bank.js?v=20261030b"></script>
 <script src="prodimport.js?v=20261022o"></script>
 <script src="loans.js?v=20261024e"></script>
 <script src="po.js?v=20261030a"></script>
@@ -402,6 +403,6 @@
 <script src="dash.js?v=20261022o"></script>
 <script src="ops.js?v=20261022o"></script>
 <script src="review.js?v=20261024e"></script>
-<script src="admin.js?v=20261030a"></script>
+<script src="admin.js?v=20261030b"></script>
 </body>
 </html>

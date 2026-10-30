@@ -151,7 +151,9 @@ function buildShell() {
     wrap.insertAdjacentHTML('afterbegin', '<h2 class="ep-title" id="epTitle"></h2>');
     var pend = $('pending');   // тооллого, мөнгөний хүсэлтийн хуудсууд (гурван дэлгүүрт ижил тул энд үүсгэнэ)
     var html = '<div data-view="count" id="countView" style="display:none"><div class="card">' +
-        '<div class="cnt-bar">' + (BIZ.warehouse ? '<label>Байршил<select id="cntLoc" onchange="renderCount()"><option>Дэлгүүр</option><option>Агуулах</option></select></label>' : '') +
+        (BIZ.warehouse ? '<input type="hidden" id="cntLoc" value="Дэлгүүр"><div class="seg" id="cntLocSeg" style="grid-template-columns:1fr 1fr;margin-bottom:10px">' +
+          '<button class="on" onclick="cntLocSet(\'Дэлгүүр\')">Дэлгүүрт тоолох</button><button onclick="cntLocSet(\'Агуулах\')">Агуулахад тоолох</button></div>' : '') +
+        '<div class="cnt-bar">' +
         '<input type="search" id="cntQ" placeholder="Бараагаар хайх…" oninput="renderCount()"></div>' +
         '<div id="cntList" style="margin-top:8px;overflow-x:auto"></div>' +
         '<p class="muted" style="margin-top:8px">«Байх ёстой» — системийн үлдэгдэл. Бараа бүрийг тоолоод бодит тоог «Тооллого»-д бичнэ. Тоолоогүй барааг хоосон үлдээнэ. Илгээсний дараа удирдлага баталж, үлдэгдэл засагдана.</p>' +
@@ -881,11 +883,18 @@ function renderCount() {
   var rows = Object.keys(names).filter(function (n) { return !isNonGoods(n) && (!q || n.toLowerCase().indexOf(q) >= 0); }).sort();
   var done = Object.keys(cntVals).filter(function (k) { return cntVals[k] !== ''; }).length;
   var k = $('cntLoc') && $('cntLoc').value === 'Агуулах' ? 'wh' : 'shop';
-  el.innerHTML = '<table class="rep-t cnt-t"><tr><th>Бараа</th><th class="num">Байх ёстой</th><th class="num">Тооллого</th><th class="num">Зөрүү</th></tr>' + rows.map(function (n, i) {
+  el.innerHTML = '<p style="margin:0 0 6px"><b>' + (k === 'wh' ? 'Агуулах' : 'Дэлгүүр') + '</b> <span class="muted">— энэ байршлын үлдэгдлээр</span></p><table class="rep-t cnt-t"><tr><th>Бараа</th><th class="num">Байх ёстой</th><th class="num">Тооллого</th><th class="num">Зөрүү</th></tr>' + rows.map(function (n, i) {
     var sys = Math.round((((stock || {})[n] || {})[k] || 0) * 1000) / 1000;
     return '<tr><td>' + esc(n) + ' <small class="muted">' + esc(names[n]) + '</small></td><td class="num">' + sys + '</td><td class="num"><input class="cnt-in" type="number" inputmode="decimal" min="0" step="any" value="' + esc(cntVals[n] == null ? '' : cntVals[n]) +
       '" oninput="cntVals[' + esc(JSON.stringify(n)) + ']=this.value;cntDiff(' + i + ',this.value,' + sys + ');cntNote()"></td><td class="num" id="cntD' + i + '">' + cntDiffTxt(cntVals[n], sys) + '</td></tr>'; }).join('') + '</table>' +
     '<p class="muted" id="cntN" style="margin-top:6px">' + (done ? done + ' бараа тоолсон' : '') + '</p>';
+}
+function cntLocSet(L) {   // байршил солиход тоолсон тоо цэвэрлэгдэнэ (өөр байршлын тоо холилдохгүй)
+  if ($('cntLoc').value === L) return;
+  if (Object.keys(cntVals).some(function (k) { return cntVals[k] !== ''; }) && !confirm('Оруулсан тоо арилна. ' + L + ' руу шилжих үү?')) return;
+  cntVals = {}; $('cntLoc').value = L;
+  [].forEach.call(document.querySelectorAll('#cntLocSeg button'), function (b) { b.classList.toggle('on', b.textContent.indexOf(L.slice(0, 5)) === 0); });
+  renderCount();
 }
 function cntDiffTxt(v, sys) { if (v == null || v === '' || !isFinite(Number(v))) return ''; var d = Math.round((Number(v) - sys) * 1000) / 1000; return d ? '<b style="color:' + (d < 0 ? 'var(--red,#DC2626)' : 'var(--green,#16A34A)') + '">' + (d > 0 ? '+' : '') + d + '</b>' : '<span class="muted">0</span>'; }
 function cntDiff(i, v, sys) { var c = $('cntD' + i); if (c) c.innerHTML = cntDiffTxt(v, sys); }

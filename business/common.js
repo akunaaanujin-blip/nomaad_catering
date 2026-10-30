@@ -180,7 +180,7 @@ function ebBoard(list, at) {
       '<td><b class="mono2">' + esc(x.code || '—') + '</b><br><small class="muted">' + esc(x.created || '') + '</small></td>' +
       '<td><b>' + esc(x.phone) + '</b>' + (x.cust && x.cust !== x.phone ? '<br><small class="muted">' + esc(x.cust) + '</small>' : '') + '</td>' +
       '<td class="eb-addr">' + esc(x.addr) + '</td><td>' + esc(x.item) + (x.qty ? ' <small class="muted">· ' + x.qty + 'ш</small>' : '') + '</td>' +
-      '<td class="n">' + (x.price ? fmt(x.price) : '<small class="muted">0</small>') + '</td><td class="n">' + (x.got ? fmt(x.got) : '') + '</td>' +
+      '<td class="n">' + (x.price ? fmt(x.price) : '<small class="muted">0</small>') + '</td><td class="n">' + (x.got ? fmt(x.got) + (x.price > 0 && x.id ? '<br><small class="st g">Төлбөр орсон</small>' : '') : '') + '</td>' +
       '<td><span class="st ' + (EB_CLS[x.st] || 'y') + '">' + esc(x.name || '—') + '</span>' + (x.at && x.at !== x.created ? '<br><small class="muted">' + esc(x.at) + '</small>' : '') + ebBack(x) + '</td>' +
       '<td>' + esc(x.driver) + (x.dphone ? '<br><small class="muted">' + esc(x.dphone) + '</small>' : '') + '</td><td>' + (x.ok === 'Тийм' ? 'Тийм' : x.ok ? '<small class="muted">' + esc(x.ok) + '</small>' : '') + '</td></tr>';
     if (open) tr += '<tr class="eb-d"><td colspan="9"><div class="eb-kv">' + (x.raw || []).map(function (p) {

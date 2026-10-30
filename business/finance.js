@@ -486,9 +486,9 @@ function repPayroll(E, y) {
 
 // ═══════════ НЯГТЛАНГИЙН ТАЙЛАН, ТОХИРГОО (нэг хуудсанд цуглуулсан) ═══════════
 var HUBS = {
-  acct: ['Нягтлангийн тайлан', [['Шалгалт', ['dash']], ['Журнал', ['entry', 'trial', 'gl']], ['Мөнгө', ['cash', 'expenses']],
-    ['Авлага, өглөг', ['partners', 'aging_r', 'aging_p', 'pstmt']], ['Санхүүгийн тайлан', ['balance', 'pl', 'equity']]]],
-  other: ['Бусад', [['Тайлан', ['profit', 'acct']], ['Мөнгө', ['vouchers']], ['Сар бүр', ['monthly', 'assets']], ['Тохиргоо', ['setup']]]],
+  acct: ['Нягтлангийн тайлан', [['Журнал', ['journal', 'entry', 'trial', 'gl']], ['Данс', ['accounts']], ['Санхүүгийн тайлан', ['balance', 'pl', 'equity']],
+    ['Авлага, өглөг', ['partners', 'aging_r', 'aging_p', 'pstmt']], ['Мөнгө', ['cash', 'expenses']], ['Шалгалт', ['dash']]]],
+  other: ['Бусад', [['Тайлан', ['profit']], ['Мөнгө', ['vouchers']], ['Сар бүр', ['monthly', 'assets']], ['Тохиргоо', ['setup']]]],
   setup: ['Тохиргоо', [['Эхлэх', ['opening', 'banklink']], ['Мэдэгдэл', ['digest']], ['Хамгаалалт', ['lock', 'close']], ['Тусламж', ['glossary']]]],
 };
 function hubOf(sub) { var h = ''; Object.keys(HUBS).forEach(function (k) { HUBS[k][1].forEach(function (g) { if (g[1].indexOf(sub) >= 0) h = k; }); }); return h; }

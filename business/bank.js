@@ -222,9 +222,17 @@ function bankView() {
   }).join('');
   return head + '<div class="card"><h2>Төлбөрийн мэдээлэл (хэрэглэгчид илгээх мессежид)</h2><div class="bar-row"><input id="payInfo" value="' + esc(pay) + '" placeholder="Жишээ: Хаан банк 53xxxxxxxx (Н.Анужин)" style="flex:1;min-width:220px">' +
     '<button class="b-btn" onclick="savePayInfo()">Хадгалах</button></div><p class="muted" style="font-size:12.5px;margin-top:6px">Ажилтан захиалга бүртгэхэд «Төлбөрийн мессеж»-д энэ данс, дүн, «Гүйлгээний утга: утасны дугаар» бичигдэнэ — тулгалт автоматаар таарна.</p></div>' +
-    spSettingsCard(biz) + ebSettingsCard(biz) +
     tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th class="bk-ck">' + (list.some(function (l) { return l.status === 'Шинэ'; }) ? '<input type="checkbox" title="Бүгдийг сонгох" onchange="bankSelAll(this.checked)">' : '') + '</th><th>Огноо</th><th>Гүйлгээний утга</th><th class="n">Орлого</th><th class="n">Зарлага</th><th>Тулгах баримт</th><th></th></tr>' +
     (rows || '<tr><td colspan="7" class="muted">' + (all.length ? 'Тулгах гүйлгээ алга' : 'Хуулга оруулаагүй байна — «Хуулга оруулах» дарна уу') + '</td></tr>') + '</table></div></div>';
+}
+// ── API холболт (Санхүү → Холболт): гадны үйлчилгээний түлхүүр, төлөв — банкны хуулгаас салгасан ──
+function apiView(biz) {
+  var B = BUSINESSES[biz] || {}, row = function (name, on, what) { return '<tr><td><b>' + name + '</b></td><td>' + (on === true ? '<span class="st g">Холбогдсон</span>' : '<span class="st n">' + (on || 'Тохируулаагүй') + '</span>') + '</td><td class="muted">' + what + '</td></tr>'; };
+  return '<div class="card"><h2>Холболтын төлөв</h2><div class="scroll"><table class="rep-t"><tr><th>Үйлчилгээ</th><th>Төлөв</th><th>Юунд</th></tr>' +
+    (B.orders ? row('Буухиа (ebuuhia)', !!window.ebOnAll, 'Захиалгыг хүргэлтэд илгээх, төлөв, авсан мөнгө татах') : '') +
+    row('StorePay', !!(window.spAll || {})[biz], 'Хэрэглэгчийн зээлийн эрх шалгах, нэхэмжлэх илгээх') +
+    row('И-баримт (PosAPI)', B.ebarimt === false ? 'Ашиглахгүй' : 'Касс компьютер дээр', 'Касс компьютер дээрх PosAPI-аар баримт хэвлэх (дэлгүүр бүрт)') +
+    '</table></div></div>' + ebSettingsCard(biz) + spSettingsCard(biz);
 }
 // StorePay merchant API — түлхүүрийг зөвхөн серверт хадгална (энд хэзээ ч буцааж харуулахгүй); хоосон талбар хуучныг хэвээр үлдээнэ
 function spSettingsCard(biz) {
