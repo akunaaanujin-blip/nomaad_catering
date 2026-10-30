@@ -192,7 +192,7 @@ function openPoPay(id, type) {
         (open || !L.length ? '<option value=""' + (L.length ? '' : ' selected') + '>Бараа ирээгүй байна (урьдчилж төлсөн)</option>' : '') + '</select>'
       : '<label for="ppType">Төрөл</label><select id="ppType"><option value="a"' + (s.sup ? '' : ' selected') + '>Урьдчилгаа</option><option value="b"' + (s.sup ? ' selected' : '') + '>Үлдэгдэл төлбөр</option></select>') +
     '<div class="row2"><div><label for="ppDate">Огноо</label><input id="ppDate" type="date" value="' + todayStr() + '"></div><div><label for="ppAcc">Хаанаас төлсөн</label><select id="ppAcc">' + cashAccOpts('1101') +
-      (cargo ? '<option value="3101">Дараа төлнө (өглөг)</option>' : '') + '</select></div></div>' +
+      (cargo ? '<option value="3101">Дараа төлнө (өглөг)</option>' : '') + '<option value="4201">Хаалтаас (' + esc(meta.closed || '10-26') + ') өмнө төлсөн — эхний үлдэгдэл</option></select></div></div>' +
     '<div class="row2"><div><label for="ppAmt">' + (cargo ? 'Каргоны дүн (₮)' : 'Төлсөн дүн (₮)') + '</label><input id="ppAmt" type="number" min="0" inputmode="numeric"></div>' +
     (cargo ? '<div><label for="ppCo">Карго компани</label><input id="ppCo" value="' + esc(P.cargoCo || '') + '"></div>' :
       '<div><label for="ppFx">' + (P.cur === 'MNT' ? 'Тайлбар' : 'Валютаар (' + PO_CUR[P.cur] + ', заавал биш)') + '</label><input id="ppFx" ' + (P.cur === 'MNT' ? '' : 'type="number" min="0" step="any"') + '></div>') + '</div>' +
@@ -206,6 +206,8 @@ function savePoPay(id, cargo) {
   if (cco && cco !== P.cargoCo) P.cargoCo = cco;
   var fx = !cargo && $('ppFx') ? $('ppFx').value.trim() : '', note = fx ? (P.cur === 'MNT' ? fx : PO_CUR[P.cur] + fx + ' (ханш ' + Math.round(amt / Number(fx) * 100) / 100 + ')') : '';
   var type = cargo ? ($('ppShip').value ? 'k' + $('ppShip').value : 'c') : $('ppType').value;
+  // Хаалтаас өмнө төлсөн (мөнгө нь архивт) — Дт 1505 / Кт 4201, огноо = шинээр эхэлсэн өдөр (хаалтын өдөр түгжигдсэн)
+  if (acc === '4201') { if (meta.closed && d <= meta.closed) d = addDays(meta.closed, 1); note = (note ? note + ' · ' : '') + 'хаалтаас өмнө төлсөн'; }
   var pe = poPayEntry(id + '|' + type, acc, d, amt, note, cco);
   postEntries([pe.entry], function () { gClose(); toast(pe.link + ' бүртгэгдлээ'); if (API_URL) refresh(); else render(); });
 }

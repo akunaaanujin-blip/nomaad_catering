@@ -286,12 +286,13 @@ function bizModules(biz) { return BUSINESSES[biz] && BUSINESSES[biz].finOnly ? M
 function openMgmt() { state.view = 'company'; state.biz = 'mgmt'; state.module = 'finance'; render(); window.scrollTo(0, 0); }
 // Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
 var MENU = {
-  sales: [['Бүртгэл', ['shop', 'receipts', 'orders', 'buuhia']], ['Шинжилгээ', ['item', 'cat', 'staff', 'day', 'pay', 'disc', 'slow', 'boost']], ['Татвар', ['ebarimt']]],
-  products: [['Бүртгэл', ['catalog', 'stock', 'in', 'counts']], ['Худалдан авалт', ['po', 'suppliers']], ['Тайлан', ['move', 'prices']]],
+  sales: [['Бүртгэл', ['shop', 'orders', 'buuhia', 'receipts']], ['Шинжилгээ', ['item', 'day', 'staff', 'pay', 'cat', 'disc', 'slow', 'boost']], ['Татвар', ['ebarimt']]],
+  products: [['Бүртгэл', ['stock', 'counts', 'catalog', 'in']], ['Худалдан авалт', ['po', 'suppliers']], ['Тайлан', ['move', 'prices']]],
   // Санхүү — цөөн, ойлгомжтой цэс. Нягтлангийн тайлан, тохиргоо нь тус бүр нэг хуудсанд цуглуулагдсан (finance.js HUBS)
   // Санхүү — Excel «Санхүүгийн бүртгэлийн файл»-ын дарааллаар дугаартай 10 хуудас; бусад нь «Бусад» нэг хуудсанд (finance.js HUBS.other)
   // Санхүү — албан санхүүгийн програмын бүлэглэл: Мөнгө · Тооцоо · Тайлан · Нягтлан
-  finance: [['Мөнгө', ['ledger', 'cashacc', 'bank', 'money']], ['Тооцоо', ['recv', 'payb', 'debts', 'loans', 'payroll', 'requests']], ['Тайлан', ['daily', 'expcat', 'cashflow', 'months']], ['Нягтлан', ['acct', 'other']], ['Холболт', ['api']]],
+  // Чухлаас нь: өдөр бүр хийх (тулгах, батлах) → тооцоо → тайлан → нягтлан → тохиргоо
+  finance: [['Өдөр бүр', ['bank', 'requests', 'daily', 'cashacc']], ['Тооцоо', ['recv', 'payb', 'payroll', 'loans', 'debts']], ['Тайлан', ['months', 'expcat', 'cashflow', 'money', 'ledger']], ['Нягтлан', ['acct', 'other']], ['Холболт', ['api']]],
 };
 function subLabel(mod, k) { var x = (SUBS[mod] || []).filter(function (s) { return s[0] === k; })[0]; return x ? x[1] : k; }
 function subGroup(mod, k) { var g = (MENU[mod] || []).filter(function (g) { return g[1].indexOf(k) >= 0; })[0]; return g ? g[0] : mod === 'finance' && hubOf(k) ? HUBS[hubOf(k)][0] : ''; }
