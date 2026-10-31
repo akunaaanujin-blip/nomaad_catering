@@ -86,7 +86,7 @@ function simpleTodo() {
 
 // ═══════════ САР БҮРИЙН АЖИЛ ═══════════
 function monthlyView() {
-  var biz = state.biz, now = new Date(), lm = todayStr(new Date(now.getFullYear(), now.getMonth() - 1, 1)).slice(0, 7);
+  var biz = state.biz, now = new Date(), lm = todayStr(new Date(now.getFullYear(), now.getMonth() - (now.getDate() >= 25 ? 0 : 1), 1)).slice(0, 7);   // сарын 25-аас хойш — энэ сар, өмнө нь — өмнөх сар
   var items = [];
   var bl = (typeof bankLines !== 'undefined' ? bankLines : []).filter(function (l) { return l.biz === biz; });
   var lastImp = bl.map(function (l) { return l.date.slice(0, 10); }).sort().pop() || '';
@@ -120,7 +120,7 @@ function monthlyView() {
   }
   items.push([!unpaidOld.length, 'Удсан авлагаа нэхэх', unpaidOld.length ? unpaidOld.length + ' хүний өр 60 хоногоос удсан' : 'Удсан авлага алга', "setSub('aging_r')"]);
   if (isOwner()) items.push([!!meta.lock && meta.lock >= lastDayOf(lm), lm + ' сарыг шалгаад түгжих', meta.lock ? 'Одоо ' + meta.lock + ' хүртэл түгжигдсэн' : 'Түгжээгүй', "setSub('lock')"]);
-  items.push([false, 'Сарын тайлангаа Excel-ээр хадгалах', 'Бүх тайлан → Excel татах', "openModule('reports')"]);
+  items.push([false, 'Сарын тайлангаа Excel-ээр хадгалах', 'Тайлан бүрийн дээд талын «Excel» товч', "navGo('finance/pl')"]);
   return '<p class="hint">Сар бүрийн эхэнд энэ жагсаалтыг дарааллаар нь хийхэд санхүү тань цэгцтэй байна. Ногоон тэмдэг — хийгдсэн.</p>' +
     '<div class="card"><ul class="cklist">' + items.map(function (x, i) {
       return '<li><span class="ck ' + (x[0] ? 'ok' : 'bad') + '">' + (x[0] ? '✓' : i + 1) + '</span><span style="flex:1"><b>' + esc(x[1]) + '</b><br><small class="muted">' + esc(x[2]) + '</small></span>' +

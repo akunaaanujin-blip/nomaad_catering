@@ -9,7 +9,14 @@ function isFee(name) { return String(name || '').replace(/ \(буцаалт\)$/,
 var DISC_ITEM = 'Хөнгөлөлт', SPLIT_ITEM = 'Төлбөр хуваалт';
 function baseItem(name) { return String(name || '').replace(/ \(буцаалт\)$/, ''); }
 function isAdj(name) { var b = baseItem(name); return b === DISC_ITEM || b === SPLIT_ITEM; }
-function isNonGoods(name) { return isFee(name) || isAdj(name); }   // үлдэгдэл, өртөгт орохгүй
+// Үйлчилгээ (Барааны бүртгэлд ангилал «Үйлчилгээ»), хүргэлтийн төлбөр, хөнгөлөлт — бараа биш: үлдэгдэл, тооллого, хөдөлгөөн, өртөгт орохгүй
+var _svc = null, _svcN = -1;
+function isService(name) {
+  var n = 0, B = typeof BUSINESSES !== 'undefined' ? BUSINESSES : {}; Object.keys(B).forEach(function (k) { n += (B[k].products || []).length; });
+  if (_svcN !== n) { _svc = {}; _svcN = n; Object.keys(B).forEach(function (k) { (B[k].products || []).forEach(function (p) { if (/^үйлчилгээ$/i.test(String(p.cat || '').trim())) _svc[p.name] = 1; }); }); }
+  return !!_svc[baseItem(name)];
+}
+function isNonGoods(name) { return isFee(name) || isAdj(name) || isService(name); }   // үлдэгдэл, өртөгт орохгүй
 // Баримтын түлхүүр: bill → ДДТД → мөрийн ID
 function billKey(x) { return x.bill || (String(x.note || '').match(/ДДТД (\d+)/) || [])[1] || x.id; }
 // Цуцалсан (буухиад өгөхөөс өмнө) ба Буцаасан (хүргэлтээс буцсан) — аль аль нь идэвхгүй захиалга
@@ -22,7 +29,7 @@ function staffIn(s, b) { return staffBizes(s.biz).indexOf(b) >= 0; }
 
 function fmt(n) {
   n = Math.round(Number(n) || 0);
-  return '₮' + n.toLocaleString('en-US');
+  return (n < 0 ? '−₮' + (-n).toLocaleString('en-US') : '₮' + n.toLocaleString('en-US'));   // сөрөг: «−₮12,000»
 }
 function pad(n) { return (n < 10 ? '0' : '') + n; }
 function todayStr(d) {

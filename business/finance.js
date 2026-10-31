@@ -135,7 +135,7 @@ function simpleView() {
       line('Барааны өртөг', -p.cogs, fl(['6101'], 1, 'item', 'Барааны өртөг')) +
       '<tr class="b"><td>Нийт ашиг' + pct + '</td><td class="n">' + dl(fl(REV.concat(['6001', '6101']), -1, 'item', 'Нийт ашиг (бараагаар)'), mny(p.gross)) + '</td></tr>' +
       line('Зардал', -p.expT, fl(accsOf('exp'), 1, 'acc', 'Зардал')) +
-      (p.other ? line('Бусад орлого', p.other, fl(['5201', '5202'], -1, 'cat', 'Бусад орлого (хүү гэх мэт)')) : '') +
+      (p.other ? line('Бусад орлого', p.other, fl(['5201', '5202', '8101'], -1, 'cat', 'Бусад орлого (хүү гэх мэт)')) : '') +
       '<tr class="tot"><td>Цэвэр ашиг</td><td class="n' + (p.profit < 0 ? ' neg' : '') + '">' + dl(fl(PLA, -1, 'acc', 'Цэвэр ашиг'), mny(p.profit)) + '</td></tr></table>' +
     '<table class="rep-t"><tr><th>Зардал юунд гарсан</th><th class="n">Дүн</th></tr>' + (p.exps.length ? p.exps.slice().sort(function (a, c2) { return c2.v - a.v; }).map(function (x) {
       return line(esc(EXP_SHORT[x.code] || x.name), x.v, fl([x.code], 1, 'cat', EXP_SHORT[x.code] || x.name)); }).join('') +
@@ -512,7 +512,7 @@ function addDrill(sub, rep, f, t) {
   if (sub === 'pl') {
     var PLMAP = { 'Борлуулалтын орлого': [REV, -1, 'item'], 'Хасах: борлуулалтын буцаалт': [['6001'], -1, 'item'], 'Цэвэр борлуулалт': [REV.concat(['6001']), -1, 'item'],
       'Борлуулсан барааны өртөг': [['6101'], -1, 'item'], 'Нийт ашиг': [REV.concat(['6001', '6101']), -1, 'item'], 'Үйл ажиллагааны зардал, нийт': [accsOf('exp'), -1, 'acc'],
-      'Бусад орлого': [['5201', '5202'], -1, 'cat'], 'Цэвэр ашиг (алдагдал)': [PLA, -1, 'acc'] };
+      'Бусад орлого': [['5201', '5202', '8101'], -1, 'cat'], 'Цэвэр ашиг (алдагдал)': [PLA, -1, 'acc'] };
     rep.rows.forEach(function (r) {
       var x = PLMAP[r.name], cd = codeOf(r.name);
       if (cd) x = [[cd], -1, 'cat'];

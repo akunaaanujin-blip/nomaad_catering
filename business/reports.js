@@ -36,6 +36,7 @@ var ACCOUNTS = [
   ['5102', 'Ажил үйлчилгээний орлого (хүргэлтийн орлого)', 'rev'],
   ['5201', 'Бусад орлого', 'rev'],
   ['5202', 'Хүүгийн орлого', 'rev'],
+  ['8101', 'Бусад орлого (барааны илүүдэл)', 'rev'],   // тооллогын илүүдэл — борлуулалт биш, «Бусад орлого»
   ['6001', 'Борлуулалтын буцаалт', 'contra'],
   ['6101', 'Борлуулсан барааны өртөг', 'cogs'],
   // ── Зардал: Baaz / стандарт дансны төлөвлөгөө (2026-10-23-нд шилжсэн, хуучин кодыг OLD_EXP-ээр хөрвүүлнэ) ──
@@ -235,7 +236,7 @@ function buildJournal(biz, R) {
       }
       if (baseItem(x.item) === DISC_ITEM) { add(d, 'Борлуулалтын хөнгөлөлт', x.id, '6001', cash, -a, 'Хөнгөлөлт · баримт ' + (x.bill || ''), cust, x.bill); return; }
       if (oo && isFee(item) && (!EB_FEE_DATE[oo.id] || d < EB_FEE_DATE[oo.id])) EB_FEE_DATE[oo.id] = d;
-      var ownFee = isFee(item) && ORD[x.bill] && ORD[x.bill].ebCode === 'бусад';   // буухиад өгөөгүй (өөрсдөө / бусад) хүргэлтийн төлбөр — хүргэлтийн үйлчилгээний орлого
+      var ownFee = isNonGoods(item) && !isAdj(item);   // хүргэлтийн төлбөр, үйлчилгээ — 5102 үйлчилгээний (хүргэлтийн) орлого, барааны орлогоос тусдаа
       if (a >= 0) {
         add(d, 'Борлуулалт', x.id, cash, ownFee ? '5102' : '5101', a, item + ' × ' + x.qty + ' (' + (oo ? 'захиалга, авлага' : x.pay || 'Бэлэн') + ')', cust, x.bill);
         // Хуучин (EB_PAY_FROM-оос өмнө буухиад өгсөн) захиалга: буухиад өгмөгц Дт 7124 / Кт 3101 Өглөг (Буухиа). Шинэд өглөг зөвхөн тооцоо нийлэхэд үүснэ
@@ -260,7 +261,8 @@ function buildJournal(biz, R) {
     }
   });
   // «Засвар: бараа орлого → эхний үлдэгдэл #M…» журнал — тэр бараа орлогыг эхний үлдэгдэл (Дт 1404 / Кт 4201) болгоно; засварын мөр өөрөө журналд гарахгүй
-  var OPENFIX = {}, isOpenFix = function (j) { return j.biz === biz && /^Засвар: бараа орлого → эхний үлдэгдэл/.test(String(j.desc)); };
+  // «Засвар: тооллого → эхний үлдэгдэл #M…» — эхний тооллого (эхний үлдэгдэл оруулсны дараах анхны) зөрүүг эхний үлдэгдлийн засвар (4201) болгоно
+  var OPENFIX = {}, isOpenFix = function (j) { return j.biz === biz && /^Засвар: (бараа орлого|тооллого) → эхний үлдэгдэл/.test(String(j.desc)); };
   R.journal.forEach(function (j) { if (isOpenFix(j)) (String(j.desc).match(/#M[\w\-]+/g) || []).forEach(function (t) { OPENFIX[t.slice(1)] = 1; }); });
   R.moves.forEach(function (m) {
     if (m.biz !== biz) return;
@@ -277,9 +279,10 @@ function buildJournal(biz, R) {
       if (cg) add(d, 'Бараа орлого · карго', m.id, '1404', PAY_ACC[m.cargoPay] || '3101', cg, 'Карго · ' + m.item + ' × ' + m.qty + ' (' + m.cargoPay + ')', m.cargoPartner);
     }
     else if (m.kind === 'Тооллого' || m.kind === 'Хасалт') {
-      // Тооллогын илүүдэл орлого биш — дутагдал, хорогдлын (7421) зардлыг бууруулна (ихэнхдээ өмнөх тооллого / бүртгэлийн алдааны засвар)
-      if (m.qty < 0) add(d, m.kind, m.id, '7421', '1404', v, m.item + ' ' + m.qty);
-      else add(d, m.kind, m.id, '1404', '7421', v, m.item + ' +' + m.qty + ' (илүүдэл)');
+      // Дутагдал: Дт 7421 / Кт 1404. Илүүдэл: Дт 1404 / Кт 8101 бусад орлого (нэг дансанд сөрөг дүнгээр бичихгүй). Эхний тооллого: 4201-тэй
+      if (m.kind === 'Тооллого' && OPENFIX[m.id]) add(d, 'Эхний тооллого', m.id, m.qty < 0 ? '4201' : '1404', m.qty < 0 ? '1404' : '4201', v, m.item + ' ' + (m.qty > 0 ? '+' : '') + m.qty + ' (эхний үлдэгдлийн засвар)');
+      else if (m.qty < 0) add(d, m.kind, m.id, '7421', '1404', v, m.item + ' ' + m.qty);
+      else add(d, m.kind, m.id, '1404', '8101', v, m.item + ' +' + m.qty + ' (илүүдэл)');
     }
   });
   ce.adj.forEach(function (a) { add(a.date, 'Карго · зарагдсан бараа', a.ref, '6101', '1404', a.amount, 'Карго · ' + a.item + ' (бараа нь зарагдсан тул өртөгт)'); });
@@ -411,7 +414,7 @@ function plData(E, from, to) {
   var b = balances(E, to, from), g = function (k) { return b[k] || 0; };
   var sales = -g('5101') - g('5102'), ret = g('6001'), net = sales - ret, cogs = g('6101'), gross = net - cogs;   // 5201/5202 — «бусад орлого»
   var exps = ACCOUNTS.filter(function (a) { return a[2] === 'exp'; }).map(function (a) { return { code: a[0], name: a[1], v: g(a[0]) }; }).filter(function (x) { return x.v; });
-  var expT = exps.reduce(function (s, x) { return s + x.v; }, 0), other = -g('5201') - g('5202');
+  var expT = exps.reduce(function (s, x) { return s + x.v; }, 0), other = accsOf('rev').filter(function (k) { return k !== '5101' && k !== '5102'; }).reduce(function (t, k) { return t - g(k); }, 0);   // бусад орлого (5201, 5202, 8101 …)
   return { sales: sales, ret: ret, net: net, cogs: cogs, gross: gross, exps: exps, expT: expT, other: other, profit: gross - expT + other };
 }
 function repPL(E, from, to) {
@@ -549,11 +552,14 @@ function groupBills(list, byDate) {
 }
 function payText(pays) { return Object.keys(pays).filter(function (k) { return pays[k] > 0; }).map(function (k) { return k + (Object.keys(pays).length > 1 ? ' ' + fmt(pays[k]) : ''); }).join(' + '); }
 // Дэлгүүрийн борлуулалт — захиалгаас (Cozy онлайн) үүсээгүй, дэлгүүрт кассаар гарсан баримт
-function repShop(R, biz, from, to, view) {
+function shopOnly(src) {   // src: shop — дэлгүүрийн касс, online — онлайн захиалга, all — бүгд
   var ids = {}; (window.adminOrders || []).forEach(function (o) { ids[o.id] = 1; });
-  var only = function (x) { return !ids[x.bill]; };
+  return function (x) { return src === 'all' ? true : src === 'online' ? !!ids[x.bill] : !ids[x.bill]; };
+}
+function repShop(R, biz, from, to, view) {
+  var src = (typeof state !== 'undefined' && state.shopSrc) || 'shop', only = shopOnly(src);
   var rep = view === 'item' ? repSalesBy(R, biz, from, to, 'item', only) : view === 'day' ? repShopDays(R, biz, from, to, only) : view === 'staff' ? repSalesBy(R, biz, from, to, 'staff', only) : repReceipts(R, biz, from, to, only);
-  rep.title = 'Дэлгүүрийн борлуулалт · ' + ({ item: 'бараагаар', day: 'өдрөөр', staff: 'худалдагчаар' }[view] || 'баримтаар');
+  rep.title = ({ shop: 'Дэлгүүрийн борлуулалт', online: 'Онлайн захиалгын борлуулалт', all: 'Бүх борлуулалт' }[src]) + ' · ' + ({ item: 'бараагаар', day: 'өдрөөр', staff: 'худалдагчаар' }[view] || 'баримтаар');
   return rep;
 }
 // Өдөр бүр: баримтын тоо, төлбөрийн хэлбэр тус бүрийн дүн, нийт
@@ -624,8 +630,8 @@ function repBoost(R, biz, from, to) {
              sales: r0(sa), ratio: sa ? Math.round(o.a / sa * 100) + '%' : '—', uplift: r0(up), net: r0(net), verdict: verdict(net, o.run, fl.nc), roi: o.a ? Math.round(net / o.a * 100) : 0 };
   });
   var tq = sum(rows, 'orders');
-  return { title: 'Boost бараагаар', cols: [c('key', 'Бараа'), m('n', 'Удаа'), m('days', 'Хоног'), c('usd', 'Доллар'), m('boost', 'Boost ₮'), m('qty', 'Зарсан (boost үед)'), m('before', 'Өмнөх ижил үе'),
-      m('orders', 'Захиалга'), m('cpo', 'Нэг захиалгын зардал'), m('sales', 'Борлуулалт (boost үед)'), c('ratio', 'Boost / борлуулалт'), m('uplift', 'Нэмэлт ашиг'), m('net', 'Цэвэр үр дүн'), c('verdict', 'Дүгнэлт')],
+  return { title: 'Сурталчилгаа бараагаар', cols: [c('key', 'Бараа'), m('n', 'Удаа'), m('days', 'Хоног'), c('usd', 'USD'), m('boost', 'Сурталчилгааны зардал'), m('qty', 'Зарсан (сурталчилгааны үед)'), m('before', 'Өмнөх ижил үе'),
+      m('orders', 'Захиалга'), m('cpo', 'Нэг захиалгын зардал'), m('sales', 'Борлуулалт (сурталчилгааны үед)'), c('ratio', 'Зардал / борлуулалт'), m('uplift', 'Нэмэлт ашиг'), m('net', 'Цэвэр үр дүн'), c('verdict', 'Дүгнэлт')],
     rows: rows.concat(det.length ? [{ key: '— Бичилтүүд —', _b: true }] : []).concat(det),
     total: { key: 'Нийт', usd: sum(rows, '_usd') ? '$' + sum(rows, '_usd') : '', boost: sum(rows, 'boost'), qty: sum(rows, 'qty'), before: sum(rows, 'before'), orders: tq, cpo: tq ? Math.round(sum(rows, 'boost') / tq) : '', sales: sum(rows, 'sales'), uplift: sum(rows, 'uplift'), net: sum(rows, 'net') },
     note: 'Нэмэлт ашиг = boost үеийн нийт ашиг (борлуулалт − өртөг) − өмнөх ижил үеийн нийт ашиг; Цэвэр үр дүн = нэмэлт ашиг − boost зардал (≥ 0 бол ашигтай). Boost үе = эхэлсэн өдрөөс хоногийн тоогоор (дуусаагүй бол өнөөдрийг хүртэл); «Өмнөх ижил үе» — түүнээс өмнөх ижил олон хоног. Захиалга — тэр хугацаанд тухайн бараатай ирсэн Cozy захиалга. Boost — зөвхөн бүртгэл, санхүүд банкны хуулгаар (7205) орно.' };
@@ -687,12 +693,12 @@ function repStockMove(R, biz, from, to) {
   var since = null;   // үлдэгдэл хөтөлж эхэлсэн мөч (минутаар — серверийн тооцоотой адил)
   R.moves.forEach(function (m) { if (m.biz === biz) { var d = String(m.date).slice(0, 16); if (!since || d < since) since = d; } });
   R.moves.forEach(function (mv) {
-    if (mv.biz !== biz || mv.kind === 'Шилжүүлэг') return;
+    if (mv.biz !== biz || mv.kind === 'Шилжүүлэг' || isNonGoods(mv.item)) return;
     var d = String(mv.date).slice(0, 10), o = get(mv.item);
     if (d < from) o.o += mv.qty; else if (d <= to) { if (mv.qty > 0) o.inq += mv.qty; else o.outq += -mv.qty; }
   });
   R.records.forEach(function (x) {
-    if (x.biz !== biz || x.type !== 'sale' || !since || x.date + ' ' + (x.time || '00:00') < since) return;
+    if (x.biz !== biz || x.type !== 'sale' || !since || x.date + ' ' + (x.time || '00:00') < since || isNonGoods(x.item)) return;   // хүргэлтийн төлбөр, үйлчилгээ бараа биш
     var o = get(String(x.item).replace(/ \(буцаалт\)$/, '')), q = Number(x.qty) || 0;
     if (x.date < from) o.o -= q; else if (x.date <= to) { if (q > 0) o.outq += q; else o.inq += -q; }
   });

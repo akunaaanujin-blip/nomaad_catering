@@ -231,7 +231,8 @@ function apiView(biz) {
     (B.orders ? row('Буухиа (ebuuhia)', !!window.ebOnAll, 'Захиалгыг хүргэлтэд илгээх, төлөв, авсан мөнгө татах') : '') +
     row('StorePay', !!(window.spAll || {})[biz], 'Хэрэглэгчийн зээлийн эрх шалгах, нэхэмжлэх илгээх') +
     row('И-баримт (PosAPI)', B.ebarimt === false ? 'Ашиглахгүй' : 'Касс компьютер дээр', 'Касс компьютер дээрх PosAPI-аар баримт хэвлэх (дэлгүүр бүрт)') +
-    '</table></div></div>' + ebSettingsCard(biz) + spSettingsCard(biz);
+    '</table></div></div>' + '<h2 class="sec-title" style="font-size:16px;margin:16px 0 8px">Банкны данс холбох</h2><div style="margin-bottom:8px"><button class="b-btn primary" onclick="openBankLink()">+ Данс холбох</button></div>' + bankLinkView() +
+    ebSettingsCard(biz) + spSettingsCard(biz);
 }
 // StorePay merchant API — түлхүүрийг зөвхөн серверт хадгална (энд хэзээ ч буцааж харуулахгүй); хоосон талбар хуучныг хэвээр үлдээнэ
 function spSettingsCard(biz) {

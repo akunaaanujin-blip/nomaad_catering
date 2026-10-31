@@ -216,3 +216,4 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var
 .fn-fr .fn-flt{margin-bottom:8px}
 .bz-admin .bar-row .fn-flt{margin-bottom:0}
 @media(max-width:760px){.fn-q,.fn-q input{width:100%}.fn-flt{display:flex}}
+.fn-subh{cursor:pointer;display:flex;justify-content:space-between;user-select:none}.fn-subh:hover{color:var(--text-2)}.fn-ck.fn-o{background:var(--neutral-soft);color:var(--text-3)}

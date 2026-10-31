@@ -9,7 +9,8 @@ var REM_KINDS = ['Зээл төлөх', 'Өглөг төлөх', 'Авлага �
 function calEvents() {
   var ev = [];
   reminders.forEach(function (r) { if (r.status !== 'Цуцалсан' && r.kind !== 'Тайлан илгээсэн') ev.push({ date: r.date, kind: 'rem', done: r.status === 'Хийгдсэн', r: r, text: r.title + (r.amount ? ' · ' + fmt(r.amount) : '') }); });
-  if (isOwner()) Object.keys(ENTITIES).forEach(function (k) { taxDeadlines(k).forEach(function (x) { ev.push({ date: x.date, kind: 'tax', text: x.name + ' (' + ENTITIES[k].name + ')', k: k, go: x.go, key: x.key }); }); });
+  var only = state.biz && BUSINESSES[state.biz] && !BUSINESSES[state.biz].finOnly ? entOf(state.biz) : '';   // компанийн дотор — зөвхөн тэр хуулийн этгээдийн татвар
+  if (isOwner()) Object.keys(ENTITIES).filter(function (k) { return !only || k === only; }).forEach(function (k) { taxDeadlines(k).forEach(function (x) { ev.push({ date: x.date, kind: 'tax', text: x.name + ' (' + ENTITIES[k].name + ')', k: k, go: x.go, key: x.key }); }); });
   (typeof tasks !== 'undefined' ? tasks : []).forEach(function (t) { if (t.due && t.status === 'Шинэ') ev.push({ date: t.due, kind: 'task', text: 'Даалгавар: ' + t.title + ' (' + t.staffName + ')' }); });
   staff.forEach(function (s) { if (s.status === 'Тийм' && s.contractEnd) ev.push({ date: s.contractEnd, kind: 'contract', text: 'Гэрээ дуусна: ' + s.name, id: s.id }); });
   loanEvents().forEach(function (e) { ev.push(e); });
@@ -135,6 +136,7 @@ function ordStTag(o) {
 }
 function payStTag(o) {
   if (o.saleDone === 'returned' && o.confirmed) return stTag('Буцаан олгосон', 'r');
+  if (o.confirmed && /буухиа хураасан/.test(o.confirmed)) return stTag('Буухиа хураасан', 'b');   // мөнгө буухиа дээр — шилжүүлэхэд хаагдана
   if (o.confirmed) return stTag('Төлсөн', 'g');
   if (ordDead(o)) return stTag('—', 'n');
   return stTag(o.paid === 'Орсон' ? 'Төлөөгүй · ажилтан «орсон»' : 'Төлөөгүй', 'y');
@@ -158,7 +160,7 @@ function repOrders(biz) {
   return { title: 'Захиалга', rows: rows, actions: true,
     cols: [c('date', 'Огноо'), c('phone', 'Утас'), c('customer', 'Захиалагч'), c('items', 'Бараа'), c('status', 'Захиалгын төлөв'), c('pay', 'Төлбөрийн төлөв'), c('payType', 'Төлбөрийн хэлбэр'), c('bank', 'Банкны хуулга'), m('amount', 'Дүн'), c('staff', 'Ажилтан')],
     total: { date: rows.length + ' захиалга', amount: sum(rows, 'amount') },
-    note: 'Баталгаажаагүй нийт: ' + fmt(unpaid) + (nBank ? ' · банкны хуулгаас таарсан ' + nBank + ' захиалга — «Хуулгаар баталгаажуулах» дарна' : '') + '. Ажилтны «Төлбөр орсон» нь зөвхөн тэмдэглэл — санхүүд бичигдэхгүй. «Банкны хуулга»-аар тулгах (эсвэл энд «Баталгаажуулах») үед л санхүүд орно.' };
+    note: 'Баталгаажаагүй нийт: ' + fmt(unpaid) + (nBank ? ' · банкны хуулгаас таарсан ' + nBank + ' захиалга — «Хуулгаар баталгаажуулах» дарна' : '') + '. Захиалга авлагаар бүртгэгдэнэ. Төлбөр баталгаажих үед авлага хаагдана. Ажилтны «Төлбөр орсон» нь шалгах тэмдэглэл. «Банкны хуулга»-аар тулгах (эсвэл энд «Баталгаажуулах») үед л санхүүд орно.' };
 }
 // ── Харилцагчид (утасны дугаараар): хэдэн удаа, хэдийг захиалсан ──
 function phoneKey(p) { return String(p || '').replace(/\D/g, '').slice(-8); }

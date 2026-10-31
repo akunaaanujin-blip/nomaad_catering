@@ -3,7 +3,7 @@
 // Дүгнэлтийн талбарууд Script Property REVIEW { 'biz|YYYY-MM': { good, issues, next, planProfit } }-д хадгалагдана.
 
 var RV = { mo: todayStr().slice(0, 7), biz: 'all', charts: [] };
-function rvMoney(n) { n = Math.round(Number(n) || 0); return (n < 0 ? '−' : '') + Math.abs(n).toLocaleString('en-US') + '₮'; }
+function rvMoney(n) { return fmt(n); }   // «₮1,076,000», сөрөг «−₮…»
 function rvPct(n) { return n === null || !isFinite(n) ? '—' : (Math.round(n * 10) / 10) + '%'; }
 function rvMonthEnd(mo) { return mo + '-' + pad(new Date(Number(mo.slice(0, 4)), Number(mo.slice(5, 7)), 0).getDate()); }
 function rvPrevMo(mo) { var d = new Date(Number(mo.slice(0, 4)), Number(mo.slice(5, 7)) - 2, 1); return d.getFullYear() + '-' + pad(d.getMonth() + 1); }

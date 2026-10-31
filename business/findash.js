@@ -46,7 +46,7 @@ function finDash(E, p, f, t, fl, PLA) {
   var bar = function (v, c) { return '<span class="fd-bar"><i style="width:' + Math.max(2, Math.round(v / tot * 100)) + '%;background:' + c + '"></i></span>'; };
   return '<div class="fd">' +
     '<div class="fd-kg">' +
-      fdCard('in', FD_C.in, 'Нийт орлого', dl(fl(REV.concat(['6001', '5201', '5202']), -1, 'item', 'Орлого'), mny(p.net + p.other)), fdChg(p.net + p.other, q.net + q.other, true)) +
+      fdCard('in', FD_C.in, 'Нийт орлого', dl(fl(REV.concat(['6001', '5201', '5202', '8101']), -1, 'item', 'Орлого'), mny(p.net + p.other)), fdChg(p.net + p.other, q.net + q.other, true)) +
       fdCard('out', FD_C.out, 'Нийт зардал', dl(fl(['6101'].concat(accsOf('exp')), 1, 'acc', 'Зардал (өртөг орсон)'), mny(cost)), fdChg(cost, qcost, false)) +
       fdCard('profit', p.profit >= 0 ? FD_C.profit : FD_C.red, 'Цэвэр ашиг', dl(fl(PLA, -1, 'acc', 'Цэвэр ашиг'), mny(p.profit)), fdChg(p.profit, q.profit, true)) +
       fdCard('cash', FD_C.cash, 'Мөнгөн урсгал (цэвэр)', dl(fl(cash, 1, 'type', 'Мөнгөн урсгал', { dir: 1 }), mny(cf[0] - cf[1])), fdChg(cf[0] - cf[1], qf[0] - qf[1], true)) +
@@ -141,7 +141,7 @@ function fdForecast(E, y) {
 function dailyView() {
   var r = range(), f = r[0], t = r[1], E = J(), d0 = new Date(f + 'T00:00:00'), d1 = new Date(t + 'T00:00:00');
   if ((d1 - d0) / 864e5 > 92) { d0 = new Date(d1 - 91 * 864e5); f = todayStr(d0); }
-  var I = {}, O = {}, C = {}, inc = ['5101', '5102', '6001'], oth = ['5201', '5202'], cst = ['6101'].concat(accsOf('exp'));
+  var I = {}, O = {}, C = {}, inc = ['5101', '5102', '6001'], oth = ['5201', '5202', '8101'], cst = ['6101'].concat(accsOf('exp'));
   drillLines({ acc: inc, from: f, to: t, sign: -1 }, E).lines.forEach(function (x) { I[x.date] = (I[x.date] || 0) + x.v; });
   drillLines({ acc: oth, from: f, to: t, sign: -1 }, E).lines.forEach(function (x) { O[x.date] = (O[x.date] || 0) + x.v; });   // хүүгийн орлого гэх мэт — борлуулалтаас тусад нь
   drillLines({ acc: cst, from: f, to: t, sign: 1 }, E).lines.forEach(function (x) { C[x.date] = (C[x.date] || 0) + x.v; });
@@ -197,8 +197,11 @@ function allBankLinks() {
 }
 function cashLinkName(code, biz) {   // accName() үүнийг ашиглана — тухайн компанийн дансыг нэрээр нь
   biz = biz || (typeof state !== 'undefined' && state.biz); if (!biz) return '';
-  var L = allBankLinks().filter(function (l) { return l.biz === biz && l.acc === code; });
-  return L.length === 1 ? L[0].name : '';
+  var A = allBankLinks(), L = A.filter(function (l) { return l.biz === biz && l.acc === code; });
+  if (L.length === 1) return L[0].name;
+  // Дансны төлөвлөгөө бүх компанид нэг тул өөр компанийн банкны нэр (жишээ «… (Cozy)») энэ компанид харагдахгүй — үндсэн нэр
+  if (!L.length && A.some(function (l) { return l.acc === code && l.biz !== biz; })) { var b0 = (typeof BASE_ACC !== 'undefined' ? BASE_ACC : []).filter(function (a) { return a[0] === code; })[0]; return b0 ? b0[1] : ''; }
+  return '';
 }
 var CASH_SHORT = { '10003': 'Касс (бэлэн мөнгө)', '110106': 'Пос (картын төлбөр)' };
 function cashAccView() {

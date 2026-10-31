@@ -400,7 +400,7 @@ function bankLinkView() {
     '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th>Данс</th><th>Нэр</th><th>Компани</th><th>Санхүүгийн данс</th><th></th></tr>' +
     (all.length ? all.map(function (l) {
       return '<tr' + (l.biz === state.biz ? ' class="b"' : '') + '><td>' + esc(maskNo(l.no)) + '</td><td>' + esc(l.name || '') + '</td><td>' + esc((BUSINESSES[l.biz] || {}).name || l.biz) + '</td>' +
-        '<td>' + esc(l.acc + ' ' + accName(l.acc)) + '</td><td class="n">' + (l.cfg ? '<small class="muted">тохиргоонд</small>' : '<button class="mini" onclick="delBankLink(\'' + esc(l.no) + '\')">Салгах</button>') + '</td></tr>';
+        '<td>' + esc(l.acc + ' ' + (cashLinkName(l.acc, l.biz) || accName(l.acc))) + '</td><td class="n">' + (l.cfg ? '<small class="muted">тохиргоонд</small>' : '<button class="mini" onclick="delBankLink(\'' + esc(l.no) + '\')">Салгах</button>') + '</td></tr>';
     }).join('') : '<tr><td colspan="5" class="muted">Холбосон данс алга</td></tr>') + '</table></div></div>';
 }
 function openBankLink(no, acc0) {
@@ -408,14 +408,24 @@ function openBankLink(no, acc0) {
   gOpen('<h2>Банкны данс холбох</h2>' +
     '<label for="lkNo">Дансны дугаар</label><input id="lkNo" inputmode="numeric" placeholder="Бүтэн дугаар эсвэл сүүлийн 4 орон" value="' + esc(no || '') + '">' +
     '<label for="lkName">Нэр</label><input id="lkName" placeholder="Жишээ: Хаан банк — удирдлага" value="' + esc(ex ? ex.name : '') + '">' +
-    '<div class="row2"><div><label for="lkBiz">Компани</label><select id="lkBiz">' + ALL_KEYS.map(function (k) { return '<option value="' + k + '"' + (k === (ex ? ex.biz : state.biz) ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('') + '</select></div>' +
-    '<div><label for="lkAcc">Санхүүгийн данс</label><select id="lkAcc">' + cashAccOpts(ex ? ex.acc : acc0 || '1101') + '<option value="new">+ Шинэ харилцах данс үүсгэх</option></select></div></div>' +
+    '<div class="row2"><div><label for="lkBiz">Компани</label><select id="lkBiz" onchange="$(\'lkAcc\').innerHTML=lkAccOpts(this.value,$(\'lkAcc\').value,$(\'lkNo\').value)">' + ALL_KEYS.map(function (k) { return '<option value="' + k + '"' + (k === (ex ? ex.biz : state.biz) ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('') + '</select></div>' +
+    '<div><label for="lkAcc">Санхүүгийн данс</label><select id="lkAcc">' + lkAccOpts(ex ? ex.biz : state.biz, ex ? ex.acc : acc0 || '1101', no) + '</select></div></div>' +
     '<p class="muted" style="font-size:12.5px;margin-top:6px">Компанийн анхны банкны данс бол «Байгууллагын харилцах (1101)». Хоёр дахь данс бол «Шинэ харилцах данс үүсгэх» — үлдэгдэл нь тусдаа харагдана.</p>' +
     '<button class="btn" onclick="saveBankLink()">Холбох</button><button class="btn ghost" onclick="gClose()">Болих</button>');
+}
+// Тухайн компанийн харилцах дансууд: аль банкны данс холбогдсоныг харуулж, өөр банкны данстай нь сонгуулахгүй (нэг санхүүгийн дансанд нэг банкны данс)
+function lkAccOpts(biz, sel, no) {
+  no = String(no || '').replace(/\D/g, '');
+  return ACCOUNTS.filter(function (a) { return a[3] === 'cash' && a[0] !== '10003' && a[0] !== '110106'; }).map(function (a) {
+    var other = allBankLinks().filter(function (l) { return l.biz === biz && l.acc === a[0] && String(l.no).slice(-4) !== no.slice(-4); })[0];
+    return '<option value="' + a[0] + '"' + (other ? ' disabled' : '') + (a[0] === sel && !other ? ' selected' : '') + '>' + a[0] + ' ' + esc(other ? (other.name || maskNo(other.no)) + ' — холбогдсон' : (cashLinkName(a[0], biz) || 'Харилцах (чөлөөтэй)')) + '</option>';
+  }).join('') + '<option value="new">+ Шинэ харилцах данс үүсгэх</option>';
 }
 function saveBankLink() {
   var no = $('lkNo').value.replace(/\D/g, ''), name = $('lkName').value.trim(), biz = $('lkBiz').value, acc = $('lkAcc').value;
   if (no.length < 4) { toast('Дансны дугаарын дор хаяж сүүлийн 4 оронг бичнэ үү'); return; }
+  var dup = allBankLinks().filter(function (l) { return l.biz === biz && l.acc === acc && String(l.no).slice(-4) !== no.slice(-4); })[0];
+  if (dup) { toast(acc + ' дансанд ' + maskNo(dup.no) + ' холбогдсон байна — «Шинэ харилцах данс үүсгэх»-ийг сонгоно уу'); return; }
   var done = function () {
     var links = (window.bankLinks || []).filter(function (l) { return l.no !== no; }).concat([{ no: no, biz: biz, acc: acc, name: name || 'Банк ' + maskNo(no) }]);
     window.bankLinks = links;
