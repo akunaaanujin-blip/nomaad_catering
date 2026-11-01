@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v6.3 (компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v6.4 (буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -1228,7 +1228,11 @@ function adminOrder(d) {
     if (f.confirmed) sh.getRange(o.row, 18).setValue('Орсон');
   }
   if (f.saleDone !== undefined) sh.getRange(o.row, 21).setValue(String(f.saleDone).slice(0, 30));
-  if (f.ebCode === 'бусад' && !o.ebCode) sh.getRange(o.row, 23).setValue('бусад');   // буухиад өгөөгүй (өөрсдөө хүргэсэн) гэж тэмдэглэх — зөвхөн кодгүй захиалгад
+  if (f.ebCode === 'бусад' && !o.ebCode) sh.getRange(o.row, 23).setValue('бусад');
+  else if (f.ebCode && /^[\w-]{3,40}$/.test(String(f.ebCode)) && !o.ebCode) {   // буухиагийн хүргэлттэй гараар холбох (дахин илгээгдэхгүй)
+    if (orderRows().some(function (x) { return String(x.ebCode) === String(f.ebCode); })) return { status: 'error', error: 'dup' };
+    sh.getRange(o.row, 23).setValue(String(f.ebCode));
+  }   // буухиад өгөөгүй (өөрсдөө хүргэсэн) гэж тэмдэглэх — зөвхөн кодгүй захиалгад
   if (f.note) sh.getRange(o.row, 19).setValue(String(o.note || '') + ' ' + String(f.note).slice(0, 100));
   sh.getRange(o.row, 20).setValue(Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + ' ' + String(d.by || 'Удирдлага'));
   return { status: 'ok' };
@@ -1421,28 +1425,34 @@ function ebNorm(x) {
 }
 // Хүргэлтийг манай захиалгатай холбоно: external_order_id → код → (буухиагийн сайтаас гараар үүсгэсэн бол) утас + огноогоор.
 // Утсаар: тухайн дэлгүүрийн буухиад өгсөн/хүргэгдсэн/буцаасан, кодгүй захиалгаас хүргэлтийн өдөр буюу түүнээс өмнөх хамгийн сүүлийнх. write=true бол кодыг захиалгад бичнэ.
+// Буухиагийн хүргэлт ↔ манай захиалга: 1) external_order_id / код, 2) утас (+ «Шинэ» захиалгад огноо ±1 өдөр, дүн). Холбогдсон «Шинэ» захиалга → fresh (Буухиад өгсөн болгоно)
 function ebLink(L, biz, write) {
-  const rows = cacheGet('ord', orderRows), byExt = {}, byCode = {}, byPhone = {}, used = {}, sh = write ? orderSheet() : null, done = [];
+  const rows = cacheGet('ord', orderRows), byExt = {}, byCode = {}, byPhone = {}, used = {}, sh = write ? orderSheet() : null, done = [], fresh = [];
+  const dayOff = function (a, b) { return Math.abs((new Date(String(a) + 'T00:00:00') - new Date(String(b) + 'T00:00:00')) / 864e5); };
   let wrote = false;
   rows.forEach(function (o) { byExt[o.id] = o; if (o.ebCode) byCode[String(o.ebCode)] = o; });
   rows.forEach(function (o) {
-    if (o.biz !== biz || o.ebCode || !/^(Буухиад өгсөн|Хүргэгдсэн|Буцаасан)$/.test(o.status)) return;
+    if (o.biz !== biz || o.ebCode || !/^(Шинэ|Буухиад өгсөн|Хүргэгдсэн|Буцаасан)$/.test(o.status)) return;
     const ph = String(o.phone).replace(/\D/g, ''); if (ph) (byPhone[ph] = byPhone[ph] || []).push(o);
   });
   const out = [];
   L.slice().sort(function (a, b) { return a.created < b.created ? -1 : 1; }).forEach(function (n) {
     let o = byExt[n.ext] || byCode[n.code];
     if (!o) {
-      const c = (byPhone[String(n.phone).replace(/\D/g, '')] || []).filter(function (x) { return !used[x.id] && (!n.day || String(x.date) <= n.day); });
+      const c = (byPhone[String(n.phone).replace(/\D/g, '')] || []).filter(function (x) {
+        if (used[x.id] || (n.day && String(x.date) > n.day && x.status !== 'Шинэ')) return false;
+        if (x.status !== 'Шинэ') return true;
+        return n.st !== 11 && n.st !== 12 && n.day && dayOff(x.date, n.day) <= 1 && (!(n.price > 0) || Math.abs(n.price - Number(x.amount)) <= 1);   // «Шинэ»: огноо ±1 өдөр, дүн таарах
+      });
       o = c.sort(function (a, b) { return String(b.date) < String(a.date) ? -1 : 1; })[0];
-      if (o) { used[o.id] = 1; if (write && n.code) { sh.getRange(o.row, 23).setValue(n.code); wrote = true; } }
+      if (o) { used[o.id] = 1; if (write && n.code) { sh.getRange(o.row, 23).setValue(n.code); wrote = true; if (o.status === 'Шинэ') fresh.push(o.id); if (!String(o.customer || '').trim() && n.cust && n.cust !== n.phone) sh.getRange(o.row, 6).setValue(String(n.cust).slice(0, 80)); } }
     }
     if (o && o.biz !== biz) return;
     if (o) { n.id = o.id; n.our = o.status; n.sd = String(o.saleDone || ''); if (write && !o.ebCode && n.code && !used[o.id]) { sh.getRange(o.row, 23).setValue(n.code); wrote = true; } if (n.st === 10 && o.status === 'Буухиад өгсөн') done.push(o.id); }
     out.push(n);
   });
   if (wrote) cacheDrop(['ord']);
-  return { list: out, done: done };
+  return { list: out, done: done, fresh: fresh };
 }
 function ebView(c, biz, fresh) { return ebLink(ebList(c, fresh).map(ebNorm), biz, true); }
 // Удирдлага: зөвхөн харах (төлөв, код бичихгүй)
@@ -1505,6 +1515,7 @@ function ebuuhia(d, asWho) {
     if (d.type === 'eb_sync') {   // ebuuhia-ийн бүх хүргэлтийг (31 хоног) татна; «Хүргэгдсэн» (10) бол манай захиалгыг автоматаар Хүргэгдсэн болгоно
       const v = ebView(c, who.biz, !!d.fresh);
       let ship = null; if (v.done.length) { ship = ordersShipAs({ ids: v.done, to: 'Хүргэгдсэн' }, who); cacheDrop(['ord', 'rec', 'stk']); }
+      if (v.fresh.length) { ordersShipAs({ ids: v.fresh, to: 'Буухиад өгсөн' }, who); cacheDrop(['ord', 'rec', 'stk']); }   // буухиа дээр аль хэдийн байсан «Шинэ» захиалга
       return { status: 'ok', list: v.list, delivered: v.done.length, ship: ship };
     }
   } catch (err) { return { status: 'error', error: String(err.message || err).slice(0, 200) }; }

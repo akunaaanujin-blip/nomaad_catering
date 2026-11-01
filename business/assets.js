@@ -36,7 +36,7 @@ function assetsView() {
     '<p class="hint">Элэгдэл сар бүрийн эцэст автоматаар бодогдож санхүүд орно (Дт 7113 Элэгдлийн зардал / Кт 2002 Хуримтлагдсан элэгдэл) — гараар бичих шаардлагагүй. ' +
     'Хөрөнгө бүртгэхэд авсны дараа сараас эхэлж, үлдэх өртөгт хүрэхэд зогсоно.</p>' + tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Хөрөнгө</th><th class="n">Өртөг</th><th class="n">Хугацаа</th><th class="n">Сарын элэгдэл</th>' +
     '<th class="n">Хуримтлагдсан</th><th class="n">Үлдэгдэл өртөг</th><th>Төлөв</th><th></th></tr>' +
-    (rows || '<tr><td colspan="9" class="muted">Бүртгэл алга — «+ Хөрөнгө бүртгэх» дарж нэмнэ үү (тавилга, тоног төхөөрөмж, машин, компьютер г.м)</td></tr>') + '</table></div>' +
+    (rows || '<tr><td colspan="9" class="muted">Хөрөнгө алга. <button class="b-btn primary" onclick="openAsset()">+ Хөрөнгө бүртгэх</button></td></tr>') + '</table></div>' +
     (Math.abs(unreg) >= 1 ? '<p class="rep-note">Бүртгэлгүй (#лавлагаагүй) үндсэн хөрөнгийн үлдэгдэл: <b>' + mny(unreg) + '</b> — өмнө нь 2001 дансанд шууд бичсэн гүйлгээ.</p>' : '') + '</div>';
 }
 

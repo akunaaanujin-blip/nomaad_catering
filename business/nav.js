@@ -98,19 +98,26 @@ subnavHtml = function () {
     return '<button class="fn-gb' + (x.gi === state.navG ? ' sel' : '') + (x.on ? ' on' : '') + '" onclick="fnOpen(' + x.gi + ')" title="' + x.g[0] + '"><span class="fn-i">' + ico(x.g[1]) + '</span><span>' + x.g[0] + '</span>' +
       (x.badge ? '<i class="fn-badge">' + x.badge + '</i>' : '') + '</button>';
   }).join('');
-  // Дэд гарчигтай бүлэг (Тайлан): дэд бүлэг эвхэгдэнэ — идэвхтэй хуудасных эсвэл сүүлд нээсэн нь л дэлгэгдсэн
-  var hdr = '', openSub = load('nb_fn_sub', ''), activeSub = '';
+  // Дэд гарчигтай бүлэг (Тайлан): дэд бүлэг бүр тусдаа нээгдэж/хаагдана (анхдагч — бүгд нээлттэй), идэвхтэй хуудасных үргэлж нээлттэй
+  var shut = {}; try { shut = JSON.parse(localStorage.getItem('nb_fn_subs') || '{}') || {}; } catch (e) {}
+  var hdr = '', activeSub = '';
   cur.items.forEach(function (it) { if (it[0] === '—') hdr = it[1]; else if (navItemOn(it[0])) activeSub = hdr; });
-  hdr = ''; var want = activeSub || openSub;
+  hdr = '';
   var panel = '<div class="fn-ph">' + cur.g[0] + '</div><ul>' + cur.items.map(function (it) {
-    if (it[0] === '—') { hdr = it[1]; var op = !want || want === hdr; return '<li class="fn-sub fn-subh' + (op ? ' open' : '') + '" onclick="fnSub(\'' + hdr + '\')">' + hdr + '<span>' + (op ? '▾' : '▸') + '</span></li>'; }
-    if (hdr && want && want !== hdr) return '';
+    if (it[0] === '—') { hdr = it[1]; var op = hdr === activeSub || !shut[hdr];
+      return '<li><button class="fn-subh" aria-expanded="' + op + '" onclick="fnSub(\'' + hdr + '\')"><span>' + hdr + '</span><span class="fn-car2">' + (op ? '▾' : '▸') + '</span></button></li>'; }
+    if (hdr && hdr !== activeSub && shut[hdr]) return '';
     var n = navCountOf(it[0]);
     return '<li><button class="' + (navItemOn(it[0]) ? 'on' : '') + '" onclick="navGo(\'' + it[0] + '\')"><span>' + it[1] + '</span>' + (n ? '<i class="fn-badge">' + n + '</i>' : '') + '</button></li>';
   }).join('') + '</ul>';
   return brand + '<div class="fn-2"><nav class="fn-col">' + col + '</nav><div class="fn-panel">' + panel + '</div></div>';
 };
-function fnSub(h) { save('nb_fn_sub', load('nb_fn_sub', '') === h ? '' : h); $('subnav').innerHTML = subnavHtml(); }
+function fnSub(h) {
+  var s = {}; try { s = JSON.parse(localStorage.getItem('nb_fn_subs') || '{}') || {}; } catch (e) {}
+  if (s[h]) delete s[h]; else s[h] = 1;
+  try { localStorage.setItem('nb_fn_subs', JSON.stringify(s)); } catch (e) {}
+  $('subnav').innerHTML = subnavHtml();
+}
 // Бүлэг дарахад самбар нь солигдоно (хуудас солихгүй); нэг хуудастай бүлэг бол шууд нээнэ
 function fnOpen(gi) {
   var g = MNAV[gi], real = g[2].filter(function (it) { return it[0] !== '—' && navOk(state.biz, it[0]); });
@@ -167,6 +174,13 @@ render = function () {
   $('main').classList.add('has-sub');
   var p = $('hdPer'); if (p) { p.innerHTML = window.__usesPeriod ? hdPeriod() : ''; p.style.display = window.__usesPeriod ? '' : 'none'; }
   bellRender();
+  // Буухиа: компанийн дотор 10 минут тутам ард нь татаж, хураасан мөнгө / хүргэгдсэнийг автоматаар бичнэ
+  var B = BUSINESSES[state.biz];
+  var slot = state.biz + '|' + Math.floor(Date.now() / 600000), bz = state.biz;
+  if (API_URL && state.view === 'company' && B && B.orders && window.ebOnAll && typeof ebAdmPull === 'function' && !ebAdm.busy && window.__ebAuto !== slot &&
+      (ebAdm.biz !== bz || Date.now() - (ebAdm.t || 0) > 10 * 60000)) {
+    window.__ebAuto = slot; setTimeout(function () { if (state.biz === bz && !ebAdm.busy) ebAdmPull(); }, 1500);
+  }
 };
 
 // ═══════════ АНХААРАХ ЗҮЙЛС (нүүр + хонх) ═══════════

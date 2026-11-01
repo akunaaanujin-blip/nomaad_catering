@@ -155,13 +155,13 @@ function repOrders(biz) {
       ? '<button class="mini" onclick="undoPayOrder(\'' + o.id + '\')">Буцаах</button>'
       : '<button class="mini" style="color:var(--green)" onclick="openPayOrder(\'' + o.id + '\')">Баталгаажуулах</button>' + (bc ? ' <button class="mini" title="Банкны хуулгын таарсан гүйлгээгээр шууд" onclick="ordBankMatch(\'' + o.id + '\')">Хуулгаар</button>' : '');
     if (billed[o.id]) act = '<button class="mini" onclick="openBillAdm(\'' + o.id + '\')">Баримт</button>' + act;
-    return { date: o.date + ' ' + o.time, phone: o.phone, customer: o.customer, items: items(o), status: ordStTag(o), pay: payStTag(o), payType: o.payType,
+    return { date: o.date + ' ' + o.time, phone: o.phone, customer: o.customer ? o.customer + ' (' + o.phone + ')' : o.phone, items: items(o), status: ordStTag(o), pay: payStTag(o), payType: o.payType,
              bank: bk, amount: o.amount, staff: o.staff, _act: act };
   });
   // Дүрэм: захиалга «Буухиад өгсөн» (илгээгдсэн) болмогц борлуулалт, авлага үүснэ; «Шинэ» нь авлагад ороогүй
   var unpaid = ordOpenAmt(all), fresh = all.filter(function (o) { return o.status === 'Шинэ'; }).reduce(function (a, o) { return a + o.amount; }, 0), nBank = all.filter(function (o) { return !o.confirmed && !ordDead(o) && cand[o.id]; }).length;
   return { title: 'Захиалга', rows: rows, actions: true,
-    cols: [c('date', 'Огноо'), c('phone', 'Утас'), c('customer', 'Захиалагч'), c('items', 'Бараа'), c('status', 'Захиалгын төлөв'), c('pay', 'Төлбөрийн төлөв'), c('payType', 'Төлбөрийн хэлбэр'), c('bank', 'Банкны хуулга'), m('amount', 'Дүн'), c('staff', 'Ажилтан')],
+    cols: [c('date', 'Огноо'), c('customer', 'Захиалагч'), c('items', 'Бараа'), c('status', 'Захиалгын төлөв'), c('pay', 'Төлбөрийн төлөв'), c('payType', 'Төлбөрийн хэлбэр'), c('bank', 'Банкны хуулга'), m('amount', 'Дүн'), c('staff', 'Ажилтан')],
     total: { date: rows.length + ' захиалга', amount: sum(rows, 'amount') },
     note: 'Баталгаажаагүй нийт (авлага): ' + fmt(unpaid) + (fresh ? ' · илгээгдээгүй «Шинэ» ' + fmt(fresh) + ' (авлага үүсээгүй)' : '') + (nBank ? ' · банкны хуулгаас таарсан ' + nBank + ' — «Хуулгаар» дарна' : '') +
       '. Захиалга илгээгдэхэд (Буухиад өгсөн) орлого, авлага бүртгэгдэнэ. Ажилтны «Төлбөр орсон» нь шалгах тэмдэглэл. Банкны хуулгаар тулгах эсвэл «Баталгаажуулах» дарах үед авлага хаагдаж, мөнгө дансанд орно.' };

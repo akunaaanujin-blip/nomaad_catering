@@ -411,7 +411,9 @@ window.ebRedraw = function (keep) {
 function renderDlv() {
   var w = dlvWrap(); if (!w) return;
   if (!dlvBusy && Date.now() - dlvPulled > 5 * 60000 && window.API_URL !== '') { dlvPulled = Date.now(); setTimeout(dlvPull, 0); }   // нээхэд (5 мин тутам) буухиагаас автоматаар татна
-  var fresh = orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending; }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
+  var maybe = function (o) { var ph = function (p) { return String(p || '').replace(/\D/g, '').slice(-8); }, d0 = new Date(o.date + 'T00:00:00');   // буухиа дээр аль хэдийн байгаа (холбогдоогүй)
+    return (dlvAll || []).some(function (x) { return !x.id && ph(x.phone) === ph(o.phone) && x.st !== 11 && x.st !== 12 && x.created && Math.abs(new Date(String(x.created).slice(0, 10).replace(/\//g, '-') + 'T00:00:00') - d0) <= 864e5; }); };
+  var fresh = orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending && !o.ebCode && !maybe(o); }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
   var retry = orders.filter(function (o) { return o.status === 'Буухиад өгсөн' && !o.ebCode; });
   var nSel = Object.keys(dlvSel).filter(function (k) { return dlvSel[k]; }).length;
   var row = function (o) {
@@ -475,6 +477,13 @@ function dlvSend(mode, given) {
     : Object.keys(dlvSel).filter(function (k) { return dlvSel[k]; });
   if (!ids.length || dlvBusy) return;
   var L = orders.filter(function (o) { return ids.indexOf(o.id) >= 0; }), noD = L.filter(function (o) { return !o.district; }).length;
+  // Буухиа дээр аль хэдийн байж магадгүй: ижил утас, сүүлийн 24 цагт үүссэн, манай өөр захиалгатай холбогдоогүй хүргэлт
+  var lim = new Date(Date.now() - 864e5), ph = function (p) { return String(p || '').replace(/\D/g, '').slice(-8); };
+  var dup = L.map(function (o) {
+    var x = (dlvAll || []).filter(function (x) { return ph(x.phone) === ph(o.phone) && (!x.id || x.id === o.id) && x.st !== 11 && x.st !== 12 && new Date(String(x.created || '').replace(/\//g, '-').replace(' ', 'T')) >= lim; })[0];
+    return x ? o.phone + ' (' + x.code + ')' : '';
+  }).filter(Boolean);
+  if (dup.length && !confirm('Энэ захиалга Буухиа дээр аль хэдийн байж магадгүй:\n' + dup.join('\n') + '\n\nДахин илгээх үү? (Үгүй бол «Шинэчлэх» дарахад автоматаар холбогдоно)')) return;
   if (!confirm(ids.length + ' захиалгыг буухиа руу илгээх үү?\nБуухиа авах нийт: ' + fmt(L.reduce(function (a, o) { return a + dlvCod(o); }, 0)) + (noD ? '\n\n' + noD + ' захиалгын дүүрэг хоосон байна.' : ''))) return;
   dlvBusy = true; renderDlv(); toast('Буухиа руу илгээж байна…');
   ordPost({ type: 'eb_send', ids: ids }, function (err, d) {

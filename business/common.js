@@ -178,7 +178,7 @@ function ebBoard(list, at) {
     var n = t[0] === 'all' ? list.length : cnt[t[0]] || 0;
     if (t[0] !== 'all' && !n && String(ebF.st) !== String(t[0])) return '';
     return '<button class="' + (String(ebF.st) === String(t[0]) ? 'on' : '') + '" onclick="ebF.st=\'' + t[0] + '\';ebF.open=\'\';ebRedraw()">' + t[1] + ' <small>' + n + '</small></button>';
-  }).join('') + (window.ebRecPanel ? '<button class="' + (ebF.st === 'rec' ? 'on' : '') + '" onclick="ebF.st=\'rec\';ebF.open=\'\';ebRedraw()">Нийлээгүй' + (window.ebRecCount ? ' <small>' + window.ebRecCount() + '</small>' : '') + '</button>' : '') + '</div>';
+  }).join('') + (window.ebRecPanel ? '<button class="' + (ebF.st === 'rec' ? 'on' : '') + '" title="Манай захиалгатай холбогдоогүй, эсвэл мөнгө нь буухиатай тооцоо нийлээгүй хүргэлт" onclick="ebF.st=\'rec\';ebF.open=\'\';ebRedraw()">Нийлээгүй' + (window.ebRecCount ? ' <small>' + window.ebRecCount() + '</small>' : '') + '</button>' : '') + '</div>';
   if (ebF.st === 'rec') return tabs + window.ebRecPanel();
   var tool = '<div class="eb-tool"><input type="search" id="ebQ" placeholder="Код, утас, нэр, хаяг, бараа, огноогоор хайх…" value="' + esc(ebF.q) + '" oninput="ebF.q=this.value;ebRedraw(1)">' +
     '<small class="muted">' + L.length + ' хүргэлт · авах ' + fmt(sum('price')) + ' · авсан ' + fmt(sum('got')) + (at ? ' · ' + esc(at) + '-д шинэчилсэн' : '') + '</small></div>';

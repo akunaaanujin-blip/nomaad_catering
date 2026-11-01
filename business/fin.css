@@ -218,3 +218,8 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var
 @media(max-width:760px){.fn-q,.fn-q input{width:100%}.fn-flt{display:flex}}
 .fn-subh{cursor:pointer;display:flex;justify-content:space-between;user-select:none}.fn-subh:hover{color:var(--text-2)}.fn-ck.fn-o{background:var(--neutral-soft);color:var(--text-3)}
 .bz-admin .rep-note.warn{background:var(--warning-soft);color:var(--warning)}
+/* Тайлангийн дэд бүлгийн гарчиг — бүтэн мөр товч */
+.fn-panel li button.fn-subh{justify-content:space-between;font-size:12px;font-weight:600;color:var(--text-2);padding:10px 10px 4px;margin-top:4px;text-transform:none;box-shadow:none;background:none}
+.fn-panel li button.fn-subh:hover{color:var(--text)}
+.fn-panel li button.fn-subh:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+.fn-car2{font-size:11px;color:var(--text-2)}
