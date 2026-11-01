@@ -129,6 +129,8 @@ function ordPhoneHint() {
     if (ordHistQ !== k) return;
     if (!h || (!h.n && !h.canc)) { el.textContent = 'Шинэ харилцагч'; return; }
     ordHistLast = h.last;
+    var auto = h.last && !$('orAddress').value.trim() && !$('orCustomer').value.trim() && (h.last.address || h.last.customer);   // өмнөх нэр, хаягаар автоматаар
+    if (auto) { ordFillLast(); el.innerHTML = 'Өмнө ' + h.n + ' захиалга · нийт ' + fmt(h.total) + ' — өмнөх нэр, хаягаар бөглөлөө, шалгаад засаарай'; return; }
     el.innerHTML = 'Өмнө ' + h.n + ' захиалга · нийт ' + fmt(h.total) + (h.last ? ' · сүүлд ' + esc(h.last.date) : '') + (h.canc ? ' · ' + h.canc + ' удаа цуцалсан' : '') +
       (h.last && h.last.address && !$('orAddress').value.trim() ? ' <button class="mini" onclick="ordFillLast()">Өмнөх хаягаар бөглөх</button>' : '');
   };

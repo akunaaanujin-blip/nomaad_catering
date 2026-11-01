@@ -24,7 +24,7 @@ var MNAV = [
     ['finance/balance', 'Санхүүгийн байдал'], ['finance/pl', 'Орлогын тайлан'], ['finance/equity', 'Өмчийн өөрчлөлт'], ['finance/aging_r', 'Авлага, өглөгийн насжилт']]],
   ['Татвар', 'tax', [['v:tax:calendar', 'Тайлангийн хуанли'], ['v:tax:nd8', 'НДШ тайлан'], ['v:tax:tt11', 'ХХОАТ (ТТ-11)'], ['v:tax:tt02', 'ААНОАТ (ТТ-02)'],
     ['v:tax:ebalance', 'Жилийн тайлан (e-Balance)'], ['v:tax:entpl', 'Нэгтгэсэн орлогын тайлан'], ['sales/ebarimt', 'И-баримт']]],
-  ['Тохиргоо', 'gear', [['v:staff', 'Ажилчид, эрх'], ['finance/accounts', 'Дансны төлөвлөгөө'], ['finance/opening', 'Эхний үлдэгдэл'], ['finance/lock', 'Гүйлгээ түгжих'],
+  ['Тохиргоо', 'gear', [['finance/company', 'Компанийн мэдээлэл'], ['v:staff', 'Ажилчид, эрх'], ['finance/accounts', 'Дансны төлөвлөгөө'], ['finance/opening', 'Эхний үлдэгдэл'], ['finance/lock', 'Гүйлгээ түгжих'],
     ['finance/close', 'Он хаах, нөөц'], ['finance/api', 'Холболт (банк, буухиа, StorePay)'], ['finance/digest', 'Өдрийн тойм и-мэйл'],
     ['finance/audit', 'Өөрчлөлтийн түүх'], ['finance/trash', 'Хогийн сав'], ['v:docs', 'Маягт, загвар'], ['finance/glossary', 'Нэр томьёо']]],
 ];
@@ -34,7 +34,8 @@ PAGE_TABS.entry = PAGE_TABS.journal; PAGE_TABS.aging_p = PAGE_TABS.aging_r;
 var NAV_ALIAS = { entry: 'journal', aging_p: 'aging_r' };   // таб бүхий хуудсын цэсний зүйл
 
 // Үг хэллэг (хуудасны гарчиг = цэсний нэр); шинэ хуудсууд
-SUBS.finance.push(['audit', 'Өөрчлөлтийн түүх'], ['trash', 'Хогийн сав']);
+SUBS.finance.push(['audit', 'Өөрчлөлтийн түүх'], ['trash', 'Хогийн сав'], ['company', 'Компанийн мэдээлэл']);
+REP_HELP.company = 'Нэр, татварын горим, ТТД, НӨАТ, И-баримт, холбоо барих, санхүүгийн жил, буухиагийн нэг хүргэлтийн хөлс. Татварын хуудсууд эндээс хамаарч харагдана.';
 REP_HELP.audit = 'Хэн, хэзээ, юу өөрчилсөн — удирдлагын бүх бичилт, захиалга, тооллого.';
 REP_HELP.trash = 'Сүүлийн 30 хоногт цуцалсан баримт, барааны хөдөлгөөн, журналын бичилт. Сэргээвэл санхүү, үлдэгдэлд дахин тусна.';
 (function () {
@@ -59,7 +60,7 @@ function navOk(biz, k) {
   var B = BUSINESSES[biz] || {};
   if (B.finOnly && !/^(finance\/|v:|home$)/.test(k)) return false;   // Удирдлага: зөвхөн санхүү
   if (B.finOnly && /^v:tax:/.test(k)) return false;
-  if (/^finance\/(audit|trash)$/.test(k)) return isOwner();
+  if (/^finance\/(audit|trash|company)$/.test(k)) return isOwner();
   var m = k.match(/^(\w+)\/(\w+)$/); if (m) return subVisible(biz, m[2]);
   if (k === 'v:staff' || k === 'v:docs') return isOwner();
   if (/^v:tax:(ebalance|tt02)$/.test(k) && ENTITIES[entOf(biz)] && ENTITIES[entOf(biz)].type === 'Хувь хүн') return false;   // хувь хүнд e-Balance, ААНОАТ хамаарахгүй
@@ -150,6 +151,7 @@ companyView = function () {
   if (state.module === 'home') return homeView();
   if (state.module === 'finance' && state.sub.finance === 'audit') return pageHead('Өөрчлөлтийн түүх', '<button class="b-btn" onclick="audLoad(true)">Шинэчлэх</button>') + auditView();
   if (state.module === 'finance' && state.sub.finance === 'trash') return pageHead('Хогийн сав', '') + trashView();
+  if (state.module === 'finance' && state.sub.finance === 'company') return pageHead('Компанийн мэдээлэл', '') + companyView2();
   if (state.module === 'finance' && /^(money|cash|banklink|receipts)$/.test(state.sub.finance)) state.sub.finance = state.sub.finance === 'banklink' ? 'api' : 'ledger';   // нэгтгэсэн хуудас
   if (state.module === 'sales' && state.sub.sales === 'receipts') { state.sub.sales = 'shop'; state.shopSrc = 'all'; }
   if (state.module === 'finance' && /^(acct|other|setup|simple)$/.test(state.sub.finance)) state.sub.finance = 'daily';   // хассан нэгтгэл хуудас
@@ -408,6 +410,63 @@ countsView = function () {
         '<td class="n"><button class="mini" onclick="ocMark(\'' + x.date + '\',' + (on ? 0 : 1) + ')">' + (on ? 'Тэмдэглэгээ авах' : 'Эхний тооллого гэж тэмдэглэх') + '</button></td></tr>';
     }).join('') : '<tr><td colspan="6" class="muted">Батлагдсан тооллого алга.</td></tr>') + '</table></div></div>';
 };
+
+// ═══════════ Касс хаах (удирдлага) ═══════════
+// Системийн кассын үлдэгдэл (10003) ↔ бодит тоолсон дүн; зөрүүтэй бол шалтгаан заавал.
+// Дутагдал: Дт 7404 / Кт 10003, илүүдэл: Дт 10003 / Кт 5201 (журналын бичилт, «Касс хаалт» тайлбартай)
+function openCashClose() {
+  var sys = r0(balances(J(), todayStr())['10003'] || 0);
+  gOpen('<h2>Касс хаах</h2><p class="muted">' + esc(BUSINESSES[state.biz].name) + ' · ' + todayStr() + '</p>' +
+    '<table class="rep-t"><tr><td>Системийн хүлээгдэж буй дүн (10003)</td><td class="n"><b>' + mny(sys) + '</b></td></tr></table>' +
+    '<label for="ccReal">Бодит тоолсон дүн (₮)</label><input id="ccReal" type="number" min="0" inputmode="numeric" oninput="ccDiff(' + sys + ')">' +
+    '<p id="ccDiffTxt" style="margin:6px 0"></p>' +
+    '<label for="ccWhy">Зөрүүний шалтгаан</label><input id="ccWhy" placeholder="Зөрүүтэй бол заавал (жишээ: хариулт буруу өгсөн)">' +
+    '<button class="btn" onclick="saveCashClose(' + sys + ')">Хадгалах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
+}
+function ccDiff(sys) { var v = Number($('ccReal').value), d = r0(v - sys), el = $('ccDiffTxt'); if (!el) return; el.innerHTML = $('ccReal').value === '' ? '' : Math.abs(d) < 1 ? '<span style="color:var(--income)">Зөрүүгүй</span>' : 'Зөрүү: <b class="' + (d < 0 ? 'neg' : '') + '">' + (d < 0 ? 'дутагдал ' : 'илүүдэл ') + fmt(Math.abs(d)) + '</b>'; }
+function saveCashClose(sys) {
+  if ($('ccReal').value === '') { toast('Бодит дүнгээ оруулна уу'); return; }
+  var real = Number($('ccReal').value), d = r0(real - sys), why = $('ccWhy').value.trim();
+  if (Math.abs(d) < 1) { gClose(); toast('Касс зөрүүгүй — хаалаа'); return; }
+  if (!why) { toast('Зөрүүний шалтгааныг бичнэ үү'); $('ccWhy').focus(); return; }
+  var e = d < 0 ? { dr: '7404', cr: '10003', desc: 'Касс хаалт · дутагдал · ' + why } : { dr: '10003', cr: '5201', desc: 'Касс хаалт · илүүдэл · ' + why };
+  postEntries([Object.assign({ biz: state.biz, date: todayStr(), amount: Math.abs(d), partner: '' }, e)], function () { gClose(); toast('Касс хаалт бичигдлээ · ' + (d < 0 ? 'дутагдал ' : 'илүүдэл ') + fmt(Math.abs(d))); if (API_URL) refresh(); else render(); });
+}
+
+// ═══════════ КОМПАНИЙН МЭДЭЭЛЭЛ ═══════════
+// window.companyInfo = { biz: { name, short, color, taxMode: 'ААН'|'Хувь хүн', tin, vat, ebarimt, addr, phone, email, fyStart, ebFee } } (Script Property COMPANY)
+var CO_BASE = {};
+function applyCompany() {
+  var C = window.companyInfo || {};
+  Object.keys(BUSINESSES).forEach(function (k) {
+    var B = BUSINESSES[k], c = C[k] || {}, o = CO_BASE[k] = CO_BASE[k] || { name: B.name, color: B.color, ebarimt: B.ebarimt };
+    B.name = c.name || o.name; B.color = c.color || o.color; B.ebarimt = c.ebarimt === 'no' ? false : c.ebarimt === 'yes' ? true : o.ebarimt;
+    var E = ENTITIES[entOf(k)]; if (E && c.taxMode && E.biz.length === 1) E.type = c.taxMode === 'Хувь хүн' ? 'Хувь хүн' : 'ХХК';   // хэд хэдэн компанитай хуулийн этгээдийн горимыг өөрчлөхгүй
+  });
+}
+function companyView2() {
+  var k = state.biz, c = (window.companyInfo || {})[k] || {}, B = BUSINESSES[k], E = ENTITIES[entOf(k)] || {};
+  var f = function (id, label, v, ph, type) { return '<div><label for="co_' + id + '">' + label + '</label><input id="co_' + id + '"' + (type ? ' type="' + type + '"' : '') + ' value="' + esc(v == null ? '' : v) + '" placeholder="' + esc(ph || '') + '"></div>'; };
+  var sel = function (id, label, v, opts) { return '<div><label for="co_' + id + '">' + label + '</label><select id="co_' + id + '">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(v) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>'; };
+  return '<div class="card" style="max-width:760px">' +
+    '<div class="row2">' + f('name', 'Нэр', c.name || B.name) + f('short', 'Товч нэр', c.short || '', 'Жишээ: Cozy') + '</div>' +
+    '<div class="row2">' + sel('taxMode', 'Татварын горим', c.taxMode || (E.type === 'Хувь хүн' ? 'Хувь хүн' : 'ААН'), [['ААН', 'ААН (хуулийн этгээд)'], ['Хувь хүн', 'Хувь хүн']]) + f('tin', 'ТТД / Регистр', c.tin || E.tin || E.regNo || '') + '</div>' +
+    '<div class="row2">' + sel('vat', 'НӨАТ төлөгч', c.vat || 'no', [['no', 'Үгүй'], ['yes', 'Тийм']]) + sel('ebarimt', 'И-баримт ашиглах', c.ebarimt || (B.ebarimt === false ? 'no' : 'yes'), [['yes', 'Тийм'], ['no', 'Үгүй']]) + '</div>' +
+    '<div class="row2">' + f('addr', 'Хаяг', c.addr || '') + f('phone', 'Утас', c.phone || '') + '</div>' +
+    '<div class="row2">' + f('email', 'Имэйл', c.email || '', '', 'email') + f('fyStart', 'Санхүүгийн жилийн эхлэл (сар-өдөр)', c.fyStart || '01-01', '01-01') + '</div>' +
+    '<div class="row2">' + f('color', 'Өнгө', c.color || B.color || '#1F4E79', '', 'color') + (B.orders ? f('ebFee', 'Буухиагийн нэг хүргэлтийн хөлс (₮)', c.ebFee || 7000, '', 'number') : '<div></div>') + '</div>' +
+    '<p class="muted" style="font-size:12.5px">Татварын горим «Хувь хүн» бол e-Balance, ААНОАТ хуудас нуугдана. Хөлс нь хүргэгдсэн захиалга бүрт хүргэлтийн зардал (7124) болж бичигдэнэ.' + (E.biz && E.biz.length > 1 ? ' Энэ компани «' + esc(E.name) + '» хуулийн этгээдэд бусад компанитай хамт байгаа тул горим тэр хуулийн этгээдээр хэвээр.' : '') + '</p>' +
+    '<button class="b-btn primary" onclick="saveCompany()">Хадгалах</button></div>';
+}
+function saveCompany() {
+  var k = state.biz, all = JSON.parse(JSON.stringify(window.companyInfo || {})), c = {};
+  ['name', 'short', 'taxMode', 'tin', 'vat', 'ebarimt', 'addr', 'phone', 'email', 'fyStart', 'color', 'ebFee'].forEach(function (x) { var el = $('co_' + x); if (el) c[x] = x === 'ebFee' ? Number(el.value) || 0 : String(el.value).trim().slice(0, 120); });
+  if (c.fyStart && !/^\d{2}-\d{2}$/.test(c.fyStart)) { toast('Санхүүгийн жилийн эхлэлийг «01-01» хэлбэрээр бичнэ үү'); return; }
+  all[k] = c; window.companyInfo = all; applyCompany();
+  if (!API_URL) { save('nb_demo_company', all); toast('Хадгаллаа'); render(); return; }
+  post({ type: 'admin_setting', key: 'company', value: all }, function (err) { if (err) { toast('Алдаа: ' + err); return; } toast('Хадгаллаа'); render(); });
+}
+applyCompany();
 
 // 15 минут идэвхгүй бол удирдлагын хуудаснаас автоматаар гарна
 var IDLE = { t: Date.now() };

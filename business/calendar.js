@@ -131,7 +131,7 @@ function remCancel(id) {
 // төлбөр — Төлөөгүй шар, Төлсөн (удирдлага баталгаажуулсан) ногоон, Буцаан олгосон улаан. Ажилтны «орсон» тэмдэглэл нь баталгаажтал шар.
 function stTag(txt, cls) { return { __html: '<span class="st ' + cls + '">' + esc(txt) + '</span>', toString: function () { return txt; } }; }
 function ordStTag(o) {
-  var s = o.status, L = { 'Шинэ': ['Шинэ', 'n'], 'Буухиад өгсөн': [o.ebCode === 'бусад' ? 'Хүргэлтэд (бусад)' : 'Хүргэлтэд', 'b'], 'Хүргэгдсэн': ['Хүргэгдсэн', 'g'], 'Цуцалсан': ['Цуцалсан', 'n'], 'Буцаасан': ['Буцаасан', 'r'] }[s] || [s || '—', 'n'];
+  var s = o.status, L = { 'Шинэ': ['Шинэ', 'n'], 'Буухиад өгсөн': [o.ebCode === 'бусад' ? 'Бусад хүргэлтэд' : 'Буухиад өгсөн', 'b'], 'Хүргэгдсэн': ['Хүргэгдсэн', 'g'], 'Цуцалсан': ['Цуцалсан', 'n'], 'Буцаасан': ['Буцаасан', 'r'] }[s] || [s || '—', 'n'];
   return stTag(L[0], L[1]);
 }
 function payStTag(o) {
@@ -141,6 +141,8 @@ function payStTag(o) {
   if (ordDead(o)) return stTag('—', 'n');
   return stTag(o.paid === 'Орсон' ? 'Төлөөгүй · ажилтан «орсон»' : 'Төлөөгүй', 'y');
 }
+// Захиалгын авлага: илгээгдсэн (Шинэ биш), цуцлаагүй, төлбөр нь баталгаажаагүй захиалгын дүн
+function ordOpenAmt(list) { return list.filter(function (o) { return o.status !== 'Шинэ' && !o.confirmed && !ordDead(o); }).reduce(function (a, o) { return a + (Number(o.amount) || 0); }, 0); }
 function repOrders(biz) {
   var all = (window.adminOrders || []).filter(function (o) { return o.biz === biz; }).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
   var list = all.filter(ordFilt(state.ordF || 'wait'));
@@ -156,11 +158,13 @@ function repOrders(biz) {
     return { date: o.date + ' ' + o.time, phone: o.phone, customer: o.customer, items: items(o), status: ordStTag(o), pay: payStTag(o), payType: o.payType,
              bank: bk, amount: o.amount, staff: o.staff, _act: act };
   });
-  var unpaid = all.filter(ordFilt('wait')).reduce(function (a, o) { return a + o.amount; }, 0), nBank = all.filter(function (o) { return !o.confirmed && !ordDead(o) && cand[o.id]; }).length;
+  // Дүрэм: захиалга «Буухиад өгсөн» (илгээгдсэн) болмогц борлуулалт, авлага үүснэ; «Шинэ» нь авлагад ороогүй
+  var unpaid = ordOpenAmt(all), fresh = all.filter(function (o) { return o.status === 'Шинэ'; }).reduce(function (a, o) { return a + o.amount; }, 0), nBank = all.filter(function (o) { return !o.confirmed && !ordDead(o) && cand[o.id]; }).length;
   return { title: 'Захиалга', rows: rows, actions: true,
     cols: [c('date', 'Огноо'), c('phone', 'Утас'), c('customer', 'Захиалагч'), c('items', 'Бараа'), c('status', 'Захиалгын төлөв'), c('pay', 'Төлбөрийн төлөв'), c('payType', 'Төлбөрийн хэлбэр'), c('bank', 'Банкны хуулга'), m('amount', 'Дүн'), c('staff', 'Ажилтан')],
     total: { date: rows.length + ' захиалга', amount: sum(rows, 'amount') },
-    note: 'Баталгаажаагүй нийт: ' + fmt(unpaid) + (nBank ? ' · банкны хуулгаас таарсан ' + nBank + ' захиалга — «Хуулгаар баталгаажуулах» дарна' : '') + '. Захиалга авлагаар бүртгэгдэнэ. Төлбөр баталгаажих үед авлага хаагдана. Ажилтны «Төлбөр орсон» нь шалгах тэмдэглэл. «Банкны хуулга»-аар тулгах (эсвэл энд «Баталгаажуулах») үед л санхүүд орно.' };
+    note: 'Баталгаажаагүй нийт (авлага): ' + fmt(unpaid) + (fresh ? ' · илгээгдээгүй «Шинэ» ' + fmt(fresh) + ' (авлага үүсээгүй)' : '') + (nBank ? ' · банкны хуулгаас таарсан ' + nBank + ' — «Хуулгаар» дарна' : '') +
+      '. Захиалга илгээгдэхэд (Буухиад өгсөн) орлого, авлага бүртгэгдэнэ. Ажилтны «Төлбөр орсон» нь шалгах тэмдэглэл. Банкны хуулгаар тулгах эсвэл «Баталгаажуулах» дарах үед авлага хаагдаж, мөнгө дансанд орно.' };
 }
 // ── Харилцагчид (утасны дугаараар): хэдэн удаа, хэдийг захиалсан ──
 function phoneKey(p) { return String(p || '').replace(/\D/g, '').slice(-8); }

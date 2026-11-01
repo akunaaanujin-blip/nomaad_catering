@@ -87,7 +87,10 @@ var BUUHIA = 'Буухиа';
 var EB_PAY_FROM = '2026-10-25';
 function ebFeeAuto(d) { return !!d && String(d).slice(0, 10) < EB_PAY_FROM; }
 var EB_FEE_DATE = {};   // захиалгын ID → хүргэлтийн хөлсний борлуулалт бичигдсэн (буухиад өгсөн) огноо; buildJournal дүүргэнэ
-function ebOrdAuto(o) { return !!o && ebFeeAuto(EB_FEE_DATE[o.id] || o.date); }
+function ebOrdAuto(o) { return !!o && (ebFeeAuto(EB_FEE_DATE[o.id] || o.date) || ebAccrues(o)); }
+// Шинэ дүрэм: буухиагаар хүргэгдсэн захиалга бүрт хөлсийг хүргэгдсэн мөчид зардал болгоно (Дт 7124 / Кт 3101 Буухиа), тооцоо нийлэхэд өглөг хаагдана
+function ebAccrues(o) { return !!o && !!o.ebCode && o.ebCode !== 'бусад' && o.status === 'Хүргэгдсэн' && !ebFeeAuto(EB_FEE_DATE[o.id] || o.date); }
+function ebFeeOf(biz) { var c = (typeof window !== 'undefined' && window.companyInfo || {})[biz] || {}; return Number(c.ebFee) > 0 ? Number(c.ebFee) : 7000; }
 // Хуучин зардлын код → Baaz код. Шинэ төлөвлөгөөнд байхгүй хуучин код үргэлж хөрвүүлэгдэнэ; давхцах 7201, 7401 нь
 // зөвхөн шилжүүлэлтийн мөчөөс (MIG_TS) өмнө бичигдсэн гараар бичилтэд хөрвүүлэгдэнэ (Sheet-ийн өгөгдлийг өөрчлөхгүй).
 var OLD_EXP = { '7201': '7114', '7202': '7111', '7203': '7117', '7204': '7123', '7205': '7120', '7206': '7112', '7207': '7124', '7301': '7122',
@@ -285,6 +288,13 @@ function buildJournal(biz, R) {
       else add(d, m.kind, m.id, '1404', '8101', v, m.item + ' +' + m.qty + ' (илүүдэл)');
     }
   });
+  // Буухиагийн хөлс — хүргэгдсэн захиалга бүрт (өмнө нь тооцоо нийлэхэд «#EB» бичигдсэн бол давхар бичихгүй)
+  var ebDone = {}; (R.journal || []).forEach(function (j) { if (j.biz === biz && /#EB:/.test(String(j.desc))) (String(j.desc).match(/#O\d+/g) || []).forEach(function (t) { ebDone[t.slice(1)] = 1; }); });
+  Object.keys(ORD).forEach(function (id) {
+    var o = ORD[id]; if (!ebAccrues(o) || ebDone[id]) return;
+    var d = String(EB_FEE_DATE[id] || o.date).slice(0, 10); if (R.closed && d <= R.closed) return;
+    add(d, 'Буухиагийн хөлс', id, '7124', '3101', ebFeeOf(biz), 'Хүргэлтийн зардал · ' + o.phone + ' #' + id, BUUHIA);
+  });
   ce.adj.forEach(function (a) { add(a.date, 'Карго · зарагдсан бараа', a.ref, '6101', '1404', a.amount, 'Карго · ' + a.item + ' (бараа нь зарагдсан тул өртөгт)'); });
   R.salary.forEach(function (e) {
     if (e.biz !== biz) return;   // «Бүх дэлгүүр»-ийн ажилтны цалинг олгохдоо компани сонгоно
@@ -412,15 +422,15 @@ function repCash(E, from, to) {
 }
 function plData(E, from, to) {
   var b = balances(E, to, from), g = function (k) { return b[k] || 0; };
-  var sales = -g('5101') - g('5102'), ret = g('6001'), net = sales - ret, cogs = g('6101'), gross = net - cogs;   // 5201/5202 — «бусад орлого»
+  var goods = -g('5101'), svc = -g('5102'), sales = goods + svc, ret = g('6001'), net = sales - ret, cogs = g('6101'), gross = net - cogs;   // 5201/5202 — «бусад орлого»
   var exps = ACCOUNTS.filter(function (a) { return a[2] === 'exp'; }).map(function (a) { return { code: a[0], name: a[1], v: g(a[0]) }; }).filter(function (x) { return x.v; });
   var expT = exps.reduce(function (s, x) { return s + x.v; }, 0), other = accsOf('rev').filter(function (k) { return k !== '5101' && k !== '5102'; }).reduce(function (t, k) { return t - g(k); }, 0);   // бусад орлого (5201, 5202, 8101 …)
-  return { sales: sales, ret: ret, net: net, cogs: cogs, gross: gross, exps: exps, expT: expT, other: other, profit: gross - expT + other };
+  return { goods: goods, svc: svc, sales: sales, ret: ret, net: net, cogs: cogs, gross: gross, exps: exps, expT: expT, other: other, profit: gross - expT + other };
 }
 function repPL(E, from, to) {
   var p = plData(E, from, to), rows = [];
   var L = function (name, v, bold) { rows.push({ name: name, v: v === '' ? '' : r0(v), _b: bold }); };
-  L('Борлуулалтын орлого', p.sales); L('Хасах: борлуулалтын буцаалт', -p.ret); L('Цэвэр борлуулалт', p.net, 1);
+  L('Барааны борлуулалт', p.goods); L('Хүргэлтийн орлого', p.svc); L('Хасах: борлуулалтын буцаалт', -p.ret); L('Цэвэр борлуулалт', p.net, 1);
   L('Борлуулсан барааны өртөг', -p.cogs); L('Нийт ашиг', p.gross, 1);
   p.exps.forEach(function (x) { L('  ' + x.code + ' ' + x.name, -x.v); });
   L('Үйл ажиллагааны зардал, нийт', -p.expT, 1); L('Бусад орлого', p.other); L('Цэвэр ашиг (алдагдал)', p.profit, 1);

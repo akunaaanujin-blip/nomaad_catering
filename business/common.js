@@ -144,8 +144,10 @@ document.addEventListener('focusin', function (e) {
 
 // ═══ Буухиа (ebuuhia) — хүргэлтийн жагсаалт: ажилтны «Хүргэлт», удирдлагын «Буухиа» хуудас хоёулаа ашиглана ═══
 // list — серверийн ebNorm хэлбэр. ebF — шүүлтүүр (төлөв, хайлт, нээсэн мөр). Дахин зурахдаа window.ebRedraw()-г дуудна.
-var EB_TABS = [['all', 'Бүгд'], [1, 'Бүртгэгдсэн'], [2, 'Хүлээн авсан'], [3, 'Жолоочид хуваарилсан'], [5, 'Хүлээгдэж буй'], [10, 'Хүргэгдсэн'], ['back', 'Буцаасан, цуцалсан']];
-function ebIn(x, t) { return t === 'all' || (t === 'back' ? x.st === 11 || x.st === 12 : String(x.st) === String(t)); }
+// Захиалга, Хүргэлт хоёр хуудсанд нэг нэр томьёо: Шинэ → Буухиад өгсөн → Жолоочид → Хүргэгдсэн / Цуцалсан / Буцаасан
+var EB_UNI = { 1: 'Буухиад өгсөн', 2: 'Буухиад өгсөн', 3: 'Жолоочид', 5: 'Жолоочид', 10: 'Хүргэгдсэн', 11: 'Цуцалсан', 12: 'Буцаасан' };
+var EB_TABS = [['all', 'Бүгд'], ['sent', 'Буухиад өгсөн'], ['drv', 'Жолоочид'], [10, 'Хүргэгдсэн'], ['back', 'Цуцалсан, буцаасан']];
+function ebIn(x, t) { return t === 'all' || (t === 'back' ? x.st === 11 || x.st === 12 : t === 'sent' ? x.st === 1 || x.st === 2 : t === 'drv' ? x.st === 3 || x.st === 5 : String(x.st) === String(t)); }
 // Буцаасан/цуцалсан хүргэлтийн бараа: буухиад өгөхөд борлуулалт бичигдэж үлдэгдлээс хасагдсан тул гарт ирэхэд «Хүлээн авсан» дарж л үлдэгдэлд буцаана.
 // window.ebRecv байвал (ажилтны хуудас) товч, үгүй бол (удирдлага) зөвхөн төлөв.
 function ebBack(x) {
@@ -166,8 +168,8 @@ function ebHay(x) { return [x.code, x.ext, x.cust, x.phone, x.phone2, x.addr, x.
 function ebBoard(list, at) {
   list = (list || []).filter(function (x) { return x.id || (x.st !== 11 && x.st !== 12); })   // захиалгатай холбогдоогүй буцаасан/цуцалсныг харуулахгүй
     .sort(function (a, b) { return (b.created || '') < (a.created || '') ? -1 : 1; });
-  var cnt = {}; list.forEach(function (x) { cnt[x.st] = (cnt[x.st] || 0) + 1; if (ebIn(x, 'back')) cnt.back = (cnt.back || 0) + 1; });
-  if (ebF.st === '11' || ebF.st === '12') ebF.st = 'back';
+  var cnt = {}; list.forEach(function (x) { cnt[x.st] = (cnt[x.st] || 0) + 1; ['back', 'sent', 'drv'].forEach(function (t) { if (ebIn(x, t)) cnt[t] = (cnt[t] || 0) + 1; }); });
+  if (ebF.st === '11' || ebF.st === '12') ebF.st = 'back'; if (ebF.st === '1' || ebF.st === '2') ebF.st = 'sent'; if (ebF.st === '3' || ebF.st === '5') ebF.st = 'drv';
   if (ebF.st === 'rec' && !window.ebRecPanel) ebF.st = 'all';
   var q = ebF.q.toLowerCase().trim();
   var L = list.filter(function (x) { return ebIn(x, ebF.st) && (!q || ebHay(x).indexOf(q) >= 0); });
@@ -188,7 +190,7 @@ function ebBoard(list, at) {
       '<td><b>' + esc(x.phone) + '</b>' + (x.cust && x.cust !== x.phone ? '<br><small class="muted">' + esc(x.cust) + '</small>' : '') + '</td>' +
       '<td class="eb-addr">' + esc(x.addr) + '</td><td>' + esc(x.item) + (x.qty ? ' <small class="muted">· ' + x.qty + 'ш</small>' : '') + '</td>' +
       '<td class="n">' + (x.price ? fmt(x.price) : '<small class="muted">0</small>') + '</td><td class="n">' + (x.got ? fmt(x.got) + (x.price > 0 && x.id ? '<br><small class="st g">Төлбөр орсон</small>' : '') : '') + '</td>' +
-      '<td><span class="st ' + (EB_CLS[x.st] || 'y') + '">' + esc(x.name || '—') + '</span>' + (x.at && x.at !== x.created ? '<br><small class="muted">' + esc(x.at) + '</small>' : '') + ebBack(x) + '</td>' +
+      '<td><span class="st ' + (EB_CLS[x.st] || 'y') + '" title="Буухиа: ' + esc(x.name || '') + '">' + esc(EB_UNI[x.st] || x.name || '—') + '</span>' + (x.at && x.at !== x.created ? '<br><small class="muted">' + esc(x.at) + '</small>' : '') + ebBack(x) + '</td>' +
       '<td>' + esc(x.driver) + (x.dphone ? '<br><small class="muted">' + esc(x.dphone) + '</small>' : '') + '</td><td>' + (x.ok === 'Тийм' ? 'Тийм' : x.ok ? '<small class="muted">' + esc(x.ok) + '</small>' : '') + '</td></tr>';
     if (open) tr += '<tr class="eb-d"><td colspan="9"><div class="eb-kv">' + (x.raw || []).map(function (p) {
       return '<div><small>' + esc(EB_LBL[p[0]] || p[0]) + '</small><span>' + esc(p[0] === 'status' ? x.name : p[1]) + '</span></div>';

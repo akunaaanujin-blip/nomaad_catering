@@ -228,7 +228,7 @@ function monthTypeCard(E, y) {
 
 // ═══════════ БАРААНЫ АШИГ (хуучин «тайлан» хуудас) ═══════════
 function repProfit(Rr, biz, f, t) {
-  var base = repSalesBy(Rr, biz, f, t, 'item'), noc = 0;
+  var base = repSalesBy(Rr, biz, f, t, 'item', function (x) { return !isNonGoods(x.item); }), noc = 0;   // хүргэлтийн төлбөр, үйлчилгээ — барааны ашигт орохгүй
   var rows = base.rows.map(function (r) {
     var has = r.cogs !== '';
     if (!has && r.net) noc++;
@@ -299,6 +299,9 @@ function openItems(E, accs, sign, to, loanKey) {
     var acc = inD ? e.dr : e.cr, v = (inD ? e.amount : -e.amount) * sign;
     var who = e.partner || (loanKey ? accName(acc) : '(харилцагч заагаагүй)'), p = P[who] = P[who] || { open: [], over: 0, acc: acc, np: !e.partner };
     if (v > 0) {
+      // нэг захиалгын (баримтын) барааны мөр + хүргэлтийн мөр → нэг авлага
+      var same = e.bill ? p.open.filter(function (o) { return o.bill === e.bill && o.date === e.date && !o.paid; })[0] : null;
+      if (same && !(p.over > 0)) { same.amt += v; return; }
       var it = { date: e.date, who: who, desc: e.desc, amt: v, paid: 0, closed: '', acc: acc, np: !e.partner, ref: e.ref || '', bill: e.bill || '',
                  key: (e.ref || '') + '|' + e.date + '|' + Math.round(v) };
       if (p.over > 0) { var u = Math.min(p.over, v); it.paid += u; p.over -= u; }
@@ -378,7 +381,7 @@ function repDebts(E, k, flt) {
           '<button class="mini" style="color:var(--accent)" onclick="debtClose(\'' + k + '\',\'' + esc(it.key) + '\')">' + (k === 'r' ? 'Авлага хаах' : 'Өглөг хаах') + '</button>' : '' });
     });
   }
-  return { title: T[0] + ' — ' + DEBT_ST.filter(function (x) { return x[0] === flt; })[0][1].toLowerCase(), rows: rows, actions: /^[rp]$/.test(k),
+  return { title: T[0] + ' — ' + DEBT_ST.filter(function (x) { return x[0] === flt; })[0][1].toLowerCase(), hideCount: true, rows: rows, actions: /^[rp]$/.test(k),
     cols: [c('who', 'Харилцагч'), c('date', 'Огноо'), c('desc', 'Тайлбар'), m('amt', 'Дүн'), m('paid', 'Төлсөн'), m('left', 'Үлдэгдэл'), c('st', 'Төлөв')],
     total: { who: 'Нийт', amt: r0(tot.amt), paid: r0(tot.paid), left: r0(tot.left) } };
 }
@@ -439,7 +442,7 @@ function debtsPre(E) {
   var oiC = openItems(E, debtAccs(k), T[3], td, k === 'l').items, cnt = { open: 0, part: 0, closed: 0, all: oiC.length }, left = 0, late = 0, who = {};
   oiC.forEach(function (it) { var s2 = debtStatus(it); cnt[s2]++; if (s2 !== 'closed') { cnt.open++; var l = it.amt - it.paid; left += l; who[it.who] = 1; if ((new Date(td) - new Date(it.date)) / 864e5 > 30) late += l; } });
   var kp = function (lbl, v, cls) { return '<div class="dk2' + (cls ? ' ' + cls : '') + '"><small>' + lbl + '</small><b>' + v + '</b></div>'; };
-  var kpis = '<div class="dk2-row">' + kp(k === 'p' ? 'Төлөх үлдэгдэл' : k === 'r' ? 'Авах үлдэгдэл' : 'Үлдэгдэл', mny(left)) + kp('Хаагдаагүй баримт', cnt.open) +
+  var kpis = '<div class="dk2-row">' + kp(k === 'p' ? 'Төлөх үлдэгдэл' : k === 'r' ? 'Авах үлдэгдэл' : 'Үлдэгдэл', mny(left)) + kp(k === 'r' ? 'Захиалга, баримт' : 'Хаагдаагүй баримт', cnt.open) +
     kp('Харилцагч', Object.keys(who).length) + kp('30 хоногоос хэтэрсэн', mny(late), late > 0.5 ? 'warn' : '') + '</div>';
   var cur = state.dst === 'none' || !state.dst ? 'open' : state.dst;
   var seg = '<div class="seg">' + DEBT_ST.map(function (x) {
@@ -510,7 +513,7 @@ function addDrill(sub, rep, f, t) {
   var REV = ['5101', '5102'], PLA = accsOf('rev').concat(accsOf('contra'), accsOf('cogs'), accsOf('exp')), cash = cashCodes();
   var codeOf = function (name) { var mm = String(name).match(/^\s*(\d{4,6}) /); return mm ? mm[1] : ''; };
   if (sub === 'pl') {
-    var PLMAP = { 'Борлуулалтын орлого': [REV, -1, 'item'], 'Хасах: борлуулалтын буцаалт': [['6001'], -1, 'item'], 'Цэвэр борлуулалт': [REV.concat(['6001']), -1, 'item'],
+    var PLMAP = { 'Борлуулалтын орлого': [REV, -1, 'item'], 'Барааны борлуулалт': [['5101'], -1, 'item'], 'Хүргэлтийн орлого': [['5102'], -1, 'item'], 'Хасах: борлуулалтын буцаалт': [['6001'], -1, 'item'], 'Цэвэр борлуулалт': [REV.concat(['6001']), -1, 'item'],
       'Борлуулсан барааны өртөг': [['6101'], -1, 'item'], 'Нийт ашиг': [REV.concat(['6001', '6101']), -1, 'item'], 'Үйл ажиллагааны зардал, нийт': [accsOf('exp'), -1, 'acc'],
       'Бусад орлого': [['5201', '5202', '8101'], -1, 'cat'], 'Цэвэр ашиг (алдагдал)': [PLA, -1, 'acc'] };
     rep.rows.forEach(function (r) {
