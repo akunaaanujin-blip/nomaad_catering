@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v6.5 (буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v6.6 (удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -174,7 +174,9 @@ function auditLabel(d) {
   if (t === 'admin_record') return d.statusId ? 'Мөнгөний хүсэлт: ' + d.status : d.cancelId ? 'Баримт / зарлага цуцалсан' : 'Бичлэг засварласан';
   if (t === 'admin_stock') return d.approveId ? 'Тооллого баталсан' : d.cancelId ? 'Барааны хөдөлгөөн цуцалсан / тооллого татгалзсан' : 'Барааны хөдөлгөөн бичсэн (' + n(d.moves) + ')';
   if (t === 'admin_restore') return 'Хогийн савнаас сэргээсэн';
-  if (t === 'admin_setting') return 'Тохиргоо: ' + String(d.key || '');
+  if (t === 'admin_setting') return d.key === 'ebold' ? 'Буухиа: өмнөх үеийнх гэж тэмдэглэсэн' : 'Тохиргоо: ' + String(d.key || '');
+  if (t === 'admin_order' && d.fields && d.fields.status === 'Цуцалсан') return 'Захиалга цуцалсан' + (d.fields.receive ? ' (борлуулалт буцаасан)' : '');
+  if (t === 'admin_order' && d.fields && d.fields.restore) return 'Цуцалсан захиалгыг сэргээсэн';
   if (t === 'order_save') return d.order && d.order.id ? 'Захиалга засварласан' : 'Захиалга бүртгэсэн';
   if (t === 'order_delete') return 'Захиалга бүр устгасан';
   if (t === 'orders_ship') return 'Захиалга → ' + String(d.to || '');
@@ -202,9 +204,9 @@ function audit(d, res) {
   if (d._who) who = String(d.by || d._who.id || '');
   else { const s = checkStaff(d.token); if (s) { who = s.staff.name; biz = biz || s.biz; } }
   const det = auditClean(d, 0);
-  if (t === 'admin_setting') { delete det.value; if (/^(lock|review|targets)$/.test(String(d.key))) det.value = auditClean(d.value, 1); }   // түлхүүр, нууц тохиргоог бичихгүй
+  if (t === 'admin_setting') { delete det.value; if (/^(lock|review|targets|company)$/.test(String(d.key))) det.value = auditClean(d.value, 1); }   // түлхүүр, нууц тохиргоог бичихгүй
   delete det.type; delete det.by;
-  const id = String(d.cancelId || d.approveId || d.statusId || d.restoreId || (d.order && d.order.id) || '');
+  const id = String(d.cancelId || d.approveId || d.statusId || d.restoreId || (d.order && d.order.id) || (t === 'admin_order' ? d.id : '') || '');
   auditSheet().appendRow([Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss'), who.slice(0, 40), biz, auditLabel(d), String(d.what || '').slice(0, 200), t, id, JSON.stringify(det).slice(0, 3000)]);
 }
 // Түүх унших: сүүлийн N мөр (шинэ нь эхэнд), from — огнооноос хойш
@@ -370,7 +372,8 @@ function adminRead(d) {
   a.targets = JSON.parse(pr.getProperty('TARGETS') || '{}');   // борлуулалтын зорилт { 'biz|YYYY-MM': { total, staff: { нэр: дүн } } }
   a.assets = JSON.parse(pr.getProperty('ASSETS') || '[]');
   a.review = JSON.parse(pr.getProperty('REVIEW') || '{}');
-  a.company = JSON.parse(pr.getProperty('COMPANY') || '{}');   // компанийн мэдээлэл { biz: { name, short, color, taxMode, tin, vat, ebarimt, addr, phone, email, fyStart, ebFee } }   // удирдлагын тойм { 'biz|YYYY-MM': { good, issues, next, complaints, planProfit } }
+  a.company = JSON.parse(pr.getProperty('COMPANY') || '{}');
+  a.ebold = JSON.parse(pr.getProperty('EB_OLD') || '{}');   // буухиа: эхний үлдэгдлээс өмнөх (тооцоо хийгдсэн) хүргэлтийн код → { by, at }   // компанийн мэдээлэл { biz: { name, short, color, taxMode, tin, vat, ebarimt, addr, phone, email, fyStart, ebFee } }   // удирдлагын тойм { 'biz|YYYY-MM': { good, issues, next, complaints, planProfit } }
   a.minstock = minStockAll();
   a.digest = { on: pr.getProperty('DIGEST') === 'on', to: pr.getProperty('DIGEST_TO') || '', mail: DIGEST_MAIL };
   a.priceLog = cacheGet('price', priceRows);
@@ -1234,6 +1237,26 @@ function adminOrder(d) {
     sh.getRange(o.row, 23).setValue(String(f.ebCode));
   }   // буухиад өгөөгүй (өөрсдөө хүргэсэн) гэж тэмдэглэх — зөвхөн кодгүй захиалгад
   if (f.note) sh.getRange(o.row, 19).setValue(String(o.note || '') + ' ' + String(f.note).slice(0, 100));
+  // Удирдлага цуцлах: шалтгаан заавал; receive — бараа гарт ирсэн бол борлуулалтыг эсрэг бичилтээр буцаана (ажилтны «Буцаалт хүлээн авсан»-тай адил)
+  if (f.status === 'Цуцалсан') {
+    if (/^(Цуцалсан|Буцаасан)$/.test(o.status)) return { status: 'error', error: 'state' };
+    if (!String(f.reason || '').trim()) return { status: 'error', error: 'fields' };
+    sh.getRange(o.row, 17).setValue('Цуцалсан');
+    sh.getRange(o.row, 19).setValue((String(o.note || '') + ' · цуцалсан: ' + String(f.reason).slice(0, 120) + ' (өмнө: ' + o.status + ')').slice(0, 300));
+    if (f.receive && /^yes:/.test(String(o.saleDone || ''))) {
+      const pay = String(o.saleDone).slice(4), now = new Date(), date = Utilities.formatDate(now, TZ, 'yyyy-MM-dd'), time = Utilities.formatDate(now, TZ, 'HH:mm'), rows = [];
+      if (lockedDate(date)) return { status: 'error', error: 'locked' };
+      let items; try { items = JSON.parse(o.items || '[]'); } catch (e) { items = []; }
+      items.forEach(function (i, k) {
+        const q = Number(i.qty) || 1, p = Number(i.price) || 0, amt = Math.round(q * p); if (!amt) return;
+        rows.push([o.biz + '-' + now.getTime() + '-r' + k, date, time, BIZ_NAMES[o.biz], TYPE_NAMES.sale, String(d.by || 'Удирдлага').slice(0, 40), (String(i.name || '') + ' (буцаалт)').slice(0, 80), -q, 'ш', p, -amt, pay,
+          '', '', 'Захиалга ' + o.phone + ' цуцалсан', o.biz, 'sale', o.id, '', pay === 'Урьдчилгаа' ? ((o.customer ? o.customer + ' ' : '') + o.phone) : '']);
+      });
+      if (rows.length) { const log = logSheet(); log.getRange(log.getLastRow() + 1, 1, rows.length, LOG_HEAD.length).setValues(rows); }
+      sh.getRange(o.row, 21).setValue('returned');
+    }
+  }
+  if (f.restore && o.status === 'Цуцалсан' && String(o.saleDone || '') !== 'returned' && /^(Шинэ|Буухиад өгсөн|Хүргэгдсэн)$/.test(String(f.restore))) sh.getRange(o.row, 17).setValue(String(f.restore));   // хогийн савнаас сэргээх
   sh.getRange(o.row, 20).setValue(Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + ' ' + String(d.by || 'Удирдлага'));
   return { status: 'ok' };
 }
@@ -1251,7 +1274,7 @@ function adminSetting(d) {
     if (ms.length > 8500) return { status: 'error', error: 'too_big' };
     PropertiesService.getScriptProperties().setProperty('MINSTOCK_' + d.biz, ms); return { status: 'ok' };
   }
-  const JSONKEYS = { kpi: 'KPI', assets: 'ASSETS', targets: 'TARGETS', review: 'REVIEW', company: 'COMPANY' };   // + удирдлагын тоймын дүгнэлт   // KPI %, үндсэн хөрөнгө, борлуулалтын зорилт
+  const JSONKEYS = { kpi: 'KPI', assets: 'ASSETS', targets: 'TARGETS', review: 'REVIEW', company: 'COMPANY', ebold: 'EB_OLD' };   // + удирдлагын тоймын дүгнэлт   // KPI %, үндсэн хөрөнгө, борлуулалтын зорилт
   if (JSONKEYS[d.key]) {
     const s = JSON.stringify(d.value || (d.key === 'assets' ? [] : {}));
     if (s.length > 8500) return { status: 'error', error: 'too_big' };

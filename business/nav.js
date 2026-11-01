@@ -354,19 +354,20 @@ function auditView() {
 // Хогийн сав: сүүлийн 30 хоногт цуцалсан баримт, хөдөлгөөн, журнал (татгалзсан тооллого орохгүй) — «Сэргээх»
 function trashItems() {
   var lim = todayStr(new Date(Date.now() - 30 * 864e5)), back = {};
-  (AUD.rows || []).forEach(function (r) { if (r.type === 'admin_restore') back[r.id] = 1; });
+  (AUD.rows || []).forEach(function (r) { if (r.type === 'admin_restore' || (r.type === 'admin_order' && /сэргээсэн/.test(r.what))) back[r.id] = 1; });
   return (AUD.rows || []).filter(function (r) {
     if (!audMine(r) || r.at.slice(0, 10) < lim || !r.id || back[r.id]) return false;
     if (r.type === 'admin_record') return /цуцалсан/.test(r.what);
     if (r.type === 'admin_journal') return /цуцалсан/.test(r.what);
     if (r.type === 'admin_stock') return /цуцалсан/.test(r.what) && !/^Тооллого/.test(r.note);
+    if (r.type === 'admin_order') return r.what === 'Захиалга цуцалсан';   // борлуулалт буцаасан цуцлалт сэргэхгүй
     return false;
-  }).map(function (r) { return { r: r, kind: r.type === 'admin_record' ? 'rec' : r.type === 'admin_stock' ? 'mov' : 'jr' }; });
+  }).map(function (r) { return { r: r, kind: r.type === 'admin_record' ? 'rec' : r.type === 'admin_stock' ? 'mov' : r.type === 'admin_order' ? 'ord' : 'jr' }; });
 }
 function trashView() {
   audLoad();
   if (!AUD.rows) return audWait();
-  var L = trashItems(), K = { rec: 'Баримт, зарлага', mov: 'Барааны хөдөлгөөн', jr: 'Журнал' };
+  var L = trashItems(), K = { rec: 'Баримт, зарлага', mov: 'Барааны хөдөлгөөн', jr: 'Журнал', ord: 'Захиалга' };
   return audWait() +
     '<div class="card rep"><div class="rep-cap"><b>Хогийн сав</b><span>сүүлийн 30 хоногт цуцалсан · ' + L.length + '</span></div><div class="scroll"><table class="rep-t"><tr><th>Цуцалсан</th><th>Хэн</th><th>Төрөл</th><th>Юу</th><th></th></tr>' +
     (L.map(function (x) {
@@ -376,6 +377,12 @@ function trashView() {
 }
 function trashRestore(kind, id, what) {
   if (!confirm('Сэргээх үү?\n' + (what || id) + '\n\nСанхүү, үлдэгдэлд дахин тусна.')) return;
+  if (kind === 'ord') {   // цуцалсан захиалга — өмнөх төлөв рүү
+    var ar = (AUD.rows || []).filter(function (r) { return r.type === 'admin_order' && r.id === id; })[0], prev = 'Шинэ';
+    try { prev = JSON.parse(ar.det).fields.prev || 'Шинэ'; } catch (e) {}
+    post({ type: 'admin_order', id: id, by: ownerName, what: what, fields: { restore: prev } }, function (err) { if (err) { toast('Алдаа: ' + err); return; } toast('Захиалга сэргээлээ (' + prev + ')'); AUD.at = 0; audLoad(true); refresh(); });
+    return;
+  }
   post({ type: 'admin_restore', kind: kind, restoreId: id, what: what }, function (err, d) {
     if (err) { toast(err === 'locked' ? 'Түгжсэн хугацааны бичлэг — сэргээх боломжгүй' : err === 'negative' ? 'Сэргээвэл үлдэгдэл хасах болно: ' + ((d && d.item) || '') : err === 'state' ? 'Энэ бичлэгийг сэргээх боломжгүй' : 'Алдаа: ' + err); return; }
     toast('Сэргээлээ'); AUD.at = 0; audLoad(true); refresh();
@@ -482,6 +489,37 @@ function saveCompany() {
   post({ type: 'admin_setting', key: 'company', value: all }, function (err) { if (err) { toast('Алдаа: ' + err); return; } toast('Хадгаллаа'); render(); });
 }
 applyCompany();
+
+// ═══════════ Удирдлагаас захиалга цуцлах ═══════════
+// Шалтгаан заавал (Давхар — аль захиалгын давхар; Хэрэглэгч татгалзсан; Бусад + тайлбар). Илгээгдсэн бол: бараа гарт ирсэн үед борлуулалтыг буцаана.
+function ordCancelOpen(id) {
+  var o = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!o) return;
+  var ph = function (p) { return String(p || '').replace(/\D/g, '').slice(-8); };
+  var twins = (window.adminOrders || []).filter(function (x) { return x.id !== id && x.biz === o.biz && !ordDead(x) && ph(x.phone) === ph(o.phone); });
+  var sold = /^yes:/.test(o.saleDone || ''), eb = o.ebCode && o.ebCode !== 'бусад';
+  gOpen('<h2>Захиалга цуцлах</h2><p class="muted">' + esc(o.customer ? o.customer + ' (' + o.phone + ')' : o.phone) + ' · ' + esc(o.date) + ' · ' + fmt(o.amount) + ' · ' + esc(ordStLabel(o)) + '</p>' +
+    '<label for="ocWhy">Шалтгаан *</label><select id="ocWhy" onchange="$(\'ocTwinW\').style.display=this.value===\'Давхар\'?\'\':\'none\'">' +
+      ['Давхар', 'Хэрэглэгч татгалзсан', 'Бусад'].map(function (x) { return '<option' + (x === 'Давхар' && dupOf(o) ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select>' +
+    '<div id="ocTwinW"' + (dupOf(o) ? '' : ' style="display:none"') + '><label for="ocTwin">Аль захиалгын давхар вэ</label><select id="ocTwin">' + (twins.length ? twins.map(function (x) {
+      return '<option value="' + x.id + '">' + esc(x.date + ' · ' + (x.customer ? x.customer + ' · ' : '') + fmt(x.amount) + ' · ' + ordStLabel(x) + (x.ebCode && x.ebCode !== 'бусад' ? ' · ' + x.ebCode : '')) + '</option>'; }).join('') : '<option value="">Ижил утастай өөр захиалга алга</option>') + '</select></div>' +
+    '<label for="ocNote">Тайлбар</label><input id="ocNote" placeholder="«Бусад» бол заавал">' +
+    (sold ? '<label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="ocRecv" style="width:auto"> Бараа гарт ирсэн — борлуулалт, авлагыг эсрэг бичилтээр буцаах</label>' +
+      '<p class="muted" style="font-size:12.5px;margin:4px 0 0">Чагтлаагүй бол бараа буухиа дээр гэж тооцогдож, буцаж ирэхэд ажилтан «Буцаалт хүлээн авсан» дарахад буцаагдана.</p>' : '') +
+    (eb ? '<div class="alert" style="margin-top:10px"><div>Энэ захиалга Буухиа дээр байна (<b>' + esc(o.ebCode) + '</b>) — <b>Буухиа дээр бас цуцлана уу.</b></div><a class="b-btn" href="https://ebuuhia.com/" target="_blank" rel="noopener">Буухиа нээх</a></div>' : '') +
+    '<div style="margin-top:12px"><button class="btn danger" onclick="ordCancelDo(\'' + id + '\')">Цуцлах</button><button class="btn ghost" onclick="gClose()">Болих</button></div>');
+}
+function ordCancelDo(id) {
+  var o = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!o) return;
+  var why = $('ocWhy').value, note = $('ocNote').value.trim(), twin = why === 'Давхар' && $('ocTwin') ? $('ocTwin').value : '', recv = $('ocRecv') && $('ocRecv').checked;
+  if (why === 'Бусад' && !note) { toast('Тайлбараа бичнэ үү'); $('ocNote').focus(); return; }
+  var reason = why + (twin ? ' · #' + twin + ' захиалгын давхар' : '') + (note ? ' · ' + note : '');
+  var what = (o.customer ? o.customer + ' ' : '') + o.phone + ' · ' + fmt(o.amount) + ' · ' + reason;
+  if (!API_URL) { o.status = 'Цуцалсан'; if (recv) o.saleDone = 'returned'; gClose(); render(); toast('Цуцаллаа'); return; }
+  post({ type: 'admin_order', id: id, by: ownerName, what: what, fields: { status: 'Цуцалсан', reason: reason, receive: !!recv, prev: o.status } }, function (err) {
+    if (err) { toast(err === 'state' ? 'Аль хэдийн цуцалсан' : err === 'locked' ? 'Өнөөдрийн огноо түгжигдсэн' : 'Алдаа: ' + err); return; }
+    gClose(); toast('Захиалга цуцаллаа' + (recv ? ' — борлуулалт буцаагдлаа' : '')); refresh();
+  });
+}
 
 // 15 минут идэвхгүй бол удирдлагын хуудаснаас автоматаар гарна
 var IDLE = { t: Date.now() };

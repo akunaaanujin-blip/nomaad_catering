@@ -161,6 +161,7 @@ function repOrders(biz) {
       ? '<button class="mini" onclick="undoPayOrder(\'' + o.id + '\')">Буцаах</button>'
       : '<button class="mini" style="color:var(--green)" onclick="openPayOrder(\'' + o.id + '\')">Баталгаажуулах</button>' + (bc ? ' <button class="mini" title="Банкны хуулгын таарсан гүйлгээгээр шууд" onclick="ordBankMatch(\'' + o.id + '\')">Хуулгаар</button>' : '');
     if (billed[o.id]) act = '<button class="mini" onclick="openBillAdm(\'' + o.id + '\')">Баримт</button>' + act;
+    if (!ordDead(o)) act += ' <select class="mini" title="Бусад үйлдэл" onchange="if(this.value===\'x\')ordCancelOpen(\'' + o.id + '\');this.selectedIndex=0"><option value="">⋯</option><option value="x">Цуцлах</option></select>';
     return { date: o.date + ' ' + o.time, phone: o.phone, customer: (dupOf(o) ? '⚠ ' : '') + (o.customer ? o.customer + ' (' + o.phone + ')' : o.phone), items: items(o), status: ordStTag(o), pay: payStTag(o), payType: o.payType,
              bank: bk, amount: o.amount, staff: o.staff, _act: act };
   });
