@@ -199,6 +199,15 @@ function ordAddrInput() {
   if (!$('orKhoroo').value) $('orKhoroo').value = guessKhoroo(t);
   $('orProvince').style.display = isProvince(t) ? 'block' : 'none';
 }
+// Ижил утас, ижил бараатай (48 цагийн дотор) өөр захиалга / буухиагийн хүргэлт байвал тайлбар текст, үгүй бол ''
+function ordDupOf(o) {
+  var ph = function (p) { return String(p || '').replace(/\D/g, '').slice(-8); }, goods = ordItemsText(o), lim = Date.now() - 48 * 3600e3, tm = function (d, t) { return new Date(String(d || '').replace(/\//g, '-') + 'T' + (t || '00:00')).getTime(); };
+  var d = orders.filter(function (x) { return x.id !== o.id && !ordDead(x) && ph(x.phone) === ph(o.phone) && ordItemsText(x) === goods && tm(x.date, x.time) >= lim; })[0];
+  if (d) return ph(o.phone) + '-аас ' + d.date + '-нд ижил захиалга байна' + (d.ebCode && d.ebCode !== 'бусад' ? ' (' + d.ebCode + ')' : '') + ' — ' + goods + '.';
+  var x = (typeof dlvAll !== 'undefined' && dlvAll || []).filter(function (y) { return y.id !== o.id && ph(y.phone) === ph(o.phone) && y.st !== 11 && y.st !== 12 && tm(String(y.created || '').slice(0, 10), String(y.created || '').slice(11, 16)) >= lim; })[0];
+  return x ? ph(o.phone) + '-аас ' + String(x.created).slice(0, 10).replace(/\//g, '-') + '-нд буухиа дээр хүргэлт байна (' + x.code + ').' : '';
+}
+function ordIsDup(o) { return !ordDead(o) && !!ordDupOf(o); }
 function submitOrder() {
   if (ordEdit) { var cur = orders.filter(function (x) { return x.id === ordEdit.id; })[0]; withFresh(function () {
     var fresh = orders.filter(function (x) { return x.id === ordEdit.id; })[0];
@@ -221,6 +230,10 @@ function submitOrder2() {
     items: ordCart.slice().concat(ordDiscLines(prev)).concat(ordFeeVal() ? [{ name: FEE_ITEM, qty: 1, price: ordFeeVal() }] : []),
     amount: Math.round(ordCartTotal() + ordDiscLines(prev).reduce(function (a, x) { return a + x.qty * x.price; }, 0)), deliverDate: $('orDate').value,
     payType: $('orPayType').value, paid: $('orPaid').value, status: ordEdit ? $('orStatus').value : 'Шинэ', note: $('orNote').value.trim() });
+  if (!prev.id) {   // давхар захиалга: ижил утас + ижил бараа сүүлийн 48 цагт (манайд эсвэл буухиа дээр)
+    var dp = ordDupOf(o);
+    if (dp && !confirm(dp + '\n\nДавхар уу? «OK» — тийм, шинэ захиалга бүртгэнэ; «Cancel» — болино.')) return;
+  }
   var bad = ordBook(o, prev);
   if (bad) { alert('Үлдэгдэл хүрэлцэхгүй — хүргэлтэд гаргах боломжгүй:\n\n' + bad + '\n\nУдирдлагаар орлого бүртгүүлсний дараа дахин оролдоно уу.'); loadStock(); return; }
   if (!prev.id && ordShort(o).length) toast('Анхаар: үлдэгдэл хүрэлцэхгүй — орлого ортол буухиад өгөх боломжгүй');
@@ -329,7 +342,7 @@ function renderOrders() {
     var ret = ordAwaitReturn(o) ? '<small class="warn">Бараа буцаж ирээгүй</small>' : o.saleDone === 'returned' ? '<small>Бараа буцаж ирсэн</small>' : '';
     return '<tr>' +
       '<td class="c-d" data-l="Огноо">' + esc(String(o.date || '').slice(5).replace('-', '/')) + '<small>' + esc(o.time || '') + '</small></td>' +
-      '<td class="c-p" data-l="Хэрэглэгч" onclick="openOrder(\'' + o.id + '\')"><b>' + esc(o.phone) + '</b><small>' + esc(o.customer || '') + '</small></td>' +
+      '<td class="c-p" data-l="Хэрэглэгч" onclick="openOrder(\'' + o.id + '\')"><b>' + (ordIsDup(o) ? '<span title="' + esc(ordDupOf(o)) + '" style="color:#B45309">⚠ </span>' : '') + esc(o.phone) + '</b><small>' + esc(o.customer || '') + '</small></td>' +
       '<td class="c-a" data-l="Хаяг">' + esc([o.city && o.city !== 'Улаанбаатар' ? o.city : '', o.district, o.address].filter(Boolean).join(' ')).slice(0, 80) + '</td>' +
       '<td class="c-i" data-l="Бараа">' + esc(ordItemsText(o)) + '</td>' +
       '<td class="c-m num" data-l="Дүн">' + fmt(o.amount) + (fee ? '<small>хүргэлт ' + fmt(fee) + '</small>' : '') + '</td>' +

@@ -223,3 +223,8 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var
 .fn-panel li button.fn-subh:hover{color:var(--text)}
 .fn-panel li button.fn-subh:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
 .fn-car2{font-size:11px;color:var(--text-2)}
+/* Ачаалах үеийн skeleton */
+.sk{display:flex;flex-direction:column;gap:12px}
+.sk i,.sk-row i{display:block;height:16px;border-radius:12px;background:linear-gradient(90deg,var(--neutral-soft) 25%,var(--surface-alt) 50%,var(--neutral-soft) 75%);background-size:200% 100%;animation:skm 1.2s infinite}
+.sk-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.sk-row i{height:80px}
+@keyframes skm{0%{background-position:200% 0}100%{background-position:-200% 0}}

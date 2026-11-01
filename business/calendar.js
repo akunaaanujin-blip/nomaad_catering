@@ -143,6 +143,12 @@ function payStTag(o) {
 }
 // Захиалгын авлага: илгээгдсэн (Шинэ биш), цуцлаагүй, төлбөр нь баталгаажаагүй захиалгын дүн
 function ordOpenAmt(list) { return list.filter(function (o) { return o.status !== 'Шинэ' && !o.confirmed && !ordDead(o); }).reduce(function (a, o) { return a + (Number(o.amount) || 0); }, 0); }
+// Ижил утас + ижил бараа 48 цагийн дотор өөр захиалга байвал давхар байж болзошгүй (⚠)
+function dupOf(o) {
+  if (ordDead(o)) return null;
+  var ph = function (p) { return String(p || '').replace(/\D/g, '').slice(-8); }, t0 = new Date(o.date + 'T' + (o.time || '00:00')).getTime(), it = admOrdItems(o);
+  return (window.adminOrders || []).filter(function (x) { return x.id !== o.id && x.biz === o.biz && !ordDead(x) && ph(x.phone) === ph(o.phone) && admOrdItems(x) === it && Math.abs(new Date(x.date + 'T' + (x.time || '00:00')).getTime() - t0) <= 48 * 3600e3; })[0] || null;
+}
 function repOrders(biz) {
   var all = (window.adminOrders || []).filter(function (o) { return o.biz === biz; }).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
   var list = all.filter(ordFilt(state.ordF || 'wait'));
@@ -155,7 +161,7 @@ function repOrders(biz) {
       ? '<button class="mini" onclick="undoPayOrder(\'' + o.id + '\')">Буцаах</button>'
       : '<button class="mini" style="color:var(--green)" onclick="openPayOrder(\'' + o.id + '\')">Баталгаажуулах</button>' + (bc ? ' <button class="mini" title="Банкны хуулгын таарсан гүйлгээгээр шууд" onclick="ordBankMatch(\'' + o.id + '\')">Хуулгаар</button>' : '');
     if (billed[o.id]) act = '<button class="mini" onclick="openBillAdm(\'' + o.id + '\')">Баримт</button>' + act;
-    return { date: o.date + ' ' + o.time, phone: o.phone, customer: o.customer ? o.customer + ' (' + o.phone + ')' : o.phone, items: items(o), status: ordStTag(o), pay: payStTag(o), payType: o.payType,
+    return { date: o.date + ' ' + o.time, phone: o.phone, customer: (dupOf(o) ? '⚠ ' : '') + (o.customer ? o.customer + ' (' + o.phone + ')' : o.phone), items: items(o), status: ordStTag(o), pay: payStTag(o), payType: o.payType,
              bank: bk, amount: o.amount, staff: o.staff, _act: act };
   });
   // Дүрэм: захиалга «Буухиад өгсөн» (илгээгдсэн) болмогц борлуулалт, авлага үүснэ; «Шинэ» нь авлагад ороогүй

@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v6.4 (буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v6.5 (буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -252,7 +252,7 @@ function cacheKeysFor(d) {
   if (d.type === 'admin_eb' && d.op !== 'send' && d.op !== 'del' && d.op !== 'other') return null;   // төлөв татах — бичвэл ebuuhia() өөрөө кэш цэвэрлэнэ
   return CACHE_MAP[d.type] || CACHE_ALL;   // мэдэгдэхгүй бичилт (он хаах г.м) — бүгдийг
 }
-const CACHE_OFF = { stk: 1, mov: 1 };   // ТҮР УНТРААСАН: нөөцийн кэш (сайжруулалт дуустал) — дахин асаахдаа энэ жагсаалтаас хасна
+const CACHE_OFF = {};   // 2026-11-01: нөөцийн кэш (stk, mov) дахин асаасан — бичилт бүр cacheKeysFor-оор цэвэрлэнэ.  Хуучин: «ТҮР УНТРААСАН:   // ТҮР УНТРААСАН: нөөцийн кэш (сайжруулалт дуустал) — дахин асаахдаа энэ жагсаалтаас хасна
 function cacheGet(name, fn) {
   if (CACHE_OFF[name]) return fn();
   const c = CacheService.getScriptCache(), k = 'ck2_' + name, n = Number(c.get(k) || 0);
@@ -1383,6 +1383,7 @@ function ebListRaw(c) {
   return out;
 }
 // ebuuhia-ийн хүргэлтийг нэг хэлбэрт оруулна (талбарын нэр өөр байж болох тул хэд хэдэн нэрээр хайна) + бүх анхны талбар (raw)
+function ebNum(v) { const n = Number(String(v == null ? '' : v).replace(/[^\d.\-]/g, '')); return isFinite(n) ? n : 0; }   // «77,000₮», «77000.00» → 77000
 function ebPick(x, keys) {
   for (let i = 0; i < keys.length; i++) {
     let v = x; keys[i].split('.').forEach(function (k) { v = v != null && typeof v === 'object' ? v[k] : undefined; });
@@ -1416,7 +1417,7 @@ function ebNorm(x) {
     cust: String(ebPick(x, ['customer.name', 'customer_name', 'receiver_name'])), phone: String(ebPick(x, ['customer.phone', 'customer_phone', 'phone', 'receiver_phone'])),
     phone2: String(ebPick(x, ['customer.phone2', 'phone2'])), addr: addr,
     item: String(ebPick(x, ['delivery.item_name', 'item_name'])), qty: Number(ebPick(x, ['delivery.quantity', 'quantity'])) || 0,
-    price: Number(ebPick(x, ['delivery.total_price', 'total_price', 'price'])) || 0, got: Number(ebPick(x, ['received_money', 'delivery.received_money'])) || 0,
+    price: ebNum(ebPick(x, ['delivery.total_price', 'total_price', 'price'])), got: ebNum(ebPick(x, ['received_money', 'delivery.received_money', 'collected_amount', 'paid_amount'])),
     fee: Number(ebPick(x, ['delivery_fee', 'delivery_price', 'shipping_fee', 'fee', 'delivery.fee'])) || 0,
     driver: String(ebPick(x, ['driver.name', 'driver_name', 'driver'])), dphone: String(ebPick(x, ['driver_desc', 'driver.phone', 'driver_phone'])),
     ok: vf === '' ? '' : vf === true || vf === 'true' || vf === 1 ? 'Тийм' : 'Үгүй',

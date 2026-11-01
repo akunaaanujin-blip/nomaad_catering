@@ -162,7 +162,7 @@ function dailyView() {
     fdCard('profit', FD_C.profit, 'Өдрийн дундаж орлого', mny(act ? ti / act : 0), '<em class="fd-ch">' + act + ' өдөр орлоготой</em>') +
     fdCard('pct', '#A855F7', 'Хамгийн их орлоготой өдөр', best ? best.slice(5) : '—', best ? '<em class="fd-ch">' + mny(I[best]) + '</em>' : '') + '</div>' +
     '<div class="fd-c" style="margin-bottom:16px"><h3><span class="fd-n" style="background:' + FD_C.in + '">1</span>Өдөр бүрийн орлого</h3><div class="fd-box"><canvas id="fdDaily"></canvas></div></div>' +
-    '<div class="fd-c"><h3><span class="fd-n" style="background:' + FD_C.out + '">2</span>Өдрөөр</h3><table class="fd-t"><tr><th>Өдөр</th><th class="n">Борлуулалт</th>' + (hasO ? '<th class="n">Бусад орлого</th>' : '') + '<th class="n">Зардал</th><th class="n">Цэвэр</th><th class="n">Хуримтлагдсан орлого</th></tr>' + rows +
+    '<div class="fd-c"><h3><span class="fd-n" style="background:' + FD_C.out + '">2</span>Өдрөөр</h3><table class="fd-t"><tr><th>Өдөр</th><th class="n">Борлуулалт</th>' + (hasO ? '<th class="n">Бусад орлого</th>' : '') + '<th class="n">Зардал</th><th class="n">Цэвэр</th><th class="n">Өссөн дүн</th></tr>' + rows +
     '<tr class="tot"><td><b>Нийт</b></td><td class="n"><b>' + mny(ti) + '</b></td>' + (hasO ? '<td class="n"><b>' + mny(to) + '</b></td>' : '') + '<td class="n"><b>' + mny(tc) + '</b></td><td class="n"><b>' + mny(ti + to - tc) + '</b></td><td></td></tr></table></div></div>';
 }
 

@@ -68,7 +68,8 @@ function navOk(biz, k) {
   return true;
 }
 function navGo(k) {
-  state.navG = null;   // самбар нээгдсэн хуудасны бүлэгт шилжинэ
+  state.navG = null;
+  try { var hs = JSON.parse(localStorage.getItem('nb_fn_subs') || '{}') || {}, hh = ''; MNAV.forEach(function (g) { hh = ''; g[2].forEach(function (it) { if (it[0] === '—') hh = it[1]; else if (it[0] === k && hh && hs[hh]) { delete hs[hh]; localStorage.setItem('nb_fn_subs', JSON.stringify(hs)); } }); }); } catch (e) {}   // хаалттай дэд бүлгийн хуудсыг (хайлт, мэдэгдлээс) нээвэл тэр бүлэг нээгдэнэ   // самбар нээгдсэн хуудасны бүлэгт шилжинэ
   if (k === 'home' || k === 'review') { state.view = 'company'; state.module = k; }
   else if (k === 'v:staff') { state.staffBiz = state.biz || state.staffBiz; state.view = 'staff'; }
   else if (k === 'v:cal') { openCal(); return; }
@@ -104,9 +105,9 @@ subnavHtml = function () {
   cur.items.forEach(function (it) { if (it[0] === '—') hdr = it[1]; else if (navItemOn(it[0])) activeSub = hdr; });
   hdr = '';
   var panel = '<div class="fn-ph">' + cur.g[0] + '</div><ul>' + cur.items.map(function (it) {
-    if (it[0] === '—') { hdr = it[1]; var op = hdr === activeSub || !shut[hdr];
+    if (it[0] === '—') { hdr = it[1]; var op = shut[hdr] ? false : true;   // хэрэглэгч хаасан бол идэвхтэй хуудастай ч хаагдана
       return '<li><button class="fn-subh" aria-expanded="' + op + '" onclick="fnSub(\'' + hdr + '\')"><span>' + hdr + '</span><span class="fn-car2">' + (op ? '▾' : '▸') + '</span></button></li>'; }
-    if (hdr && hdr !== activeSub && shut[hdr]) return '';
+    if (hdr && shut[hdr]) return '';
     var n = navCountOf(it[0]);
     return '<li><button class="' + (navItemOn(it[0]) ? 'on' : '') + '" onclick="navGo(\'' + it[0] + '\')"><span>' + it[1] + '</span>' + (n ? '<i class="fn-badge">' + n + '</i>' : '') + '</button></li>';
   }).join('') + '</ul>';
