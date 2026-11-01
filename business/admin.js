@@ -1556,12 +1556,14 @@ function ebLink() {
 }
 function ebRecRows() {   // буухиагийн «Харилцагчийн тайлан»-тай ижил: буухиа нийлээгүй бүх хүргэлт (манай захиалгагүй, цуцалсан ч), хөлс анхдагч 7,000
   // k: 'open' — нийлэх; 'booked' — манай журналд өмнө бичсэн (дахин бичихгүй); 'cancel' — цуцалсан, хөлсгүй
-  var done = ebSettled(), eb = ebSettledByEb(ebAdm.list || []), O = {}, M = ebLink();
+  // Бүртгэлийн шалгалтын ✕ (хураасан мөнгө Буухиа дээр бүртгэгдээгүй) хүргэлт энд заавал харагдана — төлөв, буухиагийн нийлэлтээс үл хамааран
+  var done = ebSettled(), eb = ebSettledByEb(ebAdm.list || []), O = {}, M = ebLink(), bad = {};
+  ebMoneyBad().bad.forEach(function (x) { bad[x.code] = 1; });
   (window.adminOrders || []).forEach(function (o) { O[o.id] = o; });
-  return (ebAdm.list || []).filter(function (x) { var o = O[x.id]; return (x.st === 10 || x.st === 11) && !eb[x.code] && !(window.ebOld || {})[x.code] && !(o && x.got > 0 && o.confirmed && !/буухиа/.test(o.confirmed)); })
+  return (ebAdm.list || []).filter(function (x) { var o = O[x.id]; return !(window.ebOld || {})[x.code] && (bad[x.code] || (x.st === 10 || x.st === 11) && !eb[x.code] && !(o && x.got > 0 && o.confirmed && !/буухиа/.test(o.confirmed))); })
     .map(function (x) {
       var k = x.st === 11 ? 'cancel' : done[x.code] ? 'booked' : 'open', o = M[x.code] || null, fb = ebOrdAuto(o) ? (ebAccrues(o) ? ebFeeOf(o.biz) : ordFeeAdm(o)) : 0;
-      return { x: x, o: o, fb: fb, k: k, fee: k === 'cancel' ? 0 : ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000, on: k === 'open' ? 1 : 0 };
+      return { x: x, o: o, fb: fb, k: k, bad: !!bad[x.code], fee: k === 'cancel' ? 0 : ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000, on: k === 'open' ? 1 : 0 };
     })
     .sort(function (a, b) { return a.x.created < b.x.created ? -1 : 1; });
 }
@@ -1582,30 +1584,52 @@ function ebLinkDo(code, id) {
     gClose(); toast('Холбогдлоо — шинэчилж байна'); var o = (window.adminOrders || []).filter(function (y) { return y.id === id; })[0]; if (o) o.ebCode = code; ebAdmPull(true);
   });
 }
+// Бүртгэлийн шалгалт: буухиа мөнгө хураасан ч Буухиа дээр (авлага) бүртгэгдээгүй хүргэлт — холбогдоогүй (unl) / холбогдсон ч шилжээгүй (stay)
+function ebMoneyBad() {
+  var Mk = ebLink(), dn = ebSettled(), dr = ebRecvd(), old = window.ebOld || {};
+  var G = (ebAdm.list || []).filter(function (x) { return x.got > 0 && x.st !== 11 && x.st !== 12 && !dn[x.code] && !old[x.code]; });
+  var unl = G.filter(function (x) { return !Mk[x.code]; }), stay = G.filter(function (x) { var o = Mk[x.code]; return o && !dr[x.code] && !(o.confirmed && !/буухиа/.test(o.confirmed)); });
+  return { unl: unl, stay: stay, bad: unl.concat(stay) };
+}
 // «Өмнөх үеийнх (тооцоо хийгдсэн)» — журналд бичихгүй, Нийлээгүй / шалгалтад тооцохгүй; хэн, хэзээ — өөрчлөлтийн түүхэд
-function ebOldMark(codes) {
-  codes = (codes || []).filter(function (c) { return !(window.ebOld || {})[c]; }); if (!codes.length) return;
-  if (!confirm(codes.length + ' хүргэлтийг «Өмнөх үеийнх (тооцоо хийгдсэн)» гэж тэмдэглэх үү?\nШалтгаан: эхний үлдэгдлийн өмнө, мөнгө шилжсэн. Журналд бичилт хийхгүй.')) return;
+function ebOldMark(codes) {   // баталгаажуулах цонх
+  codes = (codes || []).filter(function (c) { return !(window.ebOld || {})[c]; }); if (!codes.length) { toast('Тэмдэглэх хүргэлт сонгогдоогүй'); return; }
+  var X = (ebAdm.list || []).filter(function (x) { return codes.indexOf(x.code) >= 0; }), got = X.reduce(function (a, x) { return a + (x.got > 0 ? x.got : 0); }, 0);
+  ebAdm.oldPend = codes;
+  gOpen('<h2>Өмнөх үеийнх гэж тэмдэглэх</h2><p>' + codes.length + ' хүргэлт · хураасан мөнгө <b>' + fmt(got) + '</b></p>' +
+    '<div class="scroll" style="max-height:260px"><table class="rep-t"><tr><th>Огноо</th><th>Утас</th><th>Код</th><th class="n">Авсан</th></tr>' + X.map(function (x) {
+      return '<tr><td class="nw">' + esc(String(x.created || '').slice(0, 16)) + '</td><td>' + esc(x.phone) + '</td><td class="mono2">' + esc(x.code) + '</td><td class="n">' + fmt(x.got || 0) + '</td></tr>'; }).join('') + '</table></div>' +
+    '<p class="muted" style="font-size:12.5px">Эхний үлдэгдлийн өмнө тооцоо нь хийгдэж мөнгө шилжсэн гэж үзнэ. Журналд бичилт хийхгүй; Нийлээгүй, Бүртгэлийн шалгалтад тооцохгүй. Хэн, хэзээ — өөрчлөлтийн түүхэд.</p>' +
+    '<div style="margin-top:12px"><button class="btn" onclick="ebOldMarkDo()">Тэмдэглэх</button><button class="btn ghost" onclick="gClose()">Болих</button></div>');
+}
+function ebOldMarkDo() {
+  var codes = (ebAdm.oldPend || []).filter(function (c) { return !(window.ebOld || {})[c]; }); gClose(); if (!codes.length) return;
   var all = Object.assign({}, window.ebOld || {}), at = todayStr() + ' ' + timeStr();
   codes.forEach(function (c) { all[c] = { by: ownerName, at: at }; });
-  window.ebOld = all;
+  var prev = window.ebOld || {}; window.ebOld = all; ebAdm.same = {};
   if (!API_URL) { save('nb_demo_ebold', all); ebRedraw(); return; }
-  post({ type: 'admin_setting', key: 'ebold', value: all, what: codes.length + ' хүргэлт: ' + codes.slice(0, 8).join(', ') + (codes.length > 8 ? '…' : '') }, function (err) { if (err) { toast('Алдаа: ' + err); return; } toast(codes.length + ' хүргэлт өмнөх үеийнх гэж тэмдэглэгдлээ'); ebRedraw(); });
+  post({ type: 'admin_setting', key: 'ebold', value: all, what: codes.length + ' хүргэлт: ' + codes.slice(0, 8).join(', ') + (codes.length > 8 ? '…' : '') }, function (err) { if (err) { window.ebOld = prev; ebRedraw(); toast('Алдаа: ' + err); return; } toast(codes.length + ' хүргэлт өмнөх үеийнх гэж тэмдэглэгдлээ'); ebRedraw(); });
 }
 function ebRecCount() { return ebAdm.list ? ebRecRows().length : ''; }
 function ebRecBody() {   // зөвхөн харах — тооцоог буухиагийн сайтад нийлнэ, нийлсний дараа өглөг автоматаар бичигдэнэ (ebAutoBook)
   var R0 = ebRecRows(), nl = R0.filter(function (r) { return !r.o && r.k !== 'cancel'; }), mn = R0.filter(function (r) { return r.o || r.k === 'cancel'; });
   var rt = ebAdm.rt || (nl.length ? 'nolink' : 'money'), sumGot = function (L) { return L.reduce(function (a, r) { return a + (r.k === 'open' ? r.x.got - r.fee : 0); }, 0); };
-  var sub = stBar('', [['nolink', 'Захиалгатай холбогдоогүй', nl.length, 'Буухиа дээр байгаа боловч манай захиалгатай холбогдоогүй — «Холбох» дарж захиалгаа сонгоно'],
-    ['money', 'Мөнгө шилжүүлээгүй · ' + fmt(sumGot(mn)), mn.length, 'Захиалгатай холбогдсон, буухиа тооцоо нийлж мөнгө шилжүүлээгүй']], rt, "ebAdm.rt='%';ebRedraw()");
+  // таб — зөвхөн энэ хэсгийг дахин зурна (бүх хуудсыг биш)
+  var sub = '<div class="fn-flt"><div class="fn-seg">' + [['nolink', 'Захиалгатай холбогдоогүй', nl.length], ['money', 'Мөнгө шилжүүлээгүй · ' + fmt(sumGot(mn)), mn.length]].map(function (t) {
+    return '<button class="' + (rt === t[0] ? 'on' : '') + '" onclick="ebAdm.rt=\'' + t[0] + '\';ebRedraw()">' + t[1] + ' <span class="fn-n">(' + t[2] + ')</span></button>'; }).join('') + '</div></div>';
   var R = rt === 'nolink' ? nl : mn, op = R.filter(function (r) { return r.k === 'open'; });
   var got = r0(op.reduce(function (a, r) { return a + r.x.got; }, 0)), fee = r0(op.reduce(function (a, r) { return a + r.fee; }, 0)), net = r0(got - fee);
   var bar = '<div class="bar-row" style="margin:0 0 8px;gap:8px;align-items:center"><a class="b-btn" href="https://ebuuhia.com/report/customer" target="_blank" rel="noopener">Буухиа руу нэвтэрч тооцоо нийлэх</a>' +
     '<small class="muted">Буухиагийн «Харилцагчийн тайлан» дээр «Тайлан нийлэх» дарсны дараа энд «Шинэчлэх» дарахад нийлсэн хүргэлтийн авлага, өглөг автоматаар бичигдэнэ.</small></div>';
   // Эхний үлдэгдлийн (хаалтын) огнооноос өмнөх хүргэлт — «Өмнөх үеийнх (тооцоо хийгдсэн)» гэж тэмдэглэх санал
-  var cut = (meta.closed || '2026-10-26').replace(/-/g, '/'), olds = R.filter(function (r) { return r.k !== 'booked' && String(r.x.created || '').slice(0, 10) <= cut; });
-  if (olds.length) bar = '<div class="alert"><div>' + cut.replace(/\//g, '-').slice(5) + '-ны хаалтаас өмнөх <b>' + olds.length + '</b> хүргэлт байна. Өмнөх үеийнх (мөнгө нь шилжсэн, эхний үлдэгдэлд тусгагдсан) гэж тэмдэглэх үү?</div>' +
-    '<button class="b-btn" onclick="ebOldMark(' + esc(JSON.stringify(olds.map(function (r) { return r.x.code; }))) + ')">' + olds.length + ' хүргэлтийг тэмдэглэх</button></div>' + bar;
+  // Хоёр табын аль алинаас (R0); эхний үлдэгдлийн өдрийнхийг цагаар нь хэрэглэгч сонгоно
+  var closed = ebClosed(), od = ebOpenDay(), S = ebAdm.same = ebAdm.same || {};
+  var olds = R0.filter(function (r) { var d = ebDay(r.x.created); return r.k !== 'booked' && d && d <= closed; }), same = R0.filter(function (r) { return r.k !== 'booked' && ebDay(r.x.created) === od; });
+  var pick = olds.concat(same.filter(function (r) { return S[r.x.code]; })), pickGot = pick.reduce(function (a, r) { return a + (r.x.got > 0 ? r.x.got : 0); }, 0);
+  if (olds.length || same.length) bar = '<div class="alert"><div>Эхний үлдэгдлийн (' + od.slice(5) + ') өмнөх <b>' + olds.length + '</b> хүргэлт · <b>' + fmt(pickGot) + '</b> — бүгдийг өмнөх үеийнх гэж тэмдэглэх үү?' +
+    (same.length ? '<br><small>' + od.slice(5) + '-ны (эхний үлдэгдлийн өдөр) хүргэлт — эхний үлдэгдлээс өмнөх бол чагтална: ' + same.map(function (r) {
+      return '<label style="display:inline-flex;gap:4px;margin-right:10px"><input type="checkbox" style="width:auto"' + (S[r.x.code] ? ' checked' : '') + ' onchange="ebAdm.same[\'' + esc(r.x.code) + '\']=this.checked;ebRedraw()">' + esc(r.x.phone) + ' ' + esc(ebHm(r.x.created)) + ' · ' + fmt(r.x.got || 0) + '</label>'; }).join('') + '</small>' : '') + '</div>' +
+    '<button class="b-btn"' + (pick.length ? '' : ' disabled') + ' onclick="ebOldMark(' + esc(JSON.stringify(pick.map(function (r) { return r.x.code; }))) + ')">Тэмдэглэх (' + pick.length + ')</button></div>' + bar;
   bar = sub + bar + (ebAdm.log && ebAdm.log.length ? '<details style="margin:0 0 8px"><summary class="muted" style="cursor:pointer">Хураасан мөнгөний лог (' + ebAdm.log.length + ')</summary><pre class="fn-pre">' + esc(ebAdm.log.join('\n')) + '</pre></details>' : '');
   if (!R.length) return bar + '<p class="muted">' + (rt === 'nolink' ? 'Холбогдоогүй хүргэлт алга.' : 'Нийлээгүй хүргэлт алга.') + '</p>';
   var rows = R.map(function (r, i) {
@@ -1709,13 +1733,22 @@ function ebOpenPay() {
   var v = 0; J().forEach(function (e) { if (e.partner !== BUUHIA || !/^(Он нээлт|Эхний үлдэгдэл)|Эхний үлдэгдлийн засвар · Буухиа/.test(String(e.desc))) return; if (e.cr === '3101') v += e.amount; if (e.dr === '3101') v -= e.amount; });
   return r0(v);
 }
-function ebOpenDay() { return meta.closed ? todayStr(new Date(new Date(meta.closed + 'T00:00:00').getTime() + 864e5)) : '2026-10-27'; }
-function ebCut() { return (meta.closed || '2026-10-26').replace(/-/g, '/'); }
+function ebOpenDay() { return todayStr(new Date(new Date(ebClosed() + 'T00:00:00').getTime() + 864e5)); }
+function ebClosed() { return meta.closed || '2026-10-26'; }
+// Буухиагийн огноо «2026/10/14 13:44», «2026-10-14», Date мөр → 'YYYY-MM-DD' (уншигдахгүй бол '')
+function ebDay(s) {
+  s = String(s || ''); var m = s.match(/^(\d{4})[\/.-](\d{1,2})[\/.-](\d{1,2})/);
+  if (m) return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+  var d = new Date(s); return isNaN(d.getTime()) ? '' : todayStr(d);
+}
+function ebHm(s) { var m = String(s || '').match(/\s(\d{1,2}):(\d{2})/); return m ? ('0' + m[1]).slice(-2) + ':' + m[2] : ''; }
 function ebCheck() {
-  var cut = ebCut(), ALL = (ebAdm.list || []).filter(function (x) { return x.st === 10 && !(window.ebOld || {})[x.code]; }), M = ebLink(), P = ebOurPay(), tag = ebSettled(), eb = ebSettledByEb(ebAdm.list || []);
-  var L = ALL.filter(function (x) { return String(x.created || '').slice(0, 10) > cut; }), pre = ALL.filter(function (x) { return String(x.created || '').slice(0, 10) <= cut && !eb[x.code] && !(x.got > 0); });
+  var closed = ebClosed(), ALL = (ebAdm.list || []).filter(function (x) { return x.st === 10 && !(window.ebOld || {})[x.code]; }), M = ebLink(), P = ebOurPay(), tag = ebSettled(), eb = ebSettledByEb(ebAdm.list || []);
+  var isPre = function (x) { var d = ebDay(x.created); return !!d && d <= closed; };
+  // Эхний үлдэгдлийн өмнөх: хаалтын өдөр хүртэл хүргэгдсэн, тэр өдрөөр буухиа тооцоо нийлээгүй (нийлсэн бол мөнгө нь шилжсэн)
+  var L = ALL.filter(function (x) { return !isPre(x); }), pre = ALL.filter(function (x) { return isPre(x) && !(eb[x.code] && ebDay(eb[x.code]) && ebDay(eb[x.code]) <= closed); });
   var fee = function (x) { return ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000; };
-  var openPay = ebOpenPay(), preFee = r0(pre.reduce(function (a, x) { return a + fee(x); }, 0));
+  var openPay = ebOpenPay(), preFee = r0(pre.reduce(function (a, x) { return a + fee(x); }, 0)), preGot = r0(pre.reduce(function (a, x) { return a + (x.got > 0 ? x.got : 0); }, 0));
   if (P.other != null) { P.other = r0(P.other - openPay); if (Math.abs(P.other) < 0.5) delete P.other; }   // эхний үлдэгдлийн өглөгийг тусад нь тулгана
   var owe = L.filter(function (x) { return !(x.got > 0); }), expect = r0(owe.reduce(function (a, x) { return a + fee(x); }, 0));
   var ours = r0(Object.keys(P).reduce(function (a, k) { return a + P[k]; }, 0));
@@ -1724,14 +1757,24 @@ function ebCheck() {
   var extra = Object.keys(P).filter(function (k) { return P[k] > 0.5 && (/^O\d/.test(k) ? !linked[k] : /^EB:/.test(k) ? !L.some(function (x) { return 'EB:' + x.code === k; }) : true); });
   var open = ebRecRows(), inOpen = {}; open.forEach(function (r) { inOpen[r.x.code] = 1; });
   var done = L.filter(function (x) { return eb[x.code] || (tag[x.code] && !inOpen[x.code]); });
-  return { pre: pre, preFee: preFee, openPay: openPay, L: L, owe: owe, expect: expect, ours: ours, diff: r0(ours - expect), missing: missing, extra: extra, P: P, M: M, open: open, done: done, tag: tag, eb: eb,
+  return { pre: pre, preFee: preFee, preGot: preGot, openPay: openPay, L: L, owe: owe, expect: expect, ours: ours, diff: r0(ours - expect), missing: missing, extra: extra, P: P, M: M, open: open, done: done, tag: tag, eb: eb,
     ok: Math.abs(ours - expect) < 1 && !missing.length && !extra.length };
 }
 // Эхний үлдэгдлийн «Буухиа» өглөгийг өмнөх үеийн хүргэлтийн хөлстэй тэнцүүлэх: зөрүүг Дт 3101 / Кт 4201 (эсвэл эсрэг), огноо = эхний үлдэгдлийн өдөр
-function ebOpenFix(target) {
-  var cur = ebOpenPay(), d = r0(cur - target); if (Math.abs(d) < 1) return;
-  var day = meta.closed ? todayStr(new Date(new Date(meta.closed + 'T00:00:00').getTime() + 864e5)) : todayStr();
-  if (!confirm('Эхний үлдэгдлийн Буухиа өглөг ' + fmt(cur) + ' → ' + fmt(target) + '\n\n' + (d > 0 ? 'Дт 3101 Өглөг (Буухиа) / Кт 4201 ' : 'Дт 4201 / Кт 3101 Өглөг (Буухиа) ') + fmt(Math.abs(d)) + ', огноо ' + day + '. Бичих үү?')) return;
+function ebOpenFix(target) {   // баталгаажуулах цонх: хуучин → шинэ, журналын бичилт
+  var c = ebCheck(); if (!c.pre.length) { toast('Эхний үлдэгдлийн өмнөх хүргэлт олдсонгүй — огноог шалгана уу'); return; }
+  var cur = ebOpenPay(), d = r0(cur - target), day = ebOpenDay(); if (Math.abs(d) < 1) return;
+  var dr = d > 0 ? '3101' : '4201', cr = d > 0 ? '4201' : '3101', nm = function (a) { return a + ' ' + ((ACC[a] || {}).name || ''); };
+  gOpen('<h2>Эхний үлдэгдлийн Буухиа өглөг засах</h2>' +
+    '<table class="rep-t" style="margin:8px 0"><tr><td>Одоогийн өглөг</td><td class="n">' + fmt(cur) + '</td></tr><tr><td><b>Шинэ өглөг</b></td><td class="n"><b>' + fmt(target) + '</b></td></tr>' +
+    '<tr><td class="muted">Үндэслэл</td><td class="n muted">' + c.pre.length + ' хүргэлт × хөлс</td></tr></table>' +
+    '<p style="margin:10px 0 4px"><b>Журналын бичилт</b> · ' + esc(day) + '</p><table class="rep-t"><tr><th>Дебет</th><th>Кредит</th><th class="n">Дүн</th></tr><tr><td>' + esc(nm(dr)) + '</td><td>' + esc(nm(cr)) + '</td><td class="n">' + fmt(Math.abs(d)) + '</td></tr></table>' +
+    '<p class="muted" style="font-size:12.5px">Харилцагч: ' + esc(BUUHIA) + ' · «Эхний үлдэгдлийн засвар · Буухиа өглөг ' + fmt(cur) + ' → ' + fmt(target) + '»</p>' +
+    '<div style="margin-top:12px"><button class="btn" onclick="ebOpenFixDo(' + target + ')">Бичих</button><button class="btn ghost" onclick="gClose()">Болих</button></div>');
+}
+function ebOpenFixDo(target) {
+  var cur = ebOpenPay(), d = r0(cur - target), day = ebOpenDay(); if (Math.abs(d) < 1) { gClose(); return; }
+  gClose();
   postEntries([{ biz: state.biz, date: day, dr: d > 0 ? '3101' : '4201', cr: d > 0 ? '4201' : '3101', amount: Math.abs(d), partner: BUUHIA, desc: 'Эхний үлдэгдлийн засвар · Буухиа өглөг ' + fmt(cur) + ' → ' + fmt(target) }],
     function () { toast('Эхний үлдэгдлийн өглөг засагдлаа'); if (API_URL) refresh(); else render(); });
 }
@@ -1741,8 +1784,12 @@ function ebCheckBanner() {
     '<b>' + (c.ok ? 'Буухиагийн өгөгдөлтэй таарлаа' : 'Буухиагийн өгөгдөлтэй таарахгүй байна') + '</b>' +
     '<div style="font-size:12.5px;margin-top:4px">Буухиа: хүргэгдсэн ' + c.L.length + ', үүнээс урьдчилж төлсөн (авсан мөнгө 0) ' + c.owe.length + ' → бидний төлөх хөлс <b>' + fmt(c.expect) + '</b> · Манай журналын «Буухиа» өглөг <b>' + fmt(c.ours) + '</b>' + (c.diff ? ' · зөрүү <b style="color:#B45309">' + (c.diff > 0 ? '+' : '') + fmt(c.diff) + '</b>' : '') + '</div>';
   var bits = '', od = r0(c.openPay - c.preFee);
-  if (c.openPay || c.pre.length) bits += '<div style="font-size:12.5px;margin-top:6px;padding-top:6px;border-top:1px dashed #E5E7EB"><b>Эхний үлдэгдлийн өглөг ' + fmt(c.openPay) + '</b> ↔ ' + ebOpenDay().slice(5) +
-    '-ны эхний үлдэгдлээс өмнөх ' + c.pre.length + ' хүргэлтийн хөлс <b>' + fmt(c.preFee) + '</b>' + (Math.abs(od) >= 1 ? ' · <b class="neg">зөрүү ' + fmt(Math.abs(od)) + '</b> <button class="mini" onclick="ebOpenFix(' + c.preFee + ')">Эхний үлдэгдлийн өглөгийг ' + fmt(c.preFee) + ' болгох</button>' : ' · таарч байна') + '</div>';
+  var dv = '<div style="font-size:12.5px;margin-top:6px;padding-top:6px;border-top:1px dashed #E5E7EB">';
+  if (!c.pre.length) bits += dv + '<b>Эхний үлдэгдлийн өглөг ' + fmt(c.openPay) + '</b> · <span style="color:#B45309">Эхний үлдэгдлийн (' + ebOpenDay().slice(5) + ') өмнөх хүргэлт олдсонгүй — огноог шалгана уу</span>' +
+    ' <small class="muted">(буухиагийн жагсаалтын хамгийн эрт огноо: ' + esc((ebAdm.list || []).map(function (x) { return ebDay(x.created); }).filter(Boolean).sort()[0] || '—') + ')</small></div>';
+  else bits += dv + '<b>Эхний үлдэгдлийн өглөг ' + fmt(c.openPay) + '</b> ↔ ' + ebOpenDay().slice(5) +
+    '-ны эхний үлдэгдлээс өмнөх ' + c.pre.length + ' хүргэлтийн хөлс <b>' + fmt(c.preFee) + '</b>' + (c.preGot ? ' <small class="muted">(тэдгээрийн хураасан мөнгө ' + fmt(c.preGot) + ')</small>' : '') +
+    (Math.abs(od) >= 1 ? ' · <b class="neg">зөрүү ' + fmt(Math.abs(od)) + '</b> <button class="mini" onclick="ebOpenFix(' + c.preFee + ')">Эхний үлдэгдлийн өглөгийг ' + fmt(c.preFee) + ' болгох</button>' : ' · таарч байна') + '</div>';
   if (c.missing.length) bits += '<div style="font-size:12.5px;margin-top:6px"><b>Манайд өглөг бичигдээгүй хүргэлт (' + c.missing.length + '):</b> ' + c.missing.map(function (x) { return esc(x.phone) + ' <small class="muted">' + esc(x.created.slice(5, 10)) + '</small>'; }).join(', ') + '</div>';
   if (c.extra.length) bits += '<div style="font-size:12.5px;margin-top:6px"><b>Манайд өглөгтэй ч буухиад хүргэлт олдоогүй (' + c.extra.length + '):</b> ' + c.extra.map(function (k) { var o = O[k]; return esc(o ? o.phone : k) + ' <small class="muted">' + fmt(c.P[k]) + '</small>'; }).join(', ') + '</div>';
   return head + bits + '</div>';
@@ -1878,9 +1925,7 @@ function extraChecks(E, r, p, line, neq) {
     if (!ebAdm.list || ebAdm.biz !== state.biz) out += line(true, '<span class="muted">Буухиа хураасан мөнгө — «Борлуулалт → Хүргэлт» нээж шинэчилсний дараа шалгагдана</span>');
     else {
       // Буухиагаас татсан БҮХ хүргэлт: авсан > 0 бол захиалга нь холбогдсон, авлага нь Буухиа дээр (#EBR / тооцоо нийлсэн) байх ёстой
-      var Mk = ebLink(), dn = ebSettled(), dr = ebRecvd(), G = (ebAdm.list || []).filter(function (x) { return x.got > 0 && x.st !== 11 && x.st !== 12 && !dn[x.code] && !(window.ebOld || {})[x.code]; });
-      var unl = G.filter(function (x) { return !Mk[x.code]; }), stay = G.filter(function (x) { var o = Mk[x.code]; return o && !dr[x.code] && !(o.confirmed && !/буухиа/.test(o.confirmed)); });
-      var bad = unl.concat(stay), sm = bad.reduce(function (a, x) { return a + x.got; }, 0);
+      var mb = ebMoneyBad(), unl = mb.unl, stay = mb.stay, bad = mb.bad, G = { length: (ebAdm.list || []).filter(function (x) { return x.got > 0 && x.st !== 11 && x.st !== 12; }).length }, sm = bad.reduce(function (a, x) { return a + x.got; }, 0);
       out += line(!bad.length, bad.length ? bad.length + ' хүргэлтийн хураасан мөнгө ' + fmt(sm) + ' Буухиа дээр бүртгэгдээгүй' + (unl.length ? ' (захиалгатай холбогдоогүй ' + unl.length + ': ' + esc(unl.slice(0, 3).map(function (x) { return x.phone; }).join(', ')) + ')' : '') +
         (stay.length ? ' (хэрэглэгчийн авлагад үлдсэн ' + stay.length + ': ' + esc(stay.slice(0, 3).map(function (x) { return x.phone; }).join(', ')) + ')' : '') : 'Буухиа «авсан» > 0 бүх ' + G.length + ' хүргэлтийн авлага Буухиа дээр', 'sales/buuhia');
     }
