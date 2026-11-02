@@ -114,19 +114,19 @@ function boostView() {
       '<td class="n">' + (o.usd ? '$' + (Math.round(o.usd * 100) / 100) : '') + '</td><td class="n">' + nn(o.a) + '</td>' +
       '<td class="n">' + nn(d._q) + '</td><td class="n">' + nn(d._on) + '</td><td class="n">' + nn(d._sa) + '</td>' +
       '<td class="n">' + (d._nc ? '<span class="muted">—</span>' : nn(d._gp)) + '</td><td class="n' + (o.after < -0.5 ? ' neg' : '') + '">' + nn(o.after) + '</td>' +
-      '<td style="min-width:170px">' + tag(o.verdict) + '<br><small class="muted">' + (o.be != null ? o.be + ' ш зарвал нөхнө · одоо ' + r0(d._q) + ' ш' : 'Тэнцэх тоо: өртөггүй') + '</small>' +
+      '<td style="min-width:150px">' + tag(o.verdict) + '<br><small class="muted">' + (o.be != null ? o.be + ' ш зарвал нөхнө · одоо ' + r0(d._q) + ' ш' : 'Тэнцэх тоо: өртөггүй') + '</small>' +
         '<br><small class="' + (o.paid === false ? 'neg' : 'muted') + '">' + (o.paid == null ? 'Банкаар (7120)' : o.paid ? 'Төлсөн' : 'Банкаар тулгаагүй') + '</small></td>' +
       '<td class="n"><button class="mini" onclick="event.stopPropagation();cancelRecord(' + esc(JSON.stringify(x.id)) + ')">Цуцлах</button></td></tr>';
     if (!op) return main;
     var sl = d._sl.slice().sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; }), ol = d._ol;
     return main + '<tr class="b"><td colspan="' + cols + '" style="background:var(--bg-2,#F9FAFB)">' +
-      '<b>Борлуулалт (' + sl.length + ')</b>' + (sl.length ? '<table class="rep-t" style="margin:4px 0 8px"><tr><th>Огноо</th><th>Ажилтан</th><th class="n">Тоо</th><th>Төлбөр</th><th class="n">Дүн</th></tr>' + sl.map(function (y) {
+      '<b>Борлуулалт (' + sl.length + ')</b>' + (sl.length ? '<table class="rep-t bst-sub" style="margin:4px 0 8px"><tr><th>Огноо</th><th>Ажилтан</th><th class="n">Тоо</th><th>Төлбөр</th><th class="n">Дүн</th></tr>' + sl.map(function (y) {
         return '<tr class="clk" onclick="openBillAdm(' + esc(JSON.stringify(billKey(y))) + ')"><td class="nw">' + y.date + ' ' + esc(y.time || '') + '</td><td>' + esc(y.staff || '') + '</td><td class="n">' + y.qty + '</td><td>' + esc(y.pay || '') + '</td><td class="n">' + fmt(y.amount).slice(1) + '</td></tr>'; }).join('') + '</table>' : ' <span class="muted">— алга</span><br>') +
-      '<b>Захиалга (' + ol.length + ')</b>' + (ol.length ? '<table class="rep-t" style="margin:4px 0 0"><tr><th>Огноо</th><th>Утас</th><th>Төлөв</th><th class="n">Дүн</th></tr>' + ol.map(function (w) {
+      '<b>Захиалга (' + ol.length + ')</b>' + (ol.length ? '<table class="rep-t bst-sub" style="margin:4px 0 0"><tr><th>Огноо</th><th>Утас</th><th>Төлөв</th><th class="n">Дүн</th></tr>' + ol.map(function (w) {
         return '<tr><td class="nw">' + w.date + '</td><td>' + esc(w.phone || '') + '</td><td>' + esc(typeof ordStLabel === 'function' ? ordStLabel(w) : w.status || '') + '</td><td class="n">' + fmt(Number(w.amount) || 0).slice(1) + '</td></tr>'; }).join('') + '</table>' : ' <span class="muted">— алга</span>') +
       '</td></tr>';
   }).join('');
-  var head = '<tr>' + (many ? '<th>Компани</th>' : '') + '<th>Бараа</th><th>Ажилтан</th><th>Хугацаа</th><th class="n">$</th><th class="n">₮</th><th class="n">Зарсан ш</th><th class="n">Захиалга</th><th class="n">Борлуулалт</th><th class="n">Нийт ашиг</th><th class="n">Boost-ийн дараах ашиг</th><th>Дүгнэлт</th><th></th></tr>';
+  var head = '<tr>' + (many ? '<th>Компани</th>' : '') + '<th>Бараа</th><th>Ажилтан</th><th>Хугацаа</th><th class="n">$</th><th class="n">₮</th><th class="n">Зарсан ш</th><th class="n">Захиалга</th><th class="n">Борлуулалт</th><th class="n">Нийт ашиг</th><th class="n">Boost-ийн дараах</th><th>Дүгнэлт</th><th></th></tr>';
   return '<div class="card">' + flt + '</div>' + kpi +
     '<div class="card rep"><div class="scroll"><table class="rep-t bst-t">' + head + (rows || '<tr><td colspan="' + cols + '" class="muted">Энэ хугацаанд boost алга.</td></tr>') + '</table></div>' +
     '<p class="muted" style="font-size:12.5px;margin-top:8px">Нийт ашиг = boost-ийн хугацааны борлуулалт − өртөг; Boost-ийн дараах ашиг = нийт ашиг − boost зардал. Тэнцэх тоо = boost₮ ÷ (зарах үнэ − өртөг). Мөр дээр дарахад тэр хугацааны борлуулалт, захиалга нээгдэнэ. Төлбөр: банкны хуулгаар «3801 Сурталчилгаа төлсөн» гэж тулгасан дүнг эртний boost-оос эхлэн хуваарилна.</p></div>';
