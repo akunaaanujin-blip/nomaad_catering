@@ -345,6 +345,12 @@ function audAt(s) {
 }
 // Тайлбаргүй «Захиалгын төлбөр» мөр: утас · дүн · хуучин төлөв → шинэ төлөв (дэлгэрэнгүйгээс)
 function audNote(r) {
+  if (r.type === 'order_save') {   // «Захиалга бүртгэсэн / засварласан»: утас · бараа · дүн
+    var od = {}; try { od = JSON.parse(r.det).order || {}; } catch (e) {}
+    var it = od.items; if (typeof it === 'string') { try { it = JSON.parse(it); } catch (e) { it = []; } }
+    it = (Array.isArray(it) ? it : []).filter(function (i) { return i && i.name && i.name !== FEE_ITEM && i.name !== DISC_ITEM && i.name !== SPLIT_ITEM; }).map(function (i) { return i.name + ((Number(i.qty) || 1) > 1 ? ' ×' + i.qty : ''); }).join(', ');
+    return [(od.customer ? od.customer + ' ' : '') + (od.phone || ''), it, od.amount ? fmt(od.amount) : ''].filter(function (x) { return String(x).trim(); }).join(' · ');
+  }
   if (r.type !== 'admin_order') return '';
   var f = {}; try { f = JSON.parse(r.det).fields || {}; } catch (e) {}
   var o = (window.adminOrders || []).filter(function (x) { return x.id === r.id; })[0];

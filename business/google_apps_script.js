@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v6.7 (удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v6.8 (буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -178,6 +178,7 @@ function auditLabel(d) {
   if (t === 'admin_order' && d.fields && d.fields.status === 'Цуцалсан') return 'Захиалга цуцалсан' + (d.fields.receive ? ' (борлуулалт буцаасан)' : '');
   if (t === 'admin_order' && d.fields && d.fields.restore) return 'Цуцалсан захиалгыг сэргээсэн';
   if (t === 'admin_order' && d.fields && d.fields.edit) return 'Захиалга засварласан';
+  if (t === 'admin_order' && d.fields && d.fields.receive && !d.fields.status) return 'Захиалгын бараа буцаж ирсэн';
   if (t === 'order_save') return d.order && d.order.id ? 'Захиалга засварласан' : 'Захиалга бүртгэсэн';
   if (t === 'order_delete') return 'Захиалга бүр устгасан';
   if (t === 'orders_ship') return 'Захиалга → ' + String(d.to || '');
@@ -1222,6 +1223,20 @@ function adminBank(d) {
   });
   return { status: 'ok', added: rows.length, updated: upd };
 }
+// Захиалгын бараа буцаж ирсэн: сөрөг борлуулалтын мөрүүд (үлдэгдэлд нэмэгдэнэ), saleDone = returned. Алдаа бол код.
+function orderReturnRows(o, by, why) {
+  const pay = String(o.saleDone).slice(4), now = new Date(), date = Utilities.formatDate(now, TZ, 'yyyy-MM-dd'), time = Utilities.formatDate(now, TZ, 'HH:mm'), rows = [];
+  if (lockedDate(date)) return 'locked';
+  let items; try { items = JSON.parse(o.items || '[]'); } catch (e) { items = []; }
+  items.forEach(function (i, k) {
+    const q = Number(i.qty) || 1, p = Number(i.price) || 0, amt = Math.round(q * p); if (!amt) return;
+    rows.push([o.biz + '-' + now.getTime() + '-r' + k, date, time, BIZ_NAMES[o.biz], TYPE_NAMES.sale, String(by || 'Удирдлага').slice(0, 40), (String(i.name || '') + ' (буцаалт)').slice(0, 80), -q, 'ш', p, -amt, pay,
+      '', '', 'Захиалга ' + o.phone + ' ' + why, o.biz, 'sale', o.id, '', pay === 'Урьдчилгаа' ? ((o.customer ? o.customer + ' ' : '') + o.phone) : '']);
+  });
+  if (rows.length) { const log = logSheet(); log.getRange(log.getLastRow() + 1, 1, rows.length, LOG_HEAD.length).setValues(rows); }
+  orderSheet().getRange(o.row, 21).setValue('returned');
+  return '';
+}
 // Удирдагч захиалгын төлбөрийг «Орсон» болгох (банкны хуулгаар тулгахад)
 function adminOrder(d) {
   const o = orderRows().filter(function (x) { return x.id === String(d.id); })[0];
@@ -1254,18 +1269,13 @@ function adminOrder(d) {
     if (!String(f.reason || '').trim()) return { status: 'error', error: 'fields' };
     sh.getRange(o.row, 17).setValue('Цуцалсан');
     sh.getRange(o.row, 19).setValue((String(o.note || '') + ' · цуцалсан: ' + String(f.reason).slice(0, 120) + ' (өмнө: ' + o.status + ')').slice(0, 300));
-    if (f.receive && /^yes:/.test(String(o.saleDone || ''))) {
-      const pay = String(o.saleDone).slice(4), now = new Date(), date = Utilities.formatDate(now, TZ, 'yyyy-MM-dd'), time = Utilities.formatDate(now, TZ, 'HH:mm'), rows = [];
-      if (lockedDate(date)) return { status: 'error', error: 'locked' };
-      let items; try { items = JSON.parse(o.items || '[]'); } catch (e) { items = []; }
-      items.forEach(function (i, k) {
-        const q = Number(i.qty) || 1, p = Number(i.price) || 0, amt = Math.round(q * p); if (!amt) return;
-        rows.push([o.biz + '-' + now.getTime() + '-r' + k, date, time, BIZ_NAMES[o.biz], TYPE_NAMES.sale, String(d.by || 'Удирдлага').slice(0, 40), (String(i.name || '') + ' (буцаалт)').slice(0, 80), -q, 'ш', p, -amt, pay,
-          '', '', 'Захиалга ' + o.phone + ' цуцалсан', o.biz, 'sale', o.id, '', pay === 'Урьдчилгаа' ? ((o.customer ? o.customer + ' ' : '') + o.phone) : '']);
-      });
-      if (rows.length) { const log = logSheet(); log.getRange(log.getLastRow() + 1, 1, rows.length, LOG_HEAD.length).setValues(rows); }
-      sh.getRange(o.row, 21).setValue('returned');
-    }
+    if (f.receive && /^yes:/.test(String(o.saleDone || ''))) { const er = orderReturnRows(o, d.by, 'цуцалсан'); if (er) return { status: 'error', error: er }; }
+  }
+  // Буухиа цуцалсан / буцаасан захиалгын бараа буцаж ирсэн: борлуулалтын буцаалтын мөр (журналд зөвхөн Дт 1404 / Кт 6101 — орлого цуцлах үед буцаагдсан)
+  if (f.receive && !f.status && /^(Буцаасан|Цуцалсан)$/.test(o.status)) {
+    if (!/^yes:/.test(String(o.saleDone || ''))) return { status: 'error', error: 'state' };
+    const er = orderReturnRows(o, d.by, 'буцаж ирсэн'); if (er) return { status: 'error', error: er };
+    sh.getRange(o.row, 19).setValue((String(o.note || '') + ' · бараа буцаж ирсэн ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')).slice(0, 300));
   }
   if (f.restore && o.status === 'Цуцалсан' && String(o.saleDone || '') !== 'returned' && /^(Шинэ|Буухиад өгсөн|Хүргэгдсэн)$/.test(String(f.restore))) sh.getRange(o.row, 17).setValue(String(f.restore));   // хогийн савнаас сэргээх
   sh.getRange(o.row, 20).setValue(Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + ' ' + String(d.by || 'Удирдлага'));
@@ -1462,7 +1472,7 @@ function ebNorm(x) {
 // Утсаар: тухайн дэлгүүрийн буухиад өгсөн/хүргэгдсэн/буцаасан, кодгүй захиалгаас хүргэлтийн өдөр буюу түүнээс өмнөх хамгийн сүүлийнх. write=true бол кодыг захиалгад бичнэ.
 // Буухиагийн хүргэлт ↔ манай захиалга: 1) external_order_id / код, 2) утас (+ «Шинэ» захиалгад огноо ±1 өдөр, дүн). Холбогдсон «Шинэ» захиалга → fresh (Буухиад өгсөн болгоно)
 function ebLink(L, biz, write) {
-  const rows = cacheGet('ord', orderRows), byExt = {}, byCode = {}, byPhone = {}, used = {}, sh = write ? orderSheet() : null, done = [], fresh = [];
+  const rows = cacheGet('ord', orderRows), byExt = {}, byCode = {}, byPhone = {}, used = {}, sh = write ? orderSheet() : null, done = [], fresh = [], canc = [];
   const dayOff = function (a, b) { return Math.abs((new Date(String(a) + 'T00:00:00') - new Date(String(b) + 'T00:00:00')) / 864e5); };
   let wrote = false;
   rows.forEach(function (o) { byExt[o.id] = o; if (o.ebCode) byCode[String(o.ebCode)] = o; });
@@ -1483,11 +1493,27 @@ function ebLink(L, biz, write) {
       if (o) { used[o.id] = 1; if (write && n.code) { sh.getRange(o.row, 23).setValue(n.code); wrote = true; if (o.status === 'Шинэ') fresh.push(o.id); if (!String(o.customer || '').trim() && n.cust && n.cust !== n.phone) sh.getRange(o.row, 6).setValue(String(n.cust).slice(0, 80)); } }
     }
     if (o && o.biz !== biz) return;
-    if (o) { n.id = o.id; n.our = o.status; n.sd = String(o.saleDone || ''); if (write && !o.ebCode && n.code && !used[o.id]) { sh.getRange(o.row, 23).setValue(n.code); wrote = true; } if (n.st === 10 && o.status === 'Буухиад өгсөн') done.push(o.id); }
+    if (o) { n.id = o.id; n.our = o.status; n.sd = String(o.saleDone || ''); if (write && !o.ebCode && n.code && !used[o.id]) { sh.getRange(o.row, 23).setValue(n.code); wrote = true; } if (n.st === 10 && o.status === 'Буухиад өгсөн') done.push(o.id); if ((n.st === 11 || n.st === 12) && /^(Буухиад өгсөн|Хүргэгдсэн)$/.test(o.status)) canc.push({ o: o, n: n }); }
     out.push(n);
   });
   if (wrote) cacheDrop(['ord']);
-  return { list: out, done: done, fresh: fresh };
+  return { list: out, done: done, fresh: fresh, canc: canc };
+}
+// Буухиа цуцалсан (11) / буцаасан (12) → манай захиалга «Буцаасан», шалтгаан буухиагаас. Тэмдэглэлд «буухиа цуцалсан YYYY-MM-DD» —
+// журнал (клиент buildJournal) тэр өдөр орлого, авлагыг эсрэг бичнэ; бараа «буухиад байгаа» (буцаж ирэхэд Дт 1404 / Кт 6101).
+function ebCancelApply(list, who) {
+  if (!list || !list.length) return 0;
+  const sh = orderSheet(), today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
+  list.forEach(function (c) {
+    const o = c.o, n = c.n, at = String(n.at || '').slice(0, 10).replace(/\//g, '-');
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(at) && at <= today && !lockedDate(at) ? at : today;
+    const why = (n.st === 11 ? 'буухиа цуцалсан ' : 'буухиа буцаасан ') + date + (n.reason ? ': ' + String(n.reason).slice(0, 80) : '');
+    sh.getRange(o.row, 17).setValue('Буцаасан');
+    sh.getRange(o.row, 19).setValue((String(o.note || '') + ' · ' + why + ' (өмнө: ' + o.status + ')').slice(0, 300));
+    sh.getRange(o.row, 20).setValue(Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + ' Буухиа');
+    try { auditSheet().appendRow(['\'' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss'), 'Буухиа', o.biz, 'Буухиа цуцалсан → захиалга буцаасан', ((o.customer ? o.customer + ' ' : '') + o.phone + ' · ' + o.amount + '₮ · ' + why).slice(0, 200), 'eb_cancel', o.id, JSON.stringify({ code: n.code, st: n.st, reason: n.reason, prev: o.status })]); } catch (e) {}
+  });
+  return list.length;
 }
 function ebView(c, biz, fresh) { return ebLink(ebList(c, fresh).map(ebNorm), biz, true); }
 // Удирдлага: зөвхөн харах (төлөв, код бичихгүй)
@@ -1551,7 +1577,8 @@ function ebuuhia(d, asWho) {
       const v = ebView(c, who.biz, !!d.fresh);
       let ship = null; if (v.done.length) { ship = ordersShipAs({ ids: v.done, to: 'Хүргэгдсэн' }, who); cacheDrop(['ord', 'rec', 'stk']); }
       if (v.fresh.length) { ordersShipAs({ ids: v.fresh, to: 'Буухиад өгсөн' }, who); cacheDrop(['ord', 'rec', 'stk']); }   // буухиа дээр аль хэдийн байсан «Шинэ» захиалга
-      return { status: 'ok', list: v.list, delivered: v.done.length, ship: ship };
+      const cancelled = ebCancelApply(v.canc, who); if (cancelled) cacheDrop(['ord']);
+      return { status: 'ok', list: v.list, delivered: v.done.length, cancelled: cancelled, ship: ship };
     }
   } catch (err) { return { status: 'error', error: String(err.message || err).slice(0, 200) }; }
   return { status: 'error', error: 'type' };

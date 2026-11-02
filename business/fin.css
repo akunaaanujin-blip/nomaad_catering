@@ -158,7 +158,7 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var
   .bz-admin .bz-menu{display:inline-block}
   .bz-admin .bz-content{padding:14px 12px 40px}
   .bz-admin .bz-head{flex-wrap:wrap;height:auto;min-height:52px;padding:8px 12px;row-gap:8px}
-  .fn-per{order:9;width:100%}.fn-per input{flex:1;width:auto;min-width:0}.fn-per select{flex:none;width:118px}
+  .fn-per{order:9;width:100%}.fn-per input{flex:1;width:auto;min-width:0}.fn-per select{flex:none;width:auto;max-width:60%}
   .bz-admin .gs{order:8;flex:1 1 100%}
   .bz-admin .bz-head .bz-user{display:flex;margin-left:auto}.bz-admin .bz-user #ownerName,.bz-admin .bz-user small{display:none}
   .fn-co{max-width:150px}
@@ -237,3 +237,4 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var
 .dd-menu button{display:block;width:100%;text-align:left;background:none;border:0;padding:7px 12px;font:inherit;font-size:13px;color:var(--text,#111827);cursor:pointer}
 .dd-menu button:hover,.dd-menu button:focus{background:var(--neutral-soft,#F3F4F6);outline:none}
 .fn-panel li.fn-sg>ul{list-style:none;margin:0;padding:0}.fn-panel li.fn-sg>ul[hidden]{display:none!important}
+.fn-per select{flex:none;width:auto;min-width:10.5em;padding-right:26px}

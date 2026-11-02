@@ -21,6 +21,12 @@ function isNonGoods(name) { return isFee(name) || isAdj(name) || isService(name)
 function billKey(x) { return x.bill || (String(x.note || '').match(/ДДТД (\d+)/) || [])[1] || x.id; }
 // Цуцалсан (буухиад өгөхөөс өмнө) ба Буцаасан (хүргэлтээс буцсан) — аль аль нь идэвхгүй захиалга
 function ordDead(o) { return o.status === 'Цуцалсан' || o.status === 'Буцаасан'; }
+// Буухиа цуцалсан/буцаасан (сервер тэмдэглэлд «буухиа цуцалсан YYYY-MM-DD: шалтгаан») → { date, why } эсвэл null
+function ordEbCancel(o) {
+  if (!o || !ordDead(o)) return null;
+  var m = String(o.note || '').match(/буухиа (цуцалсан|буцаасан) (\d{4}-\d{2}-\d{2})(?:: ([^(·]*))?/);
+  return m ? { date: m[2], kind: m[1], why: (m[3] || '').trim() } : null;
+}
 
 // Ажилтны «Бизнес»: 'cozy' · 'cozy,meat' (нэг эрхээр хэд хэдэн дэлгүүрт) · 'all' (бүх дэлгүүр)
 var STAFF_BIZ = ['meat', 'cozy', 'travel'];

@@ -131,6 +131,7 @@ function remCancel(id) {
 // төлбөр — Төлөөгүй шар, Төлсөн (удирдлага баталгаажуулсан) ногоон, Буцаан олгосон улаан. Ажилтны «орсон» тэмдэглэл нь баталгаажтал шар.
 function stTag(txt, cls) { return { __html: '<span class="st ' + cls + '">' + esc(txt) + '</span>', toString: function () { return txt; } }; }
 function ordStTag(o) {
+  if (ordEbCancel(o)) { var k = ordEbCancel(o); return stTag('Цуцалсан, буцаасан' + (k.why ? ' · ' + k.why : '') + (/^yes:/.test(o.saleDone || '') ? ' · бараа буухиад' : ''), 'r'); }
   var s = o.status, L = { 'Шинэ': ['Шинэ', 'n'], 'Буухиад өгсөн': [o.ebCode === 'бусад' ? 'Бусад хүргэлтэд' : 'Буухиад өгсөн', 'b'], 'Хүргэгдсэн': ['Хүргэгдсэн', 'g'], 'Цуцалсан': ['Цуцалсан', 'n'], 'Буцаасан': ['Буцаасан', 'r'] }[s] || [s || '—', 'n'];
   return stTag(L[0], L[1]);
 }
@@ -161,8 +162,10 @@ function repOrders(biz) {
       ? '<button class="mini" onclick="undoPayOrder(\'' + o.id + '\')">Буцаах</button>'
       : '<button class="mini" style="color:var(--green)" onclick="openPayOrder(\'' + o.id + '\')">Баталгаажуулах</button>' + (bc ? ' <button class="mini" title="Банкны хуулгын таарсан гүйлгээгээр шууд" onclick="ordBankMatch(\'' + o.id + '\')">Хуулгаар</button>' : '');
     if (billed[o.id]) act = '<button class="mini" onclick="openBillAdm(\'' + o.id + '\')">Баримт</button>' + act;
+    if (ordDead(o) && /^yes:/.test(o.saleDone || '')) act += ' <button class="mini dd-btn" title="Бусад үйлдэл" aria-haspopup="menu" onclick="ddMenu(this,[[\'Бараа буцаж ирсэн\',\'ordRecvOpen(&quot;' + o.id + '&quot;)\']])">⋯</button>';
     if (!ordDead(o)) act += ' <button class="mini dd-btn" title="Бусад үйлдэл" aria-haspopup="menu" onclick="ddMenu(this,[[\'Засах\',\'ordEditOpen(&quot;' + o.id + '&quot;)\'],[\'Цуцлах\',\'ordCancelOpen(&quot;' + o.id + '&quot;)\']])">⋯</button>';
-    return { _cls: o.status === 'Цуцалсан' ? 'ord-canc' : '', date: o.date + ' ' + o.time, phone: o.phone, customer: (dupOf(o) ? '⚠ ' : '') + (o.customer ? o.customer + ' (' + o.phone + ')' : o.phone), items: items(o), status: ordStTag(o), pay: payStTag(o), payType: o.payType,
+    var ebx = typeof ebOfOrder === 'function' ? ebOfOrder(o) : null, ebw = ebx && ebMismatch(o, ebx);   // буухиагийн төлөв манайхтай зөрвөл ⚠
+    return { _cls: o.status === 'Цуцалсан' ? 'ord-canc' : '', date: o.date + ' ' + o.time, phone: o.phone, customer: (dupOf(o) || ebw ? '⚠ ' : '') + (o.customer ? o.customer + ' (' + o.phone + ')' : o.phone) + (ebw ? ' · Буухиа: ' + ebw : ''), items: items(o), status: ordStTag(o), pay: payStTag(o), payType: o.payType,
              bank: bk, amount: o.amount, staff: o.staff, _act: act };
   });
   // Дүрэм: захиалга «Буухиад өгсөн» (илгээгдсэн) болмогц борлуулалт, авлага үүснэ; «Шинэ» нь авлагад ороогүй

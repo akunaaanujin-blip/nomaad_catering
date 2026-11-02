@@ -223,6 +223,9 @@ function buildJournal(biz, R) {
   // Захиалгын борлуулалт (Cozy) — хуримтлалын аргачлал: хүргэгдмэгц Дт 1201 Авлага / Кт 5101 (ажилтны «Шилжүүлэг» банк руу бичихгүй);
   // мөнгө орж удирдлага тулгахад (bank.js orderPayEntries) Дт банк / Кт 1201 — авлага хаагдана.
   var ORD = {}; (R.orders || []).forEach(function (o) { if (o.biz === biz) ORD[o.id] = o; });
+  // Буухиа цуцалсан/буцаасан захиалга: цуцалсан өдөр орлого, авлагыг эсрэг бичнэ (Дт 5101/5102 / Кт 1201); бараа буухиад —
+  // буцаж ирэхэд (сөрөг борлуулалтын мөр) зөвхөн Дт 1404 / Кт 6101 (орлогыг дахин буцаахгүй)
+  var EBC = {}; Object.keys(ORD).forEach(function (id) { var k = ordEbCancel(ORD[id]); if (k) EBC[id] = k; });
   R.records.forEach(function (x) {
     if (x.biz !== biz) return;
     if (R.closed && x.date <= R.closed) return;   // хаагдсан онд хамаарах хоцорч ирсэн бичлэг — он нээлтэд аль хэдийн тусгагдсан тул давхар бичихгүй
@@ -237,7 +240,13 @@ function buildJournal(biz, R) {
         else add(d, 'Төлбөр хуваалт', x.id, '5101', cash, -a, 'Хуваан төлсөн (' + (x.pay || 'Бэлэн') + ')', cust, x.bill);
         return;
       }
-      if (baseItem(x.item) === DISC_ITEM) { add(d, 'Борлуулалтын хөнгөлөлт', x.id, '6001', cash, -a, 'Хөнгөлөлт · баримт ' + (x.bill || ''), cust, x.bill); return; }
+      if (baseItem(x.item) === DISC_ITEM) {
+        var kd = EBC[x.bill];
+        if (kd && a > 0) return;   // буухиа цуцалсан захиалгын буцаалтын мөр — хөнгөлөлт цуцлах үед буцаагдсан
+        add(d, 'Борлуулалтын хөнгөлөлт', x.id, '6001', cash, -a, 'Хөнгөлөлт · баримт ' + (x.bill || ''), cust, x.bill);
+        if (kd && a < 0 && !(R.closed && kd.date <= R.closed)) add(kd.date, 'Буухиа цуцалсан', x.id + '-ebc', cash, '6001', -a, 'Буухиа ' + kd.kind + ' · хөнгөлөлт буцаав #EBC:' + x.bill, cust, x.bill);
+        return;
+      }
       if (oo && isFee(item) && (!EB_FEE_DATE[oo.id] || d < EB_FEE_DATE[oo.id])) EB_FEE_DATE[oo.id] = d;
       var ownFee = isNonGoods(item) && !isAdj(item);   // хүргэлтийн төлбөр, үйлчилгээ — 5102 үйлчилгээний (хүргэлтийн) орлого, барааны орлогоос тусдаа
       if (a >= 0) {
@@ -245,8 +254,10 @@ function buildJournal(biz, R) {
         // Хуучин (EB_PAY_FROM-оос өмнө буухиад өгсөн) захиалга: буухиад өгмөгц Дт 7124 / Кт 3101 Өглөг (Буухиа). Шинэд өглөг зөвхөн тооцоо нийлэхэд үүснэ
         if (oo && isFee(item) && oo.ebCode !== 'бусад' && ebFeeAuto(d)) add(d, 'Буухиагийн хөлс', x.id, '7124', '3101', a, 'Хүргэлт · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
         if (c) add(d, 'Борлуулалт · өртөг', x.id, '6101', '1404', c, item + ' × ' + x.qty);
+        var kc = EBC[x.bill];
+        if (kc && !(R.closed && kc.date <= R.closed)) add(kc.date, 'Буухиа цуцалсан', x.id + '-ebc', ownFee ? '5102' : '5101', cash, a, 'Буухиа ' + kc.kind + ' · ' + item + ' × ' + x.qty + (kc.why ? ' · ' + kc.why : '') + ' #EBC:' + x.bill, cust, x.bill);
       } else {
-        add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty), cust);
+        if (!EBC[x.bill]) add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty), cust);   // буухиа цуцалсан бол орлого аль хэдийн буцаагдсан
         // буцаасан/цуцалсан хүргэлтэд буухиа хөлс авдаггүй — хүргэх үед бичсэн өглөгийг буцаана
         if (oo && isFee(item) && oo.ebCode !== 'бусад' && ebFeeAuto(EB_FEE_DATE[oo.id] || d)) add(d, 'Буухиагийн хөлс (буцаалт)', x.id, '3101', '7124', -a, 'Хүргэлт буцаасан · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
         if (c) add(d, 'Буцаалт · өртөг', x.id, '1404', '6101', c, item);
