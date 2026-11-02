@@ -624,11 +624,11 @@ function repReceipts(R, biz, from, to, only) {
   var ce = costEngine(biz, R), costOf = function (o) { return o.lines.reduce(function (s, x) { var v = Math.abs(ce.rec[x.id] || 0); return s + (Number(x.amount) < 0 ? -v : v); }, 0); };
   var rows = groupBills(salesIn(R, biz, from, to).filter(only || function () { return true; }), true).map(function (o) {
     return { date: o.date + ' ' + o.time, staff: o.staff, items: o.items.join(', ') || (o.retItems.length ? 'Буцаалт: ' + o.retItems.join(', ') : ''), customer: custOf(o), pay: payText(o.pays), disc: o.disc ? r0(o.disc) : '', ret: o.ret ? r0(o.ret) : '', fee: o.fee ? r0(o.fee) : '', cost: r0(costOf(o)) || '',
-             ebarimt: o.ddtd || '—', amount: r0(o.net), _bill: o.key, order: ords[o.key] ? ordStLabel(ords[o.key]) + (ords[o.key].confirmed ? ' · баталгаажсан' : '') : '' };
+             ebarimt: o.ddtd || '—', amount: r0(o.net), _bill: o.key, _act: typeof payFixOpen === 'function' && o.net > 0 ? '<button class="mini" onclick="event.stopPropagation();payFixOpen(' + esc(JSON.stringify(o.key)) + ')">Төлбөр засах</button>' : '', order: ords[o.key] ? ordStLabel(ords[o.key]) + (ords[o.key].confirmed ? ' · баталгаажсан' : '') : '' };
   }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
   var oc = rows.some(function (r) { return r.order; }) ? [c('order', 'Захиалга')] : [];   // Cozy: захиалгаас үүссэн баримтын хүргэлтийн төлөв
   return { title: 'Баримтын жагсаалт', cols: [c('date', 'Огноо'), c('staff', 'Худалдагч'), c('items', 'Бараа'), c('customer', 'Хэрэглэгч')].concat(oc).concat([c('pay', 'Төлбөр'), m('disc', 'Хөнгөлөлт'), m('ret', 'Буцаалт'), m('fee', 'Хүргэлт'), c('ebarimt', 'И-баримт'), m('amount', 'Дүн'), m('cost', 'Өртөг')]),
-    rows: rows, total: { items: rows.length + ' баримт', disc: sum(rows, 'disc'), ret: sum(rows, 'ret'), fee: sum(rows, 'fee'), amount: sum(rows, 'amount'), cost: sum(rows, 'cost') }, note: 'Мөр дээр дарахад баримтын дэлгэрэнгүй нээгдэнэ.' };
+    actions: typeof payFixOpen === 'function', rows: rows, total: { items: rows.length + ' баримт', disc: sum(rows, 'disc'), ret: sum(rows, 'ret'), fee: sum(rows, 'fee'), amount: sum(rows, 'amount'), cost: sum(rows, 'cost') }, note: 'Мөр дээр дарахад баримтын дэлгэрэнгүй нээгдэнэ.' };
 }
 // Boost бараагаар: ажилтны бичсэн зар сурталчилгааны төлбөр (зөвхөн бүртгэл — санхүүд банкны хуулгаар 7205)
 // Boost бүрийн үр дүн: boost явсан өдрүүдийн борлуулалт ↔ түүнээс өмнөх ижил урттай үе; тэр хугацаанд тухайн бараагаар ирсэн захиалга → нэг захиалгын зардал
@@ -654,14 +654,15 @@ function repBoost(R, biz, from, to) {
     o.n++; o.a += Number(x.amount) || 0; o.d += Number(x.qty) || 0; if (x.unit === 'USD') o.usd += Number(x.price) || 0;
     for (var d = w.a; d < w.b; d = addDays(d, 1)) o.inD[d] = 1;
     for (var e = w.pa; e < w.a; e = addDays(e, 1)) o.preD[e] = 1;
-    var q = 0, sa = 0, pq = 0, on = 0, gp = 0, pgp = 0, fl = {}, run = boostEnd(x) > today;
+    var q = 0, sa = 0, pq = 0, on = 0, gp = 0, pgp = 0, fl = {}, run = boostEnd(x) > today, sl = [], ol = [], fl2 = {};
     if (run) o.run = true;
-    sales.forEach(function (y) { if (baseItem(y.item) !== x.item) return; if (y.date >= w.a && y.date < w.b) { q += Number(y.qty) || 0; sa += Number(y.amount) || 0; gp += gpOf(y, fl); } else if (y.date >= w.pa && y.date < w.a) { pq += Number(y.qty) || 0; pgp += gpOf(y, fl); } });
+    sales.forEach(function (y) { if (baseItem(y.item) !== x.item) return; if (y.date >= w.a && y.date < w.b) { q += Number(y.qty) || 0; sa += Number(y.amount) || 0; gp += gpOf(y, fl); gpOf(y, fl2); sl.push(y); } else if (y.date >= w.pa && y.date < w.a) { pq += Number(y.qty) || 0; pgp += gpOf(y, fl); } });
     var up = gp - pgp, net = up - (Number(x.amount) || 0);
-    ords.forEach(function (d) { if (d.date >= w.a && d.date < w.b && itemsOf(d).indexOf(x.item) >= 0) { on++; o.ord[d.id] = 1; } });
+    ords.forEach(function (d) { if (d.date >= w.a && d.date < w.b && itemsOf(d).indexOf(x.item) >= 0) { on++; o.ord[d.id] = 1; ol.push(d); } });
     return { key: x.date + ' ' + (x.time || '') + ' · ' + x.item + (x.note ? ' · ' + x.note : '') + ' · ' + (x.staff || ''), days: Number(x.qty) || '', usd: x.unit === 'USD' ? '$' + r0(x.price) : '',
              boost: r0(Number(x.amount) || 0), qty: r0(q), before: r0(pq), orders: on, cpo: on ? r0(Math.round((Number(x.amount) || 0) / on)) : '', sales: r0(sa), ratio: sa ? Math.round((Number(x.amount) || 0) / sa * 100) + '%' : '—',
-             uplift: r0(up), net: r0(net), verdict: verdict(net, run, fl.nc), _id: x.id, _item: x.item, _from: x.date, _to: addDays(boostEnd(x), -1) };
+             uplift: r0(up), net: r0(net), verdict: verdict(net, run, fl.nc), _id: x.id, _item: x.item, _from: x.date, _to: addDays(boostEnd(x), -1),
+             _x: x, _run: run, _q: q, _sa: sa, _gp: gp, _nc: !!fl2.nc, _on: on, _sl: sl, _ol: ol };   // _…: Boost хуудас (ads.js boostView)
   });
   var rows = Object.keys(by).sort(function (a, b) { return by[b].a - by[a].a; }).map(function (k) {
     var o = by[k], q = 0, sa = 0, pq = 0, on = Object.keys(o.ord).length, gp = 0, pgp = 0, fl = {};
@@ -674,7 +675,7 @@ function repBoost(R, biz, from, to) {
   var tq = sum(rows, 'orders');
   return { title: 'Сурталчилгаа бараагаар', cols: [c('key', 'Бараа'), m('n', 'Удаа'), m('days', 'Хоног'), c('usd', 'USD'), m('boost', 'Сурталчилгааны зардал'), m('qty', 'Зарсан (сурталчилгааны үед)'), m('before', 'Өмнөх ижил үе'),
       m('orders', 'Захиалга'), m('cpo', 'Нэг захиалгын зардал'), m('sales', 'Борлуулалт (сурталчилгааны үед)'), c('ratio', 'Зардал / борлуулалт'), m('uplift', 'Нэмэлт ашиг'), m('net', 'Цэвэр үр дүн'), c('verdict', 'Дүгнэлт')],
-    rows: rows.concat(det.length ? [{ key: '— Бичилтүүд —', _b: true }] : []).concat(det),
+    rows: rows.concat(det.length ? [{ key: '— Бичилтүүд —', _b: true }] : []).concat(det), det: det,
     total: { key: 'Нийт', usd: sum(rows, '_usd') ? '$' + sum(rows, '_usd') : '', boost: sum(rows, 'boost'), qty: sum(rows, 'qty'), before: sum(rows, 'before'), orders: tq, cpo: tq ? Math.round(sum(rows, 'boost') / tq) : '', sales: sum(rows, 'sales'), uplift: sum(rows, 'uplift'), net: sum(rows, 'net') },
     note: 'Нэмэлт ашиг = boost үеийн нийт ашиг (борлуулалт − өртөг) − өмнөх ижил үеийн нийт ашиг; Цэвэр үр дүн = нэмэлт ашиг − boost зардал (≥ 0 бол ашигтай). Boost үе = эхэлсэн өдрөөс хоногийн тоогоор (дуусаагүй бол өнөөдрийг хүртэл); «Өмнөх ижил үе» — түүнээс өмнөх ижил олон хоног. Захиалга — тэр хугацаанд тухайн бараатай ирсэн Cozy захиалга. Boost — зөвхөн бүртгэл, санхүүд банкны хуулгаар (7205) орно.' };
 }

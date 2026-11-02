@@ -265,14 +265,16 @@ function renderBoost() {
   if (dl) dl.innerHTML = products.filter(function (p) { return !isNonGoods(p.name); }).map(function (p) { return '<option value="' + esc(p.name) + '">'; }).join('');
   if (!$('bRate').value) $('bRate').value = load('nb_usd_rate', '') || '';
   boostChips();
-  var cut = todayStr(new Date(Date.now() - 30 * 864e5));
-  var list = load(LS_REC, []).filter(function (r) { return r.type === 'boost' && r.biz === BIZ_KEY && r.date >= cut; }).reverse();
-  var by = {}; list.forEach(function (r) { by[r.item] = (by[r.item] || 0) + r.amount; });
-  $('boostList').innerHTML = list.length ? Object.keys(by).sort(function (a, b) { return by[b] - by[a]; }).map(function (k) {
-    return '<li><span><b>' + esc(k) + '</b><small>' + list.filter(function (r) { return r.item === k; }).map(function (r) {
-      return esc(r.date.slice(5)) + ' ' + (r.unit === 'USD' ? boostCur(r.price, 'USD') : fmt(r.amount)) + (r.qty ? ' · ' + r.qty + ' хоног' : '') + (r.note ? ' (' + esc(r.note) + ')' : ''); }).join(' · ') + '</small></span>' +
-      '<span class="amt">' + fmt(by[k]) + '</span></li>';
-  }).join('') : '<li class="muted">Сүүлийн 30 хоногт сурталчилгаа бичээгүй байна</li>';
+  // Миний boost: энэ ажилтны сүүлийн 30 хоногийн boost — явж байгаа нь дээр
+  var cut = todayStr(new Date(Date.now() - 30 * 864e5)), t = todayStr();
+  var endOf = function (r) { var d = new Date(r.date + 'T00:00:00'); d.setDate(d.getDate() + Math.max(1, Number(r.qty) || 1)); return todayStr(d); };   // энэ өдрөөс явахгүй
+  var list = load(LS_REC, []).filter(function (r) { return r.type === 'boost' && r.biz === BIZ_KEY && r.date >= cut && (!r.staff || r.staff === staffName); })
+    .sort(function (a, b) { var ra = endOf(a) > t, rb = endOf(b) > t; return ra !== rb ? (ra ? -1 : 1) : (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
+  $('boostList').innerHTML = list.length ? list.map(function (r) {
+    var e = endOf(r), run = e > t, left = Math.round((new Date(e + 'T00:00:00') - new Date(t + 'T00:00:00')) / 864e5), last = new Date(e + 'T00:00:00'); last.setDate(last.getDate() - 1);
+    return '<li><span><b>' + esc(r.item) + '</b><small>' + r.date.slice(5) + ' – ' + todayStr(last).slice(5) + ' · ' + (run ? '<span style="color:var(--green)">' + left + ' хоног үлдсэн</span>' : 'Дууссан') + (r.note ? ' · ' + esc(r.note) : '') + '</small></span>' +
+      '<span class="amt">' + (r.unit === 'USD' ? boostCur(r.price, 'USD') : fmt(r.amount)) + '</span></li>';
+  }).join('') : '<li class="muted">Сүүлийн 30 хоногт boost бичээгүй байна</li>';
 }
 function saveBoost() {
   if ($('bItem').value.trim()) boostAdd();

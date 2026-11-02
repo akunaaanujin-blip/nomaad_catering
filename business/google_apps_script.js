@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v7.0 (цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v7.1 (төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -172,7 +172,7 @@ function auditSheet() {
 function auditLabel(d) {
   const t = d.type, n = function (a) { return Array.isArray(a) ? a.length : 0; };
   if (t === 'admin_journal') return d.cancelId ? 'Журналын бичилт цуцалсан' : 'Журналд бичсэн' + (n(d.entries) > 1 ? ' (' + n(d.entries) + ')' : '');
-  if (t === 'admin_record') return d.statusId ? 'Мөнгөний хүсэлт: ' + d.status : d.cancelId ? 'Баримт / зарлага цуцалсан' : 'Бичлэг засварласан';
+  if (t === 'admin_record') return d.statusId ? 'Мөнгөний хүсэлт: ' + d.status : d.payId ? 'Төлбөрийн хэлбэр засав → ' + d.pay : d.cancelId ? 'Баримт / зарлага цуцалсан' : 'Бичлэг засварласан';
   if (t === 'admin_stock') return d.approveId ? 'Тооллого баталсан' : d.cancelId ? 'Барааны хөдөлгөөн цуцалсан / тооллого татгалзсан' : 'Барааны хөдөлгөөн бичсэн (' + n(d.moves) + ')';
   if (t === 'admin_restore') return 'Хогийн савнаас сэргээсэн';
   if (t === 'admin_setting') return d.key === 'ebold' ? 'Буухиа: өмнөх үеийнх гэж тэмдэглэсэн' : 'Тохиргоо: ' + String(d.key || '');
@@ -324,8 +324,8 @@ function mgrGuard(d, who) {
   }
   if (t === 'admin_record') {
     const sh = logSheet(), last = sh.getLastRow(); if (last < 2) return 'role';
-    const v = sh.getRange(2, 1, last - 1, 16).getValues();
-    for (let i = 0; i < v.length; i++) if (String(v[i][0]) === String(d.cancelId || d.statusId)) return ok(v[i][15]) ? '' : 'role';
+    const v = sh.getRange(2, 1, last - 1, 18).getValues();
+    for (let i = 0; i < v.length; i++) if (d.payId ? String(v[i][17]) === String(d.payId) : String(v[i][0]) === String(d.cancelId || d.statusId)) return ok(v[i][15]) ? '' : 'role';
     return 'role';
   }
   if (t === 'admin_import_cozy') return ok('cozy') ? '' : 'role';
@@ -979,6 +979,22 @@ function adminRecord(d) {
       return { status: 'ok' };
     }
     return { status: 'error', error: 'not_found' };
+  }
+  if (last >= 2 && d.payId) {   // төлбөрийн хэлбэр засах: нэг баримтын (bill) бүх борлуулалтын мөр, огноо хэвээр
+    const PAYS = { 'Бэлэн': 1, 'Карт': 1, 'Шилжүүлэг': 1, 'Зээлээр': 1, 'StorePay': 1 };
+    if (!PAYS[d.pay] || !String(d.note || '').trim()) return { status: 'error', error: 'fields' };
+    const v = sh.getRange(2, 1, last - 1, LOG_HEAD.length).getValues(), hit = [];
+    for (let i = 0; i < v.length; i++) if (String(v[i][17]) === String(d.payId) && String(v[i][16]) === 'sale' && String(v[i][18]) !== 'Устгасан') hit.push(i);
+    if (!hit.length) return { status: 'error', error: 'not_found' };
+    const r0 = v[hit[0]], date = fmtDate(r0[1], 'yyyy-MM-dd'), biz = String(r0[15]);
+    if (hit.some(function (i) { return /ДДТД/.test(String(v[i][14])); })) return { status: 'error', error: 'ebarimt' };
+    if (lockedDate(date)) return { status: 'error', error: 'locked' };
+    const cashTouched = d.pay === 'Бэлэн' || hit.some(function (i) { return String(v[i][11]) === 'Бэлэн'; });
+    if (cashTouched && v.some(function (r) { return String(r[16]) === 'close' && String(r[15]) === biz && String(r[18]) !== 'Устгасан' && fmtDate(r[1], 'yyyy-MM-dd') === date; })) return { status: 'error', error: 'closed' };
+    const from = hit.map(function (i) { return String(v[i][11]); }).filter(function (x, k, a) { return a.indexOf(x) === k; }).join('/');
+    const stamp = ' [Төлбөр засав: ' + from + ' → ' + d.pay + ' · ' + String(d.by || '').slice(0, 30) + ' · ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd') + ' · ' + String(d.note).slice(0, 80) + ']';
+    hit.forEach(function (i) { sh.getRange(i + 2, 12).setValue(d.pay); sh.getRange(i + 2, 15).setValue(String(v[i][14] || '') + stamp); });
+    return { status: 'ok', n: hit.length };
   }
   if (last < 2 || !d.cancelId) return { status: 'error', error: 'not_found' };
   const vals = sh.getRange(2, 1, last - 1, LOG_HEAD.length).getValues();

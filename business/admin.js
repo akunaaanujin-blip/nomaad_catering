@@ -307,7 +307,7 @@ function bizModules(biz) { return BUSINESSES[biz] && BUSINESSES[biz].finOnly ? M
 function openMgmt() { state.view = 'company'; state.biz = 'mgmt'; state.module = 'finance'; render(); window.scrollTo(0, 0); }
 // Дэд цэсний бүлгүүд (Baaz-ийн «Журнал / Мөнгөн хөрөнгө / Авлага өглөг / Санхүүгийн тайлан» шиг)
 var MENU = {
-  sales: [['Бүртгэл', ['shop', 'orders', 'buuhia', 'ebrec', 'receipts']], ['Шинжилгээ', ['item', 'day', 'staff', 'pay', 'cat', 'disc', 'slow', 'boost', 'ads']], ['Татвар', ['ebarimt']]],
+  sales: [['Бүртгэл', ['shop', 'orders', 'buuhia', 'ebrec', 'receipts']], ['Шинжилгээ', ['item', 'day', 'staff', 'pay', 'cat', 'disc', 'slow', 'boost', 'ads', 'boostp']], ['Татвар', ['ebarimt']]],
   products: [['Бүртгэл', ['stock', 'counts', 'catalog', 'in']], ['Худалдан авалт', ['po', 'suppliers']], ['Тайлан', ['move', 'prices']]],
   // Санхүү — цөөн, ойлгомжтой цэс. Нягтлангийн тайлан, тохиргоо нь тус бүр нэг хуудсанд цуглуулагдсан (finance.js HUBS)
   // Санхүү — Excel «Санхүүгийн бүртгэлийн файл»-ын дарааллаар дугаартай 10 хуудас; бусад нь «Бусад» нэг хуудсанд (finance.js HUBS.other)
@@ -348,6 +348,7 @@ function subVisible(biz, k) {
   if (k === 'orders' || k === 'customers') return !!B.orders;
   if (k === 'buuhia') return !!B.orders && !!window.ebOnAll;
   if (k === 'ebrec') return !!B.orders;
+  if (k === 'boostp') return !B.finOnly;
   if (k === 'daily') return !B.finOnly;   // удирдлагын өөрийн санхүүд борлуулалт байхгүй
   if (k === 'ebarimt') return B.ebarimt !== false;
   if (B.finOnly && /^(simple|months|profit|payroll|expenses|assets|requests)$/.test(k)) return false;   // Удирдлага: үр дүн, бараа, ажилчидгүй
@@ -424,8 +425,8 @@ function companyView() {
   if (mod === 'staff') return pageHead('Ажилчид', '') + staffView(state.biz);
   if (mod === 'review') return reviewView();
   if (mod === 'reports') return pageHead('Бүх тайлан', '<button class="b-btn primary" onclick="exportAll()">Бүх тайланг Excel-ээр татах</button>', true) + reportsModule();
-  var sub = state.sub[mod], noPeriod = /^(counts|requests|accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary|months|payroll|debts|acct|setup|loans|banklink|po|assets|customers|digest|other|recv|payb|buuhia|ebrec|api|partners|audit|trash|company)$/.test(sub);   // авлага, өглөг — өнөөдрийн байдлаар (хугацаагаар шүүхгүй)
-  var acts = /^(counts|requests|overview|dash|stock|close|bank|opening|lock|simple|monthly|glossary|acct|setup|loans|banklink|po|assets|digest|other|daily|expcat|cashacc)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
+  var sub = state.sub[mod], noPeriod = /^(counts|requests|accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary|months|payroll|debts|acct|setup|loans|banklink|po|assets|customers|digest|other|recv|payb|buuhia|ebrec|boostp|api|partners|audit|trash|company)$/.test(sub);   // авлага, өглөг — өнөөдрийн байдлаар (хугацаагаар шүүхгүй)
+  var acts = /^(boostp|counts|requests|overview|dash|stock|close|bank|opening|lock|simple|monthly|glossary|acct|setup|loans|banklink|po|assets|digest|other|daily|expcat|cashacc)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
   // Харилцахын (банкны) гүйлгээг гараар бичихгүй — зөвхөн банкны хуулгаар тулгана (давхар бичигдэхээс сэргийлнэ)
   if (sub === 'money') acts = '<button class="b-btn primary" onclick="setSub(\'bank\')">Банкны хуулгаар тулгах</button>' +
     '<button class="b-btn" onclick="openVoucher(\'КО\')">+ Орлого (касс)</button><button class="b-btn" onclick="openVoucher(\'КЗ\')">+ Зарлага (касс)</button>' + acts;
@@ -494,6 +495,7 @@ function openBillAdm(key) {
   var ord = (window.adminOrders || []).filter(function (d) { return d.id === key; })[0];
   var html = '<div class="bar-row"><h2 style="margin:0">Баримт</h2><span style="display:flex;gap:6px">' +
     (ord ? '<button class="b-btn ghost" onclick="goOrder(' + esc(JSON.stringify(ord.id)) + ')">Захиалгыг нээх</button>' : '') +
+    (o.net > 0 ? '<button class="b-btn ghost" onclick="payFixOpen(' + esc(JSON.stringify(key)) + ')">Төлбөр засах</button>' : '') +
     '<button class="b-btn ghost" onclick="closeSheet(\'billAdmSheet\')">Хаах</button></span></div>' +
     '<p class="muted" style="margin:6px 0 10px">' + esc(o.date + ' ' + o.time) + ' · ' + esc(o.staff) + (o.customer ? ' · ' + esc(o.customer) : '') + (o.ddtd ? ' · ДДТД ' + esc(o.ddtd) : '') + '</p>' +
     '<div class="scroll"><table class="rep-t"><tr><th>Мөр</th><th class="n">Тоо × үнэ</th><th>Төлбөр</th><th class="n">Дүн</th><th class="n">Өртөг</th></tr>' + rows +
@@ -501,6 +503,41 @@ function openBillAdm(key) {
     (cogs ? '<p class="muted" style="margin-top:8px">Энэ баримтын ашиг: <b>' + fmt(o.net - cogs) + '</b> (' + (o.net ? Math.round((o.net - cogs) / o.net * 100) : 0) + '%)</p>' : '');
   if (!$('billAdmSheet')) document.body.insertAdjacentHTML('beforeend', '<div class="sheet" id="billAdmSheet" onclick="if(event.target===this)closeSheet(\'billAdmSheet\')"><div class="panel" id="billAdmPanel" style="max-width:720px"></div></div>');
   $('billAdmPanel').innerHTML = html; openSheet('billAdmSheet');
+}
+// ── Төлбөрийн хэлбэр засах: ажилтан буруу сонгосон (Бэлэн → Шилжүүлэг г.м) — огноо хэвээр, нэг баримтын бүх мөр хамт ──
+// Журнал records-оос үүсдэг тул pay солигдмогц Дт 10003 Касс → Дт 1298 / 110106 / 1201 болж шилжинэ.
+var PAY_FIX = ['Бэлэн', 'Карт', 'Шилжүүлэг', 'Зээлээр', 'StorePay'];
+function payFixWhy(L) {   // засах боломжгүй шалтгаан ('' бол болно)
+  var o = groupBills(L)[0], cashIn = L.some(function (x) { return (x.pay || 'Бэлэн') === 'Бэлэн'; });
+  if (!L[0].bill) return 'Баримтын дугааргүй хуучин бичлэг';
+  if (o.ddtd) return 'И-баримт гарсан — дэлгүүрээс «Баримт буцаах»-аар засна';
+  return cashIn && records.some(function (x) { return x.type === 'close' && x.biz === L[0].biz && x.date === L[0].date; }) ? 'closed' : '';
+}
+function payFixOpen(key) {
+  var L = records.filter(function (x) { return x.type === 'sale' && billKey(x) === key; }); if (!L.length) return;
+  var o = groupBills(L)[0], why = payFixWhy(L), cur = payText(o.pays) || (L[0].pay || 'Бэлэн');
+  if (why && why !== 'closed') { toast(why); return; }
+  gOpen('<h2>Төлбөрийн хэлбэр засах</h2>' +
+    '<p class="muted" style="margin:4px 0 10px">' + esc(o.date + ' ' + o.time) + ' · ' + esc(o.items.join(', ')) + ' · ' + fmt(o.net) + '<br>Огноо өөрчлөгдөхгүй. Баримтын ' + L.length + ' мөр бүгд солигдоно.</p>' +
+    '<label>Одоогийн хэлбэр</label><input value="' + esc(cur) + '" disabled>' +
+    '<label for="pfNew">Шинэ хэлбэр</label><select id="pfNew">' + PAY_FIX.map(function (p) { return '<option' + (p === 'Шилжүүлэг' && cur !== 'Шилжүүлэг' ? ' selected' : '') + '>' + p + '</option>'; }).join('') + '</select>' +
+    '<label for="pfWhy">Шалтгаан *</label><input id="pfWhy" maxlength="80" placeholder="Жишээ: ажилтан бэлэн гэж буруу сонгосон, хуулгад орсон">' +
+    (why === 'closed' ? '<p class="muted" style="font-size:12.5px;margin-top:8px;color:var(--red)">Энэ өдрийн касс хаагдсан тул бэлэн мөнгөтэй холбоотой засвар хийх боломжгүй (сервер хориглоно).</p>' : '') +
+    '<div style="margin-top:12px"><button class="btn" onclick="payFixSave(' + esc(JSON.stringify(key)) + ')">Хадгалах</button><button class="btn ghost" onclick="gClose()">Болих</button></div>');
+}
+function payFixSave(key) {
+  var L = records.filter(function (x) { return x.type === 'sale' && billKey(x) === key; }); if (!L.length) return;
+  var np = $('pfNew').value, why = $('pfWhy').value.trim(), cur = payText(groupBills(L)[0].pays) || (L[0].pay || 'Бэлэн');
+  if (!why) { toast('Шалтгаанаа бичнэ үү'); $('pfWhy').focus(); return; }
+  if (L.every(function (x) { return (x.pay || 'Бэлэн') === np; })) { toast('Төлбөрийн хэлбэр аль хэдийн ' + np); return; }
+  if (np === 'Бэлэн' && records.some(function (x) { return x.type === 'close' && x.biz === L[0].biz && x.date === L[0].date; })) { toast('Касс хаагдсан өдрийн борлуулалтыг бэлэн болгох боломжгүй'); return; }
+  if (!confirm('Төлбөрийн хэлбэр солих уу?\n\n' + L[0].date + ' · ' + fmt(groupBills(L)[0].net) + '\n' + cur + ' → ' + np + '\nШалтгаан: ' + why)) return;
+  gClose();
+  var msg = { closed: 'Касс хаагдсан өдрийн бэлэн борлуулалтыг засах боломжгүй', ebarimt: 'И-баримт гарсан баримт — дэлгүүрээс «Баримт буцаах»-аар засна', locked: 'Энэ хугацаа түгжигдсэн', not_found: 'Баримт олдсонгүй' };
+  post({ type: 'admin_record', payId: L[0].bill, pay: np, by: ownerName, note: why }, function (err) {
+    if (err) { toast(msg[err] || 'Алдаа: ' + err); return; }
+    toast('Төлбөрийн хэлбэр солигдлоо: ' + cur + ' → ' + np); closeSheet('billAdmSheet'); refresh();
+  });
 }
 // «Захиалга» хуудсанд тухайн захиалгыг утсаар нь шүүж харуулна
 function goOrder(id) {
@@ -1166,7 +1203,7 @@ function closeSheet(id) { $(id).classList.remove('show'); }
 // ═══════════ ДЭД ЦЭС, ТАЙЛАН (reports.js-ийн хөдөлгүүрээр) ═══════════
 var SUBS = {
   sales: [['shop', 'Дэлгүүрийн борлуулалт'], ['receipts', 'Бүх баримт'], ['orders', 'Захиалга'], ['buuhia', 'Буухиа (хүргэлт)'], ['ebrec', 'Буухиатай тулгах'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'],
-          ['pay', 'Төлбөрийн хэлбэрээр'], ['disc', 'Хөнгөлөлт, буцаалт'], ['slow', 'Удаан эргэлттэй бараа'], ['boost', 'Boost бараагаар'], ['ads', 'Сурталчилгаа, ROAS'], ['ebarimt', 'И-баримт тулгалт']],
+          ['pay', 'Төлбөрийн хэлбэрээр'], ['disc', 'Хөнгөлөлт, буцаалт'], ['slow', 'Удаан эргэлттэй бараа'], ['boost', 'Boost бараагаар'], ['ads', 'Сурталчилгаа, ROAS'], ['boostp', 'Boost'], ['ebarimt', 'И-баримт тулгалт']],
   products: [['catalog', 'Барааны бүртгэл, үнэ'], ['counts', 'Тооллого батлах'], ['po', 'Бараа захиалга (Хятад)'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['prices', 'Үнийн түүх'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
   finance: [['requests', 'Мөнгөний хүсэлт'], ['simple', 'Захирлын самбар'], ['months', '12 сарын дүн'], ['daily', 'Өдрийн орлого'], ['cashacc', 'Мөнгөний данс'], ['profit', 'Барааны ашиг'], ['money', 'Гүйлгээ'], ['bank', 'Банкны хуулга'], ['vouchers', 'Кассын баримт'],
             ['expcat', 'Зардлын задаргаа'], ['other', 'Бусад'], ['recv', 'Авлага'], ['payb', 'Өглөг'], ['debts', 'Бусад тооцоо'], ['loans', 'Зээлийн хяналт'], ['assets', 'Үндсэн хөрөнгө, элэгдэл'], ['banklink', 'Банкны данс холбох'], ['digest', 'Өдрийн тойм и-мэйл'], ['payroll', 'Цалин, НДШ'], ['monthly', 'Сар бүрийн ажил'], ['acct', 'Нягтлангийн тайлан'], ['setup', 'Тохиргоо'],
@@ -1419,6 +1456,7 @@ function subBody() {
   if (mod === 'sales' && sub === 'buuhia') return ebAdmView();
   if (mod === 'sales' && sub === 'ebrec') return ebRecView();
   if (mod === 'sales' && sub === 'ads') return adsView();
+  if (mod === 'sales' && sub === 'boostp') return boostView();
   if (mod === 'products' && sub === 'po') return poView();
   var rep = makeReport(mod, sub), pre = '', post = '';
   if (mod === 'finance') { var rr = range(); addDrill(sub, rep, rr[0], rr[1]); }
@@ -2184,7 +2222,7 @@ function savePartner() {
 function cancelRecord(id) {
   var x = records.filter(function (r) { return r.id === id; })[0]; if (!x) return;
   var what = x.type === 'sale' ? x.item + ' · ' + fmt(x.amount) : x.type === 'expense' ? x.category + ' · ' + fmt(x.amount) : x.type === 'boost' ? 'Boost · ' + x.item + ' · ' + fmt(x.amount) : 'Касс хаалт';
-  if (!confirm('Энэ бичлэгийг цуцлах уу?\n' + x.date + ' ' + x.time + ' · ' + what + (x.type === 'boost' ? '' : '\n\nСанхүү, үлдэгдлээс хасагдана.'))) return;
+  if (!confirm('Энэ бичлэгийг цуцлах уу?\n' + x.date + ' ' + x.time + ' · ' + what + (x.type === 'boost' ? (x.date >= BOOST_JR_FROM ? '\n\nЖурналын Дт 7120 / Кт 3801 бичилт мөн цуцлагдана.' : '') : '\n\nСанхүү, үлдэгдлээс хасагдана.'))) return;
   if (!API_URL) { records = records.filter(function (r) { return r.id !== id; }); save('nb_records', records); render(); return; }
   post({ type: 'admin_record', cancelId: id, by: ownerName, what: x.date + ' ' + x.time + ' · ' + what }, function (err) {
     if (err) { toast(err === 'ebarimt' ? 'И-баримттай борлуулалтыг дэлгүүрээс «Баримт буцаах»-аар буцаана' : 'Алдаа: ' + err); return; }
