@@ -239,8 +239,10 @@ function repProfit(Rr, biz, f, t) {
     return { key: r.key, qty: r.qty, net: r.net, avg: r.qty ? r0(r.net / r.qty) : '', cogs: r.cogs, margin: r.margin, pct: has && r.net ? Math.round(r.margin / r.net * 100) + '%' : '',
       _d: { net: S(['5101', '5102', '6001', '6002'], -1, 'борлуулалт'), cogs: S(['6101'], 1, 'өртөг'), margin: S(['5101', '5102', '6001', '6002', '6101'], -1, 'ашиг') } };
   });
-  // Сурталчилгаа (Boost) бараагаар — журналд Дт 7120 (reports.js BOOST_JR_FROM-оос); цэвэр ашиг = ашиг − сурталчилгаа
-  var ads = {}; Rr.records.forEach(function (x) { if (x.biz === biz && x.type === 'boost' && x.date >= f && x.date <= t && x.date >= BOOST_JR_FROM) ads[x.item] = (ads[x.item] || 0) + (Number(x.amount) || 0); });
+  // Сурталчилгаа (Boost) бараагаар — банкаар тулгасан Boost нэхэмжлэхийн Дт 7120 «Boost · <бараа> #BST:…» (бодит төлсөн ₮); цэвэр ашиг = ашиг − сурталчилгаа
+  var ads = {}; (window.journal || []).forEach(function (e) {
+    if (e.biz !== biz || e.date < f || e.date > t || (e.dr !== '7120' && e.cr !== '7120')) return;
+    var m = String(e.desc || '').match(/^Boost · (.*?) #BST:/); if (m) ads[m[1]] = (ads[m[1]] || 0) + (e.dr === '7120' ? e.amount : -e.amount); });
   var byK = {}; rows.forEach(function (r) { byK[r.key] = r; });
   Object.keys(ads).forEach(function (k) { if (!byK[k]) rows.push(byK[k] = { key: k, qty: '', net: 0, avg: '', cogs: '', margin: 0, pct: '' }); });
   rows.forEach(function (r) { var a = r0(ads[r.key] || 0); r.ads = a || ''; r.after = a || r.margin ? r0((Number(r.margin) || 0) - a) : '';

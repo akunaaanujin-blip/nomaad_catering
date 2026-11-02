@@ -784,7 +784,7 @@ function productsModule() {
     '</div></div>' +
     '<div class="scroll" style="margin-top:10px"><table class="stock"><tr><th>Бараа</th><th class="hide-sm">Ангилал</th><th class="n">Үнэ</th>' +
     '<th class="n hide-sm" title="Сүүлд авсан үнэ (Хятад)">Авсан үнэ</th><th class="n hide-sm">Ханш</th><th class="n hide-sm">Карго/ш</th><th class="n" title="Авсан үнэ × ханш + карго (дундаж)">Өртөг үнэ</th><th class="n">Ашиг</th><th class="n">Дэлгүүр</th>' + (wh ? '<th class="n">Агуулах</th><th class="n">Нийт</th>' : '') +
-    '<th class="n">Зарагдсан</th><th></th></tr>' +
+    '<th class="n" title="Нийт үлдэгдэл × өртөг үнэ">Өртгөөр нийт</th><th class="n">Зарагдсан</th><th></th></tr>' +
     list.map(function (r) {
       var t = total(r), s = sold[r.name] || { qty: 0 };
       var cls = t <= 0 ? 'st-out' : (t <= LOW_STOCK ? 'st-low' : '');
@@ -794,9 +794,13 @@ function productsModule() {
         '<td class="n hide-sm">' + (lb[r.name] && lb[r.name].cargo ? fmt(lb[r.name].cargo) : '') + '</td>' +
         '<td class="n">' + (r.cost ? fmt(r.cost) : '—') + '</td><td class="n' + (margin !== null && margin < 0 ? ' neg' : '') + '">' + (margin === null ? '' : margin + '%') + '</td>' +
         '<td class="n">' + round2(r.shop) + '</td>' + (wh ? '<td class="n">' + round2(r.wh) + '</td><td class="n"><b>' + t + '</b></td>' : '') +
-        '<td class="n">' + (s.qty ? round2(s.qty) : '') + '</td>' +
+        '<td class="n">' + (r.cost && t > 0 ? fmt(round2(t * r.cost)) : '') + '</td><td class="n">' + (s.qty ? round2(s.qty) : '') + '</td>' +
         '<td class="n"><button class="mini" onclick="openMove(\'Орлого\',' + esc(JSON.stringify(r.name)) + ')">+ Орлого</button></td></tr>';
-    }).join('') + '</table></div></div>' +
+    }).join('') + (function () {   // доод мөр: жагсаалтад (шүүлтээр) харагдаж буй барааны өртгөөр нийт үнэ
+      var lv = list.reduce(function (a, r) { return a + Math.max(0, total(r)) * (r.cost || 0); }, 0), ls = list.reduce(function (a, r) { return a + Math.max(0, r.shop); }, 0), lw = list.reduce(function (a, r) { return a + Math.max(0, r.wh); }, 0);
+      return '<tr class="tot"><td><b>Нийт' + (list.length < rows.length ? ' (' + list.length + ' бараа)' : '') + '</b></td><td class="hide-sm"></td><td></td><td class="hide-sm"></td><td class="hide-sm"></td><td class="hide-sm"></td><td></td><td></td>' +
+        '<td class="n">' + round2(ls) + '</td>' + (wh ? '<td class="n">' + round2(lw) + '</td><td class="n"><b>' + round2(ls + lw) + '</b></td>' : '') + '<td class="n"><b>' + fmt(round2(lv)) + '</b></td><td></td><td></td></tr>';
+    })() + '</table></div></div>' +
     '<div class="card"><div class="bar-row"><h2 style="margin:0">Хөдөлгөөний түүх</h2>' +
     '<button class="link" onclick="state.showMoves=!state.showMoves;render()">' + (state.showMoves ? 'Нуух' : 'Харах') + '</button></div>' +
     (state.showMoves ? '<div class="scroll" style="margin-top:8px"><table><tr><th>Огноо</th><th>Төрөл</th><th>Бараа</th><th>Байршил</th><th class="n">Тоо</th><th class="n">Нэгж өртөг</th><th>Хэн</th><th>Тайлбар</th><th></th></tr>' +

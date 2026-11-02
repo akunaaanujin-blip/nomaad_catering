@@ -5,6 +5,7 @@ var ADS_TAG = '#ADS';
 function adsCamp(e, rec) {   // 7120 бичилтийн кампанит ажлын нэр
   var m = String(e.desc || '').match(/^Сурталчилгаа · (.*?) #ADS/); if (m) return m[1];
   if (e.doc === 'Сурталчилгаа' && rec[e.ref]) return 'Boost · ' + rec[e.ref].item;
+  var b = String(e.desc || '').match(/^Boost · (.*?) #BST:/); if (b) return 'Boost · ' + b[1];   // банкаар тулгасан Boost нэхэмжлэх
   return 'Бусад (банкаар бичсэн)';
 }
 function adsOpen() {
@@ -65,26 +66,68 @@ function bstRange() {
   if (BST.per === 'month') return [t.slice(0, 8) + '01', t];
   return ['0000-00-00', '9999-12-31'];
 }
-// 3801 «Сурталчилгаа (Meta)»: банкаар төлсөн дүнг (Дт 3801) хамгийн эртний boost-оос эхлэн хуваарилна
-function bstPaid(biz, Rr) {
-  var E = buildJournal(biz, Rr), paid = 0, out = {};
-  E.forEach(function (e) { if ((e.dr === '3801' || e.dr === '7120') && e.partner === BOOST_PARTNER) paid += e.amount;   // банкаар төлсөн boost (7120, хуучин 3801)
-    if (e.cr === '3801' && e.partner === BOOST_PARTNER && e.doc !== 'Сурталчилгаа') paid -= e.amount; });
-  Rr.records.filter(function (x) { return x.biz === biz && x.type === 'boost' && x.date >= BOOST_JR_FROM; })
-    .sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; })
-    .forEach(function (x) { var a = Number(x.amount) || 0; out[x.id] = paid + 0.5 >= a; paid -= a; if (paid < 0) paid = 0; });
-  return out;
+// ═══════════ Boost нэхэмжлэх (BST-…) ═══════════
+// Ажилтны boost мөрүүд bill = нэхэмжлэхийн дугаараар нэгдэнэ. Төлсөн эсэх, бодит ₮ — журналын «#BST:<дугаар>» тагтай Дт 7120 бичилтээс
+// (банкны хуулгаар тулгахад мөр бүрт «Boost · <бараа> #BST:<дугаар>»). Мөрийн ₮ (amount) нь зөвхөн ханшаар тооцсон урьдчилсан дүн.
+var BST_TAG_RE = /#BST:([\w-]+)/;
+function bstTag(no) { return '#BST:' + String(no).replace(/^BST-/i, ''); }
+function bstNoIn(desc) { var m = String(desc || '').match(/BST-?\s?(\d[\w-]{3,})/i); return m ? 'BST-' + m[1] : ''; }   // банкны гүйлгээний утган дахь дугаар
+function bstCoName(k) { return BST_SHORT[k] || (k === 'travel' ? 'NOMAAD' : (BUSINESSES[k] || {}).name || k); }
+function bstInvoices(Rr) {
+  Rr = Rr || R();
+  var by = {}, list = [], J = {};
+  (Rr.records || []).forEach(function (x) {
+    if (x.type !== 'boost' || !/^BST-/.test(String(x.bill || '')) || x.date < BOOST_JR_FROM) return;
+    var v = by[x.bill]; if (!v) { v = by[x.bill] = { no: x.bill, tag: bstTag(x.bill), rows: [], staff: x.staff || '', date: x.date }; list.push(v); }
+    v.rows.push(x); if (x.date < v.date) v.date = x.date;
+  });
+  (window.journal || []).forEach(function (e) { var m = String(e.desc || '').match(BST_TAG_RE); if (m) (J[m[1]] = J[m[1]] || []).push(e); });
+  list.forEach(function (v) {
+    var E = J[v.tag.slice(5)] || [], cos = {};
+    v.rows.forEach(function (x) { x._usd = x.unit === 'USD' ? Number(x.price) || 0 : 0; x._est = Number(x.amount) || 0; x._paid = 0; });
+    v.pays = [];
+    E.forEach(function (e) {
+      if (e.dr !== '7120' && e.cr !== '7120') return;
+      var sg = e.dr === '7120' ? 1 : -1, it = (String(e.desc).match(/^Boost · (.*?) #BST:/) || [])[1];
+      var rs = v.rows.filter(function (x) { return x.biz === e.biz && x.item === it; }); if (!rs.length) rs = v.rows.filter(function (x) { return x.biz === e.biz; }); if (!rs.length) return;
+      var tu = rs.reduce(function (a, x) { return a + x._usd; }, 0);
+      rs.forEach(function (x) { x._paid += sg * e.amount * (tu ? x._usd / tu : 1 / rs.length); });
+      v.pays.push({ biz: e.biz, date: e.date, amount: sg * e.amount });
+    });
+    v.rows.forEach(function (x) {
+      var c = cos[x.biz] = cos[x.biz] || { biz: x.biz, usd: 0, est: 0, paid: 0, last: '', n: 0 };
+      c.usd += x._usd; c.est += x._est; c.paid += x._paid; c.n++;
+    });
+    v.pays.forEach(function (p) { var c = cos[p.biz]; if (c && p.date > c.last) c.last = p.date; });
+    v.cos = Object.keys(cos).map(function (k) { var c = cos[k]; c.usd = Math.round(c.usd * 100) / 100; c.paid = r0(c.paid); c.isPaid = c.paid > 0.5; return c; });
+    v.usd = Math.round(v.cos.reduce(function (a, c) { return a + c.usd; }, 0) * 100) / 100;
+    v.est = v.cos.reduce(function (a, c) { return a + c.est; }, 0); v.paid = v.cos.reduce(function (a, c) { return a + c.paid; }, 0);
+    var np = v.cos.filter(function (c) { return c.isPaid; }), last = np.reduce(function (a, c) { return c.last > a ? c.last : a; }, '');
+    v.state = np.length === v.cos.length ? 'paid' : np.length ? 'part' : 'open';
+    v.status = v.state === 'paid' ? 'Төлсөн · ' + last : v.state === 'part' ? 'Хэсэгчлэн төлсөн' : 'Төлөгдөөгүй';
+  });
+  return list.sort(function (a, b) { return a.no < b.no ? 1 : -1; });
+}
+function bstPaidMap(Rr) { var m = {}; bstInvoices(Rr).forEach(function (v) { v.rows.forEach(function (x) { m[x.id] = x._paid; }); }); return m; }
+function bstImg(no) {
+  if (!API_URL) { toast('Зураг зөвхөн сервертэй үед харагдана'); return; }
+  post({ type: 'admin_boost', img: no }, function (err, d) {
+    if (err || !d || !d.img) { toast(err === 'not_found' ? 'Энэ нэхэмжлэхэд зураг алга' : 'Зураг ачаалсангүй: ' + (err || '')); return; }
+    gOpen('<h2>' + esc(no) + ' · Meta баримт</h2><img src="' + esc(d.img) + '" alt="" style="max-width:100%;border-radius:8px"><div style="margin-top:10px"><button class="b-btn" onclick="gClose()">Хаах</button></div>');
+  });
 }
 function bstRows(Rr) {
-  var r = bstRange(), today = todayStr(), cos = BST.biz === 'all' ? bstCos() : [BST.biz], out = [];
+  var r = bstRange(), today = todayStr(), cos = BST.biz === 'all' ? bstCos() : [BST.biz], out = [], paid = bstPaidMap(Rr);
   cos.forEach(function (biz) {
-    var rep = repBoost(Rr, biz, '0000-00-00', '9999-12-31'), paid = bstPaid(biz, Rr), ce = costEngine(biz, Rr), P = {};
+    var rep = repBoost(Rr, biz, '0000-00-00', '9999-12-31'), ce = costEngine(biz, Rr), P = {};
     (BUSINESSES[biz].products || []).forEach(function (p) { P[p.name] = Number(p.price) || 0; });
     (rep.det || []).forEach(function (d) {
       if (d._from > r[1] || d._to < r[0]) return;
-      var x = d._x, a = Number(x.amount) || 0, cost = avgCost(ce, x.item), price = d._q > 0 ? d._sa / d._q : P[x.item] || 0, unit = price - cost;
+      var x = d._x, legacy = x.date < BOOST_JR_FROM, a = legacy ? Number(x.amount) || 0 : r0(paid[x.id] || 0);   // зөвхөн төлсөн мөр — бодит төлсөн ₮
+      if (!(a > 0.5)) return;
+      var cost = avgCost(ce, x.item), price = d._q > 0 ? d._sa / d._q : P[x.item] || 0, unit = price - cost;
       out.push({ biz: biz, x: x, d: d, a: a, usd: x.unit === 'USD' ? Number(x.price) || 0 : 0, left: d._run ? Math.round((new Date(boostEnd(x) + 'T00:00:00') - new Date(today + 'T00:00:00')) / 864e5) : 0,
-        after: d._gp - a, be: unit > 0 && cost > 0 ? Math.ceil(a / unit) : null, paid: x.date < BOOST_JR_FROM ? null : !!paid[x.id],
+        after: d._gp - a, be: unit > 0 && cost > 0 ? Math.ceil(a / unit) : null, legacy: legacy,
         verdict: d._run ? 'Явж байна' : d._nc ? 'Өртөггүй' : d._gp - a >= 0 ? 'Ашигтай' : 'Ашиггүй' });
     });
   });
@@ -93,14 +136,21 @@ function bstRows(Rr) {
 function bstSet(k, v) { BST[k] = v; render(); }
 function bstToggle(id) { BST.open[id] = !BST.open[id]; render(); }
 function boostView() {
-  var Rr = R(), L = bstRows(Rr), cos = bstCos();
+  var Rr = R(), L = bstRows(Rr), cos = bstCos(), INV = bstInvoices(Rr), rg = bstRange();
   var spent = 0, usd = 0, sales = 0, after = 0; L.forEach(function (o) { spent += o.a; usd += o.usd; sales += o.d._sa; after += o.after; });
   var roas = spent > 0 ? (Math.round(sales / spent * 10) / 10) + '×' : '—';
   var seg = function (k, opts) { return '<div class="fn-seg">' + opts.map(function (o) { return '<button class="' + (BST[k] === o[0] ? 'on' : '') + '" onclick="bstSet(\'' + k + '\',\'' + o[0] + '\')">' + o[1] + '</button>'; }).join('') + '</div>'; };
   var flt = '<div class="fn-flt"><span class="fn-fl">Компани</span>' + seg('biz', [['all', 'Бүгд']].concat(cos.map(function (k) { return [k, bstName(k)]; }))) + '</div>' +
     '<div class="fn-flt"><span class="fn-fl">Хугацаа</span>' + seg('per', [['week', 'Энэ долоо хоног'], ['month', 'Энэ сар'], ['all', 'Бүх хугацаа']]) + '</div>';
+  // Төлөгдөөгүй нэхэмжлэх (сонгосон компанийн мөрөөр): тоо, $
+  var mine = function (c) { return BST.biz === 'all' || c.biz === BST.biz; };
+  var unp = INV.filter(function (v) { return v.cos.some(function (c) { return mine(c) && !c.isPaid; }); });
+  var unpUsd = unp.reduce(function (a, v) { return a + v.cos.reduce(function (b, c) { return b + (mine(c) && !c.isPaid ? c.usd : 0); }, 0); }, 0);
+  var unpEst = unp.reduce(function (a, v) { return a + v.cos.reduce(function (b, c) { return b + (mine(c) && !c.isPaid ? c.est : 0); }, 0); }, 0);
+  var unpCard = '<div class="fn-kpis"><div class="fn-kpi"><small>Төлөгдөөгүй нэхэмжлэх</small><b' + (unp.length ? ' class="neg"' : '') + '>' + unp.length + ' · $' + Math.round(unpUsd * 100) / 100 + '</b>' +
+    (unpEst ? '<small class="muted">≈ ' + fmt(unpEst) + ' (ханшаар)</small>' : '') + '</div></div>';
   var kpi = '<div class="fn-kpis">' +
-    '<div class="fn-kpi"><small>Зарцуулсан</small><b>' + fmt(spent) + (usd ? ' <span class="muted" style="font-size:.7em">· $' + (Math.round(usd * 100) / 100) + '</span>' : '') + '</b></div>' +
+    '<div class="fn-kpi"><small>Төлсөн (банкаар)</small><b>' + fmt(spent) + (usd ? ' <span class="muted" style="font-size:.7em">· $' + (Math.round(usd * 100) / 100) + '</span>' : '') + '</b></div>' +
     '<div class="fn-kpi"><small>Boost-ийн үеийн борлуулалт</small><b>' + fmt(sales) + '</b></div>' +
     '<div class="fn-kpi"><small>Boost-ийн дараах ашиг</small><b class="' + (after < -0.5 ? 'neg' : '') + '">' + mny(after) + '</b></div>' +
     '<div class="fn-kpi"><small>ROAS</small><b>' + roas + '</b></div></div>';
@@ -116,7 +166,7 @@ function boostView() {
       '<td class="n">' + nn(d._q) + '</td><td class="n">' + nn(d._on) + '</td><td class="n">' + nn(d._sa) + '</td>' +
       '<td class="n">' + (d._nc ? '<span class="muted">—</span>' : nn(d._gp)) + '</td><td class="n' + (o.after < -0.5 ? ' neg' : '') + '">' + nn(o.after) + '</td>' +
       '<td style="min-width:150px">' + tag(o.verdict) + '<br><small class="muted">' + (o.be != null ? o.be + ' ш зарвал нөхнө · одоо ' + r0(d._q) + ' ш' : 'Тэнцэх тоо: өртөггүй') + '</small>' +
-        '<br><small class="' + (o.paid === false ? 'neg' : 'muted') + '">' + (o.paid == null ? 'Банкаар (7120)' : o.paid ? 'Төлсөн' : 'Банкаар тулгаагүй') + '</small></td>' +
+        '<br><small class="muted">' + (o.legacy ? 'Банкаар (7120)' : 'Төлсөн · ' + esc(x.bill || '')) + '</small></td>' +
       '<td class="n"><button class="mini" onclick="event.stopPropagation();cancelRecord(' + esc(JSON.stringify(x.id)) + ')">Цуцлах</button></td></tr>';
     if (!op) return main;
     var sl = d._sl.slice().sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; }), ol = d._ol;
@@ -127,10 +177,21 @@ function boostView() {
         return '<tr><td class="nw">' + w.date + '</td><td>' + esc(w.phone || '') + '</td><td>' + esc(typeof ordStLabel === 'function' ? ordStLabel(w) : w.status || '') + '</td><td class="n">' + fmt(Number(w.amount) || 0).slice(1) + '</td></tr>'; }).join('') + '</table>' : ' <span class="muted">— алга</span>') +
       '</td></tr>';
   }).join('');
+  var invL = INV.filter(function (v) { return v.cos.some(mine) && (v.state !== 'paid' || v.rows.some(function (x) { return x.date <= rg[1] && addDays(boostEnd(x), -1) >= rg[0]; })); });
+  var invRows = invL.map(function (v) {
+    var cs = v.cos.filter(mine);
+    return '<tr><td class="nw"><b>' + esc(v.no) + '</b><br><small class="muted">' + esc(v.staff) + '</small></td><td>' + v.rows.filter(function (x) { return mine(x); }).map(function (x) {
+        return (many ? bstName(x.biz) + ' · ' : '') + esc(x.item) + ' <small class="muted">$' + x._usd + ' · ' + x.date.slice(5) + '–' + addDays(boostEnd(x), -1).slice(5) + (x.note ? ' · ' + esc(x.note) : '') + (x._paid > 0.5 ? ' · ' + fmt(r0(x._paid)) : '') + '</small>'; }).join('<br>') + '</td>' +
+      '<td>' + cs.map(function (c) { var df = c.isPaid ? r0(c.paid - c.est) : 0;
+        return '<div class="nw">' + bstCoName(c.biz) + ': $' + c.usd + ' · ≈' + fmt(c.est).slice(1) + ' — ' + (c.isPaid ? '<span style="color:var(--green)">Төлсөн · ' + c.last + ' · ' + fmt(c.paid).slice(1) + '</span>' + (Math.abs(df) > 0.5 ? ' <small class="' + (df < 0 ? 'neg' : 'muted') + '">' + (df < 0 ? 'дутуу ' + fmt(-df).slice(1) : 'илүү ' + fmt(df).slice(1)) + '</small>' : '') : '<span class="neg">Төлөгдөөгүй</span>') + '</div>'; }).join('') + '</td>' +
+      '<td><span class="st ' + ({ paid: 'g', part: 'y', open: 'r' })[v.state] + '">' + esc(v.status) + '</span></td><td class="n"><button class="mini" onclick="bstImg(' + esc(JSON.stringify(v.no)) + ')">Баримт</button></td></tr>';
+  }).join('');
+  var invCard = '<div class="card rep"><div class="rep-cap"><b>Нэхэмжлэх</b><span>Төлөгдөөгүй бүгд + энэ хугацааны төлсөн. Банкны хуулгаар «Boost нэхэмжлэх»-ээр тулгана.</span></div><div class="scroll"><table class="rep-t"><tr><th>Дугаар</th><th>Мөр</th><th>Компаниар ($ · ≈₮ ханшаар — төлсөн ₮)</th><th>Төлөв</th><th></th></tr>' +
+    (invRows || '<tr><td colspan="5" class="muted">Нэхэмжлэх алга.</td></tr>') + '</table></div></div>';
   var head = '<tr>' + (many ? '<th>Компани</th>' : '') + '<th>Бараа</th><th>Ажилтан</th><th>Хугацаа</th><th class="n">$</th><th class="n">₮</th><th class="n">Зарсан ш</th><th class="n">Захиалга</th><th class="n">Борлуулалт</th><th class="n">Нийт ашиг</th><th class="n">Boost-ийн дараах</th><th>Дүгнэлт</th><th></th></tr>';
-  return '<div class="card">' + flt + '</div>' + kpi +
-    '<div class="card rep"><div class="scroll"><table class="rep-t bst-t">' + head + (rows || '<tr><td colspan="' + cols + '" class="muted">Энэ хугацаанд boost алга.</td></tr>') + '</table></div>' +
-    '<p class="muted" style="font-size:12.5px;margin-top:8px">Нийт ашиг = boost-ийн хугацааны борлуулалт − өртөг; Boost-ийн дараах ашиг = нийт ашиг − boost зардал. Тэнцэх тоо = boost₮ ÷ (зарах үнэ − өртөг). Мөр дээр дарахад тэр хугацааны борлуулалт, захиалга нээгдэнэ. Төлбөр: банкны хуулгаар «3801 Сурталчилгаа төлсөн» гэж тулгасан дүнг эртний boost-оос эхлэн хуваарилна.</p></div>';
+  return unpCard + '<div class="card">' + flt + '</div>' + kpi +
+    '<div class="card rep"><div class="scroll"><table class="rep-t bst-t">' + head + (rows || '<tr><td colspan="' + cols + '" class="muted">Энэ хугацаанд төлсөн boost алга.</td></tr>') + '</table></div>' +
+    '<p class="muted" style="font-size:12.5px;margin-top:8px">Нийт ашиг = boost-ийн хугацааны борлуулалт − өртөг; Boost-ийн дараах ашиг = нийт ашиг − boost зардал. Тэнцэх тоо = boost₮ ÷ (зарах үнэ − өртөг). Мөр дээр дарахад тэр хугацааны борлуулалт, захиалга нээгдэнэ. Зөвхөн банкаар тулгасан (Төлсөн) нэхэмжлэхийн мөр орно — ₮ нь бодит төлсөн дүн (банкны ₮-ийг нэхэмжлэхийн мөрүүдэд $-ын харьцаагаар хуваасан).</p></div>' + invCard;
 }
 // Нүүрний «Идэвхтэй boost» карт (тухайн компани)
 function boostHomeCard(biz) {
