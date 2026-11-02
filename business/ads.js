@@ -1,6 +1,6 @@
 // ═══════════ Сурталчилгаа (Boost) — зардал бүртгэх, ROAS (8-р ээлж) ═══════════
 // Удирдлагаас бүртгэсэн зардал: Дт 7120 Зар сурталчилгааны зардал / Кт мөнгөний данс (карт, харилцах) — журналд «Сурталчилгаа · <кампанит ажил> #ADS».
-// Ажилтны Boost бүртгэл (Дт 7120 / Кт 3801) хэвээр. ROAS = тухайн хугацааны борлуулалт ÷ зардал.
+// Boost нэхэмжлэхийг банкаар төлөхөд Дт 7120 / Кт банк. ROAS = тухайн хугацааны борлуулалт ÷ зардал.
 var ADS_TAG = '#ADS';
 function adsCamp(e, rec) {   // 7120 бичилтийн кампанит ажлын нэр
   var m = String(e.desc || '').match(/^Сурталчилгаа · (.*?) #ADS/); if (m) return m[1];
@@ -109,7 +109,7 @@ function bstInvoices(Rr) {
   });
   return list.sort(function (a, b) { return a.no < b.no ? 1 : -1; });
 }
-function bstPaidMap(Rr) { var m = {}; bstInvoices(Rr).forEach(function (v) { v.rows.forEach(function (x) { m[x.id] = x._paid; }); }); return m; }
+function bstPaidMap(Rr) { var m = {}; bstInvoices(Rr).forEach(function (v) { v.rows.forEach(function (x) { m[x.id] = { paid: x._paid, est: x._est }; }); }); return m; }
 function bstImg(no) {
   if (!API_URL) { toast('Зураг зөвхөн сервертэй үед харагдана'); return; }
   post({ type: 'admin_boost', img: no }, function (err, d) {
@@ -124,11 +124,11 @@ function bstRows(Rr) {
     (BUSINESSES[biz].products || []).forEach(function (p) { P[p.name] = Number(p.price) || 0; });
     (rep.det || []).forEach(function (d) {
       if (d._from > r[1] || d._to < r[0]) return;
-      var x = d._x, legacy = x.date < BOOST_JR_FROM, a = legacy ? Number(x.amount) || 0 : r0(paid[x.id] || 0);   // зөвхөн төлсөн мөр — бодит төлсөн ₮
+      var x = d._x, legacy = x.date < BOOST_JR_FROM, pm = paid[x.id] || {}, a = legacy ? Number(x.amount) || 0 : r0(pm.paid || 0);   // зөвхөн төлсөн мөр — бодит төлсөн ₮
       if (!(a > 0.5)) return;
       var cost = avgCost(ce, x.item), price = d._q > 0 ? d._sa / d._q : P[x.item] || 0, unit = price - cost;
       out.push({ biz: biz, x: x, d: d, a: a, usd: x.unit === 'USD' ? Number(x.price) || 0 : 0, left: d._run ? Math.round((new Date(boostEnd(x) + 'T00:00:00') - new Date(today + 'T00:00:00')) / 864e5) : 0,
-        after: d._gp - a, be: unit > 0 && cost > 0 ? Math.ceil(a / unit) : null, legacy: legacy,
+        after: d._gp - a, est: legacy ? a : r0(pm.est || 0), be: unit > 0 && cost > 0 ? Math.ceil(a / unit) : null, legacy: legacy,
         verdict: d._run ? 'Явж байна' : d._nc ? 'Өртөггүй' : d._gp - a >= 0 ? 'Ашигтай' : 'Ашиггүй' });
     });
   });
@@ -167,8 +167,8 @@ function boostView() {
       '<td class="n">' + nn(d._q) + '</td><td class="n">' + nn(d._on) + '</td><td class="n">' + nn(d._sa) + '</td>' +
       '<td class="n">' + (d._nc ? '<span class="muted">—</span>' : nn(d._gp)) + '</td><td class="n' + (o.after < -0.5 ? ' neg' : '') + '">' + nn(o.after) + '</td>' +
       '<td style="min-width:150px">' + tag(o.verdict) + '<br><small class="muted">' + (o.be != null ? o.be + ' ш зарвал нөхнө · одоо ' + r0(d._q) + ' ш' : 'Тэнцэх тоо: өртөггүй') + '</small>' +
-        '<br><small class="muted">' + (o.legacy ? 'Банкаар (7120)' : 'Төлсөн · ' + esc(x.bill || '')) + '</small></td>' +
-      '<td class="n"><button class="mini" onclick="event.stopPropagation();cancelRecord(' + esc(JSON.stringify(x.id)) + ')">Цуцлах</button></td></tr>';
+        '<br><small class="muted">' + (o.legacy ? 'Банкаар (7120)' : o.a < o.est - 0.5 ? 'Хэсэгчлэн · дутуу ' + fmt(r0(o.est - o.a)) : 'Төлсөн · ' + esc(x.bill || '')) + '</small></td>' +
+      '<td class="n nw"><button class="mini" onclick="event.stopPropagation();bstDateOpen(' + esc(JSON.stringify(x.id)) + ')">Огноо засах</button> <button class="mini" onclick="event.stopPropagation();cancelRecord(' + esc(JSON.stringify(x.id)) + ')">Цуцлах</button></td></tr>';
     if (!op) return main;
     var sl = d._sl.slice().sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; }), ol = d._ol;
     return main + '<tr class="b"><td colspan="' + cols + '" style="background:var(--bg-2,#F9FAFB)">' +
@@ -194,6 +194,25 @@ function boostView() {
   return unpCard + '<div class="card">' + flt + '</div>' + kpi +
     '<div class="card rep"><div class="scroll"><table class="rep-t bst-t">' + head + (rows || '<tr><td colspan="' + cols + '" class="muted">Энэ хугацаанд төлсөн boost алга.</td></tr>') + '</table></div>' +
     '<p class="muted" style="font-size:12.5px;margin-top:8px">Нийт ашиг = boost-ийн хугацааны борлуулалт − өртөг; Boost-ийн дараах ашиг = нийт ашиг − boost зардал. Тэнцэх тоо = boost₮ ÷ (зарах үнэ − өртөг). Мөр дээр дарахад тэр хугацааны борлуулалт, захиалга нээгдэнэ. Зөвхөн банкаар тулгасан (Төлсөн) нэхэмжлэхийн мөр орно — ₮ нь бодит төлсөн дүн (банкны ₮-ийг нэхэмжлэхийн мөрүүдэд $-ын харьцаагаар хуваасан).</p></div>' + invCard;
+}
+// Boost-ийн эхэлсэн/дууссан огноог засах — зөвхөн шинжилгээнд (ROAS, борлуулалтын хугацаа); дүн, журнал өөрчлөгдөхгүй
+function bstDateOpen(id) {
+  var x = R().records.filter(function (y) { return y.id === id; })[0]; if (!x) return;
+  gOpen('<h2>Boost-ийн огноо засах</h2><p class="rep-note">' + esc(x.item) + (x.bill ? ' · ' + esc(x.bill) : '') + '</p>' +
+    '<p class="muted" style="font-size:12.5px">Зөвхөн шинжилгээнд (борлуулалт, ROAS-ийн хугацаа) — мөнгөн дүн, журналд нөлөөлөхгүй.</p>' +
+    '<label for="bdF">Эхэлсэн</label><input type="date" id="bdF" value="' + esc(x.date) + '">' +
+    '<label for="bdT">Дууссан</label><input type="date" id="bdT" value="' + esc(addDays(boostEnd(x), -1)) + '">' +
+    '<div class="row2" style="margin-top:12px"><button class="b-btn" onclick="gClose()">Болих</button><button class="b-btn primary" onclick="bstDateSave(' + esc(JSON.stringify(id)) + ')">Хадгалах</button></div>');
+}
+function bstDateSave(id) {
+  var f = $('bdF').value, t = $('bdT').value;
+  if (!f || !t) { toast('Огноогоо сонгоно уу'); return; }
+  if (t < f) { toast('Дууссан огноо эхэлснээс өмнө байна'); return; }
+  var qty = Math.round((new Date(t + 'T00:00:00') - new Date(f + 'T00:00:00')) / 864e5) + 1;
+  post({ type: 'admin_boost', edit: [{ id: id, date: f, qty: qty }] }, function (err) {
+    if (err) { toast(err === 'role' ? 'Энэ компанид эрхгүй' : 'Алдаа: ' + err); return; }
+    gClose(); toast('Огноо засагдлаа'); refresh();
+  });
 }
 // Нүүрний «Идэвхтэй boost» карт (тухайн компани)
 function boostHomeCard(biz) {

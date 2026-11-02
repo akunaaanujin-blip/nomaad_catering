@@ -317,7 +317,7 @@ function openItems(E, accs, sign, to, loanKey) {
       // нэг захиалгын (баримтын) барааны мөр + хүргэлтийн мөр → нэг авлага
       var same = e.bill ? p.open.filter(function (o) { return o.bill === e.bill && o.date === e.date && !o.paid; })[0] : null;
       if (same && !(p.over > 0)) { same.amt += v; return; }
-      var it = { date: e.date, who: who, desc: e.desc, amt: v, paid: 0, fee: 0, closed: '', acc: acc, np: !e.partner, ref: e.ref || '', bill: e.bill || '', tags: (String(e.desc).match(/#O\d+/g) || []).map(function (t) { return t.slice(1); }),
+      var it = { date: e.date, who: who, desc: e.desc, other: inD ? e.cr : e.dr, amt: v, paid: 0, fee: 0, closed: '', acc: acc, np: !e.partner, ref: e.ref || '', bill: e.bill || '', tags: (String(e.desc).match(/#O\d+/g) || []).map(function (t) { return t.slice(1); }),
                  key: (e.ref || '') + '|' + e.date + '|' + Math.round(v) };
       it.pays = [];
       if (p.over > 0) { var u = Math.min(p.over, v); it.paid += u; p.over -= u; it.pays.push({ date: e.date, desc: 'Өмнө илүү төлсөн дүнгээс', partner: who, other: '', v: u, key: '' }); }

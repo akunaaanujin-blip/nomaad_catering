@@ -1,4 +1,5 @@
 // Хадгалах явцын төлөв (post/refresh) — ачаалах үед fetchAll-аас өмнө тодорхойлогдсон байх ёстой
+var JS_VER = '20261103a';   // хуучин (кэшлэгдсэн) кодоор бичихгүй — серверийн MIN_JS-тэй тэнцүү эсвэл их байна; JS засах бүрт ахиулна
 var BUSY = { n: 0, p: 0, msg: '' }, INFLIGHT = {}, refreshing = false, refreshAgain = false;
 // ── УДИРДЛАГЫН САМБАР ──
 // Baaz-ийн бүтэцтэй: Миний компаниуд → (Борлуулалт · Бараа материал · Санхүү · Ажилчид), мөн нийт Ажилчид цэс.
@@ -150,13 +151,14 @@ function post(body, cb) {
   var rd = /^(admin_read|admin_audit)$/.test(body.type) || (body.type === 'admin_eb' && body.op === 'sync');   // уншилт — «Ачаалж байна…», товч түгжихгүй
   if (rd && btn) { btn.disabled = false; btn = null; }
   busySet(1, rd ? 'Ачаалж байна…' : 'Хадгалж байна…', !rd);
-  var done = function (err, d) { delete INFLIGHT[key]; if (btn) btn.disabled = false; busySet(-1, '', !rd); cb(err, d); };
-  body.token = token; if (body.by == null && /^admin_/.test(body.type)) body.by = ownerName;   // түүхэнд «хэн»
+  var done = function (err, d, quiet) { delete INFLIGHT[key]; if (btn) btn.disabled = false; busySet(-1, '', !rd); if (!quiet) cb(err, d); };
+  body.token = token; body.v = JS_VER; if (body.by == null && /^admin_/.test(body.type)) body.by = ownerName;   // түүхэнд «хэн»
   fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) })
     .then(function (r) { return r.json(); })
     .then(function (d) {
       var err = d && d.status === 'ok' ? null : (d && d.error) || 'error';
       if (err === 'auth') authLost();
+      if (err === 'old') { done('old', d, 1); toast('Хуудсаа шинэчилнэ үү (Ctrl+Shift+R) — хуучин хувилбар ачаалагдсан байна'); return; }   // бичигдээгүй; дуудагчийн алдааны мессеж үүнийг дарахгүй
       if (err === 'locked') { toast('Энэ хугацааны гүйлгээ түгжигдсэн байна (Санхүү → Гүйлгээ түгжих)'); err = 'locked'; }
       done(err, d);
     })
