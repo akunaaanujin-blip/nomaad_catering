@@ -322,7 +322,13 @@ function buildJournal(biz, R) {
     }
   });
   // Буухиагийн хөлс — хүргэгдсэн захиалга бүрт (өмнө нь тооцоо нийлэхэд «#EB» бичигдсэн бол давхар бичихгүй)
-  var ebDone = {}; (R.journal || []).forEach(function (j) { if (j.biz === biz && /#EB:/.test(String(j.desc))) (String(j.desc).match(/#O\d+/g) || []).forEach(function (t) { ebDone[t.slice(1)] = 1; }); });
+  // Зөвхөн хөлсийг тооцоон дээр шууд зардлаар (Дт 7124) бичсэн захиалга. Тооцоо «Дт 3101» бичсэн бол хүргэх үеийн өглөгийг хааж байгаа тул өглөг заавал бичигдэнэ
+  var ebDone = {}, ebPaid = {}; (R.journal || []).forEach(function (j) {
+    if (j.biz !== biz || !/#EB:/.test(String(j.desc))) return;
+    var m = ['7124', '7207'].indexOf(String(j.dr)) >= 0 ? ebDone : String(j.dr) === '3101' ? ebPaid : null;
+    if (m) (String(j.desc).match(/#O\d+/g) || []).forEach(function (t) { m[t.slice(1)] = 1; });
+  });
+  Object.keys(ebPaid).forEach(function (id) { delete ebDone[id]; });
   Object.keys(ORD).forEach(function (id) {
     var o = ORD[id]; if (!ebAccrues(o) || ebDone[id]) return;
     var d = String(EB_FEE_DATE[id] || o.date).slice(0, 10); if (R.closed && d <= R.closed) return;
