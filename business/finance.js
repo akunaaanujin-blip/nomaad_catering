@@ -45,6 +45,7 @@ function drillKey(g, x) {
   return '';
 }
 function drillLines(s, E) {
+  if (s.lines) return { lines: s.lines, open: 0 };   // бэлэн мөрүүд (авлага, өглөгийн «Төлсөн» — яг аль гүйлгээгээр хаагдсан)
   E = E || J();
   var A = {}; s.acc.forEach(function (k) { A[k] = 1; });
   var from = s.from || '', to = s.to || '9999-12-31', out = [], open = 0;
@@ -316,7 +317,8 @@ function openItems(E, accs, sign, to, loanKey) {
       if (same && !(p.over > 0)) { same.amt += v; return; }
       var it = { date: e.date, who: who, desc: e.desc, amt: v, paid: 0, fee: 0, closed: '', acc: acc, np: !e.partner, ref: e.ref || '', bill: e.bill || '', tags: (String(e.desc).match(/#O\d+/g) || []).map(function (t) { return t.slice(1); }),
                  key: (e.ref || '') + '|' + e.date + '|' + Math.round(v) };
-      if (p.over > 0) { var u = Math.min(p.over, v); it.paid += u; p.over -= u; }
+      it.pays = [];
+      if (p.over > 0) { var u = Math.min(p.over, v); it.paid += u; p.over -= u; it.pays.push({ date: e.date, desc: 'Өмнө илүү төлсөн дүнгээс', partner: who, other: '', v: u, key: '' }); }
       if (it.paid >= it.amt - 0.5) it.closed = e.date; else p.open.push(it);
       items.push(it);
     } else {
@@ -326,7 +328,7 @@ function openItems(E, accs, sign, to, loanKey) {
       // Буухиа хураасан мөнгөнөөсөө хөлсөө суутгасан (Дт 3101 / 7124) — төлбөр биш, «хөлс хассан» гэж тусад нь харуулна
       var isFee = inC && (e.dr === '3101' || e.dr === '7124') && e.partner === BUUHIA;
       var order = tags.length ? p.open.slice().sort(function (a, b) { return hit(a) - hit(b); }) : p.open.slice();
-      for (var q = 0; q < order.length && rest > 0.005; q++) { var o = order[q], u2 = Math.min(rest, o.amt - o.paid); o.paid += u2; if (isFee) o.fee += u2; rest -= u2; if (o.paid >= o.amt - 0.5) o.closed = e.date; }
+      for (var q = 0; q < order.length && rest > 0.005; q++) { var o = order[q], u2 = Math.min(rest, o.amt - o.paid); o.paid += u2; if (isFee) o.fee += u2; rest -= u2; o.pays.push({ date: e.date, time: e.time || '', doc: e.doc, desc: e.desc, partner: e.partner, acc: acc, other: inD ? e.cr : e.dr, v: u2, key: '' }); if (o.paid >= o.amt - 0.5) o.closed = e.date; }
       p.open = p.open.filter(function (o) { return !o.closed; });
       if (rest > 0.005) p.over += rest;
     }
@@ -391,10 +393,12 @@ function repDebts(E, k, flt) {
     var opened = OPEN[k + g.w] || !!q;
     rows.push({ _b: 1, _act: g.open.length && /^[rp]$/.test(k) ? '<input type="checkbox" title="Энэ харилцагчийн бүх баримтыг сонгох" data-grp="' + esc(g.w) + '" onchange="debtSelGrp(this)">' : '',
       _on: 'if(!/INPUT|LABEL|BUTTON/.test(event.target.tagName))debtTog(\'dOpen\',\'' + jsq(k + g.w) + '\')', date: '', who: (opened ? '▾ ' : '▸ ') + nameTel(g.w), desc: g.open.length + (k === 'r' ? ' захиалга, баримт' : ' хаагдаагүй баримт'), amt: r0(amt), paid: r0(paid), left: r0(g.left), closed: '', st: old ? days(old) + ' хоног' : 'Хаагдсан',
-      _d: { left: debtSpec(k, { who: g.w, acc: (oi.P[g.w] || {}).acc, np: (oi.P[g.w] || {}).np }, td) } });
+      _d: { left: debtSpec(k, { who: g.w, acc: (oi.P[g.w] || {}).acc, np: (oi.P[g.w] || {}).np }, td),
+        paid: { lines: [].concat.apply([], g.L.map(function (it) { return it.pays || []; })).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }), t: 'Төлсөн / хасагдсан — ' + g.w, to: td } } });
     if (!opened) return;
     g.L.filter(keep).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (it) {
-      rows.push({ date: String(it.date).slice(5), who: '', desc: it.desc, amt: r0(it.amt), paid: r0(it.paid), left: r0(it.amt - it.paid), st: it.closed ? 'Хаагдсан ' + String(it.closed).slice(5) : (it.paid - (it.fee || 0) > 0.5 ? 'Хэсэгчлэн · ' : it.fee > 0.5 ? 'Хөлс ' + mny(it.fee) + ' хассан · ' : '') + days(it.date) + ' хоног',
+      rows.push({ _d: it.paid > 0.5 ? { paid: { lines: it.pays, t: 'Төлсөн / хасагдсан — ' + it.who + ' · ' + it.date + ' · ' + mny(it.amt), to: td } } : null,
+        date: String(it.date).slice(5), who: '', desc: it.desc, amt: r0(it.amt), paid: r0(it.paid), left: r0(it.amt - it.paid), st: it.closed ? 'Хаагдсан ' + String(it.closed).slice(5) : (it.paid - (it.fee || 0) > 0.5 ? 'Хэсэгчлэн · ' : it.fee > 0.5 ? 'Хөлс ' + mny(it.fee) + ' хассан · ' : '') + days(it.date) + ' хоног',
         _act: !it.closed && /^[rp]$/.test(k) ? '<input type="checkbox" class="dsel" data-grp="' + esc(g.w) + '" data-key="' + esc(it.key) + '" data-left="' + r0(it.amt - it.paid) + '"' + (debtSel[it.key] !== undefined ? ' checked' : '') + ' onchange="debtSelSet(this)" title="Олноор хаахад сонгох"> ' +
           '<button class="mini" style="color:var(--accent)" onclick="debtClose(\'' + k + '\',\'' + esc(it.key) + '\')">' + (k === 'r' ? 'Авлага хаах' : 'Өглөг хаах') + '</button>' : '' });
     });
