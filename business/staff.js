@@ -56,9 +56,8 @@ function onCodeInput() {
 function doLogin() {
   var user = $('userInput').value.trim().toLowerCase();
   var code = $('codeInput').value.trim();
-  if (!user) { loginFail('Утасны дугаараа бичнэ үү'); $('userInput').focus(); return; }
-  if (!/[a-zа-я]/i.test(user) && !/^\d{8}$/.test(user.replace(/\D/g, '').slice(-8))) { loginFail('Утасны дугаар 8 оронтой'); $('userInput').focus(); return; }
-  if (!/^\d{4,8}$/.test(code)) { loginFail('PIN-ээ оруулна уу'); return; }
+  if (!user) { loginFail('Нэвтрэх нэрээ бичнэ үү'); $('userInput').focus(); return; }
+  if (!/^\d{4,8}$/.test(code)) { loginFail('Кодоо оруулна уу'); return; }
   if (!API_URL) {   // туршилтын горим
     if (code !== '0000') { loginFail('Туршилтын горимд код: 0000'); return; }
     return loginOk({ name: user, role: 'manager' });
@@ -71,8 +70,8 @@ function doLogin() {
     if (!data || data.status !== 'ok') {
       loginFail(data && data.error === 'locked' ? 'Олон удаа буруу оруулсан — 10 минутын дараа оролдоно уу'
         : data && data.error === 'pending' ? 'Таны бүртгэл менежерийн баталгаажуулалт хүлээж байна'
-        : data && data.error === 'shared' ? 'Нийтлэг эрхээр нэвтрэх боломжгүй — өөрийн утас, PIN-ээр нэвтэрнэ үү (удирдлагад хандана уу)'
-        : 'Утас эсвэл PIN буруу байна');
+        : data && data.error === 'shared' ? 'Нийтлэг эрхээр нэвтрэх боломжгүй — өөрийн нэвтрэх нэр, кодоор нэвтэрнэ үү (удирдлагад хандана уу)'
+        : 'Нэвтрэх нэр эсвэл код буруу байна');
       return;
     }
     loginOk(data);
@@ -81,43 +80,21 @@ function doLogin() {
 function loginOk(d) {
   var user = $('userInput').value.trim().toLowerCase();
   save(LS_USER, user);
-  // Хэд хэдэн дэлгүүрт эрхтэй бол бусад дэлгүүр цэсэнд харагдана — солиход PIN дахин асууна (утас нь бөглөгдсөн)
+  // Хэд хэдэн дэлгүүрт эрхтэй бол бүгдэд нь нэг дор нэвтэрнэ — хуудас хооронд дахин код асуухгүй шилжинэ
   var bizes = d.tokens ? Object.keys(d.tokens).filter(function (b) { return BUSINESSES[b] && (!BUSINESSES[b].hidden || b === BIZ_KEY); }) : [BIZ_KEY];
-  bizes.forEach(function (b) { if (b !== BIZ_KEY) save('nb_user_' + b, user); });
+  bizes.forEach(function (b) {
+    if (b === BIZ_KEY) return;
+    sesSave({ name: d.name, role: d.role, date: todayStr(), token: d.tokens[b], bizes: bizes }, b);
+    save('nb_user_' + b, user);
+  });
   if (bizes.indexOf(BIZ_KEY) < 0) { location.replace(bizes[0] + '.html'); return; }   // энэ дэлгүүрт эрхгүй — өөрийн дэлгүүр рүү
   session = { name: d.name, role: d.role, date: todayStr(), token: (d.tokens && d.tokens[BIZ_KEY]) || d.token || '', bizes: bizes };
   sesSave(session);
   staffName = session.name;
   isManager = session.role === 'manager';
   $('loginMsg').textContent = '';
-  var oldPin = $('codeInput').value;
   showMain();
   flushQueue();
-  if (d.pinChange && API_URL) pinChangeOpen(oldPin, true);
-}
-// PIN солих (6 орон) — 4 оронтой хуучин кодоор нэвтэрсэн бол заавал
-function pinChangeOpen(old, force) {
-  var el = $('pinSheet');
-  if (!el) { el = document.createElement('div'); el.className = 'sheet'; el.id = 'pinSheet'; document.body.appendChild(el); }
-  el.innerHTML = '<div class="panel"><h2>PIN солих</h2><p class="muted">' + (force ? 'Аюулгүй байдлын үүднээс 6 оронтой шинэ PIN тохируулна уу.' : '') + '</p>' +
-    (old ? '' : '<label for="pinOld">Одоогийн PIN</label><input id="pinOld" class="code-input" type="password" inputmode="numeric" maxlength="8">') +
-    '<label for="pinNew">Шинэ PIN (6 орон)</label><input id="pinNew" class="code-input" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password">' +
-    '<label for="pinNew2">Давтах</label><input id="pinNew2" class="code-input" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password">' +
-    '<p class="muted" id="pinMsg" style="color:var(--red);min-height:18px"></p><button class="btn" onclick="pinChangeDo(' + esc(JSON.stringify(old || '')) + ',' + !!force + ')">Хадгалах</button>' +
-    (force ? '' : '<button class="btn ghost" onclick="closeSheet(\'pinSheet\')">Болих</button>') + '</div>';
-  openSheet('pinSheet'); setTimeout(function () { var f = $('pinOld') || $('pinNew'); if (f) f.focus(); }, 50);
-}
-function pinChangeDo(old, force) {
-  old = old || ($('pinOld') ? $('pinOld').value.trim() : ''); var p = $('pinNew').value.trim();
-  if (!/^\d{6}$/.test(p)) { $('pinMsg').textContent = 'PIN 6 оронтой тоо байна'; return; }
-  if (p !== $('pinNew2').value.trim()) { $('pinMsg').textContent = 'Давтсан PIN таарахгүй байна'; return; }
-  if (/^(\d)\1{5}$|^(012345|123456|234567|345678|456789|987654|654321)$/.test(p)) { $('pinMsg').textContent = 'Хэт энгийн PIN — өөр тоо сонгоно уу'; return; }
-  $('pinMsg').textContent = 'Хадгалж байна…';
-  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'staff_pin', token: session.token, old: old, pin: p }) })
-    .then(function (r) { return r.json(); }).then(function (d) {
-      if (d && d.status === 'ok') { closeSheet('pinSheet'); toast('PIN солигдлоо — дараагийн удаа шинэ PIN-ээр нэвтэрнэ'); return; }
-      $('pinMsg').textContent = d && d.error === 'old' ? 'Одоогийн PIN буруу' : d && d.error === 'type' ? 'Сервер шинэчлэгдээгүй байна — удирдлагад хэлнэ үү' : 'Алдаа: ' + ((d && d.error) || '');
-    }).catch(function () { $('pinMsg').textContent = 'Интернэт холболтоо шалгана уу'; });
 }
 function loginFail(msg) {
   $('loginMsg').textContent = msg;
@@ -196,12 +173,12 @@ function renderNav() {
       return '<div class="ep-grp">' + (grp.t ? '<div class="ep-grp-t">' + esc(grp.t) + '</div>' : '') + grp.items.map(function (it, ii) {
         return '<a class="ep-it' + (it[0] === cur ? ' on' : '') + '" onclick="navGo(' + gi + ',' + ii + ')">' + esc(it[1]) + '</a>';
       }).join('') + '</div>';
-    }).join('') + bizSwitch() + '<div class="ep-grp"><a class="ep-it" onclick="pinChangeOpen(\'\',false)">PIN солих</a></div><div class="ep-foot">NOMAAD · ажилтны хуудас</div>';
+    }).join('') + bizSwitch() + '<div class="ep-foot">NOMAAD · ажилтны хуудас</div>';
 }
 function bizSwitch() {   // нэг эрхээр хэд хэдэн дэлгүүрт ажилладаг бол бусад дэлгүүр рүү шилжих
   var L = (session && session.bizes || []).filter(function (b) { return b !== BIZ_KEY && BUSINESSES[b] && !BUSINESSES[b].hidden; });
   if (!L.length) return '';
-  return '<div class="ep-grp"><div class="ep-grp-t">Өөр дэлгүүр <small>(PIN асууна)</small></div>' + L.map(function (b) {
+  return '<div class="ep-grp"><div class="ep-grp-t">Өөр дэлгүүр</div>' + L.map(function (b) {
     return '<a class="ep-it" href="' + b + '.html">' + esc(BUSINESSES[b].name) + '</a>';
   }).join('') + '</div>';
 }

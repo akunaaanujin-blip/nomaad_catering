@@ -1156,7 +1156,7 @@ function saveStaff() {
   if (!/^[a-z0-9._]{3,20}$/.test(f.username)) { toast('Нэвтрэх нэр: латин жижиг үсэг, тоо, цэг (3-20)'); return; }
   if (!f.biz) { toast('Ажиллах дэлгүүрээ сонгоно уу'); return; }
   var code = $('sfCode').value.trim();
-  if (code) { if (!/^\d{6}$/.test(code)) { toast('PIN 6 оронтой тоо байна'); return; } f.code = code; }
+  if (code) { if (!/^\d{4,8}$/.test(code)) { toast('Код 4-8 оронтой тоо байна'); return; } f.code = code; }
   var kp = Number($('sfKpi').value) || 0, sid = editId;
   if (kp < 0 || kp > 50) { toast('KPI хувь 0–50 хооронд'); return; }
   post({ type: 'admin_staff', id: editId, fields: f }, function (err, d) {

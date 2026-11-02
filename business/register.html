@@ -37,8 +37,8 @@
     <label for="rBank">Цалингийн данс (банк, дансны дугаар)</label>
     <input id="rBank" placeholder="Хаан банк 5000123456">
     <div class="row2">
-      <div><label for="rCode">PIN (6 орон) *</label><input id="rCode" class="code-input" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="••••••"></div>
-      <div><label for="rCode2">Кодоо давтах *</label><input id="rCode2" class="code-input" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="••••••"></div>
+      <div><label for="rCode">Нэвтрэх код (4 орон) *</label><input id="rCode" class="code-input" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="••••"></div>
+      <div><label for="rCode2">Кодоо давтах *</label><input id="rCode2" class="code-input" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="••••"></div>
     </div>
     <p class="muted" style="font-size:13px;margin-top:6px">Кодоо бусдад бүү хэлээрэй. 1234, 0000 гэх мэт амархан код бүү сонгоорой.</p>
     <p id="rMsg" class="muted" style="color:var(--red);min-height:20px;margin-top:6px"></p>
@@ -76,7 +76,7 @@ function submitRegister() {
   if (!d.name) msg = 'Нэрээ бичнэ үү';
   else if (!/^\+?\d{8,12}$/.test(d.phone)) msg = 'Утасны дугаараа зөв бичнэ үү';
   else if (!/^[a-z0-9._]{3,20}$/.test(d.username)) msg = 'Нэвтрэх нэр: латин жижиг үсэг, тоо, цэг (3-20 тэмдэгт)';
-  else if (!/^\d{6}$/.test(d.code)) msg = 'PIN 6 оронтой тоо байна';
+  else if (!/^\d{4}$/.test(d.code)) msg = 'Нэвтрэх код 4 оронтой тоо байна';
   else if (d.code !== $('rCode2').value.trim()) msg = 'Код хоорондоо таарахгүй байна';
   else if (/^(\d)\1{3}$|^1234$|^4321$/.test(d.code)) msg = 'Илүү хэцүү код сонгоно уу';
   $('rMsg').textContent = msg;
@@ -98,7 +98,7 @@ function submitRegister() {
       $('rMsg').textContent = {
         user_taken: 'Энэ нэвтрэх нэр бүртгэгдсэн байна — өөр нэр сонгоно уу',
         user: 'Нэвтрэх нэр буруу байна (латин жижиг үсэг, тоо, цэг)',
-        fields: 'Нэр, утсаа зөв бөглөнө үү', code: 'PIN 6 оронтой тоо байна',
+        fields: 'Нэр, утсаа зөв бөглөнө үү', code: 'Код 4 оронтой тоо байна',
         busy: 'Олон бүртгэл ирсэн байна — түр хүлээгээд дахин оролдоно уу',
       }[res.error] || 'Алдаа гарлаа: ' + (res.error || '');
     })

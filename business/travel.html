@@ -24,10 +24,10 @@
   <h1 id="loginBiz"></h1>
   <p class="muted">Ажилтны хуудас</p>
   <div class="card" style="text-align:left">
-    <label for="userInput">Утас</label>
-    <input id="userInput" autocomplete="username" autocapitalize="none" spellcheck="false" inputmode="tel" placeholder="99112233" onkeydown="if(event.key==='Enter')$('codeInput').focus()">
-    <label for="codeInput">PIN (6 орон)</label>
-    <input id="codeInput" class="code-input" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="••••••" oninput="onCodeInput()" onkeydown="if(event.key==='Enter')doLogin()">
+    <label for="userInput">Нэвтрэх нэр</label>
+    <input id="userInput" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="жишээ: bold.b" onkeydown="if(event.key==='Enter')$('codeInput').focus()">
+    <label for="codeInput">Нууц код</label>
+    <input id="codeInput" class="code-input" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="••••" oninput="onCodeInput()" onkeydown="if(event.key==='Enter')doLogin()">
     <p class="muted" id="loginMsg" style="margin-top:8px;min-height:20px;color:var(--red)"></p>
     <button class="btn" onclick="doLogin()">Нэвтрэх</button>
     <p class="muted" style="margin-top:10px;font-size:13px">Шинэ ажилтан уу? <a href="register.html?biz=travel">Энд бүртгүүлнэ үү</a></p>
