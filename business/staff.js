@@ -143,7 +143,6 @@ function showMain() {
   syncPast();   // өмнөх өдрүүдийн бүх ажилтны борлуулалт
   if (typeof ebCheckInfo === 'function') { ebCheckInfo(); setInterval(ebCheckInfo, 30 * 60000); }
   if (BIZ.orders && typeof loadOrders === 'function') loadOrders();   // Cozy: захиалгууд
-  if (BIZ.orders && typeof dlvAsk17 === 'function') { setTimeout(dlvAsk17, 8000); setInterval(dlvAsk17, 60000); }   // 17:00 — буухиа дуудах уу
   loadTasks();
   buildShell();
 }

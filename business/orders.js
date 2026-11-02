@@ -425,23 +425,13 @@ window.ebRedraw = function (keep) {
   renderDlv();
   if (keep) { var q = document.getElementById('ebQ'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }
 };
-function dlvMaybe(o) { var ph = function (p) { return String(p || '').replace(/\D/g, '').slice(-8); }, d0 = new Date(o.date + 'T00:00:00');   // буухиа дээр аль хэдийн байгаа (холбогдоогүй)
-  return (dlvAll || []).some(function (x) { return !x.id && ph(x.phone) === ph(o.phone) && x.st !== 11 && x.st !== 12 && x.created && Math.abs(new Date(String(x.created).slice(0, 10).replace(/\//g, '-') + 'T00:00:00') - d0) <= 864e5; }); }
-function dlvFresh() { return orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending && !o.ebCode && !dlvMaybe(o) && (!ordIsDup(o) || dlvNotDup[o.id]); }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; }); }
-// 17:00 — «Буухиа дуудах уу?» гэж өдөрт нэг удаа асууна; зөвшөөрвөл хаяг бүрэн «Шинэ» захиалгуудыг буухиа руу илгээнэ
-function dlvAsk17() {
-  var now = new Date(), key = 'nb_eb17_' + BIZ_KEY, day = todayStr(now);
-  if (now.getHours() < 17 || load(key, '') === day || dlvBusy || !window.API_URL) return;
-  var L = dlvFresh().filter(function (o) { return addrFinal(o).ok; }); if (!L.length) return;
-  save(key, day);
-  if (!confirm('17:00 — Буухиа дуудах уу?\n«Шинэ» захиалга ' + L.length + ', буухиа авах нийт: ' + fmt(L.reduce(function (a, o) { return a + dlvCod(o); }, 0)) + '\n\n' + L.map(function (o) { return o.phone + ' → ' + addrText(addrFinal(o)); }).join('\n'))) return;
-  showView('dlv'); dlvSend('ask17', L.map(function (o) { return o.id; }));
-}
 function renderDlv() {
   var w = dlvWrap(); if (!w) return;
   if (!dlvBusy && Date.now() - dlvPulled > 5 * 60000 && window.API_URL !== '') { dlvPulled = Date.now(); setTimeout(dlvPull, 0); }   // нээхэд (5 мин тутам) буухиагаас автоматаар татна
-  var dups = orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending && !o.ebCode && !dlvMaybe(o) && ordIsDup(o) && !dlvNotDup[o.id]; });   // ⚠ — шийдэх хүртэл илгээхгүй
-  var fresh = dlvFresh();
+  var maybe = function (o) { var ph = function (p) { return String(p || '').replace(/\D/g, '').slice(-8); }, d0 = new Date(o.date + 'T00:00:00');   // буухиа дээр аль хэдийн байгаа (холбогдоогүй)
+    return (dlvAll || []).some(function (x) { return !x.id && ph(x.phone) === ph(o.phone) && x.st !== 11 && x.st !== 12 && x.created && Math.abs(new Date(String(x.created).slice(0, 10).replace(/\//g, '-') + 'T00:00:00') - d0) <= 864e5; }); };
+  var dups = orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending && !o.ebCode && !maybe(o) && ordIsDup(o) && !dlvNotDup[o.id]; });   // ⚠ — шийдэх хүртэл илгээхгүй
+  var fresh = orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending && !o.ebCode && !maybe(o) && (!ordIsDup(o) || dlvNotDup[o.id]); }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
   var retry = orders.filter(function (o) { return o.status === 'Буухиад өгсөн' && !o.ebCode; });
   var nSel = Object.keys(dlvSel).filter(function (k) { return dlvSel[k]; }).length;
   var row = function (o) {   // Буухиа руу явах эцсийн хаяг — засаж болно; хот/аймаг, дүүрэг/сум хоосон бол шар, илгээхгүй
@@ -514,7 +504,7 @@ function dlvAddrSave(id) {
 function ordStName(o) { return ordEbCancel(o) ? 'Буцаасан, цуцалсан' : o.ebCode === 'бусад' && o.status === 'Буухиад өгсөн' ? 'Бусад хүргэлтэд' : o.status; }
 function fresh_all(on) { orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending; }).forEach(function (o) { dlvSel[o.id] = on && addrFinal(o).ok; }); renderDlv(); }
 function dlvSend(mode, given) {
-  var ids = mode === 'ask17' ? given : given || mode === 'retry' ? orders.filter(function (o) { return o.status === 'Буухиад өгсөн' && !o.ebCode; }).map(function (o) { return o.id; })
+  var ids = given || mode === 'retry' ? orders.filter(function (o) { return o.status === 'Буухиад өгсөн' && !o.ebCode; }).map(function (o) { return o.id; })
     : Object.keys(dlvSel).filter(function (k) { return dlvSel[k]; });
   if (!ids.length || dlvBusy) return;
   var L = orders.filter(function (o) { return ids.indexOf(o.id) >= 0; }), bad = L.filter(function (o) { return !addrFinal(o).ok; });
@@ -527,7 +517,7 @@ function dlvSend(mode, given) {
     return x ? o.phone + ' (' + x.code + ')' : '';
   }).filter(Boolean);
   if (dup.length && !confirm('Энэ захиалга Буухиа дээр аль хэдийн байж магадгүй:\n' + dup.join('\n') + '\n\nДахин илгээх үү? (Үгүй бол «Шинэчлэх» дарахад автоматаар холбогдоно)')) return;
-  if (mode !== 'ask17' && !confirm(ids.length + ' захиалгыг буухиа руу илгээх үү?\nБуухиа авах нийт: ' + fmt(L.reduce(function (a, o) { return a + dlvCod(o); }, 0)) + '\n\n' + L.map(function (o) { return o.phone + ' → ' + addrText(addrFinal(o)); }).join('\n'))) return;
+  if (!confirm(ids.length + ' захиалгыг буухиа руу илгээх үү?\nБуухиа авах нийт: ' + fmt(L.reduce(function (a, o) { return a + dlvCod(o); }, 0)) + '\n\n' + L.map(function (o) { return o.phone + ' → ' + addrText(addrFinal(o)); }).join('\n'))) return;
   dlvBusy = true; renderDlv(); toast('Буухиа руу илгээж байна…');
   ordPost({ type: 'eb_send', ids: ids, addr: addr }, function (err, d) {
     dlvBusy = false;
