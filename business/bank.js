@@ -396,7 +396,7 @@ function bankApply(ids, quiet) {
   var n = 1 + orderUpd.length + loanCloseIds.length + (entries.length ? 1 : 0), fin = function () { if (--n === 0) { toast(updates.length + ' гүйлгээ тулгагдлаа'); refresh(); } };
   loanCloseIds.forEach(function (lid) { post({ type: 'admin_loan', closeId: lid }, function () { fin(); }); });
   if (entries.length) post({ type: 'admin_journal', by: ownerName, entries: entries }, function (err) { if (err) toast('Журнал: ' + err); fin(); });
-  orderUpd.forEach(function (u) { post({ type: 'admin_order', id: u.id, by: ownerName, fields: u.fields }, function () { fin(); }); });
+  orderUpd.forEach(function (u) { post({ type: 'admin_order', id: u.id, by: ownerName, what: ordAudWhat((window.adminOrders || []).filter(function (z) { return z.id === u.id; })[0], u.fields), fields: u.fields }, function () { fin(); }); });
   reqDone.forEach(function (rid) { reqSetStatus(rid, 'Төлсөн', 'банк'); });
   post({ type: 'admin_bank', by: ownerName, updates: updates }, function (err) { if (err) toast('Алдаа: ' + err); fin(); });
 }
@@ -478,7 +478,7 @@ function savePayOrder() {
     save('nb_demo_journal', journal); save('nb_orders_cozy', window.adminOrders); closeSheet('payOrderSheet'); render(); toast('Баталгаажлаа'); return;
   }
   var bl = poPick ? (bankLines || []).filter(function (x) { return x.id === poPick; })[0] : null;
-  var go2 = function () { post({ type: 'admin_order', id: o.id, by: ownerName, fields: fields }, function (err) { if (err) { toast('Алдаа: ' + err); return; }
+  var go2 = function () { post({ type: 'admin_order', id: o.id, by: ownerName, what: ordAudWhat(o, fields), fields: fields }, function (err) { if (err) { toast('Алдаа: ' + err); return; }
     if (bl) { bl.status = 'Тулгасан'; bl.link = 'Захиалга ' + o.phone + ' #' + o.id; post({ type: 'admin_bank', by: ownerName, updates: [{ id: bl.id, status: 'Тулгасан', link: bl.link }] }, function () {}); }
     closeSheet('payOrderSheet'); toast(bl ? 'Төлбөр бүртгэгдэж, банкны гүйлгээ тулгагдлаа' : 'Төлбөр бүртгэгдлээ'); refresh(); }); };
   if (pe.entries.length) post({ type: 'admin_journal', by: ownerName, entries: pe.entries }, function (err) { if (err) { if (err !== 'locked') toast('Алдаа: ' + err); return; } go2(); });
@@ -500,7 +500,7 @@ function undoPayOrder(id) {
   var n = js.length + 1 + (bl.length ? 1 : 0), fin = function () { if (--n === 0) { toast('Буцаагдлаа'); refresh(); } };
   js.forEach(function (j) { post({ type: 'admin_journal', cancelId: j.id }, function () { fin(); }); });
   if (bl.length) post({ type: 'admin_bank', by: ownerName, updates: bl.map(function (l) { return { id: l.id, status: 'Шинэ', link: '' }; }) }, function () { fin(); });
-  post({ type: 'admin_order', id: o.id, by: ownerName, fields: fields }, function () { fin(); });
+  post({ type: 'admin_order', id: o.id, by: ownerName, what: ordAudWhat(o, fields), fields: fields }, function () { fin(); });
 }
 
 // Буруу / давхар оруулсан хуулгыг устгах — зөвхөн тулгаагүй («Шинэ») мөр (Sheet-д «Устгасан» төлөвтэй үлдэнэ, дахин оруулбал сэргэнэ).
@@ -668,5 +668,5 @@ function dcSave() {
   var n = 1 + (x ? 1 : 0) + ordUpd.length, fin = function () { if (--n === 0) { toast('Хаагдлаа'); refresh(); } };
   post({ type: 'admin_journal', by: ownerName, entries: E }, function (err) { if (err) toast('Алдаа: ' + err); fin(); });
   if (x) post({ type: 'admin_bank', by: ownerName, updates: [{ id: x.l.id, status: 'Тулгасан', link: x.l.link }] }, function () { fin(); });
-  ordUpd.forEach(function (o) { post({ type: 'admin_order', id: o.id, by: ownerName, fields: { confirmed: o.confirmed, note: (cash ? 'Бэлэн ' : 'Банк ') + d } }, function () { fin(); }); });
+  ordUpd.forEach(function (o) { post({ type: 'admin_order', id: o.id, by: ownerName, what: ordAudWhat(o, { confirmed: o.confirmed }), fields: { confirmed: o.confirmed, note: (cash ? 'Бэлэн ' : 'Банк ') + d } }, function () { fin(); }); });
 }

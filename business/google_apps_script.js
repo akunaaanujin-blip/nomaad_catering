@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v6.6 (удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v6.7 (удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -108,7 +108,7 @@ function doPost(e) {
   } catch (err) {
     return json({ status: 'error', error: err.message });
   } finally {
-    try { if (drop) cacheDrop(drop); } catch (e2) {}
+    try { if (drop) { SpreadsheetApp.flush(); cacheDrop(drop); } } catch (e2) {}   // бичилтийг дуусгаад кэш цэвэрлэнэ (зэрэг уншилт хуучныг кэшлэхгүй)
     lock.releaseLock();
   }
 }
@@ -177,6 +177,7 @@ function auditLabel(d) {
   if (t === 'admin_setting') return d.key === 'ebold' ? 'Буухиа: өмнөх үеийнх гэж тэмдэглэсэн' : 'Тохиргоо: ' + String(d.key || '');
   if (t === 'admin_order' && d.fields && d.fields.status === 'Цуцалсан') return 'Захиалга цуцалсан' + (d.fields.receive ? ' (борлуулалт буцаасан)' : '');
   if (t === 'admin_order' && d.fields && d.fields.restore) return 'Цуцалсан захиалгыг сэргээсэн';
+  if (t === 'admin_order' && d.fields && d.fields.edit) return 'Захиалга засварласан';
   if (t === 'order_save') return d.order && d.order.id ? 'Захиалга засварласан' : 'Захиалга бүртгэсэн';
   if (t === 'order_delete') return 'Захиалга бүр устгасан';
   if (t === 'orders_ship') return 'Захиалга → ' + String(d.to || '');
@@ -207,15 +208,16 @@ function audit(d, res) {
   if (t === 'admin_setting') { delete det.value; if (/^(lock|review|targets|company)$/.test(String(d.key))) det.value = auditClean(d.value, 1); }   // түлхүүр, нууц тохиргоог бичихгүй
   delete det.type; delete det.by;
   const id = String(d.cancelId || d.approveId || d.statusId || d.restoreId || (d.order && d.order.id) || (t === 'admin_order' ? d.id : '') || '');
-  auditSheet().appendRow([Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss'), who.slice(0, 40), biz, auditLabel(d), String(d.what || '').slice(0, 200), t, id, JSON.stringify(det).slice(0, 3000)]);
+  auditSheet().appendRow(['\'' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss'), who.slice(0, 40), biz, auditLabel(d), String(d.what || '').slice(0, 200), t, id, JSON.stringify(det).slice(0, 3000)]);
 }
 // Түүх унших: сүүлийн N мөр (шинэ нь эхэнд), from — огнооноос хойш
 function adminAudit(d) {
   const sh = auditSheet(), last = sh.getLastRow(); if (last < 2) return { status: 'ok', rows: [] };
   const lim = Math.min(Number(d.limit) || 500, 3000), start = Math.max(2, last - lim + 1);
   const rows = sh.getRange(start, 1, last - start + 1, AUDIT_HEAD.length).getValues().reverse()
-    .filter(function (r) { return !d.from || String(r[0]) >= String(d.from); })
-    .map(function (r) { return { at: String(r[0]), who: String(r[1]), biz: String(r[2]), what: String(r[3]), note: String(r[4]), type: String(r[5]), id: String(r[6]), det: String(r[7]) }; });
+    .map(function (r) { r[0] = r[0] instanceof Date ? Utilities.formatDate(r[0], TZ, 'yyyy-MM-dd HH:mm:ss') : String(r[0]); return r; })
+    .filter(function (r) { return !d.from || r[0] >= String(d.from); })
+    .map(function (r) { return { at: r[0], who: String(r[1]), biz: String(r[2]), what: String(r[3]), note: String(r[4]), type: String(r[5]), id: String(r[6]), det: String(r[7]) }; });
   return { status: 'ok', rows: rows };
 }
 // ═══════════ ХОГИЙН САВ: цуцалсан бичлэгийг (30 хоногийн дотор) сэргээх ═══════════
@@ -1237,6 +1239,15 @@ function adminOrder(d) {
     sh.getRange(o.row, 23).setValue(String(f.ebCode));
   }   // буухиад өгөөгүй (өөрсдөө хүргэсэн) гэж тэмдэглэх — зөвхөн кодгүй захиалгад
   if (f.note) sh.getRange(o.row, 19).setValue(String(o.note || '') + ' ' + String(f.note).slice(0, 100));
+  let edited = false;
+  if (f.edit && typeof f.edit === 'object') {   // удирдлагаас засах: нэр, хаяг, хүргэх өдөр, тэмдэглэл (утас, бараа, дүн — ажилтан)
+    ['customer', 'district', 'khoroo', 'address', 'deliverDate', 'note'].forEach(function (k) {
+      if (f.edit[k] === undefined) return;
+      const v = String(f.edit[k]).slice(0, k === 'note' ? 300 : 120);
+      if (k === 'deliverDate' && v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
+      sh.getRange(o.row, ORDER_KEYS.indexOf(k) + 1).setValue(v); edited = true;
+    });
+  }
   // Удирдлага цуцлах: шалтгаан заавал; receive — бараа гарт ирсэн бол борлуулалтыг эсрэг бичилтээр буцаана (ажилтны «Буцаалт хүлээн авсан»-тай адил)
   if (f.status === 'Цуцалсан') {
     if (/^(Цуцалсан|Буцаасан)$/.test(o.status)) return { status: 'error', error: 'state' };
@@ -1258,7 +1269,7 @@ function adminOrder(d) {
   }
   if (f.restore && o.status === 'Цуцалсан' && String(o.saleDone || '') !== 'returned' && /^(Шинэ|Буухиад өгсөн|Хүргэгдсэн)$/.test(String(f.restore))) sh.getRange(o.row, 17).setValue(String(f.restore));   // хогийн савнаас сэргээх
   sh.getRange(o.row, 20).setValue(Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + ' ' + String(d.by || 'Удирдлага'));
-  return { status: 'ok' };
+  return { status: 'ok', edited: edited };
 }
 // Дэлгүүрийн төлбөрийн мэдээлэл (данс, эзэмшигч) — GitHub-д бичихгүй, Script Properties-д
 function adminSetting(d) {

@@ -161,11 +161,12 @@ function repOrders(biz) {
       ? '<button class="mini" onclick="undoPayOrder(\'' + o.id + '\')">Буцаах</button>'
       : '<button class="mini" style="color:var(--green)" onclick="openPayOrder(\'' + o.id + '\')">Баталгаажуулах</button>' + (bc ? ' <button class="mini" title="Банкны хуулгын таарсан гүйлгээгээр шууд" onclick="ordBankMatch(\'' + o.id + '\')">Хуулгаар</button>' : '');
     if (billed[o.id]) act = '<button class="mini" onclick="openBillAdm(\'' + o.id + '\')">Баримт</button>' + act;
-    if (!ordDead(o)) act += ' <select class="mini" title="Бусад үйлдэл" onchange="if(this.value===\'x\')ordCancelOpen(\'' + o.id + '\');this.selectedIndex=0"><option value="">⋯</option><option value="x">Цуцлах</option></select>';
-    return { date: o.date + ' ' + o.time, phone: o.phone, customer: (dupOf(o) ? '⚠ ' : '') + (o.customer ? o.customer + ' (' + o.phone + ')' : o.phone), items: items(o), status: ordStTag(o), pay: payStTag(o), payType: o.payType,
+    if (!ordDead(o)) act += ' <button class="mini dd-btn" title="Бусад үйлдэл" aria-haspopup="menu" onclick="ddMenu(this,[[\'Засах\',\'ordEditOpen(&quot;' + o.id + '&quot;)\'],[\'Цуцлах\',\'ordCancelOpen(&quot;' + o.id + '&quot;)\']])">⋯</button>';
+    return { _cls: o.status === 'Цуцалсан' ? 'ord-canc' : '', date: o.date + ' ' + o.time, phone: o.phone, customer: (dupOf(o) ? '⚠ ' : '') + (o.customer ? o.customer + ' (' + o.phone + ')' : o.phone), items: items(o), status: ordStTag(o), pay: payStTag(o), payType: o.payType,
              bank: bk, amount: o.amount, staff: o.staff, _act: act };
   });
   // Дүрэм: захиалга «Буухиад өгсөн» (илгээгдсэн) болмогц борлуулалт, авлага үүснэ; «Шинэ» нь авлагад ороогүй
+  all = all.filter(function (o) { return o.status !== 'Цуцалсан'; });   // дүн, тоонд цуцалсан орохгүй
   var unpaid = ordOpenAmt(all), fresh = all.filter(function (o) { return o.status === 'Шинэ'; }).reduce(function (a, o) { return a + o.amount; }, 0), nBank = all.filter(function (o) { return !o.confirmed && !ordDead(o) && cand[o.id]; }).length;
   return { title: 'Захиалга', rows: rows, actions: true,
     cols: [c('date', 'Огноо'), c('customer', 'Захиалагч'), c('items', 'Бараа'), c('status', 'Захиалгын төлөв'), c('pay', 'Төлбөрийн төлөв'), c('payType', 'Төлбөрийн хэлбэр'), c('bank', 'Банкны хуулга'), m('amount', 'Дүн'), c('staff', 'Ажилтан')],
@@ -229,8 +230,9 @@ function ordFilt(f) {
   return function (o) {
     if (f === 'check') return !o.confirmed && o.paid === 'Орсон' && !ordDead(o);
     if (f === 'wait') return !o.confirmed && !ordDead(o);
-    if (f === 'conf') return !!o.confirmed;
-    return true;
+    if (f === 'conf') return !!o.confirmed && o.status !== 'Цуцалсан';
+    if (f === 'canc') return o.status === 'Цуцалсан';
+    return o.status !== 'Цуцалсан';   // «Бүгд» — цуцалсан (хогийн сав) орохгүй
   };
 }
 function importCozyOld() {

@@ -104,20 +104,31 @@ subnavHtml = function () {
   var hdr = '', activeSub = '';
   cur.items.forEach(function (it) { if (it[0] === '—') hdr = it[1]; else if (navItemOn(it[0])) activeSub = hdr; });
   hdr = '';
-  var panel = '<div class="fn-ph">' + cur.g[0] + '</div><ul>' + cur.items.map(function (it) {
-    if (it[0] === '—') { hdr = it[1]; var op = shut[hdr] ? false : true;   // хэрэглэгч хаасан бол идэвхтэй хуудастай ч хаагдана
-      return '<li><button class="fn-subh" aria-expanded="' + op + '" onclick="fnSub(\'' + hdr + '\')"><span>' + hdr + '</span><span class="fn-car2">' + (op ? '▾' : '▸') + '</span></button></li>'; }
-    if (hdr && shut[hdr]) return '';
-    var n = navCountOf(it[0]);
-    return '<li><button class="' + (navItemOn(it[0]) ? 'on' : '') + '" onclick="navGo(\'' + it[0] + '\')"><span>' + it[1] + '</span>' + (n ? '<i class="fn-badge">' + n + '</i>' : '') + '</button></li>';
-  }).join('') + '</ul>';
+  // дэд бүлэг бүр өөрийн <ul> — хаалттай бол hidden (aria-expanded="false"), товч aria-controls-оор холбогдоно
+  var gi2 = 0, li = function (it) { var n = navCountOf(it[0]);
+    return '<li><button class="' + (navItemOn(it[0]) ? 'on' : '') + '" onclick="navGo(\'' + it[0] + '\')"><span>' + it[1] + '</span>' + (n ? '<i class="fn-badge">' + n + '</i>' : '') + '</button></li>'; };
+  var html = '', open = false;
+  cur.items.forEach(function (it) {
+    if (it[0] === '—') {
+      if (open) html += '</ul></li>';
+      hdr = it[1]; var op = !shut[hdr], id = 'fnsg' + (gi2++);
+      html += '<li class="fn-sg"><button class="fn-subh" aria-expanded="' + op + '" aria-controls="' + id + '" data-h="' + esc(hdr) + '" onclick="fnSub(this)"><span>' + hdr + '</span><span class="fn-car2">' + (op ? '▾' : '▸') + '</span></button>' +
+        '<ul id="' + id + '"' + (op ? '' : ' hidden') + '>';
+      open = true; return;
+    }
+    html += li(it);
+  });
+  if (open) html += '</ul></li>';
+  var panel = '<div class="fn-ph">' + cur.g[0] + '</div><ul>' + html + '</ul>';
   return brand + '<div class="fn-2"><nav class="fn-col">' + col + '</nav><div class="fn-panel">' + panel + '</div></div>';
 };
-function fnSub(h) {
-  var s = {}; try { s = JSON.parse(localStorage.getItem('nb_fn_subs') || '{}') || {}; } catch (e) {}
+function fnSub(btn) {   // зөвхөн тэр дэд бүлгийг нээж/хаана (бүх цэсийг дахин зурахгүй)
+  var h = btn.getAttribute('data-h'), s = {}; try { s = JSON.parse(localStorage.getItem('nb_fn_subs') || '{}') || {}; } catch (e) {}
   if (s[h]) delete s[h]; else s[h] = 1;
   try { localStorage.setItem('nb_fn_subs', JSON.stringify(s)); } catch (e) {}
-  $('subnav').innerHTML = subnavHtml();
+  var op = !s[h], ul = document.getElementById(btn.getAttribute('aria-controls'));
+  btn.setAttribute('aria-expanded', String(op)); btn.querySelector('.fn-car2').textContent = op ? '▾' : '▸';
+  if (ul) ul.hidden = !op;
 }
 // Бүлэг дарахад самбар нь солигдоно (хуудас солихгүй); нэг хуудастай бүлэг бол шууд нээнэ
 function fnOpen(gi) {
@@ -323,9 +334,31 @@ function audLoad(force) {
   post({ type: 'admin_audit', limit: 2000, from: todayStr(new Date(Date.now() - 90 * 864e5)) }, function (err, d) {
     AUD.busy = false; AUD.at = Date.now();
     if (err) { AUD.err = err === 'type' ? 'Серверийг шинэчлэх (Apps Script v6.2 deploy) шаардлагатай.' : 'Алдаа: ' + err; AUD.rows = AUD.rows || []; }
-    else { AUD.err = ''; AUD.rows = d.rows || []; }
+    else { AUD.err = ''; AUD.rows = (d.rows || []).map(function (r) { r.at = audAt(r.at); if (!r.note) r.note = audNote(r); return r; }); }
     if (state.view === 'company' && /^(audit|trash)$/.test(state.sub.finance)) render();
   });
+}
+// Sheet огноог Date болгосон бол «Sun Nov 01 2026 23:10:00 GMT+0800» ирнэ → «2026-11-01 23:10»
+function audAt(s) {
+  s = String(s || ''); if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s;
+  var d = new Date(s); return isNaN(d.getTime()) ? s : todayStr(d) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2);
+}
+// Тайлбаргүй «Захиалгын төлбөр» мөр: утас · дүн · хуучин төлөв → шинэ төлөв (дэлгэрэнгүйгээс)
+function audNote(r) {
+  if (r.type !== 'admin_order') return '';
+  var f = {}; try { f = JSON.parse(r.det).fields || {}; } catch (e) {}
+  var o = (window.adminOrders || []).filter(function (x) { return x.id === r.id; })[0];
+  return ordAudWhat(o, f) || (r.id ? '#' + r.id : '');
+}
+function ordAudWhat(o, f) {
+  f = f || {}; var ch = [];
+  if (f.confirmed !== undefined) ch.push(f.confirmed ? 'Төлөөгүй → ' + (/буухиа хураасан/.test(f.confirmed) ? 'Буухиа хураасан' : 'Төлсөн') : 'Төлсөн → Төлөөгүй');
+  else if (f.paid) ch.push('ажилтны тэмдэглэл → ' + f.paid);
+  if (f.ebCode) ch.push(f.ebCode === 'бусад' ? 'бусад хүргэлтээр' : 'буухиа код ' + f.ebCode);
+  if (f.saleDone !== undefined) ch.push('борлуулалт: ' + (f.saleDone || '—'));
+  if (f.edit) ch.push('засвар: ' + Object.keys(f.edit).join(', '));
+  if (!ch.length && f.note) ch.push(String(f.note));
+  return [o ? (o.customer ? o.customer + ' ' : '') + o.phone : '', o ? fmt(o.amount) : ''].filter(Boolean).concat(ch).join(' · ');
 }
 function audMine(r) { return !r.biz || r.biz === state.biz; }
 function audWait() {   // ачаалж байх үеийн / алдааны мөр «Дахин оролдох» товчтой
@@ -372,9 +405,11 @@ function trashView() {
     '<div class="card rep"><div class="rep-cap"><b>Хогийн сав</b><span>сүүлийн 30 хоногт цуцалсан · ' + L.length + '</span></div><div class="scroll"><table class="rep-t"><tr><th>Цуцалсан</th><th>Хэн</th><th>Төрөл</th><th>Юу</th><th></th></tr>' +
     (L.map(function (x) {
       return '<tr><td data-l="Цуцалсан" class="nw">' + esc(x.r.at.slice(0, 16)) + '</td><td data-l="Хэн">' + esc(x.r.who || '—') + '</td><td data-l="Төрөл">' + K[x.kind] + '</td><td data-l="Юу">' + esc(x.r.note || '#' + x.r.id) + '</td>' +
-        '<td class="n"><button class="mini" onclick="trashRestore(\'' + x.kind + '\',\'' + esc(x.r.id) + '\',' + esc(JSON.stringify(x.r.note || '')) + ')">Сэргээх</button></td></tr>';
+        (x.kind === 'ord' && ordNotCancelled(x.r.id) ? '<td class="n"><small style="color:#B45309">хэрэгжээгүй · ' + esc(ordNotCancelled(x.r.id)) + '</small> <button class="mini" onclick="ordCancelOpen(\'' + esc(x.r.id) + '\')">Дахин цуцлах</button></td></tr>' :
+        '<td class="n"><button class="mini" onclick="trashRestore(\'' + x.kind + '\',\'' + esc(x.r.id) + '\',' + esc(JSON.stringify(x.r.note || '')) + ')">Сэргээх</button></td></tr>');
     }).join('') || '<tr><td colspan="5" class="muted">Хогийн сав хоосон.</td></tr>') + '</table></div></div>';
 }
+function ordNotCancelled(id) { var o = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; return o && o.status !== 'Цуцалсан' ? o.status : ''; }
 function trashRestore(kind, id, what) {
   if (!confirm('Сэргээх үү?\n' + (what || id) + '\n\nСанхүү, үлдэгдэлд дахин тусна.')) return;
   if (kind === 'ord') {   // цуцалсан захиалга — өмнөх төлөв рүү
@@ -517,10 +552,52 @@ function ordCancelDo(id) {
   if (!API_URL) { o.status = 'Цуцалсан'; if (recv) o.saleDone = 'returned'; gClose(); render(); toast('Цуцаллаа'); return; }
   post({ type: 'admin_order', id: id, by: ownerName, what: what, fields: { status: 'Цуцалсан', reason: reason, receive: !!recv, prev: o.status } }, function (err) {
     if (err) { toast(err === 'state' ? 'Аль хэдийн цуцалсан' : err === 'locked' ? 'Өнөөдрийн огноо түгжигдсэн' : 'Алдаа: ' + err); return; }
-    gClose(); toast('Захиалга цуцаллаа' + (recv ? ' — борлуулалт буцаагдлаа' : '')); refresh();
+    o.status = 'Цуцалсан'; gClose(); render(); toast('Захиалга цуцаллаа' + (recv ? ' — борлуулалт буцаагдлаа' : ''));
+    fetchAll(function (ok) { if (!ok) return; render(); ordCancelVerify(id); });
   });
 }
 
+// Жижиг товчны доор гарах цэс: items = [[нэр, js]] — дэлгэцийн баруун ирмэгээс хэтрэхгүй, гадуур дарах / Esc хаана
+function ddMenu(btn, items) {
+  var old = document.getElementById('ddMenu'); if (old) { old.remove(); if (old._btn === btn) return; }
+  var m = document.createElement('div'); m.id = 'ddMenu'; m.className = 'dd-menu'; m.setAttribute('role', 'menu'); m._btn = btn;
+  m.innerHTML = items.map(function (it) { return '<button role="menuitem" onclick="document.getElementById(\'ddMenu\').remove();' + esc(it[1]) + '">' + esc(it[0]) + '</button>'; }).join('');
+  document.body.appendChild(m);
+  var r = btn.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
+  var left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8)), top = r.bottom + 4 + h > window.innerHeight ? r.top - h - 4 : r.bottom + 4;
+  m.style.left = left + 'px'; m.style.top = Math.max(8, top) + 'px';
+  var b = m.querySelector('button'); if (b) b.focus();
+}
+document.addEventListener('mousedown', function (e) { var m = document.getElementById('ddMenu'); if (m && !m.contains(e.target) && e.target !== m._btn) m.remove(); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var m = document.getElementById('ddMenu'); if (m) { m.remove(); if (m._btn) m._btn.focus(); } } });
+window.addEventListener('scroll', function () { var m = document.getElementById('ddMenu'); if (m) m.remove(); }, true);
+// Удирдлагаас захиалга засах: хэрэглэгчийн нэр, хаяг, хүргэх өдөр, тэмдэглэл (утас, бараа, дүнг ажилтан засна)
+var ORD_EDIT = [['customer', 'Хэрэглэгчийн нэр'], ['district', 'Дүүрэг'], ['khoroo', 'Хороо'], ['address', 'Хаяг'], ['deliverDate', 'Хүргэх өдөр', 'date'], ['note', 'Тэмдэглэл']];
+function ordEditOpen(id) {
+  var o = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!o) return;
+  gOpen('<h2>Захиалга засах</h2><p class="muted">' + esc(o.phone) + ' · ' + esc(o.date) + ' · ' + fmt(o.amount) + ' · ' + esc(ordStLabel(o)) + '</p>' +
+    ORD_EDIT.map(function (f) { return '<label for="oe_' + f[0] + '">' + f[1] + '</label><input id="oe_' + f[0] + '"' + (f[2] ? ' type="' + f[2] + '"' : '') + ' value="' + esc(o[f[0]] == null ? '' : o[f[0]]) + '">'; }).join('') +
+    '<p class="muted" style="font-size:12.5px">Утас, бараа, дүнг ажилтны хуудаснаас засна.</p>' +
+    '<div style="margin-top:12px"><button class="btn" onclick="ordEditDo(\'' + id + '\')">Хадгалах</button><button class="btn ghost" onclick="gClose()">Болих</button></div>');
+}
+function ordEditDo(id) {
+  var o = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!o) return;
+  var ed = {}, ch = [];
+  ORD_EDIT.forEach(function (f) { var v = $('oe_' + f[0]).value.trim(), was = String(o[f[0]] == null ? '' : o[f[0]]); if (v !== was) { ed[f[0]] = v; ch.push(f[1] + ': ' + (was || '—') + ' → ' + (v || '—')); } });
+  if (!ch.length) { gClose(); return; }
+  var what = (o.customer ? o.customer + ' ' : '') + o.phone + ' · ' + ch.join('; ');
+  if (!API_URL) { Object.assign(o, ed); gClose(); render(); toast('Хадгаллаа'); return; }
+  post({ type: 'admin_order', id: id, by: ownerName, what: what.slice(0, 200), fields: { edit: ed } }, function (err, d) {
+    if (err) { toast('Алдаа: ' + err); return; }
+    if (!d.edited) { alert('Сервер засварыг хадгалсангүй — Apps Script-ийн сүүлийн хувилбарыг deploy хийх шаардлагатай.'); return; }
+    Object.assign(o, ed); gClose(); render(); toast('Захиалга засагдлаа'); refresh();
+  });
+}
+// Сервер цуцлалтыг хэрэгжүүлсэн эсэх (хуучин сервер «ok» гэж хариулаад төлвийг солихгүй байж болно)
+function ordCancelVerify(id) {
+  var o = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0];
+  if (o && o.status !== 'Цуцалсан') alert('Сервер захиалгын төлвийг «Цуцалсан» болгосонгүй (одоо: ' + o.status + ').\nApps Script-ийн сүүлийн хувилбар deploy хийгдсэн эсэхийг шалгаад дахин цуцлана уу.');
+}
 // 15 минут идэвхгүй бол удирдлагын хуудаснаас автоматаар гарна
 var IDLE = { t: Date.now() };
 ['click', 'keydown', 'mousemove', 'touchstart', 'scroll'].forEach(function (ev) { document.addEventListener(ev, function () { IDLE.t = Date.now(); }, { passive: true }); });
