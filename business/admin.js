@@ -1586,7 +1586,11 @@ function ebAdmBody() {
 // Үнийн дүнгүй (бидэнд төлсөн): хөлсийг буухиа бидэнээс авна — дараагийн шилжүүлгээс суутгах эсвэл бид төлнө.
 // Нэг шилжүүлэг (эсвэл төлбөр) = Σ авсан мөнгө − Σ хөлс. Хүргэлт бүрээр: Дт банк / Кт 1201 (авсан), Дт 3101 Буухиа / Кт банк (хөлс) → банкны цэвэр дүн тэнцэнэ.
 function ebRevd() { var m = {}; (journal || []).forEach(function (j) { (String(j.desc).match(/#EBX:[\w-]+/g) || []).forEach(function (t) { m[t.slice(5)] = 1; }); }); return m; }   // цуцлагдаж буцаасан
-function ebRecvd() { var m = {}; (journal || []).forEach(function (j) { if (j.partner !== BUUHIA) return; (String(j.desc).match(/#EBR:[\w-]+/g) || []).forEach(function (t) { m[t.slice(5)] = (m[t.slice(5)] || 0) + (Number(j.amount) || 0); }); }); return m; }   // хураасан мөчид шилжүүлсэн (дүн)   // хураасан мөчид шилжүүлсэн
+function ebRecvd() {   // хураасан гэж Буухиа руу шилжүүлсэн дүн (#EBR) − эсрэг бичилтээр буцаасан (#EBX), Буухиа талын мөрөөр; 0 бол одоо шилжээгүй
+  var m = {}; (journal || []).forEach(function (j) { if (j.partner !== BUUHIA) return; var d = String(j.desc);
+    (d.match(/#EBR:[\w-]+/g) || []).forEach(function (t) { m[t.slice(5)] = r0((m[t.slice(5)] || 0) + (Number(j.amount) || 0)); });
+    (d.match(/#EBX:[\w-]+/g) || []).forEach(function (t) { m[t.slice(5)] = r0((m[t.slice(5)] || 0) - (Number(j.amount) || 0)); }); });
+  Object.keys(m).forEach(function (k) { if (m[k] < 0.5) delete m[k]; }); return m; }
 function ebSettled() { var m = {}; (journal || []).forEach(function (j) { (String(j.desc).match(/#EB:[\w-]+/g) || []).forEach(function (t) { m[t.slice(4)] = 1; }); }); return m; }
 // Буухиа тооцоо нийлэхдээ хүргэлтүүдийг нэг дор шинэчилдэг (updated_at ижил, хаагдсаны дараа) — тэр багцад орсон нь нийлсэн
 function ebRaw(x, k) { var p = (x.raw || []).filter(function (y) { return y[0] === k; })[0]; return p ? p[1] : ''; }
@@ -1653,7 +1657,7 @@ function ebLinkDo(code, id) {
 // Бүртгэлийн шалгалт: буухиа мөнгө хураасан ч Буухиа дээр (авлага) бүртгэгдээгүй хүргэлт — холбогдоогүй (unl) / холбогдсон ч шилжээгүй (stay)
 function ebMoneyBad() {
   var Mk = ebLink(), dn = ebSettled(), dr = ebRecvd(), old = window.ebOld || {};
-  var G = (ebAdm.list || []).filter(function (x) { return x.got > 0 && x.st !== 11 && x.st !== 12 && !dn[x.code] && !old[x.code]; });
+  var G = (ebAdm.list || []).filter(function (x) { return x.got > 0 && x.st === 10 && x.ok === 'Тийм' && !dn[x.code] && !old[x.code]; });
   var unl = G.filter(function (x) { return !Mk[x.code]; }), stay = G.filter(function (x) { var o = Mk[x.code]; return o && !dr[x.code] && !(o.confirmed && !/буухиа/.test(o.confirmed)); });
   return { unl: unl, stay: stay, bad: unl.concat(stay) };
 }
@@ -1732,14 +1736,15 @@ function ebAutoBook(fresh) {
   if (ebAdm.booking || !ebAdm.list || !(window.adminOrders || []).length || !(journal || []).length) return;   // журнал ачаалаагүй бол давхар бичихгүй
   var done = ebSettled(), doneR = ebRecvd(), eb = ebSettledByEb(ebAdm.list), O = {}, M = ebLink(), B = {}, RC = [];
   window.adminOrders.forEach(function (o) { O[o.id] = o; });
-  // 1) Буухиа мөнгө хураасан (авсан > 0, хүргэгдсэн эсэхээс үл хамааран) мөчид: хэрэглэгчийн авлага → Буухиагийн авлага (Дт 1201 Буухиа / Кт 1201 хэрэглэгч), «Буухиа хураасан»
-  //    Дараа нь цуцлагдсан / буцаасан бол эсрэг бичилтээр авлагыг хэрэглэгч рүү буцаана (#EBX)
+  // 1) Буухиа дээр Хүргэгдсэн (st 10) БА баталгаажсан (ok «Тийм») үед л хураасан гэж: хэрэглэгчийн авлага → Буухиагийн авлага (Дт 1201 Буухиа / Кт 1201 хэрэглэгч), «Буухиа хураасан» #EBR.
+  //    Бүртгэгдсэн / Хүлээн авсан (st 1, 2) үеийн received_money-г хураасан гэж тооцохгүй.
+  //    #EBR бичигдсэн ч Буухиа дээр st ≠ 10 болсон бол эсрэг бичилтээр (#EBX) авлагыг хэрэглэгч рүү буцаана
   var doneX = ebRevd(), RX = [], okD = function (d) { return /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= EB_AUTO_FROM.replace(/\//g, '-') && !(meta.closed && d <= meta.closed) && !(meta.lock && d <= meta.lock); };
   ebAdm.list.forEach(function (x) {
-    var mo = M[x.code], d = String(x.at || x.created || '').slice(0, 10).replace(/\//g, '-'), dead = x.st === 11 || x.st === 12;
-    if (dead && doneR[x.code] && !doneX[x.code] && mo) { var td = todayStr(); RX.push({ x: x, o: mo, d: okD(d) ? d : td, got: doneR[x.code] }); return; }
+    var mo = M[x.code], d = String(x.at || x.created || '').slice(0, 10).replace(/\//g, '-'), dlv = x.st === 10 && x.ok === 'Тийм';
+    if (x.st !== 10 && doneR[x.code] && mo) { var td = todayStr(); RX.push({ x: x, o: mo, d: okD(d) ? d : td, got: doneR[x.code] }); return; }
     if ((window.ebOld || {})[x.code]) return;   // өмнөх үеийнх — журналд бичихгүй
-    if (dead || !(x.got > 0) || !mo || done[x.code] || doneR[x.code] || (mo.confirmed && !/буухиа/.test(mo.confirmed)) || !okD(d)) return;
+    if (!dlv || !(x.got > 0) || !mo || done[x.code] || doneR[x.code] || (mo.confirmed && !/буухиа/.test(mo.confirmed)) || !okD(d)) return;
     RC.push({ x: x, o: mo, d: d });
   });
   ebAdm.list.forEach(function (x) {
@@ -1751,7 +1756,7 @@ function ebAutoBook(fresh) {
   });
   // Лог: хураасан мөнгөтэй хүргэлт бүрийн шийдвэр (F12 → Console, «[Буухиа]»)
   ebAdm.log = (ebAdm.list || []).filter(function (x) { return x.got > 0; }).map(function (x) {
-    var mo = M[x.code], why = done[x.code] ? 'тооцоо нийлсэн' : doneR[x.code] ? 'өмнө шилжүүлсэн' : !mo ? 'захиалгатай холбогдоогүй' : x.st === 11 || x.st === 12 ? 'цуцалсан' : (mo.confirmed && !/буухиа/.test(mo.confirmed)) ? 'банкаар баталгаажсан' :
+    var mo = M[x.code], why = done[x.code] ? 'тооцоо нийлсэн' : doneR[x.code] ? 'өмнө шилжүүлсэн' : !mo ? 'захиалгатай холбогдоогүй' : x.st !== 10 ? 'хүргэгдээгүй (st ' + x.st + ')' : x.ok !== 'Тийм' ? 'баталгаажаагүй' : (mo.confirmed && !/буухиа/.test(mo.confirmed)) ? 'банкаар баталгаажсан' :
       RC.some(function (r) { return r.x.code === x.code; }) ? 'ОДОО шилжүүлнэ' : 'огноо түгжигдсэн/хаагдсан';
     return x.code + ' ' + x.phone + ' авсан ' + x.got + ' → ' + why;
   });
