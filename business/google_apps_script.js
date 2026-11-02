@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v7.1 (төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v7.2 (банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -39,7 +39,12 @@ const ORDER_KEYS = ['id', 'date', 'time', 'biz', 'staff', 'customer', 'phone', '
 const SHEET_REMIND = 'Сануулга';
 const REMIND_HEAD = ['ID', 'Огноо', 'Гарчиг', 'Төрөл', 'Дүн', 'Харилцагч', 'Компани', 'Давтамж', 'Төлөв', 'Тэмдэглэл', 'Үүсгэсэн'];
 const SHEET_BANK = 'Банк';
-const BANK_HEAD = ['ID', 'Данс', 'Огноо', 'Орлого', 'Зарлага', 'Үлдэгдэл', 'Гүйлгээний утга', 'Харьцсан данс', 'biz', 'Төлөв', 'Холбоос', 'Хэн', 'Оруулсан'];
+const BANK_HEAD = ['ID', 'Данс', 'Огноо', 'Орлого', 'Зарлага', 'Үлдэгдэл', 'Гүйлгээний утга', 'Харьцсан данс', 'biz', 'Төлөв', 'Холбоос', 'Хэн', 'Оруулсан', 'import_id', 'Бичилт'];   // «Банк» = BankTxn; Бичилт — энэ мөрөөс үүссэн журналын ID (таслалаар)
+// Хуулга импортын лог, банкны дүрэм (гүйлгээний утгад түлхүүр үг → үйлдэл)
+const SHEET_IMPORT = 'ImportLog';
+const IMPORT_HEAD = ['import_id', 'Данс', 'Бизнес', 'biz', 'Эхлэх огноо', 'Дуусах огноо', 'Нийт мөр', 'Оруулсан', 'Алгассан', 'Давхардсан', 'Эцсийн үлдэгдэл', 'Импорт хийсэн', 'Хэн', 'Төлөв'];
+const SHEET_RULES = 'Rules';
+const RULE_HEAD = ['ID', 'Түлхүүр үг', 'Үйлдэл', 'biz', 'Хэн', 'Огноо', 'Төлөв'];
 const SHEET_TASK = 'Даалгавар';
 const TASK_HEAD = ['ID', 'Үүсгэсэн', 'biz', 'Ажилтан ID', 'Ажилтан', 'Даалгавар', 'Хугацаа', 'Төлөв', 'Хийсэн', 'Хийсэн огноо', 'Хэнээс', 'Тайлбар'];
 const SHEET_LOAN = 'Зээл';
@@ -122,7 +127,7 @@ function route(data) {
   if (data.type === 'admin_stock') return isAdmin(data) ? adminStock(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_journal') return isAdmin(data) ? adminJournal(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_doc') return isAdmin(data) ? adminDoc(data) : { status: 'error', error: 'auth' };
-  if (data.type === 'admin_bank') return isAdmin(data) ? adminBank(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_bank') return !isAdmin(data) ? { status: 'error', error: 'auth' } : data.undoImport ? bankUndoImport(data) : data.rule || data.ruleCancel ? bankRule(data) : adminBank(data);
   if (data.type === 'admin_order') return isAdmin(data) ? adminOrder(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_task') return isAdmin(data) ? adminTask(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_setting') return isAdmin(data) ? adminSetting(data) : { status: 'error', error: 'auth' };
@@ -246,9 +251,9 @@ function adminRestore(d) {
 
 // ── Серверийн кэш (хурд): удирдлагын уншилт хуудас тус бүрийг 5 мин кэшлэнэ, бичилт хийхэд тэр хуудсыг л цэвэрлэнэ ──
 // Sheet-ийг гараар засвал 5 минутын дотор шинэчлэгдэнэ.
-const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf'];
+const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'imp', 'rule', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf'];
 const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_other: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_send: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
-  admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr'], admin_bank: ['bank', 'jr', 'ord'], admin_partner: ['pt'], admin_reminder: ['rem'],
+  admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr', 'bank'], admin_bank: ['bank', 'jr', 'ord', 'imp', 'rule'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_po: ['po', 'jr'],
   admin_restore: ['rec', 'stk', 'mov', 'jr'], admin_staff: ['adm', 'stf'], staff_pin: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
 const CACHE_READ = { admin_audit: 1, eb_sync: 1, requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
@@ -304,6 +309,10 @@ function mgrGuard(d, who) {
   }
   if (t === 'admin_product') return (!d.product || ok(d.product.biz)) && all(d.products, function (x) { return x.biz; }) ? '' : 'role';
   if (t === 'admin_bank') {
+    if (d.undoImport) { const m = byId(importRows(), d.undoImport); return m && ok(m.biz) ? '' : 'role'; }
+    if (d.ruleCancel) { const r = byId(ruleRows(), d.ruleCancel); return r && ok(r.biz) ? '' : 'role'; }
+    if (d.rule) return ok(d.rule.biz) ? '' : 'role';
+    if (d.import && !ok(d.import.biz)) return 'role';
     if (!all(d.lines, function (x) { return x.biz; })) return 'role';
     if ((d.updates || []).length) { const B = {}; bankRows().forEach(function (r) { B[r.id] = r.biz; }); if (!d.updates.every(function (u) { return ok(B[String(u.id)]); })) return 'role'; }
     return '';
@@ -361,6 +370,8 @@ function adminRead(d) {
   a.meta = { closed: pr.getProperty('CLOSED') || '', lastBackup: pr.getProperty('LAST_BACKUP') || '', backupUrl: pr.getProperty('BACKUP_FOLDER_URL') || '' };
   a.reminders = cacheGet('rem', reminderRows);
   a.bank = cacheGet('bank', bankRows);
+  a.importLog = cacheGet('imp', importRows);
+  a.bankRules = cacheGet('rule', ruleRows);
   a.docs = cacheGet('docs', docRows);
   a.tasks = cacheGet('task', taskRows);
   a.payInfo = payInfoAll();
@@ -911,6 +922,9 @@ function adminJournal(d) {
     const rows = list.map(function (x, i) { return ['J' + Date.now() + '-' + i, x.date, BIZ_NAMES[x.biz], String(x.dr), String(x.cr), Number(x.amount), String(x.partner || '').slice(0, 80),
       String(x.desc || '').slice(0, 200), by, now, x.biz, '', '']; });
     sh.getRange(sh.getLastRow() + 1, 1, rows.length, JOURNAL_HEAD.length).setValues(rows);
+    // банкны хуулгын мөрөөс үүссэн бичилт: тэр мөрийн «Бичилт» баганад журналын ID (импорт буцаахад цуцлагдана)
+    const bj = {}; list.forEach(function (x, i) { if (x.bankId) (bj[String(x.bankId)] = bj[String(x.bankId)] || []).push(rows[i][0]); });
+    if (Object.keys(bj).length) { const bs = bankSheet(); bankRows().forEach(function (r, i) { if (bj[r.id]) bs.getRange(i + 2, 15).setValue((r.jids ? r.jids + ',' : '') + bj[r.id].join(',')); }); }
     return { status: 'ok', saved: rows.length };
   }
   const e = d.entry || {};
@@ -1225,14 +1239,40 @@ function bankSheet() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   let sh = ss.getSheetByName(SHEET_BANK);
   if (!sh) { sh = ss.insertSheet(SHEET_BANK); sh.appendRow(BANK_HEAD); styleHead(sh, BANK_HEAD.length, '#0F766E'); sh.getRange('A:C').setNumberFormat('@'); sh.getRange('H:H').setNumberFormat('@'); }
+  else if (sh.getLastColumn() < BANK_HEAD.length) { sh.getRange(1, 1, 1, BANK_HEAD.length).setValues([BANK_HEAD]); styleHead(sh, BANK_HEAD.length, '#0F766E'); }   // v7.2: import_id, Бичилт багана нэмэгдсэн
   return sh;
+}
+function importSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_IMPORT);
+  if (!sh) { sh = ss.insertSheet(SHEET_IMPORT); sh.appendRow(IMPORT_HEAD); styleHead(sh, IMPORT_HEAD.length, '#0F766E'); sh.getRange('A:B').setNumberFormat('@'); sh.getRange('E:F').setNumberFormat('@'); }
+  return sh;
+}
+function importRows() {
+  const sh = importSheet(), last = sh.getLastRow(); if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, IMPORT_HEAD.length).getValues().map(function (v) {
+    return { id: String(v[0]), acct: String(v[1]), biz: String(v[3]), from: String(v[4]), to: String(v[5]), total: Number(v[6]) || 0, added: Number(v[7]) || 0, skipped: Number(v[8]) || 0,
+             dup: Number(v[9]) || 0, endBal: Number(v[10]) || 0, at: fmtDate(v[11], 'yyyy-MM-dd HH:mm'), by: String(v[12]), status: String(v[13]) };
+  });
+}
+function ruleSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_RULES);
+  if (!sh) { sh = ss.insertSheet(SHEET_RULES); sh.appendRow(RULE_HEAD); styleHead(sh, RULE_HEAD.length, '#0F766E'); }
+  return sh;
+}
+function ruleRows() {
+  const sh = ruleSheet(), last = sh.getLastRow(); if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, RULE_HEAD.length).getValues().map(function (v) {
+    return { id: String(v[0]), kw: String(v[1]), act: String(v[2]), biz: String(v[3]), by: String(v[4]), at: fmtDate(v[5], 'yyyy-MM-dd'), status: String(v[6]) };
+  }).filter(function (r) { return r.status !== 'Устгасан'; });
 }
 function bankRows() {
   const sh = bankSheet(), last = sh.getLastRow();
   if (last < 2) return [];
   return sh.getRange(2, 1, last - 1, BANK_HEAD.length).getValues().map(function (v) {
     return { id: String(v[0]), acct: String(v[1]), date: String(v[2]), credit: Number(v[3]) || 0, debit: Number(v[4]) || 0, bal: Number(v[5]) || 0, desc: String(v[6]),
-             party: String(v[7]), biz: String(v[8]), status: String(v[9]), link: String(v[10]) };
+             party: String(v[7]), biz: String(v[8]), status: String(v[9]), link: String(v[10]), imp: String(v[13] || ''), jids: String(v[14] || '') };
   });
 }
 // lines: шинэ мөрүүд (давхардсаныг алгасна); updates: [{id, status, link}] — тулгалтын үр дүн
@@ -1246,17 +1286,54 @@ function adminBank(d) {
     if (!id || have[id] || !BIZ_NAMES[l.biz]) return;
     have[id] = -1;
     rows.push([id, String(l.acct).slice(0, 20), String(l.date).slice(0, 19), Number(l.credit) || 0, Number(l.debit) || 0, Number(l.bal) || 0, String(l.desc || '').slice(0, 250),
-               String(l.party || '').slice(0, 30), l.biz, 'Шинэ', '', by, now]);
+               String(l.party || '').slice(0, 30), l.biz, 'Шинэ', '', by, now, String(l.imp || d.import && d.import.id || '').slice(0, 30), '']);
   });
   if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, BANK_HEAD.length).setValues(rows);
+  if (d.import && d.import.id && BIZ_NAMES[d.import.biz]) {   // импортын лог
+    const m = d.import;
+    importSheet().appendRow([String(m.id).slice(0, 30), String(m.acct).slice(0, 20), BIZ_NAMES[m.biz], m.biz, String(m.from).slice(0, 19), String(m.to).slice(0, 19), Number(m.total) || 0,
+      rows.length + (Number(m.restored) || 0), Number(m.skipped) || 0, Number(m.dup) || 0, Number(m.endBal) || 0, now, by, '']);
+  }
   let upd = 0;
   const pos = {};
   bankRows().forEach(function (r, i) { pos[r.id] = i + 2; });
   (d.updates || []).forEach(function (u) {
     const r = pos[String(u.id)]; if (!r) return;
     sh.getRange(r, 10, 1, 3).setValues([[String(u.status || '').slice(0, 20), String(u.link || '').slice(0, 120), by]]); upd++;
+    if (u.status === 'Шинэ' || u.status === 'Устгасан') sh.getRange(r, 15).setValue('');   // тулгалт буцаавал бичилтийн холбоос арилна
+    if (u.imp) sh.getRange(r, 14).setValue(String(u.imp).slice(0, 30));   // устгасан мөрийг дахин импортлоход шинэ импорттой холбоно
   });
   return { status: 'ok', added: rows.length, updated: upd };
+}
+// Импорт буцаах: тэр импортоор орсон мөрүүд «Устгасан», тэднээс үүссэн журналын бичилт «Устгасан»; гараар оруулсан бүртгэлтэй тулгасан бол зөвхөн холбоос арилна
+function bankUndoImport(d) {
+  const lg = importSheet(), lv = lg.getLastRow() >= 2 ? lg.getRange(2, 1, lg.getLastRow() - 1, IMPORT_HEAD.length).getValues() : [];
+  let li = -1; for (let i = 0; i < lv.length; i++) if (String(lv[i][0]) === String(d.undoImport)) li = i;
+  if (li < 0) return { status: 'error', error: 'not_found' };
+  if (String(lv[li][13]) === 'Буцаасан') return { status: 'error', error: 'state' };
+  const sh = bankSheet(), rows = bankRows(), mine = [], jids = {};
+  rows.forEach(function (r, i) { if (r.imp === String(d.undoImport) && r.status !== 'Устгасан') { mine.push(i + 2); r.jids.split(',').forEach(function (j) { if (j) jids[j] = 1; }); } });
+  const js = journalSheet(), jl = js.getLastRow(), jv = jl >= 2 ? js.getRange(2, 1, jl - 1, 2).getValues() : [], hit = [];
+  for (let i = 0; i < jv.length; i++) if (jids[String(jv[i][0])]) { if (lockedDate(fmtDate(jv[i][1], 'yyyy-MM-dd'))) return { status: 'error', error: 'locked' }; hit.push(i + 2); }
+  hit.forEach(function (r) { js.getRange(r, 12).setValue('Устгасан'); });
+  const by = String(d.by || '').slice(0, 40);
+  mine.forEach(function (r) { sh.getRange(r, 10, 1, 3).setValues([['Устгасан', '', by]]); sh.getRange(r, 15).setValue(''); });
+  lg.getRange(li + 2, 14).setValue('Буцаасан');
+  return { status: 'ok', lines: mine.length, entries: hit.length };
+}
+// Банкны дүрэм: нэмэх (rule: {kw, act, biz}) / устгах (ruleCancel: ID)
+function bankRule(d) {
+  const sh = ruleSheet();
+  if (d.ruleCancel) {
+    const last = sh.getLastRow(), ids = last >= 2 ? sh.getRange(2, 1, last - 1, 1).getValues() : [];
+    for (let i = 0; i < ids.length; i++) if (String(ids[i][0]) === String(d.ruleCancel)) { sh.getRange(i + 2, 7).setValue('Устгасан'); return { status: 'ok' }; }
+    return { status: 'error', error: 'not_found' };
+  }
+  const r = d.rule || {}, kw = String(r.kw || '').trim().slice(0, 60), act = String(r.act || '').slice(0, 40);
+  if (kw.length < 2 || !/^(skip|A:\d{4,6}|TR:\d{4,6}|MG:\d{4,6}|IC:\w+)$/.test(act) || !BIZ_NAMES[r.biz]) return { status: 'error', error: 'fields' };
+  const id = 'RL' + Date.now();
+  sh.appendRow([id, kw, act, r.biz, String(d.by || '').slice(0, 40), Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), '']);
+  return { status: 'ok', id: id };
 }
 // Захиалгын бараа буцаж ирсэн: сөрөг борлуулалтын мөрүүд (үлдэгдэлд нэмэгдэнэ), saleDone = returned. Алдаа бол код.
 function orderReturnRows(o, by, why) {
