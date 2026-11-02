@@ -214,12 +214,15 @@ function bstDateSave(id) {
     gClose(); toast('Огноо засагдлаа'); refresh();
   });
 }
-// Нүүрний «Идэвхтэй boost» карт (тухайн компани)
+// Нүүрний «Идэвхтэй boost» карт (тухайн компани; 'all' — бүх компани)
+// Нийт зарцуулалт = банкаар төлсөн boost (журналын Дт 7120: #BST нэхэмжлэх + нэхэмжлэхгүй), ажилтны тооцоолсон ₮ биш
 function boostHomeCard(biz) {
-  var t = todayStr(), L = (R().records || []).filter(function (x) { return x.biz === biz && x.type === 'boost' && x.date <= t && boostEnd(x) > t; });
-  if (!L.length) return '';
-  var sp = L.reduce(function (a, x) { return a + (Number(x.amount) || 0); }, 0), endT = L.filter(function (x) { return boostEnd(x) === addDays(t, 1); }).length;
-  return '<div class="card"><div class="bar-row"><h2 style="margin:0">Идэвхтэй boost</h2><button class="link" onclick="BST.biz=state.biz;BST.per=\'all\';navGo(\'sales/boostp\')">Дэлгэрэнгүй →</button></div>' +
-    '<div class="fn-kpis" style="margin-top:8px"><div class="fn-kpi"><small>Явж байгаа</small><b>' + L.length + '</b></div><div class="fn-kpi"><small>Нийт зарцуулалт</small><b>' + fmt(sp) + '</b></div>' +
+  var B = biz === 'all' ? KEYS.filter(function (k) { return k !== 'mgmt'; }) : [biz], inB = function (b) { return B.indexOf(b) >= 0; };
+  var t = todayStr(), L = (R().records || []).filter(function (x) { return inB(x.biz) && x.type === 'boost' && x.date <= t && boostEnd(x) > t; });
+  var sp = (window.journal || []).reduce(function (a, e) { return !inB(e.biz) ? a : a + (e.dr === '7120' ? Number(e.amount) || 0 : 0) - (e.cr === '7120' ? Number(e.amount) || 0 : 0); }, 0);
+  if (!L.length && !(sp > 0.5)) return '';
+  var endT = L.filter(function (x) { return boostEnd(x) === addDays(t, 1); }).length;
+  return '<div class="card"><div class="bar-row"><h2 style="margin:0">Идэвхтэй boost</h2><button class="link" onclick="BST.biz=' + (biz === 'all' ? '\'all\'' : 'state.biz') + ';BST.per=\'all\';navGo(\'sales/boostp\')">Дэлгэрэнгүй →</button></div>' +
+    '<div class="fn-kpis" style="margin-top:8px"><div class="fn-kpi"><small>Явж байгаа</small><b>' + L.length + '</b></div><div class="fn-kpi"><small>Нийт зарцуулалт (банкаар)</small><b>' + fmt(sp) + '</b></div>' +
     '<div class="fn-kpi"><small>Өнөөдөр дуусах</small><b>' + endT + '</b></div></div></div>';
 }

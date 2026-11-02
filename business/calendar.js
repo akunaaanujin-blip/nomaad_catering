@@ -152,7 +152,11 @@ function dupOf(o) {
 }
 function repOrders(biz) {
   var all = (window.adminOrders || []).filter(function (o) { return o.biz === biz; }).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
-  var list = all.filter(ordFilt(state.ordF || 'wait'));
+  var q = nz(state.oq || '').trim(), qd = q.replace(/\D/g, '');
+  var list = q ? all.filter(function (o) {   // хайж байхад бүх төлөвөөс (цуцалсан, буцаасан ч)
+    var t = nz([o.phone, o.phone2, o.customer, o.address, o.district, o.ebCode, o.id, o.status, typeof o.items === 'string' ? o.items : JSON.stringify(o.items || '')].join(' '));
+    return q.split(/\s+/).every(function (w) { return t.indexOf(w) >= 0; }) || (qd.length >= 4 && qd.length === q.replace(/[\s-]/g, '').length && t.replace(/[\s-]/g, '').indexOf(qd) >= 0);
+  }) : all.filter(ordFilt(state.ordF || 'wait'));
   var items = function (o) { try { var arr = typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []); return arr.map(function (i) { return i.name + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); } catch (e) { return String(o.items); } };
   var billed = {}; (window.records || []).forEach(function (x) { if (x.type === 'sale' && x.bill) billed[x.bill] = 1; });
   var cand = ordBankCands(biz);   // захиалга бүрт таарах банкны хуулгын гүйлгээ

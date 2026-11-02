@@ -1,5 +1,5 @@
 // Хадгалах явцын төлөв (post/refresh) — ачаалах үед fetchAll-аас өмнө тодорхойлогдсон байх ёстой
-var JS_VER = '20261103b';   // хуучин (кэшлэгдсэн) кодоор бичихгүй — серверийн MIN_JS-тэй тэнцүү эсвэл их байна; JS засах бүрт ахиулна
+var JS_VER = '20261103c';   // хуучин (кэшлэгдсэн) кодоор бичихгүй — серверийн MIN_JS-тэй тэнцүү эсвэл их байна; JS засах бүрт ахиулна
 var BUSY = { n: 0, p: 0, msg: '' }, INFLIGHT = {}, refreshing = false, refreshAgain = false;
 // ── УДИРДЛАГЫН САМБАР ──
 // Baaz-ийн бүтэцтэй: Миний компаниуд → (Борлуулалт · Бараа материал · Санхүү · Ажилчид), мөн нийт Ажилчид цэс.
@@ -546,8 +546,7 @@ function payFixSave(key) {
 // «Захиалга» хуудсанд тухайн захиалгыг утсаар нь шүүж харуулна
 function goOrder(id) {
   var d = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!d) return;
-  closeSheet('billAdmSheet'); state.ordF = 'all'; setSub('orders');
-  var inp = document.querySelector('#view .fn-q .search'); if (inp) { inp.value = d.phone; rowSearch(inp); }
+  closeSheet('billAdmSheet'); state.ordF = 'all'; state.oq = d.phone; setSub('orders');   // хайлт бүх төлөвөөс (цуцалсан ч)
 }
 // Хайлт: хүснэгтийн мөрийг шууд шүүнэ (дахин зурахгүй). Хайж байхад «Нийт» мөр нуугдана.
 function searchBox(ph) {
@@ -574,6 +573,7 @@ var GS = { L: [], i: 0 };
 function gsItems(q) {
   var W = nz(q).trim().split(/\s+/).filter(Boolean); if (!W.length) return [];
   var hit = function (t) { var h = nz(t); return W.every(function (w) { return h.indexOf(w) >= 0; }); };
+  var qd = String(q).replace(/\D/g, ''), hitD = function (t) { return qd.length >= 4 && qd.length === String(q).replace(/[\s-]/g, '').length && String(t || '').replace(/[\s-]/g, '').indexOf(qd) >= 0; };   // «9911 2233» → 99112233
   var inCo = state.view === 'company' && BUSINESSES[state.biz], biz = inCo ? state.biz : '', out = [];
   var add = function (g, label, sub, fn, max) { if (out.filter(function (x) { return x.g === g; }).length < (max || 6)) out.push({ g: g, label: label, sub: sub || '', fn: fn }); };
   var cos = biz ? [biz] : ALL_KEYS.filter(function (k) { return BUSINESSES[k]; });
@@ -591,7 +591,7 @@ function gsItems(q) {
       if (hit(p.name + ' ' + (p.cat || '') + ' ' + (p.code || ''))) add('Бараа', p.name, (biz ? '' : BUSINESSES[b].name + ' · ') + (p.price ? fmt(p.price) : '') + (p.cat ? ' · ' + p.cat : ''), "gsOpen('" + b + "','products','catalog'," + JSON.stringify(p.name) + ")");
     });
     (window.adminOrders || []).forEach(function (o) {
-      if (o.biz === b && hit([o.phone, o.phone2, o.customer, o.address].join(' '))) add('Захиалга', o.phone + (o.customer ? ' · ' + o.customer : ''), o.date + ' · ' + fmt(o.amount) + ' · ' + o.status, "go('company','" + b + "');goOrder('" + o.id + "')");
+      if (o.biz === b && (hit([o.phone, o.phone2, o.customer, o.address, o.ebCode, o.id].join(' ')) || hitD([o.phone, o.phone2, o.ebCode].join(' ')))) add('Захиалга', o.phone + (o.customer ? ' · ' + o.customer : ''), o.date + ' · ' + fmt(o.amount) + ' · ' + o.status, "go('company','" + b + "');goOrder('" + o.id + "')");
     });
     partners.forEach(function (p) {
       if (p.biz === b && hit(p.name + ' ' + (p.phone || ''))) add('Харилцагч', p.name, (biz ? '' : BUSINESSES[b].name), "state.partner=" + JSON.stringify(p.name) + ";gsOpen('" + b + "','finance','pstmt')");
@@ -600,7 +600,7 @@ function gsItems(q) {
   if (biz) ACCOUNTS.forEach(function (a) {
     if (a[0] !== '0000' && hit(a[0] + ' ' + accName(a[0]))) add('Данс', a[0] + ' ' + accName(a[0]), 'Дансны хуулга', "state.acc='" + a[0] + "';gsOpen('" + biz + "','finance','ledger')");
   });
-  staff.forEach(function (x) { if (hit(x.name + ' ' + (x.phone || ''))) add('Ажилтан', x.name, (BUSINESSES[x.biz] || {}).name || '', "go('staff')"); });
+  staff.forEach(function (x) { if (hit(x.name + ' ' + (x.phone || '') + ' ' + (x.username || '')) || hitD(x.phone)) add('Ажилтан', x.name, (BUSINESSES[x.biz] || {}).name || '', "go('staff')"); });
   return out;
 }
 function gsOpen(b, mod, sub, q) {
@@ -1489,7 +1489,7 @@ function subBody() {
   if (mod === 'finance' && sub === 'entry') pre = '<p class="hint">Борлуулалт, зарлага, бараа, цалин санхүүд <b>автоматаар</b> бичигддэг. Энд зөвхөн бусад гүйлгээг (эхний үлдэгдэл, хөрөнгө оруулалт, зээл, банкинд тушаах, нийлүүлэгчид төлөх г.м) оруулна.</p>';
   if (sub === 'entry') rep.edit = 'editEntry';
   if (mod === 'sales' && sub === 'shop') pre = shopHead(rep);
-  if (mod === 'sales' && /^(shop|receipts|orders|item|disc)$/.test(sub)) pre += searchBox(sub === 'shop' ? 'Бараа, худалдагч, хэрэглэгч, төлбөр, ДДТД-аар хайх…' : sub === 'orders' ? 'Утас, нэр, бараагаар хайх…' : sub === 'item' ? 'Барааны нэрээр хайх…' : 'Бараа, хэрэглэгч, утас, ажилтан, ДДТД-аар хайх…');
+  if (mod === 'sales' && /^(shop|receipts|orders|item|disc)$/.test(sub)) pre += sub === 'orders' ? '<div class="fn-flt fn-q"><input class="search" id="oqIn" type="search" placeholder="Утас, нэр, бараа, буухиа кодоор хайх (цуцалсан ч)…" value="' + esc(state.oq || '') + '" oninput="state.oq=this.value;render();var e=$(\'oqIn\');if(e){e.focus();e.setSelectionRange(e.value.length,e.value.length)}"></div>' : searchBox(sub === 'shop' ? 'Бараа, худалдагч, хэрэглэгч, төлбөр, ДДТД-аар хайх…' : sub === 'orders' ? 'Утас, нэр, бараагаар хайх…' : sub === 'item' ? 'Барааны нэрээр хайх…' : 'Бараа, хэрэглэгч, утас, ажилтан, ДДТД-аар хайх…');
   else if (sub !== 'ledger' && rep && rep.rows && rep.rows.length > 8) pre += searchBox('Энэ хүснэгтээс хайх — нэр, утас, дүн, огноо, тайлбар…');   // урт хүснэгт бүрт
   return pre + reportCard(rep, { entry: 'cancelEntry', in: 'cancelMove', expenses: 'cancelRecord', boost: 'cancelRecord', vouchers: 'cancelEntry', catalog: 'openProduct' }[sub]) + post;
 }
@@ -2365,7 +2365,7 @@ var V_PURPOSE = {
   in: [['1201', 'Авлага төлөгдсөн (зээлээр авсан хүн төлсөн)', 1], ['5101', 'Бараа борлуулсан (дэлгүүрийн бүртгэлээс гадуур)'], ['4101', 'Хөрөнгө оруулалт (эзэн, хөрөнгө оруулагч)'],
        ['1290', 'Компани хооронд (бусад компаниас ирсэн)', 1], ['5202', 'Хүүгийн орлого'], ['1208', 'Захирал хувийн зарлагаа буцааж төлсөн'],
        ['3501', 'Зээл авсан'], ['5201', 'Бусад орлого'], ['10003', 'Кассаас шилжүүлсэн'], ['1101', 'Харилцахаас бэлэн мөнгө авсан'], ['110106', 'Картын (пос) мөнгө орсон'], ['1503', 'Урьдчилгаа буцаан авсан', 1]],
-  out: [['3101', 'Нийлүүлэгчид өглөг төлсөн', 1], ['1503', 'Нийлүүлэгчид урьдчилгаа өгсөн', 1], ['1290', 'Компани хооронд (бусад компани руу)', 1], ['1208', 'Захирлын хувийн зарлага'],
+  out: [['3101', 'Нийлүүлэгчид өглөг төлсөн', 1], ['1503', 'Нийлүүлэгчид урьдчилгаа өгсөн', 1], ['1290', 'Компани хооронд (бусад компани руу)', 1], ['1208', 'Захирлын зарлага'],
         ['7101', 'Цалин'], ['7102', 'НДШ'], ['7114', 'Түрээс'], ['7201', 'Зээлийн хүү, банкны шимтгэл'], ['7111', 'Цахилгаан, ус, дулаан'], ['7118', 'Шатахуун'],
         ['7117', 'Тээвэр'], ['7123', 'Сав, баглаа'], ['7120', 'Зар сурталчилгаа'], ['7112', 'Засвар'], ['7124', 'Хүргэлт'], ['7105', 'Бичиг хэрэг'], ['7106', 'Утас, интернет'],
         ['3403', 'НДШ төлсөн (нийгмийн даатгалд)'], ['3404', 'ХХОАТ төлсөн (татварт)'], ['3301', 'Цалин олгосон (бодогдсон цалингаас)'],
