@@ -1,5 +1,5 @@
 // Хадгалах явцын төлөв (post/refresh) — ачаалах үед fetchAll-аас өмнө тодорхойлогдсон байх ёстой
-var JS_VER = '20261103a';   // хуучин (кэшлэгдсэн) кодоор бичихгүй — серверийн MIN_JS-тэй тэнцүү эсвэл их байна; JS засах бүрт ахиулна
+var JS_VER = '20261103b';   // хуучин (кэшлэгдсэн) кодоор бичихгүй — серверийн MIN_JS-тэй тэнцүү эсвэл их байна; JS засах бүрт ахиулна
 var BUSY = { n: 0, p: 0, msg: '' }, INFLIGHT = {}, refreshing = false, refreshAgain = false;
 // ── УДИРДЛАГЫН САМБАР ──
 // Baaz-ийн бүтэцтэй: Миний компаниуд → (Борлуулалт · Бараа материал · Санхүү · Ажилчид), мөн нийт Ажилчид цэс.
@@ -302,7 +302,7 @@ function railHtml(pend) {
     (inCo && BUSINESSES[state.biz] ? bizModules(state.biz).map(function (m) { return item(state.module === m[0], "openModule('" + m[0] + "')", m[0], m[1]); }).join('') : '') +
     (inCo ? '' :   // компанийн дотор зөвхөн компанийн цэс; удирдлагын цэс нь «Компаниуд» түвшинд
     '<div class="rail-sep"></div>' +
-    item(state.view === 'staff', "state.staffBiz=state.view==='company'?state.biz:state.staffBiz;go('staff')", 'people', 'Ажилчид', pend && isOwner() ? '<i class="dot">' + pend + '</i>' : '') +
+    item(state.view === 'staff', "state.staffBiz=state.view==='company'&&KEYS.indexOf(state.biz)>=0?state.biz:state.staffBiz;go('staff')", 'people', 'Ажилчид', pend && isOwner() ? '<i class="dot">' + pend + '</i>' : '') +
     (isOwner() ? item(state.view === 'tax', 'openTax()', 'tax', 'Татвар, тайлан') + item(state.view === 'docs', "go('docs')", 'docs', 'Маягт') : '') +
     item(state.view === 'cal', 'openCal()', 'cal', 'Календарь', reminders.some(function (r) { return r.status === 'Хүлээгдэж' && r.date <= todayStr(); }) ? '<i class="dot">!</i>' : '') +
     '<div class="rail-foot">' + item(false, "window.open('guide.html','_blank')", 'help', 'Гарын авлага') + item(false, 'refresh()', 'refresh', 'Шинэчлэх') + item(false, 'logout()', 'logout', 'Гарах') + '</div>');
@@ -992,6 +992,7 @@ function staffSales(s, month) {
     .reduce(function (a, x) { return a + (Number(x.amount) || 0); }, 0);
 }
 function staffView(fixedBiz) {
+  if (state.staffBiz !== 'all' && KEYS.indexOf(state.staffBiz) < 0) state.staffBiz = 'all';   // «Удирдлага» (mgmt) г.м ажилтангүй компани — бүгдийг харуулна
   var bizF = fixedBiz || state.staffBiz;
   var list = staff.filter(function (s) { return bizF === 'all' || staffIn(s, bizF); });
   var pend = list.filter(function (s) { return s.status === 'Хүлээгдэж'; });
