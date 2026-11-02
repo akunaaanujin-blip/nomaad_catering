@@ -1,5 +1,5 @@
 // NOMAAD ажилтан/удирдлага — файлуудыг төхөөрөмжид хадгалж хуудсыг шууд нээнэ.
-// HTML: сүлжээ эхэлж (шинэчлэл шууд орно), тасарвал хадгалсныг; ?v= бүхий JS/CSS ба CDN сан: хадгалснаас (хувилбар солигдоход шинээр татна).
+// HTML: сүлжээ эхэлж, хөтчийн HTTP кэшгүй (шинэчлэл шууд орно), тасарвал хадгалсныг; ?v= бүхий JS/CSS ба CDN сан: хадгалснаас (хувилбар солигдоход шинээр татна).
 // Сервер (script.google.com) болон бусад API-г ХЭЗЭЭ Ч хадгалахгүй.
 var CACHE = 'nb-static-v1';
 self.addEventListener('install', function () { self.skipWaiting(); });
@@ -12,7 +12,7 @@ self.addEventListener('fetch', function (e) {
   if (!own && !cdn) return;
   var isHtml = req.mode === 'navigate' || /\.html$|\/$/.test(u.pathname);
   if (isHtml) {
-    e.respondWith(fetch(req).then(function (r) { var c = r.clone(); caches.open(CACHE).then(function (ca) { ca.put(req, c); }); return r; })
+    e.respondWith(fetch(u.href, { cache: 'no-cache', credentials: 'same-origin' }).then(function (r) { if (r.redirected) return Response.redirect(r.url, 302); var c = r.clone(); caches.open(CACHE).then(function (ca) { ca.put(req, c); }); return r; })
       .catch(function () { return caches.match(req, { ignoreSearch: true }); }));
     return;
   }
