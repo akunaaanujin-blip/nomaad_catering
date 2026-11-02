@@ -61,7 +61,7 @@ function drawLabel(o, canvas) {
   var who = [o.customer, o.phone2 ? '☎ ' + o.phone2 : ''].filter(Boolean).join(' · ');
   if (who) { F(big ? 22 : 18, true); wrapLines(ctx, who, W - 2 * P, 1).forEach(function (l) { ctx.fillText(l, P, y); y += big ? 26 : 21; }); }
   // хаяг
-  var addr = [o.city && o.city !== 'Улаанбаатар' ? o.city : '', o.district, o.khoroo, o.address].filter(Boolean).join(', ');
+  var addr = [o.city && o.city !== 'Улаанбаатар' ? o.city : '', o.district, khorooTxt(o.khoroo), addrClean(o.address)].filter(Boolean).join(', ');
   F(big ? 24 : 20, false);
   var footH = big ? 30 : 24, itemsH = big ? 60 : 22, room = H - y - footH - itemsH - 4, lh = big ? 28 : 23;
   wrapLines(ctx, addr, W - 2 * P, Math.max(1, Math.floor(room / lh))).forEach(function (l) { ctx.fillText(l, P, y); y += lh; });

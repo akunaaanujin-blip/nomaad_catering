@@ -1615,3 +1615,27 @@ body.pos10.biz-travel{--p:#2F9E66;--p-d:#23824F;--p-50:#E6F5EC;--accent:#2F9E66}
 .gs-i.on,.gs-i:hover{background:#EEF3F9}
 .bz-head .bz-user{margin-left:12px}
 @media (max-width:760px){.gs{flex:1 1 auto}.gs-res{left:auto;width:min(92vw,360px)}.bz-head .bz-user{display:none}}
+
+/* ⋯ товч + цэс (удирдлагын хуудастай ижил) */
+.mini.dd-btn{width:32px;padding:3px 0;text-align:center;font-weight:700;color:#374151}
+.dd-menu{position:fixed;z-index:9000;min-width:150px;background:#fff;border:1px solid #E3E5E9;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.12);padding:4px 0}
+.dd-menu button{display:block;width:100%;text-align:left;background:none;border:0;padding:8px 12px;font:inherit;font-size:13.5px;color:#111827;cursor:pointer}
+.dd-menu button:hover,.dd-menu button:focus{background:#F3F4F6;outline:none}
+
+/* ═══ v10 · ажилтны хуудас удирдлагатай нэг загвар (--primary #1F4E79, Inter, даруу товч) ═══ */
+body:not(.bz-admin){--ep:#1F4E79;--ep-soft:#E8EFF6;--ep-line:#E5E7EB;--ep-bg:#F6F7F9;--ep-ink:#111827;--accent:#1F4E79;
+  font-family:'Inter',-apple-system,'Segoe UI',Roboto,sans-serif}
+body:not(.bz-admin) .ep-nav{background:#13263D}
+body:not(.bz-admin) .ep-it.on::after{background:#1F4E79;box-shadow:inset 0 0 0 4px #1F4E79,inset 0 0 0 7px #fff}
+body:not(.bz-admin) .btn{border-radius:6px;font-weight:600;background:#1F4E79}
+body:not(.bz-admin) .btn:hover{background:#183E61}
+body:not(.bz-admin) .top .right button,body:not(.bz-admin) .mini{border-color:#D1D5DB;color:#1F4E79}
+body:not(.bz-admin) input:focus,body:not(.bz-admin) select:focus,body:not(.bz-admin) textarea:focus{border-color:#1F4E79;box-shadow:0 0 0 3px rgba(31,78,121,.15)}
+body:not(.bz-admin) th,body:not(.bz-admin) .st,body:not(.bz-admin) .eb-badge,body:not(.bz-admin) .sub-group{text-transform:none;letter-spacing:0}
+body:not(.bz-admin) .sum b.g{color:#15803D}body:not(.bz-admin) .sum b.r{color:#B91C1C}body:not(.bz-admin) .sum b.k{color:#111827}
+body:not(.bz-admin) .sum.sum4{grid-template-columns:repeat(5,1fr)}
+@media(max-width:700px){body:not(.bz-admin) .sum.sum4{grid-template-columns:1fr 1fr}}
+.dlv-addr{min-width:200px}.dlv-ed td{background:#F9FAFB}
+body.pos10,body.pos10.biz-cozy,body.pos10.biz-meat,body.pos10.biz-travel{--p:#1F4E79;--p-d:#183E61;--p-50:#E8EFF6;--accent:#1F4E79;--ink:#111827;--ok:#15803D;--bad:#B91C1C;font-family:'Inter',-apple-system,'Segoe UI',Roboto,sans-serif}
+/* нүүрний дүн: өнгө утгаар (байрлалаар биш) — борлуулалт/захиалга ногоон, зарлага улаан, цэвэр хар */
+body.pos10 .sum>div:nth-child(n)>b.g{color:#15803D!important}body.pos10 .sum>div:nth-child(n)>b.r{color:#B91C1C!important}body.pos10 .sum>div:nth-child(n)>b.k{color:#111827!important}

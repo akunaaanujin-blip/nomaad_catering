@@ -235,13 +235,21 @@ function repProfit(Rr, biz, f, t) {
     var S = function (acc, sign, title) { return { acc: acc, from: f, to: t, sign: sign, grp: 'item', only: r.key, t: r.key + ' — ' + title }; };
     return { key: r.key, qty: r.qty, net: r.net, avg: r.qty ? r0(r.net / r.qty) : '', cogs: r.cogs, margin: r.margin, pct: has && r.net ? Math.round(r.margin / r.net * 100) + '%' : '',
       _d: { net: S(['5101', '5102', '6001'], -1, 'борлуулалт'), cogs: S(['6101'], 1, 'өртөг'), margin: S(['5101', '5102', '6001', '6101'], -1, 'ашиг') } };
-  }).sort(function (a, b) { return (Number(b.margin) || 0) - (Number(a.margin) || 0) || b.net - a.net; });
-  var tot = { key: 'Нийт', net: sum(rows, 'net'), cogs: sum(rows, 'cogs'), margin: sum(rows, 'margin') };
+  });
+  // Сурталчилгаа (Boost) бараагаар — журналд Дт 7120 (reports.js BOOST_JR_FROM-оос); цэвэр ашиг = ашиг − сурталчилгаа
+  var ads = {}; Rr.records.forEach(function (x) { if (x.biz === biz && x.type === 'boost' && x.date >= f && x.date <= t && x.date >= BOOST_JR_FROM) ads[x.item] = (ads[x.item] || 0) + (Number(x.amount) || 0); });
+  var byK = {}; rows.forEach(function (r) { byK[r.key] = r; });
+  Object.keys(ads).forEach(function (k) { if (!byK[k]) rows.push(byK[k] = { key: k, qty: '', net: 0, avg: '', cogs: '', margin: 0, pct: '' }); });
+  rows.forEach(function (r) { var a = r0(ads[r.key] || 0); r.ads = a || ''; r.after = a || r.margin ? r0((Number(r.margin) || 0) - a) : '';
+    if (a) (r._d = r._d || {}).ads = { acc: ['7120'], from: f, to: t, sign: 1, grp: 'item', only: r.key, t: r.key + ' — сурталчилгаа' }; });
+  rows.sort(function (a, b) { return (Number(b.margin) || 0) - (Number(a.margin) || 0) || b.net - a.net; });
+  var tot = { key: 'Нийт', net: sum(rows, 'net'), cogs: sum(rows, 'cogs'), margin: sum(rows, 'margin'), ads: sum(rows, 'ads') };
+  tot.after = r0(tot.margin - (tot.ads || 0));
   tot.pct = tot.net && tot.cogs ? Math.round(tot.margin / tot.net * 100) + '%' : '';
   tot._d = { net: { acc: ['5101', '5102', '6001'], from: f, to: t, sign: -1, grp: 'item', t: 'Цэвэр борлуулалт' }, cogs: { acc: ['6101'], from: f, to: t, sign: 1, grp: 'item', t: 'Барааны өртөг' },
              margin: { acc: ['5101', '5102', '6001', '6101'], from: f, to: t, sign: -1, grp: 'item', t: 'Нийт ашиг (бараагаар)' } };
   return { title: 'Бараа тус бүрийн ашиг', rows: rows, total: tot,
-    cols: [c('key', 'Бараа'), m('qty', 'Тоо'), m('net', 'Борлуулалт'), m('avg', 'Дундаж үнэ'), m('cogs', 'Өртөг'), m('margin', 'Ашиг'), c('pct', 'Ашгийн %')],
+    cols: [c('key', 'Бараа'), m('qty', 'Тоо'), m('net', 'Борлуулалт'), m('avg', 'Дундаж үнэ'), m('cogs', 'Өртөг'), m('margin', 'Ашиг'), c('pct', 'Ашгийн %')].concat(tot.ads ? [m('ads', 'Сурталчилгаа'), m('after', 'Сурталчилгааны дараах ашиг')] : []),
     note: noc ? noc + ' барааны авсан үнэ (өртөг) бүртгэгдээгүй тул ашиг нь тооцогдоогүй — «Бараа» → «Орлого»-оор авсан үнийг оруулна уу.' : '' };
 }
 

@@ -205,3 +205,86 @@ function ebBoard(list, at) {
   }).join('');
   return tabs + tool + '<div class="eb-wrap"><table class="tbl eb-t"><tr><th>Код · огноо</th><th>Хүлээн авагч</th><th>Хаяг</th><th>Бараа</th><th class="n">Авах</th><th class="n">Авсан</th><th>Төлөв</th><th>Жолооч</th><th>Баталгаажсан</th></tr>' + rows + '</table></div>';
 }
+
+// ═══════════ ХАЯГ: хот/аймаг, дүүрэг/сум, хороо (Буухиа руу явах эцсийн хаяг) ═══════════
+// Хороо — зөвхөн дугаар («15»), харуулахдаа нэг удаа «-р хороо». «10р хороолол» нь хороо биш.
+// Хот/аймаг хоосон бол хаягаас аймаг/сумыг хайна; олдохгүй бол Улаанбаатар гэж АВТОМАТААР тавихгүй (илгээхийг хориглоно).
+var UB_DISTRICTS = ['Баянзүрх', 'Баянгол', 'Сүхбаатар', 'Чингэлтэй', 'Хан-Уул', 'Сонгинохайрхан', 'Налайх', 'Багануур', 'Багахангай'];
+// аймаг: [төв, ...сумд] — олон аймагт давхардах сумын нэрийг (Жаргалант, Эрдэнэ, Баянгол г.м) оруулаагүй
+var AIMAGS = {
+  'Архангай': ['Цэцэрлэг', 'Батцэнгэл', 'Тариат', 'Хашаат', 'Өгийнуур', 'Хотонт', 'Эрдэнэбулган'],
+  'Баян-Өлгий': ['Өлгий', 'Цэнгэл', 'Сагсай', 'Толбо', 'Улаанхус', 'Буянт'],
+  'Баянхонгор': ['Баянхонгор', 'Бууцагаан', 'Галуут', 'Эрдэнэцогт', 'Баянлиг'],
+  'Булган': ['Булган', 'Хутаг-Өндөр', 'Тэшиг', 'Рашаант'],
+  'Говь-Алтай': ['Алтай', 'Есөнбулаг', 'Тайшир', 'Халиун', 'Бигэр'],
+  'Говьсүмбэр': ['Чойр', 'Сүмбэр', 'Шивээговь'],
+  'Дархан-Уул': ['Дархан', 'Шарын гол', 'Хонгор'],
+  'Дорноговь': ['Сайншанд', 'Замын-Үүд', 'Хатанбулаг', 'Даланжаргалан'],
+  'Дорнод': ['Чойбалсан', 'Баяндун', 'Матад', 'Халхгол'],
+  'Дундговь': ['Мандалговь', 'Сайнцагаан', 'Гурвансайхан', 'Дэлгэрцогт', 'Луус'],
+  'Завхан': ['Улиастай', 'Тэлмэн', 'Их-Уул', 'Отгон'],
+  'Орхон': ['Эрдэнэт', 'Баян-Өндөр'],
+  'Өвөрхангай': ['Арвайхээр', 'Хархорин', 'Хужирт', 'Бат-Өлзий', 'Уянга'],
+  'Өмнөговь': ['Даланзадгад', 'Ханбогд', 'Цогтцэций', 'Гурвантэс', 'Ханхонгор', 'Баяндалай'],
+  'Сүхбаатар': ['Баруун-Урт', 'Эрдэнэцагаан', 'Онгон', 'Мөнххаан'],
+  'Сэлэнгэ': ['Мандал', 'Зүүнхараа', 'Ерөө', 'Шаамар', 'Алтанбулаг'],
+  'Төв': ['Зуунмод', 'Баянчандмань', 'Борнуур', 'Батсүмбэр', 'Сэргэлэн', 'Эрдэнэсант', 'Лүн'],
+  'Увс': ['Улаангом', 'Тэс', 'Наранбулаг', 'Малчин'],
+  'Ховд': ['Ховд', 'Мөст', 'Мянгад'],
+  'Хөвсгөл': ['Мөрөн', 'Хатгал', 'Ханх', 'Тариалан', 'Цагаан-Үүр'],
+  'Хэнтий': ['Чингис', 'Өндөрхаан', 'Бэрх', 'Баян-Адарга', 'Дадал'],
+};
+var CITIES = ['Улаанбаатар'].concat(Object.keys(AIMAGS));
+function addrWord(t, w) { return new RegExp('(^|[^а-яёөүa-z])' + w.replace(/[-\s]/g, '[-\\s]?') + '([^а-яёөүa-z]|$)', 'i').test(String(t || '')); }
+// Хаягаас аймаг / сум: { city, sum } (сум олдвол аймаг нь). «Сүхбаатар» ганцаараа бол УБ-ын дүүрэг байж болох тул «аймаг» үгтэй үед л
+function provinceOf(t) {
+  t = String(t || '');
+  for (var a in AIMAGS) { var s = AIMAGS[a].filter(function (x) { return addrWord(t, x); })[0]; if (s && !(a === 'Сүхбаатар' && s === 'Сүхбаатар')) return { city: a, sum: s }; }
+  for (var b in AIMAGS) if (b === 'Сүхбаатар' ? /сүхбаатар\s*аймаг/i.test(t) : addrWord(t, b)) return { city: b, sum: '' };
+  return { city: '', sum: '' };
+}
+function khorooNum(k) {   // «15», «15-р хороо», «15 р хороо» → «15»; «10р хороолол» → ''
+  k = String(k || ''); if (/хороолол|horoolol/i.test(k)) return '';
+  var m = k.match(/(\d{1,2})/); return m ? String(Number(m[1])) : '';
+}
+function khorooOf(t) { var m = String(t || '').match(/(\d{1,2})\s*-?\s*(р|r|дүгээр|дугаар)?\s*(хороо|horoo)(?!лол|lol)/i); return m ? String(Number(m[1])) : ''; }
+function khorooTxt(k) { k = khorooNum(k); return k ? k + '-р хороо' : ''; }
+function addrClean(t) { return String(t || '').replace(/\s*дүүрэг хоосон\s*/gi, ' ').replace(/\s{2,}/g, ' ').trim(); }
+// Буухиа руу явах эцсийн хаяг: { city, district, khoroo, address, ok, why, auto }
+function addrFinal(o) {
+  var addr = addrClean(o.address), city = String(o.city || '').trim(), dist = String(o.district || '').trim(), kh = khorooNum(o.khoroo) || khorooOf(addr), auto = {};
+  if (!dist && (!city || city === 'Улаанбаатар') && typeof guessDistrict === 'function') { var g = guessDistrict(addr); if (g) { dist = g; auto.district = 1; } }
+  if (!city && UB_DISTRICTS.indexOf(dist) >= 0) { city = 'Улаанбаатар'; auto.city = 1; }
+  if (!city || (city !== 'Улаанбаатар' && !dist)) { var p = provinceOf(addr + ' ' + dist + ' ' + city); if (!city && p.city) { city = p.city; auto.city = 1; } if (!dist && p.sum && p.city === city) { dist = p.sum; auto.district = 1; } }
+  var why = !city ? 'Хот/аймаг сонгоно уу' : !dist ? (city === 'Улаанбаатар' ? 'Дүүрэг сонгоно уу' : 'Сум сонгоно уу') : '';
+  return { city: city, district: dist, khoroo: city === 'Улаанбаатар' ? kh : '', address: addr, ok: !why, why: why, auto: auto };
+}
+function addrText(f) { return [f.city, f.district, khorooTxt(f.khoroo), f.address].filter(Boolean).join(', '); }
+function citySelect(id, v, extra) {
+  return '<select id="' + id + '"' + (extra || '') + '><option value="">Хот / аймаг сонгох</option>' + CITIES.map(function (c) { return '<option' + (c === v ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select>';
+}
+// Дүүрэг / сумын санал (datalist) — нэг удаа
+function distListEnsure() {
+  if (document.getElementById('distList')) return;
+  var d = document.createElement('datalist'); d.id = 'distList';
+  d.innerHTML = UB_DISTRICTS.concat([].concat.apply([], Object.keys(AIMAGS).map(function (a) { return AIMAGS[a]; }))).map(function (x) { return '<option value="' + x + '">'; }).join('');
+  document.body.appendChild(d);
+}
+
+// Жижиг товчны доор гарах цэс: items = [[нэр, js]] — дэлгэцийн баруун ирмэгээс хэтрэхгүй, гадуур дарах / Esc хаана
+function ddMenu(btn, items) {
+  var old = document.getElementById('ddMenu'); if (old) { old.remove(); if (old._btn === btn) return; }
+  var m = document.createElement('div'); m.id = 'ddMenu'; m.className = 'dd-menu'; m.setAttribute('role', 'menu'); m._btn = btn;
+  m.innerHTML = items.map(function (it) { return '<button role="menuitem" onclick="document.getElementById(\'ddMenu\').remove();' + esc(it[1]) + '">' + esc(it[0]) + '</button>'; }).join('');
+  document.body.appendChild(m);
+  var r = btn.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
+  var left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8)), top = r.bottom + 4 + h > window.innerHeight ? r.top - h - 4 : r.bottom + 4;
+  m.style.left = left + 'px'; m.style.top = Math.max(8, top) + 'px';
+  var b = m.querySelector('button'); if (b) b.focus();
+}
+document.addEventListener('mousedown', function (e) { var m = document.getElementById('ddMenu'); if (m && !m.contains(e.target) && e.target !== m._btn) m.remove(); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var m = document.getElementById('ddMenu'); if (m) { m.remove(); if (m._btn) m._btn.focus(); } } });
+window.addEventListener('scroll', function () { var m = document.getElementById('ddMenu'); if (m) m.remove(); }, true);
+
+// Нэгж: «ширхэг» → «ш» (бүх хуудсанд ижил); кг, литр г.м хэвээр
+function unitShort(u) { u = String(u || '').trim(); return !u || /^(ширхэг|ширх\.?|шир\.?|ш\.?|pcs)$/i.test(u) ? 'ш' : u; }

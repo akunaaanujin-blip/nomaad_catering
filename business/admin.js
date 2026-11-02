@@ -1112,7 +1112,7 @@ function saveStaff() {
   if (!/^[a-z0-9._]{3,20}$/.test(f.username)) { toast('Нэвтрэх нэр: латин жижиг үсэг, тоо, цэг (3-20)'); return; }
   if (!f.biz) { toast('Ажиллах дэлгүүрээ сонгоно уу'); return; }
   var code = $('sfCode').value.trim();
-  if (code) { if (!/^\d{4,8}$/.test(code)) { toast('Код 4-8 оронтой тоо байна'); return; } f.code = code; }
+  if (code) { if (!/^\d{6}$/.test(code)) { toast('PIN 6 оронтой тоо байна'); return; } f.code = code; }
   var kp = Number($('sfKpi').value) || 0, sid = editId;
   if (kp < 0 || kp > 50) { toast('KPI хувь 0–50 хооронд'); return; }
   post({ type: 'admin_staff', id: editId, fields: f }, function (err, d) {
@@ -1495,6 +1495,8 @@ function ebAdmFresh() { return (window.adminOrders || []).filter(function (o) { 
   .sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; }); }
 function ebAdmSend(other) {   // other — буухиад өгөхгүй, өөрсдөө / бусад хүргэлтээр (буухиагийн хөлс бичигдэхгүй)
   var ids = Object.keys(ebAdm.sel).filter(function (k) { return ebAdm.sel[k]; });
+  var badA = other ? [] : (window.adminOrders || []).filter(function (o) { return ids.indexOf(o.id) >= 0 && !addrFinal(o).ok; });
+  if (badA.length) { alert('Хаяг дутуу ' + badA.length + ' захиалга:\n' + badA.map(function (o) { return o.phone + ': ' + addrFinal(o).why; }).join('\n') + '\n\nАжилтны «Хүргэлт» хуудсанд «Засах» дарж бөглөнө.'); return; }
   if (!ids.length || ebAdm.busy || !confirm(ids.length + (other ? ' захиалгыг бусад хүргэлтээр (буухиагүй) гаргах уу?' : ' захиалгыг буухиа руу илгээх үү?'))) return;
   var dup = other ? [] : (window.adminOrders || []).filter(function (o) { return ids.indexOf(o.id) >= 0 && ebMaybe(o); }).map(function (o) { return o.phone + ' (' + ebMaybe(o).code + ')'; });
   if (dup.length && !confirm('Энэ захиалга Буухиа дээр аль хэдийн байж магадгүй:\n' + dup.join('\n') + '\n\nДахин илгээх үү?')) return;
@@ -1528,7 +1530,7 @@ function ebAdmBody() {
     '<div class="eb-wrap"><table class="tbl eb-t"><tr><th style="width:28px"><input type="checkbox" onchange="ebAdmFresh().forEach(function(o){ebAdm.sel[o.id]=this.checked},this);ebRedraw()"></th><th>Огноо</th><th>Хүлээн авагч</th><th>Хаяг</th><th>Бараа</th><th class="n">Дүн</th><th>Манай төлөв</th></tr>' +
     fresh.map(function (o) {
       return '<tr><td><input type="checkbox"' + (ebAdm.sel[o.id] ? ' checked' : '') + ' onchange="ebAdm.sel[\'' + o.id + '\']=this.checked;ebRedraw()"></td><td>' + esc(o.date) + '</td><td><b>' + esc(o.phone) + '</b>' + (o.customer ? '<br><small class="muted">' + esc(o.customer) + '</small>' : '') + '</td>' +
-        '<td class="eb-addr">' + esc([o.district, o.address].filter(Boolean).join(', ')) + (o.district ? '' : ' <small style="color:#B45309">дүүрэг хоосон</small>') + '</td><td>' + esc(ebAdmItems(o)) + '</td><td class="n">' + fmt(o.amount) + '</td><td>' + esc(o.status) + '</td></tr>';
+        '<td class="eb-addr">' + esc(addrText(addrFinal(o))) + (addrFinal(o).ok ? '' : ' <small style="color:#B45309">' + esc(addrFinal(o).why) + '</small>') + '</td><td>' + esc(ebAdmItems(o)) + '</td><td class="n">' + fmt(o.amount) + '</td><td>' + esc(o.status) + '</td></tr>';
     }).join('') + '</table></div></div>' : '';
   return dupBox + send + '<div class="ord-bar" style="margin-top:' + (send ? '18px' : '0') + '"><h3 style="margin:0;flex:1">Буухиа дээрх хүргэлтүүд</h3>' +
     '<a class="b-btn" href="https://ebuuhia.com/report/customer" target="_blank" rel="noopener">Буухиа руу нэвтэрч тооцоо нийлэх</a>' +
@@ -1983,6 +1985,10 @@ function extraChecks(E, r, p, line, neq) {
       out += line(!cb.length, cb.length ? 'Буухиа цуцалсан ' + cb.length + ' захиалгын авлага 0 биш: ' + esc(cb.slice(0, 4).join(', ')) + (cb.length > 4 ? '…' : '') + ' — «Хүргэлт» хуудсыг шинэчилнэ үү' : 'Буухиа цуцалсан захиалгын авлага 0' + (cn ? ' (' + cn + ' захиалга)' : ''), 'sales/buuhia');
     }
   }
+  // Сурталчилгаа: ажилтны Boost бүртгэлээр Дт 7120 / Кт 3801 — банкаар шууд 7120 бичсэн бол давхардаж болзошгүй
+  var adB = E.filter(function (e) { return e.date >= BOOST_JR_FROM && e.dr === '7120' && e.doc !== 'Сурталчилгаа'; }), adS = adB.reduce(function (a, e) { return a + e.amount; }, 0);
+  if (records.some(function (x) { return x.biz === state.biz && x.type === 'boost'; }) || adB.length)
+    out += line(!adB.length, adB.length ? adB.length + ' гүйлгээ ' + fmt(adS) + ' 7120 Сурталчилгаа руу шууд бичигдсэн — ажилтны Boost бүртгэлтэй давхардаж болзошгүй (банкны тулгалтыг «3801 Сурталчилгаа төлсөн» болгоно)' : 'Сурталчилгааны зардал зөвхөн Boost бүртгэлээр (давхардалгүй)', 'finance/bank');
   var badE = ACCOUNTS.filter(function (a) { return (a[2] === 'exp' || a[2] === 'cogs') && (bp[a[0]] || 0) < -0.5; });
   out += line(!badE.length, badE.length ? 'Сөрөг үлдэгдэлтэй зардлын данс: ' + badE.map(function (a) { return a[0] + ' ' + esc(a[1]) + ' ' + fmt(bp[a[0]]); }).join(', ') : 'Зардлын данс бүр эерэг (сөрөг үлдэгдэлгүй)', 'finance/trial');
   var badR = ACCOUNTS.filter(function (a) { return a[2] === 'rev' && (bp[a[0]] || 0) > 0.5; });

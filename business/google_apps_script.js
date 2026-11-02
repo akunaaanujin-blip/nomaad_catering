@@ -133,6 +133,7 @@ function route(data) {
   if (data.type === 'task_done') return staffTaskDone(data);
   if (data.type === 'admin_reminder') return isAdmin(data) ? adminReminder(data) : { status: 'error', error: 'auth' };
   if (data.type === 'order_save') return orderSave(data);
+  if (data.type === 'staff_pin') return staffPin(data);
   if (data.type === 'order_delete') return orderDelete(data);
   if (data.type === 'orders_ship') return ordersShip(data);
   if (data.type === 'eb_send' || data.type === 'eb_sync' || data.type === 'eb_del' || data.type === 'eb_other') return ebuuhia(data);
@@ -161,7 +162,7 @@ function route(data) {
 // Удирдлагын бүх бичилт, захиалга, тооллого: хэн · хэзээ · юу (амжилттай болсныг л). Нууц утга (түлхүүр, код, нууц үг) бичигдэхгүй.
 // Ажилтны борлуулалт, зарлагын мөр өөрөө ажилтан, цагтай тул энд давхар бичихгүй.
 const SHEET_AUDIT = 'Түүх', AUDIT_HEAD = ['Цаг', 'Хэн', 'Компани', 'Үйлдэл', 'Тайлбар', 'Төрөл', 'ID', 'Дэлгэрэнгүй'];
-const AUDIT_SKIP = { register: 1, admin_login: 1, record_receipt: 1, barcode_set: 1, admin_backup: 1, admin_audit: 1, admin_restore: 0 };
+const AUDIT_SKIP = { staff_pin: 1, register: 1, admin_login: 1, record_receipt: 1, barcode_set: 1, admin_backup: 1, admin_audit: 1, admin_restore: 0 };
 function auditSheet() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   let sh = ss.getSheetByName(SHEET_AUDIT);
@@ -249,7 +250,7 @@ const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'docs'
 const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_other: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_send: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
   admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr'], admin_bank: ['bank', 'jr', 'ord'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_po: ['po', 'jr'],
-  admin_restore: ['rec', 'stk', 'mov', 'jr'], admin_staff: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
+  admin_restore: ['rec', 'stk', 'mov', 'jr'], admin_staff: ['adm', 'stf'], staff_pin: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
 const CACHE_READ = { admin_audit: 1, eb_sync: 1, requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
 function cacheKeysFor(d) {
   if (!d.type) return ['rec', 'stk'];   // ажилтны бичлэг (борлуулалт, зарлага, касс)
@@ -593,21 +594,29 @@ function tinInfo(q) {
 }
 
 // ── Ажилтны нэвтрэлт ── Кодын жагсаалтыг хэзээ ч буцаахгүй. Зөвхөн "Тийм" төлөвтэй ажилтан нэвтэрнэ.
+// Нэвтрэх: утас (8 орон) эсвэл нэвтрэх нэр + PIN. Нийтлэг (дэлгүүрийн нэртэй «cozy» г.м, нэг утсанд олон) эрхээр нэвтрүүлэхгүй.
+// PIN 6 оронтой болоогүй бол pinChange — ажилтан нэвтэрмэгц солино.
 function login(biz, user, code, multi) {
   code = String(code || '').trim();
   user = String(user || '').trim().toLowerCase();
-  if (!BIZ_NAMES[biz] || !USER_RE.test(user) || !/^\d{4,8}$/.test(code)) return { status: 'error', error: 'code' };
+  const ph = user.replace(/\D/g, ''), byPhone = /^\d{8}$/.test(ph.slice(-8)) && !/[a-zа-яөүё]/i.test(user);
+  if (!BIZ_NAMES[biz] || !(byPhone || USER_RE.test(user)) || !/^\d{4,8}$/.test(code)) return { status: 'error', error: 'code' };
+  if (!byPhone && BIZ_NAMES[user]) return { status: 'error', error: 'shared' };
   const cache = CacheService.getScriptCache();
   const key = 'fail_' + biz + '_' + user;
   const fails = Number(cache.get(key) || 0);
   if (fails >= 10) return { status: 'error', error: 'locked' };
   // multi — шинэ хуудас: эрхтэй бүх дэлгүүрийн токеныг нэг дор буцаана (хуудас хооронд дахин нэвтрэхгүй шилжинэ)
-  const s = cacheGet('stf', staffRows).filter(function (x) { return x.username === user && (multi ? staffBizes(x.biz).length : staffIn(x, biz)); })[0];
+  const p8 = function (v) { return String(v || '').replace(/\D/g, '').slice(-8); };
+  const cand = cacheGet('stf', staffRows).filter(function (x) { return (byPhone ? p8(x.phone) === ph.slice(-8) : x.username === user) && x.status !== 'Үгүй' && (multi ? staffBizes(x.biz).length : staffIn(x, biz)); });
+  if (byPhone && cand.length > 1) return { status: 'error', error: 'shared' };   // нэг утсанд олон эрх — удирдлага засна
+  const s = cand[0];
+  if (s && BIZ_NAMES[s.username]) return { status: 'error', error: 'shared' };
   if (s && s.code === code.padStart(4, '0')) {
     if (s.status === 'Хүлээгдэж') return { status: 'error', error: 'pending' };
     if (s.status === 'Тийм') {
       cache.remove(key);
-      const out = { status: 'ok', name: s.name, role: s.role === 'Худалдагч' ? 'seller' : 'manager' };
+      const out = { status: 'ok', name: s.name, role: s.role === 'Худалдагч' ? 'seller' : 'manager', pinChange: code.length < 6 };
       if (staffIn(s, biz)) out.token = signStaff(s.id, biz);
       if (multi) { out.tokens = {}; staffBizes(s.biz).forEach(function (b) { out.tokens[b] = b === biz && out.token ? out.token : signStaff(s.id, b); }); }
       return out;
@@ -617,6 +626,15 @@ function login(biz, user, code, multi) {
   return { status: 'error', error: 'code' };
 }
 
+// Ажилтан PIN-ээ солих (6 орон): хуучин PIN заавал
+function staffPin(d) {
+  const who = checkStaff(d.token); if (!who) return { status: 'error', error: 'auth' };
+  const old = String(d.old || '').trim(), pin = String(d.pin || '').trim();
+  if (!/^\d{6}$/.test(pin)) return { status: 'error', error: 'pin' };
+  if (who.staff.code !== old.padStart(4, '0')) return { status: 'error', error: 'old' };
+  const c = staffSheet().getRange(who.staff.row, 3); c.setNumberFormat('@'); c.setValue(pin);
+  return { status: 'ok' };
+}
 // ── Ажилтан өөрөө бүртгүүлэх ── "Хүлээгдэж" төлөвтэй орно, удирдагч баталсны дараа нэвтэрнэ.
 function register(d) {
   const cache = CacheService.getScriptCache();
@@ -630,7 +648,7 @@ function register(d) {
   if (!BIZ_NAMES[biz]) return { status: 'error', error: 'biz' };
   if (!USER_RE.test(username)) return { status: 'error', error: 'user' };
   if (!name || !/^\+?\d{8,12}$/.test(phone)) return { status: 'error', error: 'fields' };
-  if (!/^\d{4}$/.test(code)) return { status: 'error', error: 'code' };
+  if (!/^\d{6}$/.test(code)) return { status: 'error', error: 'code' };   // PIN 6 орон
   const rows = staffRows();
   if (rows.some(function (s) { return s.username === username; })) return { status: 'error', error: 'user_taken' };
   const sh = staffSheet();
@@ -640,6 +658,7 @@ function register(d) {
     String(d.position || '').trim().slice(0, 40), '', String(d.bank || '').trim().slice(0, 40),
     Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), id, username,
     String(d.address || '').trim().slice(0, 150), /^\d{4}-\d{2}-\d{2}$/.test(String(d.start)) ? d.start : '', '', '', '', '']);
+  sh.getRange(sh.getLastRow(), 3).setNumberFormat('@').setValue(code);   // «012345» тэгээрээ хадгалагдана
   cache.put('reg_count', String(n + 1), 3600);
   return { status: 'ok', id: id };
 }
@@ -677,7 +696,7 @@ function adminStaff(d) {
   if (f.phone !== undefined) set(7, String(f.phone).slice(0, 15));
   if (f.bank !== undefined) set(11, String(f.bank).slice(0, 40));
   if (f.name) set(2, String(f.name).slice(0, 60));
-  if (f.code && /^\d{4,8}$/.test(f.code)) set(3, String(f.code));
+  if (f.code && /^\d{6}$/.test(f.code)) { sh.getRange(s.row, 3).setNumberFormat('@'); set(3, String(f.code)); }
   if (f.address !== undefined) set(15, String(f.address).slice(0, 150));
   if (f.ndJob !== undefined && /^(\d{4}-\d{2})?$/.test(String(f.ndJob))) set(21, String(f.ndJob));
   if (f.ndType !== undefined && /^\d{5}$/.test(String(f.ndType))) set(22, String(f.ndType));
@@ -1515,6 +1534,7 @@ function ebCancelApply(list, who) {
   });
   return list.length;
 }
+function ebKh(k) { k = String(k || ''); if (/хороолол/i.test(k)) return ''; const m = k.match(/(\d{1,2})/); return m ? String(Number(m[1])) : ''; }   // хороо — зөвхөн дугаар
 function ebView(c, biz, fresh) { return ebLink(ebList(c, fresh).map(ebNorm), biz, true); }
 // Удирдлага: зөвхөн харах (төлөв, код бичихгүй)
 // Удирдлага: ажилтантай ижил үйлдэл (илгээх, төлөв татах, устгах) — op: send | del | sync
@@ -1539,6 +1559,11 @@ function ebuuhia(d, asWho) {
   try {
     if (d.type === 'eb_send') {   // шинэ захиалгыг буухиад өгнө (борлуулалт бичигдэнэ), дараа нь ebuuhia-д хүргэлт үүсгэнэ
       const want = {}; (Array.isArray(d.ids) ? d.ids : []).slice(0, 50).forEach(function (x) { want[String(x)] = 1; });
+      // Ажилтны харсан (засварласан / хаягаас таньсан) эцсийн хаягийг эхлээд хадгална
+      if (d.addr && typeof d.addr === 'object') { const osh0 = orderSheet(); orderRows().forEach(function (o) {
+        const a = d.addr[o.id]; if (!want[o.id] || !a || o.biz !== who.biz || o.ebCode) return;
+        osh0.getRange(o.row, 9, 1, 4).setValues([[String(a.city || '').slice(0, 40), String(a.district || '').slice(0, 40), ebKh(a.khoroo), String(a.address || '').replace(/\s*дүүрэг хоосон\s*/gi, ' ').trim().slice(0, 300)]]);
+      }); }
       let list = orderRows().filter(function (o) { return want[o.id] && o.biz === who.biz && !o.ebCode && (o.status === 'Шинэ' || o.status === 'Буухиад өгсөн'); });
       const fresh = list.filter(function (o) { return o.status === 'Шинэ'; }).map(function (o) { return o.id; });
       let ship = { shipped: [], skipped: [] };
@@ -1550,10 +1575,11 @@ function ebuuhia(d, asWho) {
         let items; try { items = JSON.parse(o.items || '[]'); } catch (e) { items = []; }
         const goods = items.filter(function (i) { return i.name !== FEE_ITEM && i.name !== DISC_ITEM && i.name !== SPLIT_ITEM; });
         const qty = goods.reduce(function (a, i) { return a + (Number(i.qty) || 1); }, 0) || 1;
-        const kh = String(o.khoroo || '').trim();
+        const kh = ebKh(o.khoroo), city = String(o.city || '').trim(), dist = String(o.district || '').trim();
+        if (!city || !dist) { failed.push({ id: o.id, phone: o.phone, why: !city ? 'Хот/аймаг сонгоно уу' : 'Дүүрэг/сум сонгоно уу' }); return; }   // Улаанбаатар гэж автоматаар тавихгүй
         const body = { external_order_id: o.id,
           customer: { name: String(o.customer || o.phone).slice(0, 80), phone: String(o.phone).replace(/\D/g, ''), phone2: String(o.phone2 || '').replace(/\D/g, '') },
-          address: { city: String(o.city || 'Улаанбаатар'), district: String(o.district || ''), committee: kh ? (/хороо/.test(kh) ? kh : kh + '-р хороо') : '', addition: String(o.address || '').slice(0, 255) },
+          address: { city: city, district: dist, committee: kh ? kh + '-р хороо' : '', addition: String(o.address || '').replace(/\s*дүүрэг хоосон\s*/gi, ' ').trim().slice(0, 255) },
           delivery: { item_name: goods.map(function (i) { return i.name + ' ' + (Number(i.qty) || 1) + 'ш'; }).join(', ').slice(0, 250), quantity: qty,
             description: String(o.note || '').slice(0, 200), total_price: o.paid === 'Орсон' || o.confirmed ? 0 : Math.round(o.amount) } };
         const r = ebCall(c, 'post', '/api/partner/v1/deliveries', body, 'nb-' + o.id);

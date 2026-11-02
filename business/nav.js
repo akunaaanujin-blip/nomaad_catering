@@ -563,20 +563,6 @@ function ordCancelDo(id) {
   });
 }
 
-// Жижиг товчны доор гарах цэс: items = [[нэр, js]] — дэлгэцийн баруун ирмэгээс хэтрэхгүй, гадуур дарах / Esc хаана
-function ddMenu(btn, items) {
-  var old = document.getElementById('ddMenu'); if (old) { old.remove(); if (old._btn === btn) return; }
-  var m = document.createElement('div'); m.id = 'ddMenu'; m.className = 'dd-menu'; m.setAttribute('role', 'menu'); m._btn = btn;
-  m.innerHTML = items.map(function (it) { return '<button role="menuitem" onclick="document.getElementById(\'ddMenu\').remove();' + esc(it[1]) + '">' + esc(it[0]) + '</button>'; }).join('');
-  document.body.appendChild(m);
-  var r = btn.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
-  var left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8)), top = r.bottom + 4 + h > window.innerHeight ? r.top - h - 4 : r.bottom + 4;
-  m.style.left = left + 'px'; m.style.top = Math.max(8, top) + 'px';
-  var b = m.querySelector('button'); if (b) b.focus();
-}
-document.addEventListener('mousedown', function (e) { var m = document.getElementById('ddMenu'); if (m && !m.contains(e.target) && e.target !== m._btn) m.remove(); });
-document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var m = document.getElementById('ddMenu'); if (m) { m.remove(); if (m._btn) m._btn.focus(); } } });
-window.addEventListener('scroll', function () { var m = document.getElementById('ddMenu'); if (m) m.remove(); }, true);
 // Удирдлагаас захиалга засах: хэрэглэгчийн нэр, хаяг, хүргэх өдөр, тэмдэглэл (утас, бараа, дүнг ажилтан засна)
 var ORD_EDIT = [['customer', 'Хэрэглэгчийн нэр'], ['district', 'Дүүрэг'], ['khoroo', 'Хороо'], ['address', 'Хаяг'], ['deliverDate', 'Хүргэх өдөр', 'date'], ['note', 'Тэмдэглэл']];
 function ordEditOpen(id) {

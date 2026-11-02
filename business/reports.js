@@ -86,6 +86,7 @@ var BUUHIA = 'Буухиа';
 // Буухиагийн өглөг зөвхөн «Буухиа тооцоо» нийлэх үед үүснэ. Үүнээс өмнөх огноотой захиалгад хөлсийг хүргэх үед өглөгөөр бичдэг байсан (хуучин хаалтууд таарахын тулд хэвээр).
 var EB_PAY_FROM = '2026-10-25';
 function ebFeeAuto(d) { return !!d && String(d).slice(0, 10) < EB_PAY_FROM; }
+var BOOST_JR_FROM = '2026-10-27', BOOST_PARTNER = 'Сурталчилгаа (Meta)';   // шинээр эхэлсэн өдрөөс — өмнөх нь банкаар 7120
 var EB_FEE_DATE = {};   // захиалгын ID → хүргэлтийн хөлсний борлуулалт бичигдсэн (буухиад өгсөн) огноо; buildJournal дүүргэнэ
 function ebOrdAuto(o) { return !!o && (ebFeeAuto(EB_FEE_DATE[o.id] || o.date) || ebAccrues(o)); }
 // Шинэ дүрэм: буухиагаар хүргэгдсэн захиалга бүрт хөлсийг хүргэгдсэн мөчид зардал болгоно (Дт 7124 / Кт 3101 Буухиа), тооцоо нийлэхэд өглөг хаагдана
@@ -262,6 +263,8 @@ function buildJournal(biz, R) {
         if (oo && isFee(item) && oo.ebCode !== 'бусад' && ebFeeAuto(EB_FEE_DATE[oo.id] || d)) add(d, 'Буухиагийн хөлс (буцаалт)', x.id, '3101', '7124', -a, 'Хүргэлт буцаасан · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
         if (c) add(d, 'Буцаалт · өртөг', x.id, '1404', '6101', c, item);
       }
+    } else if (x.type === 'boost') {   // Сурталчилгаа (Boost): ажилтны бүртгэл бүр зардал — Дт 7120 / Кт 3801 (банкаар/картаар төлөхөд өглөг хаагдана)
+      if (d >= BOOST_JR_FROM) add(d, 'Сурталчилгаа', x.id, '7120', '3801', a, 'Сурталчилгаа · ' + x.item + (x.qty ? ' · ' + x.qty + ' хоног' : '') + (x.unit === 'USD' ? ' · $' + x.price : ''), BOOST_PARTNER, x.bill);
     } else if (x.type === 'collect') {   // зээлээр (захиалга) зарсны мөнгө орсон → авлага хаагдана
       add(d, 'Авлага төлөгдсөн', x.id, SALE_ACC[x.pay] || '1101', '1201', a, 'Захиалгын төлбөр · ' + (x.customer || ''), x.customer || '(нэргүй харилцагч)');
     } else if (x.type === 'expense') {
