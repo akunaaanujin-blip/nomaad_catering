@@ -1639,3 +1639,33 @@ body:not(.bz-admin) .sum.sum4{grid-template-columns:repeat(5,1fr)}
 body.pos10,body.pos10.biz-cozy,body.pos10.biz-meat,body.pos10.biz-travel{--p:#1F4E79;--p-d:#183E61;--p-50:#E8EFF6;--accent:#1F4E79;--ink:#111827;--ok:#15803D;--bad:#B91C1C;font-family:'Inter',-apple-system,'Segoe UI',Roboto,sans-serif}
 /* нүүрний дүн: өнгө утгаар (байрлалаар биш) — борлуулалт/захиалга ногоон, зарлага улаан, цэвэр хар */
 body.pos10 .sum>div:nth-child(n)>b.g{color:#15803D!important}body.pos10 .sum>div:nth-child(n)>b.r{color:#B91C1C!important}body.pos10 .sum>div:nth-child(n)>b.k{color:#111827!important}
+/* ═══ v11 · ажилтны хуудасны өнгө цэгцэлсэн (2026-11-02): бараан цэсэнд цайвар бичиг, нэг navy өнгө, утгагүй өнгөгүй (₮0 саарал), зөөлөн төлөвийн шошго ═══ */
+body.pos10 .ep-nav{background:#13263D}
+body.pos10 .ep-brand{color:#fff;border-bottom-color:rgba(255,255,255,.12)}
+body.pos10 .ep-brand .mono{background:#fff!important;color:#1F4E79!important}
+body.pos10 .ep-grp-t{color:rgba(255,255,255,.45)}
+body.pos10 .ep-it{color:#C3CEDB;font-weight:500;font-size:15px;height:42px;border-radius:8px}
+body.pos10 .ep-it svg{color:currentColor}
+body.pos10 .ep-it:hover{background:rgba(255,255,255,.07);color:#fff}
+body.pos10 .ep-it.on{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+body.pos10 .ep-it.on::after{display:block;content:'';position:absolute;left:0;right:auto;top:9px;bottom:9px;width:3px;height:auto;border-radius:0 3px 3px 0;background:#8FB8E3;box-shadow:none}
+body.pos10 .ep-foot{color:rgba(255,255,255,.4)}
+body.pos10 .top h1,body.pos10 .ep-title{color:#111827}
+/* нүүрний том товч: үндсэн нь navy, бусад нь цагаан, дүрс нь утгын зөөлөн өнгөтэй */
+body.pos10 .big.sale{background:#1F4E79;border-color:#1F4E79;color:#fff}
+body.pos10 .big.sale:hover{background:#183E61}
+body.pos10 .big.exp span{background:#FDECEC;color:#B91C1C}
+body.pos10 .big.close span,body.pos10 .big.ord-btn span,body.pos10 .big.buu-btn span{background:#E8EFF6;color:#1F4E79}
+/* дүн: тэг бол саарал */
+body.pos10 .sum>div:nth-child(n)>b.z{color:#9CA3AF!important}
+/* төлөвийн шошго: тод дэвсгэр биш, зөөлөн өнгө + бараан бичиг */
+body.pos10 .eb-t .st,body.pos10 .ep-tbl td.c-s>.st{text-transform:none;letter-spacing:0;font-weight:600;font-size:12px;background:#F1F3F5;color:#495057}
+body.pos10 .eb-t .st.g,body.pos10 .ep-tbl td.c-s>.st.g{background:#E7F5EC;color:#15803D}
+body.pos10 .eb-t .st.r,body.pos10 .ep-tbl td.c-s>.st.r{background:#FDECEC;color:#B91C1C}
+body.pos10 .eb-t .st.y,body.pos10 .ep-tbl td.c-s>.st.y{background:#FEF3E2;color:#B45309}
+body.pos10 .eb-t .st.b,body.pos10 .ep-tbl td.c-s>.st.b{background:#E8EFF6;color:#1F4E79}
+/* нэвтрэх: navy зурвас (хөх градиентгүй) */
+body.pos10 .login,body:not(.bz-admin) .login{background:linear-gradient(180deg,#1F4E79 0,#1F4E79 44%,#F6F7F9 44%)}
+body:not(.bz-admin) .login .btn{background:#1F4E79}
+body.pos10 .sum-sub{color:#6B7280}
+body:not(.bz-admin) .login a{color:#1F4E79}

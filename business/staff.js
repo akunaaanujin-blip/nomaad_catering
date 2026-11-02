@@ -1207,6 +1207,7 @@ function renderToday() {
   if ($('sumShop')) { $('sumShop').textContent = fmt(t.sales - ordSum); $('sumOrd').innerHTML = fmt(ordOut) + (ordBack ? '<small class="sum-sub">буцаалт −' + fmt(ordBack) + '</small>' : ''); $('sumNet').textContent = fmt(t.sales - ordSum - t.exp); }
   else { $('sumSales').textContent = fmt(t.sales); $('sumNet').textContent = fmt(t.sales - t.exp); }
   $('sumExp').textContent = fmt(t.exp);
+  document.querySelectorAll('.sum b').forEach(function (b) { b.classList.toggle('z', !!b.firstChild && b.firstChild.textContent === '₮0'); });   // тэг дүн саарал
   var recs = todayRecords().filter(function (r) { return r.type !== 'attend' && r.type !== 'boost' && !isOrd(r); }).slice().reverse();
   var hb = $('histBtn');
   if (!hb && $('todayList')) { $('todayList').insertAdjacentHTML('afterend', '<button class="btn ghost" id="histBtn" style="margin-top:8px" onclick="openEbHist()">Баримтын түүх (өмнөх өдрүүд)</button>'); hb = $('histBtn'); }
