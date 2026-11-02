@@ -283,8 +283,7 @@ function buildJournal(biz, R) {
         if (oo && isFee(item) && oo.ebCode !== 'бусад' && ebFeeAuto(EB_FEE_DATE[oo.id] || d)) add(d, 'Буухиагийн хөлс (буцаалт)', x.id, '3101', '7124', -a, 'Хүргэлт буцаасан · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
         if (c) add(d, 'Буцаалт · өртөг', x.id, '1404', '6101', c, item);
       }
-    } else if (x.type === 'boost') {   // Сурталчилгаа (Boost): ажилтны бүртгэл бүр зардал — Дт 7120 / Кт 3801 (банкаар/картаар төлөхөд өглөг хаагдана)
-      if (d >= BOOST_JR_FROM) add(d, 'Сурталчилгаа', x.id, '7120', '3801', a, 'Сурталчилгаа · ' + x.item + (x.qty ? ' · ' + x.qty + ' хоног' : '') + (x.unit === 'USD' ? ' · $' + x.price : ''), BOOST_PARTNER, x.bill);
+    } else if (x.type === 'boost') {   // 2026-11-02-ноос: ажилтны Boost бүртгэл журналд бичигдэхгүй (зөвхөн ROAS, бараагаар шинжилгээ) — зардал банкаар төлсөн дүнгээр Дт 7120
     } else if (x.type === 'collect') {   // зээлээр (захиалга) зарсны мөнгө орсон → авлага хаагдана
       add(d, 'Авлага төлөгдсөн', x.id, SALE_ACC[x.pay] || '1101', '1201', a, 'Захиалгын төлбөр · ' + (x.customer || ''), x.customer || '(нэргүй харилцагч)');
     } else if (x.type === 'expense') {

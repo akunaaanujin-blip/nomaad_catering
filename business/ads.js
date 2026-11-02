@@ -44,7 +44,7 @@ function adsView() {
   byCamp.sort(function (a, b) { return b.spend - a.spend; });
   var tS = byCo.reduce(function (a, x) { return a + x.spend; }, 0), tR = byCo.reduce(function (a, x) { return a + x.sales; }, 0);
   return '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Сурталчилгаа, ROAS</h2><button class="btn" onclick="adsOpen()">Зардал бүртгэх</button></div>' +
-    '<p class="muted" style="margin:6px 0 0">' + f + ' — ' + t + ' · ROAS = борлуулалт ÷ сурталчилгааны зардал (7120). Ажилтны Boost бүртгэл, удирдлагаас бүртгэсэн зардал, банкаар бичсэн 7120 бүгд орно.</p></div>' +
+    '<p class="muted" style="margin:6px 0 0">' + f + ' — ' + t + ' · ROAS = борлуулалт ÷ сурталчилгааны зардал (7120). Банкаар төлсөн boost болон удирдлагаас бүртгэсэн 7120 зардал орно (ажилтны Boost бүртгэл зөвхөн бараагаар шинжилгээнд).</p></div>' +
     '<div class="card rep"><div class="rep-cap"><b>Компаниар</b></div><div class="scroll"><table class="rep-t"><tr><th>Компани</th><th class="n">Зардал</th><th class="n">Цэвэр борлуулалт</th><th class="n">ROAS</th></tr>' +
     byCo.map(function (x) { return '<tr><td>' + esc(BUSINESSES[x.biz].name) + '</td><td class="n">' + fmt(x.spend) + '</td><td class="n">' + fmt(x.sales) + '</td><td class="n">' + roas(x.sales, x.spend) + '</td></tr>'; }).join('') +
     '<tr class="tot"><td>Нийт</td><td class="n">' + fmt(tS) + '</td><td class="n">' + fmt(tR) + '</td><td class="n">' + roas(tR, tS) + '</td></tr></table></div></div>' +
@@ -68,7 +68,8 @@ function bstRange() {
 // 3801 «Сурталчилгаа (Meta)»: банкаар төлсөн дүнг (Дт 3801) хамгийн эртний boost-оос эхлэн хуваарилна
 function bstPaid(biz, Rr) {
   var E = buildJournal(biz, Rr), paid = 0, out = {};
-  E.forEach(function (e) { if (e.dr === '3801' && e.partner === BOOST_PARTNER) paid += e.amount; if (e.cr === '3801' && e.partner === BOOST_PARTNER && e.doc !== 'Сурталчилгаа') paid -= e.amount; });
+  E.forEach(function (e) { if ((e.dr === '3801' || e.dr === '7120') && e.partner === BOOST_PARTNER) paid += e.amount;   // банкаар төлсөн boost (7120, хуучин 3801)
+    if (e.cr === '3801' && e.partner === BOOST_PARTNER && e.doc !== 'Сурталчилгаа') paid -= e.amount; });
   Rr.records.filter(function (x) { return x.biz === biz && x.type === 'boost' && x.date >= BOOST_JR_FROM; })
     .sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; })
     .forEach(function (x) { var a = Number(x.amount) || 0; out[x.id] = paid + 0.5 >= a; paid -= a; if (paid < 0) paid = 0; });

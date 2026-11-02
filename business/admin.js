@@ -2019,6 +2019,14 @@ function ordSyncDo(id) {
     toast(d.adj ? 'Тааруулсан' : 'Хүргэлт, хөнгөлөлтөөс бусад (барааны) зөрүү — захиалгыг засна уу'); gClose(); refresh();
   });
 }
+// Өглөгийн данс (liab, зээлээс бусад) харилцагч бүрээр: Кт − Дт < 0 бол өр байхгүй атал төлсөн
+function liabNegative(E, to) {
+  var A = {}; ACCOUNTS.forEach(function (a) { if (a[2] === 'liab' && !/^35/.test(a[0])) A[a[0]] = 1; });
+  var B = {}; E.forEach(function (e) { if (e.date > to) return;
+    if (A[e.cr]) { var k = e.cr + '|' + (e.partner || ''); B[k] = (B[k] || 0) + e.amount; }
+    if (A[e.dr]) { var k2 = e.dr + '|' + (e.partner || ''); B[k2] = (B[k2] || 0) - e.amount; } });
+  return Object.keys(B).filter(function (k) { return B[k] < -TOL; }).map(function (k) { var p = k.split('|'); return { acc: p[0], who: p[1] || '(харилцагчгүй)', v: B[k] }; });
+}
 // Нэмэлт шалгуур: ашиг > борлуулалт, ашгийн хувь, сөрөг үлдэгдэлтэй орлого/зардлын данс, үлдэгдэл = 1404, банкны холболт
 function extraChecks(E, r, p, line, neq) {
   var out = '', bp = balances(E, r[1], r[0]), bt = balances(E, todayStr());
@@ -2060,10 +2068,12 @@ function extraChecks(E, r, p, line, neq) {
       out += line(!cb.length, cb.length ? 'Буухиа цуцалсан ' + cb.length + ' захиалгын авлага 0 биш: ' + esc(cb.slice(0, 4).join(', ')) + (cb.length > 4 ? '…' : '') + ' — «Хүргэлт» хуудсыг шинэчилнэ үү' : 'Буухиа цуцалсан захиалгын авлага 0' + (cn ? ' (' + cn + ' захиалга)' : ''), 'sales/buuhia');
     }
   }
-  // Сурталчилгаа: ажилтны Boost бүртгэлээр Дт 7120 / Кт 3801 — банкаар шууд 7120 бичсэн бол давхардаж болзошгүй
-  var adB = E.filter(function (e) { return e.date >= BOOST_JR_FROM && e.dr === '7120' && e.doc !== 'Сурталчилгаа' && e.doc !== 'Зарлага' && String(e.desc).indexOf('#ADS') < 0; }), adS = adB.reduce(function (a, e) { return a + e.amount; }, 0);
-  if (records.some(function (x) { return x.biz === state.biz && x.type === 'boost'; }) || adB.length)
-    out += line(!adB.length, adB.length ? adB.length + ' гүйлгээ ' + fmt(adS) + ' 7120 Сурталчилгаа руу шууд бичигдсэн — ажилтны Boost бүртгэлтэй давхардаж болзошгүй (банкны тулгалтыг «3801 Сурталчилгаа төлсөн» болгоно)' : 'Сурталчилгааны зардал зөвхөн Boost бүртгэлээр (давхардалгүй)', 'finance/bank');
+  // Сурталчилгаа (2026-11-02-ноос): банкаар төлсөн boost Дт 7120 — 3801 руу ангилсан boost гүйлгээ үлдсэн эсэх
+  var adB = E.filter(function (e) { return e.dr === '3801' && BOOST_RE.test(String(e.desc)); }), adS = adB.reduce(function (a, e) { return a + e.amount; }, 0);
+  if (adB.length) out += line(false, adB.length + ' boost гүйлгээ ' + fmt(adS) + ' «3801 Бусад богино хугацаат өр төлбөр» руу ангилагдсан — «7120 Зар сурталчилгааны зардал» болгоно уу', 'finance/bank');
+  // Өглөгийн данс (3xxx) хасах үлдэгдэлтэй — өр байхгүй атал төлсөн (харилцагчаар)
+  var neg = liabNegative(E, todayStr());
+  out += line(!neg.length, neg.length ? 'Өглөг хасах үлдэгдэлтэй (өр байхгүй атал төлсөн): ' + esc(neg.slice(0, 5).map(function (n) { return n.acc + ' ' + n.who + ' ' + fmt(n.v); }).join(', ')) + (neg.length > 5 ? '…' : '') : 'Өглөгийн данс бүр хасах үлдэгдэлгүй', 'finance/trial');
   var badE = ACCOUNTS.filter(function (a) { return (a[2] === 'exp' || a[2] === 'cogs') && (bp[a[0]] || 0) < -0.5; });
   out += line(!badE.length, badE.length ? 'Сөрөг үлдэгдэлтэй зардлын данс: ' + badE.map(function (a) { return a[0] + ' ' + esc(a[1]) + ' ' + fmt(bp[a[0]]); }).join(', ') : 'Зардлын данс бүр эерэг (сөрөг үлдэгдэлгүй)', 'finance/trial');
   var badR = ACCOUNTS.filter(function (a) { return a[2] === 'rev' && (bp[a[0]] || 0) > 0.5; });
@@ -2254,7 +2264,7 @@ function savePartner() {
 function cancelRecord(id) {
   var x = records.filter(function (r) { return r.id === id; })[0]; if (!x) return;
   var what = x.type === 'sale' ? x.item + ' · ' + fmt(x.amount) : x.type === 'expense' ? x.category + ' · ' + fmt(x.amount) : x.type === 'boost' ? 'Boost · ' + x.item + ' · ' + fmt(x.amount) : 'Касс хаалт';
-  if (!confirm('Энэ бичлэгийг цуцлах уу?\n' + x.date + ' ' + x.time + ' · ' + what + (x.type === 'boost' ? (x.date >= BOOST_JR_FROM ? '\n\nЖурналын Дт 7120 / Кт 3801 бичилт мөн цуцлагдана.' : '') : '\n\nСанхүү, үлдэгдлээс хасагдана.'))) return;
+  if (!confirm('Энэ бичлэгийг цуцлах уу?\n' + x.date + ' ' + x.time + ' · ' + what + (x.type === 'boost' ? '' : '\n\nСанхүү, үлдэгдлээс хасагдана.'))) return;
   if (!API_URL) { records = records.filter(function (r) { return r.id !== id; }); save('nb_records', records); render(); return; }
   post({ type: 'admin_record', cancelId: id, by: ownerName, what: x.date + ' ' + x.time + ' · ' + what }, function (err) {
     if (err) { toast(err === 'ebarimt' ? 'И-баримттай борлуулалтыг дэлгүүрээс «Баримт буцаах»-аар буцаана' : 'Алдаа: ' + err); return; }
