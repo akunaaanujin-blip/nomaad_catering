@@ -1621,15 +1621,15 @@ function ebLink() {
   return M;
 }
 function ebRecRows() {   // буухиагийн «Харилцагчийн тайлан»-тай ижил: буухиа нийлээгүй бүх хүргэлт (манай захиалгагүй, цуцалсан ч), хөлс анхдагч 7,000
-  // k: 'open' — нийлэх; 'booked' — манай журналд өмнө бичсэн (дахин бичихгүй); 'cancel' — цуцалсан, хөлсгүй
+  // k: 'open' — нийлэх; 'booked' — манай журналд өмнө бичсэн (дахин бичихгүй); 'cancel' — цуцалсан/буцаасан (буцааж авчирсны хөлс 7,000 авдаг)
   // Бүртгэлийн шалгалтын ✕ (хураасан мөнгө Буухиа дээр бүртгэгдээгүй) хүргэлт энд заавал харагдана — төлөв, буухиагийн нийлэлтээс үл хамааран
   var done = ebSettled(), eb = ebSettledByEb(ebAdm.list || []), O = {}, M = ebLink(), bad = {};
   ebMoneyBad().bad.forEach(function (x) { bad[x.code] = 1; });
   (window.adminOrders || []).forEach(function (o) { O[o.id] = o; });
-  return (ebAdm.list || []).filter(function (x) { var o = O[x.id]; return !(window.ebOld || {})[x.code] && (bad[x.code] || (x.st === 10 || x.st === 11) && !eb[x.code] && !(o && x.got > 0 && o.confirmed && !/буухиа/.test(o.confirmed))); })
+  return (ebAdm.list || []).filter(function (x) { var o = O[x.id]; return !(window.ebOld || {})[x.code] && (bad[x.code] || (x.st === 10 || x.st === 11 || x.st === 12) && !eb[x.code] && !(o && x.got > 0 && o.confirmed && !/буухиа/.test(o.confirmed))); })
     .map(function (x) {
-      var k = x.st === 11 ? 'cancel' : done[x.code] ? 'booked' : 'open', o = M[x.code] || null, fb = ebOrdAuto(o) ? (ebAccrues(o) ? ebFeeOf(o.biz) : ordFeeAdm(o)) : 0;
-      return { x: x, o: o, fb: fb, k: k, bad: !!bad[x.code], fee: k === 'cancel' ? 0 : ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000, on: k === 'open' ? 1 : 0 };
+      var k = x.st === 11 || x.st === 12 ? 'cancel' : done[x.code] ? 'booked' : 'open', o = M[x.code] || null, fb = ebOrdAuto(o) ? (ebAccrues(o) ? ebFeeOf(o.biz) : ordFeeAdm(o)) : 0;
+      return { x: x, o: o, fb: fb, k: k, bad: !!bad[x.code], fee: ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000, on: k === 'open' ? 1 : 0 };
     })
     .sort(function (a, b) { return a.x.created < b.x.created ? -1 : 1; });
 }
@@ -1744,7 +1744,7 @@ function ebAutoBook(fresh) {
   });
   ebAdm.list.forEach(function (x) {
     var t = eb[x.code], o = O[x.id];
-    if ((window.ebOld || {})[x.code] || x.st !== 10 || !t || t < EB_AUTO_FROM || (meta.closed && t.slice(0, 10).replace(/\//g, '-') <= meta.closed) || done[x.code] ||   // хаасан (шинээр эхэлсэн) хугацааных дахин бичигдэхгүй
+    if ((window.ebOld || {})[x.code] || [10, 11, 12].indexOf(x.st) < 0 || !t || t < EB_AUTO_FROM || (meta.closed && t.slice(0, 10).replace(/\//g, '-') <= meta.closed) || done[x.code] ||   // хаасан (шинээр эхэлсэн) хугацааных дахин бичигдэхгүй
         (o && x.got > 0 && o.confirmed && !/буухиа/.test(o.confirmed))) return;   // хэрэглэгч бидэнд шууд төлсөн бол буухиагийн тооцоонд орохгүй
     var mo = M[x.code] || null;
     (B[t.slice(0, 10)] = B[t.slice(0, 10)] || []).push({ x: x, o: mo, fb: ebOrdAuto(mo) ? (ebAccrues(mo) ? ebFeeOf(mo.biz) : ordFeeAdm(mo)) : 0, fee: ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000 });
@@ -1776,7 +1776,7 @@ function ebAutoBook(fresh) {
     var d = day.replace(/\//g, '-'), net = 0;
     B[day].forEach(function (r) {
       var tag = ' · ' + r.x.phone + (r.o ? ' #' + r.o.id : '') + ' #EB:' + r.x.code, cust = r.o ? ordCust(r.o) : r.x.phone;
-      if (r.x.got > 0 && !doneR[r.x.code] && !recv[r.x.code]) {   // хэрэглэгчийн авлага буухиад шилжинэ (хураасан мөчид шилжээгүй бол) (бичилт нэг л харилцагчтай тул 1299 түр дансаар дамжина, үлдэгдэл 0)
+      if (r.x.got > 0 && r.x.st === 10 && !doneR[r.x.code] && !recv[r.x.code]) {   // хэрэглэгчийн авлага буухиад шилжинэ (хураасан мөчид шилжээгүй бол) (бичилт нэг л харилцагчтай тул 1299 түр дансаар дамжина, үлдэгдэл 0)
         E.push({ biz: biz, date: d, dr: '1299', cr: '1201', amount: r.x.got, partner: cust, desc: 'Буухиа тооцоо · хэрэглэгч буухиад төлсөн' + tag });
         E.push({ biz: biz, date: d, dr: '1201', cr: '1299', amount: r.x.got, partner: BUUHIA, desc: 'Буухиа тооцоо · авсан мөнгө' + tag });
         if (r.o && !r.o.confirmed) { r.o.confirmed = d + ' буухиа'; r.o.paid = 'Орсон'; ordUpd.push(r.o); }
