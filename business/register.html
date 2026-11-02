@@ -58,7 +58,7 @@
 <script src="common.js"></script>
 <script>
 var params = new URLSearchParams(location.search);
-$('rBiz').innerHTML = Object.keys(BUSINESSES).map(function (k) {
+$('rBiz').innerHTML = Object.keys(BUSINESSES).filter(function (k) { return !BUSINESSES[k].hidden; }).map(function (k) {
   var b = BUSINESSES[k];
   return '<option value="' + k + '"' + (params.get('biz') === k ? ' selected' : '') + '>' + b.icon + ' ' + esc(b.name) + '</option>';
 }).join('');

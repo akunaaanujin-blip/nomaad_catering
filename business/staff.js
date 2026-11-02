@@ -82,7 +82,7 @@ function loginOk(d) {
   var user = $('userInput').value.trim().toLowerCase();
   save(LS_USER, user);
   // Хэд хэдэн дэлгүүрт эрхтэй бол бусад дэлгүүр цэсэнд харагдана — солиход PIN дахин асууна (утас нь бөглөгдсөн)
-  var bizes = d.tokens ? Object.keys(d.tokens).filter(function (b) { return BUSINESSES[b]; }) : [BIZ_KEY];
+  var bizes = d.tokens ? Object.keys(d.tokens).filter(function (b) { return BUSINESSES[b] && (!BUSINESSES[b].hidden || b === BIZ_KEY); }) : [BIZ_KEY];
   bizes.forEach(function (b) { if (b !== BIZ_KEY) save('nb_user_' + b, user); });
   if (bizes.indexOf(BIZ_KEY) < 0) { location.replace(bizes[0] + '.html'); return; }   // энэ дэлгүүрт эрхгүй — өөрийн дэлгүүр рүү
   session = { name: d.name, role: d.role, date: todayStr(), token: (d.tokens && d.tokens[BIZ_KEY]) || d.token || '', bizes: bizes };
@@ -133,7 +133,7 @@ function showMain() {
   $('login').style.display = 'none';
   $('main').style.display = 'block';
   $('who').textContent = staffName + (isManager ? ' · менежер' : '');
-  var L = (session && session.bizes || []).filter(function (b) { return BUSINESSES[b]; });
+  var L = (session && session.bizes || []).filter(function (b) { return BUSINESSES[b] && (!BUSINESSES[b].hidden || b === BIZ_KEY); });
   if (L.length > 1) $('bizName').innerHTML = '<select class="biz-pick" aria-label="Дэлгүүр солих" onchange="location.href=this.value+\'.html\'">' + L.map(function (b) {
     return '<option value="' + b + '"' + (b === BIZ_KEY ? ' selected' : '') + '>' + esc(BUSINESSES[b].name) + '</option>'; }).join('') + '</select>';
   $('today').textContent = todayStr();
@@ -199,7 +199,7 @@ function renderNav() {
     }).join('') + bizSwitch() + '<div class="ep-grp"><a class="ep-it" onclick="pinChangeOpen(\'\',false)">PIN солих</a></div><div class="ep-foot">NOMAAD · ажилтны хуудас</div>';
 }
 function bizSwitch() {   // нэг эрхээр хэд хэдэн дэлгүүрт ажилладаг бол бусад дэлгүүр рүү шилжих
-  var L = (session && session.bizes || []).filter(function (b) { return b !== BIZ_KEY && BUSINESSES[b]; });
+  var L = (session && session.bizes || []).filter(function (b) { return b !== BIZ_KEY && BUSINESSES[b] && !BUSINESSES[b].hidden; });
   if (!L.length) return '';
   return '<div class="ep-grp"><div class="ep-grp-t">Өөр дэлгүүр <small>(PIN асууна)</small></div>' + L.map(function (b) {
     return '<a class="ep-it" href="' + b + '.html">' + esc(BUSINESSES[b].name) + '</a>';

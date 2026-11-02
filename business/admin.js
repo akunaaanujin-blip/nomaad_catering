@@ -3,15 +3,16 @@ var BUSY = { n: 0, p: 0, msg: '' }, INFLIGHT = {}, refreshing = false, refreshAg
 // ── УДИРДЛАГЫН САМБАР ──
 // Baaz-ийн бүтэцтэй: Миний компаниуд → (Борлуулалт · Бараа материал · Санхүү · Ажилчид), мөн нийт Ажилчид цэс.
 
-var KEYS = ['meat', 'travel', 'cozy'];          // дэлгүүрүүд (ажилчид, бараатай)
+var ORIG_ALL = ['meat', 'travel', 'cozy', 'mgmt'];   // компани хоорондын тооцоонд бүх компанийн нэр хэрэгтэй (менежерт ч)
+function bizShown(k) { return !(BUSINESSES[k] || {}).hidden; }   // config-д hidden: true бол цэс, жагсаалтад харагдахгүй
+var KEYS = ['meat', 'travel', 'cozy'].filter(bizShown);   // дэлгүүрүүд (ажилчид, бараатай)
 var ALL_KEYS = KEYS.concat(['mgmt']);            // + Удирдлага (зөвхөн санхүү)
-var ORIG_ALL = ALL_KEYS.slice();                 // компани хоорондын тооцоонд бүх компанийн нэр хэрэгтэй (менежерт ч)
 // Эрх: Эзэн — бүгд; Менежер — зөвхөн өөрийн дэлгүүр (цалин, зээл, татвар, тохиргоо, удирдлагын санхүүгүй). Сервер ч мөн шалгана.
 var ROLE = 'Эзэн', ROLE_BIZ = 'all';
 function isOwner() { return ROLE === 'Эзэн'; }
 function applyRole(role, biz) {
   ROLE = role || 'Эзэн'; ROLE_BIZ = biz || 'all';
-  KEYS = ORIG_ALL.filter(function (k) { return k !== 'mgmt' && (isOwner() || staffIn({ biz: ROLE_BIZ }, k)); });
+  KEYS = ORIG_ALL.filter(function (k) { return k !== 'mgmt' && bizShown(k) && (isOwner() || staffIn({ biz: ROLE_BIZ }, k)); });
   ALL_KEYS = isOwner() ? KEYS.concat(['mgmt']) : KEYS.slice();
   if (!isOwner()) { window.loans = []; window.assets = []; salary = []; }   // сервер ч менежерт эдгээрийг өгдөггүй
 }
