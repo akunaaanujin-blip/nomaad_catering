@@ -274,7 +274,7 @@ function addrFinal(o) {
   if (!dist && (!city || city === 'Улаанбаатар') && typeof guessDistrict === 'function') { var g = guessDistrict(addr); if (g) { dist = g; auto.district = 1; } }
   if (!city && UB_DISTRICTS.indexOf(dist) >= 0) { city = 'Улаанбаатар'; auto.city = 1; }
   if (!city || (city !== 'Улаанбаатар' && !dist)) { var p = provinceOf(addr + ' ' + dist + ' ' + city); if (!city && p.city) { city = p.city; auto.city = 1; } if (!dist && p.sum && p.city === city) { dist = p.sum; auto.district = 1; } }
-  var why = !city ? 'Хот/аймаг сонгоно уу' : !dist ? (city === 'Улаанбаатар' ? 'Дүүрэг сонгоно уу' : 'Сум сонгоно уу') : '';
+  var why = !city ? 'Хот/аймаг сонгоно уу' : '';   // дүүрэг/сум заавал биш — буухиа хоосон дүүрэгтэй ч хүлээж авдаг (2026-11-02)
   return { city: city, district: dist, khoroo: city === 'Улаанбаатар' ? kh : '', address: addr, ok: !why, why: why, auto: auto };
 }
 function addrText(f) { return [f.city, f.district, khorooTxt(f.khoroo), f.address].filter(Boolean).join(', '); }
