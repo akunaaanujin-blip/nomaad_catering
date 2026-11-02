@@ -104,7 +104,8 @@ function bstInvoices(Rr) {
     v.est = v.cos.reduce(function (a, c) { return a + c.est; }, 0); v.paid = v.cos.reduce(function (a, c) { return a + c.paid; }, 0);
     var np = v.cos.filter(function (c) { return c.isPaid; }), last = np.reduce(function (a, c) { return c.last > a ? c.last : a; }, '');
     v.state = np.length === v.cos.length ? 'paid' : np.length ? 'part' : 'open';
-    v.status = v.state === 'paid' ? 'Төлсөн · ' + last : v.state === 'part' ? 'Хэсэгчлэн төлсөн' : 'Төлөгдөөгүй';
+    var nm = function (l) { return l.map(function (c) { return bstCoName(c.biz); }).join(', '); };
+    v.status = v.state === 'paid' ? 'Төлсөн · ' + last : v.state === 'part' ? nm(np) + ' төлсөн · ' + nm(v.cos.filter(function (c) { return !c.isPaid; })) + ' төлөгдөөгүй' : 'Төлөгдөөгүй';
   });
   return list.sort(function (a, b) { return a.no < b.no ? 1 : -1; });
 }
@@ -182,8 +183,9 @@ function boostView() {
     var cs = v.cos.filter(mine);
     return '<tr><td class="nw"><b>' + esc(v.no) + '</b><br><small class="muted">' + esc(v.staff) + '</small></td><td>' + v.rows.filter(function (x) { return mine(x); }).map(function (x) {
         return (many ? bstName(x.biz) + ' · ' : '') + esc(x.item) + ' <small class="muted">$' + x._usd + ' · ' + x.date.slice(5) + '–' + addDays(boostEnd(x), -1).slice(5) + (x.note ? ' · ' + esc(x.note) : '') + (x._paid > 0.5 ? ' · ' + fmt(r0(x._paid)) : '') + '</small>'; }).join('<br>') + '</td>' +
-      '<td>' + cs.map(function (c) { var df = c.isPaid ? r0(c.paid - c.est) : 0;
-        return '<div class="nw">' + bstCoName(c.biz) + ': $' + c.usd + ' · ≈' + fmt(c.est).slice(1) + ' — ' + (c.isPaid ? '<span style="color:var(--green)">Төлсөн · ' + c.last + ' · ' + fmt(c.paid).slice(1) + '</span>' + (Math.abs(df) > 0.5 ? ' <small class="' + (df < 0 ? 'neg' : 'muted') + '">' + (df < 0 ? 'дутуу ' + fmt(-df).slice(1) : 'илүү ' + fmt(df).slice(1)) + '</small>' : '') : '<span class="neg">Төлөгдөөгүй</span>') + '</div>'; }).join('') + '</td>' +
+      '<td>' + cs.map(function (c) {
+        // Бодит зардал = банкаар төлсөн ₮; ажилтны тооцоолол зөвхөн лавлагаа
+        return '<div class="nw">' + bstCoName(c.biz) + ': $' + c.usd + ' — ' + (c.isPaid ? '<span style="color:var(--green)">Төлсөн · ' + c.last + ' · ' + fmt(c.paid) + '</span> <small class="muted">(тооцоолол ' + fmt(c.est) + ')</small>' : '≈' + fmt(c.est).slice(1) + ' · <span class="neg">Төлөгдөөгүй</span>') + '</div>'; }).join('') + '</td>' +
       '<td><span class="st ' + ({ paid: 'g', part: 'y', open: 'r' })[v.state] + '">' + esc(v.status) + '</span></td><td class="n"><button class="mini" onclick="bstImg(' + esc(JSON.stringify(v.no)) + ')">Баримт</button></td></tr>';
   }).join('');
   var invCard = '<div class="card rep"><div class="rep-cap"><b>Нэхэмжлэх</b><span>Төлөгдөөгүй бүгд + энэ хугацааны төлсөн. Банкны хуулгаар «Boost нэхэмжлэх»-ээр тулгана.</span></div><div class="scroll"><table class="rep-t"><tr><th>Дугаар</th><th>Мөр</th><th>Компаниар ($ · ≈₮ ханшаар — төлсөн ₮)</th><th>Төлөв</th><th></th></tr>' +
