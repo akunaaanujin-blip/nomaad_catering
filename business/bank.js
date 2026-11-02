@@ -83,6 +83,7 @@ function importBank(input) {
     var delK = {}; (window.bankDeleted || []).forEach(function (b) { if (String(b.acct).slice(-4) === String(acct).slice(-4)) delK[bankKey(b, true)] = b.id; });
     var keyN = function (l) { return bankKey(l) + (l.twin ? '#' + l.twin : ''); };
     var fresh = lines.filter(function (l) { return !have[keyN(l)]; }), dup = lines.length - fresh.length;
+    twins = fresh.filter(function (l) { return l.twin; }).length;   // анхааруулга зөвхөн шинээр орох ижил мөрөнд
     if (!fresh.length) { toast('Шинэ гүйлгээ алга — ' + lines.length + ' гүйлгээ бүгд өмнө орсон (давхардсан)'); return; }
     fresh.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
     // Өмнөх импорт: тухайн дансны хамгийн сүүлийн «дуусах огноо»; хугацаа давхцвал анхааруулна (давхардсан мөр аль хэдийн шүүгдсэн)
