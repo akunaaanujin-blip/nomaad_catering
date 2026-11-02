@@ -155,7 +155,7 @@ function navMenu() {   // зөвхөн хуудсууд — үйлдлийн т�
   if (BIZ.orders) g.push(['orders', 'Захиалга', function () { showView('orders'); }]);
   if (BIZ.orders && typeof renderDlv === 'function') g.push(['dlv', 'Хүргэлт', function () { showView('dlv'); }]);   // буухиа (ebuuhia API)   // захиалга — дэлгүүрийн борлуулалтаас тусдаа хуудас
   g = g.concat([['stock', 'Барааны үлдэгдэл', function () { showView('stock'); }],
-           ['count', 'Тооллого', function () { showView('count'); }], ['req', 'Мөнгөний хүсэлт', function () { showView('req'); }]]);
+           ['count', 'Тооллого', function () { showView('count'); }], ['req', 'Зардал, хүсэлт', function () { showView('req'); }]]);
   if (BIZ.boost && $('boostView')) g.push(['boost', 'Сурталчилгаа', function () { showView('boost'); }]);
   return [{ t: '', items: g }];
 }
@@ -182,7 +182,7 @@ function buildShell() {
         '<div id="cntList" style="margin-top:8px;overflow-x:auto"></div>' +
         '<p class="muted" style="margin-top:8px">Бараа бүрийг тоолоод бодит тоог бичнэ. Тоолоогүй барааг хоосон үлдээнэ. Илгээсний дараа удирдлага системийн үлдэгдэлтэй тулгаж баталдаг.</p>' +
         '<button class="btn" onclick="submitCount()">Тооллого илгээх</button></div></div>' +
-      '<div data-view="req" id="reqView" style="display:none"><div class="card"><div class="ord-bar"><button class="btn sm" onclick="openExpense()">＋ Мөнгөний хүсэлт</button>' +
+      '<div data-view="req" id="reqView" style="display:none"><div class="card"><div class="ord-bar"><button class="btn sm" onclick="openExpense(\'req\')">＋ Мөнгөний хүсэлт</button><button class="btn sm ghost" onclick="openExpense(\'cash\')">＋ Кассаас зардал</button>' +
         '<button class="link" onclick="loadRequests()">Шинэчлэх</button></div><ul class="list" id="reqList" style="margin-top:8px"></ul></div></div>';
     if (pend) pend.insertAdjacentHTML('beforebegin', html); else wrap.insertAdjacentHTML('beforeend', html);
   }
@@ -214,7 +214,7 @@ function showView(v, tab) {
     el.style.display = (el.getAttribute('data-view') || 'dash') === v ? '' : 'none';
   });
   var w = document.querySelector('#main .wrap'); if (w) w.classList.toggle('ep-wide', v === 'orders');
-  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : v === 'stock' ? 'Барааны үлдэгдэл' : v === 'boost' ? 'Сурталчилгаа' : v === 'count' ? 'Тооллого' : v === 'req' ? 'Мөнгөний хүсэлт' : v === 'dlv' ? 'Хүргэлт' : 'Борлуулалт';
+  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : v === 'stock' ? 'Барааны үлдэгдэл' : v === 'boost' ? 'Сурталчилгаа' : v === 'count' ? 'Тооллого' : v === 'req' ? 'Зардал, хүсэлт' : v === 'dlv' ? 'Хүргэлт' : 'Борлуулалт';
   if (v === 'stock') renderStockPage();
   if (v === 'count') renderCount();
   if (v === 'req') loadRequests();
@@ -868,16 +868,34 @@ function finishSale(lines) {
   toast('✓ Борлуулалт бичигдлээ: ' + fmt(lines.reduce(function (a, r) { return a + r.amount; }, 0)));
 }
 
-// ── Зарлага ──
-function openExpense() {
-  expense = { category: '' };
-  $('expChips').innerHTML = BIZ.expenses.map(function (c, i) {
-    return '<button class="chip" onclick="pickExp(' + i + ')">' + esc(c) + '</button>';
-  }).join('');
-  $('expAmount').value = '';
-  $('expNote').value = '';
-  if ($('expTo')) $('expTo').value = '';
+// ── Кассаас зардал / Мөнгөний хүсэлт ──
+// «Кассаас»: ажилтан касст байгаа бэлнээс төлсөн — type 'expense' → Дт зардлын данс / Кт касс, касс хаалтаас хасагдана.
+// «Хүсэлт»: кассаас гарахгүй, удирдлага баталж шилжүүлнэ (type 'request').
+function openExpense(mode) {
+  expense = { category: '', mode: mode === 'req' ? 'req' : 'cash' };
+  var t = todayTotals(), op = clOpening(), left = op.v + t.cash - t.exp;
+  document.querySelector('#expSheet .panel').innerHTML = '<h2>Зардал</h2>' +
+    '<div class="seg" id="expSeg" style="grid-template-columns:1fr 1fr;margin-bottom:6px">' +
+      '<button onclick="expMode(\'cash\')">Кассаас төлсөн</button><button onclick="expMode(\'req\')">Мөнгөний хүсэлт</button></div>' +
+    '<p class="muted" id="expHint" style="font-size:12.5px;margin:0"></p>' +
+    '<label>Юунд?</label><div class="chips" id="expChips">' + BIZ.expenses.map(function (c, i) {
+      return '<button class="chip" onclick="pickExp(' + i + ')">' + esc(c) + '</button>'; }).join('') + '</div>' +
+    '<label for="expAmount">Дүн (₮)</label><input id="expAmount" type="number" inputmode="numeric" min="0">' +
+    '<div id="expToBox"><label for="expTo">Хэнд шилжүүлэх (нэр, банк, дансны дугаар)</label><input id="expTo" placeholder="Жишээ: Бат-Эрдэнэ · Хаан банк 5000123456"></div>' +
+    '<label for="expNote" id="expNoteL"></label><input id="expNote" placeholder="Жишээ: такси, 20кг мах, уут">' +
+    '<p class="muted" id="expLeft" style="font-size:12.5px;margin-top:8px">Касст байх ёстой: ' + fmt(Math.max(0, left)) + '</p>' +
+    '<button class="btn" id="expBtn" onclick="submitExpense()"></button><button class="btn ghost" onclick="closeSheet(\'expSheet\')">Болих</button>';
+  expMode(expense.mode);
   openSheet('expSheet');
+}
+function expMode(m) {
+  expense.mode = m; var cash = m === 'cash', b = $('expSeg').children;
+  b[0].classList.toggle('on', cash); b[1].classList.toggle('on', !cash);
+  $('expHint').textContent = cash ? 'Касст байгаа бэлэн мөнгөнөөс өөрөө төлсөн зардал. Касс хаалтаас хасагдана.' : 'Кассаас гаргахгүй — удирдлага баталж мөнгийг шилжүүлнэ.';
+  $('expToBox').style.display = cash ? 'none' : '';
+  $('expLeft').style.display = cash ? '' : 'none';
+  $('expNoteL').textContent = cash ? 'Юунд зарцуулсан (тайлбар) *' : 'Тайлбар (заавал биш)';
+  $('expBtn').textContent = cash ? 'Зардал бүртгэх' : 'Хүсэлт илгээх';
 }
 function pickExp(i) {
   expense.category = BIZ.expenses[i];
@@ -885,13 +903,21 @@ function pickExp(i) {
   for (var k = 0; k < chips.length; k++) chips[k].classList.toggle('on', k === i);
 }
 function submitExpense() {
-  var amt = parseFloat($('expAmount').value) || 0;
-  var to = $('expTo') ? $('expTo').value.trim() : '';
-  if (!expense.category) { toast('Юунд хэрэгтэйг сонгоно уу'); return; }
-  if (amt <= 0) { toast('Дүн оруулна уу'); return; }
+  var amt = Math.round(parseFloat($('expAmount').value) || 0), note = $('expNote').value.trim();
+  if (!expense.category) { toast('Юунд гэдгийг сонгоно уу'); return; }
+  if (amt <= 0) { toast('Дүн оруулна уу'); $('expAmount').focus(); return; }
+  if (expense.mode === 'cash') {
+    if (!note) { toast('Юунд зарцуулсныг бичнэ үү'); $('expNote').focus(); return; }
+    if (!confirm('Кассаас ' + fmt(amt) + ' гарсныг бүртгэх үү?\n\n' + expense.category + ' · ' + note)) return;
+    addRecord({ type: 'expense', category: expense.category, amount: amt, note: note });
+    closeSheet('expSheet');
+    toast('✓ Кассын зардал бүртгэгдлээ: ' + fmt(amt));
+    return;
+  }
+  var to = $('expTo').value.trim();
   if (!to) { toast('Хэнд шилжүүлэхийг бичнэ үү'); $('expTo').focus(); return; }
   // Мөнгөний хүсэлт: кассаас гарахгүй, удирдлага баталж гүйлгээ хийнэ (санхүүд удирдлагын баримтаар орно)
-  addRecord({ type: 'request', category: expense.category, amount: Math.round(amt), customer: to, note: $('expNote').value.trim() });
+  addRecord({ type: 'request', category: expense.category, amount: amt, customer: to, note: note });
   closeSheet('expSheet');
   toast('✓ Хүсэлт илгээгдлээ: ' + fmt(amt) + ' — удирдлага батална');
   if (shellView === 'req') setTimeout(loadRequests, 1500);

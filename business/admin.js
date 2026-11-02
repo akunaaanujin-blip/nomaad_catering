@@ -1991,7 +1991,7 @@ function extraChecks(E, r, p, line, neq) {
     }
   }
   // Сурталчилгаа: ажилтны Boost бүртгэлээр Дт 7120 / Кт 3801 — банкаар шууд 7120 бичсэн бол давхардаж болзошгүй
-  var adB = E.filter(function (e) { return e.date >= BOOST_JR_FROM && e.dr === '7120' && e.doc !== 'Сурталчилгаа' && String(e.desc).indexOf('#ADS') < 0; }), adS = adB.reduce(function (a, e) { return a + e.amount; }, 0);
+  var adB = E.filter(function (e) { return e.date >= BOOST_JR_FROM && e.dr === '7120' && e.doc !== 'Сурталчилгаа' && e.doc !== 'Зарлага' && String(e.desc).indexOf('#ADS') < 0; }), adS = adB.reduce(function (a, e) { return a + e.amount; }, 0);
   if (records.some(function (x) { return x.biz === state.biz && x.type === 'boost'; }) || adB.length)
     out += line(!adB.length, adB.length ? adB.length + ' гүйлгээ ' + fmt(adS) + ' 7120 Сурталчилгаа руу шууд бичигдсэн — ажилтны Boost бүртгэлтэй давхардаж болзошгүй (банкны тулгалтыг «3801 Сурталчилгаа төлсөн» болгоно)' : 'Сурталчилгааны зардал зөвхөн Boost бүртгэлээр (давхардалгүй)', 'finance/bank');
   var badE = ACCOUNTS.filter(function (a) { return (a[2] === 'exp' || a[2] === 'cogs') && (bp[a[0]] || 0) < -0.5; });
