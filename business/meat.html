@@ -132,6 +132,7 @@
     <ul class="list cart" id="orCart"></ul>
     <div class="fee-row"><label for="orFee">Хүргэлтийн төлбөр (₮)</label><input id="orFee" type="number" inputmode="numeric" min="0" value="7000" oninput="renderOrdCart()"></div>
     <label class="or-print" style="margin:4px 0 0"><input type="checkbox" id="orFeeFree" onchange="ordFeeFree()"> Хүргэлтийн төлбөргүй</label>
+    <label for="orCourier">Хүргэлтийн компани</label><select id="orCourier"><option value="Буухиа">Буухиа</option><option value="Бусад">Бусад (өөрсдөө / өөр хүргэлт)</option></select>
     <p style="text-align:right;margin-top:6px">Нийт (хүргэлттэй): <b id="orTotal">₮0</b></p>
     <label for="orAddress">Хаяг * <span class="muted" style="font-weight:400">(хороолол, байр, тоот, орц, код)</span></label>
     <textarea id="orAddress" rows="2" oninput="ordAddrInput()"></textarea>
@@ -311,7 +312,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="staff.js?v=20261102n"></script>
 <script src="ebarimt.js?v=20261023d"></script>
-<script src="orders.js?v=20261102f"></script>
+<script src="orders.js?v=20261102z"></script>
 <script src="label.js?v=20261102e"></script>
 </body>
 </html>

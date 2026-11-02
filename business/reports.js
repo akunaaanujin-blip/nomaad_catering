@@ -38,6 +38,7 @@ var ACCOUNTS = [
   ['5202', 'Хүүгийн орлого', 'rev'],
   ['8101', 'Бусад орлого (барааны илүүдэл)', 'rev'],   // тооллогын илүүдэл — борлуулалт биш, «Бусад орлого»
   ['6001', 'Борлуулалтын буцаалт', 'contra'],
+  ['6002', 'Борлуулалтын хөнгөлөлт', 'contra'],
   ['6101', 'Борлуулсан барааны өртөг', 'cogs'],
   // ── Зардал: Baaz / стандарт дансны төлөвлөгөө (2026-10-23-нд шилжсэн, хуучин кодыг OLD_EXP-ээр хөрвүүлнэ) ──
   // Ерөнхий ба удирдлагын зардал (70xx)
@@ -99,8 +100,9 @@ var OLD_EXP = { '7201': '7114', '7202': '7111', '7203': '7117', '7204': '7123', 
 // «Шинээр эхлэх»-ийн тэнцүүлэх мөрийг (2026-10-27) 4601 «Хуримтлагдсан ашиг»-т бичсэн байсан — энэ нь ашиг биш,
 // эхний үлдэгдлийн зөрүү тул 4201 «Эздийн өмчийн бусад хэсэг (эхний үлдэгдэл)» болгож уншина (Sheet өөрчлөхгүй)
 function isOpenBal(j) { return (j.dr === '4601' || j.cr === '4601') && /эхний үлдэгдлийн тэнцүүлэлт/.test(String(j.desc)); }
-function accMig(code, id) {
-  if (code === '0') return '0000';   // Sheet «0000»-ийг тоо 0 болгон хадгалсан (он нээлтийн нэгтгэл)
+function accMig(code, id, desc) {
+  if (code === '0') return '0000';
+  if (code === '6001' && /^Хөнгөлөлт/.test(String(desc || ''))) return '6002';   // хөнгөлөлтийг 6001 «Буцаалт»-д бичдэг байсан → 6002 «Борлуулалтын хөнгөлөлт»   // Sheet «0000»-ийг тоо 0 болгон хадгалсан (он нээлтийн нэгтгэл)
   var n = OLD_EXP[code]; if (!n) return code;
   if (code !== '7201' && code !== '7401') return n;
   var ts = Number((String(id || '').match(/^J(\d{13})/) || [])[1]) || 0;   // журналын ID = үүсгэсэн мөч (мс)
@@ -262,8 +264,8 @@ function buildJournal(biz, R) {
       if (baseItem(x.item) === DISC_ITEM) {
         var kd = EBC[x.bill];
         if (kd && a > 0) return;   // буухиа цуцалсан захиалгын буцаалтын мөр — хөнгөлөлт цуцлах үед буцаагдсан
-        add(d, 'Борлуулалтын хөнгөлөлт', x.id, '6001', cash, -a, 'Хөнгөлөлт · баримт ' + (x.bill || ''), cust, x.bill);
-        if (kd && a < 0 && !(R.closed && kd.date <= R.closed)) add(kd.date, 'Буухиа цуцалсан', x.id + '-ebc', cash, '6001', -a, 'Буухиа ' + kd.kind + ' · хөнгөлөлт буцаав #EBC:' + x.bill, cust, x.bill);
+        add(d, 'Борлуулалтын хөнгөлөлт', x.id, '6002', cash, -a, oo ? 'Хөнгөлөлт (захиалга, авлага)' : 'Хөнгөлөлт · баримт ' + (x.bill || ''), cust, x.bill);   // захиалгад баримт (И-баримт) гардаггүй
+        if (kd && a < 0 && !(R.closed && kd.date <= R.closed)) add(kd.date, 'Буухиа цуцалсан', x.id + '-ebc', cash, '6002', -a, 'Буухиа ' + kd.kind + ' · хөнгөлөлт буцаав #EBC:' + x.bill, cust, x.bill);
         return;
       }
       if (oo && isFee(item) && (!EB_FEE_DATE[oo.id] || d < EB_FEE_DATE[oo.id])) EB_FEE_DATE[oo.id] = d;
@@ -338,7 +340,7 @@ function buildJournal(biz, R) {
     if (j.biz !== biz || isOpenFix(j)) return;
     if (isOpenBal(j)) j = { id: j.id, date: j.date, no: j.no, partner: j.partner, amount: j.amount, dr: j.dr === '4601' ? '4201' : j.dr, cr: j.cr === '4601' ? '4201' : j.cr,
       desc: String(j.desc).replace(/Хуримтлагдсан ашиг \(эхний/, ACC['4201'].name + ' (эхний') };
-    add(j.date, j.no ? VOUCHER_NAMES[j.no.slice(0, 2)] + ' ' + j.no : /^Он нээлт/.test(j.desc) ? 'Он нээлт' : 'Журналын бичилт', j.id, accMig(j.dr, j.id), accMig(j.cr, j.id), j.amount, j.desc, j.partner);
+    add(j.date, j.no ? VOUCHER_NAMES[j.no.slice(0, 2)] + ' ' + j.no : /^Он нээлт/.test(j.desc) ? 'Он нээлт' : 'Журналын бичилт', j.id, accMig(j.dr, j.id, j.desc), accMig(j.cr, j.id, j.desc), j.amount, j.desc, j.partner);
   });
   // Үндсэн хөрөнгийн элэгдэл — сар бүрийн эцэст автоматаар (шулуун шугамаар, авсны дараа сараас). Гараар бичсэн сар байвал түүнийг авна.
   var td = todayStr();
@@ -454,15 +456,15 @@ function repCash(E, from, to) {
 }
 function plData(E, from, to) {
   var b = balances(E, to, from), g = function (k) { return b[k] || 0; };
-  var goods = -g('5101'), svc = -g('5102'), sales = goods + svc, ret = g('6001'), net = sales - ret, cogs = g('6101'), gross = net - cogs;   // 5201/5202 — «бусад орлого»
+  var goods = -g('5101'), svc = -g('5102'), sales = goods + svc, ret = g('6001'), disc = g('6002'), net = sales - ret - disc, cogs = g('6101'), gross = net - cogs;   // 5201/5202 — «бусад орлого»
   var exps = ACCOUNTS.filter(function (a) { return a[2] === 'exp'; }).map(function (a) { return { code: a[0], name: a[1], v: g(a[0]) }; }).filter(function (x) { return x.v; });
   var expT = exps.reduce(function (s, x) { return s + x.v; }, 0), other = accsOf('rev').filter(function (k) { return k !== '5101' && k !== '5102'; }).reduce(function (t, k) { return t - g(k); }, 0);   // бусад орлого (5201, 5202, 8101 …)
-  return { goods: goods, svc: svc, sales: sales, ret: ret, net: net, cogs: cogs, gross: gross, exps: exps, expT: expT, other: other, profit: gross - expT + other };
+  return { goods: goods, svc: svc, sales: sales, ret: ret, disc: disc, net: net, cogs: cogs, gross: gross, exps: exps, expT: expT, other: other, profit: gross - expT + other };
 }
 function repPL(E, from, to) {
   var p = plData(E, from, to), rows = [];
   var L = function (name, v, bold) { rows.push({ name: name, v: v === '' ? '' : r0(v), _b: bold }); };
-  L('Барааны борлуулалт', p.goods); L('Хүргэлтийн орлого', p.svc); L('Хасах: борлуулалтын буцаалт', -p.ret); L('Цэвэр борлуулалт', p.net, 1);
+  L('Барааны борлуулалт', p.goods); L('Хүргэлтийн орлого', p.svc); L('Хасах: борлуулалтын буцаалт', -p.ret); L('Хасах: борлуулалтын хөнгөлөлт', -p.disc); L('Цэвэр борлуулалт', p.net, 1);
   L('Борлуулсан барааны өртөг', -p.cogs); L('Нийт ашиг', p.gross, 1);
   p.exps.forEach(function (x) { L('  ' + x.code + ' ' + x.name, -x.v); });
   L('Үйл ажиллагааны зардал, нийт', -p.expT, 1); L('Бусад орлого', p.other); L('Цэвэр ашиг (алдагдал)', p.profit, 1);

@@ -46,7 +46,7 @@ function finDash(E, p, f, t, fl, PLA) {
   var bar = function (v, c) { return '<span class="fd-bar"><i style="width:' + Math.max(2, Math.round(v / tot * 100)) + '%;background:' + c + '"></i></span>'; };
   return '<div class="fd">' +
     '<div class="fd-kg">' +
-      fdCard('in', FD_C.in, 'Нийт орлого', dl(fl(REV.concat(['6001', '5201', '5202', '8101']), -1, 'item', 'Орлого'), mny(p.net + p.other)), fdChg(p.net + p.other, q.net + q.other, true)) +
+      fdCard('in', FD_C.in, 'Нийт орлого', dl(fl(REV.concat(['6001', '6002', '5201', '5202', '8101']), -1, 'item', 'Орлого'), mny(p.net + p.other)), fdChg(p.net + p.other, q.net + q.other, true)) +
       fdCard('out', FD_C.out, 'Нийт зардал', dl(fl(['6101'].concat(accsOf('exp')), 1, 'acc', 'Зардал (өртөг орсон)'), mny(cost)), fdChg(cost, qcost, false)) +
       fdCard('profit', p.profit >= 0 ? FD_C.profit : FD_C.red, 'Цэвэр ашиг', dl(fl(PLA, -1, 'acc', 'Цэвэр ашиг'), mny(p.profit)), fdChg(p.profit, q.profit, true)) +
       fdCard('cash', FD_C.cash, 'Мөнгөн урсгал (цэвэр)', dl(fl(cash, 1, 'type', 'Мөнгөн урсгал', { dir: 1 }), mny(cf[0] - cf[1])), fdChg(cf[0] - cf[1], qf[0] - qf[1], true)) +
@@ -112,7 +112,7 @@ function fdAnalysis(E, p, f, t) {
   var C = fdCosts(p);
   if (C.length && cost > 0) { var sh = C[0].v / cost;
     rows.push(['Хамгийн том зардал', esc(C[0].n), sh > 0.5 ? fdSt('#D97706', pc(sh) + ' эзэлнэ') : fdSt(FD_C.in, pc(sh) + ' эзэлнэ'), '«' + esc(C[0].n) + '» нийт зардлын ' + pc(sh) + '-ийг эзэлж байна.']); }
-  var it = {}; drillLines({ acc: ['5101', '5102', '6001'], from: f, to: t, sign: -1, grp: 'item' }, E).lines.forEach(function (x) { it[x.key] = (it[x.key] || 0) + x.v; });
+  var it = {}; drillLines({ acc: ['5101', '5102', '6001', '6002'], from: f, to: t, sign: -1, grp: 'item' }, E).lines.forEach(function (x) { it[x.key] = (it[x.key] || 0) + x.v; });
   var ks = Object.keys(it).filter(function (k) { return it[k] > 0; }).sort(function (a, b) { return it[b] - it[a]; });
   if (ks.length && p.net > 0) { var top = it[ks[0]] / p.net;
     rows.push(['Орлогын төвлөрөл', esc(ks[0]), top > 0.7 ? fdSt('#D97706', 'Төвлөрсөн') : fdSt(FD_C.in, 'Тархсан'),
@@ -141,7 +141,7 @@ function fdForecast(E, y) {
 function dailyView() {
   var r = range(), f = r[0], t = r[1], E = J(), d0 = new Date(f + 'T00:00:00'), d1 = new Date(t + 'T00:00:00');
   if ((d1 - d0) / 864e5 > 92) { d0 = new Date(d1 - 91 * 864e5); f = todayStr(d0); }
-  var I = {}, O = {}, C = {}, inc = ['5101', '5102', '6001'], oth = ['5201', '5202', '8101'], cst = ['6101'].concat(accsOf('exp'));
+  var I = {}, O = {}, C = {}, inc = ['5101', '5102', '6001', '6002'], oth = ['5201', '5202', '8101'], cst = ['6101'].concat(accsOf('exp'));
   drillLines({ acc: inc, from: f, to: t, sign: -1 }, E).lines.forEach(function (x) { I[x.date] = (I[x.date] || 0) + x.v; });
   drillLines({ acc: oth, from: f, to: t, sign: -1 }, E).lines.forEach(function (x) { O[x.date] = (O[x.date] || 0) + x.v; });   // хүүгийн орлого гэх мэт — борлуулалтаас тусад нь
   drillLines({ acc: cst, from: f, to: t, sign: 1 }, E).lines.forEach(function (x) { C[x.date] = (C[x.date] || 0) + x.v; });

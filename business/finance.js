@@ -22,6 +22,7 @@ function moneyType(x) {
   if (o === '1201') return /#O\d|Захиалгын/.test(String(x.desc)) ? 'Захиалгын орлого' : 'Авлага төлөгдсөн';
   if (o === '3802') return 'Захиалгын урьдчилгаа';
   if (o === '6001') return 'Бараа буцаалт';
+  if (o === '6002') return 'Хөнгөлөлт';
   if (/^35/.test(o)) return isIn ? 'Зээл авсан' : 'Зээл төлөлт';
   if (o === '4201' && /^Эхний үлдэгдэл/.test(String(x.desc))) return 'Эхний үлдэгдэл';
   if (o === '4101' || o === '4201') return isIn ? 'Эзэмшигч мөнгө оруулсан' : 'Эзэмшигч мөнгө авсан';
@@ -132,8 +133,9 @@ function simpleView() {
     '<div class="grid2"><table class="rep-t">' +
       line('Борлуулалт', p.sales, fl(REV, -1, 'item', 'Борлуулалт')) +
       (p.ret ? line('Буцаалт', -p.ret, fl(['6001'], 1, 'item', 'Борлуулалтын буцаалт')) : '') +
+      (p.disc ? line('Хөнгөлөлт', -p.disc, fl(['6002'], 1, 'item', 'Борлуулалтын хөнгөлөлт')) : '') +
       line('Барааны өртөг', -p.cogs, fl(['6101'], 1, 'item', 'Барааны өртөг')) +
-      '<tr class="b"><td>Нийт ашиг' + pct + '</td><td class="n">' + dl(fl(REV.concat(['6001', '6101']), -1, 'item', 'Нийт ашиг (бараагаар)'), mny(p.gross)) + '</td></tr>' +
+      '<tr class="b"><td>Нийт ашиг' + pct + '</td><td class="n">' + dl(fl(REV.concat(['6001', '6002', '6101']), -1, 'item', 'Нийт ашиг (бараагаар)'), mny(p.gross)) + '</td></tr>' +
       line('Зардал', -p.expT, fl(accsOf('exp'), 1, 'acc', 'Зардал')) +
       (p.other ? line('Бусад орлого', p.other, fl(['5201', '5202', '8101'], -1, 'cat', 'Бусад орлого (хүү гэх мэт)')) : '') +
       '<tr class="tot"><td>Цэвэр ашиг</td><td class="n' + (p.profit < 0 ? ' neg' : '') + '">' + dl(fl(PLA, -1, 'acc', 'Цэвэр ашиг'), mny(p.profit)) + '</td></tr></table>' +
@@ -188,7 +190,7 @@ function repMonths(E, y) {
     var S = function (acc, sign, grp, title, x) { return Object.assign({ acc: acc, from: f, to: t, sign: sign, grp: grp, t: title + ' · ' + lab }, x || {}); };
     return { sales: r0(p.net), cogs: r0(p.cogs), gross: r0(p.gross), exp: r0(p.expT), profit: r0(p.profit), in: r0(fin), out: r0(fout),
       cash: r0(cash.reduce(function (a, k) { return a + (b[k] || 0); }, 0)),
-      _d: { sales: S(REV.concat(['6001']), -1, 'item', 'Борлуулалт'), cogs: S(['6101'], 1, 'item', 'Өртөг'), gross: S(REV.concat(['6001', '6101']), -1, 'item', 'Нийт ашиг'),
+      _d: { sales: S(REV.concat(['6001', '6002']), -1, 'item', 'Борлуулалт'), cogs: S(['6101'], 1, 'item', 'Өртөг'), gross: S(REV.concat(['6001', '6002', '6101']), -1, 'item', 'Нийт ашиг'),
             exp: S(accsOf('exp'), 1, 'acc', 'Зардал'), profit: S(PLA, -1, 'acc', 'Цэвэр ашиг'), in: S(cash, 1, 'type', 'Орсон мөнгө', { dir: 1 }), out: S(cash, -1, 'type', 'Гарсан мөнгө', { dir: 1 }),
             cash: { acc: cash, from: f, to: closeAt, sign: 1, grp: 'type', bal: true, t: 'Мөнгө · ' + lab } } };
   };
@@ -234,7 +236,7 @@ function repProfit(Rr, biz, f, t) {
     if (!has && r.net) noc++;
     var S = function (acc, sign, title) { return { acc: acc, from: f, to: t, sign: sign, grp: 'item', only: r.key, t: r.key + ' — ' + title }; };
     return { key: r.key, qty: r.qty, net: r.net, avg: r.qty ? r0(r.net / r.qty) : '', cogs: r.cogs, margin: r.margin, pct: has && r.net ? Math.round(r.margin / r.net * 100) + '%' : '',
-      _d: { net: S(['5101', '5102', '6001'], -1, 'борлуулалт'), cogs: S(['6101'], 1, 'өртөг'), margin: S(['5101', '5102', '6001', '6101'], -1, 'ашиг') } };
+      _d: { net: S(['5101', '5102', '6001', '6002'], -1, 'борлуулалт'), cogs: S(['6101'], 1, 'өртөг'), margin: S(['5101', '5102', '6001', '6002', '6101'], -1, 'ашиг') } };
   });
   // Сурталчилгаа (Boost) бараагаар — журналд Дт 7120 (reports.js BOOST_JR_FROM-оос); цэвэр ашиг = ашиг − сурталчилгаа
   var ads = {}; Rr.records.forEach(function (x) { if (x.biz === biz && x.type === 'boost' && x.date >= f && x.date <= t && x.date >= BOOST_JR_FROM) ads[x.item] = (ads[x.item] || 0) + (Number(x.amount) || 0); });
@@ -246,8 +248,8 @@ function repProfit(Rr, biz, f, t) {
   var tot = { key: 'Нийт', net: sum(rows, 'net'), cogs: sum(rows, 'cogs'), margin: sum(rows, 'margin'), ads: sum(rows, 'ads') };
   tot.after = r0(tot.margin - (tot.ads || 0));
   tot.pct = tot.net && tot.cogs ? Math.round(tot.margin / tot.net * 100) + '%' : '';
-  tot._d = { net: { acc: ['5101', '5102', '6001'], from: f, to: t, sign: -1, grp: 'item', t: 'Цэвэр борлуулалт' }, cogs: { acc: ['6101'], from: f, to: t, sign: 1, grp: 'item', t: 'Барааны өртөг' },
-             margin: { acc: ['5101', '5102', '6001', '6101'], from: f, to: t, sign: -1, grp: 'item', t: 'Нийт ашиг (бараагаар)' } };
+  tot._d = { net: { acc: ['5101', '5102', '6001', '6002'], from: f, to: t, sign: -1, grp: 'item', t: 'Цэвэр борлуулалт' }, cogs: { acc: ['6101'], from: f, to: t, sign: 1, grp: 'item', t: 'Барааны өртөг' },
+             margin: { acc: ['5101', '5102', '6001', '6002', '6101'], from: f, to: t, sign: -1, grp: 'item', t: 'Нийт ашиг (бараагаар)' } };
   return { title: 'Бараа тус бүрийн ашиг', rows: rows, total: tot,
     cols: [c('key', 'Бараа'), m('qty', 'Тоо'), m('net', 'Борлуулалт'), m('avg', 'Дундаж үнэ'), m('cogs', 'Өртөг'), m('margin', 'Ашиг'), c('pct', 'Ашгийн %')].concat(tot.ads ? [m('ads', 'Сурталчилгаа'), m('after', 'Сурталчилгааны дараах ашиг')] : []),
     note: noc ? noc + ' барааны авсан үнэ (өртөг) бүртгэгдээгүй тул ашиг нь тооцогдоогүй — «Бараа» → «Орлого»-оор авсан үнийг оруулна уу.' : '' };
@@ -527,8 +529,8 @@ function addDrill(sub, rep, f, t) {
   var REV = ['5101', '5102'], PLA = accsOf('rev').concat(accsOf('contra'), accsOf('cogs'), accsOf('exp')), cash = cashCodes();
   var codeOf = function (name) { var mm = String(name).match(/^\s*(\d{4,6}) /); return mm ? mm[1] : ''; };
   if (sub === 'pl') {
-    var PLMAP = { 'Борлуулалтын орлого': [REV, -1, 'item'], 'Барааны борлуулалт': [['5101'], -1, 'item'], 'Хүргэлтийн орлого': [['5102'], -1, 'item'], 'Хасах: борлуулалтын буцаалт': [['6001'], -1, 'item'], 'Цэвэр борлуулалт': [REV.concat(['6001']), -1, 'item'],
-      'Борлуулсан барааны өртөг': [['6101'], -1, 'item'], 'Нийт ашиг': [REV.concat(['6001', '6101']), -1, 'item'], 'Үйл ажиллагааны зардал, нийт': [accsOf('exp'), -1, 'acc'],
+    var PLMAP = { 'Борлуулалтын орлого': [REV, -1, 'item'], 'Барааны борлуулалт': [['5101'], -1, 'item'], 'Хүргэлтийн орлого': [['5102'], -1, 'item'], 'Хасах: борлуулалтын буцаалт': [['6001'], -1, 'item'], 'Хасах: борлуулалтын хөнгөлөлт': [['6002'], -1, 'item'], 'Цэвэр борлуулалт': [REV.concat(['6001', '6002']), -1, 'item'],
+      'Борлуулсан барааны өртөг': [['6101'], -1, 'item'], 'Нийт ашиг': [REV.concat(['6001', '6002', '6101']), -1, 'item'], 'Үйл ажиллагааны зардал, нийт': [accsOf('exp'), -1, 'acc'],
       'Бусад орлого': [['5201', '5202', '8101'], -1, 'cat'], 'Цэвэр ашиг (алдагдал)': [PLA, -1, 'acc'] };
     rep.rows.forEach(function (r) {
       var x = PLMAP[r.name], cd = codeOf(r.name);

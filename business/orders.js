@@ -22,6 +22,7 @@ function ordItems(o) { try { return typeof o.items === 'string' ? JSON.parse(o.i
 function ordOpen(o) { return o.status === 'Шинэ' || o.status === 'Буухиад өгсөн'; }   // хаагдаагүй (хүргэгдээгүй, цуцлаагүй)
 function ordGoods(o) { return ordItems(o).filter(function (i) { return !isNonGoods(i.name); }); }   // хүргэлтийн төлбөргүй бараанууд
 function ordDiscLines(o) { return o && o.items ? ordItems(o).filter(function (i) { return baseItem(i.name) === DISC_ITEM; }) : []; }   // засварт хөнгөлөлт хадгалагдана
+function ordCourier(o) { return o && (o.courier === 'Бусад' || o.ebCode === 'бусад') ? 'Бусад' : 'Буухиа'; }   // захиалга дээр сонгосон хүргэлтийн компани (хоосон = Буухиа)
 function ordFee(o) { return ordItems(o).filter(function (i) { return isFee(i.name); }).reduce(function (a, i) { return a + (Number(i.price) || 0) * (Number(i.qty) || 1); }, 0); }
 function ordItemsText(o) { return ordGoods(o).map(function (i) { return i.name + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); }
 
@@ -157,6 +158,7 @@ function openOrder(id) {
   ordCart = o ? ordGoods(o) : [];
   $('orFee').value = o ? ordFee(o) : FEE_DEFAULT;
   $('orFeeFree').checked = !!o && !ordFee(o); $('orFee').disabled = $('orFeeFree').checked;
+  if ($('orCourier')) $('orCourier').value = ordCourier(o);
   $('orTitle').textContent = o ? 'Захиалга · ' + o.phone : '＋ Шинэ захиалга';
   if ($('orPhoneHint')) $('orPhoneHint').innerHTML = '';
   $('orCustomer').value = o ? o.customer || '' : ''; $('orPhone').value = o ? o.phone : ''; $('orPhone2').value = o ? o.phone2 || '' : '';
@@ -233,7 +235,7 @@ function submitOrder2() {
     district: $('orDistrict').value, khoroo: khorooNum($('orKhoroo').value), address: $('orAddress').value.trim(),
     items: ordCart.slice().concat(ordDiscLines(prev)).concat(ordFeeVal() ? [{ name: FEE_ITEM, qty: 1, price: ordFeeVal() }] : []),
     amount: Math.round(ordCartTotal() + ordDiscLines(prev).reduce(function (a, x) { return a + x.qty * x.price; }, 0)), deliverDate: $('orDate').value,
-    payType: $('orPayType').value, paid: $('orPaid').value, status: ordEdit ? $('orStatus').value : 'Шинэ', note: $('orNote').value.trim() });
+    payType: $('orPayType').value, courier: $('orCourier') ? $('orCourier').value : prev.courier || '', paid: $('orPaid').value, status: ordEdit ? $('orStatus').value : 'Шинэ', note: $('orNote').value.trim() });
   if (!prev.id) {   // давхар захиалга: ижил утас + ижил бараа сүүлийн 48 цагт (манайд эсвэл буухиа дээр)
     var dp = ordDupOf(o);
     if (dp && !confirm(dp + '\n\nДавхар уу? «OK» — тийм, шинэ захиалга бүртгэнэ; «Cancel» — болино.')) return;
@@ -431,7 +433,8 @@ function renderDlv() {
   var maybe = function (o) { var ph = function (p) { return String(p || '').replace(/\D/g, '').slice(-8); }, d0 = new Date(o.date + 'T00:00:00');   // буухиа дээр аль хэдийн байгаа (холбогдоогүй)
     return (dlvAll || []).some(function (x) { return !x.id && ph(x.phone) === ph(o.phone) && x.st !== 11 && x.st !== 12 && x.created && Math.abs(new Date(String(x.created).slice(0, 10).replace(/\//g, '-') + 'T00:00:00') - d0) <= 864e5; }); };
   var dups = orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending && !o.ebCode && !maybe(o) && ordIsDup(o) && !dlvNotDup[o.id]; });   // ⚠ — шийдэх хүртэл илгээхгүй
-  var fresh = orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending && !o.ebCode && !maybe(o) && (!ordIsDup(o) || dlvNotDup[o.id]); }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
+  var other = orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending && !o.ebCode && ordCourier(o) === 'Бусад'; });   // захиалга дээр «Бусад» хүргэлт сонгосон — буухиа руу илгээхгүй
+  var fresh = orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending && !o.ebCode && ordCourier(o) !== 'Бусад' && !maybe(o) && (!ordIsDup(o) || dlvNotDup[o.id]); }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
   var retry = orders.filter(function (o) { return o.status === 'Буухиад өгсөн' && !o.ebCode; });
   var nSel = Object.keys(dlvSel).filter(function (k) { return dlvSel[k]; }).length;
   var row = function (o) {   // Буухиа руу явах эцсийн хаяг — засаж болно; хот/аймаг, дүүрэг/сум хоосон бол шар, илгээхгүй
@@ -445,7 +448,10 @@ function renderDlv() {
   };
   var dupHtml = dups.length ? '<div class="card" style="border-left:3px solid #B45309"><b>Шийдэх ' + dups.length + '</b> <small class="muted">— давхар байж болзошгүй (ижил утас, бараа 48 цагт)</small>' + dups.map(function (o) {
       return '<div style="margin-top:6px">⚠ ' + esc((o.customer ? o.customer + ' ' : '') + o.phone + ' · ' + ordItemsText(o) + ' · ' + fmt(o.amount)) + ' <button class="mini" onclick="quickOrd(\'' + o.id + '\',\'status\',\'Цуцалсан\')">Цуцлах</button> <button class="mini" onclick="dlvNotDup[\'' + o.id + '\']=1;renderDlv()">Давхар биш</button></div>'; }).join('') + '</div>' : '';
-  w.innerHTML = dupHtml + (fresh.length ? '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиа руу илгээх <small class="muted" style="font-weight:400">«Шинэ» захиалга ' + fresh.length + '</small></h2>' +
+  var otherHtml = other.length ? '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Бусад хүргэлтээр <small class="muted" style="font-weight:400">«Шинэ» ' + other.length + '</small></h2>' +
+      '<button class="btn sm" onclick="dlvOther(' + esc(JSON.stringify(other.map(function (o) { return o.id; }))) + ')"' + (dlvBusy ? ' disabled' : '') + '>Гаргах (' + other.length + ')</button></div>' +
+      other.map(function (o) { return '<div style="margin-top:6px">' + esc((o.customer ? o.customer + ' ' : '') + o.phone + ' · ' + ordItemsText(o) + ' · ' + fmt(o.amount)) + '</div>'; }).join('') + '</div>' : '';
+  w.innerHTML = dupHtml + otherHtml + (fresh.length ? '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиа руу илгээх <small class="muted" style="font-weight:400">«Шинэ» захиалга ' + fresh.length + '</small></h2>' +
       '<button class="btn sm ghost2" onclick="dlvOther()"' + (nSel && !dlvBusy ? '' : ' disabled') + '>Бусад хүргэлтээр (' + nSel + ')</button>' +
       '<button class="btn sm ghost2" onclick="var ids=Object.keys(dlvSel).filter(function(k){return dlvSel[k]});if(ids.length)openLabels(ids)"' + (nSel ? '' : ' disabled') + '>Шошго хэвлэх</button>' +
       '<button class="btn sm" onclick="dlvSend()"' + (nSel && !dlvBusy ? '' : ' disabled') + '>Сонгосныг илгээх' + (nSel ? ' (' + nSel + ')' : '') + '</button></div>' +
@@ -483,8 +489,8 @@ window.ebDel = function (code) {
   });
 };
 // Буухиад өгөхгүй захиалга — өөрсдөө / бусад хүргэлтээр гаргана (борлуулалт бичигдэнэ, буухиагийн хөлс бичигдэхгүй)
-function dlvOther() {
-  var ids = Object.keys(dlvSel).filter(function (k) { return dlvSel[k]; });
+function dlvOther(given) {
+  var ids = given || Object.keys(dlvSel).filter(function (k) { return dlvSel[k]; });
   if (!ids.length || dlvBusy || !confirm(ids.length + ' захиалгыг бусад хүргэлтээр (буухиагүй) гаргах уу?\nБорлуулалт бичигдэнэ.')) return;
   dlvBusy = true; renderDlv();
   ordPost({ type: 'eb_other', ids: ids }, function (err, d) {

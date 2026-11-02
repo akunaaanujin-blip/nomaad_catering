@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v7.2 (банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v7.3 (захиалгын хүргэлтийн төлбөр, хөнгөлөлт засахад борлуулалтын мөр дагана — orderSyncAdj; удирдлагаас хүргэлт/хөнгөлөлт засах, «Хүргэлтийн компани» багана; банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -33,9 +33,9 @@ const PRICE_HEAD = ['Огноо', 'biz', 'Бараа', 'Хуучин үнэ', '�
 // Захиалга (Cozy: Facebook захиалга → буухиа хүргэлт)
 const SHEET_ORDER = 'Захиалга';
 const ORDER_HEAD = ['ID', 'Огноо', 'Цаг', 'biz', 'Ажилтан', 'Захиалагч', 'Утас', 'Нэмэлт утас', 'Хот/аймаг', 'Дүүрэг/сум', 'Хороо', 'Хаяг',
-  'Бараа', 'Дүн', 'Хүргэх огноо', 'Төлбөрийн хэлбэр', 'Хүргэлтийн төлөв', 'Төлбөр', 'Тэмдэглэл', 'Шинэчилсэн', 'Борлуулалт', 'Баталгаа', 'Буухиа код'];
+  'Бараа', 'Дүн', 'Хүргэх огноо', 'Төлбөрийн хэлбэр', 'Хүргэлтийн төлөв', 'Төлбөр', 'Тэмдэглэл', 'Шинэчилсэн', 'Борлуулалт', 'Баталгаа', 'Буухиа код', 'Хүргэлтийн компани'];
 const ORDER_KEYS = ['id', 'date', 'time', 'biz', 'staff', 'customer', 'phone', 'phone2', 'city', 'district', 'khoroo', 'address',
-  'items', 'amount', 'deliverDate', 'payType', 'status', 'paid', 'note', 'updated', 'saleDone', 'confirmed', 'ebCode'];
+  'items', 'amount', 'deliverDate', 'payType', 'status', 'paid', 'note', 'updated', 'saleDone', 'confirmed', 'ebCode', 'courier'];
 const SHEET_REMIND = 'Сануулга';
 const REMIND_HEAD = ['ID', 'Огноо', 'Гарчиг', 'Төрөл', 'Дүн', 'Харилцагч', 'Компани', 'Давтамж', 'Төлөв', 'Тэмдэглэл', 'Үүсгэсэн'];
 const SHEET_BANK = 'Банк';
@@ -252,7 +252,7 @@ function adminRestore(d) {
 // ── Серверийн кэш (хурд): удирдлагын уншилт хуудас тус бүрийг 5 мин кэшлэнэ, бичилт хийхэд тэр хуудсыг л цэвэрлэнэ ──
 // Sheet-ийг гараар засвал 5 минутын дотор шинэчлэгдэнэ.
 const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'imp', 'rule', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf'];
-const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_other: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_send: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
+const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_other: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_send: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord', 'rec'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
   admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr', 'bank'], admin_bank: ['bank', 'jr', 'ord', 'imp', 'rule'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_po: ['po', 'jr'],
   admin_restore: ['rec', 'stk', 'mov', 'jr'], admin_staff: ['adm', 'stf'], staff_pin: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
@@ -1373,10 +1373,24 @@ function adminOrder(d) {
     sh.getRange(o.row, 23).setValue(String(f.ebCode));
   }   // буухиад өгөөгүй (өөрсдөө хүргэсэн) гэж тэмдэглэх — зөвхөн кодгүй захиалгад
   if (f.note) sh.getRange(o.row, 19).setValue(String(o.note || '') + ' ' + String(f.note).slice(0, 100));
-  let edited = false;
+  let edited = false, adj = 0;
+  if (f.edit && typeof f.edit === 'object' && (f.edit.fee !== undefined || f.edit.disc !== undefined)) {   // удирдлага хүргэлтийн төлбөр, хөнгөлөлт засах — дүн, борлуулалтын мөр дагана
+    if (/^(Цуцалсан|Буцаасан)$/.test(o.status)) return { status: 'error', error: 'state' };
+    let items; try { items = JSON.parse(o.items || '[]'); } catch (e) { items = []; }
+    const fee = f.edit.fee !== undefined ? Math.max(0, Math.round(Number(f.edit.fee) || 0)) : null, disc = f.edit.disc !== undefined ? Math.max(0, Math.round(Number(f.edit.disc) || 0)) : null;
+    const why = (items.filter(function (i) { return i.name === DISC_ITEM; })[0] || {}).why || '';
+    items = items.filter(function (i) { return !((fee !== null && i.name === FEE_ITEM) || (disc !== null && i.name === DISC_ITEM)); });
+    if (disc) items.push({ name: DISC_ITEM, qty: 1, price: -disc, why: why || 'Удирдлага' });
+    if (fee) items.push({ name: FEE_ITEM, qty: 1, price: fee });
+    const amount = items.reduce(function (a, i) { return a + (Number(i.qty) || 1) * (Number(i.price) || 0); }, 0);
+    sh.getRange(o.row, 13, 1, 2).setValues([[JSON.stringify(items), Math.round(amount)]]);
+    o.items = JSON.stringify(items); o.amount = amount; edited = true;
+  }
+  if (f.sync || edited) adj = orderSyncAdj(o, d.by);   // «Авлагыг захиалгатай тааруулах»
   if (f.edit && typeof f.edit === 'object') {   // удирдлагаас засах: нэр, хаяг, хүргэх өдөр, тэмдэглэл (утас, бараа, дүн — ажилтан)
-    ['customer', 'district', 'khoroo', 'address', 'deliverDate', 'note'].forEach(function (k) {
+    ['customer', 'district', 'khoroo', 'address', 'deliverDate', 'note', 'courier'].forEach(function (k) {
       if (f.edit[k] === undefined) return;
+      if (k === 'courier' && !/^(Буухиа|Бусад|)$/.test(String(f.edit[k]))) return;
       const v = String(f.edit[k]).slice(0, k === 'note' ? 300 : 120);
       if (k === 'deliverDate' && v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
       sh.getRange(o.row, ORDER_KEYS.indexOf(k) + 1).setValue(v); edited = true;
@@ -1399,7 +1413,7 @@ function adminOrder(d) {
   }
   if (f.restore && o.status === 'Цуцалсан' && String(o.saleDone || '') !== 'returned' && /^(Шинэ|Буухиад өгсөн|Хүргэгдсэн)$/.test(String(f.restore))) sh.getRange(o.row, 17).setValue(String(f.restore));   // хогийн савнаас сэргээх
   sh.getRange(o.row, 20).setValue(Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + ' ' + String(d.by || 'Удирдлага'));
-  return { status: 'ok', edited: edited };
+  return { status: 'ok', edited: edited, adj: adj };
 }
 // Дэлгүүрийн төлбөрийн мэдээлэл (данс, эзэмшигч) — GitHub-д бичихгүй, Script Properties-д
 function adminSetting(d) {
@@ -1880,6 +1894,10 @@ function orderSheet() {
     if (sh.getMaxColumns() < 23) sh.insertColumnsAfter(sh.getMaxColumns(), 23 - sh.getMaxColumns());
     sh.getRange(1, 23).setValue('Буухиа код'); sh.getRange('W:W').setNumberFormat('@'); styleHead(sh, 23, '#7A5A2E');
   }
+  if (String(sh.getRange(1, 24).getValue()) !== 'Хүргэлтийн компани') {   // v7.3: Буухиа / Бусад — захиалга дээр сонгоно (хоосон = Буухиа)
+    if (sh.getMaxColumns() < 24) sh.insertColumnsAfter(sh.getMaxColumns(), 24 - sh.getMaxColumns());
+    sh.getRange(1, 24).setValue('Хүргэлтийн компани'); styleHead(sh, 24, '#7A5A2E');
+  }
   return sh;
 }
 function orderRows() {
@@ -1903,7 +1921,7 @@ function orderSave(d) {
   const base = cur || { id: 'O' + Date.now(), date: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), time: Utilities.formatDate(new Date(), TZ, 'HH:mm'), biz: o.biz, staff: who.staff.name };
   const merged = {};
   ORDER_KEYS.forEach(function (k) { merged[k] = base[k] !== undefined ? base[k] : ''; });
-  ['customer', 'phone', 'phone2', 'city', 'district', 'khoroo', 'address', 'items', 'amount', 'deliverDate', 'payType', 'status', 'paid', 'note', 'saleDone'].forEach(function (k) {
+  ['customer', 'phone', 'phone2', 'city', 'district', 'khoroo', 'address', 'items', 'amount', 'deliverDate', 'payType', 'status', 'paid', 'note', 'saleDone', 'courier'].forEach(function (k) {
     if (o[k] !== undefined) merged[k] = typeof o[k] === 'string' ? o[k].slice(0, k === 'items' ? 2000 : 300) : o[k];
   });
   // Ажилтан «Орсон/Ороогүй» гэж тэмдэглэж болно (санхүүд бичигдэхгүй). Баталгааг ЗӨВХӨН удирдлага (банкны тулгалт) тавина.
@@ -1917,7 +1935,36 @@ function orderSave(d) {
   merged.updated = now + ' ' + who.staff.name;
   const row = ORDER_KEYS.map(function (k) { return merged[k]; });
   if (cur) sh.getRange(cur.row, 1, 1, ORDER_HEAD.length).setValues([row]); else sh.appendRow(row);
-  return { status: 'ok', order: merged };
+  const adj = cur ? orderSyncAdj(Object.assign({ row: cur.row }, merged), who.staff.name) : 0;   // илгээгдсэн захиалгын хүргэлт, хөнгөлөлт засварлавал борлуулалтын мөр дагана
+  return { status: 'ok', order: merged, adj: adj };
+}
+// Илгээгдсэн (борлуулалт бичигдсэн) захиалгын «Хүргэлтийн төлбөр», «Хөнгөлөлт»-ийг засахад борлуулалтын мөрийг захиалгатай тааруулна —
+// журнал (авлага 1201, орлого 5102, хөнгөлөлт 6002) бүртгэлээс үүсдэг тул дагаж шинэчлэгдэнэ. Түгжигдээгүй анхны мөрийг засна, үгүй бол зөрүүг шинэ мөрөөр.
+function orderSyncAdj(o, by) {
+  if (!/^yes:/.test(String(o.saleDone || '')) || /^(Цуцалсан|Буцаасан)$/.test(String(o.status))) return 0;
+  let items; try { items = JSON.parse(o.items || '[]'); } catch (e) { return 0; }
+  const want = {}; want[FEE_ITEM] = 0; want[DISC_ITEM] = 0;
+  items.forEach(function (i) { if (want[i.name] !== undefined) want[i.name] += Math.round((Number(i.qty) || 1) * (Number(i.price) || 0)); });
+  const log = logSheet(), lr = log.getLastRow(), have = {}, first = {};
+  if (lr >= 2) log.getRange(2, 1, lr - 1, LOG_HEAD.length).getValues().forEach(function (v, i) {
+    if (String(v[16]) !== 'sale' || String(v[17]) !== String(o.id) || String(v[18]) === 'Устгасан') return;
+    const k = String(v[6]).replace(/ \(буцаалт\)$/, ''); if (want[k] === undefined) return;
+    have[k] = (have[k] || 0) + (Number(v[10]) || 0);
+    if (String(v[6]) === k && !first[k] && !lockedDate(fmtDate(v[1], 'yyyy-MM-dd'))) first[k] = { r: i + 2, amt: Number(v[10]) || 0 };
+  });
+  const pay = String(o.saleDone).slice(4), now = new Date(), date = Utilities.formatDate(now, TZ, 'yyyy-MM-dd'), rows = [];
+  let n = 0;
+  Object.keys(want).forEach(function (k) {
+    const diff = Math.round(want[k] - (have[k] || 0)); if (!diff) return;
+    const x = first[k], nv = x ? x.amt + diff : 0; n++;
+    if (x && nv === 0) { log.getRange(x.r, 19).setValue('Устгасан'); return; }   // хүргэлт үнэгүй / хөнгөлөлтгүй болсон
+    if (x && nv * x.amt > 0) { log.getRange(x.r, 8, 1, 4).setValues([[1, 'ш', nv, nv]]); return; }
+    if (lockedDate(date)) { n--; return; }
+    rows.push([o.biz + '-' + now.getTime() + '-a' + n, date, Utilities.formatDate(now, TZ, 'HH:mm'), BIZ_NAMES[o.biz], TYPE_NAMES.sale, String(by || 'Удирдлага').slice(0, 40), k, 1, 'ш', diff, diff, pay,
+      '', '', 'Захиалга ' + o.phone + ' · засвар', o.biz, 'sale', o.id, '', pay === 'Урьдчилгаа' ? ((o.customer ? o.customer + ' ' : '') + o.phone) : '']);
+  });
+  if (rows.length) log.getRange(log.getLastRow() + 1, 1, rows.length, LOG_HEAD.length).setValues(rows);
+  return n;
 }
 // Ажилтанд үлдэгдэл — удирдлагын кэшээс (өртөггүй)
 function stockPublic(biz) {
@@ -1962,7 +2009,7 @@ function importCozy(d) {
     const status = /хүргэгдсэн/.test(st) ? 'Хүргэгдсэн' : /өгсөн/.test(st) ? 'Буухиад өгсөн' : 'Шинэ';
     const paid = /^орсон/.test(String(v[5] || '').trim().toLowerCase()) ? 'Орсон' : 'Ороогүй';
     rows.push(['O' + Date.now() + '-' + i, today, '00:00', 'cozy', 'Хуучин хүснэгт', '', phone, '', 'Улаанбаатар', '', '', String(v[2] || '').trim(),
-      items, amount, '', paid === 'Орсон' ? 'Шилжүүлэг' : 'Хүргэлтээр бэлэн', status, paid, String(v[6] || '').trim(), 'Хуучин хүснэгтээс шилжүүлсэн', 'imported', paid === 'Орсон' ? 'Хуучин' : '']);
+      items, amount, '', paid === 'Орсон' ? 'Шилжүүлэг' : 'Хүргэлтээр бэлэн', status, paid, String(v[6] || '').trim(), 'Хуучин хүснэгтээс шилжүүлсэн', 'imported', paid === 'Орсон' ? 'Хуучин' : '', '', '']);
   });
   if (d.dryRun) return { status: 'ok', count: rows.length };
   if (rows.length) { const sh = orderSheet(); sh.getRange(sh.getLastRow() + 1, 1, rows.length, ORDER_HEAD.length).setValues(rows); }

@@ -1534,7 +1534,7 @@ function ebMaybe(o) {
 }
 // ⚠ давхар байж болзошгүй захиалга — шийдэх хүртэл илгээх жагсаалтад орохгүй («Давхар биш» гэвэл энэ удаа орно)
 function ebAdmDups() { return (window.adminOrders || []).filter(function (o) { return o.biz === state.biz && !o.ebCode && (o.status === 'Шинэ' || o.status === 'Буухиад өгсөн') && !ebMaybe(o) && dupOf(o) && !(ebAdm.notDup || {})[o.id]; }); }
-function ebAdmFresh() { return (window.adminOrders || []).filter(function (o) { return o.biz === state.biz && !o.ebCode && (o.status === 'Шинэ' || o.status === 'Буухиад өгсөн') && !ebMaybe(o) && (!dupOf(o) || (ebAdm.notDup || {})[o.id]); })
+function ebAdmFresh() { return (window.adminOrders || []).filter(function (o) { return o.biz === state.biz && !o.ebCode && o.courier !== 'Бусад' && (o.status === 'Шинэ' || o.status === 'Буухиад өгсөн') && !ebMaybe(o) && (!dupOf(o) || (ebAdm.notDup || {})[o.id]); })
   .sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; }); }
 function ebAdmSend(other) {   // other — буухиад өгөхгүй, өөрсдөө / бусад хүргэлтээр (буухиагийн хөлс бичигдэхгүй)
   var ids = Object.keys(ebAdm.sel).filter(function (k) { return ebAdm.sel[k]; });
@@ -1950,7 +1950,7 @@ function journalCheck(E, f, t) {
   var sAmt = sales.reduce(function (a, x) { return a + Number(x.amount); }, 0);
   var rev = 0;   // зөвхөн борлуулалтын бичлэгээс үүссэн орлого (гараар/банкаар бичсэн 5101-ийг тооцохгүй)
   E.forEach(function (e) { if (e.date >= f && e.date <= t) { if (e.doc === 'Борлуулалт' && (e.cr === '5101' || e.cr === '5102')) rev += e.amount; if (e.doc === 'Борлуулалтын буцаалт' && e.dr === '6001') rev -= e.amount;
-    if (e.doc === 'Борлуулалтын хөнгөлөлт') rev += e.dr === '6001' ? -e.amount : e.amount;
+    if (e.doc === 'Борлуулалтын хөнгөлөлт') rev += e.dr === '6001' || e.dr === '6002' ? -e.amount : e.amount;
     if (e.doc === 'Төлбөр хуваалт') rev += e.cr === '5101' ? e.amount : -e.amount; } });
   var exps = records.filter(function (x) { return x.biz === state.biz && x.type === 'expense' && x.date >= f && x.date <= t && Number(x.amount); });
   var eMiss = exps.filter(function (x) { return !E.some(function (e) { return e.ref === x.id; }); });
@@ -1994,6 +1994,31 @@ function financeDash0() {
     '<div class="grid2"><div class="card"><h2>Орлогын тайлан (товч)</h2>' + miniTable(repPL(E, r[0], r[1])) + '</div>' +
     '<div class="card"><h2>Касс хаалт</h2><div class="scroll"><table>' + closesTable(r) + '</table></div></div></div>';
 }
+// Борлуулалт бичигдсэн (илгээгдсэн) захиалга: бүртгэлийн борлуулалтын мөрүүдийн нийт ≠ захиалгын дүн (жишээ: хүргэлтийн төлбөр 7,000 → 16,000 засварласан ч мөр нь хуучнаараа)
+function ordSaleMismatch() {
+  var S = {}, out = [];
+  records.forEach(function (x) { if (x.type === 'sale' && x.bill && /^O\d/.test(x.bill)) S[x.bill] = (S[x.bill] || 0) + (Number(x.amount) || 0); });
+  (window.adminOrders || []).forEach(function (o) {
+    if (o.biz !== state.biz || !/^yes:/.test(o.saleDone || '') || ordDead(o) || S[o.id] === undefined) return;
+    if (Math.abs(S[o.id] - (Number(o.amount) || 0)) > TOL) out.push({ o: o, sold: S[o.id] });
+  });
+  return out.sort(function (a, b) { return a.o.date < b.o.date ? 1 : -1; });
+}
+function ordMismatchOpen() {
+  var ms = ordSaleMismatch();
+  gOpen('<h2>Авлага ≠ захиалгын дүн</h2><p class="muted">Борлуулалтын мөрийн нийт (авлага) захиалгын дүнтэй таарахгүй захиалгууд. «Тааруулах» — захиалгын хүргэлтийн төлбөр, хөнгөлөлтөөр борлуулалтын мөрийг шинэчилнэ (барааны мөрийг хөндөхгүй).</p>' +
+    (ms.length ? '<div class="scroll"><table class="tbl"><tr><th>Огноо</th><th>Утас</th><th class="n">Захиалгын дүн</th><th class="n">Борлуулалт (авлага)</th><th class="n">Зөрүү</th><th></th></tr>' + ms.map(function (m) {
+      return '<tr><td>' + esc(m.o.date) + '</td><td>' + esc(m.o.phone) + (m.o.customer ? ' <small class="muted">' + esc(m.o.customer) + '</small>' : '') + '</td><td class="n">' + fmt(m.o.amount) + '</td><td class="n">' + fmt(m.sold) + '</td><td class="n">' + fmt(m.o.amount - m.sold) + '</td>' +
+        '<td><button class="mini" onclick="ordEditOpen(\'' + m.o.id + '\')">Засах</button> <button class="mini" onclick="ordSyncDo(\'' + m.o.id + '\')">Тааруулах</button></td></tr>'; }).join('') + '</table></div>' : '<p>Зөрүүтэй захиалга алга.</p>') +
+    '<div style="margin-top:12px"><button class="btn ghost" onclick="gClose()">Хаах</button></div>');
+}
+function ordSyncDo(id) {
+  var o = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!o || !API_URL) return;
+  post({ type: 'admin_order', id: id, by: ownerName, what: o.phone + ' · авлагыг захиалгатай тааруулсан', fields: { sync: true } }, function (err, d) {
+    if (err) { toast('Алдаа: ' + err); return; }
+    toast(d.adj ? 'Тааруулсан' : 'Хүргэлт, хөнгөлөлтөөс бусад (барааны) зөрүү — захиалгыг засна уу'); gClose(); refresh();
+  });
+}
 // Нэмэлт шалгуур: ашиг > борлуулалт, ашгийн хувь, сөрөг үлдэгдэлтэй орлого/зардлын данс, үлдэгдэл = 1404, банкны холболт
 function extraChecks(E, r, p, line, neq) {
   var out = '', bp = balances(E, r[1], r[0]), bt = balances(E, todayStr());
@@ -2014,6 +2039,11 @@ function extraChecks(E, r, p, line, neq) {
     OL.forEach(function (o) { who[ordCust(o)] = 1; });
     E.forEach(function (e) { if (e.date > todayStr() || !who[e.partner]) return; if (e.dr === '1201') ar += e.amount; if (e.cr === '1201') ar -= e.amount; });
     out += line(Math.abs(ordOpenAmt(OL) - ar) <= TOL, neq(ordOpenAmt(OL), 'Захиалгын баталгаажаагүй нийт', ar, 'захиалгын авлага (1201)'), 'sales/orders');
+  }
+  if (BUSINESSES[state.biz].orders) {   // Илгээгдсэн захиалга бүрийн борлуулалтын мөрүүдийн нийт (авлага) = захиалгын дүн (хүргэлтийн төлбөр, хөнгөлөлт засварласан)
+    var ms = ordSaleMismatch();
+    out += line(!ms.length, ms.length ? ms.length + ' захиалгын борлуулалт (авлага) захиалгын дүнтэй таарахгүй: ' + esc(ms.slice(0, 4).map(function (m) { return m.o.phone + ' ' + fmt(m.sold) + ' ≠ ' + fmt(m.o.amount); }).join(', ')) +
+      ' <button class="link" onclick="ordMismatchOpen()">Жагсаалт →</button>' : 'Илгээгдсэн захиалга бүрийн борлуулалт (авлага) = захиалгын дүн');
   }
   if (BUSINESSES[state.biz].orders) {   // Буухиа «авсан» > 0 захиалгын авлага Буухиа дээр
     if (!ebAdm.list || ebAdm.biz !== state.biz) out += line(true, '<span class="muted">Буухиа хураасан мөнгө — «Борлуулалт → Хүргэлт» нээж шинэчилсний дараа шалгагдана</span>');

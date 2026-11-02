@@ -567,25 +567,37 @@ function ordCancelDo(id) {
 }
 
 // Удирдлагаас захиалга засах: хэрэглэгчийн нэр, хаяг, хүргэх өдөр, тэмдэглэл (утас, бараа, дүнг ажилтан засна)
-var ORD_EDIT = [['customer', 'Хэрэглэгчийн нэр'], ['district', 'Дүүрэг'], ['khoroo', 'Хороо'], ['address', 'Хаяг'], ['deliverDate', 'Хүргэх өдөр', 'date'], ['note', 'Тэмдэглэл']];
+// Хүргэлтийн төлбөр, хөнгөлөлтийг засвал захиалгын дүн ба (илгээгдсэн бол) борлуулалтын мөр, авлага дагаж шинэчлэгдэнэ
+var ORD_EDIT = [['customer', 'Хэрэглэгчийн нэр'], ['district', 'Дүүрэг'], ['khoroo', 'Хороо'], ['address', 'Хаяг'], ['deliverDate', 'Хүргэх өдөр', 'date'], ['note', 'Тэмдэглэл'],
+  ['courier', 'Хүргэлтийн компани', 'sel'], ['fee', 'Хүргэлтийн төлбөр (₮)', 'number'], ['disc', 'Хөнгөлөлт (₮)', 'number']];
+function ordEdVal(o, k) {
+  var it = o.items; if (typeof it === 'string') { try { it = JSON.parse(it); } catch (e) { it = []; } }
+  var sum = function (n) { return (it || []).filter(function (i) { return baseItem(i.name) === n; }).reduce(function (a, i) { return a + (Number(i.price) || 0) * (Number(i.qty) || 1); }, 0); };
+  if (k === 'courier') return o.courier === 'Бусад' || o.ebCode === 'бусад' ? 'Бусад' : 'Буухиа';
+  if (k === 'fee') return String(sum(FEE_ITEM)); if (k === 'disc') return String(-sum(DISC_ITEM));
+  return String(o[k] == null ? '' : o[k]);
+}
 function ordEditOpen(id) {
   var o = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!o) return;
   gOpen('<h2>Захиалга засах</h2><p class="muted">' + esc(o.phone) + ' · ' + esc(o.date) + ' · ' + fmt(o.amount) + ' · ' + esc(ordStLabel(o)) + '</p>' +
-    ORD_EDIT.map(function (f) { return '<label for="oe_' + f[0] + '">' + f[1] + '</label><input id="oe_' + f[0] + '"' + (f[2] ? ' type="' + f[2] + '"' : '') + ' value="' + esc(o[f[0]] == null ? '' : o[f[0]]) + '">'; }).join('') +
-    '<p class="muted" style="font-size:12.5px">Утас, бараа, дүнг ажилтны хуудаснаас засна.</p>' +
+    ORD_EDIT.map(function (f) { var v = ordEdVal(o, f[0]); return '<label for="oe_' + f[0] + '">' + f[1] + '</label>' + (f[2] === 'sel' ? '<select id="oe_' + f[0] + '">' + ['Буухиа', 'Бусад'].map(function (x) { return '<option' + (x === v ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select>'
+      : '<input id="oe_' + f[0] + '"' + (f[2] ? ' type="' + f[2] + '"' : '') + ' value="' + esc(v) + '">'); }).join('') +
+    '<p class="muted" style="font-size:12.5px">Утас, барааг ажилтны хуудаснаас засна. Хүргэлтийн төлбөр, хөнгөлөлтийг засвал захиалгын дүн, борлуулалт, авлага дагаж шинэчлэгдэнэ.</p>' +
     '<div style="margin-top:12px"><button class="btn" onclick="ordEditDo(\'' + id + '\')">Хадгалах</button><button class="btn ghost" onclick="gClose()">Болих</button></div>');
 }
 function ordEditDo(id) {
   var o = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!o) return;
   var ed = {}, ch = [];
-  ORD_EDIT.forEach(function (f) { var v = $('oe_' + f[0]).value.trim(), was = String(o[f[0]] == null ? '' : o[f[0]]); if (v !== was) { ed[f[0]] = v; ch.push(f[1] + ': ' + (was || '—') + ' → ' + (v || '—')); } });
+  ORD_EDIT.forEach(function (f) { var v = $('oe_' + f[0]).value.trim(), was = ordEdVal(o, f[0]); if (f[2] === 'number') { v = String(Math.max(0, Math.round(Number(v) || 0))); was = String(Number(was) || 0); }
+    if (v !== was) { ed[f[0]] = v; ch.push(f[1] + ': ' + (was || '—') + ' → ' + (v || '—')); } });
   if (!ch.length) { gClose(); return; }
   var what = (o.customer ? o.customer + ' ' : '') + o.phone + ' · ' + ch.join('; ');
   if (!API_URL) { Object.assign(o, ed); gClose(); render(); toast('Хадгаллаа'); return; }
   post({ type: 'admin_order', id: id, by: ownerName, what: what.slice(0, 200), fields: { edit: ed } }, function (err, d) {
     if (err) { toast('Алдаа: ' + err); return; }
     if (!d.edited) { alert('Сервер засварыг хадгалсангүй — Apps Script-ийн сүүлийн хувилбарыг deploy хийх шаардлагатай.'); return; }
-    Object.assign(o, ed); gClose(); render(); toast('Захиалга засагдлаа'); refresh();
+    var money = ed.fee !== undefined || ed.disc !== undefined; if (!money) Object.assign(o, ed);
+    gClose(); render(); toast('Захиалга засагдлаа' + (d.adj ? ' — борлуулалт, авлага шинэчлэгдлээ' : '')); refresh();
   });
 }
 // Сервер цуцлалтыг хэрэгжүүлсэн эсэх (хуучин сервер «ok» гэж хариулаад төлвийг солихгүй байж болно)
