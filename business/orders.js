@@ -10,9 +10,9 @@ var orders = load(LS_ORD, []), ordTab = 'new', ordEdit = null, ordCart = [];
 
 // Хаягаас дүүрэг, хороо таних (буухиа «Дүүрэг / сум *» баганад)
 var DISTRICTS = [
-  ['Баянзүрх', /(^|[^а-яөү])(бзд|баянзүрх|bzd|bayanzurh|baynzurh)/i], ['Баянгол', /(^|[^а-яөү])(бгд|баянгол|bgd|bayangol)/i],
-  ['Сүхбаатар', /(^|[^а-яөү])(сбд|sbd|сүхбаатар дүүрэг)/i], ['Чингэлтэй', /(^|[^а-яөү])(чд|чингэлтэй|chd|chingeltei)/i],
-  ['Хан-Уул', /(^|[^а-яөү])(худ|хан-уул|хан уул|hud|khan-uul|han uul)/i], ['Сонгинохайрхан', /(^|[^а-яөү])(схд|сонгинохайрхан|shd|sxd|songino)/i],
+  ['Баянзүрх', /(^|[^а-яөү])(бзд|баянзүрх|bzd|bayanzurh|baynzurh)(?![а-яөүa-z])/i], ['Баянгол', /(^|[^а-яөү])(бгд|баянгол|bgd|bayangol)(?![а-яөүa-z])/i],
+  ['Сүхбаатар', /(^|[^а-яөү])(сбд|sbd|сүхбаатар дүүрэг)(?![а-яөүa-z])/i], ['Чингэлтэй', /(^|[^а-яөү])(чд|чингэлтэй|chd|chingeltei)(?![а-яөүa-z])/i],
+  ['Хан-Уул', /(^|[^а-яөү])(худ|хан-уул|хан уул|hud|khan-uul|han uul)(?![а-яөүa-z])/i], ['Сонгинохайрхан', /(^|[^а-яөү])(схд|сонгинохайрхан|shd|sxd|songino[a-z]*)(?![а-яөүa-z])/i],
   ['Налайх', /налайх|nalaikh/i], ['Багануур', /багануур|баганур|baganuur/i], ['Багахангай', /багахангай/i],
 ];
 function guessDistrict(t) { var d = DISTRICTS.filter(function (x) { return x[1].test(t || ''); })[0]; return d ? d[0] : ''; }
@@ -103,7 +103,8 @@ function ordBook(o, prev) {
   }
   // 2) Төлбөр орсныг удирдлага (банкны хуулга / «Төлбөр орсон») бүртгэнэ — энд юу ч бичихгүй
   // 3) Буухиад өгсний дараа цуцалсан / буцаасан бол бараа буухиа дээр байна — «Буцаалт хүлээн авсан» дарахад л (ordReceive) буцаалт бичигдэж үлдэгдэлд нэмэгдэнэ
-  if (o.receive && sold && ordDead(o)) {
+  // 8-р ээлж: зарагдсан захиалгыг цуцлах / буцаахад борлуулалт шууд буцна (бараа үлдэгдэлд, өртөг буцна) — «Буцаалт хүлээн авсан» хүлээхгүй
+  if (sold && ordDead(o)) {
     var rl = lines(-1, salePay); addRecords(rl); rl.forEach(function (r) { stockTake(r.item, r.qty); });
     o.saleDone = 'returned'; o.note = ((o.note ? o.note + ' · ' : '') + 'Буцаалт хүлээн авсан ' + todayStr() + ' ' + timeStr() + ' ' + (typeof staffName !== 'undefined' ? staffName : '')).slice(0, 300);
     delete o.receive;
@@ -195,9 +196,10 @@ function ordFeeVal() { return Math.max(0, Math.round(Number($('orFee').value) ||
 function ordCartTotal() { return ordCart.reduce(function (a, l) { return a + l.qty * l.price; }, 0) + ordFeeVal(); }
 function ordAddrInput() {
   var t = $('orAddress').value;
-  if (!$('orDistrict').value) $('orDistrict').value = guessDistrict(t);
-  if (!$('orKhoroo').value) $('orKhoroo').value = guessKhoroo(t);
-  if (!$('orCity').value) { var f = addrFinal({ address: t, district: $('orDistrict').value }); if (f.city) $('orCity').value = f.city; }   // олдохгүй бол хоосон — ажилтан сонгоно
+  var g = addrGuess(t);   // эхлээд аймаг/сум, олдохгүй бол л УБ-ын дүүрэг (олдохгүй бол хоосон — ажилтан сонгоно)
+  if (!$('orCity').value && g.city) $('orCity').value = g.city;
+  if (!$('orDistrict').value && g.district && $('orCity').value === g.city) $('orDistrict').value = g.district;
+  if (!$('orKhoroo').value && g.khoroo && $('orCity').value === 'Улаанбаатар') $('orKhoroo').value = g.khoroo;
   $('orProvince').style.display = isProvince(t) ? 'block' : 'none';
 }
 // Ижил утас, ижил бараатай (48 цагийн дотор) өөр захиалга / буухиагийн хүргэлт байвал тайлбар текст, үгүй бол ''
@@ -259,8 +261,8 @@ function quickOrd2(id, field, val) {   // жагсаалтаас нэг товч
   if (field === 'paid' && o.confirmed) { renderOrders(); toast('Удирдлага баталгаажуулсан — өөрчлөх боломжгүй'); return; }
   var prev = JSON.parse(JSON.stringify(o)), n = Object.assign({}, o); n[field] = val;
   var sentOut = /^yes:/.test(o.saleDone || '');
-  if (field === 'status' && val === 'Цуцалсан' && !confirm('Захиалга ' + o.phone + '-ийг цуцлах уу?' + (sentOut ? '\nБараа буухиа дээр байгаа бол буцаж ирэхэд «Буцаалт хүлээн авсан» дарна.' : ''))) return;
-  if (field === 'status' && val === 'Буцаасан' && !confirm('Захиалга ' + o.phone + ' буцаагдсан уу?\nБараа гарт ирэхэд «Буцаалт хүлээн авсан» дарахад үлдэгдэлд нэмэгдэнэ.')) return;
+  if (field === 'status' && val === 'Цуцалсан' && !confirm('Захиалга ' + o.phone + '-ийг цуцлах уу?' + (sentOut ? '\nБорлуулалт буцаагдаж, бараа үлдэгдэлд нэмэгдэнэ.' : ''))) return;
+  if (field === 'status' && val === 'Буцаасан' && !confirm('Захиалга ' + o.phone + ' буцаагдсан уу?\nБорлуулалт буцаагдаж, бараа үлдэгдэлд нэмэгдэнэ.')) return;
   if (API_URL && field === 'status' && (val === 'Буухиад өгсөн' || val === 'Хүргэгдсэн')) { shipOrders([id], val); return; }   // борлуулалт + төлөв серверт нэг дор
   var bad = ordBook(n, prev);
   if (bad) { alert('Үлдэгдэл хүрэлцэхгүй:\n\n' + bad); loadStock(); renderOrders(); return; }

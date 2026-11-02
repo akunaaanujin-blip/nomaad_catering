@@ -233,9 +233,9 @@ function ordFilt(f) {
   return function (o) {
     if (f === 'check') return !o.confirmed && o.paid === 'Орсон' && !ordDead(o);
     if (f === 'wait') return !o.confirmed && !ordDead(o);
-    if (f === 'conf') return !!o.confirmed && o.status !== 'Цуцалсан';
-    if (f === 'canc') return o.status === 'Цуцалсан';
-    return o.status !== 'Цуцалсан';   // «Бүгд» — цуцалсан (хогийн сав) орохгүй
+    if (f === 'conf') return !!o.confirmed && !ordDead(o);
+    if (f === 'canc') return ordDead(o);   // цуцалсан + буухиа цуцалсан/буцаасан
+    return !ordDead(o);   // «Бүгд» — цуцалсан, буцаасан орохгүй
   };
 }
 function importCozyOld() {

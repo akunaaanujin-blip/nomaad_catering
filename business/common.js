@@ -241,7 +241,24 @@ function provinceOf(t) {
   t = String(t || '');
   for (var a in AIMAGS) { var s = AIMAGS[a].filter(function (x) { return addrWord(t, x); })[0]; if (s && !(a === 'Сүхбаатар' && s === 'Сүхбаатар')) return { city: a, sum: s }; }
   for (var b in AIMAGS) if (b === 'Сүхбаатар' ? /сүхбаатар\s*аймаг/i.test(t) : addrWord(t, b)) return { city: b, sum: '' };
+  if (/[a-z]/i.test(t)) {   // латинаар бичсэн хаяг: «Umnugovi», «Omnogobi aimag», «Dalanzadgad»
+    var T = ' ' + addrSkel(t) + ' ', hit = function (w) { return T.indexOf(' ' + addrSkel(w) + ' ') >= 0; };
+    for (var c in AIMAGS) { var s2 = AIMAGS[c].filter(hit)[0]; if (s2 && !(c === 'Сүхбаатар' && s2 === 'Сүхбаатар')) return { city: c, sum: s2 }; }
+    for (var d in AIMAGS) if (d === 'Сүхбаатар' ? / suhvaatar a/.test(T) : hit(d)) return { city: d, sum: '' };
+  }
   return { city: '', sum: '' };
+}
+// Кирилл/латин хаягийг нэг хэлбэрт: «Өмнөговь» ≈ «Umnugovi» ≈ «Omnogobi» → «umnuguvi»
+function addrSkel(t) {
+  var M = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'j', з: 'z', и: 'i', й: 'i', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', ө: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ү: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sh', ъ: '', ы: 'i', ь: 'i', э: 'e', ю: 'yu', я: 'ya' };
+  return String(t || '').toLowerCase().replace(/[а-яёөү]/g, function (ch) { return M[ch] != null ? M[ch] : ch; })
+    .replace(/kh/g, 'h').replace(/w/g, 'v').replace(/b/g, 'v').replace(/[ou]/g, 'u').replace(/(ii|iy|y)(?=[^aeiu]|$)/g, 'i').replace(/i+$/g, 'i').replace(/[^a-z]+/g, ' ').replace(/i\b/g, 'i').trim();
+}
+// Шинэ захиалгын хаяг бичихэд: эхлээд аймаг/сумын нэр (олдвол хот = тэр аймаг), олдохгүй бол л УБ-ын дүүрэг
+function addrGuess(t) {
+  var p = provinceOf(t); if (p.city) return { city: p.city, district: p.sum, khoroo: '' };
+  var d = typeof guessDistrict === 'function' ? guessDistrict(t) : '';
+  return { city: d ? 'Улаанбаатар' : '', district: d, khoroo: khorooOf(t) };
 }
 function khorooNum(k) {   // «15», «15-р хороо», «15 р хороо» → «15»; «10р хороолол» → ''
   k = String(k || ''); if (/хороолол|horoolol/i.test(k)) return '';
@@ -253,6 +270,7 @@ function addrClean(t) { return String(t || '').replace(/\s*дүүрэг хоос
 // Буухиа руу явах эцсийн хаяг: { city, district, khoroo, address, ok, why, auto }
 function addrFinal(o) {
   var addr = addrClean(o.address), city = String(o.city || '').trim(), dist = String(o.district || '').trim(), kh = khorooNum(o.khoroo) || khorooOf(addr), auto = {};
+  if (!city && UB_DISTRICTS.indexOf(dist) < 0) { var p0 = provinceOf(addr + ' ' + dist); if (p0.city) { city = p0.city; auto.city = 1; if (!dist && p0.sum) { dist = p0.sum; auto.district = 1; } } }   // эхлээд аймаг/сум
   if (!dist && (!city || city === 'Улаанбаатар') && typeof guessDistrict === 'function') { var g = guessDistrict(addr); if (g) { dist = g; auto.district = 1; } }
   if (!city && UB_DISTRICTS.indexOf(dist) >= 0) { city = 'Улаанбаатар'; auto.city = 1; }
   if (!city || (city !== 'Улаанбаатар' && !dist)) { var p = provinceOf(addr + ' ' + dist + ' ' + city); if (!city && p.city) { city = p.city; auto.city = 1; } if (!dist && p.sum && p.city === city) { dist = p.sum; auto.district = 1; } }

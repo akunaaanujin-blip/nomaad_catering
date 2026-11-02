@@ -150,8 +150,9 @@ function costEngine(biz, R, until) {
   R.moves.forEach(function (m) { if (m.biz === biz) { var d = String(m.date).slice(0, 16); if (!since || d < since) since = d; } });
   var ev = [];
   R.moves.forEach(function (m) { if (m.biz === biz && m.kind !== 'Шилжүүлэг') ev.push({ t: String(m.date).slice(0, 16), m: m }); });
+  var DUP = dupReturns(biz, R);
   if (since) R.records.forEach(function (x) {
-    if (x.biz !== biz || x.type !== 'sale' || isNonGoods(x.item)) return;
+    if (x.biz !== biz || x.type !== 'sale' || isNonGoods(x.item) || DUP[x.id]) return;
     var t = x.date + ' ' + (x.time || '00:00');
     if (t >= since) ev.push({ t: t, x: x });
   });
@@ -210,6 +211,19 @@ function costEngine(biz, R, until) {
 }
 function avgCost(ce, item) { var o = ce.items[item]; return o ? (o.q > 0 ? o.v / o.q : o.avg) : 0; }
 
+// Нэг захиалгын (bill = захиалгын ID) нэг барааг зарсан тооноос илүү буцаасан мөрүүд — давхар буцаалт (журнал, өртөг, үлдэгдэлд тооцохгүй)
+function dupReturns(biz, R) {
+  var ORD = {}, net = {}, dup = {}; (R.orders || []).forEach(function (o) { if (o.biz === biz) ORD[o.id] = 1; });
+  R.records.filter(function (x) { return x.biz === biz && x.type === 'sale' && ORD[x.bill] && Number(x.qty); })
+    .sort(function (a, b) { var p = a.date + (a.time || ''), q = b.date + (b.time || ''); return p < q ? -1 : p > q ? 1 : 0; })
+    .forEach(function (x) {
+      var k = x.bill + '|' + baseItem(String(x.item).replace(/ \(буцаалт\)$/, '')), q = Number(x.qty);
+      if (q < 0 && (net[k] || 0) + q < -1e-9) { dup[x.id] = 1; return; }
+      net[k] = (net[k] || 0) + q;
+    });
+  return dup;
+}
+
 // ── Журнал үүсгэх ── R = { records, moves, salary, journal, stock, staff }
 function buildJournal(biz, R) {
   var E = [], rt = {};   // rt: борлуулалт, зарлагын бичлэгийн цаг (бичилтийн ref = бичлэгийн ID)
@@ -226,9 +240,13 @@ function buildJournal(biz, R) {
   var ORD = {}; (R.orders || []).forEach(function (o) { if (o.biz === biz) ORD[o.id] = o; });
   // Буухиа цуцалсан/буцаасан захиалга: цуцалсан өдөр орлого, авлагыг эсрэг бичнэ (Дт 5101/5102 / Кт 1201); бараа буухиад —
   // буцаж ирэхэд (сөрөг борлуулалтын мөр) зөвхөн Дт 1404 / Кт 6101 (орлогыг дахин буцаахгүй)
-  var EBC = {}; Object.keys(ORD).forEach(function (id) { var k = ordEbCancel(ORD[id]); if (k) EBC[id] = k; });
+  // 8-р ээлж: цуцлалтын орлого 6001 «Борлуулалтын буцаалт»-д (Хасах: буцаалт). Бараа буцаж ирсэн (saleDone returned) бол буцаалтын мөр
+  // ердийнхөөрөө Дт 6001 / Кт авлага + Дт 1404 / Кт 6101 бичнэ; буцаалтын мөр хараахан үүсээгүй (yes:) үед л цуцалсан өдөр Дт 6001 / Кт авлага.
+  var EBC = {}; Object.keys(ORD).forEach(function (id) { var k = /^yes:/.test(ORD[id].saleDone || '') && ordEbCancel(ORD[id]); if (k) EBC[id] = k; });
+  var DUP = dupReturns(biz, R);   // нэг захиалгын давхар буцаалтын мөр — журналд бичихгүй
   R.records.forEach(function (x) {
     if (x.biz !== biz) return;
+    if (DUP[x.id]) return;
     if (R.closed && x.date <= R.closed) return;   // хаагдсан онд хамаарах хоцорч ирсэн бичлэг — он нээлтэд аль хэдийн тусгагдсан тул давхар бичихгүй
     var a = Number(x.amount) || 0, d = x.date;
     if (x.type === 'sale') {
@@ -256,7 +274,7 @@ function buildJournal(biz, R) {
         if (oo && isFee(item) && oo.ebCode !== 'бусад' && ebFeeAuto(d)) add(d, 'Буухиагийн хөлс', x.id, '7124', '3101', a, 'Хүргэлт · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
         if (c) add(d, 'Борлуулалт · өртөг', x.id, '6101', '1404', c, item + ' × ' + x.qty);
         var kc = EBC[x.bill];
-        if (kc && !(R.closed && kc.date <= R.closed)) add(kc.date, 'Буухиа цуцалсан', x.id + '-ebc', ownFee ? '5102' : '5101', cash, a, 'Буухиа ' + kc.kind + ' · ' + item + ' × ' + x.qty + (kc.why ? ' · ' + kc.why : '') + ' #EBC:' + x.bill, cust, x.bill);
+        if (kc && !(R.closed && kc.date <= R.closed)) add(kc.date, 'Буухиа цуцалсан', x.id + '-ebc', '6001', cash, a, 'Буухиа ' + kc.kind + ' · ' + item + ' × ' + x.qty + (kc.why ? ' · ' + kc.why : '') + ' #EBC:' + x.bill, cust, x.bill);
       } else {
         if (!EBC[x.bill]) add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty), cust);   // буухиа цуцалсан бол орлого аль хэдийн буцаагдсан
         // буцаасан/цуцалсан хүргэлтэд буухиа хөлс авдаггүй — хүргэх үед бичсэн өглөгийг буцаана

@@ -10,7 +10,7 @@ ICONS.money = '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12
 
 var MNAV = [
   ['Нүүр', 'home', [['home', 'Өнөөдөр'], ['finance/monthly', 'Хийх ажил (сар бүр)'], ['v:cal', 'Календарь']]],
-  ['Борлуулалт', 'sales', [['sales/orders', 'Захиалга'], ['sales/shop', 'Баримт'], ['sales/buuhia', 'Хүргэлт'], ['sales/disc', 'Буцаалт, хөнгөлөлт']]],
+  ['Борлуулалт', 'sales', [['sales/orders', 'Захиалга'], ['sales/shop', 'Баримт'], ['sales/buuhia', 'Хүргэлт'], ['sales/ebrec', 'Буухиатай тулгах'], ['sales/disc', 'Буцаалт, хөнгөлөлт'], ['sales/ads', 'Сурталчилгаа, ROAS']]],
   ['Бараа', 'products', [['products/catalog', 'Бараа, үнэ'], ['products/stock', 'Үлдэгдэл'], ['products/po', 'Худалдан авалт'], ['products/suppliers', 'Нийлүүлэгчид'],
     ['products/counts', 'Тооллого'], ['products/move', 'Хөдөлгөөн, шилжүүлэг'], ['products/in', 'Орлогын жагсаалт'], ['products/prices', 'Үнийн түүх'], ['finance/assets', 'Үндсэн хөрөнгө']]],
   ['Мөнгө', 'money', [['finance/cashacc', 'Данснууд'], ['finance/bank', 'Банкны хуулга, тулгалт'], ['finance/ledger', 'Дансны хуулга'], ['finance/vouchers', 'Кассын гүйлгээ'],
@@ -334,7 +334,7 @@ function audLoad(force) {
   post({ type: 'admin_audit', limit: 2000, from: todayStr(new Date(Date.now() - 90 * 864e5)) }, function (err, d) {
     AUD.busy = false; AUD.at = Date.now();
     if (err) { AUD.err = err === 'type' ? 'Серверийг шинэчлэх (Apps Script v6.2 deploy) шаардлагатай.' : 'Алдаа: ' + err; AUD.rows = AUD.rows || []; }
-    else { AUD.err = ''; AUD.rows = (d.rows || []).map(function (r) { r.at = audAt(r.at); if (!r.note) r.note = audNote(r); return r; }); }
+    else { AUD.err = ''; AUD.rows = (d.rows || []).map(function (r) { r.at = audAt(r.at); if (!r.note) r.note = audNote(r); r.note = audMoney(r.note); r.what = audMoney(r.what); return r; }); }
     if (state.view === 'company' && /^(audit|trash)$/.test(state.sub.finance)) render();
   });
 }
@@ -343,6 +343,8 @@ function audAt(s) {
   s = String(s || ''); if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s;
   var d = new Date(s); return isNaN(d.getTime()) ? s : todayStr(d) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2);
 }
+// Мөнгөн дүн нэг форматаар: «77000₮», «77,000 ₮», «77000.00₮» → «₮77,000»
+function audMoney(t) { return String(t == null ? '' : t).replace(/(^|[^\d₮,.])(\d[\d,]*)(?:\.\d+)?\s?₮/g, function (m, pre, n) { return pre + fmt(Number(n.replace(/,/g, ''))); }); }
 // Тайлбаргүй «Захиалгын төлбөр» мөр: утас · дүн · хуучин төлөв → шинэ төлөв (дэлгэрэнгүйгээс)
 function audNote(r) {
   if (r.type === 'order_save') {   // «Захиалга бүртгэсэн / засварласан»: утас · бараа · дүн
@@ -544,14 +546,13 @@ function ordCancelOpen(id) {
     '<div id="ocTwinW"' + (dupOf(o) ? '' : ' style="display:none"') + '><label for="ocTwin">Аль захиалгын давхар вэ</label><select id="ocTwin">' + (twins.length ? twins.map(function (x) {
       return '<option value="' + x.id + '">' + esc(x.date + ' · ' + (x.customer ? x.customer + ' · ' : '') + fmt(x.amount) + ' · ' + ordStLabel(x) + (x.ebCode && x.ebCode !== 'бусад' ? ' · ' + x.ebCode : '')) + '</option>'; }).join('') : '<option value="">Ижил утастай өөр захиалга алга</option>') + '</select></div>' +
     '<label for="ocNote">Тайлбар</label><input id="ocNote" placeholder="«Бусад» бол заавал">' +
-    (sold ? '<label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="ocRecv" style="width:auto"> Бараа гарт ирсэн — борлуулалт, авлагыг эсрэг бичилтээр буцаах</label>' +
-      '<p class="muted" style="font-size:12.5px;margin:4px 0 0">Чагтлаагүй бол бараа буухиа дээр гэж тооцогдож, буцаж ирэхэд ажилтан «Буцаалт хүлээн авсан» дарахад буцаагдана.</p>' : '') +
+    (sold ? '<p class="muted" style="font-size:12.5px;margin:10px 0 0">Цуцлахад борлуулалт буцаагдана: орлого «Борлуулалтын буцаалт» (6001), өртөг Дт 1404 / Кт 6101, бараа үлдэгдэлд нэмэгдэнэ.</p>' : '') +
     (eb ? '<div class="alert" style="margin-top:10px"><div>Энэ захиалга Буухиа дээр байна (<b>' + esc(o.ebCode) + '</b>) — <b>Буухиа дээр бас цуцлана уу.</b></div><a class="b-btn" href="https://ebuuhia.com/" target="_blank" rel="noopener">Буухиа нээх</a></div>' : '') +
     '<div style="margin-top:12px"><button class="btn danger" onclick="ordCancelDo(\'' + id + '\')">Цуцлах</button><button class="btn ghost" onclick="gClose()">Болих</button></div>');
 }
 function ordCancelDo(id) {
   var o = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!o) return;
-  var why = $('ocWhy').value, note = $('ocNote').value.trim(), twin = why === 'Давхар' && $('ocTwin') ? $('ocTwin').value : '', recv = $('ocRecv') && $('ocRecv').checked;
+  var why = $('ocWhy').value, note = $('ocNote').value.trim(), twin = why === 'Давхар' && $('ocTwin') ? $('ocTwin').value : '', recv = /^yes:/.test(o.saleDone || '');
   if (why === 'Бусад' && !note) { toast('Тайлбараа бичнэ үү'); $('ocNote').focus(); return; }
   var reason = why + (twin ? ' · #' + twin + ' захиалгын давхар' : '') + (note ? ' · ' + note : '');
   var what = (o.customer ? o.customer + ' ' : '') + o.phone + ' · ' + fmt(o.amount) + ' · ' + reason;

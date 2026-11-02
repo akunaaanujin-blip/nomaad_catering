@@ -503,9 +503,10 @@ function setMode(m) {
 function dlvReset() { if ($('dFeeFree')) { $('dFeeFree').checked = false; $('dFee').disabled = false; } ['dPhone', 'dName', 'dPhone2', 'dAddr', 'dKhoroo', 'dNote', 'dFee'].forEach(function (k) { if ($(k)) $(k).value = ''; }); if ($('dDist')) $('dDist').value = ''; if ($('dCity')) $('dCity').value = ''; if ($('dHint')) $('dHint').textContent = ''; }
 function dlvAddr() {
   var t = $('dAddr').value;
-  if (typeof guessDistrict === 'function' && !$('dDist').value) $('dDist').value = guessDistrict(t);
-  if (typeof guessKhoroo === 'function' && !$('dKhoroo').value) $('dKhoroo').value = guessKhoroo(t);
-  if (!$('dCity').value) { var f = addrFinal({ address: t, district: $('dDist').value }); if (f.city) $('dCity').value = f.city; }   // олдохгүй бол хоосон
+  var g = addrGuess(t);   // эхлээд аймаг/сум, олдохгүй бол л УБ-ын дүүрэг
+  if (!$('dCity').value && g.city) $('dCity').value = g.city;
+  if (!$('dDist').value && g.district && ($('dCity').value === g.city)) $('dDist').value = g.district;
+  if (!$('dKhoroo').value && g.khoroo && $('dCity').value === 'Улаанбаатар') $('dKhoroo').value = g.khoroo;
 }
 function dlvHint() {   // өмнөх захиалга (энэ төхөөрөмж дээрх жагсаалтаас)
   var k = String($('dPhone').value).replace(/\D/g, '').slice(-8), el = $('dHint');
