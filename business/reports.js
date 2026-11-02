@@ -643,7 +643,10 @@ function repBoost(R, biz, from, to) {
   var bs = R.records.filter(function (x) { return x.biz === biz && x.type === 'boost' && x.date >= from && x.date <= to; });
   var sales = R.records.filter(function (x) { return x.biz === biz && x.type === 'sale' && !isAdj(x.item); });
   var ords = (R.orders || []).filter(function (o) { return o.biz === biz && !ordDead(o); });
-  var ce = costEngine(biz, R), today = todayStr();
+  var ce = costEngine(biz, R), today = todayStr(), sold = {};
+  // boost эхлэхээс өмнө зарсан барааны буцаалт boost-ийн үр дүнд орохгүй (жишээ: өмнө нь зарсан захиалга boost-ийн үед цуцлагдсан)
+  sales.forEach(function (y) { if (Number(y.amount) > 0 && y.bill) { var k = y.bill + '|' + baseItem(y.item); if (!sold[k] || y.date < sold[k]) sold[k] = y.date; } });
+  var preRet = function (y, a) { var k = y.bill + '|' + baseItem(y.item); return Number(y.amount) < 0 && / \(буцаалт\)$/.test(y.item) && sold[k] && sold[k] < a; };
   // нийт ашиг = борлуулалт − өртөг; өртөг тодорхойгүй мөр байвал noCost (дүгнэлт борлуулалтаар)
   var gpOf = function (y, flag) { var cs = ce.rec[y.id]; if (cs === undefined || (!cs && Number(y.qty) > 0)) flag.nc = true; return (Number(y.amount) || 0) - (Number(cs) || 0); };
   var verdict = function (net, run, nc) { return run ? 'Явж байна' : (net >= 0 ? 'Ашигтай' : 'Ашиггүй') + (nc ? ' (өртөггүй)' : ''); };
@@ -656,7 +659,7 @@ function repBoost(R, biz, from, to) {
     for (var e = w.pa; e < w.a; e = addDays(e, 1)) o.preD[e] = 1;
     var q = 0, sa = 0, pq = 0, on = 0, gp = 0, pgp = 0, fl = {}, run = boostEnd(x) > today, sl = [], ol = [], fl2 = {};
     if (run) o.run = true;
-    sales.forEach(function (y) { if (baseItem(y.item) !== x.item) return; if (y.date >= w.a && y.date < w.b) { q += Number(y.qty) || 0; sa += Number(y.amount) || 0; gp += gpOf(y, fl); gpOf(y, fl2); sl.push(y); } else if (y.date >= w.pa && y.date < w.a) { pq += Number(y.qty) || 0; pgp += gpOf(y, fl); } });
+    sales.forEach(function (y) { if (baseItem(y.item) !== x.item || preRet(y, w.a)) return; if (y.date >= w.a && y.date < w.b) { q += Number(y.qty) || 0; sa += Number(y.amount) || 0; gp += gpOf(y, fl); gpOf(y, fl2); sl.push(y); } else if (y.date >= w.pa && y.date < w.a) { pq += Number(y.qty) || 0; pgp += gpOf(y, fl); } });
     var up = gp - pgp, net = up - (Number(x.amount) || 0);
     ords.forEach(function (d) { if (d.date >= w.a && d.date < w.b && itemsOf(d).indexOf(x.item) >= 0) { on++; o.ord[d.id] = 1; ol.push(d); } });
     return { key: x.date + ' ' + (x.time || '') + ' · ' + x.item + (x.note ? ' · ' + x.note : '') + ' · ' + (x.staff || ''), days: Number(x.qty) || '', usd: x.unit === 'USD' ? '$' + r0(x.price) : '',
@@ -666,8 +669,8 @@ function repBoost(R, biz, from, to) {
   });
   var rows = Object.keys(by).sort(function (a, b) { return by[b].a - by[a].a; }).map(function (k) {
     var o = by[k], q = 0, sa = 0, pq = 0, on = Object.keys(o.ord).length, gp = 0, pgp = 0, fl = {};
-    Object.keys(o.preD).forEach(function (d) { if (o.inD[d]) delete o.preD[d]; });   // давхцсан boost-ийн өдрийг «өмнөх үе»-д тооцохгүй
-    sales.forEach(function (y) { if (baseItem(y.item) !== k) return; if (o.inD[y.date]) { q += Number(y.qty) || 0; sa += Number(y.amount) || 0; gp += gpOf(y, fl); } else if (o.preD[y.date]) { pq += Number(y.qty) || 0; pgp += gpOf(y, fl); } });
+    Object.keys(o.preD).forEach(function (d) { if (o.inD[d]) delete o.preD[d]; }); o.a0 = Object.keys(o.inD).sort()[0];   // давхцсан boost-ийн өдрийг «өмнөх үе»-д тооцохгүй
+    sales.forEach(function (y) { if (baseItem(y.item) !== k || (o.inD[y.date] && preRet(y, o.a0))) return; if (o.inD[y.date]) { q += Number(y.qty) || 0; sa += Number(y.amount) || 0; gp += gpOf(y, fl); } else if (o.preD[y.date]) { pq += Number(y.qty) || 0; pgp += gpOf(y, fl); } });
     var up = gp - pgp, net = up - o.a;
     return { key: k, n: o.n, days: o.d || '', usd: o.usd ? '$' + r0(o.usd) : '', _usd: o.usd, boost: r0(o.a), qty: r0(q), before: r0(pq), orders: on, cpo: on ? r0(Math.round(o.a / on)) : '',
              sales: r0(sa), ratio: sa ? Math.round(o.a / sa * 100) + '%' : '—', uplift: r0(up), net: r0(net), verdict: verdict(net, o.run, fl.nc), roi: o.a ? Math.round(net / o.a * 100) : 0 };
