@@ -91,8 +91,7 @@ var BOOST_JR_FROM = '2026-10-27', BOOST_PARTNER = 'Сурталчилгаа (Met
 var EB_FEE_DATE = {};   // захиалгын ID → хүргэлтийн хөлсний борлуулалт бичигдсэн (буухиад өгсөн) огноо; buildJournal дүүргэнэ
 function ebOrdAuto(o) { return !!o && (ebFeeAuto(EB_FEE_DATE[o.id] || o.date) || ebAccrues(o)); }
 // Шинэ дүрэм: буухиагаар хүргэгдсэн захиалга бүрт хөлсийг хүргэгдсэн мөчид зардал болгоно (Дт 7124 / Кт 3101 Буухиа), тооцоо нийлэхэд өглөг хаагдана
-// Буухиа буцаалт (буцаасан/цуцалсан барааг) авчирч өгөхдөө мөн хүргэлтийн хөлс авдаг — буухиад өгсөн (хөлсний борлуулалт бичигдсэн) бол хөлс бичнэ
-function ebAccrues(o) { return !!o && !!o.ebCode && o.ebCode !== 'бусад' && (o.status === 'Хүргэгдсэн' || (o.status === 'Буцаасан' || o.status === 'Цуцалсан') && !!EB_FEE_DATE[o.id]) && !ebFeeAuto(EB_FEE_DATE[o.id] || o.date); }
+function ebAccrues(o) { return !!o && !!o.ebCode && o.ebCode !== 'бусад' && o.status === 'Хүргэгдсэн' && !ebFeeAuto(EB_FEE_DATE[o.id] || o.date); }
 function ebFeeOf(biz) { var c = (typeof window !== 'undefined' && window.companyInfo || {})[biz] || {}; return Number(c.ebFee) > 0 ? Number(c.ebFee) : 7000; }
 // Хуучин зардлын код → Baaz код. Шинэ төлөвлөгөөнд байхгүй хуучин код үргэлж хөрвүүлэгдэнэ; давхцах 7201, 7401 нь
 // зөвхөн шилжүүлэлтийн мөчөөс (MIG_TS) өмнө бичигдсэн гараар бичилтэд хөрвүүлэгдэнэ (Sheet-ийн өгөгдлийг өөрчлөхгүй).
