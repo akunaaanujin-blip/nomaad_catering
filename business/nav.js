@@ -289,7 +289,7 @@ function homeView() {
   var tx = '<div class="card"><h2>Сүүлийн 10 гүйлгээ</h2>' + (last.length ? '<div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Баримт</th><th>Тайлбар</th><th>Дебет</th><th>Кредит</th><th class="n">Дүн</th></tr>' + last.map(function (e) {
       return '<tr><td class="nw">' + e.date + (e.time ? ' ' + esc(String(e.time).slice(0, 5)) : '') + '</td><td>' + esc(e.doc) + '</td><td class="fn-ell" title="' + esc(e.desc) + '">' + esc(e.desc) + '</td><td>' + esc(accName(e.dr)) + '</td><td>' + esc(accName(e.cr)) + '</td><td class="n">' + mny(e.amount) + '</td></tr>'; }).join('') + '</table></div>'
     : '<p class="muted">Гүйлгээ алга.</p>') + '</div>';
-  return '<div class="pg-head"><div><h1>Нүүр</h1><p class="pg-desc">' + esc(B.name) + ' · ' + t + ' — өнөөдөр юу хийх, энэ сарын дүн.</p></div></div>' + todo + (typeof boostHomeCard === 'function' && !B.finOnly ? boostHomeCard(biz) : '') + kpis + chart + tx;
+  return '<div class="pg-head"><div><h1>Нүүр</h1><p class="pg-desc">' + esc(B.name) + ' · ' + t + ' — өнөөдөр юу хийх, энэ сарын дүн.</p></div></div>' + todo + (typeof ebSetHomeCard === 'function' && B.orders ? ebSetHomeCard(biz) : '') + (typeof boostHomeCard === 'function' && !B.finOnly ? boostHomeCard(biz) : '') + kpis + chart + tx;
 }
 
 // ═══════════ Аюулгүй байдал, хурдан оруулах ═══════════

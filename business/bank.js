@@ -234,6 +234,7 @@ function bankView() {
       var opts = [], cur = bankPick[l.id];   // [утга, нэр, бүлэг]
       if (l.credit) {
         if (s.kind === 'paid') opts.push(['P:' + s.o.id, 'Аль хэдийн баталгаажсан: ' + s.o.phone + ' (давхар бичихгүй)', 'Захиалгын төлбөр']);
+        if (typeof ebBankOpen === 'function') opts.push(['EB:set', 'Буухиагийн тооцоо — захиалга сонгох', 'Буухиа']);
         (window.adminOrders || []).filter(function (o) { return o.biz === biz && !ordDead(o) && ordOpen(o); }).forEach(function (o) {
           opts.push(['O:' + o.id, 'Захиалга ' + o.phone + ' · ' + (o.confirmed ? 'үлдэгдэл ' + fmt(ordDue(o)) + ' / ' : '') + fmt(o.amount) + ' · ' + ordStLabel(o) + (o.paid === 'Орсон' ? ' · ажилтан: орсон' : ''), 'Захиалгын төлбөр']); });
         shopBills(biz).forEach(function (b) { opts.push(['S:' + b.key, 'Дэлгүүр · ' + b.date + ' · ' + fmt(b.amt) + ' · шилжүүлэг (орлого бүртгэлтэй)', 'Дэлгүүрийн борлуулалт']); });
@@ -256,7 +257,7 @@ function bankView() {
             opts.push(['MG:' + a[0], a[0] + ' ' + a[1].replace(/ \(удирдлага\)$/, ''), 'Удирдлагын зарлага → удирдлагын санхүүд']); });
         bankOutOpts().forEach(function (o) { opts.push(o); });
       }
-      var def = cur || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id : s.kind === 'shop' || s.kind === 'req' || s.kind === 'man' || s.kind === 'rule' ? s.v : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : '');
+      var def = cur || (l.credit && /буух|ebuu/i.test(l.desc) && typeof ebBankOpen === 'function' ? 'EB:set' : '') || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id : s.kind === 'shop' || s.kind === 'req' || s.kind === 'man' || s.kind === 'rule' ? s.v : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : '');
       bankPick[l.id] = def;
       var iv = loanIntSuggest(def, l);
       var groups = [], byG = {};
@@ -428,7 +429,8 @@ function bankApplyAll() {
 }
 // Сонголтын дагуу: захиалга → «Төлбөр орсон» + журнал; данс → кассын/харилцахын баримт; алгасах → тэмдэглэнэ
 function bankApply(ids, quiet) {
-  if (!quiet && ids.length === 1 && bankPick[ids[0]] === 'LN:new') { openLoanFromBank(ids[0]); return; }   // шинэ зээл үүсгэж тулгана
+  if (!quiet && ids.length === 1 && bankPick[ids[0]] === 'LN:new') { openLoanFromBank(ids[0]); return; }
+  if (!quiet && ids.length === 1 && bankPick[ids[0]] === 'EB:set') { ebBankOpen(ids[0]); return; }   // захиалгыг чагтаар сонгоно (ebset.js)   // шинэ зээл үүсгэж тулгана
   if (!quiet && ids.length === 1) {   // хэрэглэгчээс баталгаажуулна
     var l0 = bankLines.filter(function (x) { return x.id === ids[0]; })[0], p0 = bankPick[ids[0]] || '';
     if (l0 && p0 && p0 !== 'skip') {
@@ -453,7 +455,7 @@ function bankApply(ids, quiet) {
     var pick = bankPick[id] || '', info = bankAcctInfo(l.acct), acc = info ? info.acc : '1101', d = l.date.slice(0, 10), amt = l.credit || l.debit;
     if (!pick) { if (!quiet) toast('Тулгах баримтаа сонгоно уу'); return; }
     if (pick === 'skip') { updates.push({ id: id, status: 'Алгассан', link: '' }); return; }
-    if (pick === 'LN:new') return;   // нэг нэгээр нь (цонхоор) тулгана
+    if (pick === 'LN:new' || pick === 'EB:set') return;   // нэг нэгээр нь (цонхоор) тулгана
     if (pick.indexOf('S:') === 0) {   // орлого борлуулах үед бичигдсэн (Дт 1298); мөнгө хуулгаар баталгаажмагц харилцах руу
       var sr = (window.records || []).filter(function (x) { return x.bill === pick.slice(2) && x.customer; })[0], sp = (String(l.desc).match(/(?:^|\D)(\d{8})(?!\d)/) || [])[1] || (String(l.desc).match(/ХААНААС:\s*\d+\s+(.+)$/i) || [])[1] || '';
       entries.push({ biz: biz, date: d, dr: acc, cr: '1298', amount: amt, desc: 'Дэлгүүрийн шилжүүлэг баталгаажсан · баримт #' + pick.slice(2), partner: sr ? String(sr.customer).slice(0, 80) : sp });   // харилцагч: баримтын хэрэглэгч, эсвэл гүйлгээний утган дахь утас / илгээгчийн нэр

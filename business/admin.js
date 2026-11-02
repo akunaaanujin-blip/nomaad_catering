@@ -315,7 +315,7 @@ var MENU = {
   // Санхүү — Excel «Санхүүгийн бүртгэлийн файл»-ын дарааллаар дугаартай 10 хуудас; бусад нь «Бусад» нэг хуудсанд (finance.js HUBS.other)
   // Санхүү — албан санхүүгийн програмын бүлэглэл: Мөнгө · Тооцоо · Тайлан · Нягтлан
   // Чухлаас нь: өдөр бүр хийх (тулгах, батлах) → тооцоо → тайлан → нягтлан → тохиргоо
-  finance: [['Өдөр бүр', ['bank', 'requests', 'daily', 'cashacc']], ['Тооцоо', ['recv', 'payb', 'payroll', 'loans', 'debts']], ['Тайлан', ['months', 'expcat', 'cashflow', 'money', 'ledger']], ['Нягтлан', ['acct', 'other']], ['Холболт', ['api']]],
+  finance: [['Өдөр бүр', ['bank', 'requests', 'daily', 'cashacc']], ['Тооцоо', ['recv', 'payb', 'ebset', 'payroll', 'loans', 'debts']], ['Тайлан', ['months', 'expcat', 'cashflow', 'money', 'ledger']], ['Нягтлан', ['acct', 'other']], ['Холболт', ['api']]],
 };
 function subLabel(mod, k) { var x = (SUBS[mod] || []).filter(function (s) { return s[0] === k; })[0]; return x ? x[1] : k; }
 function subGroup(mod, k) { var g = (MENU[mod] || []).filter(function (g) { return g[1].indexOf(k) >= 0; })[0]; return g ? g[0] : mod === 'finance' && hubOf(k) ? HUBS[hubOf(k)][0] : ''; }
@@ -1208,7 +1208,7 @@ var SUBS = {
           ['pay', 'Төлбөрийн хэлбэрээр'], ['disc', 'Хөнгөлөлт, буцаалт'], ['slow', 'Удаан эргэлттэй бараа'], ['boost', 'Boost бараагаар'], ['ads', 'Сурталчилгаа, ROAS'], ['boostp', 'Boost'], ['ebarimt', 'И-баримт тулгалт']],
   products: [['catalog', 'Барааны бүртгэл, үнэ'], ['counts', 'Тооллого батлах'], ['po', 'Бараа захиалга (Хятад)'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['prices', 'Үнийн түүх'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
   finance: [['requests', 'Мөнгөний хүсэлт'], ['simple', 'Захирлын самбар'], ['months', '12 сарын дүн'], ['daily', 'Өдрийн орлого'], ['cashacc', 'Мөнгөний данс'], ['profit', 'Барааны ашиг'], ['money', 'Гүйлгээ'], ['bank', 'Банкны хуулга'], ['vouchers', 'Кассын баримт'],
-            ['expcat', 'Зардлын задаргаа'], ['other', 'Бусад'], ['recv', 'Авлага'], ['payb', 'Өглөг'], ['debts', 'Бусад тооцоо'], ['loans', 'Зээлийн хяналт'], ['assets', 'Үндсэн хөрөнгө, элэгдэл'], ['banklink', 'Банкны данс холбох'], ['digest', 'Өдрийн тойм и-мэйл'], ['payroll', 'Цалин, НДШ'], ['monthly', 'Сар бүрийн ажил'], ['acct', 'Нягтлангийн тайлан'], ['setup', 'Тохиргоо'],
+            ['expcat', 'Зардлын задаргаа'], ['other', 'Бусад'], ['recv', 'Авлага'], ['payb', 'Өглөг'], ['ebset', 'Буухиа тооцоо'], ['debts', 'Бусад тооцоо'], ['loans', 'Зээлийн хяналт'], ['assets', 'Үндсэн хөрөнгө, элэгдэл'], ['banklink', 'Банкны данс холбох'], ['digest', 'Өдрийн тойм и-мэйл'], ['payroll', 'Цалин, НДШ'], ['monthly', 'Сар бүрийн ажил'], ['acct', 'Нягтлангийн тайлан'], ['setup', 'Тохиргоо'],
             ['dash', 'Бүртгэлийн шалгалт'], ['entry', 'Журналын бичилт'], ['journal', 'Ерөнхий журнал'], ['trial', 'Гүйлгээ баланс'], ['ledger', 'Дансны хуулга'], ['gl', 'Ерөнхий дэвтэр'],
             ['cash', 'Касс, харилцах (өдрөөр)'], ['cashflow', 'Мөнгөн урсгал'], ['expenses', 'Зарлага, касс хаалт'], ['partners', 'Авлага, өглөгийн товчоо'], ['aging_r', 'Авлагын насжилт'],
             ['aging_p', 'Өглөгийн насжилт'], ['pstmt', 'Харилцагчийн хуулга'], ['balance', 'Санхүүгийн байдал (баланс)'], ['pl', 'Орлогын тайлан'], ['equity', 'Өмчийн өөрчлөлт'],
@@ -1455,6 +1455,7 @@ function subBody() {
   if (mod === 'finance' && sub === 'api') return apiView(state.biz);
   if (mod === 'finance' && sub === 'assets') return assetsView();
   if (mod === 'finance' && sub === 'digest') return digestView();
+  if (mod === 'finance' && sub === 'ebset') return ebSetView();
   if (mod === 'sales' && sub === 'buuhia') return ebAdmView();
   if (mod === 'sales' && sub === 'ebrec') return ebRecView();
   if (mod === 'sales' && sub === 'ads') return adsView();
@@ -1657,7 +1658,7 @@ function ebLinkDo(code, id) {
 // Бүртгэлийн шалгалт: буухиа мөнгө хураасан ч Буухиа дээр (авлага) бүртгэгдээгүй хүргэлт — холбогдоогүй (unl) / холбогдсон ч шилжээгүй (stay)
 function ebMoneyBad() {
   var Mk = ebLink(), dn = ebSettled(), dr = ebRecvd(), old = window.ebOld || {};
-  var G = (ebAdm.list || []).filter(function (x) { return x.got > 0 && x.st === 10 && x.ok === 'Тийм' && !dn[x.code] && !old[x.code]; });
+  var G = (ebAdm.list || []).filter(function (x) { return x.got > 0 && x.st === 10 && !dn[x.code] && !old[x.code]; });
   var unl = G.filter(function (x) { return !Mk[x.code]; }), stay = G.filter(function (x) { var o = Mk[x.code]; return o && !dr[x.code] && !(o.confirmed && !/буухиа/.test(o.confirmed)); });
   return { unl: unl, stay: stay, bad: unl.concat(stay) };
 }
@@ -1736,27 +1737,21 @@ function ebAutoBook(fresh) {
   if (ebAdm.booking || !ebAdm.list || !(window.adminOrders || []).length || !(journal || []).length) return;   // журнал ачаалаагүй бол давхар бичихгүй
   var done = ebSettled(), doneR = ebRecvd(), eb = ebSettledByEb(ebAdm.list), O = {}, M = ebLink(), B = {}, RC = [];
   window.adminOrders.forEach(function (o) { O[o.id] = o; });
-  // 1) Буухиа дээр Хүргэгдсэн (st 10) БА баталгаажсан (ok «Тийм») үед л хураасан гэж: хэрэглэгчийн авлага → Буухиагийн авлага (Дт 1201 Буухиа / Кт 1201 хэрэглэгч), «Буухиа хураасан» #EBR.
+  // 1) Буухиа дээр Хүргэгдсэн (st 10) үед л хураасан гэж: хэрэглэгчийн авлага → Буухиагийн авлага (Дт 1201 Буухиа / Кт 1201 хэрэглэгч), «Буухиа хураасан» #EBR.
   //    Бүртгэгдсэн / Хүлээн авсан (st 1, 2) үеийн received_money-г хураасан гэж тооцохгүй.
   //    #EBR бичигдсэн ч Буухиа дээр st ≠ 10 болсон бол эсрэг бичилтээр (#EBX) авлагыг хэрэглэгч рүү буцаана
   var doneX = ebRevd(), RX = [], okD = function (d) { return /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= EB_AUTO_FROM.replace(/\//g, '-') && !(meta.closed && d <= meta.closed) && !(meta.lock && d <= meta.lock); };
   ebAdm.list.forEach(function (x) {
-    var mo = M[x.code], d = String(x.at || x.created || '').slice(0, 10).replace(/\//g, '-'), dlv = x.st === 10 && x.ok === 'Тийм';
+    var mo = M[x.code], d = String(x.at || x.created || '').slice(0, 10).replace(/\//g, '-'), dlv = x.st === 10;
     if (x.st !== 10 && doneR[x.code] && mo) { var td = todayStr(); RX.push({ x: x, o: mo, d: okD(d) ? d : td, got: doneR[x.code] }); return; }
     if ((window.ebOld || {})[x.code]) return;   // өмнөх үеийнх — журналд бичихгүй
     if (!dlv || !(x.got > 0) || !mo || done[x.code] || doneR[x.code] || (mo.confirmed && !/буухиа/.test(mo.confirmed)) || !okD(d)) return;
     RC.push({ x: x, o: mo, d: d });
   });
-  ebAdm.list.forEach(function (x) {
-    var t = eb[x.code], o = O[x.id];
-    if ((window.ebOld || {})[x.code] || x.st !== 10 || !t || t < EB_AUTO_FROM || (meta.closed && t.slice(0, 10).replace(/\//g, '-') <= meta.closed) || done[x.code] ||   // хаасан (шинээр эхэлсэн) хугацааных дахин бичигдэхгүй
-        (o && x.got > 0 && o.confirmed && !/буухиа/.test(o.confirmed))) return;   // хэрэглэгч бидэнд шууд төлсөн бол буухиагийн тооцоонд орохгүй
-    var mo = M[x.code] || null;
-    (B[t.slice(0, 10)] = B[t.slice(0, 10)] || []).push({ x: x, o: mo, fb: ebOrdAuto(mo) ? (ebAccrues(mo) ? ebFeeOf(mo.biz) : ordFeeAdm(mo)) : 0, fee: ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000 });
-  });
+  // 2026-11-02: Буухиагийн тайлангаар (ebSettledByEb) автоматаар тооцоо хаахгүй — тооцоо зөвхөн банкны хуулгаас Буухиагийн орлогыг тулгахад (ebset.js ebBankOpen)
   // Лог: хураасан мөнгөтэй хүргэлт бүрийн шийдвэр (F12 → Console, «[Буухиа]»)
   ebAdm.log = (ebAdm.list || []).filter(function (x) { return x.got > 0; }).map(function (x) {
-    var mo = M[x.code], why = done[x.code] ? 'тооцоо нийлсэн' : doneR[x.code] ? 'өмнө шилжүүлсэн' : !mo ? 'захиалгатай холбогдоогүй' : x.st !== 10 ? 'хүргэгдээгүй (st ' + x.st + ')' : x.ok !== 'Тийм' ? 'баталгаажаагүй' : (mo.confirmed && !/буухиа/.test(mo.confirmed)) ? 'банкаар баталгаажсан' :
+    var mo = M[x.code], why = done[x.code] ? 'тооцоо нийлсэн' : doneR[x.code] ? 'өмнө шилжүүлсэн' : !mo ? 'захиалгатай холбогдоогүй' : x.st !== 10 ? 'хүргэгдээгүй (st ' + x.st + ')' : (mo.confirmed && !/буухиа/.test(mo.confirmed)) ? 'банкаар баталгаажсан' :
       RC.some(function (r) { return r.x.code === x.code; }) ? 'ОДОО шилжүүлнэ' : 'огноо түгжигдсэн/хаагдсан';
     return x.code + ' ' + x.phone + ' авсан ' + x.got + ' → ' + why;
   });
