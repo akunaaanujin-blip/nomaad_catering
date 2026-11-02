@@ -276,7 +276,7 @@ function buildJournal(biz, R) {
         var kc = EBC[x.bill];
         if (kc && !(R.closed && kc.date <= R.closed)) add(kc.date, 'Буухиа цуцалсан', x.id + '-ebc', '6001', cash, a, 'Буухиа ' + kc.kind + ' · ' + item + ' × ' + x.qty + (kc.why ? ' · ' + kc.why : '') + ' #EBC:' + x.bill, cust, x.bill);
       } else {
-        if (!EBC[x.bill]) add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty), cust);   // буухиа цуцалсан бол орлого аль хэдийн буцаагдсан
+        if (!EBC[x.bill]) add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty), cust, x.bill);   // буухиа цуцалсан бол орлого аль хэдийн буцаагдсан
         // буцаасан/цуцалсан хүргэлтэд буухиа хөлс авдаггүй — хүргэх үед бичсэн өглөгийг буцаана
         if (oo && isFee(item) && oo.ebCode !== 'бусад' && ebFeeAuto(EB_FEE_DATE[oo.id] || d)) add(d, 'Буухиагийн хөлс (буцаалт)', x.id, '3101', '7124', -a, 'Хүргэлт буцаасан · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
         if (c) add(d, 'Буцаалт · өртөг', x.id, '1404', '6101', c, item);
