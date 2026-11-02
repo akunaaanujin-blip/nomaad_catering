@@ -105,13 +105,12 @@ function boostView() {
     '<div class="fn-kpi"><small>ROAS</small><b>' + roas + '</b></div></div>';
   var nn = function (v) { v = Math.round(Number(v) || 0); return v ? (v < 0 ? '−' + fmt(-v).slice(1) : fmt(v).slice(1)) : '<span class="muted">—</span>'; };   // хүснэгтийн тоо ₮-гүй, 0 → —
   var tag = function (t) { var c = { 'Явж байна': 'b', 'Ашигтай': 'g', 'Ашиггүй': 'r', 'Өртөггүй': 'y' }[t]; return '<span class="st ' + c + '">' + t + '</span>'; };
-  var many = BST.biz === 'all' && cos.length > 1, cols = 13 + (many ? 1 : 0);
+  var many = BST.biz === 'all' && cos.length > 1, cols = 12 + (many ? 1 : 0);
   var rows = L.map(function (o) {
     var x = o.x, d = o.d, op = BST.open[x.id];
     var main = '<tr class="clk" onclick="bstToggle(' + esc(JSON.stringify(x.id)) + ')">' + (many ? '<td class="nw">' + esc(bstName(o.biz)) + '</td>' : '') +
       '<td style="min-width:150px">' + esc(x.item) + (x.note ? '<br><small class="muted">' + esc(x.note) + '</small>' : '') + '</td><td class="nw">' + esc(x.staff || '') + '</td>' +
-      '<td class="nw">' + x.date.slice(5) + ' – ' + d._to.slice(5) + '</td>' +
-      '<td class="nw">' + (d._run ? '<span style="color:var(--income)">' + o.left + ' хоног</span>' : '<span class="muted">Дууссан</span>') + '</td>' +
+      '<td class="nw">' + x.date.slice(5) + ' – ' + d._to.slice(5) + '<br>' + (d._run ? '<small style="color:var(--income)">' + o.left + ' хоног үлдсэн</small>' : '<small class="muted">Дууссан</small>') + '</td>' +
       '<td class="n">' + (o.usd ? '$' + (Math.round(o.usd * 100) / 100) : '') + '</td><td class="n">' + nn(o.a) + '</td>' +
       '<td class="n">' + nn(d._q) + '</td><td class="n">' + nn(d._on) + '</td><td class="n">' + nn(d._sa) + '</td>' +
       '<td class="n">' + (d._nc ? '<span class="muted">—</span>' : nn(d._gp)) + '</td><td class="n' + (o.after < -0.5 ? ' neg' : '') + '">' + nn(o.after) + '</td>' +
@@ -127,7 +126,7 @@ function boostView() {
         return '<tr><td class="nw">' + w.date + '</td><td>' + esc(w.phone || '') + '</td><td>' + esc(typeof ordStLabel === 'function' ? ordStLabel(w) : w.status || '') + '</td><td class="n">' + fmt(Number(w.amount) || 0).slice(1) + '</td></tr>'; }).join('') + '</table>' : ' <span class="muted">— алга</span>') +
       '</td></tr>';
   }).join('');
-  var head = '<tr>' + (many ? '<th>Компани</th>' : '') + '<th>Бараа</th><th>Ажилтан</th><th>Хугацаа</th><th>Үлдсэн</th><th class="n">$</th><th class="n">₮</th><th class="n">Зарсан ш</th><th class="n">Захиалга</th><th class="n">Борлуулалт</th><th class="n">Нийт ашиг</th><th class="n">Boost-ийн дараах ашиг</th><th>Дүгнэлт</th><th></th></tr>';
+  var head = '<tr>' + (many ? '<th>Компани</th>' : '') + '<th>Бараа</th><th>Ажилтан</th><th>Хугацаа</th><th class="n">$</th><th class="n">₮</th><th class="n">Зарсан ш</th><th class="n">Захиалга</th><th class="n">Борлуулалт</th><th class="n">Нийт ашиг</th><th class="n">Boost-ийн дараах ашиг</th><th>Дүгнэлт</th><th></th></tr>';
   return '<div class="card">' + flt + '</div>' + kpi +
     '<div class="card rep"><div class="scroll"><table class="rep-t bst-t">' + head + (rows || '<tr><td colspan="' + cols + '" class="muted">Энэ хугацаанд boost алга.</td></tr>') + '</table></div>' +
     '<p class="muted" style="font-size:12.5px;margin-top:8px">Нийт ашиг = boost-ийн хугацааны борлуулалт − өртөг; Boost-ийн дараах ашиг = нийт ашиг − boost зардал. Тэнцэх тоо = boost₮ ÷ (зарах үнэ − өртөг). Мөр дээр дарахад тэр хугацааны борлуулалт, захиалга нээгдэнэ. Төлбөр: банкны хуулгаар «3801 Сурталчилгаа төлсөн» гэж тулгасан дүнг эртний boost-оос эхлэн хуваарилна.</p></div>';
