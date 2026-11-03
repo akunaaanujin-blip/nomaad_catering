@@ -21,7 +21,7 @@ function poStat(P, E) {   // post — бараа ирсний дараа тоо�
     var cash = ACC[e.cr] && ACC[e.cr].cash;
     if (cash) { if (isC) cargo += e.amount; else sup += e.amount; } else { if (isC) accrC += e.amount; else accr += e.amount; }
   });
-  return { sup: r0(sup), cargo: r0(cargo), accr: r0(accr), accrC: r0(accrC), post: r0(post), total: r0(sup + cargo + accr + accrC), bal: r0(sup + cargo + accr + accrC - out) };
+  return { sup: r0(sup), paid: r0(sup + accr), cargo: r0(cargo), accr: r0(accr), accrC: r0(accrC), post: r0(post), total: r0(sup + cargo + accr + accrC), bal: r0(sup + cargo + accr + accrC - out) };
 }
 // Ирэлтүүд: [{ n, date, items:{name:qty}, goods, cargoPre, cargoPost }] — орлогын хөдөлгөөн (тэмдэглэлд «ирэлт N #ID») + журналын карго
 function poShips(P, E) {
@@ -55,11 +55,11 @@ function poView() {
       return '<br><small class="muted">' + x.n + '-р ирэлт ' + esc(x.date.slice(5)) + ' · ' + Object.keys(x.items).length + ' бараа · ' + (c ? 'карго ' + mny(c) : 'карго тооцоогүй') + '</small>';
     }).join('');
     var st = P.status === 'Ирсэн' ? '<span class="tag">Ирсэн ' + esc(P.recvDate || '') + '</span>' : P.status === 'Цуцалсан' ? '<span class="tag r">Цуцалсан</span>' :
-      '<span class="tag b">' + (L.length ? 'Хэсэгчлэн ирсэн' : s.sup ? 'Төлбөр хийгдсэн' : 'Захиалсан') + '</span>';
+      '<span class="tag b">' + (L.length ? 'Хэсэгчлэн ирсэн' : s.paid ? 'Төлбөр хийгдсэн' : 'Захиалсан') + '</span>';
     return '<tr' + (P.status === 'Цуцалсан' ? ' style="opacity:.55"' : '') + '><td style="white-space:nowrap"><b>' + esc(P.no) + '</b><br><small class="muted">' + esc(P.date) + '</small></td><td style="min-width:110px">' + esc(P.supplier) + (P.cargoCo ? '<br><small class="muted">Карго: ' + esc(P.cargoCo) + '</small>' : '') + '</td>' +
       '<td style="white-space:normal;min-width:180px">' + esc(its.map(function (i) { return i.name + ' × ' + (rq[i.name] ? round2(rq[i.name]) + '/' : '') + i.qty; }).join(', ')) + shipTxt + '</td>' +
       '<td class="n">' + poCurAmt(P, P.total) + '</td>' +
-      '<td class="n">' + (s.sup ? dl(Object.assign({}, spec, { t: spec.t + ' — нийлүүлэгчид төлсөн' }), mny(s.sup)) : '') + '</td>' +
+      '<td class="n">' + (s.paid ? dl(Object.assign({}, spec, { t: spec.t + ' — нийлүүлэгчид төлсөн' }), mny(s.paid)) : '') + '</td>' +
       '<td class="n">' + (s.cargo + s.accrC + s.post ? mny(s.cargo + s.accrC + s.post) : '') + '</td>' +
       '<td class="n">' + (Math.abs(s.bal) >= 1 ? dl(Object.assign({}, spec, { dir: 0, t: spec.t + ' — замд яваа (1505)' }), mny(s.bal)) : '') + '</td>' +
       '<td style="white-space:nowrap">' + st + '</td><td class="n"><div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;min-width:150px">' + acts + '</div></td></tr>';
@@ -166,7 +166,7 @@ function poSetStatus(id, st, recvDate, cb) {
 // ── Төлбөр (урьдчилгаа / үлдэгдэл / карго) ──
 function poPayLabel(P, type) {
   if (/^k\d+$/.test(type)) return 'ирэлт ' + type.slice(1) + ' · карго';
-  return type === 'c' ? 'Карго (урьдчилж)' : type === 'a' ? 'Урьдчилгаа' : type === 'b' ? 'Үлдэгдэл төлбөр' : type === 'f' ? 'Бүтэн төлбөр' : (poStat(P).sup > 0 ? 'Үлдэгдэл төлбөр' : 'Урьдчилгаа');
+  return type === 'c' ? 'Карго (урьдчилж)' : type === 'a' ? 'Урьдчилгаа' : type === 'b' ? 'Үлдэгдэл төлбөр' : type === 'f' ? 'Бүтэн төлбөр' : (poStat(P).paid > 0 ? 'Үлдэгдэл төлбөр' : 'Урьдчилгаа');
 }
 function poPayEntry(spec, acc, d, amt, note, cco) {   // spec: «PO123|s» (s — нийлүүлэгч, c — карго урьдчилж, kN — N-р ирэлтийн карго, a/b — урьдчилгаа/үлдэгдэл)
   var id = spec.split('|')[0], type = spec.split('|')[1] || 's', P = poById(id); if (!P) return null;
@@ -190,11 +190,11 @@ function poOpts(biz) {
 function openPoPay(id, type) {
   var P = poById(id), s = poStat(P), cargo = type === 'c', L = cargo ? poShips(P) : [], open = P.status === 'Захиалсан';
   gOpen('<h2>' + esc(P.no) + ' · ' + (cargo ? 'Каргоны төлбөр' : 'Төлбөр') + '</h2><p class="muted">' + esc(P.supplier) + ' · ' + poCurAmt(P, P.total) +
-    ' · төлсөн ' + mny(s.sup) + (s.cargo + s.accrC + s.post ? ' · карго ' + mny(s.cargo + s.accrC + s.post) : '') + '</p>' +
+    ' · төлсөн ' + mny(s.paid) + (s.cargo + s.accrC + s.post ? ' · карго ' + mny(s.cargo + s.accrC + s.post) : '') + '</p>' +
     (cargo ? '<label for="ppShip">Аль барааны карго</label><select id="ppShip">' + L.map(function (x, i) {
         return '<option value="' + x.n + '"' + (i === L.length - 1 ? ' selected' : '') + '>' + x.n + '-р ирэлт · ' + esc(x.date) + ' ирсэн · ' + Object.keys(x.items).length + ' бараа' + (x.cargoPre + x.cargoPost ? ' (карго ' + fmt(x.cargoPre + x.cargoPost) + ')' : '') + '</option>'; }).join('') +
         (open || !L.length ? '<option value=""' + (L.length ? '' : ' selected') + '>Бараа ирээгүй байна (урьдчилж төлсөн)</option>' : '') + '</select>'
-      : '<label for="ppType">Төрөл</label><select id="ppType"><option value="a"' + (s.sup ? '' : ' selected') + '>Урьдчилгаа</option><option value="b"' + (s.sup ? ' selected' : '') + '>Үлдэгдэл төлбөр</option><option value="f">Бүтэн төлбөр (нийт дүнгээр)</option></select>') +
+      : '<label for="ppType">Төрөл</label><select id="ppType"><option value="a"' + (s.paid ? '' : ' selected') + '>Урьдчилгаа</option><option value="b"' + (s.paid ? ' selected' : '') + '>Үлдэгдэл төлбөр</option><option value="f">Бүтэн төлбөр (нийт дүнгээр)</option></select>') +
     '<div class="row2"><div><label for="ppDate">Огноо</label><input id="ppDate" type="date" value="' + todayStr() + '"></div><div><label for="ppAcc">Хаанаас төлсөн</label><select id="ppAcc">' + cashAccOpts('1101') +
       (cargo ? '<option value="3101">Дараа төлнө (өглөг)</option>' : '') + '<option value="4201">Хаалтаас (' + esc(meta.closed || '10-26') + ') өмнө төлсөн — эхний үлдэгдэл</option></select></div></div>' +
     '<div class="row2"><div><label for="ppCur">Валют</label><select id="ppCur" onchange="ppCalc()"><option value="MNT">₮ төгрөг</option><option value="CNY">¥ юань</option><option value="USD">$ доллар</option></select></div>' +
@@ -217,6 +217,8 @@ function savePoPay(id, cargo) {
   var P = poById(id), cur = $('ppCur').value, fxAmt = Number($('ppAmt').value) || 0, amt = ppCalc(), d = $('ppDate').value, acc = $('ppAcc').value, cco = cargo ? $('ppCo').value.trim() : '';
   if (!(fxAmt > 0)) { toast('Дүнгээ оруулна уу'); return; }
   if (!(amt > 0)) { toast('Ханшаа оруулна уу'); return; }
+  var paid = poStat(P).paid;   // давхар төлбөрөөс сэргийлнэ (хаалтаас өмнөх 4201 ч орно)
+  if (!cargo && paid > 0 && !confirm(P.no + '-д нийлүүлэгчид ' + fmt(paid) + ' төлсөн гэж бүртгэгдсэн байна. Дахин ' + fmt(amt) + ' нэмэх үү?')) return;
   if (cargo && acc === '3101' && !cco) { toast('Каргог дараа төлөх бол карго компанийн нэрийг бичнэ үү'); return; }
   if (cco && cco !== P.cargoCo) P.cargoCo = cco;
   var note = cur !== 'MNT' ? PO_CUR[cur] + fxAmt + ' (ханш ' + (Number($('ppRate').value) || 0) + ')' : '';
