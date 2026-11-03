@@ -12,6 +12,7 @@ var ACCOUNTS = [
   ['1201', 'Дансны авлага', 'asset'],
   ['1207', 'Ажилчдаас авах авлага', 'asset'],
   ['1208', 'Захирлын зарлага', 'asset'],
+  ['1209', 'Буухиад байгаа буцаалтын бараа', 'asset'],   // буухиа цуцалсан/буцаасан захиалгын бараа — «Бараа хүлээн авсан» дарахад 1404 руу
   ['1210', 'Олгосон зээл (бусдад өгсөн)', 'asset'],
   ['1290', 'Компани хоорондын тооцоо', 'asset'],
   ['1298', 'Баталгаажаагүй шилжүүлэг (банкны хуулгаар тулгана)', 'asset'],   // дэлгүүрт «Шилжүүлэг»-ээр зарсан — хуулгаар тулгахад харилцах руу шилжинэ
@@ -84,7 +85,7 @@ function applyCustomAccounts(list) {
   (list || []).forEach(function (a) { if (ACC[a.code]) { ACC[a.code].hide = !!a.hide; if (ACC[a.code].base && a.name) ACC[a.code].renamed = true; } });
 }
 function accHidden(code) { return !!(ACC[code] && ACC[code].hide); }
-var BUUHIA = 'Буухиа';
+var BUUHIA = 'Буухиа', BUUHIA_G = 'Буухиа (буцаалтын бараа)';
 // Буухиагийн өглөг зөвхөн «Буухиа тооцоо» нийлэх үед үүснэ. Үүнээс өмнөх огноотой захиалгад хөлсийг хүргэх үед өглөгөөр бичдэг байсан (хуучин хаалтууд таарахын тулд хэвээр).
 var EB_PAY_FROM = '2026-10-25';
 function ebFeeAuto(d) { return !!d && String(d).slice(0, 10) < EB_PAY_FROM; }
@@ -173,7 +174,7 @@ function costEngine(biz, R, until) {
   });
   if (until) ev = ev.filter(function (e) { return e.t.slice(0, 10) <= until; });
   ev.sort(function (a, b) { return a.t < b.t ? -1 : a.t > b.t ? 1 : (a.m ? -1 : 1); });   // ижил минутад хөдөлгөөн түрүүлнэ
-  var it = {}, rec = {}, mv = {}, noCost = {}, adj = [], est = {};
+  var it = {}, rec = {}, mv = {}, noCost = {}, adj = [], est = {}, su = {};   // su — баримт+бараагаар зарсан нэгж өртөг
   var get = function (k) { return it[k] = it[k] || { q: 0, v: 0, avg: 0 }; };
   // Өртөг тодорхойгүй (орлогод өртөг бичээгүй, эсвэл үлдэгдэлгүй зарсан) бол өртөг = борлуулах үнэ × 0.85 (COST_FALLBACK)
   var PR = {}; ((typeof BUSINESSES !== 'undefined' && BUSINESSES[biz] && BUSINESSES[biz].products) || []).forEach(function (p) { if (Number(p.price) > 0) PR[p.name] = Number(p.price); });
@@ -204,8 +205,9 @@ function costEngine(biz, R, until) {
       if (q2 > 0) {
         if (!(o2.q > 0 ? o2.v : o2.avg)) { o2.avg = fb(name); if (o2.q > 0) o2.v = o2.q * o2.avg; }   // өртөггүй үлдэгдэл / үлдэгдэлгүй борлуулалт
         var cg = out(o2, q2); rec[x.id] = cg; if (!cg) noCost[name] = (noCost[name] || 0) + q2;
+        if (x.bill && cg) su[x.bill + '|' + name] = cg / q2;
       }
-      else if (q2 < 0) { var a2 = o2.q > 0 ? o2.v / o2.q : o2.avg; o2.q += -q2; o2.v += -q2 * a2; rec[x.id] = q2 * a2; }
+      else if (q2 < 0) { var a2 = su[x.bill + '|' + name] || (o2.q > 0 ? o2.v / o2.q : o2.avg); o2.q += -q2; o2.v += -q2 * a2; rec[x.id] = q2 * a2; }   // буцаалт — тэр баримтаар зарсан өртгөөр
     }
   });
   var res = { items: it, rec: rec, mv: mv, noCost: noCost, adj: adj, est: est, since: since.slice(0, 10) };
@@ -245,7 +247,7 @@ function buildJournal(biz, R) {
   // буцаж ирэхэд (сөрөг борлуулалтын мөр) зөвхөн Дт 1404 / Кт 6101 (орлогыг дахин буцаахгүй)
   // 8-р ээлж: цуцлалтын орлого 6001 «Борлуулалтын буцаалт»-д (Хасах: буцаалт). Бараа буцаж ирсэн (saleDone returned) бол буцаалтын мөр
   // ердийнхөөрөө Дт 6001 / Кт авлага + Дт 1404 / Кт 6101 бичнэ; буцаалтын мөр хараахан үүсээгүй (yes:) үед л цуцалсан өдөр Дт 6001 / Кт авлага.
-  var EBC = {}; Object.keys(ORD).forEach(function (id) { var k = /^yes:/.test(ORD[id].saleDone || '') && ordEbCancel(ORD[id]); if (k) EBC[id] = k; });
+  var EBC = {}; Object.keys(ORD).forEach(function (id) { var k = /^(yes:|returned)/.test(ORD[id].saleDone || '') && ordEbCancel(ORD[id]); if (k) EBC[id] = k; });   // буцаж ирсэн ч цуцалсан өдрийн бичилт хэвээр
   var DUP = dupReturns(biz, R);   // нэг захиалгын давхар буцаалтын мөр — журналд бичихгүй
   R.records.forEach(function (x) {
     if (x.biz !== biz) return;
@@ -277,12 +279,17 @@ function buildJournal(biz, R) {
         if (oo && isFee(item) && oo.ebCode !== 'бусад' && ebFeeAuto(d)) add(d, 'Буухиагийн хөлс', x.id, '7124', '3101', a, 'Хүргэлт · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
         if (c) add(d, 'Борлуулалт · өртөг', x.id, '6101', '1404', c, item + ' × ' + x.qty);
         var kc = EBC[x.bill];
-        if (kc && !(R.closed && kc.date <= R.closed)) add(kc.date, 'Буухиа цуцалсан', x.id + '-ebc', '6001', cash, a, 'Буухиа ' + kc.kind + ' · ' + item + ' × ' + x.qty + (kc.why ? ' · ' + kc.why : '') + ' #EBC:' + x.bill, cust, x.bill);
+        if (kc && !(R.closed && kc.date <= R.closed)) {
+          add(kc.date, 'Буухиа цуцалсан', x.id + '-ebc', '6001', cash, a, 'Буухиа ' + kc.kind + ' · ' + item + ' × ' + x.qty + (kc.why ? ' · ' + kc.why : '') + ' #EBC:' + x.bill, cust, x.bill);
+          // бараа буухиа дээр — буцааж авах хүртэл 1209 авлага (өртгөөр), «Бараа хүлээн авсан» дарахад хаагдана
+          if (c) add(kc.date, 'Буухиад байгаа бараа', x.id + '-ebg', '1209', '6101', c, item + ' × ' + x.qty + ' · ' + (oo ? oo.phone : '') + ' · үнэ ' + fmt(a) + ' #' + x.bill, BUUHIA_G, x.bill);
+        }
       } else {
         if (!EBC[x.bill]) add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty), cust, x.bill);   // буухиа цуцалсан бол орлого аль хэдийн буцаагдсан
         // буцаасан/цуцалсан хүргэлтэд буухиа хөлс авдаггүй — хүргэх үед бичсэн өглөгийг буцаана
         if (oo && isFee(item) && oo.ebCode !== 'бусад' && ebFeeAuto(EB_FEE_DATE[oo.id] || d)) add(d, 'Буухиагийн хөлс (буцаалт)', x.id, '3101', '7124', -a, 'Хүргэлт буцаасан · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
-        if (c) add(d, 'Буцаалт · өртөг', x.id, '1404', '6101', c, item);
+        if (c && EBC[x.bill]) add(d, 'Буцаалт хүлээн авсан', x.id, '1404', '1209', c, item + ' × ' + Math.abs(x.qty) + ' · буухиагаас буцаж ирсэн #' + x.bill, BUUHIA_G, x.bill);
+        else if (c) add(d, 'Буцаалт · өртөг', x.id, '1404', '6101', c, item);
       }
     } else if (x.type === 'boost') {   // 2026-11-02-ноос: ажилтны Boost бүртгэл журналд бичигдэхгүй (зөвхөн ROAS, бараагаар шинжилгээ) — зардал банкаар төлсөн дүнгээр Дт 7120
     } else if (x.type === 'collect') {   // зээлээр (захиалга) зарсны мөнгө орсон → авлага хаагдана
@@ -802,7 +809,7 @@ function closePayloadAt(biz, R, end, label) {
   var pl = 0;
   ACCOUNTS.forEach(function (a) { if (/^(rev|contra|cogs|exp)$/.test(a[2])) pl += b[a[0]] || 0; });
   // Харилцагчаар (зээл, бараа захиалгыг «#ID»-аар нь) салгаж шилжүүлнэ — шинэ онд зээлийн бүртгэл, захиалга үргэлжилнэ
-  var byPartner = { '1201': {}, '3101': {}, '1503': {}, '3802': {}, '1290': {}, '1208': {}, '1210': {}, '3501': {}, '1505': {}, '2001': {}, '2002': {} },
+  var byPartner = { '1201': {}, '1209': {}, '3101': {}, '1503': {}, '3802': {}, '1290': {}, '1208': {}, '1210': {}, '3501': {}, '1505': {}, '2001': {}, '2002': {} },
       TAGGED = { '1210': 1, '3501': 1, '1505': 1, '2001': 1, '2002': 1 }, TAGONLY = { '1505': 1, '2001': 1, '2002': 1 };   // үндсэн хөрөнгө — «#FA»-аар
   E.forEach(function (e) {
     if (e.date > end) return;

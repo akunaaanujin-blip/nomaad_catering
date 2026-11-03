@@ -1,5 +1,5 @@
 // Хадгалах явцын төлөв (post/refresh) — ачаалах үед fetchAll-аас өмнө тодорхойлогдсон байх ёстой
-var JS_VER = '20261103g';   // хуучин (кэшлэгдсэн) кодоор бичихгүй — серверийн MIN_JS-тэй тэнцүү эсвэл их байна; JS засах бүрт ахиулна
+var JS_VER = '20261103t';   // хуучин (кэшлэгдсэн) кодоор бичихгүй — серверийн MIN_JS-тэй тэнцүү эсвэл их байна; JS засах бүрт ахиулна
 var BUSY = { n: 0, p: 0, msg: '' }, INFLIGHT = {}, refreshing = false, refreshAgain = false;
 // ── УДИРДЛАГЫН САМБАР ──
 // Baaz-ийн бүтэцтэй: Миний компаниуд → (Борлуулалт · Бараа материал · Санхүү · Ажилчид), мөн нийт Ажилчид цэс.
@@ -1533,7 +1533,7 @@ function ebMismatch(o, x) {
 // Буухиа цуцалсан захиалгын бараа буцаж ирсэн — сөрөг борлуулалт (үлдэгдэлд нэмэгдэнэ; журналд Дт 1404 / Кт 6101)
 function ordRecvOpen(id) {
   var o = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0]; if (!o) return;
-  if (!confirm('Захиалга ' + o.phone + '-ийн бараа буцаж ирсэн үү?\n\n' + admOrdItems(o) + '\n\nБараа үлдэгдэлд нэмэгдэнэ (Дт 1404 / Кт 6101).' + (ordEbCancel(o) ? '' : '\nОрлого, авлага мөн буцаагдана.'))) return;
+  if (!confirm('Захиалга ' + o.phone + '-ийн бараа буцаж ирсэн үү?\n\n' + admOrdItems(o) + '\n\nБараа үлдэгдэлд нэмэгдэнэ' + (ordEbCancel(o) ? ', буухиад байгаа барааны авлага (1209) хаагдана.' : '.\nОрлого, авлага мөн буцаагдана.'))) return;
   if (!API_URL) { o.saleDone = 'returned'; render(); return; }
   post({ type: 'admin_order', id: id, by: ownerName, what: (o.customer ? o.customer + ' ' : '') + o.phone + ' · бараа буцаж ирсэн', fields: { receive: true } }, function (err) {
     if (err) { toast(err === 'state' ? 'Бараа аль хэдийн буцаж ирсэн' : 'Алдаа: ' + err); return; }

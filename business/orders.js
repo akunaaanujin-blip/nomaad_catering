@@ -104,8 +104,11 @@ function ordBook(o, prev) {
   }
   // 2) Төлбөр орсныг удирдлага (банкны хуулга / «Төлбөр орсон») бүртгэнэ — энд юу ч бичихгүй
   // 3) Буухиад өгсний дараа цуцалсан / буцаасан бол бараа буухиа дээр байна — «Буцаалт хүлээн авсан» дарахад л (ordReceive) буцаалт бичигдэж үлдэгдэлд нэмэгдэнэ
-  // 8-р ээлж: зарагдсан захиалгыг цуцлах / буцаахад борлуулалт шууд буцна (бараа үлдэгдэлд, өртөг буцна) — «Буцаалт хүлээн авсан» хүлээхгүй
-  if (sold && ordDead(o)) {
+  if (sold && ordDead(o) && !o.receive && !ordEbCancel(o)) {   // бараа буухиад — орлого энэ өдөр буцна, бараа «Бараа хүлээн авсан» дарахад үлдэгдэлд (1209 авлага хаагдана)
+    o.note = ((o.note ? o.note + ' · ' : '') + 'буухиа ' + (o.status === 'Буцаасан' ? 'буцаасан ' : 'цуцалсан ') + todayStr()).slice(0, 300);
+    return;
+  }
+  if (sold && ordDead(o) && o.receive) {
     var rl = lines(-1, salePay); addRecords(rl); rl.forEach(function (r) { stockTake(r.item, r.qty); });
     o.saleDone = 'returned'; o.note = ((o.note ? o.note + ' · ' : '') + 'Буцаалт хүлээн авсан ' + todayStr() + ' ' + timeStr() + ' ' + (typeof staffName !== 'undefined' ? staffName : '')).slice(0, 300);
     delete o.receive;
@@ -263,8 +266,8 @@ function quickOrd2(id, field, val) {   // жагсаалтаас нэг товч
   if (field === 'paid' && o.confirmed) { renderOrders(); toast('Удирдлага баталгаажуулсан — өөрчлөх боломжгүй'); return; }
   var prev = JSON.parse(JSON.stringify(o)), n = Object.assign({}, o); n[field] = val;
   var sentOut = /^yes:/.test(o.saleDone || '');
-  if (field === 'status' && val === 'Цуцалсан' && !confirm('Захиалга ' + o.phone + '-ийг цуцлах уу?' + (sentOut ? '\nБорлуулалт буцаагдаж, бараа үлдэгдэлд нэмэгдэнэ.' : ''))) return;
-  if (field === 'status' && val === 'Буцаасан' && !confirm('Захиалга ' + o.phone + ' буцаагдсан уу?\nБорлуулалт буцаагдаж, бараа үлдэгдэлд нэмэгдэнэ.')) return;
+  if (field === 'status' && val === 'Цуцалсан' && !confirm('Захиалга ' + o.phone + '-ийг цуцлах уу?' + (sentOut ? '\nОрлого буцаагдана. Бараа буухиагаас ирэхэд «Буцаалт хүлээн авсан» дарахад үлдэгдэлд нэмэгдэнэ.' : ''))) return;
+  if (field === 'status' && val === 'Буцаасан' && !confirm('Захиалга ' + o.phone + ' буцаагдсан уу?\nОрлого буцаагдана. Бараа буухиагаас ирэхэд «Буцаалт хүлээн авсан» дарахад үлдэгдэлд нэмэгдэнэ.')) return;
   if (API_URL && field === 'status' && (val === 'Буухиад өгсөн' || val === 'Хүргэгдсэн')) { shipOrders([id], val); return; }   // борлуулалт + төлөв серверт нэг дор
   var bad = ordBook(n, prev);
   if (bad) { alert('Үлдэгдэл хүрэлцэхгүй:\n\n' + bad); loadStock(); renderOrders(); return; }
