@@ -11,7 +11,7 @@ function mny(v) { v = Math.round(Number(v) || 0); return (v < 0 ? '−' : '') + 
 function cashCodes() { return ACCOUNTS.filter(function (a) { return a[3] === 'cash'; }).map(function (a) { return a[0]; }); }
 function accsOf(type) { return ACCOUNTS.filter(function (a) { return a[2] === type; }).map(function (a) { return a[0]; }); }
 function loanCodes() { return ACCOUNTS.filter(function (a) { return /^35/.test(a[0]); }).map(function (a) { return a[0]; }); }
-var EXP_SHORT = { '7101': 'Цалин', '7102': 'НДШ (ажил олгогч)', '7114': 'Түрээс', '7111': 'Цахилгаан, ус', '7117': 'Тээвэр', '7118': 'Шатахуун', '7123': 'Сав, баглаа',
+var EXP_SHORT = { '7023': 'Бусад компаниас авсан', '7101': 'Цалин', '7102': 'НДШ (ажил олгогч)', '7114': 'Түрээс', '7111': 'Цахилгаан, ус', '7117': 'Тээвэр', '7118': 'Шатахуун', '7123': 'Сав, баглаа',
   '7120': 'Зар сурталчилгаа', '7112': 'Засвар', '7124': 'Хүргэлт (буухиа)', '7122': 'Бусад зардал', '7421': 'Барааны хорогдол', '7404': 'Кассын дутагдал',
   '7201': 'Санхүүгийн зардал', '7105': 'Бичиг хэрэг', '7106': 'Утас, интернет', '7104': 'Томилолт', '7119': 'Хүлээн авалт', '7113': 'Элэгдэл' };
 // Мөнгөний гүйлгээний төрөл (хуучин хүснэгтийн «Гүйлгээний төрөл» шиг)
@@ -421,9 +421,8 @@ function icRecon() {
   ALL_KEYS.forEach(function (k) { J4[k] = buildJournal(k, R()); });
   var lines = function (k, other) {   // k-ийн бүртгэл дэх other-той гүйлгээ (+ явуулсан, − ирсэн)
     var nm = BUSINESSES[other].name;
-    var ic = other === 'mgmt' ? ['1290', '1208'] : ['1290'];   // компанийн «Захирлын зарлага» (1208) = удирдлагатай хийсэн тооцоо
-    return J4[k].filter(function (e) { return (ic.indexOf(e.dr) >= 0 || ic.indexOf(e.cr) >= 0) && (e.dr === '1208' || e.cr === '1208' || (e.partner || '') === nm); })
-      .map(function (e) { return { date: e.date, v: ic.indexOf(e.dr) >= 0 ? e.amount : -e.amount, desc: e.desc, used: false }; });
+    return J4[k].filter(function (e) { return (e.dr === '1290' || e.cr === '1290') && (e.partner || '') === nm; })
+      .map(function (e) { return { date: e.date, v: e.dr === '1290' ? e.amount : -e.amount, desc: e.desc, used: false }; });
   };
   for (var i = 0; i < ALL_KEYS.length; i++) for (var j = i + 1; j < ALL_KEYS.length; j++) {
     var a = ALL_KEYS[i], b = ALL_KEYS[j], la = lines(a, b), lb = lines(b, a);
