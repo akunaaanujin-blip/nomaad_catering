@@ -1,6 +1,9 @@
 // ── НИЙТЛЭГ ТОХИРГОО ──
 // Google Apps Script-ээ deploy хийсний дараа гарах /exec холбоосыг энд тавина.
 // Хоосон байвал хуудсууд "туршилтын горим"-оор ажиллана (мэдээлэл зөвхөн энэ төхөөрөмжид хадгалагдана).
+// Boost шинээр эхэлсэн өдөр — солиход ажилтны төхөөрөмж дээрх хуучин boost бичлэг (Миний нэхэмжлэх) цэвэрлэгдэнэ
+var BOOST_RESET = '2026-11-03';
+
 var API_URL = 'https://script.google.com/macros/s/AKfycbzS1DKwIFDWPV2LBNCHKcrul_8bWFHUQHTc7ply7MeUbfBPl1YaRpfHudQMaYrSNpo8jg/exec';
 
 var BUSINESSES = {

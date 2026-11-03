@@ -278,6 +278,7 @@ function boostImgPick(el) {   // зургийг 1400px хүртэл жижигр
   fr.readAsDataURL(file);
 }
 function renderBoost() {
+  if (load('nb_boost_reset', '') !== BOOST_RESET) { save(LS_REC, load(LS_REC, []).filter(function (r) { return r.type !== 'boost'; })); save('nb_boost_reset', BOOST_RESET); }   // шинээр эхэлсэн
   if (!boost.no) boost.no = boostNewNo();
   $('bNo').textContent = boost.no;
   if (!$('bRate').value) $('bRate').value = load('nb_usd_rate', '') || '';

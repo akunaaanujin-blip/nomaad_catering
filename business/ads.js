@@ -191,9 +191,22 @@ function boostView() {
   var invCard = '<div class="card rep"><div class="rep-cap"><b>Нэхэмжлэх</b><span>Төлөгдөөгүй бүгд + энэ хугацааны төлсөн. Банкны хуулгаар «Boost нэхэмжлэх»-ээр тулгана.</span></div><div class="scroll"><table class="rep-t"><tr><th>Дугаар</th><th>Мөр</th><th>Компаниар ($ · ≈₮ ханшаар — төлсөн ₮)</th><th>Төлөв</th><th></th></tr>' +
     (invRows || '<tr><td colspan="5" class="muted">Нэхэмжлэх алга.</td></tr>') + '</table></div></div>';
   var head = '<tr>' + (many ? '<th>Компани</th>' : '') + '<th>Бараа</th><th>Ажилтан</th><th>Хугацаа</th><th class="n">$</th><th class="n">₮</th><th class="n">Зарсан ш</th><th class="n">Захиалга</th><th class="n">Борлуулалт</th><th class="n">Нийт ашиг</th><th class="n">Boost-ийн дараах</th><th>Дүгнэлт</th><th></th></tr>';
-  return unpCard + '<div class="card">' + flt + '</div>' + kpi +
+  return unpCard + '<div class="card">' + flt + '<div style="margin-top:8px;text-align:right"><button class="b-btn" onclick="bstReset()">Шинээр эхлүүлэх</button></div></div>' + kpi +
     '<div class="card rep"><div class="scroll"><table class="rep-t bst-t">' + head + (rows || '<tr><td colspan="' + cols + '" class="muted">Энэ хугацаанд төлсөн boost алга.</td></tr>') + '</table></div>' +
     '<p class="muted" style="font-size:12.5px;margin-top:8px">Нийт ашиг = boost-ийн хугацааны борлуулалт − өртөг; Boost-ийн дараах ашиг = нийт ашиг − boost зардал. Тэнцэх тоо = boost₮ ÷ (зарах үнэ − өртөг). Мөр дээр дарахад тэр хугацааны борлуулалт, захиалга нээгдэнэ. Зөвхөн банкаар тулгасан (Төлсөн) нэхэмжлэхийн мөр орно — ₮ нь бодит төлсөн дүн (банкны ₮-ийг нэхэмжлэхийн мөрүүдэд $-ын харьцаагаар хуваасан).</p></div>' + invCard;
+}
+// Шинээр эхлүүлэх: бүх boost бүртгэлийг цуцална (хогийн саванд — сэргээж болно); банкаар тулгасан 7120 зардал журналд хэвээр
+function bstReset() {
+  var L = records.filter(function (x) { return x.type === 'boost'; });
+  if (!L.length) { toast('Boost бүртгэл алга'); return; }
+  if (!confirm('Boost-ийн бүх бүртгэлийг (' + L.length + ' мөр, нэхэмжлэхүүд) устгаж шинээр эхлүүлэх үү?\n\nХогийн саванд орно. Банкаар төлсөн зардал (7120) санхүүд хэвээр үлдэнэ.')) return;
+  if (!API_URL) { records = records.filter(function (x) { return x.type !== 'boost'; }); save('nb_records', records); render(); return; }
+  var i = 0, bad = 0, next = function () {
+    if (i >= L.length) { toast(bad ? bad + ' мөр цуцлагдсангүй — дахин дарна уу' : 'Boost шинээр эхэллээ'); refresh(); return; }
+    var x = L[i++]; toast('Устгаж байна… ' + i + '/' + L.length);
+    post({ type: 'admin_record', cancelId: x.id, by: ownerName, what: x.date + ' · Boost · ' + x.item + ' (шинээр эхлэх)' }, function (err) { if (err) bad++; next(); });
+  };
+  next();
 }
 // Boost-ийн эхэлсэн/дууссан огноог засах — зөвхөн шинжилгээнд (ROAS, борлуулалтын хугацаа); дүн, журнал өөрчлөгдөхгүй
 function bstDateOpen(id) {
@@ -220,7 +233,7 @@ function boostHomeCard(biz) {
   var B = biz === 'all' ? KEYS.filter(function (k) { return k !== 'mgmt'; }) : [biz], inB = function (b) { return B.indexOf(b) >= 0; };
   var t = todayStr(), L = (R().records || []).filter(function (x) { return inB(x.biz) && x.type === 'boost' && x.date <= t && boostEnd(x) > t; });
   var sp = (window.journal || []).reduce(function (a, e) { return !inB(e.biz) ? a : a + (e.dr === '7120' ? Number(e.amount) || 0 : 0) - (e.cr === '7120' ? Number(e.amount) || 0 : 0); }, 0);
-  if (!L.length && !(sp > 0.5)) return '';
+  if (!L.length) return '';   // идэвхтэй boost байхгүй бол картгүй (шинээр эхэлсний дараа хуучин 7120 харагдахгүй)
   var endT = L.filter(function (x) { return boostEnd(x) === addDays(t, 1); }).length;
   return '<div class="card"><div class="bar-row"><h2 style="margin:0">Идэвхтэй boost</h2><button class="link" onclick="BST.biz=' + (biz === 'all' ? '\'all\'' : 'state.biz') + ';BST.per=\'all\';navGo(\'sales/boostp\')">Дэлгэрэнгүй →</button></div>' +
     '<div class="fn-kpis" style="margin-top:8px"><div class="fn-kpi"><small>Явж байгаа</small><b>' + L.length + '</b></div><div class="fn-kpi"><small>Нийт зарцуулалт (банкаар)</small><b>' + fmt(sp) + '</b></div>' +
