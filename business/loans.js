@@ -52,6 +52,15 @@ function loanSched(L, E) {
   if (!next && late.n) next = { d: late.since, amt: late.amt };
   return { rows: out, next: next, late: late, sumP: r0(rows.reduce(function (a, r) { return a + r.p; }, 0)), sumT: r0(rows.reduce(function (a, r) { return a + r.p + r.i; }, 0)) };
 }
+// Дараагийн төлөлтийн огноо, хоцорсон хоног: хуваарьтай бол түүгээр; үгүй бол «Төлөх өдөр»-өөр (сүүлийн төлөлтөөс хойшх эхний төлөх өдөр)
+function loanNextLate(L, sc, s) {
+  if (sc.rows.length) return { next: sc.next ? sc.next.d : '', late: sc.late.n ? sc.late.days : 0 };
+  if (!L.payDay) return { next: '', late: 0 };
+  var from = s.last && s.last > L.date ? s.last : L.date, f = new Date(from + 'T00:00:00'), d = null, td = todayStr();
+  for (var k = 0; k < 600; k++) { d = lnAddMon(f, k, L.payDay); if (Math.round((d - f) / 864e5) > 10) break; }   // 10 хоногоос ойр төлсөн бол тэр сарын төлөлт гэж үзнэ
+  var nd = todayStr(d);
+  return { next: nd, late: nd < td ? Math.round((new Date(td) - new Date(nd)) / 864e5) : 0 };
+}
 // Төлбөрийг үндсэн / хүү болгож задлах: хуваарь байвал түүгээр (эхлээд хүү, дараа нь үндсэн), үгүй бол нийт дүнгийн харьцаагаар, эсвэл сарын хүүгээр
 function loanSplit(L, X, E) {
   var s = loanStat(L, E), rows = (L.schedule || []).slice().sort(function (a, b) { return a.d < b.d ? -1 : 1; }), intr = 0, prin = 0, rem = X;
@@ -92,11 +101,13 @@ function loansView() {
       return f === 'all' || (f === 'closed' ? closed : !closed);
     });
     var rows = ls.map(function (L) {
-      var s = loanStat(L, E), done = s.got > 0.5 && s.left <= 0.5, closed = L.status === 'Хаагдсан' || done, sc = loanSched(L, E);
+      var s = loanStat(L, E), done = s.got > 0.5 && s.left <= 0.5, closed = L.status === 'Хаагдсан' || done, sc = loanSched(L, E), nl = loanNextLate(L, sc, s), pf = L.biz === 'mgmt';
+      var dl = pf ? function (sp, h) { return h; } : window.dl;   // хувийн санхүү: төлөлт нь журналд биш
       tot.amt += L.amount; tot.got += s.got; tot.paid += s.paid; tot.intr += s.intr; tot.left += s.left;
       var spec = { acc: [loanAcc(L), loanIntAcc(L)], tag: L.id, sign: taken ? -1 : 1, bal: false, t: L.partner + ' — ' + (taken ? 'авсан зээл' : 'өгсөн зээл') };
       var acts = (s.got < 0.5 && L.status === 'Идэвхтэй' ? '<button class="mini" onclick="openLoanPay(\'' + L.id + '\',\'disb\')">' + (taken ? 'Мөнгө орсон' : 'Мөнгө өгсөн') + '</button>' : '') +
-        (s.left > 0.5 ? '<button class="mini" style="color:var(--accent)" onclick="openLoanPay(\'' + L.id + '\',\'pay\')">' + (taken ? 'Төлөлт' : 'Төлбөр авсан') + '</button>' : '') +
+        (s.left > 0.5 ? '<button class="mini" style="color:var(--accent)" onclick="' + (pf ? 'pfLoanPay' : 'openLoanPay') + '(\'' + L.id + '\',\'pay\')">' + (taken ? 'Төлөлт' : 'Төлбөр авсан') + '</button>' : '') +
+        (pf ? '<button class="mini" onclick="pfLoanHist(\'' + L.id + '\')">Түүх</button>' : '') +
         (sc.rows.length ? '<button class="mini" onclick="openLoanSched(\'' + L.id + '\')">Хуваарь</button>' : '') +
         '<button class="mini" onclick="openLoan(\'' + L.id + '\')">Засах</button>' +
         (done && L.status === 'Идэвхтэй' ? '<button class="mini" onclick="loanStatus(\'' + L.id + '\',\'close\')">Хаах</button>' : '');
@@ -107,8 +118,10 @@ function loansView() {
         '<td class="n">' + (s.intr ? dl(Object.assign({}, spec, { acc: [loanIntAcc(L)], sign: taken ? 1 : -1, t: spec.t + ' — хүү' }), mny(s.intr)) : '') + '</td>' +
         '<td class="n"><b>' + (s.got ? dl({ acc: [loanAcc(L)], tag: L.id, sign: taken ? -1 : 1, bal: true, t: L.partner + ' — зээлийн хуулга (үлдэгдэлтэй)' }, mny(s.left)) : mny(s.left)) + '</b>' +
           (s.got > 0.5 ? '<br><small class="muted">' + Math.min(100, Math.round(s.paid / s.got * 100)) + '% төлсөн</small>' : '') + '</td>' +
-        '<td>' + (sc.rows.length && !closed ? (sc.next ? esc(sc.next.d) + ' · ' + mny(sc.next.amt) : '') + (sc.late.n ? '<br><span class="tag r">Хоцорсон ' + sc.late.days + ' хоног · ' + mny(sc.late.amt) + '</span>' : '') :
-          (!closed && L.payDay ? '<small class="muted">сар бүр ' + L.payDay + '-нд</small>' : '')) + '</td>' +
+        '<td class="n">' + (L.monthly ? mny(L.monthly) : sc.rows.length ? '<small class="muted">' + mny(sc.next ? sc.next.amt : 0) + '</small>' : '') + '</td>' +
+        '<td class="nw">' + (closed ? '' : nl.next ? esc(nl.next) + (L.payDay ? '<br><small class="muted">сар бүр ' + L.payDay + '-нд</small>' : '') : '') +
+          (!closed && !sc.rows.length ? '<br><span class="tag y" title="Хугацаа (сар), эхний төлөлтийн огноогоо оруулбал хуваарь үүснэ">Хуваарь үүсээгүй</span>' : '') + '</td>' +
+        '<td class="n">' + (!closed && nl.late > 0 ? '<b style="color:var(--red)">' + nl.late + '</b>' + (sc.late.amt ? '<br><small style="color:var(--red)">' + mny(sc.late.amt) + '</small>' : '') : '') + '</td>' +
         '<td>' + (closed ? '<span class="tag">Хаагдсан</span>' : s.got < 0.5 ? '<span class="tag r">Мөнгө ороогүй</span>' : s.paid > 0.5 ? '<span class="tag b">Хэсэгчлэн төлсөн</span>' : '<span class="tag b">Идэвхтэй</span>') + '</td>' +
         '<td class="n" style="white-space:nowrap">' + acts + '</td></tr>';
     }).join('');
@@ -116,13 +129,14 @@ function loansView() {
     var unreg = r0(reg - tot.left);
     return '<div class="card rep"><div class="rep-cap"><b>' + title + '</b><span>' + hint + '</span></div><div class="scroll"><table class="rep-t">' +
       '<tr><th>Огноо</th><th>Харилцагч</th><th class="n">Гэрээний дүн</th><th class="n">Сарын хүү</th><th>Дуусах</th><th class="n">' + (taken ? 'Орсон' : 'Олгосон') + '</th>' +
-      '<th class="n">Төлсөн үндсэн</th><th class="n">Хүү</th><th class="n">Үлдэгдэл</th><th>Дараагийн төлөлт</th><th>Төлөв</th><th></th></tr>' +
-      (rows || '<tr><td colspan="12" class="muted">Бүртгэл алга — «+ ' + (taken ? 'Авсан' : 'Өгсөн') + ' зээл» дарж нэмнэ үү</td></tr>') +
+      '<th class="n">Төлсөн үндсэн</th><th class="n">Хүү</th><th class="n">Үлдэгдэл</th><th class="n">Сарын төлөх дүн</th><th>Дараагийн төлөлтийн огноо</th><th class="n">Хоцорсон хоног</th><th>Төлөв</th><th></th></tr>' +
+      (rows || '<tr><td colspan="14" class="muted">Бүртгэл алга — «+ ' + (taken ? 'Авсан' : 'Өгсөн') + ' зээл» дарж нэмнэ үү</td></tr>') +
       (ls.length ? '<tr class="tot"><td>Нийт</td><td></td><td class="n">' + mny(tot.amt) + '</td><td></td><td></td><td class="n">' + mny(tot.got) + '</td><td class="n">' + mny(tot.paid) + '</td>' +
-        '<td class="n">' + mny(tot.intr) + '</td><td class="n">' + mny(tot.left) + '</td><td></td><td></td><td></td></tr>' : '') + '</table></div>' +
-      (Math.abs(unreg) >= 1 ? '<p class="rep-note">Бүртгэлгүй (#лавлагаагүй) ' + (taken ? 'авсан' : 'өгсөн') + ' зээлийн үлдэгдэл: <b>' + mny(unreg) + '</b> — өмнө нь «Зээл авсан/төлсөн» гэж шууд бичсэн гүйлгээ.</p>' : '') + '</div>';
+        '<td class="n">' + mny(tot.intr) + '</td><td class="n">' + mny(tot.left) + '</td><td></td><td></td><td></td><td></td><td></td></tr>' : '') + '</table></div>' +
+      (Math.abs(unreg) >= 1 && state.biz !== 'mgmt' ? '<p class="rep-note">Бүртгэлгүй (#лавлагаагүй) ' + (taken ? 'авсан' : 'өгсөн') + ' зээлийн үлдэгдэл: <b>' + mny(unreg) + '</b> — өмнө нь «Зээл авсан/төлсөн» гэж шууд бичсэн гүйлгээ.</p>' : '') + '</div>';
   };
   var ft = stBar('Төлөв', [['active', 'Идэвхтэй'], ['closed', 'Хаагдсан'], ['all', 'Бүгд']], state.lnF || 'active', "state.lnF='%'");
+  if (state.biz === 'mgmt') return ft + sec('Авсан', 'Миний авсан зээл, өр', 'Банк, хүнээс авсан — таны төлөх ёстой') + sec('Өгсөн', 'Миний өгсөн зээл', 'Бусдад өгсөн — танд буцааж өгөх ёстой');
   return ft + '<p class="hint">Энд таны бүх зээл, өр бүртгэгдэнэ. Зээл бүрийн мөнгө орсон / төлсөн гүйлгээг «Банкны хуулга»-аас (жагсаалтад зээлийн нэрээр гарна) эсвэл энд «Төлөлт» товчоор бүртгэнэ. ' +
     'Зээл бүрт «Төлөх нийт дүн», сар бүрийн <b>төлөлтийн хуваарь</b>-аа оруулбал төлбөр бүр үндсэн, хүү болж автоматаар задарна; хоцорсон төлөлт календарь болон «Миний компаниуд»-д анхааруулга болж гарна.</p>' +
     sec('Авсан', 'Миний авсан зээл, өр', 'Банк, хүнээс авсан — таны төлөх ёстой') + sec('Өгсөн', 'Миний өгсөн зээл', 'Бусдад өгсөн — танд буцааж өгөх ёстой');
@@ -140,7 +154,7 @@ function openLoan(id, kind, bankLine) {
     (lnBank ? '<p class="rep-note ok">Банкны гүйлгээ: ' + esc(lnBank.date) + ' · ' + (lnBank.credit ? '+' + fmt(lnBank.credit) : '−' + fmt(lnBank.debit)) + ' · «' + esc(lnBank.desc) + '» — хадгалахад энэ гүйлгээ шинэ зээлийн мөнгө болж тулгагдана.</p>' : '') +
     '<label for="lnKind">Төрөл</label><select id="lnKind"' + (L || lnBank ? ' disabled' : '') + ' onchange="lnMoneyHint()"><option value="Авсан">Би зээл авсан (миний өр)</option><option value="Өгсөн">Би зээл өгсөн (надад өгөх)</option></select>' +
     '<label for="lnPartner">Харилцагч (банк, хүн, байгууллага)</label><input id="lnPartner" list="lnPartners" placeholder="Жишээ: Хаан банк"><datalist id="lnPartners">' + partnerOptions() + '</datalist>' +
-    '<div class="row2"><div><label for="lnDate">Огноо</label><input id="lnDate" type="date" onchange="lnCalc(1)"></div><div><label for="lnAmount">Дүн (₮)</label><input id="lnAmount" type="number" min="0" inputmode="numeric" oninput="lnCalc(1)"></div></div>' +
+    '<div class="row2"><div><label for="lnDate">Огноо</label><input id="lnDate" type="date" onchange="lnCalc(1)"></div><div><label for="lnAmount">Дүн (₮)</label><input id="lnAmount" type="number" min="0" inputmode="numeric" oninput="lnCalc(1);lnSchedSum()"></div></div>' +
     // Зээлийн тооцоолуур (банкных шиг): хүү, хугацаа, төлөх хэлбэр → хуваарь, сарын төлбөр, нийт хүү автоматаар
     '<div class="card" style="margin:10px 0;padding:12px"><h2 style="margin:0 0 6px">Зээлийн тооцоолуур</h2>' +
     '<div class="row2"><div><label for="lnRate">Сарын хүү (%)</label><input id="lnRate" type="number" min="0" step="any" placeholder="Жишээ: 1.8" oninput="lnCalc(1)"></div>' +
@@ -151,7 +165,10 @@ function openLoan(id, kind, bankLine) {
     '<div id="lnCalcOut" class="fn-kpis" style="margin-top:10px"></div></div>' +
     '<div class="row2"><div><label for="lnTotal">Төлөх нийт дүн (хүүтэй, ₮)</label><input id="lnTotal" type="number" min="0" inputmode="numeric" oninput="lnSchedSum()"></div>' +
     '<div><label for="lnDue">Дуусах огноо</label><input id="lnDue" type="date"></div></div>' +
-    '<input id="lnPayDay" type="hidden">' +
+    '<p id="lnErr" style="display:none;color:var(--red);font-weight:600;margin:6px 0 0">Төлөх нийт дүн (хүүтэй) зээлийн дүнгээс бага байж болохгүй.</p>' +
+    '<div class="row2"><div><label for="lnMonthly">Сарын төлөх дүн (₮)</label><input id="lnMonthly" type="number" min="0" inputmode="numeric" oninput="lnMonAuto=!this.value"></div>' +
+    '<div><label for="lnPayDay">Төлөх өдөр (сар бүрийн)</label><input id="lnPayDay" type="number" min="1" max="31" inputmode="numeric" placeholder="1–31"></div></div>' +
+    '<label for="lnPayAcc">Төлөх данс</label><select id="lnPayAcc"><option value="">— сонгоогүй —</option>' + (state.biz === 'mgmt' && typeof pfAccOpts === 'function' ? pfAccOpts('') : cashAccOpts('')) + '</select>' +
     '<label>Төлөлтийн хуваарь <small class="muted" style="font-weight:400">(тооцоолуураас автоматаар, эсвэл банкны хуваарийг буулгана — засаж болно)</small></label>' +
     '<div id="lnSched"></div>' +
     '<div class="pg-act" style="margin-top:6px"><button class="b-btn" onclick="lnAuto=false;lnRows.push({d:\'\',p:\'\',i:\'\'});lnSchedRender()">+ Мөр</button>' +
@@ -161,7 +178,7 @@ function openLoan(id, kind, bankLine) {
       '<button class="b-btn" onclick="lnPasteApply()">Хуваарь болгох</button></div>' +
     '<p class="muted" id="lnSchedInfo" style="font-size:12.5px;margin-top:6px"></p>' +
     (L ? '' : '<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" id="lnRemind" checked style="width:auto"> Хуваарьгүй бол календарьт сар бүр сануулах</label>') +
-    (L || lnBank ? '' : '<label for="lnMoney" id="lnMoneyLabel">Мөнгө</label><select id="lnMoney" onchange="lnMoneyHint()">' +
+    (L || lnBank || state.biz === 'mgmt' ? '' : '<label for="lnMoney" id="lnMoneyLabel">Мөнгө</label><select id="lnMoney" onchange="lnMoneyHint()">' +
       '<option value="1101">Харилцах дансаар (одоо бүртгэнэ)</option><option value="10003">Бэлнээр (касс)</option>' +
       other.map(function (a) { return '<option value="' + a[0] + '">' + esc(a[1]) + '</option>'; }).join('') +
       '<option value="later">Банкны хуулгаар дараа тулгана</option><option value="open">Өмнөөс байсан зээл (системээс өмнөх үлдэгдэл)</option></select>' +
@@ -175,6 +192,8 @@ function openLoan(id, kind, bankLine) {
   $('lnAmount').value = L ? L.amount : lnBank ? (lnBank.credit || lnBank.debit) : '';
   $('lnRate').value = L && L.rate ? L.rate : ''; $('lnDue').value = L ? L.due : ''; $('lnPayDay').value = L && L.payDay ? L.payDay : ''; $('lnNote').value = L ? L.note : '';
   $('lnTotal').value = L && L.total ? L.total : '';
+  $('lnMonthly').value = L && L.monthly ? L.monthly : ''; lnMonAuto = !(L && L.monthly); $('lnPayAcc').value = L && L.payAcc ? L.payAcc : '';
+  if (L && L.intMode) $('lnDays').value = L.intMode;
   lnRows = L && L.schedule ? L.schedule.map(function (r) { return { d: r.d, p: r.p, i: r.i }; }) : [];
   lnAuto = !lnRows.length;   // хадгалсан хуваарийг тооцоолуур дарж бичихгүй — гараар «Тооцоолох» дарвал л
   $('lnTerm').value = lnRows.length || ''; $('lnFirst').value = lnRows.length ? lnRows[0].d : '';
@@ -196,6 +215,7 @@ function lnSchedSum() {
   var sp = 0, st = 0;
   lnRows.forEach(function (r, i) { var p = Number(r.p) || 0, it = Number(r.i) || 0; sp += p; st += p + it; var c = $('lnT' + i); if (c) c.textContent = fmt(p + it).slice(1); });
   var amt = Number($('lnAmount').value) || 0, tot = Number($('lnTotal').value) || 0, w = [];
+  if ($('lnErr')) $('lnErr').style.display = tot > 0 && amt > 0 && tot < amt ? '' : 'none';
   if (lnRows.length && amt && Math.abs(sp - amt) > 1) w.push('үндсэний нийлбэр ' + fmt(sp) + ' ≠ зээлийн дүн ' + fmt(amt));
   if (lnRows.length && tot && Math.abs(st - tot) > 1) w.push('хуваарийн нийт ' + fmt(st) + ' ≠ төлөх нийт ' + fmt(tot));
   $('lnSchedInfo').innerHTML = lnRows.length ? lnRows.length + ' төлөлт · үндсэн ' + fmt(sp) + ' · хүү ' + fmt(st - sp) + ' · нийт ' + fmt(st) +
@@ -205,7 +225,7 @@ function lnSchedSum() {
 // Сар бүр тэнцүү төлбөр: A = P·r / (1 − (1+r)^−n), r = сарын хүү; үндсэн = A − тухайн сарын хүү, сүүлийн сард үлдэгдлийг бүтэн.
 // Үндсэн тэнцүү: үндсэн = P / n, хүү үлдэгдлээс (төлбөр сар бүр буурна).
 // Хүү хоногоор: үлдэгдэл × (сарын хүү × 12) ÷ 365 × өмнөх төлөлтөөс хойшх хоног (Монголын банкуудын хуваарь ингэж бодогддог).
-var lnAuto = true;
+var lnAuto = true, lnMonAuto = true;
 function lnAddMon(d0, k, day) { var y = d0.getFullYear(), mo = d0.getMonth() + k; return new Date(y, mo, Math.min(day, new Date(y, mo + 1, 0).getDate())); }
 function lnCalcRows(P, rate, n, method, first, start, byDay) {
   var r = rate / 100, f = new Date(first + 'T00:00:00'), day = f.getDate(), prev = new Date(start + 'T00:00:00'), bal = P, out = [];
@@ -228,6 +248,7 @@ function lnCalc(auto) {
   lnRows = lnCalcRows(P, rate, n, $('lnMethod').value, first, start, $('lnDays').value === 'day'); lnAuto = true;
   $('lnTotal').value = Math.round(lnRows.reduce(function (a, r) { return a + r.p + r.i; }, 0));
   $('lnDue').value = lnRows[lnRows.length - 1].d; $('lnPayDay').value = Number(first.slice(8, 10));
+  if (lnMonAuto || !$('lnMonthly').value) { $('lnMonthly').value = Math.round(lnRows[0].p + lnRows[0].i); lnMonAuto = true; }   // санал — засаж болно
   lnSchedRender(); lnCalcOutRender();
 }
 function lnFlat(t) { var a = t.slice(0, -1); return a.length && Math.max.apply(null, a) - Math.min.apply(null, a) <= 1; }   // сүүлийн сараас бусад нь тэнцүү
@@ -273,14 +294,16 @@ function nextPayDate(day) {
 function saveLoan(id) {
   var L = { biz: state.biz, kind: $('lnKind').value, partner: $('lnPartner').value.trim(), date: $('lnDate').value, amount: Number($('lnAmount').value) || 0,
             rate: Number($('lnRate').value) || 0, due: $('lnDue').value, payDay: Number($('lnPayDay').value) || 0, note: $('lnNote').value.trim(),
-            total: Number($('lnTotal').value) || 0,
+            total: Number($('lnTotal').value) || 0, monthly: Number($('lnMonthly').value) || 0, payAcc: $('lnPayAcc').value, intMode: $('lnDays').value,
             schedule: lnRows.filter(function (r) { return /^\d{4}-\d{2}-\d{2}$/.test(r.d) && (Number(r.p) || Number(r.i)); }).map(function (r) { return { d: r.d, p: Number(r.p) || 0, i: Number(r.i) || 0 }; }) };
   if (lnRows.some(function (r) { return (Number(r.p) || Number(r.i)) && !/^\d{4}-\d{2}-\d{2}$/.test(r.d); })) { toast('Хуваарийн мөр бүрт огноо оруулна уу'); return; }
   if (!L.due && L.schedule.length) L.due = L.schedule.map(function (r) { return r.d; }).sort().pop();
   if (L.partner.length < 2) { toast('Харилцагчийн нэрийг бичнэ үү'); return; }
+  if (L.total > 0 && L.total < L.amount) { $('lnErr').style.display = ''; $('lnErr').scrollIntoView({ block: 'center' }); toast('Төлөх нийт дүн (хүүтэй) зээлийн дүнгээс бага байна'); return; }
+  if (!L.monthly && L.schedule.length) L.monthly = Math.round(L.schedule[0].p + L.schedule[0].i);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(L.date) || !(L.amount > 0)) { toast('Огноо, дүнгээ оруулна уу'); return; }
   if (L.payDay && (L.payDay < 1 || L.payDay > 31)) { toast('Төлөх өдөр 1–31'); return; }
-  var bl = id ? null : lnBank, money = id || bl ? '' : $('lnMoney').value, remind = !id && !L.schedule.length && $('lnRemind') && $('lnRemind').checked && L.payDay;   // хуваарьтай бол календарь өөрөө харуулна
+  var bl = id ? null : lnBank, money = id || bl || !$('lnMoney') ? '' : $('lnMoney').value, remind = !id && !L.schedule.length && $('lnRemind') && $('lnRemind').checked && L.payDay;   // хуваарьтай бол календарь өөрөө харуулна
   if (bl && Math.abs((bl.credit || bl.debit) - L.amount) > 0.5 && !confirm('Зээлийн дүн (' + fmt(L.amount) + ') банкны гүйлгээнээс (' + fmt(bl.credit || bl.debit) + ') өөр байна. Банкны дүнгээр мөнгө нь бүртгэгдэнэ. Үргэлжлүүлэх үү?')) return;
   var after = function (lid) {
     var taken = L.kind === 'Авсан', E = [], tag = ' #' + lid;
@@ -309,13 +332,13 @@ function saveLoan(id) {
     if (id) { var cur = loanById(id); Object.assign(cur, L); } else { L.id = 'L' + Date.now(); L.status = 'Идэвхтэй'; window.loans.push(L); }
     save('nb_demo_loans', window.loans); after(id || L.id); return;
   }
-  post({ type: 'admin_loan', loan: L, updateId: id || undefined }, function (err, d) { if (err) { toast('Алдаа: ' + err); return; } after(d.id); });
+  post({ type: 'admin_loan', loan: L, updateId: id || undefined }, function (err, d) { if (err) { toast(err === 'total' ? 'Төлөх нийт дүн (хүүтэй) зээлийн дүнгээс бага байна' : 'Алдаа: ' + err); return; } after(d.id); });
 }
 function loanStatus(id, what) {
   var L = loanById(id); if (!L) return;
   var js = journal.filter(function (j) { return hasTag(j.desc, id); });
   var bl = (typeof bankLines !== 'undefined' ? bankLines : []).filter(function (x) { return hasTag(x.link, id); });
-  if (what === 'cancel' && js.length) { toast('Гүйлгээтэй зээлийг устгах боломжгүй — төлөгдөж дуусахад «Хаагдсан» болно'); return; }
+  if (what === 'cancel' && (js.length || (typeof pfLoanTx === 'function' && pfLoanTx(id).length))) { toast('Гүйлгээтэй зээлийг устгах боломжгүй — төлөгдөж дуусахад «Хаагдсан» болно'); return; }
   if (what === 'cancel' && !confirm('«' + L.partner + '» зээлийг устгах уу?' + (js.length ? '\n\nХолбоотой ' + js.length + ' санхүүгийн бичилт мөн цуцлагдана.' : '') +
     (bl.length ? '\n' + bl.length + ' банкны гүйлгээ дахин «Тулгах» жагсаалтад орно.' : ''))) return;
   if (what === 'close' && !confirm('«' + L.partner + '» зээлийг төлөгдсөн гэж хаах уу?')) return;
@@ -340,7 +363,7 @@ function openLoanPay(id, mode) {
   gOpen('<h2>' + title + '</h2><p class="muted">' + esc(L.partner) + ' · үлдэгдэл ' + mny(s.left) + (L.rate ? ' · сарын хүү ' + L.rate + '%' : '') + '</p>' +
     '<div class="row2"><div><label for="lpDate">Огноо</label><input id="lpDate" type="date" value="' + todayStr() + '"></div>' +
     '<div><label for="lpAcc">' + ((taken ? !pay : pay) ? 'Мөнгө хаана орсон' : 'Мөнгө хаанаас гарсан') + '</label><select id="lpAcc">' + cashAccOpts('1101') + '</select></div></div>' +
-    (pay ? '<label for="lpTot">Төлсөн дүн (₮)</label><input id="lpTot" type="number" min="0" inputmode="numeric" value="' + (sc.next ? sc.next.amt : '') + '" oninput="lpAuto(\'' + id + '\')">' +
+    (pay ? '<label for="lpTot">Төлсөн дүн (₮)</label><input id="lpTot" type="number" min="0" inputmode="numeric" value="' + (sc.next ? sc.next.amt : L.monthly || '') + '" oninput="lpAuto(\'' + id + '\')">' +
            '<div class="row2"><div><label for="lpPrin">Үүнээс үндсэн</label><input id="lpPrin" type="number" min="0" inputmode="numeric" oninput="lpSum()"></div>' +
            '<div><label for="lpInt">Үүнээс хүү</label><input id="lpInt" type="number" min="0" inputmode="numeric" oninput="lpSum()"></div></div>' +
            '<p class="muted" id="lpSumInfo" style="font-size:12.5px"></p>'

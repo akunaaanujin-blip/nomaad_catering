@@ -49,7 +49,7 @@ const SHEET_TASK = 'Даалгавар';
 const TASK_HEAD = ['ID', 'Үүсгэсэн', 'biz', 'Ажилтан ID', 'Ажилтан', 'Даалгавар', 'Хугацаа', 'Төлөв', 'Хийсэн', 'Хийсэн огноо', 'Хэнээс', 'Тайлбар'];
 const SHEET_LOAN = 'Зээл';
 const LOAN_HEAD = ['ID', 'Огноо', 'biz', 'Төрөл', 'Харилцагч', 'Дүн', 'Хүү (сар %)', 'Дуусах огноо', 'Төлөх өдөр', 'Тэмдэглэл', 'Төлөв', 'Үүсгэсэн',
-  'Төлөх нийт (хүүтэй)', 'Төлөлтийн хуваарь'];   // хуваарь: [{d: огноо, p: үндсэн, i: хүү}]
+  'Төлөх нийт (хүүтэй)', 'Төлөлтийн хуваарь', 'Сарын төлөх дүн', 'Төлөх данс', 'Хүү бодох'];   // хуваарь: [{d: огноо, p: үндсэн, i: хүү}]
 const SHEET_PO = 'Бараа захиалга';
 const PO_HEAD = ['ID', 'Дугаар', 'Огноо', 'biz', 'Нийлүүлэгч', 'Бараа', 'Валют', 'Нийт (валютаар)', 'Карго компани', 'Төлөв', 'Ирсэн огноо', 'Тэмдэглэл', 'Үүсгэсэн'];
 const SHEET_DOC = 'Маягт';
@@ -166,6 +166,7 @@ function route(data) {
   if (data.type === 'admin_record') return isAdmin(data) ? adminRecord(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_partner') return isAdmin(data) ? adminPartner(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_loan') return isAdmin(data) ? adminLoan(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_pf') return data._who && data._who.role === 'Эзэн' ? adminPf(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_po') return isAdmin(data) ? adminPo(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_digest') return isAdmin(data) ? adminDigest(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_audit') return isAdmin(data) ? adminAudit(data) : { status: 'error', error: 'auth' };
@@ -201,7 +202,7 @@ function auditLabel(d) {
   if (t === 'orders_ship') return 'Захиалга → ' + String(d.to || '');
   if (t === 'stock_count') return 'Тооллого илгээсэн';
   if (t === 'admin_eb' || /^eb_/.test(t)) return 'Буухиа: ' + String(d.op || t.replace('eb_', ''));
-  return ({ admin_bank: 'Банкны хуулга', admin_product: 'Бараа, үнэ', admin_partner: 'Харилцагч', admin_loan: 'Зээл', admin_po: 'Бараа захиалга', admin_staff: 'Ажилтан',
+  return ({ admin_bank: 'Банкны хуулга', admin_product: 'Бараа, үнэ', admin_partner: 'Харилцагч', admin_loan: 'Зээл', admin_pf: 'Хувийн санхүү', admin_po: 'Бараа захиалга', admin_staff: 'Ажилтан',
     admin_salary: 'Цалин', admin_order: 'Захиалгын төлбөр', admin_task: 'Даалгавар', admin_reminder: 'Сануулга', admin_doc: 'Маягт', admin_contract: 'Гэрээ', admin_close: 'Он хаасан',
     admin_reset: 'Шинээр эхэлсэн', admin_import_cozy: 'Cozy импорт', admin_digest: 'Өдрийн тойм', task_done: 'Даалгавар биелүүлсэн', requests: 'Мөнгөний хүсэлт' })[t] || t;
 }
@@ -262,10 +263,10 @@ function adminRestore(d) {
 
 // ── Серверийн кэш (хурд): удирдлагын уншилт хуудас тус бүрийг 5 мин кэшлэнэ, бичилт хийхэд тэр хуудсыг л цэвэрлэнэ ──
 // Sheet-ийг гараар засвал 5 минутын дотор шинэчлэгдэнэ.
-const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'imp', 'rule', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf'];
+const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'imp', 'rule', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf', 'pf'];
 const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_other: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_send: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord', 'rec'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
   admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr', 'bank'], admin_bank: ['bank', 'jr', 'ord', 'imp', 'rule'], admin_partner: ['pt'], admin_reminder: ['rem'],
-  admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_po: ['po', 'jr'],
+  admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_pf: ['pf'], admin_po: ['po', 'jr'],
   admin_restore: ['rec', 'stk', 'mov', 'jr'], admin_staff: ['adm', 'stf'], staff_pin: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
 const CACHE_READ = { admin_audit: 1, eb_sync: 1, requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
 function cacheKeysFor(d) {
@@ -399,6 +400,8 @@ function adminRead(d) {
   a.tasks = a.tasks.map(function (t) { delete t.row; return t; });
   a.products = cacheGet('prod', productRows).map(function (p) { const o = Object.assign({}, p); delete o.row; return o; });
   a.loans = cacheGet('loan', loanRows).map(function (x) { delete x.row; return x; });
+  a.pf = cacheGet('pf', pfAll);   // хувийн санхүү — зөвхөн Эзэнд (доор менежерээс хасна)
+  a.pfcfg = JSON.parse(pr.getProperty('PF_CFG') || '{}');
   a.pos = cacheGet('po', poRows).map(function (x) { delete x.row; return x; });
   a.bankLinks = JSON.parse(pr.getProperty('BANKLINKS') || '[]');
   a.kpi = JSON.parse(pr.getProperty('KPI') || '{}');
@@ -415,7 +418,7 @@ function adminRead(d) {
   if (who.role !== 'Эзэн') {   // менежер: зөвхөн өөрийн дэлгүүр
     const ok = function (b) { return mgrCan(who, b); }, keep = function (arr, f) { return (arr || []).filter(function (x) { return ok(f ? f(x) : x.biz); }); };
     a.staff = (a.staff || []).filter(function (s) { return staffBizes(s.biz).some(ok); }).map(function (s) { return { id: s.id, name: s.name, biz: s.biz, role: s.role, status: s.status, username: s.username }; });
-    a.salary = []; a.loans = []; a.docs = []; a.assets = []; a.kpi = {}; a.digest = { on: false, to: '' };
+    a.salary = []; a.loans = []; a.docs = []; a.assets = []; a.kpi = {}; a.digest = { on: false, to: '' }; a.pf = {}; a.pfcfg = {};
     ['records', 'moves', 'journal', 'partners', 'bank', 'orders', 'tasks', 'products', 'pos', 'priceLog', 'bankLinks'].forEach(function (k) { a[k] = keep(a[k]); });
     a.reminders = keep(a.reminders, function (r) { return r.co; });
     const st = {}; Object.keys(a.stock || {}).forEach(function (b) { if (ok(b)) st[b] = a.stock[b]; }); a.stock = st;
@@ -1486,7 +1489,7 @@ function adminSetting(d) {
     if (ms.length > 8500) return { status: 'error', error: 'too_big' };
     PropertiesService.getScriptProperties().setProperty('MINSTOCK_' + d.biz, ms); return { status: 'ok' };
   }
-  const JSONKEYS = { kpi: 'KPI', assets: 'ASSETS', targets: 'TARGETS', review: 'REVIEW', company: 'COMPANY', ebold: 'EB_OLD' };   // + удирдлагын тоймын дүгнэлт   // KPI %, үндсэн хөрөнгө, борлуулалтын зорилт
+  const JSONKEYS = { kpi: 'KPI', assets: 'ASSETS', targets: 'TARGETS', review: 'REVIEW', company: 'COMPANY', ebold: 'EB_OLD', pfcfg: 'PF_CFG' };   // + удирдлагын тоймын дүгнэлт   // KPI %, үндсэн хөрөнгө, борлуулалтын зорилт
   if (JSONKEYS[d.key]) {
     const s = JSON.stringify(d.value || (d.key === 'assets' ? [] : {}));
     if (s.length > 8500) return { status: 'error', error: 'too_big' };
@@ -1814,7 +1817,8 @@ function loanRows() {
   return sh.getRange(2, 1, last - 1, LOAN_HEAD.length).getValues().map(function (v, i) {
     return { row: i + 2, id: String(v[0]), date: fmtDate(v[1], 'yyyy-MM-dd'), biz: String(v[2]), kind: String(v[3]), partner: String(v[4]), amount: Number(v[5]) || 0,
              rate: Number(v[6]) || 0, due: v[7] ? fmtDate(v[7], 'yyyy-MM-dd') : '', payDay: Number(v[8]) || 0, note: String(v[9] || ''), status: String(v[10] || 'Идэвхтэй'),
-             total: Number(v[12]) || 0, schedule: (function () { try { return JSON.parse(v[13] || '[]'); } catch (e) { return []; } })() };
+             total: Number(v[12]) || 0, schedule: (function () { try { return JSON.parse(v[13] || '[]'); } catch (e) { return []; } })(),
+             monthly: Number(v[14]) || 0, payAcc: String(v[15] || ''), intMode: String(v[16] || '') };
   }).filter(function (x) { return x.id && x.status !== 'Устгасан'; });
 }
 function adminLoan(d) {
@@ -1832,16 +1836,64 @@ function adminLoan(d) {
                 Math.min(31, Math.max(0, Math.round(Number(x.payDay) || 0))) || '', String(x.note || '').slice(0, 200)];
   const sched = (Array.isArray(x.schedule) ? x.schedule : []).filter(function (r) { return /^\d{4}-\d{2}-\d{2}$/.test(String(r.d)); }).slice(0, 600)
     .map(function (r) { return { d: String(r.d), p: Math.max(0, Number(r.p) || 0), i: Math.max(0, Number(r.i) || 0) }; });
-  const extra = [Math.max(0, Number(x.total) || 0) || '', sched.length ? JSON.stringify(sched).slice(0, 45000) : ''];
+  if (Number(x.total) > 0 && Number(x.total) < Number(x.amount)) return { status: 'error', error: 'total' };   // хүүтэй нийт < зээлийн дүн
+  const extra = [Math.max(0, Number(x.total) || 0) || '', sched.length ? JSON.stringify(sched).slice(0, 45000) : '', Math.max(0, Math.round(Number(x.monthly) || 0)) || '',
+                 String(x.payAcc || '').slice(0, 40), /^(day|mon)$/.test(String(x.intMode)) ? String(x.intMode) : ''];
   if (d.updateId) {
     const cur = loanRows().filter(function (y) { return y.id === String(d.updateId); })[0];
     if (!cur) return { status: 'error', error: 'not_found' };
-    sh.getRange(cur.row, 2, 1, 9).setValues([vals]); sh.getRange(cur.row, 13, 1, 2).setValues([extra]);
+    sh.getRange(cur.row, 2, 1, 9).setValues([vals]); sh.getRange(cur.row, 13, 1, 5).setValues([extra]);
     return { status: 'ok', id: cur.id };
   }
   const id = 'L' + Date.now();
   sh.appendRow([id].concat(vals, ['Идэвхтэй', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')], extra));
   return { status: 'ok', id: id };
+}
+
+// ═══════════ ХУВИЙН САНХҮҮ (зөвхөн Эзэн) ═══════════
+// Тусдаа 4 хуудас: данс, гүйлгээ, төсөв, хөрөнгө. Устгахгүй — «Цуцалсан» төлөв. Бүх нүд текст (огноо, тоо хөрвөхгүй).
+const PF_T = {
+  acc: ['P_Accounts', ['id', 'name', 'type', 'bank', 'bank4', 'open', 'openDate', 'active', 'status', 'by', 'updated']],
+  tx: ['P_Transactions', ['id', 'date', 'type', 'acc', 'toAcc', 'amount', 'cat', 'desc', 'link', 'rec', 'status', 'prin', 'intr', 'fee', 'bankId', 'co', 'jids', 'by', 'updated']],
+  bud: ['P_Budget', ['id', 'month', 'cat', 'amount', 'status', 'by', 'updated']],
+  asset: ['P_Assets', ['id', 'name', 'type', 'value', 'date', 'note', 'status', 'by', 'updated']],
+};
+const PF_NUM = { open: 1, amount: 1, prin: 1, intr: 1, fee: 1, value: 1 };
+function pfSheet(t) {
+  const ss = SpreadsheetApp.openById(SHEET_ID), T = PF_T[t];
+  let sh = ss.getSheetByName(T[0]);
+  if (!sh) { sh = ss.insertSheet(T[0]); sh.getRange(1, 1, sh.getMaxRows(), T[1].length).setNumberFormat('@'); sh.appendRow(T[1]); styleHead(sh, T[1].length, '#334155'); sh.setFrozenRows(1); }
+  return sh;
+}
+function pfRows(t) {
+  const sh = pfSheet(t), H = PF_T[t][1], last = sh.getLastRow();
+  if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, H.length).getValues().map(function (v) {
+    const o = {}; H.forEach(function (k, i) { o[k] = PF_NUM[k] ? Number(v[i]) || 0 : v[i] instanceof Date ? fmtDate(v[i], 'yyyy-MM-dd') : String(v[i]); }); return o;
+  }).filter(function (o) { return o.id; });
+}
+function pfAll() { const o = {}; Object.keys(PF_T).forEach(function (t) { o[t] = pfRows(t); }); return o; }
+// d.table — acc|tx|bud|asset; d.rows — [{id?, ...}] (id-гүй бол шинэ); d.cancel — [id]
+function adminPf(d) {
+  const t = String(d.table || ''); if (!PF_T[t]) return { status: 'error', error: 'table' };
+  const sh = pfSheet(t), H = PF_T[t][1], now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), by = String(d.by || '').slice(0, 40), pos = {}, ids = [];
+  const last = sh.getLastRow();
+  if (last >= 2) sh.getRange(2, 1, last - 1, 1).getValues().forEach(function (v, i) { if (v[0]) pos[String(v[0])] = i + 2; });
+  (Array.isArray(d.cancel) ? d.cancel : []).slice(0, 200).forEach(function (id) { const r = pos[String(id)]; if (r) { sh.getRange(r, H.indexOf('status') + 1).setValue('Цуцалсан'); sh.getRange(r, H.length - 1, 1, 2).setValues([[by, now]]); } });
+  const add = [];
+  (Array.isArray(d.rows) ? d.rows : []).slice(0, 200).forEach(function (x, n) {
+    if (!x || typeof x !== 'object') return;
+    if ((x.date && !/^\d{4}-\d{2}-\d{2}$/.test(String(x.date))) || (x.month && !/^\d{4}-\d{2}$/.test(String(x.month)))) return;
+    const id = String(x.id || '') || ('P' + t.charAt(0).toUpperCase() + Date.now() + n), row = H.map(function (k) {
+      if (k === 'id') return id; if (k === 'by') return by; if (k === 'updated') return now;
+      if (k === 'status') return String(x.status || 'Идэвхтэй').slice(0, 20);
+      return PF_NUM[k] ? String(Math.round((Number(x[k]) || 0) * 100) / 100) : String(x[k] == null ? '' : x[k]).slice(0, k === 'desc' || k === 'note' ? 300 : 120);
+    });
+    ids.push(id);
+    if (pos[id]) sh.getRange(pos[id], 1, 1, H.length).setNumberFormat('@').setValues([row]); else add.push(row);
+  });
+  if (add.length) sh.getRange(sh.getLastRow() + 1, 1, add.length, H.length).setNumberFormat('@').setValues(add);
+  return { status: 'ok', ids: ids };
 }
 
 // ═══════════ БАРАА ЗАХИАЛГА (Хятад: урьдчилгаа → үлдэгдэл → карго → бараа ирэх) ═══════════

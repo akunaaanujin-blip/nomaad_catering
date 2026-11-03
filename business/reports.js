@@ -350,7 +350,7 @@ function buildJournal(biz, R) {
   });
   // Удирдлага: бусад компанид «Захирлын зарлага» (Дт 1208) гэж бичсэнийг удирдлагын зардлын задаргаанд оруулна — Дт 7023 / Кт 4102 (өр биш)
   if (biz === 'mgmt') R.journal.forEach(function (j) {
-    if (j.biz === 'mgmt' || !BUSINESSES[j.biz] || accMig(j.dr, j.id, j.desc) !== '1208' || /эхний үлдэгдэл|^Он нээлт/i.test(String(j.desc))) return;
+    if (j.biz === 'mgmt' || !BUSINESSES[j.biz] || accMig(j.dr, j.id, j.desc) !== '1208' || /#PF/.test(String(j.desc)) || /эхний үлдэгдэл|^Он нээлт/i.test(String(j.desc))) return;
     if (R.closed && j.date <= R.closed) return;
     var on = BUSINESSES[j.biz].name;
     add(j.date, 'Бусад компаниас авсан зарлага', j.id + '-dir', '7023', '4102', j.amount, (j.desc || 'Захирлын зарлага') + ' · ' + on + '-аас төлсөн', on);
