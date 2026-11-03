@@ -141,7 +141,7 @@ function pfView() {
   if (s === 'tx') return pfTxView();
   if (s === 'bud') return pfBudView();
   if (s === 'loans') return pfHead('Авсан зээл', 'Таны төлөх зээл, өр. «Төлөлт» дарахад данснаас зарлага автоматаар бичигдэнэ.',
-    '<button class="b-btn" onclick="openLoan(null,\'Авсан\')">+ Авсан зээл</button>') + loansView('Авсан');
+    '<button class="b-btn" onclick="openLoan(null,\'Авсан\')">+ Авсан зээл</button><button class="b-btn" onclick="openLoan(null,\'Авсан\');$(\'lnSrc\').value=\'fixed\';spSrcSet()">+ Тогтмол зардал</button>') + loansView('Авсан');
   if (s === 'lgiven') return pfHead('Өгсөн зээл', 'Бусдад өгсөн, танд буцааж төлөх зээл. «Төлбөр авсан» дарахад данс руу орлого бичигдэнэ.',
     '<button class="b-btn" onclick="openLoan(null,\'Өгсөн\')">+ Өгсөн зээл</button>') + loansView('Өгсөн');
   if (s === 'asset') return pfAssetView();
@@ -151,7 +151,7 @@ function pfView() {
 }
 
 // ═══════════ ЗЭЭЛ (хувийн) ═══════════
-function pfLoans(kind) { return loanList('mgmt').filter(function (L) { return !kind || L.kind === kind; }); }
+function pfLoans(kind, withFx) { return loanList('mgmt').filter(function (L) { return (!kind || L.kind === kind) && (withFx || !lnFx(L)); }); }   // тогтмол зардал өр биш
 function pfLoanTx(id, all) { return (PF.tx || []).filter(function (t) { return t.link === id && (all || t.status !== 'Цуцалсан'); }); }
 function pfLoanOpen(L) { var s = loanStat(L); return L.status !== 'Хаагдсан' && s.left > 0.5; }
 function pfDebt() { return r0(pfLoans('Авсан').filter(pfLoanOpen).reduce(function (a, L) { return a + loanStat(L).left; }, 0)); }
@@ -176,7 +176,7 @@ function pfLoanPay(id, mode, txId) {
   var tx = txId ? (PF.tx || []).filter(function (t) { return t.id === txId; })[0] : null, s = loanStat(L), sc = loanSched(L), taken = L.kind === 'Авсан';
   lpp = { id: id, tx: tx, intrMan: !!tx, prinMan: false };
   var def = tx ? r0(tx.amount - (tx.fee || 0)) : L.monthly || (sc.next ? sc.next.amt : '');
-  gOpen('<h2>' + (tx ? 'Төлөлт засах' : taken ? 'Зээлийн төлөлт' : 'Зээлийн төлбөр авсан') + '</h2><p class="muted">' + esc(L.partner) + ' · үлдэгдэл ' + mny(s.left) +
+  gOpen('<h2>' + (tx ? 'Төлөлт засах' : lnFx(L) ? 'Тогтмол зардал төлөх' : taken ? 'Зээлийн төлөлт' : 'Зээлийн төлбөр авсан') + '</h2><p class="muted">' + esc(L.partner) + ' · үлдэгдэл ' + mny(s.left) +
       (L.rate ? ' · сарын хүү ' + L.rate + '% (жилийн ' + r0(L.rate * 12) + '%)' : '') + (L.monthly ? ' · сарын төлөх ' + mny(L.monthly) : '') + '</p>' +
     '<div class="row2"><div><label for="lpDate">Огноо</label><input id="lpDate" type="date" value="' + (tx ? tx.date : todayStr()) + '" onchange="lppCalc()"></div>' +
     '<div><label for="lpTot">' + (taken ? 'Төлсөн нийт дүн (₮)' : 'Авсан нийт дүн (₮)') + '</label><input id="lpTot" type="number" min="0" inputmode="numeric" value="' + def + '" oninput="lppCalc()"></div></div>' +
@@ -185,7 +185,7 @@ function pfLoanPay(id, mode, txId) {
     '<p class="muted" id="lpInfo" style="font-size:12.5px;margin:4px 0"></p>' +
     '<div class="row2"><div><label for="lpFee">Торгууль/шимтгэл (₮)</label><input id="lpFee" type="number" min="0" inputmode="numeric" placeholder="заавал биш" value="' + (tx && tx.fee ? tx.fee : '') + '"></div>' +
     '<div><label for="lpAcc">' + (taken ? 'Төлсөн данс' : 'Орсон данс') + '</label><select id="lpAcc">' + pfAccOpts(tx ? tx.acc : L.payAcc && pfAcc(L.payAcc) ? L.payAcc : '') + '</select></div></div>' +
-    '<label for="lpNote">Тэмдэглэл</label><input id="lpNote" value="' + esc(tx ? String(tx.desc || '').replace(/^Зээлийн (төлөлт|төлбөр авсан) · [^·]*(· )?/, '') : '') + '">' +
+    '<label for="lpNote">Тэмдэглэл</label><input id="lpNote" value="' + esc(tx ? String(tx.desc || '').replace(/^(Зээлийн төлөлт|Зээлийн төлбөр авсан|Тогтмол зардал) · [^·]*(· )?/, '') : '') + '">' +
     '<button class="btn" onclick="pfLoanPaySave()">Хадгалах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
   if (tx) { $('lpInt').value = tx.intr || 0; $('lpPrin').value = tx.prin || 0; }
   lppCalc();
@@ -199,7 +199,7 @@ function lppCalc() {
   } else if (lpp.intrMan) $('lpPrin').value = tot ? r0(tot - (Number($('lpInt').value) || 0)) : '';
   else $('lpInt').value = tot ? r0(tot - (Number($('lpPrin').value) || 0)) : '';
   var p = Number($('lpPrin').value) || 0, it = Number($('lpInt').value) || 0, bad = Math.abs(p + it - tot) > 0.5 || p < 0 || it < 0;
-  $('lpInfo').innerHTML = (!L.rate && !(L.total > L.amount) ? 'Хүүгүй зээл — төлбөр бүхэлдээ үндсэнд · ' : '') + (L.rate ? (ii.mon ? 'Хүү сараар: үлдэгдэл × ' + L.rate + '%' : 'Хүү хоногоор: үлдэгдэл × ' + r0(L.rate * 12) + '% ÷ 365 × ' + ii.days + ' хоног (' + ii.last + '-аас хойш)') + ' · ' : '') +
+  $('lpInfo').innerHTML = (!L.rate && !(L.total > L.amount) && !lnFx(L) ? 'Хүүгүй зээл — төлбөр бүхэлдээ үндсэнд · ' : '') + (L.rate ? (ii.mon ? 'Хүү сараар: үлдэгдэл × ' + L.rate + '%' : 'Хүү хоногоор: үлдэгдэл × ' + r0(L.rate * 12) + '% ÷ 365 × ' + ii.days + ' хоног (' + ii.last + '-аас хойш)') + ' · ' : '') +
     'Хүү ' + fmt(it) + ' + үндсэн ' + fmt(p) + ' = ' + fmt(p + it) + (bad ? ' <b style="color:var(--red)">≠ нийт ' + fmt(tot) + '</b>' : '');
 }
 function pfLoanPaySave() {
@@ -209,9 +209,9 @@ function pfLoanPaySave() {
   if (!(tot > 0)) { toast('Төлсөн дүнгээ оруулна уу'); return; }
   if (p < 0 || it < 0 || Math.abs(p + it - tot) > 0.5) { toast('Хүү + үндсэн = нийт дүн байх ёстой'); return; }
   if (!acc) { toast('Данс сонгоно уу'); return; }
-  var taken = L.kind === 'Авсан', note = $('lpNote').value.trim(), s = loanStat(L), prev = lpp.tx;
-  var t = { id: prev ? prev.id : pfId('PT'), date: d, type: taken ? 'Зарлага' : 'Орлого', acc: acc, toAcc: '', amount: r0(tot + fee), cat: taken ? 'Зээлийн төлөлт' : 'Зээлийн эргэн төлөлт',
-            desc: (taken ? 'Зээлийн төлөлт · ' : 'Зээлийн төлбөр авсан · ') + L.partner + (note ? ' · ' + note : ''), link: L.id, rec: prev ? prev.rec : '', prin: r0(p), intr: r0(it), fee: r0(fee),
+  var taken = L.kind === 'Авсан', note = $('lpNote').value.trim(), s = loanStat(L), prev = lpp.tx, fx = lnFx(L);
+  var t = { id: prev ? prev.id : pfId('PT'), date: d, type: taken ? 'Зарлага' : 'Орлого', acc: acc, toAcc: '', amount: r0(tot + fee), cat: fx ? fx.cat : taken ? 'Зээлийн төлөлт' : 'Зээлийн эргэн төлөлт',
+            desc: (fx ? 'Тогтмол зардал · ' : taken ? 'Зээлийн төлөлт · ' : 'Зээлийн төлбөр авсан · ') + L.partner + (note ? ' · ' + note : ''), link: L.id, rec: prev ? prev.rec : '', prin: r0(p), intr: r0(it), fee: r0(fee),
             bankId: prev ? prev.bankId : '', co: '', jids: '' };
   var left = r0(s.left + (prev ? prev.prin || 0 : 0) - p);
   pfSave('tx', [t], [], function () {
@@ -258,7 +258,7 @@ function pfLoanHist(id) {
 // Ойрын N хоногийн төлөлт (хоцорсныг оруулна)
 function pfUpcoming(days) {
   var td = todayStr(), lim = todayStr(new Date(Date.now() + days * 864e5)), out = [];
-  pfLoans('Авсан').filter(pfLoanOpen).forEach(function (L) {
+  pfLoans('Авсан', 1).filter(pfLoanOpen).forEach(function (L) {
     var s = loanStat(L), sc = loanSched(L);
     if (sc.rows.length) sc.rows.forEach(function (r) { if (r.st !== 'paid' && r.d <= lim) out.push({ d: r.d, L: L, amt: r.left, late: r.d < td }); });
     else { var nl = loanNextLate(L, sc, s); if (nl.next && nl.next <= lim) out.push({ d: nl.next, L: L, amt: L.monthly || 0, late: nl.next < td }); }
@@ -661,7 +661,7 @@ function pfRepData() {
   var bud = pfCats('exp').concat(Object.keys(sp).filter(function (c) { return pfCats('exp').indexOf(c) < 0; })).filter(function (c) { return B[c] || sp[c]; })
     .map(function (c) { var b = r0(B[c] || 0), x = r0(sp[c] || 0); return [c, b, x, r0(b - x), b ? Math.round(x / b * 100) : null]; });
   // Зээл: энэ үед төлсөн үндсэн, хүү, торгууль + нийт, үлдэгдэл
-  var loans = loanList('mgmt').map(function (L) {
+  var loans = pfLoans().map(function (L) {
     var s = loanStat(L), P = { a: 0, p: 0, i: 0, f: 0 };
     pfLoanTx(L.id).forEach(function (t) { if (inP(t)) { P.a += t.amount; P.p += t.prin || 0; P.i += t.intr || 0; P.f += t.fee || 0; } });
     return [L.partner + (L.kind === 'Өгсөн' ? ' (өгсөн)' : ''), L.amount, r0(P.a), r0(P.p), r0(P.i), r0(P.f), s.paid, s.intr, s.left, L.status === 'Хаагдсан' || s.left <= 0.5 ? 'Хаагдсан' : 'Идэвхтэй'];
