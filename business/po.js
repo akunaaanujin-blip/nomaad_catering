@@ -104,14 +104,14 @@ function msFilter(q) {
 var pqIt = [];
 function openPo(id, preset) {   // preset — «Захиалах» бараанаас үүсгэсэн ноорог { items, supplier, note }
   var P = id ? poById(id) : null;
-  pqIt = P ? (P.items || []).map(function (i) { return { name: i.name, qty: i.qty, price: i.price }; }) : preset && preset.items ? preset.items : [{ name: '', qty: '', price: '' }];
+  pqIt = P ? (P.items || []).map(function (i) { return { name: i.name, qty: i.qty, price: i.price, cn: i.cn || '' }; }) : preset && preset.items ? preset.items : [{ name: '', qty: '', price: '', cn: '' }];
   gOpen('<h2>' + (P ? 'Захиалга засах · ' + esc(P.no) : 'Шинэ бараа захиалга') + '</h2>' +
     '<div class="row2"><div><label for="pqSup">Нийлүүлэгч</label><input id="pqSup" list="pqSups" placeholder="Жишээ: Yiwu ..."><datalist id="pqSups">' + partnerOptions() + '</datalist></div>' +
     '<div><label for="pqDate">Огноо</label><input id="pqDate" type="date"></div></div>' +
     '<div class="row2"><div><label for="pqCur">Валют</label><select id="pqCur" onchange="pqRender()"><option value="CNY">¥ юань</option><option value="USD">$ доллар</option><option value="MNT">₮ төгрөг</option></select></div>' +
     '<div><label for="pqCargo">Карго компани</label><input id="pqCargo" list="pqSups" placeholder="Мэдэгдэж байвал"></div></div>' +
     '<label>Бараа</label><datalist id="pqProds">' + BUSINESSES[state.biz].products.map(function (p) { return '<option value="' + esc(p.name) + '">'; }).join('') + '</datalist>' +
-    '<div id="pqItems"></div><button class="b-btn" style="margin-top:6px" onclick="pqIt.push({name:\'\',qty:\'\',price:\'\'});pqRender()">+ Мөр нэмэх</button>' +
+    '<div id="pqItems"></div><button class="b-btn" style="margin-top:6px" onclick="pqIt.push({name:\'\',qty:\'\',price:\'\',cn:\'\'});pqRender()">+ Мөр нэмэх</button>' +
     '<p id="pqTot" style="margin-top:8px"></p>' +
     '<label for="pqNote">Тэмдэглэл</label><input id="pqNote">' +
     '<button class="btn" onclick="savePo(' + (P ? '\'' + P.id + '\'' : '') + ')">Хадгалах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
@@ -121,21 +121,22 @@ function openPo(id, preset) {   // preset — «Захиалах» бараан�
 }
 function pqRender() {
   var sg = PO_CUR[$('pqCur').value];
-  $('pqItems').innerHTML = '<table class="rep-t"><tr><th>Бараа</th><th class="n">Тоо</th><th class="n">Нэгж үнэ (' + sg + ')</th><th class="n">Дүн</th><th></th></tr>' + pqIt.map(function (it, i) {
+  $('pqItems').innerHTML = '<table class="rep-t"><tr><th>Бараа</th><th class="n">Тоо</th><th class="n">Нэгж үнэ (' + sg + ')</th><th class="n" title="Нийлүүлэгчээс Хятад дахь каргоны агуулах хүртэлх тээвэр — мөрийн нийт дүн">Хятад дахь карго (' + sg + ')</th><th class="n">Дүн</th><th></th></tr>' + pqIt.map(function (it, i) {
     return '<tr><td><input list="pqProds" value="' + esc(it.name) + '" oninput="pqIt[' + i + '].name=this.value" style="min-width:180px"></td>' +
       '<td class="n"><input type="number" min="0" step="any" value="' + it.qty + '" oninput="pqIt[' + i + '].qty=this.value;pqTot()" style="width:70px"></td>' +
       '<td class="n"><input type="number" min="0" step="any" value="' + it.price + '" oninput="pqIt[' + i + '].price=this.value;pqTot()" style="width:100px"></td>' +
+      '<td class="n"><input type="number" min="0" step="any" value="' + (it.cn || '') + '" oninput="pqIt[' + i + '].cn=this.value;pqTot()" style="width:90px"></td>' +
       '<td class="n" id="pqL' + i + '"></td><td><button class="mini" onclick="pqIt.splice(' + i + ',1);pqRender()">✕</button></td></tr>';
   }).join('') + '</table>';
   pqTot();
 }
 function pqTot() {
   var sg = PO_CUR[$('pqCur').value], t = 0;
-  pqIt.forEach(function (it, i) { var v = (Number(it.qty) || 0) * (Number(it.price) || 0); t += v; var c = $('pqL' + i); if (c) c.textContent = v ? sg + (Math.round(v * 100) / 100).toLocaleString('en-US') : ''; });
+  pqIt.forEach(function (it, i) { var v = (Number(it.qty) || 0) * (Number(it.price) || 0) + (Number(it.cn) || 0); t += v; var c = $('pqL' + i); if (c) c.textContent = v ? sg + (Math.round(v * 100) / 100).toLocaleString('en-US') : ''; });
   $('pqTot').innerHTML = 'Нийт: <b>' + sg + (Math.round(t * 100) / 100).toLocaleString('en-US') + '</b>';
 }
 function savePo(id) {
-  var items = pqIt.filter(function (i) { return String(i.name).trim() && Number(i.qty) > 0; }).map(function (i) { return { name: String(i.name).trim(), qty: Number(i.qty), price: Number(i.price) || 0 }; });
+  var items = pqIt.filter(function (i) { return String(i.name).trim() && Number(i.qty) > 0; }).map(function (i) { return { name: String(i.name).trim(), qty: Number(i.qty), price: Number(i.price) || 0, cn: Number(i.cn) || 0 }; });
   var x = { biz: state.biz, supplier: $('pqSup').value.trim(), date: $('pqDate').value, cur: $('pqCur').value, cargoCo: $('pqCargo').value.trim(), note: $('pqNote').value.trim(), items: items };
   if (x.supplier.length < 2) { toast('Нийлүүлэгчийн нэрийг бичнэ үү'); return; }
   if (!items.length) { toast('Дор хаяж нэг бараа, тоотой нь бичнэ үү'); return; }
@@ -143,7 +144,7 @@ function savePo(id) {
   save('nb_cur', x.cur); if (x.cargoCo) save('nb_cargoco', x.cargoCo);
   if (!API_URL) {
     window.pos = window.pos || [];
-    x.total = Math.round(items.reduce(function (a, i) { return a + i.qty * i.price; }, 0) * 100) / 100;
+    x.total = Math.round(items.reduce(function (a, i) { return a + i.qty * i.price + i.cn; }, 0) * 100) / 100;
     if (id) Object.assign(poById(id), x);
     else { x.id = 'PO' + Date.now(); x.no = 'ЗХ-' + ('000' + (window.pos.filter(function (p) { return p.biz === x.biz; }).length + 1)).slice(-4); x.status = 'Захиалсан'; window.pos.push(x); }
     save('nb_demo_pos', window.pos); gClose(); render(); toast('Хадгалагдлаа'); return;
@@ -233,7 +234,7 @@ function openPoRecv(id) {
     (P.items || []).map(function (it, i) {
       var prev = round2(rq[it.name] || 0), left = Math.max(0, round2(it.qty - prev));
       return '<tr><td>' + esc(it.name) + '</td><td class="n">' + it.qty + '</td><td class="n">' + (prev || '') + '</td><td class="n"><input id="prQ' + i + '" type="number" min="0" step="any" value="' + left + '" oninput="prAuto()" style="width:70px"></td>' +
-        '<td class="n">' + it.price + '</td><td class="n" id="prU' + i + '"></td><td class="n" id="prT' + i + '"></td></tr>';
+        '<td class="n">' + it.price + (it.cn ? ' <span class="muted">+ ' + it.cn + '</span>' : '') + '</td><td class="n" id="prU' + i + '"></td><td class="n" id="prT' + i + '"></td></tr>';
     }).join('') + '</table>';
   prAuto();
 }
@@ -247,8 +248,8 @@ function prAlloc(P) {   // { rows:[{name,qty,price,unit,cargoU,tot}], goods, car
   var s = poStat(P), L = poShips(P), rq = poRecvQty(P, L), unSup = Number(($('prUnSup') || {}).value) || 0, unC = Number(($('prUnCargo') || {}).value) || 0;
   var gDone = L.reduce(function (a, x) { return a + x.goods; }, 0), cDone = L.reduce(function (a, x) { return a + x.cargoPre; }, 0);
   var gPool = Math.max(0, s.sup + s.accr - gDone + unSup), cPool = Math.max(0, s.cargo + s.accrC - cDone + unC);   // 1505-д үлдсэн бараа / каргоны хэсэг
-  var rows = (P.items || []).map(function (it, i) { return { name: it.name, price: it.price, ord: it.qty, prev: rq[it.name] || 0, qty: Number(($('prQ' + i) || {}).value) || 0 }; });
-  var useQty = !rows.some(function (r) { return r.price > 0; }), wt = function (r, q) { return useQty ? q : q * r.price; };
+  var rows = (P.items || []).map(function (it, i) { return { name: it.name, price: it.price, cn: Number(it.cn) || 0, ord: it.qty, prev: rq[it.name] || 0, qty: Number(($('prQ' + i) || {}).value) || 0 }; });
+  var useQty = !rows.some(function (r) { return r.price > 0; }), wt = function (r, q) { return useQty ? q : q * r.price + (r.ord ? r.cn * q / r.ord : 0); };   // Хятад дахь карго тэр барааны өртөгт
   var remV = rows.reduce(function (a, r) { return a + wt(r, Math.max(0, r.ord - r.prev)); }, 0), shipV = rows.reduce(function (a, r) { return a + wt(r, r.qty); }, 0);
   var fin = $('prFin') && $('prFin').checked, share = fin || !(remV > 0) ? 1 : Math.min(1, shipV / remV);
   var goods = r0(gPool * share), cargo = r0(cPool), total = r0(goods + cargo);   // урьдчилж төлсөн карго — энэ ирэлтэд

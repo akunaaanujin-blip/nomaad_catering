@@ -1925,9 +1925,9 @@ function adminPo(d) {
   }
   const x = d.po || {};
   const items = (Array.isArray(x.items) ? x.items : []).filter(function (i) { return String(i.name || '').trim() && Number(i.qty) > 0; })
-    .map(function (i) { return { name: String(i.name).trim().slice(0, 80), qty: Number(i.qty), price: Math.max(0, Number(i.price) || 0) }; });
+    .map(function (i) { return { name: String(i.name).trim().slice(0, 80), qty: Number(i.qty), price: Math.max(0, Number(i.price) || 0), cn: Math.max(0, Number(i.cn) || 0) }; });   // cn — Хятад дахь карго (мөрийн дүн)
   if (!BIZ_NAMES[x.biz] || !String(x.supplier || '').trim() || !/^\d{4}-\d{2}-\d{2}$/.test(String(x.date)) || !items.length || !/^(CNY|USD|MNT)$/.test(String(x.cur))) return { status: 'error', error: 'fields' };
-  const total = Math.round(items.reduce(function (a, i) { return a + i.qty * i.price; }, 0) * 100) / 100;
+  const total = Math.round(items.reduce(function (a, i) { return a + i.qty * i.price + i.cn; }, 0) * 100) / 100;
   const vals = [x.date, x.biz, String(x.supplier).trim().slice(0, 80), JSON.stringify(items).slice(0, 45000), x.cur, total, String(x.cargoCo || '').slice(0, 80)];
   if (d.updateId) {
     const cur = rows.filter(function (y) { return y.id === String(d.updateId); })[0];
