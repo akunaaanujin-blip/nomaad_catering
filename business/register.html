@@ -26,8 +26,8 @@
       <div><label for="rPhone">Утас *</label><input id="rPhone" inputmode="tel" autocomplete="tel" placeholder="99112233"></div>
       <div><label for="rReg">Регистр</label><input id="rReg" placeholder="УБ90010101"></div>
     </div>
-    <label for="rUser">Нэвтрэх нэр <span class="muted" style="font-weight:400">(хоосон бол утасны дугаар тань нэвтрэх нэр болно)</span></label>
-    <input id="rUser" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="жишээ: bold.b эсвэл хоосон">
+    <label for="rUser">Нэвтрэх нэр <span class="muted" style="font-weight:400">(заавал биш — хоосон бол утасны дугаар тань нэвтрэх нэр болно)</span></label>
+    <input id="rUser" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="жишээ: bold.b эсвэл хоосон">
     <label for="rAddr">Гэрийн хаяг (гэрээнд бичигдэнэ)</label>
     <input id="rAddr" placeholder="Дүүрэг, хороо, байр, тоот">
     <label for="rStart">Ажилд орох огноо</label>
@@ -49,6 +49,7 @@
     <div class="done-mark">✓</div>
     <h2 style="margin:8px 0">Бүртгэл илгээгдлээ</h2>
     <p class="muted">Менежер баталгаажуулсны дараа өөрийн дэлгүүрийн хуудсанд <b>нэвтрэх нэр (эсвэл утас), кодоороо</b> нэвтэрнэ.</p>
+    <p>Таны нэвтрэх нэр: <b id="doneUser"></b></p>
     <a class="btn" id="doneLink" href="index.html" style="text-decoration:none;text-align:center">Нэвтрэх хуудас руу</a>
   </div>
 </div>
@@ -69,14 +70,15 @@ function submitRegister() {
     surname: $('rSurname').value.trim(), name: $('rName').value.trim(),
     phone: $('rPhone').value.replace(/[^\d+]/g, ''), regno: $('rReg').value.trim(),
     position: $('rPos').value.trim(), bank: $('rBank').value.trim(), code: $('rCode').value.trim(),
-    username: $('rUser').value.trim().toLowerCase() || $('rPhone').value.replace(/\D/g, '').slice(-8),   // хоосон бол утас
+    username: $('rUser').value.replace(/\s+/g, '').toLowerCase(),
     address: $('rAddr').value.trim(), start: $('rStart').value,
   };
+  // Нэвтрэх нэр хоосон эсвэл тохиромжгүй (кирилл, @, хөтчийн автоматаар бөглөсөн г.м) бол утасны дугаар нэвтрэх нэр болно
+  if (!/^[a-z0-9._]{3,20}$/.test(d.username)) d.username = d.phone.replace(/\D/g, '').slice(-8);
   var msg = '';
   if (!d.name) msg = 'Нэрээ бичнэ үү';
   else if (!/^\+?\d{8,12}$/.test(d.phone)) msg = 'Утасны дугаараа зөв бичнэ үү';
-  else if (!/^[a-z0-9._]{3,20}$/.test(d.username)) { msg = 'Нэвтрэх нэр: латин жижиг үсэг, тоо, цэг (3-20 тэмдэгт) — эсвэл хоосон орхивол утасны дугаар болно'; $('rUser').focus(); }
-  else if (!/^\d{4}$/.test(d.code)) msg = 'Нэвтрэх код 4 оронтой тоо байна';
+    else if (!/^\d{4}$/.test(d.code)) msg = 'Нэвтрэх код 4 оронтой тоо байна';
   else if (d.code !== $('rCode2').value.trim()) msg = 'Код хоорондоо таарахгүй байна';
   else if (/^(\d)\1{3}$|^1234$|^4321$/.test(d.code)) msg = 'Илүү хэцүү код сонгоно уу';
   $('rMsg').textContent = msg;
@@ -93,10 +95,11 @@ function submitRegister() {
         $('form').style.display = 'none';
         $('done').style.display = 'block';
         $('doneLink').href = d.biz + '.html';
+        $('doneUser').textContent = d.username;
         return;
       }
       $('rMsg').textContent = {
-        user_taken: $('rUser').value.trim() ? 'Энэ нэвтрэх нэр бүртгэгдсэн байна — өөр нэр сонгоно уу' : 'Энэ утсаар бүртгэл үүссэн байна — «Нэвтрэх нэр»-д өөр нэр бичнэ үү эсвэл менежерт хандана уу',
+        user_taken: d.username !== d.phone.replace(/\D/g, '').slice(-8) ? 'Энэ нэвтрэх нэр бүртгэгдсэн байна — өөр нэр сонгоно уу' : 'Энэ утсаар бүртгэл үүссэн байна — «Нэвтрэх нэр»-д өөр нэр бичнэ үү эсвэл менежерт хандана уу',
         user: 'Нэвтрэх нэр буруу байна (латин жижиг үсэг, тоо, цэг)',
         fields: 'Нэр, утсаа зөв бөглөнө үү', code: 'Код 4 оронтой тоо байна',
         busy: 'Олон бүртгэл ирсэн байна — түр хүлээгээд дахин оролдоно уу',
