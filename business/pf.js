@@ -95,6 +95,7 @@ var PF_NAV = [
   ['Гүйлгээ', 'sales', [['pf/tx', 'Гүйлгээ']]],
   ['Төсөв', 'reports', [['pf/bud', 'Төсөв']]],
   ['Зээл', 'people', [['pf/loans', 'Авсан зээл'], ['pf/lgiven', 'Өгсөн зээл']]],
+  ['Тогтмол зардал', 'cal', [['pf/fixed', 'Тогтмол зардал']]],
   ['Хөрөнгө', 'products', [['pf/asset', 'Хөрөнгө']]],
   ['Тайлан', 'reports', [['pf/rep', 'Тайлан']]],
   ['Тохиргоо', 'gear', [['pf/set', 'Тохиргоо'], ['finance/api', 'Банкны данс холбох'], ['finance/ledger', 'Хуучин бүртгэл (журнал)'], ['finance/audit', 'Өөрчлөлтийн түүх'], ['finance/trash', 'Хогийн сав']]],
@@ -141,7 +142,9 @@ function pfView() {
   if (s === 'tx') return pfTxView();
   if (s === 'bud') return pfBudView();
   if (s === 'loans') return pfHead('Авсан зээл', 'Таны төлөх зээл, өр. «Төлөлт» дарахад данснаас зарлага автоматаар бичигдэнэ.',
-    '<button class="b-btn" onclick="openLoan(null,\'Авсан\')">+ Авсан зээл</button><button class="b-btn" onclick="openLoan(null,\'Авсан\');$(\'lnSrc\').value=\'fixed\';spSrcSet()">+ Тогтмол зардал</button>') + loansView('Авсан');
+    '<button class="b-btn" onclick="openLoan(null,\'Авсан\')">+ Авсан зээл</button>') + loansView('Авсан');
+  if (s === 'fixed') return pfHead('Тогтмол зардал', 'Түрээс, интернэт, даатгал г.м давтагддаг төлбөр. «Төлсөн» дарахад тухайн ангилалд зарлага бичигдэнэ.',
+    '<button class="b-btn" onclick="openLoan(null,\'Авсан\');$(\'lnSrc\').value=\'fixed\';spSrcSet()">+ Тогтмол зардал</button>') + loansView('fixed');
   if (s === 'lgiven') return pfHead('Өгсөн зээл', 'Бусдад өгсөн, танд буцааж төлөх зээл. «Төлбөр авсан» дарахад данс руу орлого бичигдэнэ.',
     '<button class="b-btn" onclick="openLoan(null,\'Өгсөн\')">+ Өгсөн зээл</button>') + loansView('Өгсөн');
   if (s === 'asset') return pfAssetView();
