@@ -17,7 +17,7 @@ var MNAV = [
     ['products/counts', 'Тооллого'], ['products/move', 'Хөдөлгөөн, шилжүүлэг'], ['products/in', 'Орлогын жагсаалт'], ['products/prices', 'Үнийн түүх'], ['finance/assets', 'Үндсэн хөрөнгө']]],
   ['Мөнгө', 'money', [['finance/cashacc', 'Данснууд'], ['finance/bank', 'Банкны хуулга, тулгалт'], ['finance/ledger', 'Дансны хуулга'], ['finance/vouchers', 'Кассын гүйлгээ'],
     ['finance/expenses', 'Зардал, касс хаалт'], ['finance/requests', 'Мөнгөний хүсэлт']]],
-  ['Тооцоо', 'people', [['finance/ebset', 'Буухиа тооцоо'], ['finance/recv', 'Авлага'], ['finance/payb', 'Өглөг'], ['finance/loans', 'Зээл'], ['finance/payroll', 'Цалин, НДШ'], ['finance/debts', 'Бусад авлага, өглөг'],
+  ['Тооцоо', 'people', [['finance/ebset', 'Буухиа тооцоо'], ['finance/recv', 'Авлага'], ['finance/payb', 'Өглөг'], ['finance/loans', 'Зээл'], ['finance/fixed', 'Тогтмол зардал'], ['finance/payroll', 'Цалин, НДШ'], ['finance/debts', 'Бусад авлага, өглөг'],
     ['finance/partners', 'Харилцагчид'], ['finance/pstmt', 'Харилцагчийн хуулга']]],
   ['Тайлан', 'reports', [['—', 'Удирдлагын'], ['finance/daily', 'Өдрийн орлого'], ['finance/expcat', 'Зардлын задаргаа'], ['finance/cashflow', 'Мөнгөн урсгал'], ['finance/profit', 'Барааны ашиг'],
     ['finance/months', '12 сарын дүн'], ['review', 'Удирдлагын тойм'],

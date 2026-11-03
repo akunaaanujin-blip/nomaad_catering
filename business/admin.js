@@ -446,6 +446,7 @@ function companyView() {
   if (sub === 'accounts') acts = '<button class="b-btn primary" onclick="accEdit()">+ Данс нэмэх</button>';
   if (sub === 'bank') acts = '<button class="b-btn primary" onclick="$(\'bankFile\').click()">Хуулга оруулах (Excel)</button><button class="b-btn" onclick="setSub(\'banklink\')">Данс холбох</button>';
   if (sub === 'loans') acts = '<button class="b-btn primary" onclick="openLoan(null,\'Авсан\')">+ Авсан зээл</button><button class="b-btn primary" onclick="openLoan(null,\'Өгсөн\')">+ Өгсөн зээл</button>';
+  if (sub === 'fixed') acts = '<button class="b-btn primary" onclick="openLoan(null,\'Авсан\');$(\'lnSrc\').value=\'fixed\';spSrcSet()">+ Тогтмол зардал</button>';
   if (sub === 'cashacc') acts = '<button class="b-btn primary" onclick="openBankLink()">+ Банкны данс нэмэх</button><button class="b-btn" onclick="setSub(\'bank\')">Хуулга оруулах</button>';
   if (sub === 'banklink') acts = '<button class="b-btn primary" onclick="openBankLink()">+ Данс холбох</button>';
   if (sub === 'po') acts = '<button class="b-btn primary" onclick="openPo()">+ Шинэ захиалга</button>';
@@ -1460,6 +1461,7 @@ function subBody() {
   if (mod === 'finance' && sub === 'lock') return lockView();
   if (mod === 'finance' && HUBS[sub]) return hubView(sub);
   if (mod === 'finance' && sub === 'loans') return loansView();
+  if (mod === 'finance' && sub === 'fixed') return loansView('fixed');
   if (mod === 'finance' && sub === 'banklink') return bankLinkView();
   if (mod === 'finance' && sub === 'api') return apiView(state.biz);
   if (mod === 'finance' && sub === 'assets') return assetsView();
