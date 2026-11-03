@@ -347,6 +347,13 @@ function buildJournal(biz, R) {
       desc: String(j.desc).replace(/Хуримтлагдсан ашиг \(эхний/, ACC['4201'].name + ' (эхний') };
     add(j.date, j.no ? VOUCHER_NAMES[j.no.slice(0, 2)] + ' ' + j.no : /^Он нээлт/.test(j.desc) ? 'Он нээлт' : 'Журналын бичилт', j.id, accMig(j.dr, j.id, j.desc), accMig(j.cr, j.id, j.desc), j.amount, j.desc, j.partner);
   });
+  // Удирдлага: бусад компанид «Захирлын зарлага» (Дт 1208) гэж бичсэнийг удирдлагын зардал болгоно — Дт 7022 / Кт 1290 (тэр компанид өгөх)
+  if (biz === 'mgmt') R.journal.forEach(function (j) {
+    if (j.biz === 'mgmt' || !BUSINESSES[j.biz] || accMig(j.dr, j.id, j.desc) !== '1208' || /эхний үлдэгдэл|^Он нээлт/i.test(String(j.desc))) return;
+    if (R.closed && j.date <= R.closed) return;
+    var on = BUSINESSES[j.biz].name;
+    add(j.date, 'Захирлын зарлага', j.id + '-dir', '7022', '1290', j.amount, (j.desc || 'Захирлын зарлага') + ' · ' + on + '-аас төлсөн', on);
+  });
   // Үндсэн хөрөнгийн элэгдэл — сар бүрийн эцэст автоматаар (шулуун шугамаар, авсны дараа сараас). Гараар бичсэн сар байвал түүнийг авна.
   var td = todayStr();
   (R.assets || []).forEach(function (A) {

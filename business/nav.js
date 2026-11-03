@@ -58,10 +58,11 @@ function navItemOn(k) {
   var m = k.split('/'); if (state.view !== 'company' || state.module !== m[0]) return false;
   var cur = state.sub[m[0]]; return cur === m[1] || NAV_ALIAS[cur] === m[1];
 }
+// Удирдлага = захирлын хувийн санхүүгийн хөтөч: данс, гүйлгээ, зээл, тооцоо, зардлын тайлан (борлуулалт, буухиа, Boost, нягтлангийн тайлангүй)
+var MGMT_NAV = /^(home|review|v:cal|finance\/(cashacc|bank|ledger|vouchers|loans|debts|pstmt|expcat|cashflow|opening|accounts|api|audit|trash))$/;
 function navOk(biz, k) {
   var B = BUSINESSES[biz] || {};
-  if (B.finOnly && !/^(finance\/|v:|home$)/.test(k)) return false;   // Удирдлага: зөвхөн санхүү
-  if (B.finOnly && /^v:tax:/.test(k)) return false;
+  if (B.finOnly && !MGMT_NAV.test(k)) return false;   // Удирдлага: захирлын хувийн санхүүгийн хөтөч
   if (/^finance\/(audit|trash|company)$/.test(k)) return isOwner();
   var m = k.match(/^(\w+)\/(\w+)$/); if (m) return subVisible(biz, m[2]);
   if (k === 'v:staff' || k === 'v:docs') return isOwner();
@@ -91,7 +92,7 @@ subnavHtml = function () {
   }
   // Зүүн багана: 8 бүлэг (icon + нэр); хажууд нь сонгосон бүлгийн хуудсууд самбар болж нээгдэнэ (нэг удаад нэг бүлэг)
   var biz = state.biz, G = MNAV.map(function (g, gi) {
-    var items = g[2].filter(function (it) { return it[0] === '—' || navOk(biz, it[0]); }), real = items.filter(function (it) { return it[0] !== '—'; });
+    var items = g[2].filter(function (it) { return it[0] === '—' ? !BUSINESSES[biz].finOnly : navOk(biz, it[0]); }), real = items.filter(function (it) { return it[0] !== '—'; });
     return { g: g, gi: gi, items: items, real: real, on: real.some(function (it) { return navItemOn(it[0]); }), badge: real.reduce(function (a, it) { return a + navCountOf(it[0]); }, 0) };
   }).filter(function (x) { return x.real.length; });
   var act = G.filter(function (x) { return x.on; })[0];
@@ -268,7 +269,7 @@ function homeView() {
   }
   var lastBk = (typeof bankLines !== 'undefined' ? bankLines : []).filter(function (l) { return l.biz === biz; }).map(function (l) { return String(l.date).slice(0, 10); }).sort().pop() || '';
   daily.push({ txt: 'Банкны хуулга оруулж тулгах', ok: !navCount('bank') && lastBk >= todayStr(new Date(Date.now() - 7 * 864e5)), fn: "navGo('finance/bank')", hint: lastBk ? 'сүүлд ' + lastBk : 'хуулга оруулаагүй' });
-  daily.push({ txt: 'Мөнгөний хүсэлт шийдэх', ok: !pendRequests(biz).length, fn: "navGo('finance/requests')" });
+  if (!B.finOnly) daily.push({ txt: 'Мөнгөний хүсэлт шийдэх', ok: !pendRequests(biz).length, fn: "navGo('finance/requests')" });
   var todo = '<div class="card"><h2>Өнөөдөр хийх ажил</h2>' + (L.length ? L.map(function (a) {
       return '<div class="fn-todo' + (a.bad ? ' bad' : ' warn') + '"><span class="fn-ck">!</span><span>' + esc(a.txt) + '</span><button class="link" onclick="' + a.fn + '">Шийдэх →</button></div>'; }).join('') : '') +
     daily.filter(function (d) { return !d.ok && !L.some(function (a) { return a.fn === d.fn; }); }).map(function (d) { return '<div class="fn-todo"><span class="fn-ck fn-o">○</span><span>' + d.txt + (d.hint ? ' <small class="muted">· ' + esc(d.hint) + '</small>' : '') + '</span><button class="link" onclick="' + d.fn + '">Хийх →</button></div>'; }).join('') +
@@ -289,7 +290,7 @@ function homeView() {
   var tx = '<div class="card"><h2>Сүүлийн 10 гүйлгээ</h2>' + (last.length ? '<div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Баримт</th><th>Тайлбар</th><th>Дебет</th><th>Кредит</th><th class="n">Дүн</th></tr>' + last.map(function (e) {
       return '<tr><td class="nw">' + e.date + (e.time ? ' ' + esc(String(e.time).slice(0, 5)) : '') + '</td><td>' + esc(e.doc) + '</td><td class="fn-ell" title="' + esc(e.desc) + '">' + esc(e.desc) + '</td><td>' + esc(accName(e.dr)) + '</td><td>' + esc(accName(e.cr)) + '</td><td class="n">' + mny(e.amount) + '</td></tr>'; }).join('') + '</table></div>'
     : '<p class="muted">Гүйлгээ алга.</p>') + '</div>';
-  return '<div class="pg-head"><div><h1>Нүүр</h1><p class="pg-desc">' + esc(B.name) + ' · ' + t + ' — өнөөдөр юу хийх, энэ сарын дүн.</p></div></div>' + todo + (typeof ebSetHomeCard === 'function' && B.orders ? ebSetHomeCard(biz) : '') + (typeof boostHomeCard === 'function' ? boostHomeCard(B.finOnly ? 'all' : biz) : '') + kpis + chart + tx;
+  return '<div class="pg-head"><div><h1>Нүүр</h1><p class="pg-desc">' + esc(B.name) + ' · ' + t + ' — өнөөдөр юу хийх, энэ сарын дүн.</p></div></div>' + todo + (typeof ebSetHomeCard === 'function' && B.orders ? ebSetHomeCard(biz) : '') + (typeof boostHomeCard === 'function' && !B.finOnly ? boostHomeCard(biz) : '') + kpis + chart + tx;
 }
 
 // ═══════════ Аюулгүй байдал, хурдан оруулах ═══════════
