@@ -122,14 +122,17 @@ function openPo(id, preset) {   // preset — «Захиалах» бараан�
 function pqRender() {
   var sg = PO_CUR[$('pqCur').value];
   $('pqItems').innerHTML = '<table class="rep-t"><tr><th>Бараа</th><th class="n">Тоо</th><th class="n">Нэгж үнэ (' + sg + ')</th><th class="n" title="Нийлүүлэгчээс Хятад дахь каргоны агуулах хүртэлх тээвэр — мөрийн нийт дүн">Хятад дахь карго (' + sg + ')</th><th class="n">Дүн</th><th></th></tr>' + pqIt.map(function (it, i) {
-    return '<tr><td><input list="pqProds" value="' + esc(it.name) + '" oninput="pqIt[' + i + '].name=this.value" style="min-width:180px"></td>' +
+    return '<tr><td style="white-space:nowrap"><input list="pqProds" value="' + esc(it.name) + '" oninput="pqIt[' + i + '].name=this.value;pqMark(' + i + ')" style="min-width:180px"> <span id="pqN' + i + '" class="muted" style="font-size:12px" title="Барааны бүртгэлд алга — ирэхэд нь бүртгэнэ"></span></td>' +
       '<td class="n"><input type="number" min="0" step="any" value="' + it.qty + '" oninput="pqIt[' + i + '].qty=this.value;pqTot()" style="width:70px"></td>' +
       '<td class="n"><input type="number" min="0" step="any" value="' + it.price + '" oninput="pqIt[' + i + '].price=this.value;pqTot()" style="width:100px"></td>' +
       '<td class="n"><input type="number" min="0" step="any" value="' + (it.cn || '') + '" oninput="pqIt[' + i + '].cn=this.value;pqTot()" style="width:90px"></td>' +
       '<td class="n" id="pqL' + i + '"></td><td><button class="mini" onclick="pqIt.splice(' + i + ',1);pqRender()">✕</button></td></tr>';
   }).join('') + '</table>';
+  pqIt.forEach(function (it, i) { pqMark(i); });
   pqTot();
 }
+function poKnown(name) { var n = String(name || '').trim().toLowerCase(); return BUSINESSES[state.biz].products.some(function (p) { return p.name.toLowerCase() === n; }); }
+function pqMark(i) { var c = $('pqN' + i), n = String(pqIt[i].name || '').trim(); if (c) c.textContent = n && !poKnown(n) ? 'шинэ' : ''; }
 function pqTot() {
   var sg = PO_CUR[$('pqCur').value], t = 0;
   pqIt.forEach(function (it, i) { var v = (Number(it.qty) || 0) * (Number(it.price) || 0) + (Number(it.cn) || 0); t += v; var c = $('pqL' + i); if (c) c.textContent = v ? sg + (Math.round(v * 100) / 100).toLocaleString('en-US') : ''; });
@@ -215,12 +218,12 @@ function savePoPay(id, cargo) {
 // ── Бараа ирсэн (хэсэг хэсгээр): 1505-ын үлдэгдлээс энэ ирэлтэд ногдохыг бараанд хуваах ──
 var _prId = '';
 function openPoRecv(id) {
-  _prId = id;
+  _prId = id; prDone = {};
   var P = poById(id), s = poStat(P), L = poShips(P), rq = poRecvQty(P, L), wh = hasWarehouse(state.biz);
   gOpen('<h2>' + esc(P.no) + ' · Бараа ирсэн' + (L.length ? ' (' + (L.length + 1) + '-р ирэлт)' : '') + '</h2><p class="muted">' + esc(P.supplier) + ' · захиалга ' + poCurAmt(P, P.total) + '</p>' +
     '<div class="row2"><div><label for="prDate">Ирсэн огноо</label><input id="prDate" type="date" value="' + todayStr() + '"></div>' +
     (wh ? '<div><label for="prLoc">Байршил</label><select id="prLoc"><option>Агуулах</option><option>Дэлгүүр</option></select></div>' : '<div></div>') + '</div>' +
-    '<div id="prItems"></div>' +
+    '<div id="prItems"></div><div id="prNew"></div>' +
     '<label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="prFin" onchange="prCalc()" style="width:auto"> Захиалгын бүх бараа ирж дууссан (захиалгыг хаана)</label>' +
     '<table class="rep-t" style="margin-top:8px"><tr><td>Замд (1505) — нийлүүлэгчид төлсөн, бараа нь ирээгүй</td><td class="n">' + mny(s.bal) + '</td></tr></table>' +
     '<div class="row2"><div><label for="prUnSup">Нийлүүлэгчид дараа төлөх (₮)</label><input id="prUnSup" type="number" min="0" inputmode="numeric" oninput="prCalc()"></div>' +
@@ -236,7 +239,23 @@ function openPoRecv(id) {
       return '<tr><td>' + esc(it.name) + '</td><td class="n">' + it.qty + '</td><td class="n">' + (prev || '') + '</td><td class="n"><input id="prQ' + i + '" type="number" min="0" step="any" value="' + left + '" oninput="prAuto()" style="width:70px"></td>' +
         '<td class="n">' + it.price + (it.cn ? ' <span class="muted">+ ' + it.cn + '</span>' : '') + '</td><td class="n" id="prU' + i + '"></td><td class="n" id="prT' + i + '"></td></tr>';
     }).join('') + '</table>';
+  prNewRender();
   prAuto();
+}
+// Барааны бүртгэлд алга бараа — ирсэн үед нь яг тэр нэрээр бүртгэнэ (нэр зөрвөл үлдэгдэл, өртөг тусдаа үлдэнэ)
+var prDone = {};
+function prNewRender(saved) {
+  var P = poById(_prId), box = $('prNew'); if (!P || !box) return;
+  if (saved) prDone[saved.toLowerCase()] = 1;
+  var nw = (P.items || []).filter(function (it) { return !poKnown(it.name) && !prDone[it.name.toLowerCase()]; });
+  box.innerHTML = nw.length ? '<p class="muted" style="font-size:12.5px;margin-top:8px">Барааны бүртгэлд алга: ' + nw.map(function (it) {
+    return esc(it.name) + ' <button class="mini" onclick="prNewOpen(' + P.items.indexOf(it) + ')">Бүртгэх</button>';
+  }).join(' · ') + ' — бүртгэхгүй бол үлдэгдэлд орох ч зарах жагсаалтад гарахгүй.</p>' : '';
+}
+function prNewOpen(i) {
+  var it = poById(_prId).items[i], r = prAlloc(poById(_prId)).rows[i];
+  openProduct(); $('pdName').value = it.name; $('pdName').readOnly = true;   // захиалгын нэрээр — үлдэгдэл, өртөг нэг бараанд
+  if (r && r.qty > 0 && r.unit > 0) $('pdPrice').placeholder = 'өртөг ' + fmt(r.unit).slice(1) + ' / ш';
 }
 function prAuto() {   // үлдсэн бүх бараа ирвэл «дууссан» автоматаар чагтлагдана (гараар өөрчилж болно)
   var P = poById(_prId); if (!P) return;

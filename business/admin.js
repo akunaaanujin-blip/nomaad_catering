@@ -2335,7 +2335,7 @@ function openProduct(name) {
   prodEdit = p ? p.name : '';
   $('pdTitle').textContent = p ? 'Бараа засах' : 'Шинэ бараа';
   $('pdName').value = p ? p.name : ''; $('pdName').readOnly = !!p;   // нэр солиход үлдэгдэл, түүх тасрах тул солихгүй
-  $('pdUnit').value = p ? p.unit : BUSINESSES[biz].unit; $('pdPrice').value = p ? p.price : '';
+  $('pdUnit').value = p ? p.unit : BUSINESSES[biz].unit; $('pdPrice').value = p ? p.price : ''; $('pdPrice').placeholder = '';
   $('pdCat').value = p ? p.cat : ''; $('pdCls').value = p ? p.cls : ''; $('pdOff').checked = p ? !!p.off : false;
   var cats = {}; BUSINESSES[biz].products.forEach(function (x) { if (x.cat) cats[x.cat] = 1; });
   $('pdCats').innerHTML = Object.keys(cats).sort().map(function (k) { return '<option value="' + esc(k) + '">'; }).join('');
@@ -2351,11 +2351,11 @@ function saveProduct() {
   if (!API_URL) {
     logPriceDemo([p]);
     sheetProducts = sheetProducts.filter(function (x) { return !(x.biz === p.biz && x.name.toLowerCase() === p.name.toLowerCase()); }).concat([p]);
-    save('nb_demo_products', sheetProducts); applyProducts(); closeSheet('productSheet'); render(); return;
+    save('nb_demo_products', sheetProducts); applyProducts(); closeSheet('productSheet'); if (typeof prNewRender === 'function') prNewRender(p.name); render(); return;
   }
   post({ type: 'admin_product', product: p, by: ownerName }, function (err) {
     if (err) { toast('Алдаа: ' + err); return; }
-    closeSheet('productSheet'); toast('Хадгалагдлаа'); refresh();
+    closeSheet('productSheet'); toast('Хадгалагдлаа'); if (typeof prNewRender === 'function') prNewRender(p.name); refresh();
   });
 }
 
