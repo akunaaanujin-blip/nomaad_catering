@@ -546,10 +546,10 @@ function dlvPull(fresh) {
     renderDlv();
   });
 }
-// Үнийн дүнтэй илгээсэн хүргэлтэд буухиа мөнгө авсан бол (Авсан мөнгө > 0) манай захиалгад ажилтны «Төлбөр орсон» тэмдэглэгээ болно
+// Үнийн дүнтэй илгээсэн хүргэлт ХҮРГЭГДСЭН (10) бөгөөд буухиа мөнгө авсан бол (Авсан мөнгө > 0) манай захиалгад ажилтны «Төлбөр орсон» тэмдэглэгээ болно
 // (зөвхөн тэмдэглэл — санхүүд буухиатай тооцоо нийлэхэд бичигдэнэ)
 function dlvMarkPaid() {
-  var got = {}; (dlvAll || []).forEach(function (x) { if (x.id && x.price > 0 && x.got > 0) got[x.id] = 1; });
+  var got = {}; (dlvAll || []).forEach(function (x) { if (x.id && x.st === 10 && x.price > 0 && x.got > 0) got[x.id] = 1; });   // хүргэгдээгүй бол буухиагийн «авсан мөнгө» төлбөр биш
   orders.filter(function (o) { return got[o.id] && o.paid !== 'Орсон' && !o.confirmed && !o.pending && !ordDead(o); })
     .forEach(function (o) { quickOrd2(o.id, 'paid', 'Орсон'); });
 }
