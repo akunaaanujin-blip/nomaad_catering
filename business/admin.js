@@ -1,5 +1,5 @@
 // Хадгалах явцын төлөв (post/refresh) — ачаалах үед fetchAll-аас өмнө тодорхойлогдсон байх ёстой
-var JS_VER = '20261103t';   // хуучин (кэшлэгдсэн) кодоор бичихгүй — серверийн MIN_JS-тэй тэнцүү эсвэл их байна; JS засах бүрт ахиулна
+var JS_VER = '20261103u';   // хуучин (кэшлэгдсэн) кодоор бичихгүй — серверийн MIN_JS-тэй тэнцүү эсвэл их байна; JS засах бүрт ахиулна
 var BUSY = { n: 0, p: 0, msg: '' }, INFLIGHT = {}, refreshing = false, refreshAgain = false;
 // ── УДИРДЛАГЫН САМБАР ──
 // Baaz-ийн бүтэцтэй: Миний компаниуд → (Борлуулалт · Бараа материал · Санхүү · Ажилчид), мөн нийт Ажилчид цэс.
@@ -688,7 +688,7 @@ function recordRows(list) {
     // И-баримттай борлуулалтыг зөвхөн дэлгүүрээс «Баримт буцаах»-аар; бусдыг удирдагч цуцалж болно
     var canCancel = !(x.type === 'sale' && /ДДТД/.test(x.note || ''));
     return '<tr><td>' + esc(x.date) + ' ' + esc(x.time) + '</td><td>' + tag + '</td><td>' + detail + '</td><td>' + esc(x.staff) + '</td><td class="n">' + amt + '</td>' +
-      '<td class="n">' + (canCancel ? '<button class="mini" onclick="cancelRecord(\'' + esc(x.id) + '\')">Цуцлах</button>' : '') + '</td></tr>';
+      '<td class="n nw">' + (x.type === 'expense' ? '<button class="mini" onclick="editRecord(\'' + esc(x.id) + '\')">Засах</button> ' : '') + (canCancel ? '<button class="mini" onclick="cancelRecord(\'' + esc(x.id) + '\')">Устгах</button>' : '') + '</td></tr>';
   }).join('') : '<tr><td class="muted">Бичлэг алга</td></tr>';
 }
 
@@ -812,7 +812,7 @@ function productsModule() {
       moves.filter(function (m) { return m.biz === biz; }).slice().reverse().slice(0, 200).map(function (m) {
         return '<tr><td>' + esc(m.date) + '</td><td>' + esc(m.kind) + '</td><td>' + esc(m.item) + '</td><td>' + esc(m.loc) + '</td><td class="n">' +
           (m.qty > 0 ? '+' : '') + round2(m.qty) + '</td><td class="n">' + (m.cost ? fmt(m.cost) : '') + '</td><td>' + esc(m.by) + '</td><td class="muted">' + esc(m.note) + '</td>' +
-          '<td class="n">' + (m.id ? '<button class="mini" onclick="cancelMove(\'' + esc(m.id) + '\')">Цуцлах</button>' : '') + '</td></tr>';
+          '<td class="n nw">' + (m.id ? moveBtns(m) : '') + '</td></tr>';
       }).join('') + '</table></div>' : '') + '</div>';
 }
 
@@ -1292,7 +1292,7 @@ function repStockNow(biz) {
     total: { name: 'Нийт', val: sum(rows, 'val'), pval: sum(rows, 'pval') } };
 }
 function repPartnerList(biz, sup) {
-  var rows = partners.filter(function (p) { return p.biz === biz && (!sup || /нийлүүлэгч/i.test(p.kind || '')); }).map(function (p) { return { kind: p.kind, name: p.name, tin: p.tin, phone: p.phone, note: p.note }; });
+  var rows = partners.filter(function (p) { return p.biz === biz && (!sup || /нийлүүлэгч/i.test(p.kind || '')); }).map(function (p) { return { kind: p.kind, name: p.name, tin: p.tin, phone: p.phone, note: p.note, _id: p.id }; });
   return { title: sup ? 'Нийлүүлэгчид' : 'Харилцагчид', master: sup ? 'нийлүүлэгч' : 'харилцагч', empty: (sup ? 'Нийлүүлэгч' : 'Харилцагч') + ' алга. <button class="b-btn primary" onclick="openPartner()">+ ' + (sup ? 'Нийлүүлэгч' : 'Харилцагч') + '</button>', cols: [c('kind', 'Төрөл'), c('name', 'Нэр'), c('tin', 'ТТД / Регистр'), c('phone', 'Утас'), c('note', 'Тайлбар')], rows: rows };
 }
 function repExpenses(biz, f, t) {   // дэлгүүрээс бичсэн зарлага, касс хаалт (Baaz-ийн «Кассын зарлага»)
@@ -1493,10 +1493,13 @@ function subBody() {
   if (mod === 'finance' && sub === 'ledger') pre = ledgerPicker();
   if (mod === 'finance' && sub === 'entry') pre = '<p class="hint">Борлуулалт, зарлага, бараа, цалин санхүүд <b>автоматаар</b> бичигддэг. Энд зөвхөн бусад гүйлгээг (эхний үлдэгдэл, хөрөнгө оруулалт, зээл, банкинд тушаах, нийлүүлэгчид төлөх г.м) оруулна.</p>';
   if (sub === 'entry') rep.edit = 'editEntry';
+  if (sub === 'in') { rep.edit = 'editMove'; rep.rows.forEach(function (r) { var mv = moves.filter(function (x) { return x.id === r._id; })[0]; if (!mv || mv.kind === 'Шилжүүлэг') r._noEdit = 1; }); }
+  if (sub === 'expenses') { rep.edit = 'editRecord'; rep.rows.forEach(function (r) { if (r.kind !== 'Зарлага') r._noEdit = 1; }); }
+  if (sub === 'suppliers') rep.edit = 'editPartner';
   if (mod === 'sales' && sub === 'shop') pre = shopHead(rep);
   if (mod === 'sales' && /^(shop|receipts|orders|item|disc)$/.test(sub)) pre += sub === 'orders' ? '<div class="fn-flt fn-q"><input class="search" id="oqIn" type="search" placeholder="Утас, нэр, бараа, буухиа кодоор хайх (цуцалсан ч)…" value="' + esc(state.oq || '') + '" oninput="state.oq=this.value;render();var e=$(\'oqIn\');if(e){e.focus();e.setSelectionRange(e.value.length,e.value.length)}"></div>' : searchBox(sub === 'shop' ? 'Бараа, худалдагч, хэрэглэгч, төлбөр, ДДТД-аар хайх…' : sub === 'orders' ? 'Утас, нэр, бараагаар хайх…' : sub === 'item' ? 'Барааны нэрээр хайх…' : 'Бараа, хэрэглэгч, утас, ажилтан, ДДТД-аар хайх…');
   else if (sub !== 'ledger' && rep && rep.rows && rep.rows.length > 8) pre += searchBox('Энэ хүснэгтээс хайх — нэр, утас, дүн, огноо, тайлбар…');   // урт хүснэгт бүрт
-  return pre + reportCard(rep, { entry: 'cancelEntry', in: 'cancelMove', expenses: 'cancelRecord', boost: 'cancelRecord', vouchers: 'cancelEntry', catalog: 'openProduct' }[sub]) + post;
+  return pre + reportCard(rep, { entry: 'cancelEntry', in: 'cancelMove', expenses: 'cancelRecord', boost: 'cancelRecord', vouchers: 'cancelEntry', catalog: 'openProduct', suppliers: 'delPartner' }[sub]) + post;
 }
 
 // Буухиа (ebuuhia) — удирдлага: шинэ захиалгыг илгээх, төлөв татах (хүргэгдсэнийг автоматаар хаана), «Бүртгэгдсэн»-ийг устгах
@@ -1939,9 +1942,9 @@ function reportCard(rep, cancellable) {
   var body = rep.rows.length ? rep.rows.map(function (r) {
     return '<tr' + (r._cls ? ' class="' + r._cls + '"' : r._b ? ' class="b"' : '') + (r._on ? ' onclick="' + r._on + '" style="cursor:pointer"' : '') + (r._bill ? ' class="clk" onclick="openBillAdm(' + esc(JSON.stringify(r._bill)) + ')"' : '') + '>' + rep.cols.map(function (cl) { return '<td data-l="' + esc(cl.label) + '"' + (cl.num ? ' class="n' + (r[cl.k] < 0 ? ' neg' : '') + '"' : '') + '>' + cell(cl, r) + '</td>'; }).join('') +
       (rep.actions ? '<td class="n">' + (r._act || '') + '</td>' : '') +
-      (rep.edit ? '<td class="n">' + (r._id ? '<button class="mini" onclick="' + rep.edit + '(' + esc(JSON.stringify(r._id)) + ')">Засах</button>' : '') + '</td>' : '') +
+      (rep.edit ? '<td class="n">' + (r._id && !r._noEdit ? '<button class="mini" onclick="' + rep.edit + '(' + esc(JSON.stringify(r._id)) + ')">Засах</button>' : '') + '</td>' : '') +
       (rep.print ? '<td class="n">' + (r._id ? '<button class="mini" style="color:var(--accent)" onclick="printVoucherId(' + esc(JSON.stringify(r._id)) + ')">Хэвлэх</button>' : '') + '</td>' : '') +
-      (cancellable ? '<td class="n">' + (r._id ? '<button class="mini" onclick="' + cancellable + '(' + esc(JSON.stringify(r._id)) + ')">' + (cancellable === 'openProduct' ? 'Засах' : 'Цуцлах') + '</button>' : '') + '</td>' : '') + '</tr>';
+      (cancellable ? '<td class="n">' + (r._id ? '<button class="mini" onclick="' + cancellable + '(' + esc(JSON.stringify(r._id)) + ')">' + (cancellable === 'openProduct' ? 'Засах' : 'Устгах') + '</button>' : '') + '</td>' : '') + '</tr>';
   }).join('') : '<tr><td colspan="' + rep.cols.length + '" class="muted">' + (refreshing && !rep.rows.length ? 'Ачаалж байна…' : rep.empty || (rep.master ? 'Бүртгэл алга.' : 'Энэ хугацаанд бичлэг алга.')) + '</td></tr>';
   var foot = rep.total ? '<tr class="tot">' + rep.cols.map(function (cl) { return '<td data-l="' + esc(cl.label) + '"' + (cl.num ? ' class="n"' : '') + '>' + cell(cl, rep.total) + '</td>'; }).join('') + (rep.actions ? '<td></td>' : '') + (rep.edit ? '<td></td>' : '') + (rep.print ? '<td></td>' : '') + (cancellable ? '<td></td>' : '') + '</tr>' : '';
   var r = range();
@@ -2258,17 +2261,83 @@ function ptTinInput() {   // байгууллагын регистр / ТТД �
     if (!$('ptName').value.trim()) $('ptName').value = d.name;
   });
 }
+var partnerEditId = '';
 function openPartner() {
+  partnerEditId = ''; $('ptTitle').textContent = 'Харилцагч нэмэх';
   $('ptKind').value = 'Нийлүүлэгч'; ['ptName', 'ptTin', 'ptPhone', 'ptNote'].forEach(function (k) { $(k).value = ''; }); $('ptTinInfo').textContent = '';
   openSheet('partnerSheet');
 }
 function savePartner() {
   var p = { biz: state.biz, kind: $('ptKind').value, name: $('ptName').value.trim(), tin: $('ptTin').value.trim(), phone: $('ptPhone').value.trim(), note: $('ptNote').value.trim() };
   if (!p.name) { toast('Нэрээ оруулна уу'); return; }
+  if (partnerEditId) {
+    var eid = partnerEditId;
+    if (!API_URL) { partners = partners.map(function (x) { return x.id === eid ? Object.assign({}, x, p) : x; }); save('nb_demo_partners', partners); closeSheet('partnerSheet'); render(); return; }
+    post({ type: 'admin_partner', editId: eid, partner: p, what: p.name }, function (err) { if (err) { toast('Алдаа: ' + err); return; } closeSheet('partnerSheet'); toast('Засагдлаа'); refresh(); });
+    return;
+  }
   if (!API_URL) { p.id = 'P' + Date.now(); partners.push(p); save('nb_demo_partners', partners); closeSheet('partnerSheet'); render(); return; }
   post({ type: 'admin_partner', partner: p }, function (err) {
     if (err) { toast('Алдаа: ' + err); return; }
     closeSheet('partnerSheet'); toast('Нэмэгдлээ'); refresh();
+  });
+}
+
+function editPartner(id) {
+  var p = partners.filter(function (x) { return x.id === id; })[0]; if (!p) return;
+  openPartner(); partnerEditId = id; $('ptTitle').textContent = 'Харилцагч засах';
+  $('ptKind').value = p.kind || 'Нийлүүлэгч'; $('ptName').value = p.name || ''; $('ptTin').value = p.tin || ''; $('ptPhone').value = p.phone || ''; $('ptNote').value = p.note || '';
+}
+function delPartner(id) {
+  var p = partners.filter(function (x) { return x.id === id; })[0]; if (!p) return;
+  if (!confirm('«' + p.name + '» харилцагчийг жагсаалтаас устгах уу?\n(Өмнөх гүйлгээ, тооцоонд нэр нь хэвээр үлдэнэ)')) return;
+  if (!API_URL) { partners = partners.filter(function (x) { return x.id !== id; }); save('nb_demo_partners', partners); render(); return; }
+  post({ type: 'admin_partner', delId: id, what: p.name }, function (err) { if (err) { toast('Алдаа: ' + err); return; } toast('Устгагдлаа'); refresh(); });
+}
+
+// ── Засах: зарлага (ангилал, дүн, тайлбар), барааны хөдөлгөөн (тоо, өртөг, тайлбар) — огноо хэвээр ──
+function editRecord(id) {
+  var x = records.filter(function (r) { return r.id === id; })[0]; if (!x) return;
+  if (x.type !== 'expense') { toast('Зөвхөн зарлагыг засна — бусдыг устгаад дахин бичнэ'); return; }
+  gOpen('<h2>Зарлага засах</h2><p class="muted">' + esc(x.date + ' ' + x.time) + ' · ' + esc(x.staff) + '</p>' +
+    '<label for="erCat">Ангилал</label><input id="erCat" value="' + esc(x.category) + '">' +
+    '<label for="erAmt">Дүн (₮)</label><input id="erAmt" type="number" inputmode="numeric" value="' + esc(x.amount) + '">' +
+    '<label for="erNote">Тайлбар</label><input id="erNote" value="' + esc(String(x.note || '').replace(/\s*\[засав:[^\]]*\]/g, '')) + '">' +
+    '<button class="btn" onclick="saveRecordEdit(\'' + esc(id) + '\')">Хадгалах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
+}
+function saveRecordEdit(id) {
+  var cat = $('erCat').value.trim(), amt = Number($('erAmt').value), note = $('erNote').value.trim();
+  if (!cat) { toast('Ангилал оруулна уу'); return; }
+  if (!(amt > 0)) { toast('Дүнгээ оруулна уу'); return; }
+  if (!API_URL) { records.forEach(function (r) { if (r.id === id) { r.category = cat; r.amount = amt; r.note = note; } }); save('nb_records', records); gClose(); render(); return; }
+  post({ type: 'admin_record', editId: id, category: cat, amount: amt, note: note, by: ownerName, what: cat + ' · ' + fmt(amt) }, function (err) {
+    if (err) { toast({ locked: 'Энэ огноо түгжигдсэн байна', closed: 'Касс хаасан өдрийн зарлагын дүнг засах боломжгүй — устгаад засварын бичилт хийнэ', state: 'Засах боломжгүй бичлэг' }[err] || 'Алдаа: ' + err); return; }
+    gClose(); toast('Засагдлаа'); refresh();
+  });
+}
+function moveBtns(m) {
+  return (m.kind !== 'Шилжүүлэг' ? '<button class="mini" onclick="editMove(' + esc(JSON.stringify(m.id)) + ')">Засах</button> ' : '') +
+    '<button class="mini" onclick="cancelMove(' + esc(JSON.stringify(m.id)) + ')">Устгах</button>';
+}
+function editMove(id) {
+  var m = moves.filter(function (x) { return x.id === id; })[0]; if (!m) return;
+  if (m.kind === 'Шилжүүлэг') { toast('Шилжүүлгийг устгаад дахин бичнэ'); return; }
+  gOpen('<h2>' + esc(m.kind) + ' засах</h2><p class="muted">' + esc(String(m.date).slice(0, 10)) + ' · ' + esc(m.item) + ' · ' + esc(m.loc) + '</p>' +
+    '<div class="row2"><div><label for="emQty">Тоо' + (m.qty < 0 ? ' (хасах)' : '') + '</label><input id="emQty" type="number" inputmode="decimal" value="' + esc(Math.abs(m.qty)) + '"></div>' +
+    '<div><label for="emCost">Нэгж өртөг (₮)</label><input id="emCost" type="number" inputmode="decimal" value="' + esc(m.cost || '') + '"></div></div>' +
+    '<label for="emPartner">Харилцагч</label><input id="emPartner" value="' + esc(m.partner || '') + '">' +
+    '<label for="emNote">Тайлбар</label><input id="emNote" value="' + esc(m.note || '') + '">' +
+    '<button class="btn" onclick="saveMoveEdit(' + esc(JSON.stringify(id)) + ')">Хадгалах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
+}
+function saveMoveEdit(id) {
+  var m = moves.filter(function (x) { return x.id === id; })[0]; if (!m) return;
+  var q = Math.abs(Number($('emQty').value)), qty = m.qty < 0 ? -q : q, cost = Number($('emCost').value) || 0;
+  if (!q) { toast('Тоо оруулна уу'); return; }
+  var e = { qty: qty, cost: cost, partner: $('emPartner').value.trim(), note: $('emNote').value.trim() };
+  if (!API_URL) { Object.assign(m, e); save('nb_demo_moves', moves); gClose(); render(); return; }
+  post({ type: 'admin_stock', editId: id, qty: qty, cost: cost, partner: e.partner, note: e.note, what: String(m.date).slice(0, 10) + ' · ' + m.kind + ' · ' + m.item + ' ' + m.qty + ' → ' + qty }, function (err, d) {
+    if (err) { toast({ negative: 'Үлдэгдэл хасах болно: ' + ((d && d.item) || ''), locked: 'Энэ огноо түгжигдсэн байна', state: 'Засах боломжгүй хөдөлгөөн' }[err] || 'Алдаа: ' + err); return; }
+    gClose(); toast('Засагдлаа'); refresh();
   });
 }
 
@@ -3176,8 +3245,23 @@ function openingView() {
       var ex = have.filter(function (j) { return j.dr === a[0] || j.cr === a[0]; }).reduce(function (s, j) { return s + j.amount; }, 0);
       return '<tr><td>' + a[0] + '</td><td>' + esc(accName(a[0])) + '</td><td>' + (/^(1201|3101|1503|3501)$/.test(a[0]) ? '<input class="op-p" data-a="' + a[0] + '" placeholder="Нэр">' : '') + '</td>' +
         '<td class="n"><input class="op-v" data-a="' + a[0] + '" type="number" inputmode="numeric" style="width:140px;text-align:right" placeholder="' + (ex ? r0(ex) : '0') + '"></td></tr>';
-    }).join('') + '</table></div>' + (have.length ? '<p class="muted" style="margin-top:8px">Өмнө оруулсан ' + have.length + ' мөр байна — «Журналын бичилт»-ээс засна. Энд нэмэлтээр бичигдэнэ.</p>' : '') +
-    '<div class="pg-act" style="margin-top:10px"><button class="b-btn primary" onclick="saveOpening()">Эхний үлдэгдэл бичих</button></div></div>';
+    }).join('') + '</table></div>' + (have.length ? '<p class="muted" style="margin-top:8px">Өмнө оруулсан ' + have.length + ' мөр доор байна — тэндээс засна, устгана. Энд нэмэлтээр бичигдэнэ.</p>' : '') +
+    '<div class="pg-act" style="margin-top:10px"><button class="b-btn primary" onclick="saveOpening()">Эхний үлдэгдэл бичих</button></div></div>' + openingList(have);
+}
+// Оруулсан эхний үлдэгдэл: мөнгө, өр (журнал) + бараа (хөдөлгөөн) — мөр бүрийг засах, устгах
+function openingList(have) {
+  var gm = moves.filter(function (m) { return m.biz === state.biz && (m.kind === 'Эхний үлдэгдэл' || m.kind === 'Он нээлт'); });
+  var jr = have.length ? '<div class="card"><h2>Оруулсан эхний үлдэгдэл · мөнгө, авлага, өглөг</h2><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Данс</th><th>Харилцагч</th><th class="n">Дүн</th><th></th></tr>' +
+    have.map(function (j) { var a = j.dr === '4201' ? j.cr : j.dr;
+      return '<tr><td>' + esc(j.date) + '</td><td>' + esc(a + ' ' + accName(a)) + '</td><td>' + esc(j.partner || '') + '</td><td class="n">' + fmt(j.amount) + '</td>' +
+        '<td class="n nw"><button class="mini" onclick="editEntry(' + esc(JSON.stringify(j.id)) + ')">Засах</button> <button class="mini" onclick="cancelEntry(' + esc(JSON.stringify(j.id)) + ')">Устгах</button></td></tr>'; }).join('') +
+    '</table></div></div>' : '';
+  var gv = gm.reduce(function (s, m) { return s + m.qty * (m.cost || 0); }, 0);
+  var st = gm.length ? '<div class="card"><h2>Оруулсан эхний үлдэгдэл · бараа</h2><p class="muted">' + gm.length + ' мөр · өртгөөр ' + fmt(r0(gv)) + '</p><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Бараа</th><th>Байршил</th><th class="n">Тоо</th><th class="n">Нэгж өртөг</th><th class="n">Дүн</th><th></th></tr>' +
+    gm.map(function (m) { return '<tr><td>' + esc(String(m.date).slice(0, 10)) + '</td><td>' + esc(m.item) + '</td><td>' + esc(m.loc) + '</td><td class="n">' + round2(m.qty) + '</td><td class="n">' + (m.cost ? fmt(m.cost) : '') + '</td>' +
+      '<td class="n">' + (m.cost ? fmt(r0(m.qty * m.cost)) : '') + '</td><td class="n nw">' + moveBtns(m) + '</td></tr>'; }).join('') +
+    '</table></div></div>' : '';
+  return jr + st;
 }
 function saveOpening() {
   var d = $('opDate').value, E = [];
