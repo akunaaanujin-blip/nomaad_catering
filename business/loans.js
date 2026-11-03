@@ -110,8 +110,10 @@ function loansView() {
         (pf ? '<button class="mini" onclick="pfLoanHist(\'' + L.id + '\')">Түүх</button>' : '') +
         (sc.rows.length ? '<button class="mini" onclick="openLoanSched(\'' + L.id + '\')">Хуваарь</button>' : '') +
         '<button class="mini" onclick="openLoan(\'' + L.id + '\')">Засах</button>' +
-        (done && L.status === 'Идэвхтэй' ? '<button class="mini" onclick="loanStatus(\'' + L.id + '\',\'close\')">Хаах</button>' : '');
-      return '<tr><td>' + esc(L.date) + '</td><td><b>' + esc(L.partner) + '</b>' + (L.note ? '<br><small class="muted">' + esc(L.note) + '</small>' : '') + '</td>' +
+        (done && L.status === 'Идэвхтэй' ? '<button class="mini" onclick="loanStatus(\'' + L.id + '\',\'close\')">Хаах</button>' : '') +
+        (pf ? '<button class="mini" style="color:var(--red)" onclick="pfLoanDel(\'' + L.id + '\')">Устгах</button>' : '');
+      return '<tr><td>' + esc(L.date) + '</td><td><b>' + esc(L.partner) + '</b>' + (L.note ? '<br><small class="muted">' + esc(L.note) + '</small>' : '') +
+        (pf ? '<div class="pf-acts">' + acts + '</div>' : '') + '</td>' +
         '<td class="n">' + mny(L.amount) + (L.total ? '<br><small class="muted">хүүтэй ' + mny(L.total) + '</small>' : '') + '</td><td class="n">' + (L.rate ? L.rate + '%' : '') + '</td><td>' + esc(L.due || '') + '</td>' +
         '<td class="n">' + (s.got ? dl(Object.assign({}, spec, { acc: [loanAcc(L)], dir: 1, t: spec.t + ' — ' + (taken ? 'орсон' : 'олгосон') }), mny(s.got)) : '<small class="muted">бүртгэгдээгүй</small>') + '</td>' +
         '<td class="n">' + (s.paid ? dl(Object.assign({}, spec, { acc: [loanAcc(L)], sign: taken ? 1 : -1, dir: 1, t: spec.t + ' — үндсэн төлөлт' }), mny(s.paid)) : '') + '</td>' +
@@ -123,7 +125,7 @@ function loansView() {
           (!closed && !sc.rows.length ? '<br><span class="tag y" title="Хугацаа (сар), эхний төлөлтийн огноогоо оруулбал хуваарь үүснэ">Хуваарь үүсээгүй</span>' : '') + '</td>' +
         '<td class="n">' + (!closed && nl.late > 0 ? '<b style="color:var(--red)">' + nl.late + '</b>' + (sc.late.amt ? '<br><small style="color:var(--red)">' + mny(sc.late.amt) + '</small>' : '') : '') + '</td>' +
         '<td>' + (closed ? '<span class="tag">Хаагдсан</span>' : s.got < 0.5 ? '<span class="tag r">Мөнгө ороогүй</span>' : s.paid > 0.5 ? '<span class="tag b">Хэсэгчлэн төлсөн</span>' : '<span class="tag b">Идэвхтэй</span>') + '</td>' +
-        '<td class="n" style="white-space:nowrap">' + acts + '</td></tr>';
+        '<td class="n" style="white-space:nowrap">' + (pf ? '' : acts) + '</td></tr>';
     }).join('');
     var reg = taken ? -(loanCodes().reduce(function (a, k) { return a + (b[k] || 0); }, 0)) : (b['1210'] || 0);   // дансны нийт үлдэгдэл
     var unreg = r0(reg - tot.left);

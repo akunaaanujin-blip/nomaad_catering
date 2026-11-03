@@ -140,15 +140,6 @@ function pfLoanOpen(L) { var s = loanStat(L); return L.status !== 'Хаагдс�
 function pfDebt() { return r0(pfLoans('Авсан').filter(pfLoanOpen).reduce(function (a, L) { return a + loanStat(L).left; }, 0)); }
 function pfRecv() { return r0(pfLoans('Өгсөн').filter(pfLoanOpen).reduce(function (a, L) { return a + loanStat(L).left; }, 0)); }
 function pfAssetSum(to) { return r0(pfL('asset').filter(function (a) { return !to || !a.date || a.date <= to; }).reduce(function (s, a) { return s + a.value; }, 0)); }
-// Тухайн огноонд байсан өр (авсан зээлийн үлдэгдэл)
-function pfDebtAt(to, kind) {
-  var E = Jc().filter(function (e) { return e.date <= to; });
-  return r0(pfLoans(kind || 'Авсан').filter(function (L) { return L.date <= to && L.status !== 'Устгасан'; }).reduce(function (a, L) {
-    var s = loanStatJ(L, E), got = s.got > 0.5 ? s.got : L.amount, paid = s.paid;
-    pfLoanTx(L.id).forEach(function (t) { if (t.date <= to) paid += t.prin || 0; });
-    return a + Math.max(0, got - paid);
-  }, 0));
-}
 // Хүү: хоногоор — үлдэгдэл × жилийн хүү ÷ 365 × өмнөх төлөлтөөс хойшх хоног; сараар — үлдэгдэл × сарын хүү
 function pfLoanInt(L, d, skipTx) {
   var s = loanStat(L), left = s.left, last = L.date;
@@ -216,6 +207,19 @@ function pfLoanPaySave() {
 function pfLoanReopen(L) {
   if (!API_URL) { L.status = 'Идэвхтэй'; save('nb_demo_loans', window.loans); render(); return; }
   post({ type: 'admin_loan', openId: L.id }, function () { refresh(); });
+}
+// Зээл устгах: зээл «Устгасан», түүний төлөлтүүд «Цуцалсан» (Sheet-д түүх хадгалагдана); хуучин журналын бичилт хогийн саванд
+function pfLoanDel(id) {
+  var L = loanById(id); if (!L) return;
+  var T = pfLoanTx(id), js = journal.filter(function (j) { return hasTag(j.desc, id); });
+  if (!confirm('«' + L.partner + '» зээлийг устгах уу?' + (T.length ? '\n\n' + T.length + ' төлөлт (' + fmt(T.reduce(function (a, t) { return a + t.amount; }, 0)) + ') мөн цуцлагдаж, дансны үлдэгдэлд буцна.' : '') +
+    (js.length ? '\nХуучин журналын ' + js.length + ' бичилт хогийн саванд орно (сэргээж болно).' : '') + '\n\nТүүх Sheet-д хадгалагдана.')) return;
+  var fin = function () {
+    if (!API_URL) { L.status = 'Устгасан'; save('nb_demo_loans', window.loans); render(); toast('Устгагдлаа'); return; }
+    post({ type: 'admin_loan', cancelId: id }, function (err) { if (err) { toast('Алдаа: ' + err); return; } toast('Устгагдлаа'); refresh(); });
+  };
+  var next = function () { pfJCancel(js, fin); };
+  if (T.length) pfSave('tx', [], T.map(function (t) { return t.id; }), next); else next();
 }
 function pfLoanHist(id) {
   var L = loanById(id); if (!L) return;
@@ -605,60 +609,106 @@ function pfPeriod(kind, anchor, k) {   // [эхлэх, дуусах, нэр]; k 
   if (kind === 'q') { var q = Math.floor((mo - 1) / 3) + k, yy = y + Math.floor(q / 4); q = ((q % 4) + 4) % 4; var m0 = yy + '-' + ('0' + (q * 3 + 1)).slice(-2); return [m0 + '-01', pfMonEnd(pfMonAdd(m0, 2)), yy + ' ' + (q + 1) + '-р улирал']; }
   var m = pfMonAdd(anchor.slice(0, 7), k); return [m + '-01', pfMonEnd(m), m];
 }
+var PF_RT = [['io', 'Орлого, зарлага'], ['mon', 'Сар бүрээр'], ['acc', 'Дансаар'], ['bud', 'Төсвийн гүйцэтгэл'], ['loan', 'Зээл'], ['tx', 'Гүйлгээний жагсаалт']];
 function pfRepData() {
-  var kind = state.pfRk || 'month', an = state.pfRa || todayStr().slice(0, 7), cur = pfPeriod(kind, an, 0), prv = pfPeriod(kind, an, -1);
+  var kind = state.pfRk || 'month', an = state.pfRa || todayStr().slice(0, 7), cur = pfPeriod(kind, an, 0), prv = pfPeriod(kind, an, -1), inP = function (t) { return t.date >= cur[0] && t.date <= cur[1]; };
   var sec = function (type, cats) {
     var a = pfSumIn(cur[0], cur[1], type), b = pfSumIn(prv[0], prv[1], type);
     Object.keys(a).concat(Object.keys(b)).forEach(function (c) { if (cats.indexOf(c) < 0) cats.push(c); });
     return cats.filter(function (c) { return a[c] || b[c]; }).map(function (c) { return [c, r0(a[c] || 0), r0(b[c] || 0)]; });
   };
   var inc = sec('Орлого', pfCats('inc').slice()), exp = sec('Зарлага', pfCats('exp').slice());
-  var loans = loanList('mgmt').map(function (L) { var s = loanStat(L); return [L.partner + (L.kind === 'Өгсөн' ? ' (өгсөн)' : ''), L.amount, s.paid, s.intr, s.left, L.status === 'Хаагдсан' || s.left <= 0.5 ? 'Хаагдсан' : 'Идэвхтэй']; });
-  var nw = []; for (var i = 11; i >= 0; i--) {
-    var m = pfMonAdd(todayStr().slice(0, 7), -i), e = pfMonEnd(m), c = pfCash(e), as = pfAssetSum(e), d = pfDebtAt(e), rc = pfDebtAt(e, 'Өгсөн');
-    nw.push([m, c, as + rc, d, r0(c + as + rc - d)]);
-  }
-  nw.forEach(function (r, j) { r.push(j ? r0(r[4] - nw[j - 1][4]) : ''); });
-  return { cur: cur, prv: prv, inc: inc, exp: exp, loans: loans, nw: nw };
+  // Сар бүрээр: үеийн (жил бол 12 сар, улирал бол 3) сар тус бүрийн ангилал
+  var ms = []; for (var m = cur[0].slice(0, 7); m <= cur[1].slice(0, 7); m = pfMonAdd(m, 1)) ms.push(m);
+  if (ms.length < 2) { ms = []; for (var k = 11; k >= 0; k--) ms.push(pfMonAdd(cur[0].slice(0, 7), -k)); }
+  var mon = function (type, cats) {
+    var S = ms.map(function (mm) { return pfMonthSum(mm, type); });
+    S.forEach(function (o) { Object.keys(o).forEach(function (c) { if (cats.indexOf(c) < 0) cats.push(c); }); });
+    return cats.filter(function (c) { return S.some(function (o) { return o[c]; }); }).map(function (c) { return [c].concat(S.map(function (o) { return r0(o[c] || 0); })); });
+  };
+  // Дансаар: эхний, орлого, зарлага, шилжүүлэг орсон/гарсан, эцсийн
+  var d0 = todayStr(new Date(new Date(cur[0] + 'T00:00:00').getTime() - 864e5));
+  var acc = pfL('acc').map(function (A) {
+    var o = { i: 0, x: 0, ti: 0, to: 0 };
+    pfL('tx').forEach(function (t) {
+      if (!inP(t) || (A.openDate && t.date < A.openDate)) return;
+      if (t.acc === A.id) { if (t.type === 'Орлого') o.i += t.amount; else if (t.type === 'Зарлага') o.x += t.amount; else o.to += t.amount; }
+      if (t.type === 'Шилжүүлэг' && t.toAcc === A.id) o.ti += t.amount;
+    });
+    var op = A.openDate && A.openDate >= cur[0] && A.openDate <= cur[1] ? A.open : pfBal(A.id, d0);
+    return [A.name, op, r0(o.i), r0(o.x), r0(o.ti), r0(o.to), pfBal(A.id, cur[1])];
+  });
+  // Төсөв: үеийн сарын төсвийн нийлбэр ба зарцуулсан
+  var B = {}, sp = pfSumIn(cur[0], cur[1], 'Зарлага');
+  pfL('bud').forEach(function (b) { if (b.month >= cur[0].slice(0, 7) && b.month <= cur[1].slice(0, 7)) B[b.cat] = (B[b.cat] || 0) + b.amount; });
+  var bud = pfCats('exp').concat(Object.keys(sp).filter(function (c) { return pfCats('exp').indexOf(c) < 0; })).filter(function (c) { return B[c] || sp[c]; })
+    .map(function (c) { var b = r0(B[c] || 0), x = r0(sp[c] || 0); return [c, b, x, r0(b - x), b ? Math.round(x / b * 100) : null]; });
+  // Зээл: энэ үед төлсөн үндсэн, хүү, торгууль + нийт, үлдэгдэл
+  var loans = loanList('mgmt').map(function (L) {
+    var s = loanStat(L), P = { a: 0, p: 0, i: 0, f: 0 };
+    pfLoanTx(L.id).forEach(function (t) { if (inP(t)) { P.a += t.amount; P.p += t.prin || 0; P.i += t.intr || 0; P.f += t.fee || 0; } });
+    return [L.partner + (L.kind === 'Өгсөн' ? ' (өгсөн)' : ''), L.amount, r0(P.a), r0(P.p), r0(P.i), r0(P.f), s.paid, s.intr, s.left, L.status === 'Хаагдсан' || s.left <= 0.5 ? 'Хаагдсан' : 'Идэвхтэй'];
+  });
+  var tx = pfL('tx').filter(inP).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; })
+    .map(function (t) { return [t.date, t.type, pfAccName(t.acc) + (t.type === 'Шилжүүлэг' ? ' → ' + pfAccName(t.toAcc) : ''), t.cat || '', t.desc || '', t.type === 'Орлого' ? t.amount : t.type === 'Зарлага' ? -t.amount : t.amount]; });
+  return { cur: cur, prv: prv, inc: inc, exp: exp, ms: ms, minc: mon('Орлого', pfCats('inc').slice()), mexp: mon('Зарлага', pfCats('exp').slice()), acc: acc, bud: bud, loans: loans, tx: tx };
 }
 function pfRepView() {
-  var D = pfRepData(), kind = state.pfRk || 'month', an = state.pfRa || todayStr().slice(0, 7);
-  var ch = function (a, b) { var d = a - b; return '<td class="n">' + (b ? (d > 0 ? '+' : '') + Math.round(d / b * 100) + '%' : '') + '</td>'; };
-  var tbl = function (title, rows) {
-    var ta = 0, tb = 0;
-    return '<tr class="pf-sec"><td colspan="5"><b>' + title + '</b></td></tr>' + rows.map(function (r) { ta += r[1]; tb += r[2];
-      return '<tr><td>' + esc(r[0]) + '</td><td class="n">' + mny(r[1]) + '</td><td class="n">' + mny(r[2]) + '</td><td class="n">' + mny(r[1] - r[2]) + '</td>' + ch(r[1], r[2]) + '</tr>'; }).join('') +
-      '<tr class="tot"><td>Нийт ' + title.toLowerCase() + '</td><td class="n">' + mny(ta) + '</td><td class="n">' + mny(tb) + '</td><td class="n">' + mny(ta - tb) + '</td>' + ch(ta, tb) + '</tr>';
-  };
-  var ti = D.inc.reduce(function (s, r) { return s + r[1]; }, 0), te = D.exp.reduce(function (s, r) { return s + r[1]; }, 0), pi = D.inc.reduce(function (s, r) { return s + r[2]; }, 0), pe = D.exp.reduce(function (s, r) { return s + r[2]; }, 0);
+  var D = pfRepData(), kind = state.pfRk || 'month', rt = state.pfRt || 'io';
+  var T = function (head, body, foot) { return '<div class="card rep"><div class="scroll"><table class="rep-t"><tr>' + head.map(function (h, i) { return '<th' + (i ? ' class="n"' : '') + '>' + esc(h) + '</th>'; }).join('') + '</tr>' + body + (foot || '') + '</table></div></div>'; };
+  var tr = function (r, cls, b) { return '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' + r.map(function (v, i) { return i ? '<td class="n">' + (typeof v === 'number' ? (b ? '<b>' + mny(v) + '</b>' : mny(v)) : esc(v == null ? '' : v)) + '</td>' : '<td>' + esc(v) + '</td>'; }).join('') + '</tr>'; };
+  var sum = function (rows, n) { var o = []; for (var i = 1; i < n; i++) o.push(r0(rows.reduce(function (s, r) { return s + (Number(r[i]) || 0); }, 0))); return o; };
+  var pct = function (a, b) { return b ? (a - b > 0 ? '+' : '') + Math.round((a - b) / b * 100) + '%' : ''; };
+  var html = '';
+  if (rt === 'io') {
+    var blk = function (title, rows) { var t = sum(rows, 3); return '<tr class="pf-sec"><td colspan="5"><b>' + title + '</b></td></tr>' + rows.map(function (r) { return tr([r[0], r[1], r[2], r0(r[1] - r[2]), pct(r[1], r[2])]); }).join('') + tr(['Нийт ' + title.toLowerCase(), t[0], t[1], r0(t[0] - t[1]), pct(t[0], t[1])], 'tot'); };
+    var ti = sum(D.inc, 3), te = sum(D.exp, 3);
+    html = T(['Ангилал', D.cur[2], D.prv[2], 'Зөрүү', '%'], blk('Орлого', D.inc) + blk('Зарлага', D.exp), tr(['Хэмнэлт (орлого − зарлага)', r0(ti[0] - te[0]), r0(ti[1] - te[1]), r0(ti[0] - te[0] - ti[1] + te[1]), ''], 'tot'));
+  } else if (rt === 'mon') {
+    var n = D.ms.length + 1, blk2 = function (title, rows) { var t = sum(rows, n); return '<tr class="pf-sec"><td colspan="' + (n + 1) + '"><b>' + title + '</b></td></tr>' + rows.map(function (r) { return tr(r.concat([r0(r.slice(1).reduce(function (a, v) { return a + v; }, 0))])); }).join('') + tr(['Нийт ' + title.toLowerCase()].concat(t, [r0(t.reduce(function (a, v) { return a + v; }, 0))]), 'tot'); };
+    var ti2 = sum(D.minc, n), te2 = sum(D.mexp, n), sv = ti2.map(function (v, i) { return r0(v - te2[i]); });
+    html = T(['Ангилал'].concat(D.ms, ['Нийт']), blk2('Орлого', D.minc) + blk2('Зарлага', D.mexp), tr(['Хэмнэлт'].concat(sv, [r0(sv.reduce(function (a, v) { return a + v; }, 0))]), 'tot'));
+  } else if (rt === 'acc') {
+    var ta = sum(D.acc, 7);
+    html = T(['Данс', 'Эхний үлдэгдэл', 'Орлого', 'Зарлага', 'Шилжүүлэг орсон', 'Шилжүүлэг гарсан', 'Эцсийн үлдэгдэл'], D.acc.map(function (r) { return tr(r); }).join('') || '<tr><td colspan="7" class="muted">Данс алга</td></tr>', D.acc.length ? tr(['Нийт'].concat(ta), 'tot', 1) : '');
+  } else if (rt === 'bud') {
+    var tb = sum(D.bud, 4);
+    html = T(['Ангилал', 'Төсөв', 'Зарцуулсан', 'Үлдсэн', '%'], D.bud.map(function (r) {
+      var c = r[4] === null || r[4] >= 100 ? 'var(--red)' : r[4] >= 80 ? 'var(--warning,#B7791F)' : 'inherit';
+      return '<tr><td>' + esc(r[0]) + '</td><td class="n">' + mny(r[1]) + '</td><td class="n">' + mny(r[2]) + '</td><td class="n"' + (r[3] < 0 ? ' style="color:var(--red)"' : '') + '>' + mny(r[3]) + '</td><td class="n"><b style="color:' + c + '">' + (r[4] === null ? 'төсөвгүй' : r[4] + '%') + '</b></td></tr>'; }).join('') || '<tr><td colspan="5" class="muted">Төсөв, зарлага алга</td></tr>',
+      D.bud.length ? tr(['Нийт', tb[0], tb[1], tb[2], tb[0] ? Math.round(tb[1] / tb[0] * 100) + '%' : ''], 'tot') : '');
+  } else if (rt === 'loan') {
+    var tl = sum(D.loans, 9);
+    html = T(['Зээл', 'Гэрээний дүн', 'Энэ үед төлсөн', '…үндсэн', '…хүү', '…торгууль', 'Нийт төлсөн үндсэн', 'Нийт төлсөн хүү', 'Үлдэгдэл', 'Төлөв'], D.loans.map(function (r) { return tr(r); }).join('') || '<tr><td colspan="10" class="muted">Зээл алга</td></tr>',
+      D.loans.length ? tr(['Нийт'].concat(tl, ['']), 'tot', 1) : '');
+  } else {
+    var inc = 0, exp = 0; D.tx.forEach(function (r) { if (r[1] === 'Орлого') inc += r[5]; else if (r[1] === 'Зарлага') exp -= r[5]; });
+    html = T(['Огноо', 'Төрөл', 'Данс', 'Ангилал', 'Тайлбар', 'Дүн'], D.tx.map(function (r) { return '<tr><td class="nw">' + r[0] + '</td><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td><td>' + esc(r[3]) + '</td><td>' + esc(r[4]) + '</td><td class="n">' + mny(r[5]) + '</td></tr>'; }).join('') || '<tr><td colspan="6" class="muted">Гүйлгээ алга</td></tr>',
+      D.tx.length ? '<tr class="tot"><td colspan="5">Орлого ' + fmt(inc) + ' · зарлага ' + fmt(exp) + ' · хэмнэлт</td><td class="n">' + mny(inc - exp) + '</td></tr>' : '');
+  }
   var bar = '<div class="pf-flt"><select onchange="state.pfRk=this.value;render()">' + [['month', 'Сар'], ['q', 'Улирал'], ['year', 'Жил']].map(function (o) { return '<option value="' + o[0] + '"' + (kind === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
-    '<button class="mini" onclick="pfRepShift(-1)">‹</button><b>' + esc(D.cur[2]) + '</b><button class="mini" onclick="pfRepShift(1)">›</button><span class="muted">өмнөх үе: ' + esc(D.prv[2]) + '</span></div>';
-  var io = '<div class="card rep"><div class="rep-cap"><b>Орлого, зарлага ангиллаар</b></div><div class="scroll"><table class="rep-t"><tr><th>Ангилал</th><th class="n">' + esc(D.cur[2]) + '</th><th class="n">' + esc(D.prv[2]) + '</th><th class="n">Зөрүү</th><th class="n">%</th></tr>' +
-    tbl('Орлого', D.inc) + tbl('Зарлага', D.exp) +
-    '<tr class="tot"><td>Хэмнэлт (орлого − зарлага)</td><td class="n">' + mny(ti - te) + '</td><td class="n">' + mny(pi - pe) + '</td><td class="n">' + mny(ti - te - (pi - pe)) + '</td><td></td></tr></table></div></div>';
-  var ln = '<div class="card rep"><div class="rep-cap"><b>Зээлийн тайлан</b></div><div class="scroll"><table class="rep-t"><tr><th>Зээл</th><th class="n">Дүн</th><th class="n">Төлсөн үндсэн</th><th class="n">Төлсөн хүү</th><th class="n">Үлдэгдэл</th><th>Төлөв</th></tr>' +
-    (D.loans.length ? D.loans.map(function (r) { return '<tr><td>' + esc(r[0]) + '</td><td class="n">' + mny(r[1]) + '</td><td class="n">' + mny(r[2]) + '</td><td class="n">' + mny(r[3]) + '</td><td class="n"><b>' + mny(r[4]) + '</b></td><td>' + r[5] + '</td></tr>'; }).join('')
-      : '<tr><td colspan="6" class="muted">Зээл алга</td></tr>') + '</table></div></div>';
-  var nw = '<div class="card rep"><div class="rep-cap"><b>Цэвэр хөрөнгийн сар бүрийн өөрчлөлт</b><span>сарын эцсээр</span></div><div class="scroll"><table class="rep-t"><tr><th>Сар</th><th class="n">Мөнгө</th><th class="n">Хөрөнгө</th><th class="n">Өр</th><th class="n">Цэвэр хөрөнгө</th><th class="n">Өөрчлөлт</th></tr>' +
-    D.nw.map(function (r) { return '<tr><td>' + r[0] + '</td><td class="n">' + mny(r[1]) + '</td><td class="n">' + mny(r[2]) + '</td><td class="n">' + mny(r[3]) + '</td><td class="n"><b>' + mny(r[4]) + '</b></td>' +
-      '<td class="n"' + (r[5] < 0 ? ' style="color:var(--red)"' : '') + '>' + (r[5] === '' ? '' : (r[5] > 0 ? '+' : '') + mny(r[5])) + '</td></tr>'; }).join('') + '</table></div></div>';
-  return pfHead('Тайлан', 'Сар, улирал, жилээр орлого зарлага (өмнөх үетэй харьцуулсан), зээл, цэвэр хөрөнгө.', '<button class="b-btn" onclick="pfRepXlsx()">Excel татах</button>') + bar + io + ln + nw;
+    '<button class="mini" onclick="pfRepShift(-1)">‹</button><b>' + esc(D.cur[2]) + '</b><button class="mini" onclick="pfRepShift(1)">›</button>' +
+    (rt === 'io' ? '<span class="muted">өмнөх үе: ' + esc(D.prv[2]) + '</span>' : rt === 'mon' && kind === 'month' ? '<span class="muted">сүүлийн 12 сар</span>' : '') + '</div>';
+  var tabs = '<div class="tabs fn-tabs">' + PF_RT.map(function (t) { return '<button class="' + (t[0] === rt ? 'on' : '') + '" onclick="state.pfRt=\'' + t[0] + '\';render()">' + t[1] + '</button>'; }).join('') + '</div>';
+  return pfHead('Тайлан', 'Сар, улирал, жилээр — ангилал, сар бүр, данс, төсөв, зээл, гүйлгээ.', '<button class="b-btn" onclick="pfRepXlsx()">Excel татах</button>') + tabs + bar + html;
 }
 function pfRepShift(k) {
   var kind = state.pfRk || 'month', an = state.pfRa || todayStr().slice(0, 7);
   state.pfRa = pfMonAdd(an, k * (kind === 'year' ? 12 : kind === 'q' ? 3 : 1)); render();
 }
+// Excel: бүх тайлан нэг файлд (хуудас бүр нэг тайлан)
 function pfRepXlsx() {
   if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин оролдоно уу'); ensureXlsx(function () {}); return; }
   var D = pfRepData(), wb = XLSX.utils.book_new(), add = function (name, aoa, w) { var ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = w.map(function (x) { return { wch: x }; }); XLSX.utils.book_append_sheet(wb, ws, name); };
-  var io = [['Орлого, зарлага ангиллаар'], [], ['Ангилал', D.cur[2], D.prv[2], 'Зөрүү']];
+  var io = [['Орлого, зарлага · ' + D.cur[2]], [], ['Ангилал', D.cur[2], D.prv[2], 'Зөрүү']];
   [['ОРЛОГО', D.inc], ['ЗАРЛАГА', D.exp]].forEach(function (s) { io.push([s[0]]); s[1].forEach(function (r) { io.push([r[0], r[1], r[2], r0(r[1] - r[2])]); }); io.push([]); });
   add('Орлого зарлага', io, [28, 16, 16, 16]);
-  add('Зээл', [['Зээл', 'Дүн', 'Төлсөн үндсэн', 'Төлсөн хүү', 'Үлдэгдэл', 'Төлөв']].concat(D.loans), [28, 14, 16, 14, 14, 12]);
-  add('Цэвэр хөрөнгө', [['Сар', 'Мөнгө', 'Хөрөнгө', 'Өр', 'Цэвэр хөрөнгө', 'Өөрчлөлт']].concat(D.nw), [10, 14, 14, 14, 16, 14]);
-  add('Гүйлгээ', [['Огноо', 'Төрөл', 'Данс', 'Хүлээн авах', 'Ангилал', 'Тайлбар', 'Дүн', 'Үндсэн', 'Хүү', 'Торгууль', 'Тулгасан']].concat(pfL('tx').filter(function (t) { return t.date >= D.cur[0] && t.date <= D.cur[1]; })
-    .sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(function (t) { return [t.date, t.type, pfAccName(t.acc), pfAccName(t.toAcc), t.cat, t.desc, t.amount, t.prin || '', t.intr || '', t.fee || '', t.rec === '1' || t.bankId ? 'тийм' : '']; })),
-    [11, 10, 18, 18, 18, 36, 13, 12, 10, 10, 9]);
+  var mo = [['Ангилал'].concat(D.ms)]; [['ОРЛОГО', D.minc], ['ЗАРЛАГА', D.mexp]].forEach(function (s) { mo.push([s[0]]); s[1].forEach(function (r) { mo.push(r); }); mo.push([]); });
+  add('Сар бүрээр', mo, [24].concat(D.ms.map(function () { return 12; })));
+  add('Дансаар', [['Данс', 'Эхний үлдэгдэл', 'Орлого', 'Зарлага', 'Шилжүүлэг орсон', 'Шилжүүлэг гарсан', 'Эцсийн үлдэгдэл']].concat(D.acc), [22, 14, 14, 14, 14, 14, 14]);
+  add('Төсөв', [['Ангилал', 'Төсөв', 'Зарцуулсан', 'Үлдсэн', '%']].concat(D.bud.map(function (r) { return [r[0], r[1], r[2], r[3], r[4] === null ? '' : r[4]]; })), [24, 14, 14, 14, 8]);
+  add('Зээл', [['Зээл', 'Гэрээний дүн', 'Энэ үед төлсөн', 'үндсэн', 'хүү', 'торгууль', 'Нийт төлсөн үндсэн', 'Нийт төлсөн хүү', 'Үлдэгдэл', 'Төлөв']].concat(D.loans), [24, 14, 14, 12, 12, 10, 16, 14, 14, 10]);
+  add('Гүйлгээ', [['Огноо', 'Төрөл', 'Данс', 'Ангилал', 'Тайлбар', 'Дүн']].concat(D.tx), [11, 10, 24, 18, 36, 13]);
   XLSX.writeFile(wb, ('Хувийн санхүү ' + D.cur[2]).replace(/[\\/:*?"<>|]/g, '') + '.xlsx');
 }
 
@@ -686,7 +736,7 @@ function pfSetSave() {
     '.pf .pf-bar{display:grid;grid-template-columns:minmax(90px,30%) 1fr auto;gap:8px;align-items:center;margin:6px 0;font-size:13px}.pf .pf-bar i{display:block;height:8px;background:var(--line,#eef0f3);border-radius:4px;overflow:hidden}' +
     '.pf .pf-bar i b{display:block;height:100%;background:var(--expense)}.pf .pf-bar em{font-style:normal;font-variant-numeric:tabular-nums}' +
     '.pf .pf-bin{width:120px;text-align:right;margin:0}.pf .pf-meter{height:4px;background:var(--line,#eef0f3);border-radius:2px;margin-top:3px}.pf .pf-meter i{display:block;height:100%;border-radius:2px}' +
-    '.pf .pf-sec td{background:var(--bg2,#f6f7f9)}.pf .scroll{-webkit-overflow-scrolling:touch}.pf .rep-cap .mini.on{font-weight:700;color:var(--accent)}' +
+    '.pf .pf-acts{display:flex;flex-wrap:nowrap;gap:4px;margin-top:6px}.pf .pf-acts .mini{margin:0}.pf .pf-sec td{background:var(--bg2,#f6f7f9)}.pf .scroll{-webkit-overflow-scrolling:touch}.pf .rep-cap .mini.on{font-weight:700;color:var(--accent)}' +
     '.pf table.rep-t td,.pf table.rep-t th{white-space:nowrap!important;overflow-wrap:normal!important}.pf td.fn-ell{max-width:260px;overflow:hidden;text-overflow:ellipsis}' +
     '@media(max-width:760px){.bz-admin .pf .card.rep .rep-t{display:table}.bz-admin .pf .card.rep .rep-t tbody{display:table-row-group}.bz-admin .pf .card.rep .rep-t tr,.bz-admin .pf .card.rep .rep-t tr:first-child:has(th){display:table-row;border:0;padding:0;margin:0;background:none}' +
     '.bz-admin .pf .card.rep .rep-t td{display:table-cell;padding:7px 8px;border-bottom:1px solid var(--border)}.bz-admin .pf .card.rep .rep-t td.n{text-align:right}.bz-admin .pf .card.rep .rep-t td:not(.n){text-align:left}.bz-admin .pf .card.rep .rep-t td::before{display:none}' +
