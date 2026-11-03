@@ -16,7 +16,21 @@ function pfApply(d, cfg) {
   PF = { acc: (d && d.acc) || [], tx: (d && d.tx) || [], bud: (d && d.bud) || [], asset: (d && d.asset) || [] };
   pfCfg = cfg || {};
 }
-function pfL(t) { return (PF[t] || []).filter(function (x) { return x.status !== 'Цуцалсан'; }); }
+function pfL(t) { var L = (PF[t] || []).filter(function (x) { return x.status !== 'Цуцалсан'; }); return t === 'tx' ? L.concat(pfVirt()) : L; }
+// Компаниас захирлын өмнөөс төлсөн зарлага (компанийн журналд Дт 1208, удирдлагын 7023 «Бусад компаниас авсан зарлага») — хувийн зарлагад орно, дансанд нөлөөлөхгүй.
+// Хувийн санхүүгээс «Компаниас авсан»-аар үүссэн (#PT…) болон эхний үлдэгдлийн бичилт орохгүй. Засах/цуцлах — тухайн компанийн журналаас.
+var PF_COEXP = 'Бусад компаниас авсан зарлага', _pfV = { j: null, n: -1, v: [] };
+function pfVirt() {
+  var J0 = typeof journal !== 'undefined' ? journal : [];
+  if (_pfV.j === J0 && _pfV.n === J0.length) return _pfV.v;
+  var v = J0.filter(function (j) {
+    return j.biz !== 'mgmt' && BUSINESSES[j.biz] && !/^(Устгасан|Цуцалсан)$/.test(j.status || '') && accMig(j.dr, j.id, j.desc) === '1208' && !/#P[TF][0-9A-Z]/.test(String(j.desc)) && !/эхний үлдэгдэл|^Он нээлт/i.test(String(j.desc));
+  }).map(function (j) {
+    return { id: 'J' + j.id, date: j.date, type: 'Зарлага', acc: '', toAcc: '', amount: j.amount, cat: PF_COEXP, desc: (j.desc || 'Захирлын зарлага') + ' · ' + BUSINESSES[j.biz].name + '-аас төлсөн', link: '', rec: '', co: j.biz, virt: 1, status: 'Идэвхтэй' };
+  });
+  _pfV = { j: J0, n: J0.length, v: v };
+  return v;
+}
 function pfCats(kind) {
   var L = (pfCfg[kind] && pfCfg[kind].length ? pfCfg[kind] : kind === 'inc' ? PF_INC0 : PF_EXP0).slice();
   PF_SYS[kind].forEach(function (c) { if (L.indexOf(c) < 0) L.splice(Math.max(0, L.length - 1), 0, c); });
@@ -24,6 +38,7 @@ function pfCats(kind) {
 }
 function pfAcc(id) { return (PF.acc || []).filter(function (a) { return a.id === id; })[0]; }
 function pfAccName(id) { var a = pfAcc(id); return a ? a.name : id ? '—' : ''; }
+function pfTxAccName(t) { return t.virt ? (BUSINESSES[t.co] || {}).name || '' : pfAccName(t.acc); }
 function pfAccOpts(sel, all) {
   return pfL('acc').filter(function (a) { return all || a.active !== 'Үгүй' || a.id === sel; }).map(function (a) {
     return '<option value="' + esc(a.id) + '"' + (a.id === sel ? ' selected' : '') + '>' + esc(a.name) + '</option>'; }).join('');
@@ -79,7 +94,7 @@ var PF_NAV = [
   ['Данс', 'money', [['pf/acc', 'Данс']]],
   ['Гүйлгээ', 'sales', [['pf/tx', 'Гүйлгээ']]],
   ['Төсөв', 'reports', [['pf/bud', 'Төсөв']]],
-  ['Зээл', 'people', [['pf/loans', 'Зээл']]],
+  ['Зээл', 'people', [['pf/loans', 'Авсан зээл'], ['pf/lgiven', 'Өгсөн зээл']]],
   ['Хөрөнгө', 'products', [['pf/asset', 'Хөрөнгө']]],
   ['Тайлан', 'reports', [['pf/rep', 'Тайлан']]],
   ['Тохиргоо', 'gear', [['pf/set', 'Тохиргоо'], ['finance/api', 'Банкны данс холбох'], ['finance/ledger', 'Хуучин бүртгэл (журнал)'], ['finance/audit', 'Өөрчлөлтийн түүх'], ['finance/trash', 'Хогийн сав']]],
@@ -125,8 +140,10 @@ function pfView() {
   if (s === 'acc') return pfAccView();
   if (s === 'tx') return pfTxView();
   if (s === 'bud') return pfBudView();
-  if (s === 'loans') return pfHead('Зээл', 'Зээл бүрийн сарын төлөх дүн, дараагийн төлөлт. «Төлөлт» дарахад данснаас зарлага автоматаар бичигдэнэ.',
-    '<button class="b-btn" onclick="openLoan(null,\'Авсан\')">+ Авсан зээл</button><button class="b-btn" onclick="openLoan(null,\'Өгсөн\')">+ Өгсөн зээл</button>') + loansView();
+  if (s === 'loans') return pfHead('Авсан зээл', 'Таны төлөх зээл, өр. «Төлөлт» дарахад данснаас зарлага автоматаар бичигдэнэ.',
+    '<button class="b-btn" onclick="openLoan(null,\'Авсан\')">+ Авсан зээл</button>') + loansView('Авсан');
+  if (s === 'lgiven') return pfHead('Өгсөн зээл', 'Бусдад өгсөн, танд буцааж төлөх зээл. «Төлбөр авсан» дарахад данс руу орлого бичигдэнэ.',
+    '<button class="b-btn" onclick="openLoan(null,\'Өгсөн\')">+ Өгсөн зээл</button>') + loansView('Өгсөн');
   if (s === 'asset') return pfAssetView();
   if (s === 'rep') return pfRepView();
   if (s === 'set') return pfSetView();
@@ -182,7 +199,7 @@ function lppCalc() {
   } else if (lpp.intrMan) $('lpPrin').value = tot ? r0(tot - (Number($('lpInt').value) || 0)) : '';
   else $('lpInt').value = tot ? r0(tot - (Number($('lpPrin').value) || 0)) : '';
   var p = Number($('lpPrin').value) || 0, it = Number($('lpInt').value) || 0, bad = Math.abs(p + it - tot) > 0.5 || p < 0 || it < 0;
-  $('lpInfo').innerHTML = (L.rate ? (ii.mon ? 'Хүү сараар: үлдэгдэл × ' + L.rate + '%' : 'Хүү хоногоор: үлдэгдэл × ' + r0(L.rate * 12) + '% ÷ 365 × ' + ii.days + ' хоног (' + ii.last + '-аас хойш)') + ' · ' : '') +
+  $('lpInfo').innerHTML = (!L.rate && !(L.total > L.amount) ? 'Хүүгүй зээл — төлбөр бүхэлдээ үндсэнд · ' : '') + (L.rate ? (ii.mon ? 'Хүү сараар: үлдэгдэл × ' + L.rate + '%' : 'Хүү хоногоор: үлдэгдэл × ' + r0(L.rate * 12) + '% ÷ 365 × ' + ii.days + ' хоног (' + ii.last + '-аас хойш)') + ' · ' : '') +
     'Хүү ' + fmt(it) + ' + үндсэн ' + fmt(p) + ' = ' + fmt(p + it) + (bad ? ' <b style="color:var(--red)">≠ нийт ' + fmt(tot) + '</b>' : '');
 }
 function pfLoanPaySave() {
@@ -393,7 +410,7 @@ function pfCatOpts(type, sel) {
 function pfTxView() {
   var f = state.pfF = state.pfF || {}, q = nz(f.q || '');
   if (f.m == null) f.m = todayStr().slice(0, 7);
-  var L = (PF.tx || []).filter(function (t) {
+  var L = (PF.tx || []).concat(pfVirt()).filter(function (t) {
     if (!f.off && t.status === 'Цуцалсан') return false;
     if (f.m && t.date.slice(0, 7) !== f.m) return false;
     if (f.acc && t.acc !== f.acc && t.toAcc !== f.acc) return false;
@@ -406,13 +423,13 @@ function pfTxView() {
     var off = t.status === 'Цуцалсан', sg = t.type === 'Орлого' || (t.type === 'Шилжүүлэг' && f.acc && t.toAcc === f.acc) ? 1 : t.type === 'Шилжүүлэг' && !f.acc ? 0 : -1;
     if (!off && t.type === 'Орлого') inc += t.amount; if (!off && t.type === 'Зарлага') exp += t.amount;
     return '<tr' + (off ? ' style="opacity:.5;text-decoration:line-through"' : '') + '><td class="nw">' + esc(t.date) + '</td><td>' + esc(t.type) + '</td>' +
-      '<td>' + esc(pfAccName(t.acc)) + (t.type === 'Шилжүүлэг' ? ' → ' + esc(pfAccName(t.toAcc)) : '') + '</td><td>' + esc(t.cat || '') + (t.co && BUSINESSES[t.co] ? '<br><small class="muted">' + esc(BUSINESSES[t.co].name) + '</small>' : '') + '</td>' +
+      '<td>' + esc(pfTxAccName(t)) + (t.type === 'Шилжүүлэг' ? ' → ' + esc(pfAccName(t.toAcc)) : '') + '</td><td>' + esc(t.cat || '') + (t.co && BUSINESSES[t.co] ? '<br><small class="muted">' + esc(BUSINESSES[t.co].name) + '</small>' : '') + '</td>' +
       '<td class="fn-ell" title="' + esc(t.desc) + '">' + esc(t.desc || '') + '</td>' +
       '<td class="n" style="color:' + (sg > 0 ? 'var(--income)' : sg < 0 ? 'var(--expense)' : 'inherit') + '">' + (sg > 0 ? '+' : sg < 0 ? '−' : '') + fmt(t.amount) + '</td>' +
       '<td class="n">' + (t.rec === '1' || t.bankId ? '✓' : '') + '</td>' +
-      '<td class="n nw">' + (off ? '<small>цуцалсан</small>' : '<button class="mini" onclick="pfTxOpen(\'' + t.id + '\')">Засах</button><button class="mini" onclick="pfTxCancel(\'' + t.id + '\')">Цуцлах</button>') + '</td></tr>';
+      '<td class="n nw">' + (t.virt ? '<small class="muted" title="Тухайн компанийн журналаас засна">компанийн журнал</small>' : off ? '<small>цуцалсан</small>' : '<button class="mini" onclick="pfTxOpen(\'' + t.id + '\')">Засах</button><button class="mini" onclick="pfTxCancel(\'' + t.id + '\')">Цуцлах</button>') + '</td></tr>';
   }).join('');
-  var cats = pfCats('exp').concat(pfCats('inc').filter(function (c) { return pfCats('exp').indexOf(c) < 0; }));
+  var cats = pfCats('exp').concat([PF_COEXP], pfCats('inc').filter(function (c) { return pfCats('exp').indexOf(c) < 0; }));
   var flt = '<div class="pf-flt"><input type="month" value="' + esc(f.m) + '" onchange="state.pfF.m=this.value;render()" title="Сар (хоосон — бүгд)">' +
     '<select onchange="state.pfF.acc=this.value;render()"><option value="">Бүх данс</option>' + pfAccOpts(f.acc, true) + '</select>' +
     '<select onchange="state.pfF.cat=this.value;render()"><option value="">Бүх ангилал</option>' + cats.map(function (c) { return '<option' + (c === f.cat ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select>' +
@@ -650,7 +667,7 @@ function pfRepData() {
     return [L.partner + (L.kind === 'Өгсөн' ? ' (өгсөн)' : ''), L.amount, r0(P.a), r0(P.p), r0(P.i), r0(P.f), s.paid, s.intr, s.left, L.status === 'Хаагдсан' || s.left <= 0.5 ? 'Хаагдсан' : 'Идэвхтэй'];
   });
   var tx = pfL('tx').filter(inP).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; })
-    .map(function (t) { return [t.date, t.type, pfAccName(t.acc) + (t.type === 'Шилжүүлэг' ? ' → ' + pfAccName(t.toAcc) : ''), t.cat || '', t.desc || '', t.type === 'Орлого' ? t.amount : t.type === 'Зарлага' ? -t.amount : t.amount]; });
+    .map(function (t) { return [t.date, t.type, pfTxAccName(t) + (t.type === 'Шилжүүлэг' ? ' → ' + pfAccName(t.toAcc) : ''), t.cat || '', t.desc || '', t.type === 'Орлого' ? t.amount : t.type === 'Зарлага' ? -t.amount : t.amount]; });
   return { cur: cur, prv: prv, inc: inc, exp: exp, ms: ms, minc: mon('Орлого', pfCats('inc').slice()), mexp: mon('Зарлага', pfCats('exp').slice()), acc: acc, bud: bud, loans: loans, tx: tx };
 }
 function pfRepView() {

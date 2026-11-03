@@ -91,7 +91,7 @@ function openLoanSched(id) {
         '<td class="n">' + (r.left > 0.5 ? mny(r.left) : '') + '</td><td>' + (r.late ? '<span class="tag r">Хоцорсон</span>' : '<span class="tag' + (r.st === 'paid' ? '' : ' b') + '">' + lab[r.st] + '</span>') + '</td></tr>';
     }).join('') + '</table></div><button class="btn ghost" onclick="gClose()">Хаах</button>');
 }
-function loansView() {
+function loansView(only) {
   var E = Jc(), list = loanList(state.biz), b = balances(E, todayStr());
   var sec = function (kind, title, hint) {
     var f = state.lnF || 'active', taken = kind === 'Авсан', tot = { amt: 0, got: 0, paid: 0, intr: 0, left: 0 };
@@ -114,7 +114,7 @@ function loansView() {
         (pf ? '<button class="mini" style="color:var(--red)" onclick="pfLoanDel(\'' + L.id + '\')">Устгах</button>' : '');
       return '<tr><td>' + esc(L.date) + '</td><td><b>' + esc(L.partner) + '</b>' + (L.note ? '<br><small class="muted">' + esc(L.note) + '</small>' : '') +
         (pf ? '<div class="pf-acts">' + acts + '</div>' : '') + '</td>' +
-        '<td class="n">' + mny(L.amount) + (L.total ? '<br><small class="muted">хүүтэй ' + mny(L.total) + '</small>' : '') + '</td><td class="n">' + (L.rate ? L.rate + '%' : '') + '</td><td>' + esc(L.due || '') + '</td>' +
+        '<td class="n">' + mny(L.amount) + (L.total ? '<br><small class="muted">хүүтэй ' + mny(L.total) + '</small>' : '') + '</td><td class="n">' + (L.rate ? L.rate + '%' : !(L.total > L.amount) ? '<span class="tag">Хүүгүй</span>' : '') + '</td><td>' + esc(L.due || '') + '</td>' +
         '<td class="n">' + (s.got ? dl(Object.assign({}, spec, { acc: [loanAcc(L)], dir: 1, t: spec.t + ' — ' + (taken ? 'орсон' : 'олгосон') }), mny(s.got)) : '<small class="muted">бүртгэгдээгүй</small>') + '</td>' +
         '<td class="n">' + (s.paid ? dl(Object.assign({}, spec, { acc: [loanAcc(L)], sign: taken ? 1 : -1, dir: 1, t: spec.t + ' — үндсэн төлөлт' }), mny(s.paid)) : '') + '</td>' +
         '<td class="n">' + (s.intr ? dl(Object.assign({}, spec, { acc: [loanIntAcc(L)], sign: taken ? 1 : -1, t: spec.t + ' — хүү' }), mny(s.intr)) : '') + '</td>' +
@@ -138,7 +138,7 @@ function loansView() {
       (Math.abs(unreg) >= 1 && state.biz !== 'mgmt' ? '<p class="rep-note">Бүртгэлгүй (#лавлагаагүй) ' + (taken ? 'авсан' : 'өгсөн') + ' зээлийн үлдэгдэл: <b>' + mny(unreg) + '</b> — өмнө нь «Зээл авсан/төлсөн» гэж шууд бичсэн гүйлгээ.</p>' : '') + '</div>';
   };
   var ft = stBar('Төлөв', [['active', 'Идэвхтэй'], ['closed', 'Хаагдсан'], ['all', 'Бүгд']], state.lnF || 'active', "state.lnF='%'");
-  if (state.biz === 'mgmt') return ft + sec('Авсан', 'Миний авсан зээл, өр', 'Банк, хүнээс авсан — таны төлөх ёстой') + sec('Өгсөн', 'Миний өгсөн зээл', 'Бусдад өгсөн — танд буцааж өгөх ёстой');
+  if (state.biz === 'mgmt') return ft + (only !== 'Өгсөн' ? sec('Авсан', 'Миний авсан зээл, өр', 'Банк, хүнээс авсан — таны төлөх ёстой') : '') + (only !== 'Авсан' ? sec('Өгсөн', 'Миний өгсөн зээл', 'Бусдад өгсөн — танд буцааж өгөх ёстой') : '');
   return ft + '<p class="hint">Энд таны бүх зээл, өр бүртгэгдэнэ. Зээл бүрийн мөнгө орсон / төлсөн гүйлгээг «Банкны хуулга»-аас (жагсаалтад зээлийн нэрээр гарна) эсвэл энд «Төлөлт» товчоор бүртгэнэ. ' +
     'Зээл бүрт «Төлөх нийт дүн», сар бүрийн <b>төлөлтийн хуваарь</b>-аа оруулбал төлбөр бүр үндсэн, хүү болж автоматаар задарна; хоцорсон төлөлт календарь болон «Миний компаниуд»-д анхааруулга болж гарна.</p>' +
     sec('Авсан', 'Миний авсан зээл, өр', 'Банк, хүнээс авсан — таны төлөх ёстой') + sec('Өгсөн', 'Миний өгсөн зээл', 'Бусдад өгсөн — танд буцааж өгөх ёстой');
@@ -158,6 +158,7 @@ function openLoan(id, kind, bankLine) {
     '<label for="lnPartner">Харилцагч (банк, хүн, байгууллага)</label><input id="lnPartner" list="lnPartners" placeholder="Жишээ: Хаан банк"><datalist id="lnPartners">' + partnerOptions() + '</datalist>' +
     '<div class="row2"><div><label for="lnDate">Огноо</label><input id="lnDate" type="date" onchange="lnCalc(1)"></div><div><label for="lnAmount">Дүн (₮)</label><input id="lnAmount" type="number" min="0" inputmode="numeric" oninput="lnCalc(1);lnSchedSum()"></div></div>' +
     // Зээлийн тооцоолуур (банкных шиг): хүү, хугацаа, төлөх хэлбэр → хуваарь, сарын төлбөр, нийт хүү автоматаар
+    '<label style="display:flex;gap:6px;align-items:center;font-weight:400;margin-top:8px"><input type="checkbox" id="lnFree" style="width:auto" onchange="lnFreeSet()"> Хүүгүй зээл (хүү бодохгүй — төлбөр бүхэлдээ үндсэн)</label>' +
     '<div class="card" style="margin:10px 0;padding:12px"><h2 style="margin:0 0 6px">Зээлийн тооцоолуур</h2>' +
     '<div class="row2"><div><label for="lnRate">Сарын хүү (%)</label><input id="lnRate" type="number" min="0" step="any" placeholder="Жишээ: 1.8" oninput="lnCalc(1)"></div>' +
     '<div><label for="lnTerm">Хугацаа (сар)</label><input id="lnTerm" type="number" min="1" max="600" inputmode="numeric" placeholder="Жишээ: 24" oninput="lnCalc(1)"></div></div>' +
@@ -196,6 +197,7 @@ function openLoan(id, kind, bankLine) {
   $('lnTotal').value = L && L.total ? L.total : '';
   $('lnMonthly').value = L && L.monthly ? L.monthly : ''; lnMonAuto = !(L && L.monthly); $('lnPayAcc').value = L && L.payAcc ? L.payAcc : '';
   if (L && L.intMode) $('lnDays').value = L.intMode;
+  $('lnFree').checked = !!(L && !L.rate && !(L.total > L.amount)); lnFreeSet(1);
   lnRows = L && L.schedule ? L.schedule.map(function (r) { return { d: r.d, p: r.p, i: r.i }; }) : [];
   lnAuto = !lnRows.length;   // хадгалсан хуваарийг тооцоолуур дарж бичихгүй — гараар «Тооцоолох» дарвал л
   $('lnTerm').value = lnRows.length || ''; $('lnFirst').value = lnRows.length ? lnRows[0].d : '';
@@ -228,6 +230,12 @@ function lnSchedSum() {
 // Үндсэн тэнцүү: үндсэн = P / n, хүү үлдэгдлээс (төлбөр сар бүр буурна).
 // Хүү хоногоор: үлдэгдэл × (сарын хүү × 12) ÷ 365 × өмнөх төлөлтөөс хойшх хоног (Монголын банкуудын хуваарь ингэж бодогддог).
 var lnAuto = true, lnMonAuto = true;
+function lnFreeSet(init) {   // хүүгүй: хүү 0, хүү бодох сонголт нуугдана; хуваарь, сарын төлбөр = дүн ÷ хугацаа
+  var f = $('lnFree').checked;
+  $('lnRate').disabled = f; if (f) $('lnRate').value = '';
+  $('lnDays').style.display = $('lnDays').previousElementSibling.style.display = f ? 'none' : '';
+  if (!init) lnCalc(1);
+}
 function lnAddMon(d0, k, day) { var y = d0.getFullYear(), mo = d0.getMonth() + k; return new Date(y, mo, Math.min(day, new Date(y, mo + 1, 0).getDate())); }
 function lnCalcRows(P, rate, n, method, first, start, byDay) {
   var r = rate / 100, f = new Date(first + 'T00:00:00'), day = f.getDate(), prev = new Date(start + 'T00:00:00'), bal = P, out = [];
