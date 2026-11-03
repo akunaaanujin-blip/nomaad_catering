@@ -188,6 +188,7 @@ function bankSuggest(l) {
   var rh = bankRuleHit(l), rule = rh ? { kind: 'rule', v: rh.act, kw: rh.kw } : null, mm = bankManual(l);
   var man = mm.length ? { kind: 'man', v: 'M:' + mm[0].j.id, sure: mm.length === 1, tr: mm[0].tr } : null;
   if (l.credit) { var m = bankMatch(l); if (m) return m; var sh = shopMatch(l); if (sh) return sh; if (man) return man; if (rule) return rule; var dc = debtByName(l, debtCache().rec); if (dc) return dc; var lc = loanSuggest(l); if (lc) return lc; return { kind: 'acc', acc: '' }; }
+  var bg = bbSuggest(l); if (bg) return bg;   // Boost төсөв (boostbud.js)
   var bno = bstNoIn(l.desc), inv = bno && bstInvoices().filter(function (v) { return v.no === bno; })[0];   // Boost нэхэмжлэх: утганд BST- дугаар
   if (inv) return { kind: 'bst', v: 'BST:' + bno, sure: true };
   if (BOOST_RE.test(l.desc) && bstInvoices().some(function (v) { return v.state !== 'paid'; })) return { kind: 'bst', v: 'BST:set' };
@@ -249,6 +250,7 @@ function bankView() {
         BANK_IN.forEach(function (a) { opts.push([a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1], 'Бусад']); });
       } else {
         bankXOpts(l).forEach(function (o) { opts.push(o); });
+        bbBankOpts().forEach(function (o) { opts.push(o); });
         opts.push(['BST:set', 'Boost нэхэмжлэх сонгох…', 'Boost нэхэмжлэх']);
         bstInvoices().filter(function (v) { return v.state !== 'paid'; }).forEach(function (v) {
           opts.push(['BST:' + v.no, v.no + ' · $' + v.usd + ' · ' + v.cos.map(function (c) { return bstCoName(c.biz) + (c.isPaid ? ' (төлсөн)' : ''); }).join(', ') + ' · ' + v.status, 'Boost нэхэмжлэх']); });
@@ -447,7 +449,7 @@ function bankApply(ids, quiet) {
                  p0.indexOf('R:') === 0 ? 'мөнгөний хүсэлт: ' + ([].filter.call(document.querySelectorAll('option'), function (o) { return o.value === p0; })[0] || {}).textContent + ' — зардлаар бичигдэж хүсэлт «Төлсөн» болно' :
                  p0.indexOf('D:') === 0 ? (bankDebt(p0) ? debtLabel(bankDebt(p0)) + ' — хаана' : 'өр / авлага') :
                  p0.indexOf('MG:') === 0 || p0 === 'A:1208' ? 'захирлын зарлага — Дт 1208 / Кт банк (Захирал)' :
-                 /^(IC|L|PO):/.test(p0) ? ([].filter.call(document.querySelectorAll('option'), function (o) { return o.value === p0; })[0] || {}).textContent || p0 :
+                 /^(IC|L|PO|BG):/.test(p0) ? ([].filter.call(document.querySelectorAll('option'), function (o) { return o.value === p0; })[0] || {}).textContent || p0 :
                  p0.slice(2) + ' ' + accName(p0.slice(2));
       if (!confirm(l0.date + ' · ' + (l0.credit ? '+' + fmt(l0.credit) : '−' + fmt(l0.debit)) + '\n«' + l0.desc + '»\n\n→ ' + what + '\n\nТулгах уу?')) return;
     }
@@ -510,6 +512,11 @@ function bankApply(ids, quiet) {
       if (!le) return;
       entries = entries.concat(le.entries); updates.push({ id: id, status: 'Тулгасан', link: le.link });
       if (le.closes) loanCloseIds.push(pick.slice(2));
+      return;
+    }
+    if (pick.indexOf('BG:') === 0) {   // Boost төсөв — Дт 7120 «#BGT:<дугаар>», төсөв хаагдана
+      var bge = bbBankEntries(pick, biz, acc, d, amt); if (!bge) return;
+      entries = entries.concat(bge.entries); updates.push({ id: id, status: 'Тулгасан', link: bge.link });
       return;
     }
     if (pick.indexOf('PO:') === 0) {   // бараа захиалгын төлбөр / карго (1505)

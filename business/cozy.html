@@ -73,22 +73,8 @@
       </div>
     </div>
     <div data-view="boost" id="boostView" style="display:none">
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:baseline"><b>Boost нэхэмжлэх</b><span class="muted">Дугаар: <b id="bNo"></b></span></div>
-        <label for="bImg">Meta-гийн баримтын зураг (заавал)</label>
-        <input id="bImg" type="file" accept="image/*" onchange="boostImgPick(this)">
-        <img id="bImgPrev" alt="" style="display:none;max-width:100%;max-height:220px;margin-top:6px;border-radius:8px">
-        <label for="bMetaUsd">Meta баримтын нийт $ (заавал)</label><input id="bMetaUsd" type="number" inputmode="decimal" min="0" step="0.01" oninput="boostCalc()">
-        <div id="bRows"></div>
-        <button class="btn ghost" onclick="boostRowAdd()">+ Мөр нэмэх</button>
-        <label for="bRate">Ханш (1$ = ₮, урьдчилсан тооцоонд)</label><input id="bRate" type="number" inputmode="decimal" min="0" oninput="boostCalc()">
-        <small class="muted">банкны ханш (≈3,600)</small>
-        <p class="muted" id="bCalc" style="margin-top:8px"></p>
-        <button class="btn" style="margin-top:6px" onclick="saveBoost()">Хадгалах</button>
-        <p class="muted" style="margin-top:8px">Төлөв «Төлөгдөөгүй» — удирдлага банкны гүйлгээгээр тулгахад «Төлсөн» болно. Банкаар төлөхдөө гүйлгээний утгад нэхэмжлэхийн дугаарыг (BST-…) бичнэ. Кассын мөнгөнөөс хасагдахгүй.</p>
-      </div>
-      <h3 style="margin:14px 0 6px">Миний нэхэмжлэх</h3>
-      <ul class="list card" id="boostList"></ul>
+      <div id="bbList"></div>
+      <div class="card" id="bbForm" style="display:none"></div>
     </div>
     <div class="pending" id="pending"></div>
     <div class="pending" id="ebWarn"></div>
@@ -303,7 +289,7 @@
 <script src="common.js?v=20261103d"></script>
 <script>var BIZ_KEY = 'cozy';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="staff.js?v=20261103b"></script>
+<script src="staff.js?v=20261103c"></script>
 <script src="ebarimt.js?v=20261023d"></script>
 <script src="orders.js?v=20261103d"></script>
 <script src="label.js?v=20261102e"></script>

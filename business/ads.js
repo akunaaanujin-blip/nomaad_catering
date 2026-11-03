@@ -109,7 +109,7 @@ function bstInvoices(Rr) {
   });
   return list.sort(function (a, b) { return a.no < b.no ? 1 : -1; });
 }
-function bstPaidMap(Rr) { var m = {}; bstInvoices(Rr).forEach(function (v) { v.rows.forEach(function (x) { m[x.id] = { paid: x._paid, est: x._est }; }); }); return m; }
+function bstPaidMap(Rr) { var m = typeof bbPaidMap === 'function' ? bbPaidMap() : {}; bstInvoices(Rr).forEach(function (v) { v.rows.forEach(function (x) { m[x.id] = { paid: x._paid, est: x._est }; }); }); return m; }
 function bstImg(no) {
   if (!API_URL) { toast('Зураг зөвхөн сервертэй үед харагдана'); return; }
   post({ type: 'admin_boost', img: no }, function (err, d) {
