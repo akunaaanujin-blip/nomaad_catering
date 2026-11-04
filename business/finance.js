@@ -403,7 +403,7 @@ function repDebts(E, k, flt) {
         paid: { lines: [].concat.apply([], g.L.map(function (it) { return it.pays || []; })).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }), t: 'Төлсөн / хасагдсан — ' + g.w, to: td } } });
     if (!opened) return;
     g.L.filter(keep).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (it) {
-      rows.push({ _d: it.paid > 0.5 ? { paid: { lines: it.pays, t: 'Төлсөн / хасагдсан — ' + it.who + ' · ' + it.date + ' · ' + mny(it.amt), to: td } } : null,
+      rows.push({ _cls: 'ddoc', _d: it.paid > 0.5 ? { paid: { lines: it.pays, t: 'Төлсөн / хасагдсан — ' + it.who + ' · ' + it.date + ' · ' + mny(it.amt), to: td } } : null,
         date: String(it.date).slice(5), who: '', desc: it.desc, amt: r0(it.amt), paid: r0(it.paid), left: r0(it.amt - it.paid), st: it.closed ? 'Хаагдсан ' + String(it.closed).slice(5) : (it.paid - (it.fee || 0) > 0.5 ? 'Хэсэгчлэн · ' : it.fee > 0.5 ? 'Хөлс ' + mny(it.fee) + ' хассан · ' : '') + days(it.date) + ' хоног',
         _act: !it.closed && /^[rp]$/.test(k) && it.acc !== '1290' ? '<input type="checkbox" class="dsel" data-grp="' + esc(g.w) + '" data-key="' + esc(it.key) + '" data-left="' + r0(it.amt - it.paid) + '"' + (debtSel[it.key] !== undefined ? ' checked' : '') + ' onchange="debtSelSet(this)" title="Олноор хаахад сонгох"> ' +
           '<button class="mini" style="color:var(--accent)" onclick="debtClose(\'' + k + '\',\'' + esc(it.key) + '\')">' + (k === 'r' ? 'Авлага хаах' : 'Өглөг хаах') + '</button>' : '' });
