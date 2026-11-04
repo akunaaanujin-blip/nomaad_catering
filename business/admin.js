@@ -2507,15 +2507,28 @@ function saveVoucher() {
     refresh(); done(d.no);
   });
 }
+// Кассын гүйлгээ: дугаартай КО/КЗ/ХО/ХЗ баримт + кассаар (10003) автоматаар орсон, гарсан мөнгө (бэлэн борлуулалт, зарлага, касс хаалт г.м)
 function repVouchers(biz, f, t) {
+  var num = {}, grp = {};
   var rows = journal.filter(function (j) { return j.biz === biz && j.no && j.date >= f && j.date <= t; }).slice().reverse().map(function (j) {
     var V = VOUCHER[j.no.slice(0, 2)], inn = V.dir === 'in';
-    return { no: j.no, date: j.date, kind: V.name.replace(' баримт', ''), corr: (inn ? j.cr : j.dr) + ' ' + accName(inn ? j.cr : j.dr), partner: j.partner, desc: j.desc,
+    num[j.id] = 1;
+    return { no: j.no, date: j.date, time: '', kind: V.name.replace(' баримт', ''), corr: (inn ? j.cr : j.dr) + ' ' + accName(inn ? j.cr : j.dr), partner: j.partner, desc: j.desc,
              inA: inn ? j.amount : '', outA: inn ? '' : j.amount, _id: j.id };
   });
-  return { title: 'Кассын баримт', cols: [c('no', 'Дугаар'), c('date', 'Огноо'), c('kind', 'Төрөл'), c('corr', 'Харьцсан данс'), c('partner', 'Харилцагч'),
+  J().forEach(function (e) {
+    if (e.date < f || e.date > t || num[e.ref] || (e.dr === '10003') === (e.cr === '10003')) return;
+    var inn = e.dr === '10003', other = inn ? e.cr : e.dr, k = e.bill ? [e.date, e.doc, e.bill, inn].join('|') : '', g = k && grp[k];   // нэг баримтын мөрүүд нэг мөр болно
+    if (g) { g[inn ? 'inA' : 'outA'] += e.amount; g.n++; if (g.n <= 3) g.desc += ', ' + e.desc; else if (g.n === 4) g.desc += '…'; return; }
+    g = { no: '', date: e.date, time: e.time || '', kind: e.doc, corr: other + ' ' + accName(other), partner: e.partner, desc: e.desc, inA: inn ? e.amount : '', outA: inn ? '' : e.amount, n: 1 };
+    if (k) grp[k] = g;
+    rows.push(g);
+  });
+  rows.sort(function (a, b) { var x = a.date + a.time, y = b.date + b.time; return x < y ? 1 : x > y ? -1 : 0; });
+  return { title: 'Кассын гүйлгээ', cols: [c('no', 'Дугаар'), c('date', 'Огноо'), c('kind', 'Төрөл'), c('corr', 'Харьцсан данс'), c('partner', 'Харилцагч'),
     c('desc', 'Гүйлгээний утга'), m('inA', 'Орлого'), m('outA', 'Зарлага')], rows: rows,
-    total: { no: 'Нийт', inA: sum(rows, 'inA'), outA: sum(rows, 'outA') }, print: true };
+    total: { no: 'Нийт', inA: sum(rows, 'inA'), outA: sum(rows, 'outA') }, print: true,
+    note: 'Дугааргүй мөрүүд — борлуулалт, зарлагаас кассаар автоматаар орсон мөнгө. Карт, банкны гүйлгээ «Дансны хуулга»-д.' };
 }
 function printVoucherId(id) {
   var j = journal.filter(function (x) { return x.id === id; })[0]; if (j) printVoucher(j, j.no);
