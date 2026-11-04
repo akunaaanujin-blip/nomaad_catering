@@ -4,6 +4,8 @@
 // Элэгдэл сар бүрийн эцэст АВТОМАТААР бодогдоно (reports.js buildJournal — бүртгэлээс), гараар бичих шаардлагагүй.
 
 function faList(biz) { return (window.assets || []).filter(function (a) { return a.biz === biz; }); }
+// Захиалгаар ирсэн хөрөнгийн өртөг журналаас (Дт 2001 «#FA…») — дараа ирсэн карго нэмэгдэнэ
+function faPoCost() { (window.assets || []).forEach(function (A) { if (!A.po) return; var s = 0; journal.forEach(function (j) { if (j.dr === '2001' && hasTag(j.desc, A.id)) s += j.amount; }); if (s > 0) A.cost = r0(s); }); }
 function faById(id) { return (window.assets || []).filter(function (a) { return a.id === id; })[0]; }
 function faMonthly(A) { return A.life > 0 ? Math.round(Math.max(0, A.cost - (A.dep0 || 0) - (A.salv || 0)) / A.life) : 0; }
 function faStart(A) { var d = new Date(Number(A.date.slice(0, 4)), Number(A.date.slice(5, 7)), 1); return todayStr(d).slice(0, 7); }   // авсны дараа сараас

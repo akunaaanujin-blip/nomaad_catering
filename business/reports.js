@@ -842,7 +842,7 @@ function closePayloadAt(biz, R, end, label) {
     if (e.date > end) return;
     [e.dr, e.cr].forEach(function (k, i) {
       if (!byPartner[k]) return;
-      var tg = TAGGED[k] ? (String(e.desc).match(/#((?:L|PO|FA)\d+)/) || [])[1] || '' : '', key = (TAGONLY[k] ? '' : e.partner || '') + '\u0001' + tg;   // захиалга, хөрөнгийг зөвхөн «#ID»-аар
+      var tg = TAGGED[k] ? (String(e.desc).match(k === '1505' ? /#(PO\d+)/ : /^200/.test(k) ? /#(FA\d+)/ : /#((?:L|PO|FA)\d+)/) || String(e.desc).match(/#((?:L|PO|FA)\d+)/) || [])[1] || '' : '', key = (TAGONLY[k] ? '' : e.partner || '') + '\u0001' + tg;   // захиалга, хөрөнгийг зөвхөн «#ID»-аар
       byPartner[k][key] = (byPartner[k][key] || 0) + (i === 0 ? e.amount : -e.amount);
     });
   });

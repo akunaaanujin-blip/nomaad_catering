@@ -7,6 +7,15 @@
 var PO_CUR = { CNY: '¥', USD: '$', MNT: '₮' };
 function poList(biz) { return (window.pos || []).filter(function (p) { return p.biz === biz && p.status !== 'Цуцалсан'; }); }
 function poById(id) { return (window.pos || []).filter(function (p) { return p.id === id; })[0]; }
+// Төрөл: тэмдэглэлийн эхэнд «[Хөрөнгө]» — ирэлт нь үлдэгдэлд биш, Үндсэн хөрөнгөд орно (Дт 2001 / Кт 1505 «ирэлт N · нэр × тоо #FA… #PO…»)
+var PO_FA = '[Хөрөнгө]';
+function poIsAsset(P) { return String((P || {}).note || '').indexOf(PO_FA) === 0; }
+function poNoteText(P) { return String((P || {}).note || '').replace(PO_FA, '').trim(); }
+function poAssetTag(P, n) {   // тэр ирэлтийн хамгийн их өртөгтэй хөрөнгө — дараа ирсэн карго түүний өртөгт нэмэгдэнэ
+  var best = null;
+  Jc().forEach(function (e) { if (e.dr === '2001' && e.cr === '1505' && hasTag(e.desc, P.id) && poShipRe(n).test(e.desc) && (!best || e.amount > best.amount)) best = e; });
+  return best ? (String(best.desc).match(/#(FA\d+)/) || [])[1] || '' : '';
+}
 function poCurAmt(P, v) { return P.cur === 'MNT' ? fmt(v) : PO_CUR[P.cur] + (Math.round(v * 100) / 100).toLocaleString('en-US'); }
 function poShipNo(note) { var x = String(note || '').match(/ирэлт (\d+)/); return x ? Number(x[1]) : 1; }   // хуучин (ирэлтгүй) орлого — 1-р ирэлт
 function poShipRe(n) { return new RegExp('ирэлт ' + n + '(?!\\d)'); }
@@ -16,7 +25,7 @@ function poStat(P, E) {   // post — бараа ирсний дараа тоо�
     if (!hasTag(e.desc, P.id)) return;
     var isC = /карго/i.test(e.desc);
     if (e.cr === '1505') { out += e.amount; return; }
-    if (e.dr === '1404' && isC) { post += e.amount; return; }
+    if ((e.dr === '1404' || e.dr === '2001') && isC) { post += e.amount; return; }
     if (e.dr !== '1505') return;
     var cash = ACC[e.cr] && ACC[e.cr].cash;
     if (cash) { if (isC) cargo += e.amount; else sup += e.amount; } else { if (isC) accrC += e.amount; else accr += e.amount; }
@@ -32,9 +41,15 @@ function poShips(P, E) {
     x.items[m.item] = (x.items[m.item] || 0) + q;
     x.goods += q * ((Number(m.cost) || 0) - (Number(m.cargo) || 0)); x.cargoPre += q * (Number(m.cargo) || 0);
   });
+  if (poIsAsset(P)) (E || Jc()).forEach(function (e) {   // хөрөнгийн ирэлт — хөдөлгөөн биш, журналаас
+    if (e.dr !== '2001' || e.cr !== '1505' || !hasTag(e.desc, P.id)) return;
+    var m = String(e.desc).match(/· ирэлт (\d+) · (.+) × ([\d.]+)(?: · карго ([\d.]+))? #/); if (!m) return;
+    var n = Number(m[1]), x = S[n] = S[n] || { n: n, date: String(e.date).slice(0, 10), items: {}, goods: 0, cargoPre: 0, cargoPost: 0 }, c = Number(m[4]) || 0;
+    x.items[m[2]] = (x.items[m[2]] || 0) + Number(m[3]); x.goods += e.amount - c; x.cargoPre += c;
+  });
   var L = Object.keys(S).map(function (k) { return S[k]; }).sort(function (a, b) { return a.n - b.n; });
   (E || Jc()).forEach(function (e) {
-    if (e.dr !== '1404' || !/карго/i.test(e.desc) || !hasTag(e.desc, P.id)) return;
+    if ((e.dr !== '1404' && e.dr !== '2001') || e.cr === '1505' || !/карго/i.test(e.desc) || !hasTag(e.desc, P.id)) return;
     var n = poShipNo(e.desc); L.forEach(function (x) { if (x.n === n) x.cargoPost += e.amount; });
   });
   L.forEach(function (x) { x.goods = r0(x.goods); x.cargoPre = r0(x.cargoPre); x.cargoPost = r0(x.cargoPost); });
@@ -98,7 +113,7 @@ function poView() {
     var st = P.status === 'Ирсэн' ? '<span class="tag">Ирсэн ' + esc(P.recvDate || '') + '</span>' : P.status === 'Цуцалсан' ? '<span class="tag r">Цуцалсан</span>' :
       '<span class="tag b">' + (L.length ? 'Хэсэгчлэн ирсэн' : s.paid ? 'Төлбөр хийгдсэн' : 'Захиалсан') + '</span>';
     return '<tr' + (P.status === 'Цуцалсан' ? ' style="opacity:.55"' : '') + '><td style="white-space:nowrap"><b>' + esc(P.no) + '</b><br><small class="muted">' + esc(P.date) + '</small></td><td style="min-width:110px">' + esc(P.supplier) + (P.cargoCo ? '<br><small class="muted">Карго: ' + esc(P.cargoCo) + '</small>' : '') + '</td>' +
-      '<td style="white-space:normal;min-width:180px">' + esc(its.map(function (i) { return i.name + ' × ' + (rq[i.name] ? round2(rq[i.name]) + '/' : '') + i.qty; }).join(', ')) + shipTxt + '</td>' +
+      '<td style="white-space:normal;min-width:180px">' + (poIsAsset(P) ? '<small class="muted">Үндсэн хөрөнгө</small><br>' : '') + esc(its.map(function (i) { return i.name + ' × ' + (rq[i.name] ? round2(rq[i.name]) + '/' : '') + i.qty; }).join(', ')) + shipTxt + '</td>' +
       '<td class="n">' + poCurAmt(P, P.total) + '</td>' +
       '<td class="n">' + (s.paid ? dl(Object.assign({}, spec, { t: spec.t + ' — нийлүүлэгчид төлсөн' }), mny(s.paid)) : '') + '</td>' +
       '<td class="n">' + (s.cargo + s.accrC + s.post ? mny(s.cargo + s.accrC + s.post) : '') + '</td>' +
@@ -107,7 +122,8 @@ function poView() {
   }).join('');
   return poInCard() + '<p class="hint">1) «+ Шинэ захиалга» — ямар бараа, хэдийг, хэдэн юаниар захиалсан. 2) Нийлүүлэгчид төлсөн мөнгийг «Банкны хуулга»-аас энэ захиалгаар тулгана — бараа ирэх хүртэл «Замд» баганад авлага болж харагдана. ' +
     '3) Бараа ирэх бүрт «Бараа ирсэн» — ирсэн тоогоо оруулна (хэсэг хэсгээр ирж болно); ирсэн барааны хэсэг нь «Замд»-аас хасагдаж үлдэгдэлд орно. ' +
-    '4) Каргоны мөнгийг бараа ирсний дараа хуулгаас «… ирэлтийн карго»-оор тулгана (эсвэл «Карго» товч) — тэр ирэлтийн барааны өртөгт нэмэгдэнэ.</p>' + poLowCard() +
+    '4) Каргоны мөнгийг бараа ирсний дараа хуулгаас «… ирэлтийн карго»-оор тулгана (эсвэл «Карго» товч) — тэр ирэлтийн барааны өртөгт нэмэгдэнэ. ' +
+    'Төрлийг «Үндсэн хөрөнгө» гэж сонгосон захиалга ирэхэд (ажилтан бүртгэсэн ч) үлдэгдэлд биш, «Үндсэн хөрөнгө»-д орно.</p>' + poLowCard() +
     '<div class="card rep"><div class="rep-cap"><b>Захиалгууд</b></div><div class="scroll"><table class="rep-t"><tr><th>Дугаар</th><th>Нийлүүлэгч</th><th>Бараа (ирсэн/захиалсан)</th><th class="n">Нийт (валютаар)</th><th class="n">Төлсөн</th><th class="n">Карго</th><th class="n" title="Төлсөн боловч бараа нь ирээгүй — нийлүүлэгчээс авах (1505)">Замд</th><th>Төлөв</th><th></th></tr>' +
     (rows || '<tr><td colspan="9" class="muted">Захиалга алга — «+ Шинэ захиалга» дарна уу</td></tr>') + '</table></div></div>';
 }
@@ -146,7 +162,10 @@ var pqIt = [];
 function openPo(id, preset) {   // preset — «Захиалах» бараанаас үүсгэсэн ноорог { items, supplier, note }
   var P = id ? poById(id) : null;
   pqIt = P ? (P.items || []).map(function (i) { return { name: i.name, qty: i.qty, price: i.price, cn: i.cn || '' }; }) : preset && preset.items ? preset.items : [{ name: '', qty: '', price: '', cn: '' }];
+  var shipped = P && poShips(P).length;
   gOpen('<h2>' + (P ? 'Захиалга засах · ' + esc(P.no) : 'Шинэ бараа захиалга') + '</h2>' +
+    '<label for="pqKind">Төрөл</label><select id="pqKind" onchange="pqRender()"' + (shipped ? ' disabled title="Ирэлт бүртгэгдсэн тул солихгүй"' : '') + '>' + (P || preset ? '' : '<option value="">Сонгоно уу</option>') +
+      '<option value="goods">Дэлгүүрийн бараа — үлдэгдэлд орж зарагдана</option><option value="asset">Үндсэн хөрөнгө — дэлгүүрт өөрөө ашиглана</option></select>' +
     '<div class="row2"><div><label for="pqSup">Нийлүүлэгч</label><input id="pqSup" list="pqSups" placeholder="Жишээ: Yiwu ..."><datalist id="pqSups">' + partnerOptions() + '</datalist></div>' +
     '<div><label for="pqDate">Огноо</label><input id="pqDate" type="date"></div></div>' +
     '<div class="row2"><div><label for="pqCur">Валют</label><select id="pqCur" onchange="pqRender()"><option value="CNY">¥ юань</option><option value="USD">$ доллар</option><option value="MNT">₮ төгрөг</option></select></div>' +
@@ -157,7 +176,8 @@ function openPo(id, preset) {   // preset — «Захиалах» бараан�
     '<label for="pqNote">Тэмдэглэл</label><input id="pqNote">' +
     '<button class="btn" onclick="savePo(' + (P ? '\'' + P.id + '\'' : '') + ')">Хадгалах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
   $('pqSup').value = P ? P.supplier : preset ? preset.supplier || '' : ''; $('pqDate').value = P ? P.date : todayStr(); $('pqCur').value = P ? P.cur : load('nb_cur', 'CNY');
-  $('pqCargo').value = P ? P.cargoCo : load('nb_cargoco', ''); $('pqNote').value = P ? P.note : preset ? preset.note || '' : '';
+  $('pqCargo').value = P ? P.cargoCo : load('nb_cargoco', ''); $('pqNote').value = P ? poNoteText(P) : preset ? preset.note || '' : '';
+  $('pqKind').value = P ? (poIsAsset(P) ? 'asset' : 'goods') : preset ? 'goods' : '';
   pqRender();
 }
 function pqRender() {
@@ -173,7 +193,7 @@ function pqRender() {
   pqTot();
 }
 function poKnown(name) { var n = String(name || '').trim().toLowerCase(); return BUSINESSES[state.biz].products.some(function (p) { return p.name.toLowerCase() === n; }); }
-function pqMark(i) { var c = $('pqN' + i), n = String(pqIt[i].name || '').trim(); if (c) c.textContent = n && !poKnown(n) ? 'шинэ' : ''; }
+function pqMark(i) { var c = $('pqN' + i), n = String(pqIt[i].name || '').trim(); if (c) c.textContent = n && $('pqKind').value !== 'asset' && !poKnown(n) ? 'шинэ' : ''; }
 function pqTot() {
   var sg = PO_CUR[$('pqCur').value], t = 0;
   pqIt.forEach(function (it, i) { var v = (Number(it.qty) || 0) * (Number(it.price) || 0) + (Number(it.cn) || 0); t += v; var c = $('pqL' + i); if (c) c.textContent = v ? sg + (Math.round(v * 100) / 100).toLocaleString('en-US') : ''; });
@@ -182,6 +202,9 @@ function pqTot() {
 function savePo(id) {
   var items = pqIt.filter(function (i) { return String(i.name).trim() && Number(i.qty) > 0; }).map(function (i) { return { name: String(i.name).trim(), qty: Number(i.qty), price: Number(i.price) || 0, cn: Number(i.cn) || 0 }; });
   var x = { biz: state.biz, supplier: $('pqSup').value.trim(), date: $('pqDate').value, cur: $('pqCur').value, cargoCo: $('pqCargo').value.trim(), note: $('pqNote').value.trim(), items: items };
+  var kind = $('pqKind').value;
+  if (!kind) { toast('Төрлөө сонгоно уу: дэлгүүрийн бараа эсвэл үндсэн хөрөнгө'); return; }
+  if (kind === 'asset') x.note = (PO_FA + ' ' + x.note).trim();
   if (x.supplier.length < 2) { toast('Нийлүүлэгчийн нэрийг бичнэ үү'); return; }
   if (!items.length) { toast('Дор хаяж нэг бараа, тоотой нь бичнэ үү'); return; }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(x.date)) { toast('Огноо оруулна уу'); return; }
@@ -211,8 +234,8 @@ function poPayLabel(P, type) {
 }
 function poPayEntry(spec, acc, d, amt, note, cco) {   // spec: «PO123|s» (s — нийлүүлэгч, c — карго урьдчилж, kN — N-р ирэлтийн карго, a/b — урьдчилгаа/үлдэгдэл)
   var id = spec.split('|')[0], type = spec.split('|')[1] || 's', P = poById(id); if (!P) return null;
-  var ship = /^k\d+$/.test(type), label = poPayLabel(P, type), partner = type === 'c' || ship ? (cco || P.cargoCo || 'Карго') : P.supplier;
-  return { entry: { biz: P.biz, date: d, dr: ship ? '1404' : '1505', cr: acc, amount: amt, partner: partner, desc: ((note ? note + ' · ' : '') + P.no + ' · ' + label + ' · ' + partner).slice(0, 170) + ' #' + P.id },
+  var ship = /^k\d+$/.test(type), fa = ship && poIsAsset(P), tag = fa ? poAssetTag(P, type.slice(1)) : '', label = poPayLabel(P, type), partner = type === 'c' || ship ? (cco || P.cargoCo || 'Карго') : P.supplier;
+  return { entry: { biz: P.biz, date: d, dr: fa ? '2001' : ship ? '1404' : '1505', cr: acc, amount: amt, partner: partner, desc: ((note ? note + ' · ' : '') + P.no + ' · ' + label + ' · ' + partner).slice(0, 170) + (tag ? ' #' + tag : '') + ' #' + P.id },
            link: 'Бараа захиалга ' + P.no + ' · ' + label };
 }
 function poOpts(biz) {
@@ -274,10 +297,10 @@ function savePoPay(id, cargo) {
 var _prId = '';
 function openPoRecv(id) {
   _prId = id; prDone = {}; _piId = '';
-  var P = poById(id), s = poStat(P), L = poShips(P), rq = poRecvQty(P, L), wh = hasWarehouse(state.biz);
-  gOpen('<h2>' + esc(P.no) + ' · Бараа ирсэн' + (L.length ? ' (' + (L.length + 1) + '-р ирэлт)' : '') + '</h2><p class="muted">' + esc(P.supplier) + ' · захиалга ' + poCurAmt(P, P.total) + '</p>' +
+  var P = poById(id), s = poStat(P), L = poShips(P), rq = poRecvQty(P, L), fa = poIsAsset(P), wh = !fa && hasWarehouse(state.biz);
+  gOpen('<h2>' + esc(P.no) + ' · Бараа ирсэн' + (L.length ? ' (' + (L.length + 1) + '-р ирэлт)' : '') + '</h2><p class="muted">' + esc(P.supplier) + ' · захиалга ' + poCurAmt(P, P.total) + (fa ? ' · үндсэн хөрөнгөд орно' : '') + '</p>' +
     '<div class="row2"><div><label for="prDate">Ирсэн огноо</label><input id="prDate" type="date" value="' + todayStr() + '"></div>' +
-    (wh ? '<div><label for="prLoc">Байршил</label><select id="prLoc"><option>Агуулах</option><option>Дэлгүүр</option></select></div>' : '<div></div>') + '</div>' +
+    (wh ? '<div><label for="prLoc">Байршил</label><select id="prLoc"><option>Агуулах</option><option>Дэлгүүр</option></select></div>' : fa ? '<div><label for="prLife">Ашиглах хугацаа (сар)</label><input id="prLife" type="number" min="1" inputmode="numeric" placeholder="Жишээ: 60"></div>' : '<div></div>') + '</div>' +
     '<div id="prItems"></div><div id="prNew"></div>' +
     '<label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="prFin" onchange="prCalc()" style="width:auto"> Захиалгын бүх бараа ирж дууссан (захиалгыг хаана)</label>' +
     '<table class="rep-t" style="margin-top:8px"><tr><td>Замд (1505) — нийлүүлэгчид төлсөн, бараа нь ирээгүй</td><td class="n">' + mny(s.bal) + '</td></tr></table>' +
@@ -301,6 +324,7 @@ function openPoRecv(id) {
 var prDone = {};
 function prNewRender(saved) {
   var P = poById(_prId), box = $('prNew'); if (!P || !box) return;
+  if (poIsAsset(P)) { box.innerHTML = ''; return; }
   if (saved) prDone[saved.toLowerCase()] = 1;
   var nw = (P.items || []).filter(function (it) { return !poKnown(it.name) && !prDone[it.name.toLowerCase()]; });
   box.innerHTML = nw.length ? '<p class="muted" style="font-size:12.5px;margin-top:8px">Барааны бүртгэлд алга: ' + nw.map(function (it) {
@@ -349,11 +373,30 @@ function savePoRecv(id) {
   if (!(a.total > 0)) { toast('Зардал 0 байна — төлбөрөө бүртгэх эсвэл «дараа төлөх» дүнг оруулна уу'); return; }
   if (a.unC > 0 && !cco) { toast('Каргог дараа төлөх бол карго компанийн нэрийг бичнэ үү'); return; }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { toast('Огноо оруулна уу'); return; }
-  if (!confirm((a.goods > 0 ? '' : 'Нийлүүлэгчийн төлбөр бүртгэгдээгүй — барааны өртөг 0 болно.\n\n') + P.no + ' · ' + a.n + '-р ирэлт — ' + a.rows.filter(function (r) { return r.qty > 0; }).length + ' бараа, өртөг ' + fmt(a.total) + '-өөр үлдэгдэлд (' + loc + ') орох уу?' +
+  var fa = poIsAsset(P), life = fa ? Math.round(Number($('prLife').value) || 0) : 0;
+  if (fa && !isOwner()) { toast('Үндсэн хөрөнгийн ирэлтийг эзэн батална'); return; }
+  if (fa && !(life > 0)) { toast('Ашиглах хугацааг (сараар) оруулна уу'); return; }
+  if (fa && meta.lock && lastDayOf(faStart({ date: d })) <= meta.lock) { toast(meta.lock + ' хүртэл түгжигдсэн — огноог түгжээнээс хойш оруулна уу'); return; }
+  if (!confirm((a.goods > 0 ? '' : 'Нийлүүлэгчийн төлбөр бүртгэгдээгүй — барааны өртөг 0 болно.\n\n') + P.no + ' · ' + a.n + '-р ирэлт — ' + a.rows.filter(function (r) { return r.qty > 0; }).length + ' бараа, өртөг ' + fmt(a.total) + (fa ? '-өөр үндсэн хөрөнгөд орох уу?' : '-өөр үлдэгдэлд (' + loc + ') орох уу?') +
     (a.fin ? '\n\nЗахиалга хаагдана.' : '\n\nЗахиалга нээлттэй үлдэнэ — үлдсэн бараа ирэхэд дахин «Бараа ирсэн».'))) return;
   var E = [];
   if (a.unSup > 0) E.push({ biz: P.biz, date: d, dr: '1505', cr: '3101', amount: a.unSup, partner: P.supplier, desc: P.no + ' · үлдэгдэл төлбөр (дараа төлнө) · ' + P.supplier + ' #' + P.id });
   if (a.unC > 0) E.push({ biz: P.biz, date: d, dr: '1505', cr: '3101', amount: a.unC, partner: cco, desc: P.no + ' · карго (дараа төлнө) · ' + cco + ' #' + P.id });
+  if (fa) {
+    var list = (window.assets || []).slice(), now = Date.now();
+    a.rows.filter(function (r) { return r.qty > 0 && r.tot > 0; }).forEach(function (r, i) {
+      var A = { id: 'FA' + String(now + i).slice(-9), biz: P.biz, status: 'Ашиглаж буй', name: (r.name + (r.qty > 1 ? ' × ' + r.qty : '')).slice(0, 60), date: d, cost: r.tot, life: life, salv: 0, dep0: 0, note: P.no + ' · ирэлт ' + a.n, po: P.id };
+      var c = r0((r.cargoU || 0) * r.qty);
+      list.push(A);
+      E.push({ biz: P.biz, date: d, dr: '2001', cr: '1505', amount: r.tot, partner: P.supplier, desc: P.no + ' · ирэлт ' + a.n + ' · ' + r.name + ' × ' + r.qty + (c ? ' · карго ' + c : '') + ' #' + A.id + ' #' + P.id });
+    });
+    var fin = function () { gClose(); toast(P.no + ' — ' + a.n + '-р ирэлт үндсэн хөрөнгөд орлоо'); };
+    if (cco && cco !== P.cargoCo) P.cargoCo = cco;
+    faSave(list, function () { postEntries(E, function () { poInClose(function () {
+      if (a.fin) poSetStatus(id, 'Ирсэн', d, fin); else { fin(); if (API_URL) refresh(); else render(); }
+    }); }); });
+    return;
+  }
   var rate = P.cur !== 'MNT' && a.value ? Math.round(a.goods / a.value * 100) / 100 : '';
   var ms = a.rows.filter(function (r) { return r.qty > 0; }).map(function (r) {
     return { biz: P.biz, loc: loc, item: r.name, kind: 'Орлого', qty: r.qty, cost: r.unit, pay: 'Захиалга', partner: P.supplier, note: P.no + ' · ирэлт ' + a.n + ' #' + P.id,

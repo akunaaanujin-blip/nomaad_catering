@@ -94,7 +94,7 @@ function fetchAll(cb) {
     accountsX = load('nb_demo_accx', []); applyCustomAccounts(accountsX); meta.lock = load('nb_demo_lock', '');
     window.PF_RAW = [load('nb_demo_pf', {}), load('nb_demo_pfcfg', {})]; if (typeof pfApply === 'function') pfApply(PF_RAW[0], PF_RAW[1]);   // хувийн санхүү
     window.loans = load('nb_demo_loans', []); window.pos = load('nb_demo_pos', []); window.poInbox = load('nb_demo_poinbox', []).filter(function (x) { return x.status === 'Хүлээгдэж'; }); window.bankLinks = load('nb_demo_banklinks', []);
-    window.kpiCfg = load('nb_demo_kpi', {}); window.assets = load('nb_demo_assets', []); window.minStock = load('nb_demo_minstock', {});
+    window.kpiCfg = load('nb_demo_kpi', {}); window.assets = load('nb_demo_assets', []); faPoCost(); window.minStock = load('nb_demo_minstock', {});
     window.digestCfg = load('nb_demo_digest', { on: false, to: '' }); window.priceLog = load('nb_demo_pricelog', []); window.stockCounts = load('nb_demo_counts', []).filter(function (m) { return m.status === 'Хүлээгдэж'; }); window.reviewNotes = load('nb_review', {});
     applyRole(load('nb_demo_role', 'Эзэн'), load('nb_demo_rolebiz', 'all'));
     stamp(); cb(true); return;
@@ -118,7 +118,7 @@ function applyRead(d) {
   window.bankDeleted = (d.bank || []).filter(function (l) { return l.status === 'Устгасан'; }); bankLines = (d.bank || []).filter(function (l) { return l.status !== 'Устгасан'; }); window.payInfoAll = d.payInfo || {}; window.spAll = d.storepay || {}; window.ebOnAll = d.ebuuhia != null ? !!d.ebuuhia : !!window.ebOnAll;   // хариунд байхгүй бол өмнөхийг хадгална («Хүргэлт» цэс алга болохгүй)
    window.salesTargets = d.targets || {}; window.boostBud = d.boostbud || []; tasks = d.tasks || []; taxCfg = d.taxcfg || {}; customDocs = d.docs || [];
   accountsX = d.accountsX || []; applyCustomAccounts(accountsX); meta.lock = d.lock || '';
-  window.kpiCfg = d.kpi || {}; window.assets = d.assets || []; window.minStock = d.minstock || {};
+  window.kpiCfg = d.kpi || {}; window.assets = d.assets || []; faPoCost(); window.minStock = d.minstock || {};
   window.digestCfg = d.digest || { on: false, to: '' }; window.priceLog = d.priceLog || []; window.stockCounts = d.counts || []; window.poInbox = d.poInbox || [];
   window.reviewNotes = Object.assign(load('nb_review', {}), d.review || {});
   window.ebOld = d.ebold || {};   // буухиа: эхний үлдэгдлээс өмнөх (тооцоо хийгдсэн) хүргэлт
@@ -702,7 +702,7 @@ function minOf(biz, name) { return Number(((window.minStock || {})[biz] || {})[n
 function onOrder(biz) {   // ирээгүй бараа захиалгын тоо
   var o = {};
   (window.pos || []).forEach(function (P) {
-    if (P.biz !== biz || P.status !== 'Захиалсан') return;
+    if (P.biz !== biz || P.status !== 'Захиалсан' || poIsAsset(P)) return;   // хөрөнгө үлдэгдэлд орохгүй
     var rq = poRecvQty(P);   // хэсэгчлэн ирсэн бол ирсэн тоог хасна
     (P.items || []).forEach(function (i) { var q = Math.max(0, (Number(i.qty) || 0) - (rq[i.name] || 0)); if (q) o[i.name] = (o[i.name] || 0) + q; });
   });
