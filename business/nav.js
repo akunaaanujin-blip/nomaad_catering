@@ -21,7 +21,7 @@ var MNAV = [
   ['Бараа', 'products', [['products/catalog', 'Бараа, үнэ'], ['products/stock', 'Үлдэгдэл'], ['products/po', 'Худалдан авалт'], ['products/suppliers', 'Нийлүүлэгчид'],
     ['products/counts', 'Тооллого'], ['products/move', 'Хөдөлгөөн']]],
   ['Мөнгө', 'money', [['finance/cashacc', 'Данснууд'], ['finance/stmt', 'Дансны хуулга'], ['finance/bank', 'Банк тулгах'], ['finance/vouchers', 'Касс'], ['finance/requests', 'Мөнгөний хүсэлт']]],
-  ['Тооцоо', 'people', [['finance/recv', 'Авлага, өглөг'], ['finance/loans', 'Зээл'], ['finance/fixed', 'Тогтмол зардал, төлбөр'], ['finance/payroll', 'Цалин, НДШ']]],
+  ['Тооцоо', 'people', [['finance/recv', 'Авлага'], ['finance/payb', 'Өглөг'], ['finance/partners', 'Харилцагчид'], ['finance/loans', 'Зээл'], ['finance/fixed', 'Тогтмол зардал, төлбөр'], ['finance/payroll', 'Цалин, НДШ']]],
   ['Тайлан', 'reports', [['finance/mrep', 'Удирдлагын тайлан'], ['finance/daily', 'Өдрийн орлого'], ['finance/months', '12 сарын дүн'], ['finance/expcat', 'Зардлын задаргаа'],
     ['finance/profit', 'Барааны ашиг'], ['sales/item', 'Борлуулалтын тайлан']]],
   ['Нягтлан', 'book', [['finance/pl', 'Орлогын тайлан'], ['finance/balance', 'Санхүүгийн байдал'], ['finance/cashflow', 'Мөнгөн гүйлгээний тайлан'], ['finance/equity', 'Өмчийн өөрчлөлт'],
@@ -36,7 +36,7 @@ var MNAV = [
 // Нэг сэдвийн хуудсууд — цэсэнд нэг мөр, хуудас дотор таб. Эхний таб нь цэсний зүйл.
 var PAGE_TABS = {}, PAGE_TITLE = {}, NAV_ALIAS = {};
 function navTabs(title, list) { list.forEach(function (t) { PAGE_TABS[t[0]] = list; PAGE_TITLE[t[0]] = title; if (t[0] !== list[0][0]) NAV_ALIAS[t[0]] = list[0][0]; }); }
-navTabs('Авлага, өглөг', [['recv', 'Авлага'], ['payb', 'Өглөг'], ['partners', 'Харилцагчид'], ['pstmt', 'Харилцагчийн хуулга']]);
+navTabs('Харилцагчид', [['partners', 'Харилцагчид'], ['pstmt', 'Харилцагчийн хуулга']]);
 navTabs('Касс', [['vouchers', 'Гүйлгээ'], ['expenses', 'Зардал, касс хаалт']]);
 navTabs('Тогтмол зардал, төлбөр', [['fixed', 'Тогтмол зардал'], ['bills', 'Төлбөрийн хуваарь']]);
 navTabs('Барааны хөдөлгөөн', [['move', 'Хөдөлгөөн, шилжүүлэг'], ['in', 'Орлогын жагсаалт'], ['prices', 'Үнийн түүх']]);

@@ -27,7 +27,7 @@ function stmtPre(rep) {
 }
 
 // ── Удирдлагын тайлан ──
-function mrepDebt(E, k) {   // «Авлага, өглөг» хуудасны үлдэгдэлтэй ижил
+function mrepDebt(E, k) {   // «Авлага», «Өглөг» хуудасны үлдэгдэлтэй ижил
   var td = todayStr(), T = DEBT_TABS[k], left = 0, who = {};
   openItems(debtE(E, k, td), debtAccs(k), T[3], td, false).items.forEach(function (it) { if (debtStatus(it) !== 'closed') { var v = it.amt - it.paid; left += v; who[it.who] = (who[it.who] || 0) + v; } });
   return { left: r0(left), top: Object.keys(who).filter(function (w) { return who[w] > 0.5; }).sort(function (a, b) { return who[b] - who[a]; }).slice(0, 5).map(function (w) { return [nameTel(w), who[w]]; }) };
@@ -68,6 +68,6 @@ function mrepView() {
       card('Хамгийн их зарагдсан бараа', D.items.length ? D.items.map(function (x) { return ln(x[0], x[1]); }).join('') : none('Борлуулалт алга'), 'sales/item', 'Борлуулалтын тайлан') +
     '</div><div class="grid2">' +
       card('Бидэнд өгөх мөнгө', D.recv.top.map(function (x) { return ln(x[0], x[1]); }).join('') + ln('Нийт', D.recv.left, 'tot'), 'finance/recv', 'Авлага') +
-      card('Бидний өгөх мөнгө', D.payb.top.map(function (x) { return ln(x[0], x[1]); }).join('') + ln('Нийт', D.payb.left, 'tot') + (D.loan > 0.5 ? ln('Зээлийн үлдэгдэл', D.loan) : ''), 'finance/recv', 'Өглөг') +
+      card('Бидний өгөх мөнгө', D.payb.top.map(function (x) { return ln(x[0], x[1]); }).join('') + ln('Нийт', D.payb.left, 'tot') + (D.loan > 0.5 ? ln('Зээлийн үлдэгдэл', D.loan) : ''), 'finance/payb', 'Өглөг') +
     '</div>';
 }

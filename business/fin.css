@@ -3,7 +3,7 @@
 :root{
   --bg:#F6F7F9;--surface:#FFFFFF;--surface-alt:#F9FAFB;--border:#E5E7EB;--border-strong:#D1D5DB;
   --text:#111827;--text-2:#4B5563;--text-3:#9CA3AF;
-  --primary:#1F4E79;--primary-hover:#183E61;--primary-soft:#E8EFF6;--sidebar:#13263D;
+  --primary:#1457D9;--primary-hover:#0F46B0;--primary-soft:#E4EDFD;--sidebar:#1457D9;--nav-panel:#EAF0FB;--nav-hover:#D8E4F8;
   --income:#15803D;--income-soft:#E8F5EC;--expense:#B91C1C;--expense-soft:#FDECEC;
   --warning:#B45309;--warning-soft:#FEF3E2;--info:#1D4ED8;--info-soft:#E8EEFD;--neutral-soft:#F3F4F6;
 }
@@ -11,7 +11,7 @@
   :root:not([data-theme="light"]) body.bz-admin{
     --bg:#0F141A;--surface:#161C24;--surface-alt:#1C232D;--border:#2A3340;--border-strong:#364152;
     --text:#E5E7EB;--text-2:#A3ADBB;--text-3:#6B7685;
-    --primary:#5B9BD5;--primary-hover:#7AB0E0;--primary-soft:#1A2A3C;--sidebar:#0B1118;
+    --primary:#6EA8FF;--primary-hover:#8DBBFF;--primary-soft:#1A2A44;--sidebar:#1B4FC0;--nav-panel:#18212E;--nav-hover:#223044;
     --income:#4ADE80;--income-soft:#13261B;--expense:#F87171;--expense-soft:#2A1616;
     --warning:#FBBF24;--warning-soft:#2A2112;--info:#93B4F8;--info-soft:#17203A;--neutral-soft:#1C232D;
   }
@@ -19,7 +19,7 @@
 :root[data-theme="dark"] body.bz-admin{
   --bg:#0F141A;--surface:#161C24;--surface-alt:#1C232D;--border:#2A3340;--border-strong:#364152;
   --text:#E5E7EB;--text-2:#A3ADBB;--text-3:#6B7685;
-  --primary:#5B9BD5;--primary-hover:#7AB0E0;--primary-soft:#1A2A3C;--sidebar:#0B1118;
+  --primary:#6EA8FF;--primary-hover:#8DBBFF;--primary-soft:#1A2A44;--sidebar:#1B4FC0;--nav-panel:#18212E;--nav-hover:#223044;
   --income:#4ADE80;--income-soft:#13261B;--expense:#F87171;--expense-soft:#2A1616;
   --warning:#FBBF24;--warning-soft:#2A2112;--info:#93B4F8;--info-soft:#17203A;--neutral-soft:#1C232D;
 }
@@ -267,3 +267,16 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var
 .mr-more{margin-top:8px}
 .st-pick{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
 .st-pick select{min-width:240px}
+/* Цэс: үндсэн багана тод, нээгдсэн дэд цэс бүдэг дэвсгэртэй, бичвэр тод (bold) — хоёр түвшин нүдэнд шууд ялгарна */
+.fn-brand{background:var(--sidebar);border-bottom:1px solid rgba(255,255,255,.18)}
+.fn-logo{background:#fff;color:var(--sidebar);font-weight:700}
+.fn-col{padding:8px 0 8px 6px}
+.fn-gb{color:#fff;font-weight:700;margin-right:6px}
+.fn-gb:hover{background:rgba(255,255,255,.18);color:#fff}
+.fn-gb.on{color:#fff}
+.fn-gb.sel,.fn-gb.sel.on,.fn-gb.sel:hover{background:var(--nav-panel);color:var(--primary);box-shadow:none;margin-right:0;border-radius:8px 0 0 8px}
+.fn-panel{background:var(--nav-panel);border-right:1px solid var(--border-strong)}
+.fn-ph{font-weight:700;color:var(--primary)}
+.fn-panel li button{font-weight:600;color:var(--text);padding:8px 10px}
+.fn-panel li button:hover{background:var(--nav-hover);color:var(--text)}
+.fn-panel li button.on,.fn-panel li button.on:hover{background:var(--primary);color:#fff;font-weight:700;box-shadow:none}
