@@ -306,3 +306,14 @@ window.addEventListener('scroll', function () { var m = document.getElementById(
 
 // Нэгж: «ширхэг» → «ш» (бүх хуудсанд ижил); кг, литр г.м хэвээр
 function unitShort(u) { u = String(u || '').trim(); return !u || /^(ширхэг|ширх\.?|шир\.?|ш\.?|pcs)$/i.test(u) ? 'ш' : u; }
+// Буухиа руу илгээхэд: Үнийн дүнтэй (буухиа хэрэглэгчээс мөнгө авна) эсвэл Үнийн дүнгүй (мөнгийг өөрсдөө авна). Төлбөр орсон захиалгаас аль ч үед авахгүй.
+function ebAmtAsk(n, cod, list, cb) {
+  var w = document.createElement('div');
+  w.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px';
+  w.innerHTML = '<div style="background:#fff;color:#111;border-radius:10px;padding:20px;max-width:420px;width:100%;max-height:85vh;overflow:auto"><h3 style="margin:0 0 8px">' + n + ' захиалгыг буухиа руу илгээх</h3>' +
+    '<p style="margin:0 0 6px;font-size:14px"><b>Үнийн дүнтэй</b> — буухиа хэрэглэгчээс ' + fmt(cod) + ' авна.</p><p style="margin:0 0 10px;font-size:14px"><b>Үнийн дүнгүй</b> — буухиа мөнгө авахгүй, хүргэгдмэгц захиалагчийн авлага үүснэ.</p>' +
+    (list ? '<p style="margin:0 0 10px;font-size:12.5px;color:#555;white-space:pre-line">' + esc(list) + '</p>' : '') +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button type="button" data-a="x" style="padding:8px 12px">Болих</button><button type="button" data-a="0" style="padding:8px 12px">Үнийн дүнгүй</button><button type="button" data-a="1" style="padding:8px 12px;font-weight:600">Үнийн дүнтэй</button></div></div>';
+  w.addEventListener('click', function (e) { var a = e.target.getAttribute && e.target.getAttribute('data-a'); if (!a) return; document.body.removeChild(w); if (a !== 'x') cb(a === '0'); });
+  document.body.appendChild(w);
+}

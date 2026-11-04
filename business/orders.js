@@ -461,7 +461,7 @@ function renderDlv() {
       '<button class="btn sm" onclick="dlvSend()"' + (nSel && !dlvBusy ? '' : ' disabled') + '>Сонгосныг илгээх' + (nSel ? ' (' + nSel + ')' : '') + '</button></div>' +
       '<div style="overflow-x:auto;margin-top:8px"><table class="tbl dlv-t"><tr><th><input type="checkbox" onchange="fresh_all(this.checked)"></th><th>Хүлээн авагч</th><th>Хаяг</th><th>Бараа</th><th class="n">Дүн</th><th class="n">Буухиа авах</th></tr>' +
         fresh.map(row).join('') + '</table></div>' +
-      '<p class="muted" style="font-size:12.5px;margin-top:8px">«Бусад хүргэлтээр» — буухиад өгөхгүй (өөрсдөө эсвэл өөр хүргэлтээр); буухиагийн хөлс бичигдэхгүй. Илгээхэд захиалга «Буухиад өгсөн» болж, борлуулалт бичигдэнэ. «Буухиа авах» — хүргэхдээ хэрэглэгчээс авах мөнгө (төлбөр орсон бол 0).</p></div>' : '') +
+      '<p class="muted" style="font-size:12.5px;margin-top:8px">«Бусад хүргэлтээр» — буухиад өгөхгүй (өөрсдөө эсвэл өөр хүргэлтээр); буухиагийн хөлс бичигдэхгүй. Илгээхэд захиалга «Буухиад өгсөн» болж, борлуулалт бичигдэнэ. «Буухиа авах» — үнийн дүнтэй илгээвэл хэрэглэгчээс авах мөнгө (төлбөр орсон бол 0); илгээхэд үнийн дүнтэй эсэхийг асууна.</p></div>' : '') +
     (retry.length ? '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиад өгсөн боловч кодгүй <small class="muted" style="font-weight:400">' + retry.length + '</small></h2>' +
       '<button class="btn sm ghost2" onclick="dlvSend(' + "'retry'" + ')">Буухиад дахин илгээх</button></div><p class="muted" style="font-size:12.5px">Excel-ээр гараар оруулсан бол дахин илгээх хэрэггүй — шинэчлэхэд кодоор нь холбогдоно.</p></div>' : '') +
     '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиа</h2>' +
@@ -513,7 +513,7 @@ function dlvAddrSave(id) {
 }
 function ordStName(o) { return ordEbCancel(o) ? 'Буцаасан, цуцалсан' : o.ebCode === 'бусад' && o.status === 'Буухиад өгсөн' ? 'Бусад хүргэлтэд' : o.status; }
 function fresh_all(on) { orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending; }).forEach(function (o) { dlvSel[o.id] = on && addrFinal(o).ok; }); renderDlv(); }
-function dlvSend(mode, given) {
+function dlvSend(mode, given, noAmt) {
   var ids = given || mode === 'retry' ? orders.filter(function (o) { return o.status === 'Буухиад өгсөн' && !o.ebCode; }).map(function (o) { return o.id; })
     : Object.keys(dlvSel).filter(function (k) { return dlvSel[k]; });
   if (!ids.length || dlvBusy) return;
@@ -527,9 +527,16 @@ function dlvSend(mode, given) {
     return x ? o.phone + ' (' + x.code + ')' : '';
   }).filter(Boolean);
   if (dup.length && !confirm('Энэ захиалга Буухиа дээр аль хэдийн байж магадгүй:\n' + dup.join('\n') + '\n\nДахин илгээх үү? (Үгүй бол «Шинэчлэх» дарахад автоматаар холбогдоно)')) return;
-  if (!confirm(ids.length + ' захиалгыг буухиа руу илгээх үү?\nБуухиа авах нийт: ' + fmt(L.reduce(function (a, o) { return a + dlvCod(o); }, 0)) + '\n\n' + L.map(function (o) { return o.phone + ' → ' + addrText(addrFinal(o)); }).join('\n'))) return;
+  var cod = L.reduce(function (a, o) { return a + dlvCod(o); }, 0), lst = L.map(function (o) { return o.phone + ' → ' + addrText(addrFinal(o)); }).join('\n');
+  if (noAmt === undefined) {
+    if (cod > 0) { ebAmtAsk(ids.length, cod, lst, function (na) { dlvGo(ids, addr, na); }); return; }
+    if (!confirm(ids.length + ' захиалгыг буухиа руу илгээх үү?\nБуухиа авах нийт: ' + fmt(cod) + '\n\n' + lst)) return;
+  }
+  dlvGo(ids, addr, !!noAmt);
+}
+function dlvGo(ids, addr, noAmt) {
   dlvBusy = true; renderDlv(); toast('Буухиа руу илгээж байна…');
-  ordPost({ type: 'eb_send', ids: ids, addr: addr }, function (err, d) {
+  ordPost({ type: 'eb_send', ids: ids, addr: addr, noAmt: !!noAmt }, function (err, d) {
     dlvBusy = false;
     if (err) { alert(err === 'eb_off' ? 'Буухиа API тохируулаагүй байна (удирдлага → Санхүү → «API холболт»).' : 'Илгээж чадсангүй: ' + err); loadOrders(); renderDlv(); return; }
     dlvSel = {};

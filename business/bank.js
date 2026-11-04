@@ -712,7 +712,7 @@ function debtSelGrp(el) {
   var boxes = document.querySelectorAll('input.dsel[data-grp="' + el.dataset.grp + '"]');
   if (!boxes.length) {   // харилцагч хураасан — баримтуудыг өгөгдлөөс сонгоно
     var k = debtTabOf(state.sub.finance);
-    (k === 'r' ? debtItems(['1201'], 1) : debtItems(['3101'], -1)).filter(function (it) { return it.who === el.dataset.grp; }).forEach(function (it) { if (el.checked) debtSel[it.key] = it.left; else delete debtSel[it.key]; });
+    (k === 'r' ? debtItems(['1201', '1208'], 1) : debtItems(['3101', '3802'], -1)).filter(function (it) { return it.who === el.dataset.grp; }).forEach(function (it) { if (el.checked) debtSel[it.key] = it.left; else delete debtSel[it.key]; });
     debtSelCount(); return;
   }
   [].forEach.call(document.querySelectorAll('input.dsel[data-grp="' + el.dataset.grp + '"]'), function (c) { c.checked = el.checked; if (el.checked) debtSel[c.dataset.key] = Number(c.dataset.left) || 0; else delete debtSel[c.dataset.key]; });
@@ -726,7 +726,7 @@ function debtSelCount() {   // сонгосон үед л доод талд «С
 function debtCloseSel() { var ks = Object.keys(debtSel); if (!ks.length) { toast('Хаах баримтаа чагтална уу'); return; } debtClose(debtTabOf(state.sub.finance), ks); }
 function debtClose(k, keys) {
   if (typeof keys === 'string') keys = [keys];
-  var all = k === 'r' ? debtItems(['1201'], 1) : debtItems(['3101'], -1);
+  var all = k === 'r' ? debtItems(['1201', '1208'], 1) : debtItems(['3101', '3802'], -1);
   var its = all.filter(function (x) { return keys.indexOf(x.key) >= 0; });
   if (!its.length) { toast('Сонгосон баримт аль хэдийн хаагдсан байна'); return; }
   var ords = {}; (window.adminOrders || []).forEach(function (o) { if (o.biz === state.biz) ords[o.id] = o; });
@@ -811,7 +811,7 @@ function dcSave() {
   var wo = $('dcWo') ? $('dcWo').value : '', biz = state.biz, R2 = S.k === 'r', E = [], ordUpd = [];
   var src = cash ? 'Бэлэн' : String(x.l.desc).slice(0, 80);
   S.units.forEach(function (u, i) {
-    var pn = u.np ? '' : u.who;
+    var pn = u.np ? '' : u.who === BUUHIA_T && u.ord ? ordCust(u.ord) : u.who;   // төлбөр баталгаажмагц авлага нь захиалагч дээр (ordParty)
     if (A[i] > 0) E.push(R2 ? { biz: biz, date: d, dr: acc, cr: u.acc, amount: A[i], partner: pn, desc: (u.ord ? 'Захиалгын төлбөр' : 'Авлага төлөгдсөн') + ' · ' + src + ' ' + u.tag }
                             : { biz: biz, date: d, dr: u.acc, cr: acc, amount: A[i], partner: pn, desc: 'Өглөг төлсөн · ' + src + ' ' + u.tag });
     var rest = r0(u.due - A[i]);

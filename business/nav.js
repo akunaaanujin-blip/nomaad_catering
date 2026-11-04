@@ -17,7 +17,7 @@ var MNAV = [
     ['products/counts', 'Тооллого'], ['products/move', 'Хөдөлгөөн, шилжүүлэг'], ['products/in', 'Орлогын жагсаалт'], ['products/prices', 'Үнийн түүх'], ['finance/assets', 'Үндсэн хөрөнгө']]],
   ['Мөнгө', 'money', [['finance/cashacc', 'Данснууд'], ['finance/bank', 'Банкны хуулга, тулгалт'], ['finance/ledger', 'Дансны хуулга'], ['finance/vouchers', 'Кассын гүйлгээ'],
     ['finance/expenses', 'Зардал, касс хаалт'], ['finance/requests', 'Мөнгөний хүсэлт']]],
-  ['Тооцоо', 'people', [['finance/ebset', 'Буухиа тооцоо'], ['finance/recv', 'Авлага'], ['finance/payb', 'Өглөг'], ['finance/loans', 'Зээл'], ['finance/fixed', 'Тогтмол зардал'], ['finance/payroll', 'Цалин, НДШ'], ['finance/debts', 'Бусад авлага, өглөг'],
+  ['Тооцоо', 'people', [['finance/ebset', 'Буухиа тооцоо'], ['finance/recv', 'Авлага'], ['finance/payb', 'Өглөг'], ['finance/loans', 'Зээл'], ['finance/fixed', 'Тогтмол зардал'], ['finance/payroll', 'Цалин, НДШ'],
     ['finance/partners', 'Харилцагчид'], ['finance/pstmt', 'Харилцагчийн хуулга']]],
   ['Тайлан', 'reports', [['—', 'Удирдлагын'], ['finance/daily', 'Өдрийн орлого'], ['finance/expcat', 'Зардлын задаргаа'], ['finance/cashflow', 'Мөнгөн урсгал'], ['finance/profit', 'Барааны ашиг'],
     ['finance/months', '12 сарын дүн'], ['review', 'Удирдлагын тойм'],
@@ -59,7 +59,7 @@ function navItemOn(k) {
   var cur = state.sub[m[0]]; return cur === m[1] || NAV_ALIAS[cur] === m[1];
 }
 // Удирдлага = захирлын хувийн санхүүгийн хөтөч: данс, гүйлгээ, зээл, тооцоо, зардлын тайлан (борлуулалт, буухиа, Boost, нягтлангийн тайлангүй)
-var MGMT_NAV = /^(home|review|v:cal|finance\/(cashacc|bank|ledger|vouchers|loans|debts|pstmt|expcat|cashflow|opening|accounts|api|audit|trash))$/;
+var MGMT_NAV = /^(home|review|v:cal|finance\/(cashacc|bank|ledger|vouchers|loans|recv|payb|pstmt|expcat|cashflow|opening|accounts|api|audit|trash))$/;
 function navOk(biz, k) {
   var B = BUSINESSES[biz] || {};
   if (B.finOnly && !MGMT_NAV.test(k)) return false;   // Удирдлага: захирлын хувийн санхүүгийн хөтөч

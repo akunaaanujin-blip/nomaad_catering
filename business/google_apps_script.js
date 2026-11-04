@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v8.4 (ажилтны «Бараа ирсэн»-д каргоны дүн; «Бараа ирсэн», карго — удирдлага батална: staff_po, staff_po_in, admin_po inboxId; буухиа: Cozy-ийн бүртгэлтэй хүргэлт NOMAAD-д харагдахгүй — EB_HOME; засах: барааны хөдөлгөөн admin_stock editId, зарлага admin_record editId, харилцагч admin_partner editId / delId; цуцалсан/буцаасан захиалгын бараа үлдэгдэлд зөвхөн «Бараа буцаж ирсэн»-ээр — буухиа цуцлахад шууд нэмэхгүй; Boost төсөв: удирдлага BOOST_BUD-д гаргана, ажилтан boost_bud-аар төсөв + задаргаагаа харна; хуучин JS хувилбарын хүсэлтийг бичихгүй — MIN_JS; ажилтны нэвтрэлт 11-02-оос өмнөх шигээ: нэвтрэх нэр + код, нийтлэг эрх зөвшөөрнө, 4 оронтой код, PIN албадан солихгүй; Boost нэхэмжлэх: олон компанийн мөр, Meta баримтын зураг «Boost баримт», admin_boost; буухиа руу илгээхэд дүүрэг/сум заавал биш; захиалгын хүргэлтийн төлбөр, хөнгөлөлт засахад борлуулалтын мөр дагана — orderSyncAdj; удирдлагаас хүргэлт/хөнгөлөлт засах, «Хүргэлтийн компани» багана; банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v8.5 (Буухиа руу үнийн дүнтэй / дүнгүй илгээх: noAmt, «Буухиа дүн» багана; ажилтны «Бараа ирсэн»-д каргоны дүн; «Бараа ирсэн», карго — удирдлага батална: staff_po, staff_po_in, admin_po inboxId; буухиа: Cozy-ийн бүртгэлтэй хүргэлт NOMAAD-д харагдахгүй — EB_HOME; засах: барааны хөдөлгөөн admin_stock editId, зарлага admin_record editId, харилцагч admin_partner editId / delId; цуцалсан/буцаасан захиалгын бараа үлдэгдэлд зөвхөн «Бараа буцаж ирсэн»-ээр — буухиа цуцлахад шууд нэмэхгүй; Boost төсөв: удирдлага BOOST_BUD-д гаргана, ажилтан boost_bud-аар төсөв + задаргаагаа харна; хуучин JS хувилбарын хүсэлтийг бичихгүй — MIN_JS; ажилтны нэвтрэлт 11-02-оос өмнөх шигээ: нэвтрэх нэр + код, нийтлэг эрх зөвшөөрнө, 4 оронтой код, PIN албадан солихгүй; Boost нэхэмжлэх: олон компанийн мөр, Meta баримтын зураг «Boost баримт», admin_boost; буухиа руу илгээхэд дүүрэг/сум заавал биш; захиалгын хүргэлтийн төлбөр, хөнгөлөлт засахад борлуулалтын мөр дагана — orderSyncAdj; удирдлагаас хүргэлт/хөнгөлөлт засах, «Хүргэлтийн компани» багана; банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -33,9 +33,9 @@ const PRICE_HEAD = ['Огноо', 'biz', 'Бараа', 'Хуучин үнэ', '�
 // Захиалга (Cozy: Facebook захиалга → буухиа хүргэлт)
 const SHEET_ORDER = 'Захиалга';
 const ORDER_HEAD = ['ID', 'Огноо', 'Цаг', 'biz', 'Ажилтан', 'Захиалагч', 'Утас', 'Нэмэлт утас', 'Хот/аймаг', 'Дүүрэг/сум', 'Хороо', 'Хаяг',
-  'Бараа', 'Дүн', 'Хүргэх огноо', 'Төлбөрийн хэлбэр', 'Хүргэлтийн төлөв', 'Төлбөр', 'Тэмдэглэл', 'Шинэчилсэн', 'Борлуулалт', 'Баталгаа', 'Буухиа код', 'Хүргэлтийн компани'];
+  'Бараа', 'Дүн', 'Хүргэх огноо', 'Төлбөрийн хэлбэр', 'Хүргэлтийн төлөв', 'Төлбөр', 'Тэмдэглэл', 'Шинэчилсэн', 'Борлуулалт', 'Баталгаа', 'Буухиа код', 'Хүргэлтийн компани', 'Буухиа дүн'];
 const ORDER_KEYS = ['id', 'date', 'time', 'biz', 'staff', 'customer', 'phone', 'phone2', 'city', 'district', 'khoroo', 'address',
-  'items', 'amount', 'deliverDate', 'payType', 'status', 'paid', 'note', 'updated', 'saleDone', 'confirmed', 'ebCode', 'courier'];
+  'items', 'amount', 'deliverDate', 'payType', 'status', 'paid', 'note', 'updated', 'saleDone', 'confirmed', 'ebCode', 'courier', 'ebCod'];
 const SHEET_REMIND = 'Сануулга';
 const REMIND_HEAD = ['ID', 'Огноо', 'Гарчиг', 'Төрөл', 'Дүн', 'Харилцагч', 'Компани', 'Давтамж', 'Төлөв', 'Тэмдэглэл', 'Үүсгэсэн'];
 const SHEET_BANK = 'Банк';
@@ -1807,6 +1807,7 @@ function ebuuhia(d, asWho) {
       list.forEach(function (o) {
         let items; try { items = JSON.parse(o.items || '[]'); } catch (e) { items = []; }
         const goods = items.filter(function (i) { return i.name !== FEE_ITEM && i.name !== DISC_ITEM && i.name !== SPLIT_ITEM; });
+        const cod = d.noAmt || o.paid === 'Орсон' || o.confirmed ? 0 : Math.round(o.amount);   // үнийн дүнгүй сонгосон эсвэл төлбөр орсон бол буухиа мөнгө авахгүй
         const qty = goods.reduce(function (a, i) { return a + (Number(i.qty) || 1); }, 0) || 1;
         const kh = ebKh(o.khoroo), city = String(o.city || '').trim(), dist = String(o.district || '').trim();
         if (!city) { failed.push({ id: o.id, phone: o.phone, why: 'Хот/аймаг сонгоно уу' }); return; }   // Улаанбаатар гэж автоматаар тавихгүй; дүүрэг/сум заавал биш
@@ -1814,10 +1815,10 @@ function ebuuhia(d, asWho) {
           customer: { name: String(o.customer || o.phone).slice(0, 80), phone: String(o.phone).replace(/\D/g, ''), phone2: String(o.phone2 || '').replace(/\D/g, '') },
           address: { city: city, district: dist, committee: kh ? kh + '-р хороо' : '', addition: String(o.address || '').replace(/\s*дүүрэг хоосон\s*/gi, ' ').trim().slice(0, 255) },
           delivery: { item_name: goods.map(function (i) { return i.name + ' ' + (Number(i.qty) || 1) + 'ш'; }).join(', ').slice(0, 250), quantity: qty,
-            description: String(o.note || '').slice(0, 200), total_price: o.paid === 'Орсон' || o.confirmed ? 0 : Math.round(o.amount) } };
+            description: String(o.note || '').slice(0, 200), total_price: cod } };
         const r = ebCall(c, 'post', '/api/partner/v1/deliveries', body, 'nb-' + o.id);
         const x = ebObj(r.data), code = x && (x.code || x.delivery_code) || '';
-        if (r.code < 300 && code) { sh.getRange(o.row, 23).setValue(String(code)); sent.push({ id: o.id, phone: o.phone, code: String(code) }); }
+        if (r.code < 300 && code) { sh.getRange(o.row, 23, 1, 1).setValue(String(code)); sh.getRange(o.row, 25).setValue(cod > 0 ? '1' : '0'); sent.push({ id: o.id, phone: o.phone, code: String(code) }); }
         else failed.push({ id: o.id, phone: o.phone, why: ebErr(r) });
       });
       if (sent.length) CacheService.getScriptCache().remove('eb_list');
@@ -2135,6 +2136,10 @@ function orderSheet() {
     if (sh.getMaxColumns() < 24) sh.insertColumnsAfter(sh.getMaxColumns(), 24 - sh.getMaxColumns());
     sh.getRange(1, 24).setValue('Хүргэлтийн компани'); styleHead(sh, 24, '#7A5A2E');
   }
+  if (String(sh.getRange(1, 25).getValue()) !== 'Буухиа дүн') {   // v8.5: 1 — үнийн дүнтэй, 0 — үнийн дүнгүй илгээсэн (хоосон = хуучин)
+    if (sh.getMaxColumns() < 25) sh.insertColumnsAfter(sh.getMaxColumns(), 25 - sh.getMaxColumns());
+    sh.getRange(1, 25).setValue('Буухиа дүн'); styleHead(sh, 25, '#7A5A2E');
+  }
   return sh;
 }
 function orderRows() {
@@ -2246,7 +2251,7 @@ function importCozy(d) {
     const status = /хүргэгдсэн/.test(st) ? 'Хүргэгдсэн' : /өгсөн/.test(st) ? 'Буухиад өгсөн' : 'Шинэ';
     const paid = /^орсон/.test(String(v[5] || '').trim().toLowerCase()) ? 'Орсон' : 'Ороогүй';
     rows.push(['O' + Date.now() + '-' + i, today, '00:00', 'cozy', 'Хуучин хүснэгт', '', phone, '', 'Улаанбаатар', '', '', String(v[2] || '').trim(),
-      items, amount, '', paid === 'Орсон' ? 'Шилжүүлэг' : 'Хүргэлтээр бэлэн', status, paid, String(v[6] || '').trim(), 'Хуучин хүснэгтээс шилжүүлсэн', 'imported', paid === 'Орсон' ? 'Хуучин' : '', '', '']);
+      items, amount, '', paid === 'Орсон' ? 'Шилжүүлэг' : 'Хүргэлтээр бэлэн', status, paid, String(v[6] || '').trim(), 'Хуучин хүснэгтээс шилжүүлсэн', 'imported', paid === 'Орсон' ? 'Хуучин' : '', '', '', '']);
   });
   if (d.dryRun) return { status: 'ok', count: rows.length };
   if (rows.length) { const sh = orderSheet(); sh.getRange(sh.getLastRow() + 1, 1, rows.length, ORDER_HEAD.length).setValues(rows); }

@@ -116,7 +116,7 @@ function ebRecFixDo(i, d) {
   var acc = $('erAcc').value, day = $('erDate').value || todayStr(), a = Math.abs(d), up = d > 0;
   var code = x.code || (o && sys.codeOf[o.id]) || '', tag = ' · ' + (x.phone || (o ? o.phone : '')) + (o ? ' #' + o.id : '') + (code ? ' #EBT:' + code : ''), E = [], desc = 'Буухиа тулгалт · тайлан ' + fmt(x.net) + ', систем ' + fmt(r0(x.net - d)) + tag;
   if (acc === 'cust' && o) {   // нэг бичилт нэг харилцагчтай — 1299 түр дансаар
-    E.push({ biz: state.biz, date: day, dr: up ? '1299' : '1201', cr: up ? '1201' : '1299', amount: a, partner: ordCust(o), desc: desc });
+    E.push({ biz: state.biz, date: day, dr: up ? '1299' : '1201', cr: up ? '1201' : '1299', amount: a, partner: ordParty(o), desc: desc });
     E.push({ biz: state.biz, date: day, dr: up ? '1201' : '1299', cr: up ? '1299' : '1201', amount: a, partner: BUUHIA, desc: desc });
   } else E.push({ biz: state.biz, date: day, dr: up ? '1201' : '7124', cr: up ? '7124' : '1201', amount: a, partner: BUUHIA, desc: desc });
   gClose();

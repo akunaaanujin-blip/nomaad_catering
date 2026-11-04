@@ -296,14 +296,18 @@ function moneyPre(E, f, t) {
 }
 
 // ═══════════ АВЛАГА, ӨГЛӨГ, ЗЭЭЛ (хуучин хүснэгтийн «Авлага», «өглөг» жагсаалт) ═══════════
-var DEBT_TABS = { r: ['Авлага', 'Танд өгөх ёстой', ['1201', '1209'], 1], p: ['Өглөг', 'Таны өгөх ёстой (нийлүүлэгч, карго г.м)', ['3101'], -1],
-  c: ['Компани хооронд', 'Бусад компани руу явуулсан (+) / тэднээс ирсэн (−)', ['1290'], 1], d: ['Захирлын зарлага', 'Захирлын хувийн зарлага (компаниас гарсан)', ['1208'], 1],
-  a: ['Захиалгын урьдчилгаа', 'Мөнгө нь орсон, бараа нь хүргэгдээгүй', ['3802'], -1] };
+// Авлага: захиалга, буухиа, захирлын зарлага (1208), бидэнд өртэй компани (1290 +). Өглөг: нийлүүлэгч, урьдчилгаа (3802), бидний өртэй компани (1290 −)
+var DEBT_TABS = { r: ['Авлага', 'Танд өгөх ёстой', ['1201', '1209', '1208', '1290'], 1], p: ['Өглөг', 'Таны өгөх ёстой (нийлүүлэгч, карго г.м)', ['3101', '3802', '1290'], -1] };
 function debtAccs(k) { return DEBT_TABS[k][2]; }
-// Цэс: «Авлага», «Өглөг» тусдаа хуудас; «Бусад тооцоо» — компани хооронд, захирлын зарлага, захиалгын урьдчилгаа
+// Компани хооронд (1290): харилцагч бүрийн цэвэр үлдэгдлээр нэг л хуудсанд — тэд өртэй бол Авлага, бид өртэй бол Өглөг
+function debtE(E, k, to) {
+  var net = {}, is = function (e) { return e.dr === '1290' || e.cr === '1290'; };
+  E.forEach(function (e) { if (e.date <= to && is(e) && e.dr !== e.cr) net[e.partner] = (net[e.partner] || 0) + (e.dr === '1290' ? e.amount : -e.amount); });
+  return E.filter(function (e) { return !is(e) || (k === 'p' ? net[e.partner] < -0.5 : !(net[e.partner] < -0.5)); });
+}
 // «Нэр 99112233» → «Нэр (99112233)», нэргүй бол зөвхөн утас (харуулахад л — бүртгэлийн харилцагчийн нэр өөрчлөгдөхгүй)
 function nameTel(w) { var m = String(w || '').match(/^(.*\S)\s+(\+?\d{8,11})$/); return m ? m[1] + ' (' + m[2] + ')' : String(w || ''); }
-function debtTabOf(sub) { if (sub === 'recv') return 'r'; if (sub === 'payb') return 'p'; return /^[cda]$/.test(state.dtab) ? state.dtab : 'c'; }
+function debtTabOf(sub) { return sub === 'payb' ? 'p' : 'r'; }
 // Нэг бүрчлэн (FIFO): үүссэн өр бүрийг дараагийн төлөлтөөр хааж, хаасан огноог тэмдэглэнэ
 function openItems(E, accs, sign, to, loanKey) {
   var A = {}; accs.forEach(function (k) { A[k] = 1; });
@@ -312,7 +316,7 @@ function openItems(E, accs, sign, to, loanKey) {
     if (e.date > to) return;
     var inD = !!A[e.dr], inC = !!A[e.cr]; if (inD === inC) return;
     var acc = inD ? e.dr : e.cr, v = (inD ? e.amount : -e.amount) * sign;
-    var who = e.partner || (loanKey ? accName(acc) : '(харилцагч заагаагүй)'), p = P[who] = P[who] || { open: [], over: 0, acc: acc, np: !e.partner };
+    var who = e.partner || (loanKey || acc === '1208' || acc === '3802' ? accName(acc) : '(харилцагч заагаагүй)'), p = P[who] = P[who] || { open: [], over: 0, acc: acc, np: !e.partner };
     if (v > 0) {
       // нэг захиалгын (баримтын) барааны мөр + хүргэлтийн мөр → нэг авлага
       var same = e.bill ? p.open.filter(function (o) { return o.bill === e.bill && o.date === e.date && !o.paid; })[0] : null;
@@ -342,9 +346,12 @@ var DEBT_ST = [['open', 'Хаагдаагүй'], ['part', 'Хэсэгчлэн т
 function debtCat(k, g) {
   var ords = {}; (window.adminOrders || []).forEach(function (o) { if (o.biz === state.biz) ords[o.id] = 1; });
   if (g.w === BUUHIA_G) return 'Буухиад байгаа буцаалтын бараа';
+  if (g.w === BUUHIA_T) return 'Буухиад байгаа бараа';
   if (g.w === BUUHIA) return k === 'r' ? 'Буухиа (хураасан мөнгө)' : 'Буухиа (хүргэлтийн хөлс)';
   if (g.w === 'StorePay') return 'StorePay';
   if (ALL_KEYS.some(function (b) { return BUSINESSES[b].name === g.w; })) return 'Компани хооронд';
+  if (g.L.some(function (it) { return it.acc === '1208'; })) return 'Захирлын зарлага';
+  if (g.L.some(function (it) { return it.acc === '3802'; })) return 'Хэрэглэгчээс авсан урьдчилгаа';
   if (g.L.some(function (it) { return ords[it.bill]; })) return k === 'r' ? 'Захиалгын авлага (хэрэглэгчид)' : 'Хэрэглэгчээс авсан урьдчилгаа';
   var mv = moves.filter(function (m) { return m.biz === state.biz; });
   if (mv.some(function (m) { return m.cargoPartner === g.w; })) return 'Карго';
@@ -361,7 +368,7 @@ function repDebts(E, k, flt) {
   var hasQ = function (t) { var s = String(t || '').toLowerCase(); return !q || s.indexOf(q) >= 0 || (qd && ('-' + s).indexOf(qd) >= 0); };
   var keep0 = function (it) { var s2 = debtStatus(it); return flt === 'all' || (flt === 'open' ? s2 !== 'closed' : s2 === flt); };
   var keep = function (it) { return keep0(it) && (hasQ(it.who) || hasQ(it.desc) || hasQ(it.date) || hasQ(it.closed)); };
-  var T = DEBT_TABS[k], accs = debtAccs(k), td = todayStr(), oi = openItems(E, accs, T[3], td, k === 'l');
+  var T = DEBT_TABS[k], accs = debtAccs(k), td = todayStr(), oi = openItems(debtE(E, k, td), accs, T[3], td, k === 'l');
   // Нэг хүснэгт: харилцагч бүрийн нийт мөр (тод), доор нь тэр харилцагчийн баримтууд
   var days = function (d) { return Math.round((new Date(td) - new Date(d)) / 864e5); };
   var G = {}, order = [];
@@ -402,7 +409,7 @@ function repDebts(E, k, flt) {
     g.L.filter(keep).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (it) {
       rows.push({ _d: it.paid > 0.5 ? { paid: { lines: it.pays, t: 'Төлсөн / хасагдсан — ' + it.who + ' · ' + it.date + ' · ' + mny(it.amt), to: td } } : null,
         date: String(it.date).slice(5), who: '', desc: it.desc, amt: r0(it.amt), paid: r0(it.paid), left: r0(it.amt - it.paid), st: it.closed ? 'Хаагдсан ' + String(it.closed).slice(5) : (it.paid - (it.fee || 0) > 0.5 ? 'Хэсэгчлэн · ' : it.fee > 0.5 ? 'Хөлс ' + mny(it.fee) + ' хассан · ' : '') + days(it.date) + ' хоног',
-        _act: !it.closed && /^[rp]$/.test(k) ? '<input type="checkbox" class="dsel" data-grp="' + esc(g.w) + '" data-key="' + esc(it.key) + '" data-left="' + r0(it.amt - it.paid) + '"' + (debtSel[it.key] !== undefined ? ' checked' : '') + ' onchange="debtSelSet(this)" title="Олноор хаахад сонгох"> ' +
+        _act: !it.closed && /^[rp]$/.test(k) && it.acc !== '1290' ? '<input type="checkbox" class="dsel" data-grp="' + esc(g.w) + '" data-key="' + esc(it.key) + '" data-left="' + r0(it.amt - it.paid) + '"' + (debtSel[it.key] !== undefined ? ' checked' : '') + ' onchange="debtSelSet(this)" title="Олноор хаахад сонгох"> ' +
           '<button class="mini" style="color:var(--accent)" onclick="debtClose(\'' + k + '\',\'' + esc(it.key) + '\')">' + (k === 'r' ? 'Авлага хаах' : 'Өглөг хаах') + '</button>' : '' });
     });
   }
@@ -459,12 +466,8 @@ function icReconCard() {
 }
 function debtsPre(E) {
   var sub = state.sub.finance, k = debtTabOf(sub), td = todayStr(), b = balances(E, td), T = DEBT_TABS[k];
-  // «Бусад тооцоо» дээр л таб (компани хооронд · захирлын зарлага · урьдчилгаа)
-  var tabs = sub === 'debts' ? '<div class="seg" style="margin-bottom:12px">' + ['c', 'd', 'a'].map(function (x) {
-    var v = debtAccs(x).reduce(function (a, c2) { return a + (b[c2] || 0); }, 0) * DEBT_TABS[x][3];
-    return '<button class="' + (k === x ? 'on' : '') + '" onclick="state.dtab=\'' + x + '\';render()">' + DEBT_TABS[x][0] + ' <small>' + mny(v) + '</small></button>'; }).join('') + '</div>' : '';
   // Товч үзүүлэлт
-  var oiC = openItems(E, debtAccs(k), T[3], td, k === 'l').items, cnt = { open: 0, part: 0, closed: 0, all: oiC.length }, left = 0, late = 0, who = {};
+  var oiC = openItems(debtE(E, k, td), debtAccs(k), T[3], td, k === 'l').items, cnt = { open: 0, part: 0, closed: 0, all: oiC.length }, left = 0, late = 0, who = {};
   oiC.forEach(function (it) { var s2 = debtStatus(it); cnt[s2]++; if (s2 !== 'closed') { cnt.open++; var l = it.amt - it.paid; left += l; who[it.who] = 1; if ((new Date(td) - new Date(it.date)) / 864e5 > 30) late += l; } });
   var kp = function (lbl, v, cls) { return '<div class="dk2' + (cls ? ' ' + cls : '') + '"><small>' + lbl + '</small><b>' + v + '</b></div>'; };
   var kpis = '<div class="dk2-row">' + kp(k === 'p' ? 'Төлөх үлдэгдэл' : k === 'r' ? 'Авах үлдэгдэл' : 'Үлдэгдэл', mny(left)) + kp(k === 'r' ? 'Захиалга, баримт' : 'Хаагдаагүй баримт', cnt.open) +
@@ -476,7 +479,7 @@ function debtsPre(E) {
   var selBar = /^[rp]$/.test(k) ? '<div class="d-sel" id="dSelBar"><span id="dSelTxt"></span><button class="b-btn primary" onclick="debtCloseSel()">' + (k === 'r' ? 'Сонгосныг хаах' : 'Сонгосныг төлөх') + '</button>' +
     '<button class="b-btn" onclick="debtSel={};render()">Сонголт цуцлах</button></div>' : '';
   setTimeout(function () { if (typeof debtSelCount === 'function') debtSelCount(); }, 0);
-  return tabs + kpis + tool + selBar + (k === 'c' && isOwner() ? icReconCard() : '');
+  return kpis + tool + selBar + (k === 'r' && isOwner() ? icReconCard() : '');
 }
 
 // ═══════════ ЦАЛИН, НДШ (хуучин «НДШ Цалин», «ХХОАТ/НДШ тайлан») ═══════════

@@ -85,7 +85,13 @@ function applyCustomAccounts(list) {
   (list || []).forEach(function (a) { if (ACC[a.code]) { ACC[a.code].hide = !!a.hide; if (ACC[a.code].base && a.name) ACC[a.code].renamed = true; } });
 }
 function accHidden(code) { return !!(ACC[code] && ACC[code].hide); }
-var BUUHIA = 'Буухиа', BUUHIA_G = 'Буухиа (буцаалтын бараа)';
+var BUUHIA = 'Буухиа', BUUHIA_G = 'Буухиа (буцаалтын бараа)', BUUHIA_T = 'Буухиад байгаа бараа';
+// Захиалгын авлага хэн дээр: Буухиад илгээгдсэн бараа хүргэгдэх хүртэл «Буухиад байгаа бараа»; үнийн дүнтэй (ebCod 1) нь хүргэгдсэн ч
+// хураасан мөнгө бичигдэх хүртэл тэнд, дараа нь Буухиа хураасан мөнгө; үнийн дүнгүй нь хүргэгдмэгц захиалагчийн авлага. Төлбөр баталгаажвал захиалагч дээр хаагдана.
+function ordParty(o) {
+  if (!o.confirmed && o.ebCode && o.ebCode !== 'бусад' && (o.status === 'Буухиад өгсөн' || (o.status === 'Хүргэгдсэн' && String(o.ebCod) === '1'))) return BUUHIA_T;
+  return (o.customer ? o.customer + ' ' : '') + o.phone;
+}
 // Буухиагийн өглөг зөвхөн «Буухиа тооцоо» нийлэх үед үүснэ. Үүнээс өмнөх огноотой захиалгад хөлсийг хүргэх үед өглөгөөр бичдэг байсан (хуучин хаалтууд таарахын тулд хэвээр).
 var EB_PAY_FROM = '2026-10-25';
 function ebFeeAuto(d) { return !!d && String(d).slice(0, 10) < EB_PAY_FROM; }
@@ -256,36 +262,36 @@ function buildJournal(biz, R) {
     var a = Number(x.amount) || 0, d = x.date;
     if (x.type === 'sale') {
       var oo = ORD[x.bill] && x.pay === 'Шилжүүлэг' ? ORD[x.bill] : null;
-      var cash = oo ? '1201' : SALE_ACC[x.pay] || '10003', cust = oo ? (oo.customer ? oo.customer + ' ' : '') + oo.phone : x.pay === 'StorePay' ? 'StorePay' : x.pay === 'Зээлээр' || x.pay === 'Урьдчилгаа' ? (x.customer || '(нэргүй харилцагч)') : '';
-      var item = String(x.item).replace(/ \(буцаалт\)$/, '');
+      var cash = oo ? '1201' : SALE_ACC[x.pay] || '10003', cust = oo ? ordParty(oo) : x.pay === 'StorePay' ? 'StorePay' : x.pay === 'Зээлээр' || x.pay === 'Урьдчилгаа' ? (x.customer || '(нэргүй харилцагч)') : '';
+      var item = String(x.item).replace(/ \(буцаалт\)$/, ''), bt = cust === BUUHIA_T ? ' #' + x.bill : '';   // олон захиалга нэг харилцагчид — #ID-аар өөрийн авлагаас хасна
       var c = Math.abs(ce.rec[x.id] || 0);
       if (baseItem(x.item) === SPLIT_ITEM) {   // хуваан төлсөн: орлого өөрчлөгдөхгүй, мөнгө нэг хэлбэрээс нөгөөд
-        if (a >= 0) add(d, 'Төлбөр хуваалт', x.id, cash, '5101', a, 'Хуваан төлсөн (' + (x.pay || 'Бэлэн') + ')', cust, x.bill);
-        else add(d, 'Төлбөр хуваалт', x.id, '5101', cash, -a, 'Хуваан төлсөн (' + (x.pay || 'Бэлэн') + ')', cust, x.bill);
+        if (a >= 0) add(d, 'Төлбөр хуваалт', x.id, cash, '5101', a, 'Хуваан төлсөн (' + (x.pay || 'Бэлэн') + ')' + bt, cust, x.bill);
+        else add(d, 'Төлбөр хуваалт', x.id, '5101', cash, -a, 'Хуваан төлсөн (' + (x.pay || 'Бэлэн') + ')' + bt, cust, x.bill);
         return;
       }
       if (baseItem(x.item) === DISC_ITEM) {
         var kd = EBC[x.bill];
         if (kd && a > 0) return;   // буухиа цуцалсан захиалгын буцаалтын мөр — хөнгөлөлт цуцлах үед буцаагдсан
-        add(d, 'Борлуулалтын хөнгөлөлт', x.id, '6002', cash, -a, oo ? 'Хөнгөлөлт (захиалга, авлага)' : 'Хөнгөлөлт · баримт ' + (x.bill || ''), cust, x.bill);   // захиалгад баримт (И-баримт) гардаггүй
-        if (kd && a < 0 && !(R.closed && kd.date <= R.closed)) add(kd.date, 'Буухиа цуцалсан', x.id + '-ebc', cash, '6002', -a, 'Буухиа ' + kd.kind + ' · хөнгөлөлт буцаав #EBC:' + x.bill, cust, x.bill);
+        add(d, 'Борлуулалтын хөнгөлөлт', x.id, '6002', cash, -a, (oo ? 'Хөнгөлөлт (захиалга, авлага)' : 'Хөнгөлөлт · баримт ' + (x.bill || '')) + bt, cust, x.bill);   // захиалгад баримт (И-баримт) гардаггүй
+        if (kd && a < 0 && !(R.closed && kd.date <= R.closed)) add(kd.date, 'Буухиа цуцалсан', x.id + '-ebc', cash, '6002', -a, 'Буухиа ' + kd.kind + ' · хөнгөлөлт буцаав #EBC:' + x.bill + bt, cust, x.bill);
         return;
       }
       if (oo && isFee(item) && (!EB_FEE_DATE[oo.id] || d < EB_FEE_DATE[oo.id])) EB_FEE_DATE[oo.id] = d;
       var ownFee = isNonGoods(item) && !isAdj(item);   // хүргэлтийн төлбөр, үйлчилгээ — 5102 үйлчилгээний (хүргэлтийн) орлого, барааны орлогоос тусдаа
       if (a >= 0) {
-        add(d, 'Борлуулалт', x.id, cash, ownFee ? '5102' : '5101', a, item + ' × ' + x.qty + ' (' + (oo ? 'захиалга, авлага' : x.pay || 'Бэлэн') + ')', cust, x.bill);
+        add(d, 'Борлуулалт', x.id, cash, ownFee ? '5102' : '5101', a, item + ' × ' + x.qty + ' (' + (oo ? 'захиалга, авлага' : x.pay || 'Бэлэн') + ')' + (bt ? ' · ' + (oo.customer ? oo.customer + ' ' : '') + oo.phone : ''), cust, x.bill);
         // Хуучин (EB_PAY_FROM-оос өмнө буухиад өгсөн) захиалга: буухиад өгмөгц Дт 7124 / Кт 3101 Өглөг (Буухиа). Шинэд өглөг зөвхөн тооцоо нийлэхэд үүснэ
         if (oo && isFee(item) && oo.ebCode !== 'бусад' && ebFeeAuto(d)) add(d, 'Буухиагийн хөлс', x.id, '7124', '3101', a, 'Хүргэлт · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
         if (c) add(d, 'Борлуулалт · өртөг', x.id, '6101', '1404', c, item + ' × ' + x.qty);
         var kc = EBC[x.bill];
         if (kc && !(R.closed && kc.date <= R.closed)) {
-          add(kc.date, 'Буухиа цуцалсан', x.id + '-ebc', '6001', cash, a, 'Буухиа ' + kc.kind + ' · ' + item + ' × ' + x.qty + (kc.why ? ' · ' + kc.why : '') + ' #EBC:' + x.bill, cust, x.bill);
+          add(kc.date, 'Буухиа цуцалсан', x.id + '-ebc', '6001', cash, a, 'Буухиа ' + kc.kind + ' · ' + item + ' × ' + x.qty + (kc.why ? ' · ' + kc.why : '') + ' #EBC:' + x.bill + bt, cust, x.bill);
           // бараа буухиа дээр — буцааж авах хүртэл 1209 авлага (өртгөөр), «Бараа хүлээн авсан» дарахад хаагдана
           if (c) add(kc.date, 'Буухиад байгаа бараа', x.id + '-ebg', '1209', '6101', c, item + ' × ' + x.qty + ' · ' + (oo ? oo.phone : '') + ' · үнэ ' + fmt(a) + ' #' + x.bill, BUUHIA_G, x.bill);
         }
       } else {
-        if (!EBC[x.bill]) add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty), cust, x.bill);   // буухиа цуцалсан бол орлого аль хэдийн буцаагдсан
+        if (!EBC[x.bill]) add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty) + bt, cust, x.bill);   // буухиа цуцалсан бол орлого аль хэдийн буцаагдсан
         // буцаасан/цуцалсан хүргэлтэд буухиа хөлс авдаггүй — хүргэх үед бичсэн өглөгийг буцаана
         if (oo && isFee(item) && oo.ebCode !== 'бусад' && ebFeeAuto(EB_FEE_DATE[oo.id] || d)) add(d, 'Буухиагийн хөлс (буцаалт)', x.id, '3101', '7124', -a, 'Хүргэлт буцаасан · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
         if (c && EBC[x.bill]) add(d, 'Буцаалт хүлээн авсан', x.id, '1404', '1209', c, item + ' × ' + Math.abs(x.qty) + ' · буухиагаас буцаж ирсэн #' + x.bill, BUUHIA_G, x.bill);

@@ -319,7 +319,7 @@ var MENU = {
   // Санхүү — Excel «Санхүүгийн бүртгэлийн файл»-ын дарааллаар дугаартай 10 хуудас; бусад нь «Бусад» нэг хуудсанд (finance.js HUBS.other)
   // Санхүү — албан санхүүгийн програмын бүлэглэл: Мөнгө · Тооцоо · Тайлан · Нягтлан
   // Чухлаас нь: өдөр бүр хийх (тулгах, батлах) → тооцоо → тайлан → нягтлан → тохиргоо
-  finance: [['Өдөр бүр', ['bank', 'requests', 'daily', 'cashacc']], ['Тооцоо', ['recv', 'payb', 'ebset', 'payroll', 'loans', 'debts']], ['Тайлан', ['months', 'expcat', 'cashflow', 'money', 'ledger']], ['Нягтлан', ['acct', 'other']], ['Холболт', ['api']]],
+  finance: [['Өдөр бүр', ['bank', 'requests', 'daily', 'cashacc']], ['Тооцоо', ['recv', 'payb', 'ebset', 'payroll', 'loans']], ['Тайлан', ['months', 'expcat', 'cashflow', 'money', 'ledger']], ['Нягтлан', ['acct', 'other']], ['Холболт', ['api']]],
 };
 function subLabel(mod, k) { var x = (SUBS[mod] || []).filter(function (s) { return s[0] === k; })[0]; return x ? x[1] : k; }
 function subGroup(mod, k) { var g = (MENU[mod] || []).filter(function (g) { return g[1].indexOf(k) >= 0; })[0]; return g ? g[0] : mod === 'finance' && hubOf(k) ? HUBS[hubOf(k)][0] : ''; }
@@ -1218,7 +1218,7 @@ var SUBS = {
           ['pay', 'Төлбөрийн хэлбэрээр'], ['disc', 'Хөнгөлөлт, буцаалт'], ['slow', 'Удаан эргэлттэй бараа'], ['boost', 'Boost бараагаар'], ['ads', 'Сурталчилгаа, ROAS'], ['boostp', 'Boost'], ['boostbud', 'Boost төсөв'], ['ebarimt', 'И-баримт тулгалт']],
   products: [['catalog', 'Барааны бүртгэл, үнэ'], ['counts', 'Тооллого батлах'], ['po', 'Бараа захиалга (Хятад)'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['prices', 'Үнийн түүх'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
   finance: [['requests', 'Мөнгөний хүсэлт'], ['simple', 'Захирлын самбар'], ['months', '12 сарын дүн'], ['daily', 'Өдрийн орлого'], ['cashacc', 'Мөнгөний данс'], ['profit', 'Барааны ашиг'], ['money', 'Гүйлгээ'], ['bank', 'Банкны хуулга'], ['vouchers', 'Кассын баримт'],
-            ['expcat', 'Зардлын задаргаа'], ['other', 'Бусад'], ['recv', 'Авлага'], ['payb', 'Өглөг'], ['ebset', 'Буухиа тооцоо'], ['debts', 'Бусад тооцоо'], ['loans', 'Зээлийн хяналт'], ['assets', 'Үндсэн хөрөнгө, элэгдэл'], ['banklink', 'Банкны данс холбох'], ['digest', 'Өдрийн тойм и-мэйл'], ['payroll', 'Цалин, НДШ'], ['monthly', 'Сар бүрийн ажил'], ['acct', 'Нягтлангийн тайлан'], ['setup', 'Тохиргоо'],
+            ['expcat', 'Зардлын задаргаа'], ['other', 'Бусад'], ['recv', 'Авлага'], ['payb', 'Өглөг'], ['ebset', 'Буухиа тооцоо'], ['loans', 'Зээлийн хяналт'], ['assets', 'Үндсэн хөрөнгө, элэгдэл'], ['banklink', 'Банкны данс холбох'], ['digest', 'Өдрийн тойм и-мэйл'], ['payroll', 'Цалин, НДШ'], ['monthly', 'Сар бүрийн ажил'], ['acct', 'Нягтлангийн тайлан'], ['setup', 'Тохиргоо'],
             ['dash', 'Бүртгэлийн шалгалт'], ['entry', 'Журналын бичилт'], ['journal', 'Ерөнхий журнал'], ['trial', 'Гүйлгээ баланс'], ['ledger', 'Дансны хуулга'], ['gl', 'Ерөнхий дэвтэр'],
             ['cash', 'Касс, харилцах (өдрөөр)'], ['cashflow', 'Мөнгөн урсгал'], ['expenses', 'Зарлага, касс хаалт'], ['partners', 'Авлага, өглөгийн товчоо'], ['aging_r', 'Авлагын насжилт'],
             ['aging_p', 'Өглөгийн насжилт'], ['pstmt', 'Харилцагчийн хуулга'], ['balance', 'Санхүүгийн байдал (баланс)'], ['pl', 'Орлогын тайлан'], ['equity', 'Өмчийн өөрчлөлт'],
@@ -1554,15 +1554,20 @@ function ebMaybe(o) {
 function ebAdmDups() { return (window.adminOrders || []).filter(function (o) { return o.biz === state.biz && !o.ebCode && (o.status === 'Шинэ' || o.status === 'Буухиад өгсөн') && !ebMaybe(o) && dupOf(o) && !(ebAdm.notDup || {})[o.id]; }); }
 function ebAdmFresh() { return (window.adminOrders || []).filter(function (o) { return o.biz === state.biz && !o.ebCode && o.courier !== 'Бусад' && (o.status === 'Шинэ' || o.status === 'Буухиад өгсөн') && !ebMaybe(o) && (!dupOf(o) || (ebAdm.notDup || {})[o.id]); })
   .sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; }); }
-function ebAdmSend(other) {   // other — буухиад өгөхгүй, өөрсдөө / бусад хүргэлтээр (буухиагийн хөлс бичигдэхгүй)
+function ebAdmSend(other, noAmt) {   // other — буухиад өгөхгүй, өөрсдөө / бусад хүргэлтээр (буухиагийн хөлс бичигдэхгүй)
   var ids = Object.keys(ebAdm.sel).filter(function (k) { return ebAdm.sel[k]; });
   var badA = other ? [] : (window.adminOrders || []).filter(function (o) { return ids.indexOf(o.id) >= 0 && !addrFinal(o).ok; });
   if (badA.length) { alert('Хаяг дутуу ' + badA.length + ' захиалга:\n' + badA.map(function (o) { return o.phone + ': ' + addrFinal(o).why; }).join('\n') + '\n\nАжилтны «Хүргэлт» хуудсанд «Засах» дарж бөглөнө.'); return; }
-  if (!ids.length || ebAdm.busy || !confirm(ids.length + (other ? ' захиалгыг бусад хүргэлтээр (буухиагүй) гаргах уу?' : ' захиалгыг буухиа руу илгээх үү?'))) return;
+  if (!ids.length || ebAdm.busy) return;
+  if (!other && noAmt === undefined) {   // төлбөр ороогүй захиалгатай бол Үнийн дүнтэй / Үнийн дүнгүй гэж асууна
+    var cod = (window.adminOrders || []).filter(function (o) { return ids.indexOf(o.id) >= 0; }).reduce(function (a, o) { return a + (o.paid === 'Орсон' || o.confirmed ? 0 : Number(o.amount) || 0); }, 0);
+    if (cod > 0) { ebAmtAsk(ids.length, cod, '', function (na) { ebAdmSend(other, na); }); return; }
+  }
+  if (noAmt === undefined && !confirm(ids.length + (other ? ' захиалгыг бусад хүргэлтээр (буухиагүй) гаргах уу?' : ' захиалгыг буухиа руу илгээх үү?'))) return;
   var dup = other ? [] : (window.adminOrders || []).filter(function (o) { return ids.indexOf(o.id) >= 0 && ebMaybe(o); }).map(function (o) { return o.phone + ' (' + ebMaybe(o).code + ')'; });
   if (dup.length && !confirm('Энэ захиалга Буухиа дээр аль хэдийн байж магадгүй:\n' + dup.join('\n') + '\n\nДахин илгээх үү?')) return;
   ebAdm.busy = true; ebRedraw();
-  post({ type: 'admin_eb', op: other ? 'other' : 'send', biz: state.biz, ids: ids }, function (err, d) {
+  post({ type: 'admin_eb', op: other ? 'other' : 'send', biz: state.biz, ids: ids, noAmt: !!noAmt }, function (err, d) {
     ebAdm.busy = false;
     if (err) { alert('Хадгалж чадсангүй: ' + ebAdmErr(err)); ebRedraw(); return; }
     ebAdm.sel = {};
@@ -2061,7 +2066,7 @@ function extraChecks(E, r, p, line, neq) {
   }
   if (BUSINESSES[state.biz].orders) {   // Захиалгын баталгаажаагүй нийт = захиалгын хэрэглэгчдийн авлага (1201)
     var OL = (window.adminOrders || []).filter(function (o) { return o.biz === state.biz; }), who = {}, ar = 0;
-    OL.forEach(function (o) { who[ordCust(o)] = 1; });
+    OL.forEach(function (o) { who[ordCust(o)] = 1; }); who[BUUHIA_T] = 1;
     E.forEach(function (e) { if (e.date > todayStr() || !who[e.partner]) return; if (e.dr === '1201') ar += e.amount; if (e.cr === '1201') ar -= e.amount; });
     out += line(Math.abs(ordOpenAmt(OL) - ar) <= TOL, neq(ordOpenAmt(OL), 'Захиалгын баталгаажаагүй нийт', ar, 'захиалгын авлага (1201)'), 'sales/orders');
   }
