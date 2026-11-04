@@ -72,10 +72,10 @@ function ebSetView() {
   if (!ebAdm.list && !ebAdm.busy && API_URL && typeof ebAdmPull === 'function') setTimeout(ebAdmPull, 0);
   var D = ebSetData(), net = r0(D.j1201 - D.j3101);
   var kpis = '<div class="fn-kpis">' +
-    '<div class="fn-kpi"><small>Буухиагаас авах (хураасан, хаагдаагүй)</small><b>' + mny(D.j1201) + '</b></div>' +
-    '<div class="fn-kpi"><small>Буухиад өгөх (хөлс + хуучин өр)</small><b>' + mny(D.j3101) + '</b></div>' +
-    '<div class="fn-kpi"><small>' + (net >= 0 ? 'Цэвэр: Буухиа надад шилжүүлэх' : 'Цэвэр: Би Буухиад төлөх') + '</small><b class="' + (net >= 0 ? 'pos' : 'neg') + '">' + mny(Math.abs(net)) + '</b></div>' +
-    '<div class="fn-kpi"><small>Буухиа дээр явж байгаа (' + D.way.length + ', журналд ороогүй)</small><b>' + (ebAdm.list ? mny(D.wayAmt) : '—') + '</b></div></div>';
+    '<div class="fn-kpi"><small>Буухиагаас авах</small><b>' + mny(D.j1201) + '</b></div>' +
+    '<div class="fn-kpi"><small>Буухиад өгөх (хөлс)</small><b>' + mny(D.j3101) + '</b></div>' +
+    '<div class="fn-kpi"><small>' + (net >= 0 ? 'Буухиа надад шилжүүлэх' : 'Би Буухиад төлөх') + '</small><b class="' + (net >= 0 ? 'pos' : 'neg') + '">' + mny(Math.abs(net)) + '</b></div>' +
+    '<div class="fn-kpi"><small>Хүргэлтэнд явж байгаа (' + D.way.length + ')</small><b>' + (ebAdm.list ? mny(D.wayAmt) : '—') + '</b></div></div>';
   var L = ebSetFilt(D), T = { col: 0, fee: 0, net: 0 };
   var rows = L.map(function (r) {
     T.col += r.col; T.fee += r.fee; T.net += r.net;
@@ -94,9 +94,9 @@ function ebSetView() {
   var tbl = '<div class="card">' + flt + '<div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Утас</th><th>Буухиа код</th><th>Төлөв (Буухиа)</th><th class="n">Хураасан ₮</th><th class="n">Хөлс ₮</th><th class="n">Цэвэр ₮</th><th>Хаагдсан эсэх (банкны огноо)</th></tr>' +
     oldRows + (rows || '<tr><td colspan="8" class="muted">Мөр алга</td></tr>') +
     '<tr class="tot"><td colspan="4">Нийт (' + L.length + ' захиалга)</td><td class="n">' + mny(T.col) + '</td><td class="n">' + mny(T.fee) + '</td><td class="n">' + mny(T.net) + '</td><td></td></tr></table></div>' +
-    '<p class="muted" style="font-size:12.5px;margin:8px 0 0">Тооцоо хаахдаа: Мөнгө → Банкны хуулга → Буухиагаас орсон гүйлгээнд «Буухиагийн тооцоо — захиалга сонгох».</p></div>';
-  return '<div id="ebSetBox"><div class="pg-head"><div><h1>Буухиа тооцоо</h1><p class="pg-desc">Буухиа хураасан мөнгө, хөлс, захиалгагүй хүргэлтийн хөлс, хуучин өр — захиалга бүрээр.</p></div></div>' + kpis +
-    '<div class="card"><h2>Тулгалтын шалгалт</h2>' + ebSetChecks(D) + '</div>' + tbl + '</div>';
+    '<p class="muted" style="font-size:12.5px;margin:8px 0 0">Тооцоо хаахдаа: Мөнгө → Банк тулгах → Буухиагаас орсон гүйлгээнд «Буухиагийн тооцоо — захиалга сонгох».</p></div>';
+  var ck = ebSetChecks(D), ckBad = / bad"/.test(ck);   // шалгалт зөвхөн зөрүүтэй үед харагдана
+  return '<div id="ebSetBox">' + kpis + (ckBad ? '<div class="card"><h2>Зөрүү байна</h2>' + ck + '</div>' : '') + tbl + '</div>';
 }
 function ebSetHomeCard(biz) {
   if (biz !== state.biz || !J().some(function (e) { return e.partner === BUUHIA; })) return '';

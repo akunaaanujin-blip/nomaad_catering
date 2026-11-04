@@ -260,3 +260,10 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var
 .stp-d{flex:1;display:flex;flex-direction:column}.stp-d small{color:#6B7280;font-size:12px}
 .stp-row b{text-align:right;white-space:nowrap}
 .stp-tot{display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding-top:10px;font-size:14px}.stp-tot span:first-child:not(:last-child){color:#6B7280}
+/* Тайлангийн гарчиг хуудасны гарчигтай давхардахгүй — зөвхөн хэвлэхэд */
+.rep-tt{display:none}
+@media print{.rep-tt{display:inline}.rep-cap span{display:inline}}
+.mr-s{font-size:14px;line-height:1.7;margin:0}
+.mr-more{margin-top:8px}
+.st-pick{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
+.st-pick select{min-width:240px}

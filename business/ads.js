@@ -44,8 +44,7 @@ function adsView() {
   });
   byCamp.sort(function (a, b) { return b.spend - a.spend; });
   var tS = byCo.reduce(function (a, x) { return a + x.spend; }, 0), tR = byCo.reduce(function (a, x) { return a + x.sales; }, 0);
-  return '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Сурталчилгаа, ROAS</h2><button class="btn" onclick="adsOpen()">Зардал бүртгэх</button></div>' +
-    '<p class="muted" style="margin:6px 0 0">' + f + ' — ' + t + ' · ROAS = борлуулалт ÷ сурталчилгааны зардал (7120). Банкаар төлсөн boost болон удирдлагаас бүртгэсэн 7120 зардал орно (ажилтны Boost бүртгэл зөвхөн бараагаар шинжилгээнд).</p></div>' +
+  return '<div class="card"><div class="ord-bar"><p class="muted" style="margin:0;flex:1">ROAS = борлуулалт ÷ сурталчилгааны зардал. Банкаар төлсөн зардал орно.</p><button class="btn" onclick="adsOpen()">Зардал бүртгэх</button></div></div>' +
     '<div class="card rep"><div class="rep-cap"><b>Компаниар</b></div><div class="scroll"><table class="rep-t"><tr><th>Компани</th><th class="n">Зардал</th><th class="n">Цэвэр борлуулалт</th><th class="n">ROAS</th></tr>' +
     byCo.map(function (x) { return '<tr><td>' + esc(BUSINESSES[x.biz].name) + '</td><td class="n">' + fmt(x.spend) + '</td><td class="n">' + fmt(x.sales) + '</td><td class="n">' + roas(x.sales, x.spend) + '</td></tr>'; }).join('') +
     '<tr class="tot"><td>Нийт</td><td class="n">' + fmt(tS) + '</td><td class="n">' + fmt(tR) + '</td><td class="n">' + roas(tR, tS) + '</td></tr></table></div></div>' +
@@ -148,9 +147,9 @@ function boostView() {
   var unp = INV.filter(function (v) { return v.cos.some(function (c) { return mine(c) && !c.isPaid; }); });
   var unpUsd = unp.reduce(function (a, v) { return a + v.cos.reduce(function (b, c) { return b + (mine(c) && !c.isPaid ? c.usd : 0); }, 0); }, 0);
   var unpEst = unp.reduce(function (a, v) { return a + v.cos.reduce(function (b, c) { return b + (mine(c) && !c.isPaid ? c.est : 0); }, 0); }, 0);
-  var unpCard = '<div class="fn-kpis"><div class="fn-kpi"><small>Төлөгдөөгүй нэхэмжлэх</small><b' + (unp.length ? ' class="neg"' : '') + '>' + unp.length + ' · $' + Math.round(unpUsd * 100) / 100 + '</b>' +
-    (unpEst ? '<small class="muted">≈ ' + fmt(unpEst) + ' (ханшаар)</small>' : '') + '</div></div>';
-  var kpi = '<div class="fn-kpis">' +
+  var unpCard = '<div class="fn-kpi"><small>Төлөгдөөгүй нэхэмжлэх</small><b' + (unp.length ? ' class="neg"' : '') + '>' + unp.length + ' · $' + Math.round(unpUsd * 100) / 100 + '</b>' +
+    (unpEst ? '<small class="muted">≈ ' + fmt(unpEst) + ' (ханшаар)</small>' : '') + '</div>';
+  var kpi = '<div class="fn-kpis">' + unpCard +
     '<div class="fn-kpi"><small>Төлсөн (банкаар)</small><b>' + fmt(spent) + (usd ? ' <span class="muted" style="font-size:.7em">· $' + (Math.round(usd * 100) / 100) + '</span>' : '') + '</b></div>' +
     '<div class="fn-kpi"><small>Boost-ийн үеийн борлуулалт</small><b>' + fmt(sales) + '</b></div>' +
     '<div class="fn-kpi"><small>Boost-ийн дараах ашиг</small><b class="' + (after < -0.5 ? 'neg' : '') + '">' + mny(after) + '</b></div>' +
@@ -191,7 +190,7 @@ function boostView() {
   var invCard = '<div class="card rep"><div class="rep-cap"><b>Нэхэмжлэх</b><span>Төлөгдөөгүй бүгд + энэ хугацааны төлсөн. Банкны хуулгаар «Boost нэхэмжлэх»-ээр тулгана.</span></div><div class="scroll"><table class="rep-t"><tr><th>Дугаар</th><th>Мөр</th><th>Компаниар ($ · ≈₮ ханшаар — төлсөн ₮)</th><th>Төлөв</th><th></th></tr>' +
     (invRows || '<tr><td colspan="5" class="muted">Нэхэмжлэх алга.</td></tr>') + '</table></div></div>';
   var head = '<tr>' + (many ? '<th>Компани</th>' : '') + '<th>Бараа</th><th>Ажилтан</th><th>Хугацаа</th><th class="n">$</th><th class="n">₮</th><th class="n">Зарсан ш</th><th class="n">Захиалга</th><th class="n">Борлуулалт</th><th class="n">Нийт ашиг</th><th class="n">Boost-ийн дараах</th><th>Дүгнэлт</th><th></th></tr>';
-  return unpCard + '<div class="card">' + flt + '<div style="margin-top:8px;text-align:right"><button class="b-btn" onclick="bstReset()">Шинээр эхлүүлэх</button></div></div>' + kpi +
+  return '<div class="card">' + flt + '<div style="margin-top:8px;text-align:right"><button class="b-btn" onclick="bstReset()">Шинээр эхлүүлэх</button></div></div>' + kpi +
     '<div class="card rep"><div class="scroll"><table class="rep-t bst-t">' + head + (rows || '<tr><td colspan="' + cols + '" class="muted">Энэ хугацаанд төлсөн boost алга.</td></tr>') + '</table></div>' +
     '<p class="muted" style="font-size:12.5px;margin-top:8px">Нийт ашиг = boost-ийн хугацааны борлуулалт − өртөг; Boost-ийн дараах ашиг = нийт ашиг − boost зардал. Тэнцэх тоо = boost₮ ÷ (зарах үнэ − өртөг). Мөр дээр дарахад тэр хугацааны борлуулалт, захиалга нээгдэнэ. Зөвхөн банкаар тулгасан (Төлсөн) нэхэмжлэхийн мөр орно — ₮ нь бодит төлсөн дүн (банкны ₮-ийг нэхэмжлэхийн мөрүүдэд $-ын харьцаагаар хуваасан).</p></div>' + invCard;
 }

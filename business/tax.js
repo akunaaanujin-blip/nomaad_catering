@@ -11,7 +11,7 @@ var taxState = { ent: 'weiss', sub: 'calendar', month: '', quarter: '', year: ''
   taxState.year = String(new Date().getFullYear() - (new Date().getMonth() < 3 ? 1 : 0));
 })();
 var TAX_SUBS = [
-  ['Хуанли', [['calendar', 'Тайлангийн хуанли']]],
+  ['Хуанли', [['calendar', 'Татварын хуанли']]],
   ['Цалин, НДШ', [['payroll', 'Цалин бодолт'], ['nd8', 'НДШ тайлан (НД-8)'], ['tt11', 'ТТ-11 (ХХОАТ суутгал)']]],
   ['Татвар', [['tt02', 'ТТ-02 (ААНОАТ) бэлтгэл']]],
   ['Санхүүгийн тайлан', [['ebalance', 'e-Balance жилийн тайлан'], ['entpl', 'Нэгтгэсэн орлогын тайлан']]],

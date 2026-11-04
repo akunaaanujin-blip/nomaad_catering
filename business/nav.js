@@ -9,40 +9,52 @@ ICONS.bell = '<path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 
 ICONS.boost = '<path d="M3 11v2a1 1 0 001 1h2l5 4V6L6 10H4a1 1 0 00-1 1z"/><path d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13"/>';
 ICONS.money = '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9.5v5M18 9.5v5"/>';
 
+ICONS.truck = '<path d="M2.5 6.5h11v10h-11z"/><path d="M13.5 10h4l3.5 3.5v3h-7.5"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>';
+ICONS.book = '<path d="M4.5 4.5A2 2 0 016.5 3H20v15H6.5a2 2 0 00-2 2z"/><path d="M4.5 20a2 2 0 002 2H20v-4"/><path d="M9 8h7M9 11.5h5"/>';
+// Зарчим: нэг сэдэв — нэг газар. Албан ёсны тайлан (журнал, баланс, орлогын тайлан…) зөвхөн «Нягтлан»-д; «Тайлан» — энгийн үгээр.
+// Зүйл: [түлхүүр, цэсний нэр, (хуудасны гарчиг — цэсний нэрнээс өөр бол)]
 var MNAV = [
   ['Нүүр', 'home', [['home', 'Өнөөдөр'], ['finance/monthly', 'Хийх ажил (сар бүр)'], ['v:cal', 'Календарь']]],
-  ['Борлуулалт', 'sales', [['sales/orders', 'Захиалга'], ['sales/shop', 'Борлуулалтын баримт'], ['sales/buuhia', 'Хүргэлт'], ['sales/ebrec', 'Буухиатай тулгах'], ['sales/disc', 'Буцаалт, хөнгөлөлт'], ['sales/ads', 'Сурталчилгаа, ROAS']]],
-  ['Boost', 'boost', [['sales/boostp', 'Boost'], ['sales/boostbud', 'Boost төсөв']]],
+  ['Борлуулалт', 'sales', [['sales/orders', 'Захиалга'], ['sales/shop', 'Борлуулалтын баримт'], ['sales/disc', 'Буцаалт, хөнгөлөлт']]],
+  ['Буухиа', 'truck', [['sales/buuhia', 'Хүргэлт', 'Буухиа хүргэлт'], ['finance/ebset', 'Тооцоо', 'Буухиа тооцоо'], ['sales/ebrec', 'Тулгалт', 'Буухиатай тулгах']]],
+  ['Boost', 'boost', [['sales/boostp', 'Boost'], ['sales/boostbud', 'Төсөв', 'Boost төсөв'], ['sales/boost', 'Үр дүн', 'Boost үр дүн']]],
   ['Бараа', 'products', [['products/catalog', 'Бараа, үнэ'], ['products/stock', 'Үлдэгдэл'], ['products/po', 'Худалдан авалт'], ['products/suppliers', 'Нийлүүлэгчид'],
-    ['products/counts', 'Тооллого'], ['products/move', 'Хөдөлгөөн, шилжүүлэг'], ['products/in', 'Орлогын жагсаалт'], ['products/prices', 'Үнийн түүх'], ['finance/assets', 'Үндсэн хөрөнгө']]],
-  ['Мөнгө', 'money', [['finance/cashacc', 'Данснууд'], ['finance/bank', 'Банкны хуулга, тулгалт'], ['finance/ledger', 'Дансны хуулга'], ['finance/vouchers', 'Кассын гүйлгээ'],
-    ['finance/expenses', 'Зардал, касс хаалт'], ['finance/requests', 'Мөнгөний хүсэлт']]],
-  ['Тооцоо', 'people', [['finance/ebset', 'Буухиа тооцоо'], ['finance/recv', 'Авлага'], ['finance/payb', 'Өглөг'], ['finance/loans', 'Зээл'], ['finance/fixed', 'Тогтмол зардал'], ['finance/payroll', 'Цалин, НДШ'],
-    ['finance/partners', 'Харилцагчид'], ['finance/pstmt', 'Харилцагчийн хуулга']]],
-  ['Тайлан', 'reports', [['—', 'Удирдлагын'], ['finance/daily', 'Өдрийн орлого'], ['finance/expcat', 'Зардлын задаргаа'], ['finance/cashflow', 'Мөнгөн урсгал'], ['finance/profit', 'Барааны ашиг'],
-    ['finance/months', '12 сарын дүн'], ['review', 'Удирдлагын тойм'],
-    ['—', 'Борлуулалтын'], ['sales/item', 'Бараагаар'], ['sales/cat', 'Ангиллаар'], ['sales/pay', 'Төлбөрийн хэлбэрээр'], ['sales/slow', 'Удаан эргэлттэй бараа'], ['sales/boost', 'Сурталчилгааны үр дүн'],
-    ['—', 'Нягтлангийн'], ['finance/dash', 'Бүртгэлийн шалгалт'], ['finance/journal', 'Журнал'], ['finance/gl', 'Ерөнхий дэвтэр'], ['finance/trial', 'Гүйлгээ баланс'],
-    ['finance/balance', 'Санхүүгийн байдал'], ['finance/pl', 'Орлогын тайлан'], ['finance/equity', 'Өмчийн өөрчлөлт'], ['finance/aging_r', 'Авлага, өглөгийн насжилт']]],
-  ['Татвар', 'tax', [['v:tax:calendar', 'Тайлангийн хуанли'], ['v:tax:nd8', 'НДШ тайлан'], ['v:tax:tt11', 'ХХОАТ (ТТ-11)'], ['v:tax:tt02', 'ААНОАТ (ТТ-02)'],
-    ['v:tax:ebalance', 'Жилийн тайлан (e-Balance)'], ['v:tax:entpl', 'Нэгтгэсэн орлогын тайлан'], ['sales/ebarimt', 'И-баримт']]],
+    ['products/counts', 'Тооллого'], ['products/move', 'Хөдөлгөөн']]],
+  ['Мөнгө', 'money', [['finance/cashacc', 'Данснууд'], ['finance/stmt', 'Дансны хуулга'], ['finance/bank', 'Банк тулгах'], ['finance/vouchers', 'Касс'], ['finance/requests', 'Мөнгөний хүсэлт']]],
+  ['Тооцоо', 'people', [['finance/recv', 'Авлага, өглөг'], ['finance/loans', 'Зээл'], ['finance/fixed', 'Тогтмол зардал, төлбөр'], ['finance/payroll', 'Цалин, НДШ']]],
+  ['Тайлан', 'reports', [['finance/mrep', 'Удирдлагын тайлан'], ['finance/daily', 'Өдрийн орлого'], ['finance/months', '12 сарын дүн'], ['finance/expcat', 'Зардлын задаргаа'],
+    ['finance/profit', 'Барааны ашиг'], ['sales/item', 'Борлуулалтын тайлан']]],
+  ['Нягтлан', 'book', [['finance/pl', 'Орлогын тайлан'], ['finance/balance', 'Санхүүгийн байдал'], ['finance/cashflow', 'Мөнгөн гүйлгээний тайлан'], ['finance/equity', 'Өмчийн өөрчлөлт'],
+    ['v:tax:entpl', 'Нэгтгэсэн орлогын тайлан'], ['finance/trial', 'Гүйлгээ баланс'], ['finance/gl', 'Ерөнхий дэвтэр'], ['finance/journal', 'Журнал'], ['finance/aging_r', 'Насжилт'],
+    ['finance/assets', 'Үндсэн хөрөнгө'], ['finance/dash', 'Бүртгэлийн шалгалт']]],
+  ['Татвар', 'tax', [['v:tax:calendar', 'Татварын хуанли'], ['v:tax:nd8', 'НДШ тайлан'], ['v:tax:tt11', 'ХХОАТ (ТТ-11)'], ['v:tax:tt02', 'ААНОАТ (ТТ-02)'],
+    ['v:tax:ebalance', 'Жилийн тайлан (e-Balance)'], ['sales/ebarimt', 'И-баримт']]],
   ['Тохиргоо', 'gear', [['finance/company', 'Компанийн мэдээлэл'], ['v:staff', 'Ажилчид, эрх'], ['finance/accounts', 'Дансны төлөвлөгөө'], ['finance/opening', 'Эхний үлдэгдэл'], ['finance/lock', 'Гүйлгээ түгжих'],
     ['finance/close', 'Он хаах, нөөц'], ['finance/api', 'Холболт (банк, буухиа, StorePay)'], ['finance/digest', 'Өдрийн тойм и-мэйл'],
     ['finance/audit', 'Өөрчлөлтийн түүх'], ['finance/trash', 'Хогийн сав'], ['v:docs', 'Маягт, загвар'], ['finance/glossary', 'Нэр томьёо']]],
 ];
-// Нэг өгөгдлийн өөр харагдац — хуудас доторх таб (4-өөс ихгүй)
-var PAGE_TABS = { journal: [['journal', 'Бүх бичилт'], ['entry', 'Гараар бичсэн']], aging_r: [['aging_r', 'Авлага'], ['aging_p', 'Өглөг']] };
-PAGE_TABS.entry = PAGE_TABS.journal; PAGE_TABS.aging_p = PAGE_TABS.aging_r;
-var NAV_ALIAS = { entry: 'journal', aging_p: 'aging_r' };   // таб бүхий хуудсын цэсний зүйл
+// Нэг сэдвийн хуудсууд — цэсэнд нэг мөр, хуудас дотор таб. Эхний таб нь цэсний зүйл.
+var PAGE_TABS = {}, PAGE_TITLE = {}, NAV_ALIAS = {};
+function navTabs(title, list) { list.forEach(function (t) { PAGE_TABS[t[0]] = list; PAGE_TITLE[t[0]] = title; if (t[0] !== list[0][0]) NAV_ALIAS[t[0]] = list[0][0]; }); }
+navTabs('Авлага, өглөг', [['recv', 'Авлага'], ['payb', 'Өглөг'], ['partners', 'Харилцагчид'], ['pstmt', 'Харилцагчийн хуулга']]);
+navTabs('Касс', [['vouchers', 'Гүйлгээ'], ['expenses', 'Зардал, касс хаалт']]);
+navTabs('Тогтмол зардал, төлбөр', [['fixed', 'Тогтмол зардал'], ['bills', 'Төлбөрийн хуваарь']]);
+navTabs('Барааны хөдөлгөөн', [['move', 'Хөдөлгөөн, шилжүүлэг'], ['in', 'Орлогын жагсаалт'], ['prices', 'Үнийн түүх']]);
+navTabs('Борлуулалтын тайлан', [['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['pay', 'Төлбөрийн хэлбэрээр'], ['slow', 'Удаан эргэлттэй']]);
+navTabs('Boost үр дүн', [['boost', 'Бараагаар'], ['ads', 'Зардал, ROAS']]);
+navTabs('Ерөнхий дэвтэр', [['gl', 'Бүх данс'], ['ledger', 'Нэг дансаар']]);
+navTabs('Журнал', [['journal', 'Бүх бичилт'], ['entry', 'Гараар бичсэн']]);
+navTabs('Авлага, өглөгийн насжилт', [['aging_r', 'Авлага'], ['aging_p', 'Өглөг']]);
+navTabs('Удирдлагын тайлан', [['mrep', 'Товч'], ['review', 'Дэлгэрэнгүй тойм']]);
 
 // Үг хэллэг (хуудасны гарчиг = цэсний нэр); шинэ хуудсууд
-SUBS.finance.push(['audit', 'Өөрчлөлтийн түүх'], ['trash', 'Хогийн сав'], ['company', 'Компанийн мэдээлэл']);
+SUBS.finance.push(['audit', 'Өөрчлөлтийн түүх'], ['trash', 'Хогийн сав'], ['company', 'Компанийн мэдээлэл'], ['mrep', 'Удирдлагын тайлан'], ['stmt', 'Дансны хуулга'], ['fixed', 'Тогтмол зардал']);
 REP_HELP.company = 'Нэр, татварын горим, ТТД, НӨАТ, И-баримт, холбоо барих, санхүүгийн жил, буухиагийн нэг хүргэлтийн хөлс. Татварын хуудсууд эндээс хамаарч харагдана.';
 REP_HELP.audit = 'Хэн, хэзээ, юу өөрчилсөн — удирдлагын бүх бичилт, захиалга, тооллого.';
 REP_HELP.trash = 'Сүүлийн 30 хоногт цуцалсан баримт, барааны хөдөлгөөн, журналын бичилт. Сэргээвэл санхүү, үлдэгдэлд дахин тусна.';
 (function () {
   var L = {};
-  MNAV.forEach(function (g) { g[2].forEach(function (it) { var m = it[0].match(/^(\w+)\/(\w+)$/); if (m) L[m[2]] = it[1]; }); });
+  MNAV.forEach(function (g) { g[2].forEach(function (it) { var m = it[0].match(/^(\w+)\/(\w+)$/); if (m) L[m[2]] = it[2] || it[1]; }); });
   Object.keys(SUBS).forEach(function (mod) { SUBS[mod].forEach(function (s) { if (L[s[0]]) s[1] = L[s[0]]; }); });
   if (ACC['110106']) ACC['110106'].name = 'Карт (POS)';
   ACCOUNTS.forEach(function (a) { if (a[0] === '110106') a[1] = 'Карт (POS)'; });
@@ -50,7 +62,7 @@ REP_HELP.trash = 'Сүүлийн 30 хоногт цуцалсан баримт, 
 
 function navItemOn(k) {
   if (k === 'home') return state.view === 'company' && state.module === 'home';
-  if (k === 'review') return state.view === 'company' && state.module === 'review';
+  if (k === 'review' || k === 'finance/mrep' && state.view === 'company' && state.module === 'review') return state.view === 'company' && state.module === 'review';
   if (k === 'v:staff') return state.view === 'staff';
   if (k === 'v:cal') return state.view === 'cal';
   if (k === 'v:docs') return state.view === 'docs';
@@ -59,7 +71,7 @@ function navItemOn(k) {
   var cur = state.sub[m[0]]; return cur === m[1] || NAV_ALIAS[cur] === m[1];
 }
 // Удирдлага = захирлын хувийн санхүүгийн хөтөч: данс, гүйлгээ, зээл, тооцоо, зардлын тайлан (борлуулалт, буухиа, Boost, нягтлангийн тайлангүй)
-var MGMT_NAV = /^(home|review|v:cal|finance\/(cashacc|bank|ledger|vouchers|loans|recv|payb|pstmt|expcat|cashflow|opening|accounts|api|audit|trash))$/;
+var MGMT_NAV = /^(home|review|v:cal|finance\/(cashacc|bank|ledger|stmt|vouchers|loans|recv|payb|pstmt|expcat|cashflow|opening|accounts|api|audit|trash))$/;
 function navOk(biz, k) {
   var B = BUSINESSES[biz] || {};
   if (B.finOnly && !MGMT_NAV.test(k)) return false;   // Удирдлага: захирлын хувийн санхүүгийн хөтөч
@@ -151,11 +163,17 @@ crumbHtml = function () {
 };
 
 // Хуудасны дээд хэсэг: гарчиг + 1 өгүүлбэр тайлбар + үйлдэл; таб (нэг өгөгдлийн харагдац)
+function pageTabs(sub) {
+  var mod = state.module, T = (PAGE_TABS[sub] || []).filter(function (t) { return t[0] === 'review' || navOk(state.biz, (mod === 'review' ? 'finance' : mod) + '/' + t[0]); });
+  if (T.length < 2) return '';
+  return '<div class="tabs fn-tabs">' + T.map(function (t) {
+    var go = t[0] === 'review' ? "navGo('review')" : mod === 'review' ? "navGo('finance/" + t[0] + "')" : 'state.sub.' + mod + "='" + t[0] + "';render()";
+    return '<button class="' + (t[0] === sub ? 'on' : '') + '" onclick="' + go + '">' + t[1] + '</button>'; }).join('') + '</div>';
+}
 pageHead = function (title, actions, withPeriod) {
   var sub = state.view === 'company' ? state.sub[state.module] : '', d = state.view === 'company' && state.module !== 'home' && typeof REP_HELP !== 'undefined' ? REP_HELP[sub] || '' : '';
-  var T = state.view === 'company' && state.module === 'finance' ? PAGE_TABS[sub] : null;
-  return '<div class="pg-head"><div><h1>' + title + '</h1>' + (d ? '<p class="pg-desc">' + d + '</p>' : '') + '</div><div class="pg-act">' + (actions || '') + '</div></div>' +
-    (T ? '<div class="tabs fn-tabs">' + T.map(function (t) { return '<button class="' + (t[0] === sub ? 'on' : '') + '" onclick="state.sub.finance=\'' + t[0] + '\';render()">' + t[1] + '</button>'; }).join('') + '</div>' : '') +
+  var tabs = state.view === 'company' ? pageTabs(sub) : '';
+  return '<div class="pg-head"><div><h1>' + (tabs && PAGE_TITLE[sub] || title) + '</h1>' + (d ? '<p class="pg-desc">' + d + '</p>' : '') + '</div><div class="pg-act">' + (actions || '') + '</div></div>' + tabs +
     (withPeriod ? periodBar() : '');
 };
 // Хугацааны сонголт дээд мөрөнд (бүх хуудсанд нэг байрлалд, хуудас солиход хадгалагдана)
@@ -174,11 +192,14 @@ companyView = function () {
   if (state.module === 'finance' && state.sub.finance === 'audit') return pageHead('Өөрчлөлтийн түүх', '<button class="b-btn" onclick="audLoad(true)">Шинэчлэх</button>') + auditView();
   if (state.module === 'finance' && state.sub.finance === 'trash') return pageHead('Хогийн сав', '') + trashView();
   if (state.module === 'finance' && state.sub.finance === 'company') return pageHead('Компанийн мэдээлэл', '') + companyView2();
-  if (state.module === 'finance' && /^(money|cash|banklink|receipts)$/.test(state.sub.finance)) state.sub.finance = state.sub.finance === 'banklink' ? 'api' : 'ledger';   // нэгтгэсэн хуудас
+  if (state.module === 'finance' && /^(money|cash|banklink|receipts)$/.test(state.sub.finance)) state.sub.finance = state.sub.finance === 'banklink' ? 'api' : 'stmt';   // нэгтгэсэн хуудас
   if (state.module === 'sales' && state.sub.sales === 'receipts') { state.sub.sales = 'shop'; state.shopSrc = 'all'; }
-  if (state.module === 'finance' && /^(acct|other|setup|simple)$/.test(state.sub.finance)) state.sub.finance = 'daily';   // хассан нэгтгэл хуудас
+  if (state.module === 'finance' && /^(acct|other|setup|simple)$/.test(state.sub.finance)) state.sub.finance = 'mrep';   // хассан нэгтгэл хуудас
   return _companyView();
 };
+// «Дэлгэрэнгүй тойм» — Удирдлагын тайлангийн хоёрдугаар таб
+var _reviewView = reviewView;
+reviewView = function () { return pageTabs('review') + _reviewView(); };
 var _go = go;
 go = function (view, biz) { if (view === 'company' && biz && biz !== state.biz) state.module = 'home'; _go(view, biz); };
 var _render = render;
@@ -223,7 +244,7 @@ function alertsOf(biz) {
     var E = J(), lim = todayStr(new Date(Date.now() - 30 * 864e5)), by = {};
     E.forEach(function (e) { if (e.dr === '1201') { var p = by[e.partner] = by[e.partner] || { v: 0, d: e.date }; p.v += e.amount; if (e.date < p.d) p.d = e.date; } else if (e.cr === '1201') { (by[e.partner] = by[e.partner] || { v: 0, d: e.date }).v -= e.amount; } });
     var old = Object.keys(by).filter(function (k) { return by[k].v > 0.5 && by[k].d < lim; }).length;
-    add(old + ' харилцагчийн авлага 30 хоногоос удсан', old, "navGo('finance/aging_r')");
+    add(old + ' харилцагчийн авлага 30 хоногоос удсан', old, "navGo('finance/recv')");
   } catch (e) {}
   // Сар хаагдаагүй (дараа сарын 5-аас хойш өмнөх сар түгжигдээгүй)
   var pm = todayStr(new Date(new Date().getFullYear(), new Date().getMonth(), 0));
@@ -286,14 +307,12 @@ function homeView() {
       (i % 5 === 0 || i === keys.length - 1 ? '<text x="' + (x + bw / 2) + '" y="' + (H + 14) + '" text-anchor="middle">' + k.slice(8) + '</text>' : '') + '</g>';
   }).join('') + '</svg>';
   var chart = '<div class="card"><h2>Өдрийн орлого, зардал · ' + t.slice(0, 7) + '</h2><div class="fn-leg"><span><i style="background:var(--income)"></i>Орлого</span><span><i style="background:var(--expense)"></i>Зардал</span></div>' + svg + '</div>';
-  // Сүүлийн 10 гүйлгээ
-  // Өртөг, барааны дотоод бичилтийг харуулахгүй — борлуулалт, мөнгөний гүйлгээ л үлдэнэ
-  var cogsA = accsOf('cogs'), hideDoc = ['Буцаалт хүлээн авсан', 'Барааны эхний үлдэгдэл', 'Эхний тооллого'];
-  var last = E.filter(function (e) { return e.date <= t && cogsA.indexOf(e.dr) < 0 && cogsA.indexOf(e.cr) < 0 && hideDoc.indexOf(e.doc) < 0; }).slice().sort(function (a, b) { var x = a.date + (a.time || ''), y = b.date + (b.time || ''); return x < y ? 1 : x > y ? -1 : 0; }).slice(0, 10);
-  var tx = '<div class="card"><h2>Сүүлийн 10 гүйлгээ</h2>' + (last.length ? '<div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Баримт</th><th>Тайлбар</th><th>Дебет</th><th>Кредит</th><th class="n">Дүн</th></tr>' + last.map(function (e) {
-      return '<tr><td class="nw">' + e.date + (e.time ? ' ' + esc(String(e.time).slice(0, 5)) : '') + '</td><td>' + esc(e.doc) + '</td><td class="fn-ell" title="' + esc(e.desc) + '">' + esc(e.desc) + '</td><td>' + esc(accName(e.dr)) + '</td><td>' + esc(accName(e.cr)) + '</td><td class="n">' + mny(e.amount) + '</td></tr>'; }).join('') + '</table></div>'
+  // Сүүлийн мөнгөний 10 гүйлгээ — нягтлангийн данс, дебет/кредитгүй: хэзээ, юу, хэд орсон, хэд гарсан
+  var last = drillLines({ acc: cashCodes(), to: t, sign: 1, grp: 'type' }, E).lines.filter(function (x) { return x.key !== 'Данс хооронд'; }).slice().sort(function (a, b) { var p = a.date + (a.time || ''), q = b.date + (b.time || ''); return p < q ? 1 : p > q ? -1 : 0; }).slice(0, 10);
+  var tx = '<div class="card"><h2>Сүүлийн мөнгөний гүйлгээ</h2>' + (last.length ? '<div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Төрөл</th><th>Тайлбар</th><th class="n">Орсон</th><th class="n">Гарсан</th></tr>' + last.map(function (x) {
+      return '<tr><td class="nw">' + x.date + '</td><td>' + esc(x.key) + '</td><td class="fn-ell" title="' + esc(stmtDesc(x.desc)) + '">' + esc(stmtDesc(x.desc)) + '</td><td class="n">' + (x.v > 0 ? mny(x.v) : '') + '</td><td class="n">' + (x.v < 0 ? mny(-x.v) : '') + '</td></tr>'; }).join('') + '</table></div>'
     : '<p class="muted">Гүйлгээ алга.</p>') + '</div>';
-  return '<div class="pg-head"><div><h1>Нүүр</h1><p class="pg-desc">' + esc(B.name) + ' · ' + t + ' — өнөөдөр юу хийх, энэ сарын дүн.</p></div></div>' + todo + (typeof ebSetHomeCard === 'function' && B.orders ? ebSetHomeCard(biz) : '') + (typeof boostHomeCard === 'function' && !B.finOnly ? boostHomeCard(biz) : '') + kpis + chart + tx;
+  return '<div class="pg-head"><div><h1>Нүүр</h1><p class="pg-desc">' + esc(B.name) + ' · ' + t + ' — өнөөдөр юу хийх, энэ сарын дүн.</p></div></div>' + todo + kpis + chart + tx;
 }
 
 // ═══════════ Аюулгүй байдал, хурдан оруулах ═══════════

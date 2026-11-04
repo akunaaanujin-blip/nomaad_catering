@@ -63,7 +63,7 @@ function ebRecSys() {
 }
 
 function ebRecView() {
-  var head = '<div class="card"><h2>Буухиатай тулгах</h2><p class="muted" style="margin:0 0 10px">Буухиагийн тайланг (Excel/CSV — ebuuhia.com → Харилцагчийн тайлан → Татах) оруулна. Хүргэлт бүрийг системийн «Буухиагаас авах» дүнтэй харьцуулна. Зөрүүг зөвхөн мөр бүрээр шалгаж, баталгаажуулж засна.</p>' +
+  var head = '<div class="card"><p class="muted" style="margin:0 0 10px">Буухиагийн тайланг (Excel/CSV — ebuuhia.com → Харилцагчийн тайлан → Татах) оруулна. Хүргэлт бүрийг системийн «Буухиагаас авах» дүнтэй харьцуулна. Зөрүүг зөвхөн мөр бүрээр шалгаж, баталгаажуулж засна.</p>' +
     '<label class="b-btn ghost" style="cursor:pointer">Тайлан сонгох<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="ebRecFile(this)"></label>' +
     (ebRec.file ? ' <span class="muted">' + esc(ebRec.file) + '</span> <button class="mini" onclick="ebRec={rows:null,file:\'\',cols:\'\',err:\'\'};ebRecSave();render()">Арилгах</button>' : '') +
     (ebRec.cols ? '<p class="muted" style="font-size:12.5px;margin:6px 0 0">Танигдсан багана: ' + esc(ebRec.cols) + '</p>' : '') +

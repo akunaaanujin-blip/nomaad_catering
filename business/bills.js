@@ -195,15 +195,14 @@ REP_HELP.bills = 'Ус, цахилгаан, дулаан, интернет, ут
     return pfHead('Тогтмол төлбөр', 'Хувийн болон компаниудын ус, цахилгаан, дулаан, интернет, утас, түрээс. Сар бүр мөр өөрөө гарна; «Төлсөн» дарахад тухайн санхүүд зардал болж бичигдэнэ.',
       '<button class="b-btn primary" onclick="blOpen()">+ Тогтмол төлбөр</button>') + billsView('*');
   };
-  // Компани: Тооцоо → Тогтмол төлбөр (тухайн компанийнх)
-  MNAV.forEach(function (g) { if (g[1] === 'people') { var i = g[2].map(function (x) { return x[0]; }).indexOf('finance/fixed'); g[2].splice(i + 1, 0, ['finance/bills', 'Тогтмол төлбөр']); } });
+  // Компани: Тооцоо → Тогтмол зардал, төлбөр → «Төлбөрийн хуваарь» таб (тухайн компанийнх)
   var _ok = navOk;
   navOk = function (biz, k) { if (k === 'finance/bills') return biz !== 'mgmt' && isOwner() && !(BUSINESSES[biz] || {}).finOnly; return _ok(biz, k); };
   var _cv = companyView;
   companyView = function () {
     if (state.biz !== 'mgmt' && state.module === 'finance' && state.sub.finance === 'bills') {
       if (!isOwner()) return '<div class="card"><p class="muted">Энэ хэсгийг зөвхөн эзэн харна.</p></div>';
-      return pageHead('Тогтмол төлбөр', '<button class="b-btn primary" onclick="blOpen()">+ Тогтмол төлбөр</button>') + billsView(state.biz);
+      return pageHead('Тогтмол зардал, төлбөр', '<button class="b-btn primary" onclick="blOpen()">+ Тогтмол төлбөр</button>') + billsView(state.biz);
     }
     return _cv();
   };

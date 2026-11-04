@@ -23,7 +23,7 @@ var BANK_RULES = [[/boost|реклам|фэйсбүүк|facebook|meta|зар/i, 
   [/шатахуун|бензин|benzin|petrovis|шунхлай|магнай/i, '7118'], [/unitel|mobicom|skytel|gmobile|интернет|univision/i, '7106'], [/ндш|даатгал/i, '3403'],
   [/цахилгаан|ус хангамж|дулаан/i, '7111'], [/буухиа|ebuuhia|booklo|хүргэлт/i, '7124'], [/зээл/i, '3501']];
 
-// Данс → компани: эхлээд «Данс холбох»-оор холбосон (Script Properties), дараа нь config.js
+// Данс → компани: эхлээд Мөнгө → Данснууд → «+ Банкны данс нэмэх»-оор холбосон (Script Properties), дараа нь config.js
 function bankAcctInfo(acct) {
   var d = String(acct || '').replace(/\D/g, '');
   var l = (window.bankLinks || []).filter(function (x) {

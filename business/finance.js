@@ -388,13 +388,9 @@ function repDebts(E, k, flt) {
   // Хураагддаг: төрлийн бүлэг (анх нээлттэй), харилцагч (анх хураасан — дарахад баримтууд нь задарна). Хайлт хийвэл бүгд задарна.
   var OPEN = state.dOpen = state.dOpen || {}, SHUT = state.dShut = state.dShut || {};
   cats.forEach(function (cg) {
-    var shut = SHUT[k + cg.n] && !q;
-    rows.push({ _cls: 'dcat', _on: 'debtTog(\'dShut\',\'' + jsq(k + cg.n) + '\')', who: (shut ? '▸ ' : '▾ ') + cg.n, desc: cg.G.length + ' харилцагч', amt: r0(cg.amt), paid: r0(cg.amt - cg.left), left: r0(cg.left) });
+    var ebCat = /Буухиа/.test(cg.n), shut = (ebCat ? !SHUT[k + cg.n] : SHUT[k + cg.n]) && !q;   // Буухиа — анх хураасан, дэлгэрэнгүй нь «Буухиа → Тооцоо»-д
+    rows.push({ _cls: 'dcat', _on: 'debtTog(\'dShut\',\'' + jsq(k + cg.n) + '\')', who: (shut ? '▸ ' : '▾ ') + cg.n, desc: ebCat ? 'Дэлгэрэнгүй: Буухиа → Тооцоо' : cg.G.length + ' харилцагч', amt: r0(cg.amt), paid: r0(cg.amt - cg.left), left: r0(cg.left) });
     cg.G.sort(function (a, b) { return b.left - a.left; }).forEach(function (g) { g.shutCat = shut; pushG(g); });
-    if (k === 'r' && cg.n === 'Буухиа (хураасан мөнгө)') {   // буухиад өгөх хөлсийг (3101) хасвал цэвэр авах
-      var ow = 0; J().forEach(function (e) { if (e.partner === BUUHIA) { if (e.cr === '3101') ow += e.amount; if (e.dr === '3101') ow -= e.amount; } });
-      if (ow > 0.5) rows.push({ _cls: 'dcat', who: '', desc: 'Өглөг ' + mny(ow) + '-ийг хасвал цэвэр авах: ' + mny(cg.left - ow), left: r0(cg.left - ow) });
-    }
   });
   function pushG(g) {
     var amt = g.amt, paid = amt - g.left, old = g.open.length ? g.open.map(function (it) { return it.date; }).sort()[0] : '';
@@ -413,7 +409,7 @@ function repDebts(E, k, flt) {
           '<button class="mini" style="color:var(--accent)" onclick="debtClose(\'' + k + '\',\'' + esc(it.key) + '\')">' + (k === 'r' ? 'Авлага хаах' : 'Өглөг хаах') + '</button>' : '' });
     });
   }
-  return { title: T[0] + ' — ' + DEBT_ST.filter(function (x) { return x[0] === flt; })[0][1].toLowerCase(), hideCount: true, rows: rows, actions: /^[rp]$/.test(k),
+  return { title: T[0] + ' — ' + DEBT_ST.filter(function (x) { return x[0] === flt; })[0][1].toLowerCase(), hideCount: true, noRange: true, rows: rows, actions: /^[rp]$/.test(k),
     cols: [c('who', 'Харилцагч'), c('date', 'Огноо'), c('desc', 'Тайлбар'), m('amt', 'Дүн'), m('paid', 'Төлсөн'), m('left', 'Үлдэгдэл'), c('st', 'Төлөв')],
     total: { who: 'Нийт', amt: r0(tot.amt), paid: r0(tot.paid), left: r0(tot.left) } };
 }
@@ -479,7 +475,7 @@ function debtsPre(E) {
   var selBar = /^[rp]$/.test(k) ? '<div class="d-sel" id="dSelBar"><span id="dSelTxt"></span><button class="b-btn primary" onclick="debtCloseSel()">' + (k === 'r' ? 'Сонгосныг хаах' : 'Сонгосныг төлөх') + '</button>' +
     '<button class="b-btn" onclick="debtSel={};render()">Сонголт цуцлах</button></div>' : '';
   setTimeout(function () { if (typeof debtSelCount === 'function') debtSelCount(); }, 0);
-  return kpis + tool + selBar + (k === 'r' && isOwner() ? icReconCard() : '');
+  return kpis + tool + selBar;
 }
 
 // ═══════════ ЦАЛИН, НДШ (хуучин «НДШ Цалин», «ХХОАТ/НДШ тайлан») ═══════════

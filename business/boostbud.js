@@ -85,8 +85,7 @@ function boostBudView() {
       '<td style="min-width:180px">' + (R0.length ? '<b>$' + usd + '</b>' + (b.usd ? ' / $' + b.usd + (usd > b.usd + 0.009 ? ' <span class="neg">хэтэрсэн</span>' : '') : '') + '<br><small class="muted">' + det + '</small>' : '<small class="muted">Ажилтан задаргаа бичээгүй</small>') + '</td>' +
       '<td>' + st + '</td><td class="n">' + (p.ok ? '' : '<button class="mini" onclick="bbCancel(' + esc(JSON.stringify(b.id)) + ')">Цуцлах</button>') + '</td></tr>';
   }).join('');
-  return '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Boost төсөв</h2><button class="btn" onclick="bbOpen()">+ Төсөв гаргах</button></div>' +
-    '<p class="muted" style="margin:6px 0 0;font-size:12.5px">Төсөв ажилтанд харагдана; ажилтан ямар бараа хэрхэн boost хийснээ бичнэ. Банкны хуулгаар «Boost төсөв»-өөр тулгахад Дт 7120 бичигдэж төсөв хаагдана.</p>' +
+  return '<div class="card"><div class="ord-bar"><p class="muted" style="margin:0;flex:1">Төсөв ажилтанд харагдана; ажилтан ямар бараа boost хийснээ бичнэ. Банкаар төлөхөд төсөв хаагдана.</p><button class="btn" onclick="bbOpen()">+ Төсөв гаргах</button></div>' +
     (many ? '<div style="margin-top:8px">' + seg + '</div>' : '') + '</div>' +
     '<div class="fn-kpis"><div class="fn-kpi"><small>Төлөгдөөгүй төсөв</small><b' + (unp.length ? ' class="neg"' : '') + '>' + unp.length + '</b></div>' +
     '<div class="fn-kpi"><small>Төлөгдөөгүй дүн</small><b>' + (unp.reduce(function (a, b) { return a + (b.mnt || 0); }, 0) ? fmt(unp.reduce(function (a, b) { return a + (b.mnt || 0); }, 0)) : '—') +
