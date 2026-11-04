@@ -125,9 +125,12 @@ function debitNormal(c) { var t = ACC[c] && ACC[c].type; return t === 'asset' ||
 var PAY_ACC = { 'Бэлэн': '10003', 'Карт': '110106', 'Шилжүүлэг': '1101', 'Харилцах': '1101', 'Зээлээр': '3101', 'Захиалга': '1505' };   // бараа орлого (худалдан авалт); Захиалга — урьдчилж төлсөн бараа захиалгаас
 // Урьдчилгаа: хүргэлтээс өмнө төлсөн захиалга — мөнгө ирэхэд 3802-т, бараа өгөхөд 3802 → орлого
 var SALE_ACC = { 'Бэлэн': '10003', 'Карт': '110106', 'Шилжүүлэг': '1298', 'Зээлээр': '1201', 'Урьдчилгаа': '3802', 'StorePay': '1201' };   // StorePay — мөнгийг StorePay дараа шилжүүлнэ (авлага)                       // борлуулалт: зээлээр = авлага
-// Cozy Home-ийн пос NOMAAD аяллын дэлгүүрийн дансанд ордог: Cozy-д авлага (дүнгээс 1% шимтгэл хассан), аяллын дэлгүүрт мөн тэр дүнгээр өглөг (1290)
-var POS_SHARE = { from: 'cozy', to: 'travel', fee: 0.01 };
-function salePayAcc(biz, pay) { return pay === 'Карт' && biz === POS_SHARE.from ? 'POS' : SALE_ACC[pay]; }   // 'POS' — buildJournal-ийн add 1290 + шимтгэл болгож задална
+// Пос: банк 1% татдаг тул борлуулалт шууд 1% хассан дүнгээр бичигдэнэ. Cozy-ийн пос NOMAAD аяллын дэлгүүрийн дансанд ордог: Cozy-д авлага (1201), аяллын дэлгүүрт өглөг (3101).
+// Харилцагч нь тусдаа нэртэй — бусад компани хоорондын өртэй холилдохгүй, хоёр тал банкны хуулгаар («Авлага хаах» / «Өглөг хаах») хаана.
+var POS_SHARE = { from: 'cozy', to: 'travel', fee: 0.01, rec: 'Посын орлого авлага (NOMAAD аяллын дэлгүүр)', pay: 'Посын өглөг (Cozy Home Ulaanbaatar)' };
+function posBiz(biz) { return biz === POS_SHARE.from || biz === POS_SHARE.to; }
+function posNet(v) { return Math.round(v * (1 - POS_SHARE.fee) * 100) / 100; }
+function salePayAcc(biz, pay) { return pay === 'Карт' && posBiz(biz) ? 'POS' : SALE_ACC[pay]; }   // 'POS' — buildJournal-ийн add 1% хасч, данс сонгоно
 var VOUCHER_NAMES = { 'КО': 'Кассын орлого', 'КЗ': 'Кассын зарлага', 'ХО': 'Харилцахын орлого', 'ХЗ': 'Харилцахын зарлага' };
 function expenseAcc(cat, biz, tracked) {
   var c = String(cat || '');
@@ -247,14 +250,16 @@ function buildJournal(biz, R) {
     amount = Math.round((Number(amount) || 0) * 100) / 100;
     if (!amount) return;
     if (amount < 0) { var t = dr; dr = cr; cr = t; amount = -amount; }
-    var row = function (d2, c2, v, ds, pt, pos) { var o = { date: date, doc: doc, ref: ref || '', dr: d2, cr: c2, amount: v, desc: ds || '', partner: pt || '', bill: bill || '', time: rt[ref] || '' }; if (pos) o.pos = 1; E.push(o); };
-    if (dr === 'POS' || cr === 'POS') {   // пос: цэвэр дүн авлага, 1% шимтгэл зардал (буцаалтад эсрэгээр)
-      var fee = Math.round(amount * POS_SHARE.fee * 100) / 100, net = Math.round((amount - fee) * 100) / 100, isD = dr === 'POS', oth = isD ? cr : dr;
-      row(isD ? '1290' : oth, isD ? oth : '1290', net, (desc || '') + ' · Посын орлого авлага', BUSINESSES[POS_SHARE.to].name, true);
-      if (fee) row(isD ? '7201' : oth, isD ? oth : '7201', fee, (desc || '') + ' · Пос шимтгэл');
-      return;
+    var pos = dr === 'POS' || cr === 'POS';
+    if (pos) {
+      var pa = biz === POS_SHARE.from ? '1201' : '110106';
+      amount = posNet(amount); desc = (desc || '') + ' · 1% хассан';
+      if (biz === POS_SHARE.from) partner = POS_SHARE.rec;
+      if (dr === 'POS') dr = pa; else cr = pa;
     }
-    row(dr, cr, amount, desc, partner);
+    var o = { date: date, doc: doc, ref: ref || '', dr: dr, cr: cr, amount: amount, desc: desc || '', partner: partner || '', bill: bill || '', time: rt[ref] || '' };
+    if (pos) o.pos = 1;
+    E.push(o);
   };
   // Захиалгын борлуулалт (Cozy) — хуримтлалын аргачлал: хүргэгдмэгц Дт 1201 Авлага / Кт 5101 (ажилтны «Шилжүүлэг» банк руу бичихгүй);
   // мөнгө орж удирдлага тулгахад (bank.js orderPayEntries) Дт банк / Кт 1201 — авлага хаагдана.
@@ -309,7 +314,7 @@ function buildJournal(biz, R) {
       }
     } else if (x.type === 'boost') {   // 2026-11-02-ноос: ажилтны Boost бүртгэл журналд бичигдэхгүй (зөвхөн ROAS, бараагаар шинжилгээ) — зардал банкаар төлсөн дүнгээр Дт 7120
     } else if (x.type === 'collect') {   // зээлээр (захиалга) зарсны мөнгө орсон → авлага хаагдана
-      add(d, 'Авлага төлөгдсөн', x.id, salePayAcc(biz, x.pay) || '1101', '1201', a, 'Захиалгын төлбөр · ' + (x.customer || ''), x.customer || '(нэргүй харилцагч)');
+      add(d, 'Авлага төлөгдсөн', x.id, SALE_ACC[x.pay] || '1101', '1201', a, 'Захиалгын төлбөр · ' + (x.customer || ''), x.customer || '(нэргүй харилцагч)');
     } else if (x.type === 'expense') {
       var ea = expenseAcc(x.category, biz, tracked);
       // нийлүүлэгчид төлсөн бол тайлбарт нэр нь байвал тэр харилцагчийн өглөгөөс хасна
@@ -395,11 +400,11 @@ function buildJournal(biz, R) {
       acc = r0(acc + amt); mo++;
     }
   });
-  // Посын мөнгө энэ компанийн дансанд ордог: Дт 110106 / Кт 1290 — нөгөө компанийн авлагатай яг ижил дүн (мөнгө дансанд ормогц 110106 хаагдана)
+  // Cozy-ийн посын мөнгө энэ компанийн дансанд ордог: Дт 110106 / Кт 3101 — Cozy-ийн авлагатай яг ижил дүн (мөнгө дансанд ормогц 110106 хаагдана)
   if (biz === POS_SHARE.to) buildJournal(POS_SHARE.from, R).forEach(function (e) {
     if (!e.pos) return;
-    var inc = e.dr === '1290', ds = String(e.desc).replace(' · Посын орлого авлага', '') + ' · Посын өглөг';
-    E.push({ date: e.date, doc: 'Посын өглөг', ref: e.ref ? e.ref + '-pos' : '', dr: inc ? '110106' : '1290', cr: inc ? '1290' : '110106', amount: e.amount, desc: ds, partner: BUSINESSES[POS_SHARE.from].name, bill: '', time: e.time });
+    var inc = e.dr === '1201';
+    E.push({ date: e.date, doc: 'Посын өглөг', ref: e.ref ? e.ref + '-pos' : '', dr: inc ? '110106' : '3101', cr: inc ? '3101' : '110106', amount: e.amount, desc: e.desc, partner: POS_SHARE.pay, bill: e.bill, time: e.time });
   });
   E.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
   return E;

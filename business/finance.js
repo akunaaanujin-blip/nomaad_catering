@@ -37,7 +37,6 @@ var GRP_LABEL = { item: 'Бараагаар', cat: 'Утгаар', type: 'Төр
 var GRP_COL = { item: 'Бараа', cat: 'Утга', type: 'Төрөл', partner: 'Харилцагч', acc: 'Данс', month: 'Сар' };
 function drillKey(g, x) {
   if (g === 'item') return String(x.desc).split(' × ')[0].split(' · ')[0].replace(/ [+-]?\d+(\.\d+)?$/, '');
-  if (g === 'cat' && / · Пос шимтгэл$/.test(String(x.desc))) return 'Пос шимтгэл';
   if (g === 'cat') return x.doc === 'Зарлага' ? String(x.desc).split(' · ')[0] : String(x.desc).split(' · ')[0].split(' #')[0].slice(0, 60) || x.doc;
   if (g === 'type') return moneyType(x);
   if (g === 'partner') return x.partner || '(харилцагч заагаагүй)';
@@ -350,6 +349,7 @@ function debtCat(k, g) {
   if (g.w === BUUHIA_T) return 'Буухиад байгаа бараа';
   if (g.w === BUUHIA) return k === 'r' ? 'Буухиа (хураасан мөнгө)' : 'Буухиа (хүргэлтийн хөлс)';
   if (g.w === 'StorePay') return 'StorePay';
+  if (g.w === POS_SHARE.rec || g.w === POS_SHARE.pay) return 'Посын тооцоо';
   if (ALL_KEYS.some(function (b) { return BUSINESSES[b].name === g.w; })) return 'Компани хооронд';
   if (g.L.some(function (it) { return it.acc === '1208'; })) return 'Захирлын зарлага';
   if (g.L.some(function (it) { return it.acc === '3802'; })) return 'Хэрэглэгчээс авсан урьдчилгаа';

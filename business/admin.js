@@ -1972,8 +1972,9 @@ function journalCheck(E, f, t) {
   var posted = {};
   var SD = { 'Борлуулалт': 1, 'Борлуулалтын буцаалт': 1, 'Борлуулалтын хөнгөлөлт': 1, 'Төлбөр хуваалт': 1 };
   E.forEach(function (e) { if (SD[e.doc]) posted[e.ref] = (posted[e.ref] || 0) + e.amount; });
-  var miss = sales.filter(function (x) { return Math.abs((posted[x.id] || 0) - Math.abs(Number(x.amount))) > 0.5; });
-  var sAmt = sales.reduce(function (a, x) { return a + Number(x.amount); }, 0);
+  var bookAmt = function (x) { var v = Number(x.amount); return x.pay === 'Карт' && posBiz(x.biz) ? posNet(v) : v; };   // пос 1% хассан дүнгээр бичигддэг
+  var miss = sales.filter(function (x) { return Math.abs((posted[x.id] || 0) - Math.abs(bookAmt(x))) > 0.5; });
+  var sAmt = sales.reduce(function (a, x) { return a + bookAmt(x); }, 0);
   var rev = 0;   // зөвхөн борлуулалтын бичлэгээс үүссэн орлого (гараар/банкаар бичсэн 5101-ийг тооцохгүй)
   E.forEach(function (e) { if (e.date >= f && e.date <= t) { if (e.doc === 'Борлуулалт' && (e.cr === '5101' || e.cr === '5102')) rev += e.amount; if (e.doc === 'Борлуулалтын буцаалт' && e.dr === '6001') rev -= e.amount;
     if (e.doc === 'Борлуулалтын хөнгөлөлт') rev += e.dr === '6001' || e.dr === '6002' ? -e.amount : e.amount;
