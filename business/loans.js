@@ -536,7 +536,7 @@ function loanIntSuggest(pick, l) {   // зээлийн төлөлт бол ав�
   if (pick && pick.indexOf('MZ:') === 0) {   // хувийн зээл — компанийн данснаас
     var M = loanById(pick.slice(3)); if (!M) return null;
     var ms = mgSplit(M, l.debit, l.date.slice(0, 10));
-    return 'хувийн зээлээс үндсэн ' + fmt(ms.prin) + ' + хүү ' + fmt(ms.intr);
+    return lnFx(M) ? 'тогтмол зардлаас ' + fmt(l.debit) + ' хасагдана' : 'хувийн зээлээс үндсэн ' + fmt(ms.prin) + ' + хүү ' + fmt(ms.intr);
   }
   if (!pick || pick.indexOf('L:') !== 0) return null;
   var L = loanById(pick.slice(2)); if (!L) return null;
