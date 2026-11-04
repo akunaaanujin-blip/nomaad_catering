@@ -1,7 +1,7 @@
 // ── ХУВИЙН САНХҮҮ (компани сонгогчид «Хувийн санхүү», value="mgmt") — зөвхөн Эзэн ──
 // Өгөгдөл: P_Accounts, P_Transactions, P_Budget, P_Assets (сервер admin_pf). Устгахгүй — «Цуцалсан».
 // Зээл нь хуучин «Зээл» хуудаснаас (biz='mgmt'); төлөлт бүр P_Transactions-д «Зээлийн төлөлт» зарлага (link = зээлийн ID, үндсэн/хүү/торгууль).
-// Компанид өгсөн / компаниас авсан — тухайн компанийн журналд эсрэг бичилт (Дт/Кт 1208 «Захирлын зарлага», тайлбарт #PF ID).
+// Компанид өгсөн / компаниас авсан — тухайн компанийн журналд эсрэг бичилт (Дт/Кт 1208 «Удирдлагын авлага», тайлбарт #PF ID).
 // nav.js-ийн дараа ачаална.
 
 var PF = { acc: [], tx: [], bud: [], asset: [] }, pfCfg = {};
@@ -20,8 +20,8 @@ function pfL(t) { var L = (PF[t] || []).filter(function (x) { return x.status !=
 // Компаниас захирлын өмнөөс төлсөн зарлага (компанийн журналд Дт 1208, удирдлагын 7023 «Бусад компаниас авсан зарлага») — хувийн зарлагад орно, дансанд нөлөөлөхгүй.
 // Хувийн санхүүгээс «Компаниас авсан»-аар үүссэн (#PT…) болон эхний үлдэгдлийн бичилт орохгүй. Засах/цуцлах — тухайн компанийн журналаас.
 var PF_COEXP = 'Бусад компаниас авсан зарлага', _pfV = { j: null, n: -1, v: [] };
-// Удирдлагын зардал: Cozy / аяллын дэлгүүрийн данснаас хувийн зээл төлөх. Компанид Дт 7024 / Кт мөнгө (ашигт нөлөөлнө), хувийн санхүүд pfVirt-ээр зээлийн төлөлт зарлага.
-var MG_ACC = '7024', MG_EXP = 'Удирдлагын зарлага', MG_BIZ = { travel: 1, cozy: 1 }, MG_TAG = /#(L\w+)/;
+// Удирдлагын зардал: Cozy / аяллын дэлгүүрийн данснаас хувийн зээл төлөх. Компанид Дт 1208 «Удирдлагын авлага» / Кт мөнгө (ашигт нөлөөлөхгүй), хувийн санхүүд pfVirt-ээр зээлийн төлөлт зарлага.
+var MG_ACC = '1208', MG_EXP = 'Удирдлагын зарлага', MG_BIZ = { travel: 1, cozy: 1 }, MG_LOAN = /^Удирдлагын зарлага · .*?#(L\w+)/;
 function mgOpts(biz) {
   if (!MG_BIZ[biz] || !isOwner()) return [];
   return pfLoans('Авсан').filter(pfLoanOpen).map(function (L) { return ['MZ:' + L.id, L.partner + ' · үлдэгдэл ' + mny(loanStat(L).left), 'Удирдлагын зардал']; });
@@ -34,7 +34,7 @@ function mgSplit(L, amt, d) {   // хувийн зээлийн төлөлтий�
 function mgEntry(id, biz, acc, d, amt, note) {
   var L = loanById(id); if (!L || !pfLoanOpen(L)) return null;
   var sp = mgSplit(L, amt, d), txt = String(note || '').replace(/#/g, '').trim();
-  return { entry: { biz: biz, date: d, dr: MG_ACC, cr: acc, amount: r0(amt), partner: L.partner, desc: (MG_EXP + ' · ' + L.partner + (sp.intr ? ' · хүү ' + sp.intr : '') + (txt ? ' · ' + txt : '')).slice(0, 170) + ' #' + L.id },
+  return { entry: { biz: biz, date: d, dr: MG_ACC, cr: acc, amount: r0(amt), partner: DIRECTOR, desc: (MG_EXP + ' · ' + L.partner + (sp.intr ? ' · хүү ' + sp.intr : '') + (txt ? ' · ' + txt : '')).slice(0, 170) + ' #' + L.id },
            closes: loanStat(L).left - sp.prin <= 0.5, link: MG_EXP + ' · ' + L.partner + ' #' + L.id };
 }
 function pfVirt() {
@@ -42,14 +42,14 @@ function pfVirt() {
   if (_pfV.j === J0 && _pfV.n === J0.length) return _pfV.v;
   var v = J0.filter(function (j) {
     if (j.biz === 'mgmt' || !BUSINESSES[j.biz] || /^(Устгасан|Цуцалсан)$/.test(j.status || '')) return false;
-    if (j.dr === MG_ACC) return MG_TAG.test(String(j.desc));
     return accMig(j.dr, j.id, j.desc) === '1208' && !/#P[TF][0-9A-Z]/.test(String(j.desc)) && !/эхний үлдэгдэл|^Он нээлт/i.test(String(j.desc));
   }).map(function (j) {
-    if (j.dr === MG_ACC) {   // компаниас төлсөн хувийн зээл: журнал нь цорын ганц эх сурвалж — цуцлахад зээл автоматаар сэргэнэ
+    var mz = String(j.desc).match(MG_LOAN);
+    if (mz) {   // компаниас төлсөн хувийн зээл: журнал нь цорын ганц эх сурвалж — цуцлахад зээл автоматаар сэргэнэ
       var it = Math.min(j.amount, Number((String(j.desc).match(/· хүү (\d+)/) || [])[1]) || 0);
-      return { id: 'J' + j.id, date: j.date, type: 'Зарлага', acc: '', toAcc: '', amount: j.amount, cat: 'Зээлийн төлөлт', desc: String(j.desc).replace(/\s*#L\w+.*$/, '') + ' · ' + BUSINESSES[j.biz].name + '-аас төлсөн', link: String(j.desc).match(MG_TAG)[1], rec: '', prin: r0(j.amount - it), intr: it, fee: 0, co: j.biz, virt: 1, status: 'Идэвхтэй' };
+      return { id: 'J' + j.id, date: j.date, type: 'Зарлага', acc: '', toAcc: '', amount: j.amount, cat: 'Зээлийн төлөлт', desc: String(j.desc).replace(/\s*#L\w+.*$/, '') + ' · ' + BUSINESSES[j.biz].name + '-аас төлсөн', link: mz[1], rec: '', prin: r0(j.amount - it), intr: it, fee: 0, co: j.biz, virt: 1, status: 'Идэвхтэй' };
     }
-    return { id: 'J' + j.id, date: j.date, type: 'Зарлага', acc: '', toAcc: '', amount: j.amount, cat: PF_COEXP, desc: (j.desc || 'Захирлын зарлага') + ' · ' + BUSINESSES[j.biz].name + '-аас төлсөн', link: '', rec: '', co: j.biz, virt: 1, status: 'Идэвхтэй' };
+    return { id: 'J' + j.id, date: j.date, type: 'Зарлага', acc: '', toAcc: '', amount: j.amount, cat: PF_COEXP, desc: (j.desc || MG_EXP) + ' · ' + BUSINESSES[j.biz].name + '-аас төлсөн', link: '', rec: '', co: j.biz, virt: 1, status: 'Идэвхтэй' };
   });
   _pfV = { j: J0, n: J0.length, v: v };
   return v;
@@ -519,8 +519,8 @@ function pfTxType(cat) {
   $('ptAccL').textContent = tr ? 'Илгээх данс' : type === 'Орлого' ? 'Орсон данс' : 'Гарсан данс';
   var co = !tr && PF_CO.test(c.value);
   $('ptCoW').style.display = co ? '' : 'none';
-  if (co) $('ptCoHint').textContent = c.value === 'Компанид өгсөн' ? 'Компанийн журналд: Дт мөнгө / Кт 1208 «Захирлын зарлага» (захирал мөнгө оруулсан) автоматаар бичигдэнэ.' :
-    'Компанийн журналд: Дт 1208 «Захирлын зарлага» / Кт мөнгө (компаниас захиралд өгсөн) автоматаар бичигдэнэ.';
+  if (co) $('ptCoHint').textContent = c.value === 'Компанид өгсөн' ? 'Компанийн журналд: Дт мөнгө / Кт 1208 «Удирдлагын авлага» (удирдлага мөнгө оруулсан) автоматаар бичигдэнэ.' :
+    'Компанийн журналд: Дт 1208 «Удирдлагын авлага» / Кт мөнгө (компаниас удирдлагад өгсөн) автоматаар бичигдэнэ.';
 }
 function pfTxSave(id) {
   var old = id ? (PF.tx || []).filter(function (x) { return x.id === id; })[0] : null, pre = window.pfTxPre || {};
@@ -555,8 +555,8 @@ function pfTxSave(id) {
 }
 function pfCoPost(t, co, coAcc) {
   var give = t.cat === 'Компанид өгсөн';
-  postEntries([{ biz: co, date: t.date, dr: give ? coAcc : '1208', cr: give ? '1208' : coAcc, amount: t.amount, partner: typeof DIRECTOR !== 'undefined' ? DIRECTOR : 'Захирал',
-    desc: ((give ? 'Захирал мөнгө оруулсан' : 'Захиралд өгсөн') + (t.desc ? ' · ' + t.desc : '')).slice(0, 150) + ' #' + t.id }], function () { toast(BUSINESSES[co].name + '-д эсрэг бичилт хийгдлээ'); });
+  postEntries([{ biz: co, date: t.date, dr: give ? coAcc : '1208', cr: give ? '1208' : coAcc, amount: t.amount, partner: DIRECTOR,
+    desc: ((give ? 'Удирдлага мөнгө оруулсан' : 'Удирдлагад өгсөн') + (t.desc ? ' · ' + t.desc : '')).slice(0, 150) + ' #' + t.id }], function () { toast(BUSINESSES[co].name + '-д эсрэг бичилт хийгдлээ'); });
 }
 function pfJCancel(list, cb) {
   if (!list.length) { if (cb) cb(); return; }

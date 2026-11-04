@@ -4,18 +4,18 @@
 // 3) Систем зөвхөн САНАЛ болгоно — мөр бүрийг хэрэглэгч өөрөө шалгаж «Тулгах» дарна (автоматаар юу ч бичихгүй)
 // 4) Хуулгын эцсийн үлдэгдэл = санхүүгийн харилцах дансны үлдэгдэл эсэхийг шалгана
 
-var DIRECTOR = 'Захирал';   // захирлын зарлага (1208) — харилцагч
+var DIRECTOR = 'Удирдлагын авлага';   // удирдлагын зарлага (1208) — харилцагч
 var bankLines = [], bankTab = 'todo', bankPick = {}, bankSel = {};
 var BANK_IN = [['5201', 'Бусад орлого'], ['5101', 'Борлуулалт (системээс гадуур)'], ['4101', 'Хөрөнгө оруулалт (эзэн, хөрөнгө оруулагч)'], ['1201', 'Авлага орж ирсэн'],
-  ['3501', 'Зээл авсан (бүртгэлгүй)'], ['5202', 'Хүүгийн орлого'], ['1208', 'Захирал хувийн зарлагаа буцааж төлсөн'], ['10003', 'Кассаас тушаасан'], ['skip', 'Тулгахгүй (алгасах)']];
+  ['3501', 'Зээл авсан (бүртгэлгүй)'], ['5202', 'Хүүгийн орлого'], ['1208', 'Удирдлага зарлагаа буцааж төлсөн'], ['10003', 'Кассаас тушаасан'], ['skip', 'Тулгахгүй (алгасах)']];
 // Зарлагын «Тулгах баримт»: төлбөр, шилжүүлэг + Baaz-ын зардлын данс бүлгээрээ (дансны төлөвлөгөөнөөс)
 var BANK_PAY = [['1404', 'Бараа татан авалт'], ['3101', 'Нийлүүлэгчид төлсөн'], ['3301', 'Цалин олгосон'], ['3403', 'НДШ төлсөн'], ['3404', 'ХХОАТ төлсөн'],
-  ['3801', 'Сурталчилгаа (Boost) төлсөн — ажилтны бүртгэлийн өглөг'], ['1208', 'Захирлын зарлага'], ['3501', 'Зээл төлсөн (бүртгэлгүй)'], ['4101', 'Эзэмшигч мөнгө авсан'], ['10003', 'Касс руу бэлэн гаргасан'], ['skip', 'Тулгахгүй (алгасах)']];
-// 70xx (удирдлагын) зардлыг компанид сонгохгүй — захирал/удирдлагын зардлыг «Захирлын зарлага» (1208)-аар; удирдлагын санхүүд өөрөө шууд сонгоно
+  ['3801', 'Сурталчилгаа (Boost) төлсөн — ажилтны бүртгэлийн өглөг'], ['1208', 'Бусад удирдлагын зарлага'], ['3501', 'Зээл төлсөн (бүртгэлгүй)'], ['4101', 'Эзэмшигч мөнгө авсан'], ['10003', 'Касс руу бэлэн гаргасан'], ['skip', 'Тулгахгүй (алгасах)']];
+// 70xx (удирдлагын) зардлыг компанид сонгохгүй — удирдлагын зардлыг «Удирдлагын зарлага» (1208, ашигт нөлөөлөхгүй)-аар; удирдлагын санхүүд өөрөө шууд сонгоно
 function bankOutOpts() {
   var grp = function (c) { return /^70/.test(c) ? 'Ерөнхий ба удирдлагын зардал' : /^71/.test(c) ? 'Борлуулалт, маркетингийн зардал' : 'Бусад зардал'; };
-  return BANK_PAY.map(function (a) { return [a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1], 'Төлбөр, шилжүүлэг']; })
-    .concat(ACCOUNTS.filter(function (a) { return a[2] === 'exp' && !accHidden(a[0]) && a[0] !== MG_ACC && !(state.biz !== 'mgmt' && BUSINESSES.mgmt && /^70/.test(a[0])); }).map(function (a) { return ['A:' + a[0], a[0] + ' ' + a[1], grp(a[0])]; }));
+  return BANK_PAY.map(function (a) { return [a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1], a[0] === '1208' ? 'Удирдлагын зардал' : 'Төлбөр, шилжүүлэг']; })
+    .concat(ACCOUNTS.filter(function (a) { return a[2] === 'exp' && !accHidden(a[0]) && !(state.biz !== 'mgmt' && BUSINESSES.mgmt && /^70/.test(a[0])); }).map(function (a) { return ['A:' + a[0], a[0] + ' ' + a[1], grp(a[0])]; }));
 }
 var BOOST_RE = /boost|буст|реклам|фэйсбүүк|facebook|meta/i;
 var BANK_RULES = [[/boost|реклам|фэйсбүүк|facebook|meta|зар/i, '7120'],   // 2026-11-02: Boost-ыг банкаар төлсөн дүнгээр зардал (Дт 7120) — ажилтны Boost бүртгэл зөвхөн шинжилгээнд
@@ -260,7 +260,7 @@ function bankView() {
         poOpts(biz).forEach(function (o) { opts.push(o.concat(['Бараа захиалга'])); });
         loanOpts(biz, false).forEach(function (o) { opts.push(o); });
         icOpts(biz, false).forEach(function (o) { opts.push(o.concat(['Компани хооронд'])); });
-        // Удирдлагын / захирлын зарлага нэг: «Захирлын зарлага» → Дт 1208 / Кт банк (харилцагч Захирал), удирдлага талд толин бичилтгүй
+        // «Удирдлагын зарлага» → Дт 1208 / Кт банк (харилцагч Удирдлагын авлага), удирдлага талд толин бичилтгүй
         bankOutOpts().forEach(function (o) { opts.push(o); });
       }
       var def = cur || (l.credit && /буух|ebuu/i.test(l.desc) && typeof ebBankOpen === 'function' ? 'EB:set' : '') || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id : s.kind === 'shop' || s.kind === 'req' || s.kind === 'man' || s.kind === 'rule' || s.kind === 'bst' ? s.v : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : '');
@@ -306,7 +306,7 @@ function bankXOpts(l) {
 // ── Дүрэм (Rules): гүйлгээний утгад түлхүүр үг → алгасах / шилжүүлэг / ангилал ──
 function bankActLabel(a) {
   a = String(a || ''); var c = a.replace(/^\w+:/, '');
-  return a === 'skip' ? 'Алгасах' : /^TR:/.test(a) ? 'Шилжүүлэг · ' + c + ' ' + accName(c) : /^MG:/.test(a) ? 'Захирлын зарлага' : /^MZ:/.test(a) ? MG_EXP + ' · ' + ((loanById(c) || {}).partner || c) : /^IC:/.test(a) ? 'Компани хооронд · ' + (BUSINESSES[c] ? BUSINESSES[c].name : c) : c + ' ' + accName(c);
+  return a === 'skip' ? 'Алгасах' : /^TR:/.test(a) ? 'Шилжүүлэг · ' + c + ' ' + accName(c) : /^MG:/.test(a) ? MG_EXP : /^MZ:/.test(a) ? MG_EXP + ' · ' + ((loanById(c) || {}).partner || c) : /^IC:/.test(a) ? 'Компани хооронд · ' + (BUSINESSES[c] ? BUSINESSES[c].name : c) : c + ' ' + accName(c);
 }
 function bankRuleAdd(id) {
   var l = bankLines.filter(function (x) { return x.id === id; })[0], act = bankPick[id] || ''; if (!l) return;
@@ -449,8 +449,8 @@ function bankApply(ids, quiet) {
                  p0.indexOf('S:') === 0 ? 'дэлгүүрийн борлуулалттай тулгана (орлого бүртгэлтэй — мөнгө «Баталгаажаагүй шилжүүлэг»-ээс харилцах руу орно)' :
                  p0.indexOf('R:') === 0 ? 'мөнгөний хүсэлт: ' + ([].filter.call(document.querySelectorAll('option'), function (o) { return o.value === p0; })[0] || {}).textContent + ' — зардлаар бичигдэж хүсэлт «Төлсөн» болно' :
                  p0.indexOf('D:') === 0 ? (bankDebt(p0) ? debtLabel(bankDebt(p0)) + ' — хаана' : 'өр / авлага') :
-                 p0.indexOf('MG:') === 0 || p0 === 'A:1208' ? 'захирлын зарлага — Дт 1208 / Кт банк (Захирал)' :
-                 p0.indexOf('MZ:') === 0 ? 'Удирдлагын зарлага (7024, зардал) · ' + (loanById(p0.slice(3)) || {}).partner + ' — ' + loanIntSuggest(p0, l0) :
+                 p0.indexOf('MG:') === 0 || p0 === 'A:1208' ? 'удирдлагын зарлага — Дт 1208 / Кт банк (Удирдлагын авлага, ашигт нөлөөлөхгүй)' :
+                 p0.indexOf('MZ:') === 0 ? 'удирдлагын зарлага (Удирдлагын авлага, ашигт нөлөөлөхгүй) · ' + (loanById(p0.slice(3)) || {}).partner + ' — ' + loanIntSuggest(p0, l0) :
                  /^(IC|L|PO|BG):/.test(p0) ? ([].filter.call(document.querySelectorAll('option'), function (o) { return o.value === p0; })[0] || {}).textContent || p0 :
                  p0.slice(2) + ' ' + accName(p0.slice(2));
       if (!confirm(l0.date + ' · ' + (l0.credit ? '+' + fmt(l0.credit) : '−' + fmt(l0.debit)) + '\n«' + l0.desc + '»\n\n→ ' + what + '\n\nТулгах уу?')) return;
@@ -497,12 +497,12 @@ function bankApply(ids, quiet) {
       updates.push({ id: id, status: 'Тулгасан', link: 'Захиалга ' + o.phone + ' #' + o.id });
       return;
     }
-    if (pick.indexOf('MG:') === 0 && !l.credit) {   // хуучин «Удирдлагын зарлага» сонголт (дүрэм) → захирлын зарлага 1208
-      entries.push({ biz: biz, date: d, dr: '1208', cr: acc, amount: amt, desc: l.desc.slice(0, 120) || 'Захирлын зарлага', partner: DIRECTOR });
-      updates.push({ id: id, status: 'Тулгасан', link: 'Захирлын зарлага' });
+    if (pick.indexOf('MG:') === 0 && !l.credit) {   // хуучин «Удирдлагын зарлага» сонголт (дүрэм) → 1208
+      entries.push({ biz: biz, date: d, dr: '1208', cr: acc, amount: amt, desc: l.desc.slice(0, 120) || MG_EXP, partner: DIRECTOR });
+      updates.push({ id: id, status: 'Тулгасан', link: MG_EXP });
       return;
     }
-    if (pick.indexOf('MZ:') === 0) {   // хувийн зээлийг компанийн данснаас төлсөн — Дт 7024 / Кт банк
+    if (pick.indexOf('MZ:') === 0) {   // хувийн зээлийг компанийн данснаас төлсөн — Дт 1208 / Кт банк
       var mz = mgEntry(pick.slice(3), biz, acc, d, amt, l.desc.slice(0, 80)); if (!mz) return;
       entries.push(mz.entry); updates.push({ id: id, status: 'Тулгасан', link: mz.link });
       if (mz.closes) loanCloseIds.push(pick.slice(3));
@@ -544,7 +544,7 @@ function bankApply(ids, quiet) {
     var a2 = pick.slice(2);
     entries.push(l.credit ? { biz: biz, date: d, dr: acc, cr: a2, amount: amt, desc: l.desc.slice(0, 120) || 'Банкны орлого', partner: '' }
                           : { biz: biz, date: d, dr: a2, cr: acc, amount: amt, desc: l.desc.slice(0, 120) || 'Банкны зарлага', partner: a2 === '1208' ? DIRECTOR : (a2 === '7120' || a2 === '3801') && BOOST_RE.test(l.desc) ? BOOST_PARTNER : '' });
-    updates.push({ id: id, status: 'Тулгасан', link: a2 === '1208' ? 'Захирлын зарлага' : a2 + ' ' + accName(a2) });
+    updates.push({ id: id, status: 'Тулгасан', link: a2 === '1208' ? MG_EXP : a2 + ' ' + accName(a2) });
   }
   if (!updates.length) return;
   // Өглөг хасах гарах уу (өр байхгүй атал төлсөн): тулгахаас өмнө анхааруулна
