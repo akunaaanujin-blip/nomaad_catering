@@ -47,7 +47,7 @@ function poInPend(biz) { return (window.poInbox || []).filter(function (x) { ret
 function poInCard() {
   var L = poInPend(state.biz); if (!L.length) return '';
   return '<div class="card rep"><div class="rep-cap"><b>Ажилтны бүртгэл — батлах</b></div><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Ажилтан</th><th>Захиалга</th><th>Юу</th><th></th></tr>' + L.map(function (x) {
-    var d = x.data || {}, what = x.kind === 'recv' ? 'Бараа ирсэн: ' + (d.items || []).map(function (i) { return esc(i.name) + ' × ' + i.qty; }).join(', ') + (hasWarehouse(state.biz) ? ' · ' + esc(d.loc || '') : '')
+    var d = x.data || {}, what = x.kind === 'recv' ? 'Бараа ирсэн: ' + (d.items || []).map(function (i) { return esc(i.name) + ' × ' + i.qty; }).join(', ') + (hasWarehouse(state.biz) ? ' · ' + esc(d.loc || '') : '') + (d.cargo ? ' · карго ' + mny(d.cargo) + ' (' + esc(d.co || '') + ')' : '')
       : 'Карго ' + mny(d.amount) + ' · ' + esc(d.co || '') + (d.ship ? ' · ' + d.ship + '-р ирэлт' : '');
     return '<tr><td class="nw">' + esc(d.date || x.at.slice(0, 10)) + '</td><td>' + esc(x.by) + '</td><td>' + esc(x.poNo) + '</td><td>' + what + (d.note ? '<br><small class="muted">' + esc(d.note) + '</small>' : '') + '</td>' +
       '<td class="n" style="white-space:nowrap"><button class="mini" style="color:var(--green)" onclick="poInOpen(\'' + x.id + '\')">Батлах</button> <button class="mini" onclick="poInReject(\'' + x.id + '\')">Татгалзах</button></td></tr>';
@@ -62,6 +62,7 @@ function poInOpen(id) {
     var q = {}; (d.items || []).forEach(function (i) { q[i.name] = i.qty; });
     (P.items || []).forEach(function (it, i) { $('prQ' + i).value = q[it.name] || 0; });
     $('prDate').value = d.date || todayStr(); if ($('prLoc') && d.loc) $('prLoc').value = d.loc;
+    if (d.cargo) { $('prUnCargo').value = d.cargo; $('prCargoCo').value = d.co || ''; }   // Дт 1505 / Кт 3101 — карго компанийн өглөг, хуулгаар хаагдана
     prAuto();
   } else {
     openPoPay(P.id, 'c');
@@ -348,7 +349,7 @@ function savePoRecv(id) {
   if (!(a.total > 0)) { toast('Зардал 0 байна — төлбөрөө бүртгэх эсвэл «дараа төлөх» дүнг оруулна уу'); return; }
   if (a.unC > 0 && !cco) { toast('Каргог дараа төлөх бол карго компанийн нэрийг бичнэ үү'); return; }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { toast('Огноо оруулна уу'); return; }
-  if (!confirm(P.no + ' · ' + a.n + '-р ирэлт — ' + a.rows.filter(function (r) { return r.qty > 0; }).length + ' бараа, өртөг ' + fmt(a.total) + '-өөр үлдэгдэлд (' + loc + ') орох уу?' +
+  if (!confirm((a.goods > 0 ? '' : 'Нийлүүлэгчийн төлбөр бүртгэгдээгүй — барааны өртөг 0 болно.\n\n') + P.no + ' · ' + a.n + '-р ирэлт — ' + a.rows.filter(function (r) { return r.qty > 0; }).length + ' бараа, өртөг ' + fmt(a.total) + '-өөр үлдэгдэлд (' + loc + ') орох уу?' +
     (a.fin ? '\n\nЗахиалга хаагдана.' : '\n\nЗахиалга нээлттэй үлдэнэ — үлдсэн бараа ирэхэд дахин «Бараа ирсэн».'))) return;
   var E = [];
   if (a.unSup > 0) E.push({ biz: P.biz, date: d, dr: '1505', cr: '3101', amount: a.unSup, partner: P.supplier, desc: P.no + ' · үлдэгдэл төлбөр (дараа төлнө) · ' + P.supplier + ' #' + P.id });

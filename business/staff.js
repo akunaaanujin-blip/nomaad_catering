@@ -1070,7 +1070,7 @@ function renderPoIn() {
   }).join('') + '</ul>' : '<p class="muted">Хүлээгдэж буй бараа захиалга алга.</p>';
   $('piSent').innerHTML = piSent.length ? piSent.map(function (x) {
     var d = x.data || {}, st = x.status === 'Хүлээгдэж' ? 'b' : x.status === 'Татгалзсан' ? 'r' : '';
-    var what = x.kind === 'recv' ? (d.items || []).map(function (i) { return esc(i.name) + ' × ' + i.qty; }).join(', ') : 'Карго ' + fmt(d.amount) + ' · ' + esc(d.co || '');
+    var what = x.kind === 'recv' ? (d.items || []).map(function (i) { return esc(i.name) + ' × ' + i.qty; }).join(', ') + (d.cargo ? ' · карго ' + fmt(d.cargo) : '') : 'Карго ' + fmt(d.amount) + ' · ' + esc(d.co || '');
     return '<li><div>' + esc(x.poNo) + ' · ' + esc(d.date || '') + '<small>' + what + ' · ' + esc(x.by) + '</small></div><span class="tag ' + st + '">' + esc(x.status) + '</span></li>';
   }).join('') : '<li class="muted">Илгээсэн бүртгэл алга.</li>';
 }
@@ -1087,14 +1087,19 @@ function openPiRecv(id) {
     '<table style="width:100%;margin-top:10px;border-collapse:collapse"><tr><th style="text-align:left">Бараа</th><th style="text-align:right">Үлдсэн</th><th style="text-align:right">Ирсэн тоо</th></tr>' + p.items.map(function (i, k) {
       var left = Math.max(0, Math.round((i.qty - i.got) * 1000) / 1000);
       return '<tr><td style="padding:4px 0">' + esc(i.name) + '</td><td style="text-align:right">' + left + '</td><td style="text-align:right"><input id="piQ' + k + '" type="number" min="0" step="any" inputmode="decimal" value="' + left + '" style="width:80px;margin:0"></td></tr>'; }).join('') + '</table>' +
+    '<div class="row2"><div><label for="piAmt">Каргоны дүн (₮)</label><input id="piAmt" type="number" min="0" inputmode="numeric"></div>' +
+    '<div><label for="piCo">Карго компани</label><input id="piCo" value="' + esc(p.cargoCo || '') + '"></div></div>' +
     '<label for="piNote">Тэмдэглэл</label><input id="piNote" placeholder="Жишээ: 2 ширхэг гэмтэлтэй">' +
-    '<p class="muted" style="font-size:12.5px;margin-top:8px">Бодит тоолсон тоогоо бичнэ. Удирдлага баталсны дараа үлдэгдэлд орно.</p>' +
+    '<p class="muted" style="font-size:12.5px;margin-top:8px">Бодит тоолсон тоогоо бичнэ. Удирдлага баталсны дараа үлдэгдэлд орно. Каргоны дүн мэдэгдээгүй бол хоосон орхиод дараа нь «Карго» товчоор бичнэ.</p>' +
     '<button class="btn" onclick="sendPiRecv(\'' + id + '\')">Илгээх</button><button class="btn ghost" onclick="closeSheet(\'piSheet\')">Болих</button>');
 }
 function sendPiRecv(id) {
   var p = piById(id), items = p.items.map(function (i, k) { return { name: i.name, qty: Number($('piQ' + k).value) || 0 }; }).filter(function (i) { return i.qty > 0; });
+  var cargo = Number($('piAmt').value) || 0, co = $('piCo').value.trim();
   if (!items.length) { toast('Ирсэн тоогоо оруулна уу'); return; }
-  piSend({ kind: 'recv', poId: id, date: $('piDate').value, loc: $('piLoc') ? $('piLoc').value : 'Дэлгүүр', items: items, note: $('piNote').value.trim() });
+  if (cargo < 0) { toast('Каргоны дүнгээ шалгана уу'); return; }
+  if (cargo > 0 && !co) { toast('Карго компанийн нэрийг бичнэ үү'); return; }
+  piSend({ kind: 'recv', poId: id, date: $('piDate').value, loc: $('piLoc') ? $('piLoc').value : 'Дэлгүүр', items: items, cargo: cargo, co: co, note: $('piNote').value.trim() });
 }
 function openPiCargo(id) {
   var p = piById(id); if (!p) return;
@@ -1119,7 +1124,7 @@ function piSend(b) {
   var done = function () { closeSheet('piSheet'); toast('Илгээгдлээ — удирдлага батална'); loadPoIn(); };
   if (!API_URL) {
     var p = piById(b.poId), all = load('nb_demo_poinbox', []), x = { date: b.date, note: b.note };
-    if (b.kind === 'recv') { x.loc = b.loc; x.items = b.items; } else { x.amount = b.amount; x.co = b.co; x.ship = b.ship; }
+    if (b.kind === 'recv') { x.loc = b.loc; x.items = b.items; x.cargo = b.cargo; x.co = b.co; } else { x.amount = b.amount; x.co = b.co; x.ship = b.ship; }
     all.push({ id: 'PI' + Date.now(), at: todayStr() + ' ' + timeStr(), biz: BIZ_KEY, poId: b.poId, poNo: p.no, kind: b.kind, data: x, by: staffName, status: 'Хүлээгдэж' });
     save('nb_demo_poinbox', all); done(); return;
   }
