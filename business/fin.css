@@ -241,25 +241,6 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var
 .bst-t td.nw,.bst-t td.n{white-space:nowrap!important;overflow-wrap:normal!important;word-break:normal!important}
 .bst-t th{white-space:normal;vertical-align:bottom}.bst-t .bst-sub{width:auto;min-width:420px}.bst-t .bst-sub td,.bst-t .bst-sub th{padding:4px 10px}
 
-/* Storepay тооцоолуур (зээл) */
-.stp-box{background:#F2F3F5;border-radius:16px;padding:10px;margin:10px 0;display:grid;gap:10px}
-.stp-card{background:#fff;border-radius:16px;padding:12px 14px}
-.stp-card>label:first-child{margin-top:0}
-.stp-amt{position:relative}.stp-amt input{padding-right:28px;font-size:18px;font-weight:600}
-.stp-amt span{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#6B7280}
-.stp-min{color:#D92D20;font-size:12.5px;margin:4px 0 0}
-.stp-opt{display:flex;align-items:center;gap:12px;padding:10px;border:1px solid #E5E7EB;border-radius:14px;background:#fff}
-.stp-list{display:grid;gap:8px;max-height:420px;overflow:auto}.stp-list .stp-opt{cursor:pointer}.stp-opt.on{border-color:#1A3BFF}
-.stp-badge{flex:0 0 40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;color:#fff;background:#1A3BFF}
-.stp-badge.green{background:#0F3B2C;color:#34D399}.stp-badge.navy{background:#0B1F4B}
-.stp-txt{flex:1;min-width:0;display:flex;flex-direction:column}.stp-txt small{color:#6B7280;font-size:12.5px}.stp-txt small.c-blue{color:#1A3BFF}
-.stp-radio{flex:0 0 18px;height:18px;border-radius:50%;border:2px solid #C7CBD1}.stp-opt.on .stp-radio{border:5px solid #1A3BFF}
-.stp-caret{color:#6B7280}
-.stp-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #F0F1F3}
-.stp-no{flex:0 0 26px;height:26px;border-radius:50%;background:#EEF1FF;color:#1A3BFF;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
-.stp-d{flex:1;display:flex;flex-direction:column}.stp-d small{color:#6B7280;font-size:12px}
-.stp-row b{text-align:right;white-space:nowrap}
-.stp-tot{display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding-top:10px;font-size:14px}.stp-tot span:first-child:not(:last-child){color:#6B7280}
 /* Тайлангийн гарчиг хуудасны гарчигтай давхардахгүй — зөвхөн хэвлэхэд */
 .rep-tt{display:none}
 @media print{.rep-tt{display:inline}.rep-cap span{display:inline}}
