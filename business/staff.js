@@ -130,7 +130,7 @@ function navMenu() {   // зөвхөн хуудсууд — үйлдлийн т�
   var g = [['dash', 'Борлуулалт', function () { showView('dash'); }]];
   if (BIZ.orders) g.push(['orders', 'Захиалга', function () { showView('orders'); }]);
   if (BIZ.orders && typeof renderDlv === 'function') g.push(['dlv', 'Хүргэлт', function () { showView('dlv'); }]);   // буухиа (ebuuhia API)   // захиалга — дэлгүүрийн борлуулалтаас тусдаа хуудас
-  g = g.concat([['stock', 'Барааны үлдэгдэл', function () { showView('stock'); }],
+  g = g.concat([['stock', 'Барааны үлдэгдэл', function () { showView('stock'); }], ['recv', 'Бараа ирсэн, карго', function () { showView('recv'); }],
            ['count', 'Тооллого', function () { showView('count'); }], ['req', 'Зардал, хүсэлт', function () { showView('req'); }]]);
   if (BIZ.boost && $('boostView')) g.push(['boost', 'Boost төсөв', function () { showView('boost'); }]);
   return [{ t: '', items: g }];
@@ -150,7 +150,9 @@ function buildShell() {
   if (wrap) {
     wrap.insertAdjacentHTML('afterbegin', '<h2 class="ep-title" id="epTitle"></h2>');
     var pend = $('pending');   // тооллого, мөнгөний хүсэлтийн хуудсууд (гурван дэлгүүрт ижил тул энд үүсгэнэ)
-    var html = '<div data-view="count" id="countView" style="display:none"><div class="card">' +
+    var html = '<div data-view="recv" id="recvView" style="display:none"><div class="card"><h2>Хүлээгдэж буй бараа захиалга</h2><div id="piList"></div><button class="link" onclick="loadPoIn()">Шинэчлэх</button></div>' +
+      '<div class="card"><h2>Илгээсэн бүртгэл</h2><ul class="list" id="piSent"></ul></div></div>' +
+      '<div data-view="count" id="countView" style="display:none"><div class="card">' +
         (BIZ.warehouse ? '<input type="hidden" id="cntLoc" value="Дэлгүүр"><div class="seg" id="cntLocSeg" style="grid-template-columns:1fr 1fr;margin-bottom:10px">' +
           '<button class="on" onclick="cntLocSet(\'Дэлгүүр\')">Дэлгүүрт тоолох</button><button onclick="cntLocSet(\'Агуулах\')">Агуулахад тоолох</button></div>' : '') +
         '<div class="cnt-bar">' +
@@ -190,9 +192,10 @@ function showView(v, tab) {
     el.style.display = (el.getAttribute('data-view') || 'dash') === v ? '' : 'none';
   });
   var w = document.querySelector('#main .wrap'); if (w) w.classList.toggle('ep-wide', v === 'orders');
-  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : v === 'stock' ? 'Барааны үлдэгдэл' : v === 'boost' ? 'Boost төсөв' : v === 'count' ? 'Тооллого' : v === 'req' ? 'Зардал, хүсэлт' : v === 'dlv' ? 'Хүргэлт' : 'Борлуулалт';
+  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : v === 'stock' ? 'Барааны үлдэгдэл' : v === 'boost' ? 'Boost төсөв' : v === 'recv' ? 'Бараа ирсэн, карго' : v === 'count' ? 'Тооллого' : v === 'req' ? 'Зардал, хүсэлт' : v === 'dlv' ? 'Хүргэлт' : 'Борлуулалт';
   if (v === 'stock') renderStockPage();
   if (v === 'count') renderCount();
+  if (v === 'recv') loadPoIn();
   if (v === 'req') loadRequests();
   if (v === 'boost') renderBoost();
   if (v === 'dlv') renderDlv();
@@ -1036,6 +1039,95 @@ function sendCount() {
     .then(function (r) { return r.json(); }).then(function (d) {
       if (!d || d.status !== 'ok') { toast(d && d.error === 'auth' ? 'Дахин нэвтэрнэ үү' : d && d.error === 'time' ? 'Тоолсон цаг буруу байна' : 'Илгээж чадсангүй — дахин оролдоно уу'); return; }
       done(d.diff ? 'Илгээгдлээ — ' + d.diff + ' бараанд зөрүүтэй, удирдлага батална' : 'Зөрүүгүй — бүх тоо таарч байна');
+    }).catch(function () { toast('Интернэт холболтоо шалгана уу — илгээгдсэнгүй'); });
+}
+
+// ── Бараа ирсэн, карго: ажилтан зөвхөн ирсэн тоо, каргоны дүнг бичнэ (үнэ, өртөг харахгүй); үлдэгдэлд удирдлага баталмагц орно ──
+var piPos = [], piSent = [];
+function loadPoIn() {
+  if (!API_URL) {
+    piPos = load('nb_demo_pos', []).filter(function (p) { return p.biz === BIZ_KEY && p.status !== 'Цуцалсан'; }).map(function (p) {
+      return { id: p.id, no: p.no, date: p.date, supplier: p.supplier, cargoCo: p.cargoCo, status: p.status, ships: [], items: (p.items || []).map(function (i) { return { name: i.name, qty: i.qty, got: 0 }; }) }; });
+    piSent = load('nb_demo_poinbox', []).filter(function (x) { return x.biz === BIZ_KEY; }).reverse();
+    renderPoIn(); return;
+  }
+  $('piList').innerHTML = '<p class="muted">Ачаалж байна…</p>';
+  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'staff_po', token: session ? session.token : '' }) })
+    .then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || d.status !== 'ok') { $('piList').innerHTML = '<p class="muted">' + (d && d.error === 'auth' ? 'Дахин нэвтэрнэ үү' : 'Уншиж чадсангүй') + '</p>'; return; }
+      piPos = d.pos || []; piSent = d.sent || []; renderPoIn();
+    }).catch(function () { $('piList').innerHTML = '<p class="muted">Интернэт холболтоо шалгана уу</p>'; });
+}
+function piBusy(id) { return piSent.some(function (x) { return x.poId === id && x.kind === 'recv' && x.status === 'Хүлээгдэж'; }); }
+function renderPoIn() {
+  var el = $('piList'); if (!el) return;
+  el.innerHTML = piPos.length ? '<ul class="list">' + piPos.map(function (p) {
+    var its = (p.items || []).map(function (i) { return esc(i.name) + ' ' + i.got + '/' + i.qty; }).join(', '), open = p.status === 'Захиалсан';
+    return '<li><div><b>' + esc(p.no) + '</b> · ' + esc(p.supplier) + (open ? '' : ' <span class="tag">Ирсэн</span>') + '<small>' + its + '</small></div>' +
+      '<div style="display:flex;gap:6px;flex-shrink:0;align-items:flex-start">' +
+      (open ? (piBusy(p.id) ? '<span class="tag b">Батлуулж байна</span>' : '<button class="btn sm" onclick="openPiRecv(\'' + p.id + '\')">Бараа ирсэн</button>') : '') +
+      '<button class="btn sm ghost2" onclick="openPiCargo(\'' + p.id + '\')">Карго</button></div></li>';
+  }).join('') + '</ul>' : '<p class="muted">Хүлээгдэж буй бараа захиалга алга.</p>';
+  $('piSent').innerHTML = piSent.length ? piSent.map(function (x) {
+    var d = x.data || {}, st = x.status === 'Хүлээгдэж' ? 'b' : x.status === 'Татгалзсан' ? 'r' : '';
+    var what = x.kind === 'recv' ? (d.items || []).map(function (i) { return esc(i.name) + ' × ' + i.qty; }).join(', ') : 'Карго ' + fmt(d.amount) + ' · ' + esc(d.co || '');
+    return '<li><div>' + esc(x.poNo) + ' · ' + esc(d.date || '') + '<small>' + what + ' · ' + esc(x.by) + '</small></div><span class="tag ' + st + '">' + esc(x.status) + '</span></li>';
+  }).join('') : '<li class="muted">Илгээсэн бүртгэл алга.</li>';
+}
+function piPanel(html) {
+  if (!$('piSheet')) document.body.insertAdjacentHTML('beforeend', '<div class="sheet" id="piSheet" onclick="if(event.target===this)closeSheet(\'piSheet\')"><div class="panel" id="piPanel"></div></div>');
+  $('piPanel').innerHTML = html; openSheet('piSheet');
+}
+function piById(id) { return piPos.filter(function (p) { return p.id === id; })[0]; }
+function openPiRecv(id) {
+  var p = piById(id); if (!p) return;
+  piPanel('<h2>' + esc(p.no) + ' · Бараа ирсэн</h2><p class="muted">' + esc(p.supplier) + '</p>' +
+    '<div class="row2"><div><label for="piDate">Ирсэн огноо</label><input id="piDate" type="date" value="' + todayStr() + '" max="' + todayStr() + '"></div>' +
+    (BIZ.warehouse ? '<div><label for="piLoc">Байршил</label><select id="piLoc"><option>Агуулах</option><option>Дэлгүүр</option></select></div>' : '<div></div>') + '</div>' +
+    '<table style="width:100%;margin-top:10px;border-collapse:collapse"><tr><th style="text-align:left">Бараа</th><th style="text-align:right">Үлдсэн</th><th style="text-align:right">Ирсэн тоо</th></tr>' + p.items.map(function (i, k) {
+      var left = Math.max(0, Math.round((i.qty - i.got) * 1000) / 1000);
+      return '<tr><td style="padding:4px 0">' + esc(i.name) + '</td><td style="text-align:right">' + left + '</td><td style="text-align:right"><input id="piQ' + k + '" type="number" min="0" step="any" inputmode="decimal" value="' + left + '" style="width:80px;margin:0"></td></tr>'; }).join('') + '</table>' +
+    '<label for="piNote">Тэмдэглэл</label><input id="piNote" placeholder="Жишээ: 2 ширхэг гэмтэлтэй">' +
+    '<p class="muted" style="font-size:12.5px;margin-top:8px">Бодит тоолсон тоогоо бичнэ. Удирдлага баталсны дараа үлдэгдэлд орно.</p>' +
+    '<button class="btn" onclick="sendPiRecv(\'' + id + '\')">Илгээх</button><button class="btn ghost" onclick="closeSheet(\'piSheet\')">Болих</button>');
+}
+function sendPiRecv(id) {
+  var p = piById(id), items = p.items.map(function (i, k) { return { name: i.name, qty: Number($('piQ' + k).value) || 0 }; }).filter(function (i) { return i.qty > 0; });
+  if (!items.length) { toast('Ирсэн тоогоо оруулна уу'); return; }
+  piSend({ kind: 'recv', poId: id, date: $('piDate').value, loc: $('piLoc') ? $('piLoc').value : 'Дэлгүүр', items: items, note: $('piNote').value.trim() });
+}
+function openPiCargo(id) {
+  var p = piById(id); if (!p) return;
+  piPanel('<h2>' + esc(p.no) + ' · Каргоны төлбөр</h2><p class="muted">' + esc(p.supplier) + '</p>' +
+    (p.ships.length ? '<label for="piShip">Аль ирэлтийн карго</label><select id="piShip">' + p.ships.map(function (s, k) {
+      return '<option value="' + s.n + '"' + (k === p.ships.length - 1 ? ' selected' : '') + '>' + s.n + '-р ирэлт · ' + esc(s.date) + '</option>'; }).join('') + (p.status === 'Захиалсан' ? '<option value="0">Шинээр ирсэн бараа</option>' : '') + '</select>' : '') +
+    '<div class="row2"><div><label for="piAmt">Каргоны дүн (₮)</label><input id="piAmt" type="number" min="0" inputmode="numeric"></div>' +
+    '<div><label for="piDate">Огноо</label><input id="piDate" type="date" value="' + todayStr() + '" max="' + todayStr() + '"></div></div>' +
+    '<label for="piCo">Карго компани</label><input id="piCo" value="' + esc(p.cargoCo || '') + '">' +
+    '<label for="piNote">Тэмдэглэл</label><input id="piNote" placeholder="Жишээ: 3 хайрцаг, 45 кг">' +
+    '<p class="muted" style="font-size:12.5px;margin-top:8px">Кассаас хасагдахгүй. Удирдлага баталсны дараа барааны өртөгт нэмэгдэнэ.</p>' +
+    '<button class="btn" onclick="sendPiCargo(\'' + id + '\')">Илгээх</button><button class="btn ghost" onclick="closeSheet(\'piSheet\')">Болих</button>');
+}
+function sendPiCargo(id) {
+  var amt = Number($('piAmt').value) || 0, co = $('piCo').value.trim();
+  if (!(amt > 0)) { toast('Каргоны дүнгээ оруулна уу'); return; }
+  if (!co) { toast('Карго компанийн нэрийг бичнэ үү'); return; }
+  piSend({ kind: 'cargo', poId: id, date: $('piDate').value, amount: amt, co: co, ship: $('piShip') ? Number($('piShip').value) : 0, note: $('piNote').value.trim() });
+}
+function piSend(b) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(b.date) || b.date > todayStr()) { toast('Огноогоо шалгана уу'); return; }
+  var done = function () { closeSheet('piSheet'); toast('Илгээгдлээ — удирдлага батална'); loadPoIn(); };
+  if (!API_URL) {
+    var p = piById(b.poId), all = load('nb_demo_poinbox', []), x = { date: b.date, note: b.note };
+    if (b.kind === 'recv') { x.loc = b.loc; x.items = b.items; } else { x.amount = b.amount; x.co = b.co; x.ship = b.ship; }
+    all.push({ id: 'PI' + Date.now(), at: todayStr() + ' ' + timeStr(), biz: BIZ_KEY, poId: b.poId, poNo: p.no, kind: b.kind, data: x, by: staffName, status: 'Хүлээгдэж' });
+    save('nb_demo_poinbox', all); done(); return;
+  }
+  b.type = 'staff_po_in'; b.token = session ? session.token : '';
+  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(b) })
+    .then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || d.status !== 'ok') { toast(d && d.error === 'auth' ? 'Дахин нэвтэрнэ үү' : d && d.error === 'pending' ? 'Энэ захиалгын бараа ирсэн бүртгэл батлагдаагүй байна' : d && d.error === 'state' ? 'Захиалга хаагдсан байна' : 'Илгээж чадсангүй — дахин оролдоно уу'); return; }
+      done();
     }).catch(function () { toast('Интернэт холболтоо шалгана уу — илгээгдсэнгүй'); });
 }
 

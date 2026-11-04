@@ -93,7 +93,7 @@ function fetchAll(cb) {
     bankLines = load('nb_demo_bank', []); window.payInfoAll = load('nb_demo_payinfo', {}); window.salesTargets = load('nb_demo_targets', {}); window.boostBud = load('nb_demo_boostbud', []); window.companyInfo = load('nb_demo_company', {}); window.ebOld = load('nb_demo_ebold', {}); tasks = load('nb_demo_tasks', []); taxCfg = load('nb_demo_taxcfg', {}); customDocs = load('nb_demo_docs', []);
     accountsX = load('nb_demo_accx', []); applyCustomAccounts(accountsX); meta.lock = load('nb_demo_lock', '');
     window.PF_RAW = [load('nb_demo_pf', {}), load('nb_demo_pfcfg', {})]; if (typeof pfApply === 'function') pfApply(PF_RAW[0], PF_RAW[1]);   // хувийн санхүү
-    window.loans = load('nb_demo_loans', []); window.pos = load('nb_demo_pos', []); window.bankLinks = load('nb_demo_banklinks', []);
+    window.loans = load('nb_demo_loans', []); window.pos = load('nb_demo_pos', []); window.poInbox = load('nb_demo_poinbox', []).filter(function (x) { return x.status === 'Хүлээгдэж'; }); window.bankLinks = load('nb_demo_banklinks', []);
     window.kpiCfg = load('nb_demo_kpi', {}); window.assets = load('nb_demo_assets', []); window.minStock = load('nb_demo_minstock', {});
     window.digestCfg = load('nb_demo_digest', { on: false, to: '' }); window.priceLog = load('nb_demo_pricelog', []); window.stockCounts = load('nb_demo_counts', []).filter(function (m) { return m.status === 'Хүлээгдэж'; }); window.reviewNotes = load('nb_review', {});
     applyRole(load('nb_demo_role', 'Эзэн'), load('nb_demo_rolebiz', 'all'));
@@ -119,7 +119,7 @@ function applyRead(d) {
    window.salesTargets = d.targets || {}; window.boostBud = d.boostbud || []; tasks = d.tasks || []; taxCfg = d.taxcfg || {}; customDocs = d.docs || [];
   accountsX = d.accountsX || []; applyCustomAccounts(accountsX); meta.lock = d.lock || '';
   window.kpiCfg = d.kpi || {}; window.assets = d.assets || []; window.minStock = d.minstock || {};
-  window.digestCfg = d.digest || { on: false, to: '' }; window.priceLog = d.priceLog || []; window.stockCounts = d.counts || [];
+  window.digestCfg = d.digest || { on: false, to: '' }; window.priceLog = d.priceLog || []; window.stockCounts = d.counts || []; window.poInbox = d.poInbox || [];
   window.reviewNotes = Object.assign(load('nb_review', {}), d.review || {});
   window.ebOld = d.ebold || {};   // буухиа: эхний үлдэгдлээс өмнөх (тооцоо хийгдсэн) хүргэлт
   window.companyInfo = d.company || {}; if (typeof applyCompany === 'function') applyCompany();   // сервер түрүүлнэ; хадгалагдаагүй бол энэ төхөөрөмжийнх
@@ -1321,6 +1321,7 @@ function pendCounts(biz) { return (window.stockCounts || []).filter(function (m)
 function navCount(k) {   // цэсийн тоо: хүлээгдэж буй хүсэлт, тооллого, тулгаагүй банкны гүйлгээ, илгээгээгүй захиалга
   if (k === 'requests') return pendRequests(state.biz).length;
   if (k === 'counts') return pendCounts(state.biz).length;
+  if (k === 'po') return poInPend(state.biz).length;
   if (k === 'bank') return (typeof bankLines !== 'undefined' ? bankLines : []).filter(function (l) { return l.biz === state.biz && l.status === 'Шинэ'; }).length;
   if (k === 'orders') return (window.adminOrders || []).filter(function (o) { return o.biz === state.biz && o.status === 'Шинэ'; }).length;
   if (k === 'shop') { var td = todayStr(); return groupBills(salesIn(R(), state.biz, td, td), true).filter(function (o) { return o.gross > 0; }).length; }   // өнөөдрийн борлуулалтын баримт (дэлгүүр + онлайн)

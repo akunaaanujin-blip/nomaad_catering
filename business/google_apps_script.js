@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v8.2 (буухиа: Cozy-ийн бүртгэлтэй хүргэлт NOMAAD-д харагдахгүй — EB_HOME; засах: барааны хөдөлгөөн admin_stock editId, зарлага admin_record editId, харилцагч admin_partner editId / delId; цуцалсан/буцаасан захиалгын бараа үлдэгдэлд зөвхөн «Бараа буцаж ирсэн»-ээр — буухиа цуцлахад шууд нэмэхгүй; Boost төсөв: удирдлага BOOST_BUD-д гаргана, ажилтан boost_bud-аар төсөв + задаргаагаа харна; хуучин JS хувилбарын хүсэлтийг бичихгүй — MIN_JS; ажилтны нэвтрэлт 11-02-оос өмнөх шигээ: нэвтрэх нэр + код, нийтлэг эрх зөвшөөрнө, 4 оронтой код, PIN албадан солихгүй; Boost нэхэмжлэх: олон компанийн мөр, Meta баримтын зураг «Boost баримт», admin_boost; буухиа руу илгээхэд дүүрэг/сум заавал биш; захиалгын хүргэлтийн төлбөр, хөнгөлөлт засахад борлуулалтын мөр дагана — orderSyncAdj; удирдлагаас хүргэлт/хөнгөлөлт засах, «Хүргэлтийн компани» багана; банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v8.3 (ажилтны «Бараа ирсэн», карго — удирдлага батална: staff_po, staff_po_in, admin_po inboxId; буухиа: Cozy-ийн бүртгэлтэй хүргэлт NOMAAD-д харагдахгүй — EB_HOME; засах: барааны хөдөлгөөн admin_stock editId, зарлага admin_record editId, харилцагч admin_partner editId / delId; цуцалсан/буцаасан захиалгын бараа үлдэгдэлд зөвхөн «Бараа буцаж ирсэн»-ээр — буухиа цуцлахад шууд нэмэхгүй; Boost төсөв: удирдлага BOOST_BUD-д гаргана, ажилтан boost_bud-аар төсөв + задаргаагаа харна; хуучин JS хувилбарын хүсэлтийг бичихгүй — MIN_JS; ажилтны нэвтрэлт 11-02-оос өмнөх шигээ: нэвтрэх нэр + код, нийтлэг эрх зөвшөөрнө, 4 оронтой код, PIN албадан солихгүй; Boost нэхэмжлэх: олон компанийн мөр, Meta баримтын зураг «Boost баримт», admin_boost; буухиа руу илгээхэд дүүрэг/сум заавал биш; захиалгын хүргэлтийн төлбөр, хөнгөлөлт засахад борлуулалтын мөр дагана — orderSyncAdj; удирдлагаас хүргэлт/хөнгөлөлт засах, «Хүргэлтийн компани» багана; банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -51,6 +51,8 @@ const SHEET_LOAN = 'Зээл';
 const LOAN_HEAD = ['ID', 'Огноо', 'biz', 'Төрөл', 'Харилцагч', 'Дүн', 'Хүү (сар %)', 'Дуусах огноо', 'Төлөх өдөр', 'Тэмдэглэл', 'Төлөв', 'Үүсгэсэн',
   'Төлөх нийт (хүүтэй)', 'Төлөлтийн хуваарь', 'Сарын төлөх дүн', 'Төлөх данс', 'Хүү бодох'];   // хуваарь: [{d: огноо, p: үндсэн, i: хүү}]
 const SHEET_PO = 'Бараа захиалга';
+const SHEET_POIN = 'Бараа ирсэн бүртгэл';
+const POIN_HEAD = ['ID', 'Огноо', 'biz', 'PO ID', 'PO дугаар', 'Төрөл', 'Мэдээлэл', 'Ажилтан', 'Төлөв', 'Шийдсэн', 'Шийдсэн огноо'];
 const PO_HEAD = ['ID', 'Дугаар', 'Огноо', 'biz', 'Нийлүүлэгч', 'Бараа', 'Валют', 'Нийт (валютаар)', 'Карго компани', 'Төлөв', 'Ирсэн огноо', 'Тэмдэглэл', 'Үүсгэсэн'];
 const SHEET_DOC = 'Маягт';
 const DOC_HEAD = ['ID', 'Нэр', 'Бүлэг', 'Агуулга (HTML)', 'Үндсэн маягт', 'Шинэчилсэн', 'Төлөв'];
@@ -156,6 +158,8 @@ function route(data) {
   if (data.type === 'boost_bud') return boostBudStaff(data);
   if (data.type === 'requests') return staffRequests(data);
   if (data.type === 'stock_count') return stockCount(data);
+  if (data.type === 'staff_po') return staffPo(data);
+  if (data.type === 'staff_po_in') return staffPoIn(data);
   if (data.type === 'orders') return ordersFor(data);
   if (data.type === 'order_hist') return orderHist(data);
   if (data.type === 'admin_import_cozy') return isAdmin(data) ? importCozy(data) : { status: 'error', error: 'auth' };
@@ -267,10 +271,10 @@ function adminRestore(d) {
 // Sheet-ийг гараар засвал 5 минутын дотор шинэчлэгдэнэ.
 const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'imp', 'rule', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf', 'pf'];
 const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_other: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_send: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord', 'rec'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
-  admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr', 'bank'], admin_bank: ['bank', 'jr', 'ord', 'imp', 'rule'], admin_partner: ['pt'], admin_reminder: ['rem'],
+  staff_po_in: [], admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr', 'bank'], admin_bank: ['bank', 'jr', 'ord', 'imp', 'rule'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_pf: ['pf'], admin_po: ['po', 'jr'],
   admin_restore: ['rec', 'stk', 'mov', 'jr'], admin_staff: ['adm', 'stf'], staff_pin: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
-const CACHE_READ = { admin_audit: 1, eb_sync: 1, requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
+const CACHE_READ = { staff_po: 1, admin_audit: 1, eb_sync: 1, requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
 function cacheKeysFor(d) {
   if (!d.type) return ['rec', 'stk'];   // ажилтны бичлэг (борлуулалт, зарлага, касс)
   if (CACHE_READ[d.type]) return null;
@@ -336,6 +340,7 @@ function mgrGuard(d, who) {
   if (t === 'admin_order') { const o = byId(orderRows(), d.id); return o && ok(o.biz) ? '' : 'role'; }
   if (t === 'admin_partner') return ok((d.partner || {}).biz) ? '' : 'role';
   if (t === 'admin_po') {
+    if (d.inboxId) { const r = byId(poInRows(), d.inboxId); return r && ok(r.biz) ? '' : 'role'; }
     const pid = d.statusId || d.updateId; if (pid) { const p = byId(poRows(), pid); if (!p || !ok(p.biz)) return 'role'; }
     return !d.po || ok(d.po.biz) ? '' : 'role';
   }
@@ -405,6 +410,7 @@ function adminRead(d) {
   a.pf = cacheGet('pf', pfAll);   // хувийн санхүү — зөвхөн Эзэнд (доор менежерээс хасна)
   a.pfcfg = JSON.parse(pr.getProperty('PF_CFG') || '{}');
   a.pos = cacheGet('po', poRows).map(function (x) { delete x.row; return x; });
+  a.poInbox = poInRows().filter(function (x) { return x.status === 'Хүлээгдэж'; }).map(function (x) { delete x.row; return x; });   // ажилтны «Бараа ирсэн», карго — батлах
   a.bankLinks = JSON.parse(pr.getProperty('BANKLINKS') || '[]');
   a.kpi = JSON.parse(pr.getProperty('KPI') || '{}');
   a.boostbud = JSON.parse(pr.getProperty('BOOST_BUD') || '[]');   // Boost төсөв [{ id, biz, from, days, mnt, usd, note, by, at }]
@@ -422,7 +428,7 @@ function adminRead(d) {
     const ok = function (b) { return mgrCan(who, b); }, keep = function (arr, f) { return (arr || []).filter(function (x) { return ok(f ? f(x) : x.biz); }); };
     a.staff = (a.staff || []).filter(function (s) { return staffBizes(s.biz).some(ok); }).map(function (s) { return { id: s.id, name: s.name, biz: s.biz, role: s.role, status: s.status, username: s.username }; });
     a.salary = []; a.loans = []; a.docs = []; a.assets = []; a.kpi = {}; a.digest = { on: false, to: '' }; a.pf = {}; a.pfcfg = {};
-    ['records', 'moves', 'journal', 'partners', 'bank', 'orders', 'tasks', 'products', 'pos', 'priceLog', 'bankLinks'].forEach(function (k) { a[k] = keep(a[k]); });
+    ['records', 'moves', 'journal', 'partners', 'bank', 'orders', 'tasks', 'products', 'pos', 'poInbox', 'priceLog', 'bankLinks'].forEach(function (k) { a[k] = keep(a[k]); });
     a.reminders = keep(a.reminders, function (r) { return r.co; });
     const st = {}; Object.keys(a.stock || {}).forEach(function (b) { if (ok(b)) st[b] = a.stock[b]; }); a.stock = st;
     const ms = {}; Object.keys(a.minstock || {}).forEach(function (b) { if (ok(b)) ms[b] = a.minstock[b]; }); a.minstock = ms;
@@ -1965,6 +1971,7 @@ function poRows() {
   }).filter(function (x) { return x.id; });
 }
 function adminPo(d) {
+  if (d.inboxId) return poInDecide(d);
   const sh = poSheet(), rows = poRows();
   if (d.statusId) {   // Захиалсан / Ирсэн / Цуцалсан
     const cur = rows.filter(function (x) { return x.id === String(d.statusId); })[0];
@@ -1987,6 +1994,74 @@ function adminPo(d) {
   const n = rows.filter(function (y) { return y.biz === x.biz; }).length + 1, no = 'ЗХ-' + ('000' + n).slice(-4), id = 'PO' + Date.now();
   sh.appendRow([id, no].concat(vals, ['Захиалсан', '', String(x.note || '').slice(0, 200), Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')]));
   return { status: 'ok', id: id, no: no };
+}
+
+// ═══════════ АЖИЛТНЫ «БАРАА ИРСЭН», КАРГО — удирдлага батална ═══════════
+// Ажилтан зөвхөн тоо, каргоны дүнг бичнэ (үнэ, өртөг харахгүй). Үлдэгдэл, журнал нь удирдлага баталмагц admin-ийн «Бараа ирсэн» / «Карго»-оор бичигдэнэ.
+function poInSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_POIN);
+  if (!sh) { sh = ss.insertSheet(SHEET_POIN); sh.appendRow(POIN_HEAD); styleHead(sh, POIN_HEAD.length, '#1E40AF'); sh.getRange('B:B').setNumberFormat('@'); sh.getRange('K:K').setNumberFormat('@'); }
+  return sh;
+}
+function poInRows() {
+  const sh = poInSheet(), last = sh.getLastRow();
+  if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, POIN_HEAD.length).getValues().map(function (v, i) {
+    let x = {}; try { x = JSON.parse(v[6] || '{}'); } catch (e) {}
+    return { row: i + 2, id: String(v[0]), at: String(v[1]), biz: String(v[2]), poId: String(v[3]), poNo: String(v[4]), kind: String(v[5]), data: x, by: String(v[7]), status: String(v[8] || 'Хүлээгдэж'), doneBy: String(v[9] || ''), doneAt: String(v[10] || '') };
+  }).filter(function (x) { return x.id; });
+}
+function staffPo(d) {
+  const who = checkStaff(d.token);
+  if (!who) return { status: 'error', error: 'auth' };
+  const cut = Utilities.formatDate(new Date(Date.now() - 60 * 864e5), TZ, 'yyyy-MM-dd'), cut30 = Utilities.formatDate(new Date(Date.now() - 30 * 864e5), TZ, 'yyyy-MM-dd');
+  const list = cacheGet('po', poRows).filter(function (p) { return p.biz === who.biz && (p.status === 'Захиалсан' || (p.status === 'Ирсэн' && p.recvDate >= cut)); });
+  const mv = stockMoves().filter(function (m) { return m.biz === who.biz && m.kind === 'Орлого' && m.pay === 'Захиалга'; });
+  const pos = list.map(function (p) {
+    const re = new RegExp('#' + p.id + '(?![\\w])'), got = {}, S = {};
+    mv.forEach(function (m) {
+      if (!re.test(m.note)) return;
+      got[m.item] = (got[m.item] || 0) + m.qty;
+      const x = m.note.match(/ирэлт (\d+)/), n = x ? Number(x[1]) : 1; S[n] = S[n] || m.date.slice(0, 10);
+    });
+    return { id: p.id, no: p.no, date: p.date, supplier: p.supplier, cargoCo: p.cargoCo, status: p.status,   // үнэ буцаахгүй
+      items: (p.items || []).map(function (i) { return { name: i.name, qty: i.qty, got: Math.round((got[i.name] || 0) * 1000) / 1000 }; }),
+      ships: Object.keys(S).map(function (n) { return { n: Number(n), date: S[n] }; }).sort(function (a, b) { return a.n - b.n; }) };
+  });
+  const sent = poInRows().filter(function (x) { return x.biz === who.biz && (x.status === 'Хүлээгдэж' || x.at.slice(0, 10) >= cut30); }).map(function (x) { delete x.row; return x; }).reverse();
+  return { status: 'ok', pos: pos, sent: sent };
+}
+function staffPoIn(d) {
+  const who = checkStaff(d.token);
+  if (!who) return { status: 'error', error: 'auth' };
+  const p = poRows().filter(function (x) { return x.id === String(d.poId) && x.biz === who.biz; })[0];
+  if (!p || p.status === 'Цуцалсан') return { status: 'error', error: 'not_found' };
+  const today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), date = String(d.date || ''), note = String(d.note || '').trim().slice(0, 200);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) return { status: 'error', error: 'date' };
+  let x;
+  if (d.kind === 'recv') {
+    if (p.status !== 'Захиалсан') return { status: 'error', error: 'state' };
+    if (poInRows().some(function (r) { return r.poId === p.id && r.kind === 'recv' && r.status === 'Хүлээгдэж'; })) return { status: 'error', error: 'pending' };
+    const names = {}; (p.items || []).forEach(function (i) { names[i.name] = 1; });
+    const items = (Array.isArray(d.items) ? d.items : []).filter(function (i) { return names[i.name] && Number(i.qty) > 0; }).map(function (i) { return { name: String(i.name), qty: Number(i.qty) }; });
+    if (!items.length) return { status: 'error', error: 'fields' };
+    x = { date: date, loc: STOCK_LOCS[d.loc] ? d.loc : 'Дэлгүүр', items: items, note: note };
+  } else if (d.kind === 'cargo') {
+    const amount = Math.round(Number(d.amount) * 100) / 100, co = String(d.co || '').trim().slice(0, 80);
+    if (!(amount > 0) || !co) return { status: 'error', error: 'fields' };
+    x = { date: date, amount: amount, co: co, ship: Number(d.ship) || 0, note: note };
+  } else return { status: 'error', error: 'fields' };
+  const id = 'PI' + Date.now();
+  poInSheet().appendRow([id, Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), who.biz, p.id, p.no, d.kind, JSON.stringify(x).slice(0, 45000), who.staff.name, 'Хүлээгдэж', '', '']);
+  return { status: 'ok', id: id };
+}
+function poInDecide(d) {
+  const r = poInRows().filter(function (x) { return x.id === String(d.inboxId); })[0];
+  if (!r || !/^(Батлагдсан|Татгалзсан)$/.test(String(d.inboxStatus))) return { status: 'error', error: 'fields' };
+  if (r.status !== 'Хүлээгдэж') return { status: 'error', error: 'state' };
+  poInSheet().getRange(r.row, 9, 1, 3).setValues([[d.inboxStatus, String(d.by || '').slice(0, 40), Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')]]);
+  return { status: 'ok' };
 }
 
 // ═══════════ АЖИЛЧДАД ДААЛГАВАР ═══════════

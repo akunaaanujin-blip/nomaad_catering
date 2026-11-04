@@ -41,6 +41,46 @@ function poShips(P, E) {
   return L;
 }
 function poRecvQty(P, L) { var o = {}; (L || poShips(P)).forEach(function (x) { for (var k in x.items) o[k] = (o[k] || 0) + x.items[k]; }); return o; }
+// ── Ажилтны «Бараа ирсэн», карго: тоо, дүнг ажилтан бичнэ — энд баталмагц ердийн цонхоор үлдэгдэл, журналд орно ──
+var _piId = '';
+function poInPend(biz) { return (window.poInbox || []).filter(function (x) { return x.biz === biz && x.status === 'Хүлээгдэж'; }); }
+function poInCard() {
+  var L = poInPend(state.biz); if (!L.length) return '';
+  return '<div class="card rep"><div class="rep-cap"><b>Ажилтны бүртгэл — батлах</b></div><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Ажилтан</th><th>Захиалга</th><th>Юу</th><th></th></tr>' + L.map(function (x) {
+    var d = x.data || {}, what = x.kind === 'recv' ? 'Бараа ирсэн: ' + (d.items || []).map(function (i) { return esc(i.name) + ' × ' + i.qty; }).join(', ') + (hasWarehouse(state.biz) ? ' · ' + esc(d.loc || '') : '')
+      : 'Карго ' + mny(d.amount) + ' · ' + esc(d.co || '') + (d.ship ? ' · ' + d.ship + '-р ирэлт' : '');
+    return '<tr><td class="nw">' + esc(d.date || x.at.slice(0, 10)) + '</td><td>' + esc(x.by) + '</td><td>' + esc(x.poNo) + '</td><td>' + what + (d.note ? '<br><small class="muted">' + esc(d.note) + '</small>' : '') + '</td>' +
+      '<td class="n" style="white-space:nowrap"><button class="mini" style="color:var(--green)" onclick="poInOpen(\'' + x.id + '\')">Батлах</button> <button class="mini" onclick="poInReject(\'' + x.id + '\')">Татгалзах</button></td></tr>';
+  }).join('') + '</table></div></div>';
+}
+function poInOpen(id) {
+  var x = (window.poInbox || []).filter(function (r) { return r.id === id; })[0]; if (!x) return;
+  var P = poById(x.poId), d = x.data || {}; if (!P) { toast('Захиалга олдсонгүй'); return; }
+  if (x.kind === 'recv') {
+    if (P.status !== 'Захиалсан') { toast('Энэ захиалга хаагдсан байна — татгалзана уу'); return; }
+    openPoRecv(P.id);
+    var q = {}; (d.items || []).forEach(function (i) { q[i.name] = i.qty; });
+    (P.items || []).forEach(function (it, i) { $('prQ' + i).value = q[it.name] || 0; });
+    $('prDate').value = d.date || todayStr(); if ($('prLoc') && d.loc) $('prLoc').value = d.loc;
+    prAuto();
+  } else {
+    openPoPay(P.id, 'c');
+    $('ppDate').value = d.date || todayStr(); $('ppAcc').value = '3101'; $('ppAmt').value = d.amount; $('ppCo').value = d.co || '';
+    if (d.ship && $('ppShip').querySelector('option[value="' + d.ship + '"]')) $('ppShip').value = String(d.ship);
+    ppCalc();
+  }
+  _piId = id;
+}
+function poInDone(id, st, cb) {   // төлөв бичээд жагсаалтаас хасна
+  var drop = function () { window.poInbox = (window.poInbox || []).filter(function (r) { return r.id !== id; }); };
+  if (!API_URL) { drop(); save('nb_demo_poinbox', load('nb_demo_poinbox', []).map(function (r) { if (r.id === id) r.status = st; return r; })); cb(); return; }
+  post({ type: 'admin_po', inboxId: id, inboxStatus: st }, function (err) { if (err) toast('Төлөв шинэчлэгдсэнгүй: ' + err); else drop(); cb(); });
+}
+function poInClose(cb) { var id = _piId; _piId = ''; if (id) poInDone(id, 'Батлагдсан', cb); else cb(); }
+function poInReject(id) {
+  if (!confirm('Ажилтны энэ бүртгэлийг татгалзах уу? Үлдэгдэл, журнал өөрчлөгдөхгүй.')) return;
+  poInDone(id, 'Татгалзсан', function () { toast('Татгалзлаа'); render(); });
+}
 function poView() {
   var list = (window.pos || []).filter(function (p) { return p.biz === state.biz; }).slice().reverse(), E = Jc();
   var rows = list.map(function (P) {
@@ -64,7 +104,7 @@ function poView() {
       '<td class="n">' + (Math.abs(s.bal) >= 1 ? dl(Object.assign({}, spec, { dir: 0, t: spec.t + ' — замд яваа (1505)' }), mny(s.bal)) : '') + '</td>' +
       '<td style="white-space:nowrap">' + st + '</td><td class="n"><div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;min-width:150px">' + acts + '</div></td></tr>';
   }).join('');
-  return '<p class="hint">1) «+ Шинэ захиалга» — ямар бараа, хэдийг, хэдэн юаниар захиалсан. 2) Нийлүүлэгчид төлсөн мөнгийг «Банкны хуулга»-аас энэ захиалгаар тулгана — бараа ирэх хүртэл «Замд» баганад авлага болж харагдана. ' +
+  return poInCard() + '<p class="hint">1) «+ Шинэ захиалга» — ямар бараа, хэдийг, хэдэн юаниар захиалсан. 2) Нийлүүлэгчид төлсөн мөнгийг «Банкны хуулга»-аас энэ захиалгаар тулгана — бараа ирэх хүртэл «Замд» баганад авлага болж харагдана. ' +
     '3) Бараа ирэх бүрт «Бараа ирсэн» — ирсэн тоогоо оруулна (хэсэг хэсгээр ирж болно); ирсэн барааны хэсэг нь «Замд»-аас хасагдаж үлдэгдэлд орно. ' +
     '4) Каргоны мөнгийг бараа ирсний дараа хуулгаас «… ирэлтийн карго»-оор тулгана (эсвэл «Карго» товч) — тэр ирэлтийн барааны өртөгт нэмэгдэнэ.</p>' + poLowCard() +
     '<div class="card rep"><div class="rep-cap"><b>Захиалгууд</b></div><div class="scroll"><table class="rep-t"><tr><th>Дугаар</th><th>Нийлүүлэгч</th><th>Бараа (ирсэн/захиалсан)</th><th class="n">Нийт (валютаар)</th><th class="n">Төлсөн</th><th class="n">Карго</th><th class="n" title="Төлсөн боловч бараа нь ирээгүй — нийлүүлэгчээс авах (1505)">Замд</th><th>Төлөв</th><th></th></tr>' +
@@ -188,6 +228,7 @@ function poOpts(biz) {
   return out;
 }
 function openPoPay(id, type) {
+  _piId = '';
   var P = poById(id), s = poStat(P), cargo = type === 'c', L = cargo ? poShips(P) : [], open = P.status === 'Захиалсан';
   gOpen('<h2>' + esc(P.no) + ' · ' + (cargo ? 'Каргоны төлбөр' : 'Төлбөр') + '</h2><p class="muted">' + esc(P.supplier) + ' · ' + poCurAmt(P, P.total) +
     ' · төлсөн ' + mny(s.paid) + (s.cargo + s.accrC + s.post ? ' · карго ' + mny(s.cargo + s.accrC + s.post) : '') + '</p>' +
@@ -226,12 +267,12 @@ function savePoPay(id, cargo) {
   // Хаалтаас өмнө төлсөн (мөнгө нь архивт) — Дт 1505 / Кт 4201, огноо = шинээр эхэлсэн өдөр (хаалтын өдөр түгжигдсэн)
   if (acc === '4201') { if (meta.closed && d <= meta.closed) d = addDays(meta.closed, 1); note = (note ? note + ' · ' : '') + 'хаалтаас өмнө төлсөн'; }
   var pe = poPayEntry(id + '|' + type, acc, d, amt, note, cco);
-  postEntries([pe.entry], function () { gClose(); toast(pe.link + ' бүртгэгдлээ'); if (API_URL) refresh(); else render(); });
+  postEntries([pe.entry], function () { poInClose(function () { gClose(); toast(pe.link + ' бүртгэгдлээ'); if (API_URL) refresh(); else render(); }); });
 }
 // ── Бараа ирсэн (хэсэг хэсгээр): 1505-ын үлдэгдлээс энэ ирэлтэд ногдохыг бараанд хуваах ──
 var _prId = '';
 function openPoRecv(id) {
-  _prId = id; prDone = {};
+  _prId = id; prDone = {}; _piId = '';
   var P = poById(id), s = poStat(P), L = poShips(P), rq = poRecvQty(P, L), wh = hasWarehouse(state.biz);
   gOpen('<h2>' + esc(P.no) + ' · Бараа ирсэн' + (L.length ? ' (' + (L.length + 1) + '-р ирэлт)' : '') + '</h2><p class="muted">' + esc(P.supplier) + ' · захиалга ' + poCurAmt(P, P.total) + '</p>' +
     '<div class="row2"><div><label for="prDate">Ирсэн огноо</label><input id="prDate" type="date" value="' + todayStr() + '"></div>' +
@@ -321,8 +362,10 @@ function savePoRecv(id) {
   var done = function () { gClose(); toast(P.no + ' — ' + a.n + '-р ирэлт үлдэгдэлд орлоо'); };
   postEntries(E, function () {
     sendMoves(ms, function () {
-      if (a.fin) poSetStatus(id, 'Ирсэн', d, done);
-      else { done(); if (API_URL) refresh(); else render(); }
+      poInClose(function () {
+        if (a.fin) poSetStatus(id, 'Ирсэн', d, done);
+        else { done(); if (API_URL) refresh(); else render(); }
+      });
     });
   });
 }

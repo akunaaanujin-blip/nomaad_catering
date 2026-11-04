@@ -207,6 +207,7 @@ function alertsOf(biz) {
   if (bl && bl < todayStr(new Date(Date.now() - 7 * 864e5))) add('Банкны хуулга 7 хоног оруулаагүй (сүүлд ' + bl + ')', 1, "navGo('finance/bank')");
   add(pendRequests(biz).length + ' мөнгөний хүсэлт хүлээгдэж байна', pendRequests(biz).length, "navGo('finance/requests')", true);
   add(pendCounts(biz).length + ' тооллого батлах', pendCounts(biz).length, "navGo('products/counts')");
+  add(poInPend(biz).length + ' бараа ирсэн / карго батлах', poInPend(biz).length, "navGo('products/po')");
   if (B.orders) add(navCount('orders') + ' шинэ захиалга илгээгдээгүй', navCount('orders'), "navGo('sales/orders')");
   if (!B.finOnly) {
     var sold = records.some(function (x) { return x.biz === biz && x.type === 'sale' && x.date === t && x.pay === 'Бэлэн'; }),
