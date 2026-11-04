@@ -11,7 +11,7 @@ ICONS.money = '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12
 
 var MNAV = [
   ['Нүүр', 'home', [['home', 'Өнөөдөр'], ['finance/monthly', 'Хийх ажил (сар бүр)'], ['v:cal', 'Календарь']]],
-  ['Борлуулалт', 'sales', [['sales/orders', 'Захиалга'], ['sales/shop', 'Баримт'], ['sales/buuhia', 'Хүргэлт'], ['sales/ebrec', 'Буухиатай тулгах'], ['sales/disc', 'Буцаалт, хөнгөлөлт'], ['sales/ads', 'Сурталчилгаа, ROAS']]],
+  ['Борлуулалт', 'sales', [['sales/orders', 'Захиалга'], ['sales/shop', 'Борлуулалтын баримт'], ['sales/buuhia', 'Хүргэлт'], ['sales/ebrec', 'Буухиатай тулгах'], ['sales/disc', 'Буцаалт, хөнгөлөлт'], ['sales/ads', 'Сурталчилгаа, ROAS']]],
   ['Boost', 'boost', [['sales/boostp', 'Boost'], ['sales/boostbud', 'Boost төсөв']]],
   ['Бараа', 'products', [['products/catalog', 'Бараа, үнэ'], ['products/stock', 'Үлдэгдэл'], ['products/po', 'Худалдан авалт'], ['products/suppliers', 'Нийлүүлэгчид'],
     ['products/counts', 'Тооллого'], ['products/move', 'Хөдөлгөөн, шилжүүлэг'], ['products/in', 'Орлогын жагсаалт'], ['products/prices', 'Үнийн түүх'], ['finance/assets', 'Үндсэн хөрөнгө']]],
@@ -93,7 +93,7 @@ subnavHtml = function () {
   // Зүүн багана: 8 бүлэг (icon + нэр); хажууд нь сонгосон бүлгийн хуудсууд самбар болж нээгдэнэ (нэг удаад нэг бүлэг)
   var biz = state.biz, G = MNAV.map(function (g, gi) {
     var items = g[2].filter(function (it) { return it[0] === '—' ? !BUSINESSES[biz].finOnly : navOk(biz, it[0]); }), real = items.filter(function (it) { return it[0] !== '—'; });
-    return { g: g, gi: gi, items: items, real: real, on: real.some(function (it) { return navItemOn(it[0]); }), badge: real.reduce(function (a, it) { return a + navCountOf(it[0]); }, 0) };
+    return { g: g, gi: gi, items: items, real: real, on: real.some(function (it) { return navItemOn(it[0]); }), badge: real.reduce(function (a, it) { return a + (it[0] === 'sales/shop' ? 0 : navCountOf(it[0])); }, 0) };   // өнөөдрийн борлуулалтын тоо хийх ажил биш — бүлгийн тоонд нэмэхгүй
   }).filter(function (x) { return x.real.length; });
   var act = G.filter(function (x) { return x.on; })[0];
   if (state.navG == null || !G.some(function (x) { return x.gi === state.navG; })) state.navG = act ? act.gi : G[0].gi;

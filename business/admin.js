@@ -1214,7 +1214,7 @@ function closeSheet(id) { $(id).classList.remove('show'); }
 
 // ═══════════ ДЭД ЦЭС, ТАЙЛАН (reports.js-ийн хөдөлгүүрээр) ═══════════
 var SUBS = {
-  sales: [['shop', 'Дэлгүүрийн борлуулалт'], ['receipts', 'Бүх баримт'], ['orders', 'Захиалга'], ['buuhia', 'Буухиа (хүргэлт)'], ['ebrec', 'Буухиатай тулгах'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'],
+  sales: [['shop', 'Борлуулалтын баримт'], ['receipts', 'Бүх баримт'], ['orders', 'Захиалга'], ['buuhia', 'Буухиа (хүргэлт)'], ['ebrec', 'Буухиатай тулгах'], ['item', 'Бараагаар'], ['cat', 'Ангиллаар'], ['staff', 'Худалдагчаар'], ['day', 'Өдрөөр'],
           ['pay', 'Төлбөрийн хэлбэрээр'], ['disc', 'Хөнгөлөлт, буцаалт'], ['slow', 'Удаан эргэлттэй бараа'], ['boost', 'Boost бараагаар'], ['ads', 'Сурталчилгаа, ROAS'], ['boostp', 'Boost'], ['boostbud', 'Boost төсөв'], ['ebarimt', 'И-баримт тулгалт']],
   products: [['catalog', 'Барааны бүртгэл, үнэ'], ['counts', 'Тооллого батлах'], ['po', 'Бараа захиалга (Хятад)'], ['stock', 'Үлдэгдэл'], ['move', 'Хөдөлгөөний тайлан'], ['prices', 'Үнийн түүх'], ['in', 'Орлогын жагсаалт'], ['suppliers', 'Нийлүүлэгчид']],
   finance: [['requests', 'Мөнгөний хүсэлт'], ['simple', 'Захирлын самбар'], ['months', '12 сарын дүн'], ['daily', 'Өдрийн орлого'], ['cashacc', 'Мөнгөний данс'], ['profit', 'Барааны ашиг'], ['money', 'Гүйлгээ'], ['bank', 'Банкны хуулга'], ['vouchers', 'Кассын баримт'],
@@ -1323,6 +1323,7 @@ function navCount(k) {   // цэсийн тоо: хүлээгдэж буй хү�
   if (k === 'counts') return pendCounts(state.biz).length;
   if (k === 'bank') return (typeof bankLines !== 'undefined' ? bankLines : []).filter(function (l) { return l.biz === state.biz && l.status === 'Шинэ'; }).length;
   if (k === 'orders') return (window.adminOrders || []).filter(function (o) { return o.biz === state.biz && o.status === 'Шинэ'; }).length;
+  if (k === 'shop') { var td = todayStr(); return groupBills(salesIn(R(), state.biz, td, td), true).filter(function (o) { return o.gross > 0; }).length; }   // өнөөдрийн борлуулалтын баримт (дэлгүүр + онлайн)
   return 0;
 }
 function navBadge(k) { var n = navCount(k); return n ? '<i class="nb-badge">' + n + '</i>' : ''; }
