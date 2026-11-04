@@ -1,5 +1,5 @@
 // ── САНХҮҮ → ҮР ДҮН: өнгөлөг самбар (KPI карт + график). Зөвхөн энэ хуудсанд, .fd- class-тай ──
-var FD_C = { in: '#16A34A', out: '#3B82F6', profit: '#F97316', cash: '#0EA5E9', red: '#E11D48', pie: ['#3B82F6', '#22C55E', '#EAB308', '#F97316', '#A855F7', '#EC4899', '#14B8A6', '#94A3B8'] };
+var FD_C = { in: '#16A34A', out: '#7B2D26', profit: '#A8574E', cash: '#6B4FA0', red: '#7B2D26', pie: ['#7B2D26', '#B79CE0', '#A8574E', '#6B4FA0', '#D9A79F', '#8E7CC3', '#4E1B16', '#C9B3EC'] };
 var FD_I = {
   in: '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
   out: '<path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/>',

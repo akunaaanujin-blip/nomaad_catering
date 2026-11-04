@@ -3,25 +3,25 @@
 :root{
   --bg:#F6F7F9;--surface:#FFFFFF;--surface-alt:#F9FAFB;--border:#E5E7EB;--border-strong:#D1D5DB;
   --text:#111827;--text-2:#4B5563;--text-3:#9CA3AF;
-  --primary:#1F4E79;--primary-hover:#183E61;--primary-soft:#E8EFF6;--sidebar:#13263D;--row-l1:#1F4E79;--row-l2:#D5E3F2;--row-tot:#E5E7EB;
+  --primary:#7B2D26;--primary-hover:#5F211C;--primary-soft:#EEE6FA;--sidebar:#7B2D26;--row-l1:#7B2D26;--row-l2:#E0D2F5;--row-tot:#EADFDD;--sub-line:#B79CE0;
   --income:#15803D;--income-soft:#E8F5EC;--expense:#B91C1C;--expense-soft:#FDECEC;
-  --warning:#B45309;--warning-soft:#FEF3E2;--info:#1D4ED8;--info-soft:#E8EEFD;--neutral-soft:#F3F4F6;
+  --warning:#B45309;--warning-soft:#FEF3E2;--info:#6B4FA0;--info-soft:#EEE6FA;--neutral-soft:#F3F4F6;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]) body.bz-admin{
     --bg:#0F141A;--surface:#161C24;--surface-alt:#1C232D;--border:#2A3340;--border-strong:#364152;
     --text:#E5E7EB;--text-2:#A3ADBB;--text-3:#6B7685;
-    --primary:#5B9BD5;--primary-hover:#7AB0E0;--primary-soft:#1A2A3C;--sidebar:#0B1118;--row-l1:#2F6DA8;--row-l2:#22344A;--row-tot:#2A3340;
+    --primary:#E0A097;--primary-hover:#EBB8B0;--primary-soft:#2C2340;--sidebar:#5A211C;--row-l1:#7B2D26;--row-l2:#3A2C52;--row-tot:#3A2A28;--sub-line:#7D62AD;
     --income:#4ADE80;--income-soft:#13261B;--expense:#F87171;--expense-soft:#2A1616;
-    --warning:#FBBF24;--warning-soft:#2A2112;--info:#93B4F8;--info-soft:#17203A;--neutral-soft:#1C232D;
+    --warning:#FBBF24;--warning-soft:#2A2112;--info:#C9B3EC;--info-soft:#2C2340;--neutral-soft:#1C232D;
   }
 }
 :root[data-theme="dark"] body.bz-admin{
   --bg:#0F141A;--surface:#161C24;--surface-alt:#1C232D;--border:#2A3340;--border-strong:#364152;
   --text:#E5E7EB;--text-2:#A3ADBB;--text-3:#6B7685;
-  --primary:#5B9BD5;--primary-hover:#7AB0E0;--primary-soft:#1A2A3C;--sidebar:#0B1118;--row-l1:#2F6DA8;--row-l2:#22344A;--row-tot:#2A3340;
+  --primary:#E0A097;--primary-hover:#EBB8B0;--primary-soft:#2C2340;--sidebar:#5A211C;--row-l1:#7B2D26;--row-l2:#3A2C52;--row-tot:#3A2A28;--sub-line:#7D62AD;
   --income:#4ADE80;--income-soft:#13261B;--expense:#F87171;--expense-soft:#2A1616;
-  --warning:#FBBF24;--warning-soft:#2A2112;--info:#93B4F8;--info-soft:#17203A;--neutral-soft:#1C232D;
+  --warning:#FBBF24;--warning-soft:#2A2112;--info:#C9B3EC;--info-soft:#2C2340;--neutral-soft:#1C232D;
 }
 /* хуучин хувьсагчдыг шинэ утгад холбоно */
 body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var(--bg);--b-line:var(--border);--b-ink:var(--text);--b-mut:var(--text-2);
@@ -275,3 +275,19 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var
 .bz-admin #view tr.ddoc td:first-child{padding-left:28px}
 .bz-admin #view tr.ddoc a.dl{color:var(--text-2)}
 .bz-admin #view table.rep-t tr.tot td,.bz-admin #view .fd-t tr.tot td{background:var(--row-tot);color:var(--text);font-weight:700;border-top:2px solid var(--text-2)}
+/* Нэг өнгө: үндсэн — улаан хүрэн (--primary), дэд сэдэв — усан ягаан (--primary-soft, --row-l2). Өнгө солих бол дээрх :root-оос */
+body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--accent:var(--primary)}
+.bz-admin .seg button.on,.bz-admin #view .seg button.on{background:var(--primary)!important;border-color:var(--primary)!important;color:#fff!important}
+.bz-admin .fn-seg button.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.bz-admin .pg-head h1,.bz-admin .sub-title,.bz-admin .sec-title,.bz-admin .card h2,.bz-admin .rep-cap b,.bz-admin .kpis .biz .rev{color:var(--primary)}
+.bz-admin .card h2{border-left-color:var(--sub-line)}
+.bz-admin .tabs button.on{background:var(--row-l2);border-color:var(--sub-line);color:var(--primary)}
+.bz-admin .tag.b,.bz-admin .ev.tax{background:var(--primary-soft);color:var(--info)}
+.bz-admin #view tr.bk-boost td{background:var(--primary-soft)}
+.bz-admin #view tr.bk-boost td:first-child{box-shadow:inset 3px 0 0 var(--sub-line)}
+.fn-brand{background:var(--sidebar);border-bottom-color:rgba(255,255,255,.16)}
+.fn-gb{color:#F1E3E0}
+.fn-gb.sel{box-shadow:inset 3px 0 0 var(--sub-line)}
+.fn-panel{background:var(--primary-soft)}
+.fn-panel li button:hover{background:var(--row-l2)}
+.fn-panel li button.on,.fn-panel li button.on:hover{background:var(--row-l2);color:var(--primary);box-shadow:inset 3px 0 0 var(--primary)}
