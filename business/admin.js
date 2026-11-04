@@ -2478,7 +2478,9 @@ function receivableOptions() {   // зээлээр авсан хүмүүсийн
   return Object.keys(b).filter(function (k) { return b[k] > 0.5; }).map(function (k) { return '<option value="' + esc(k) + '">Авлага ' + fmt(b[k]) + '</option>'; }).join('');
 }
 function vcPurposeOpts(V) {
-  return V_PURPOSE[V.dir].filter(function (x) { return x[0] !== V.acc; }).map(function (x) { return '<option value="' + x[0] + '">' + esc(x[1]) + ' — ' + x[0] + '</option>'; }).join('');
+  var mg = V.dir === 'out' ? mgOpts(state.biz) : [];
+  return V_PURPOSE[V.dir].filter(function (x) { return x[0] !== V.acc; }).map(function (x) { return '<option value="' + x[0] + '">' + esc(x[1]) + ' — ' + x[0] + '</option>'; }).join('') +
+    (mg.length ? '<optgroup label="Удирдлагын зардал">' + mg.map(function (o) { return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>'; }).join('') + '</optgroup>' : '');
 }
 function vcPurpose() {
   var dir = VOUCHER[vKind].dir, x = V_PURPOSE[dir].filter(function (y) { return y[0] === $('vcPurpose').value; })[0];
@@ -2505,9 +2507,12 @@ function saveVoucher() {
   var e = { biz: state.biz, date: $('vcDate').value, dr: V.dir === 'in' ? V.acc : other, cr: V.dir === 'in' ? other : V.acc, amount: amt,
             partner: partner, desc: vcDescWithTags($('vcDesc').value.trim() || purpose[1], picked ? vcTags() : ''), vkind: vKind };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date)) { toast('Огноо оруулна уу'); return; }
+  var mz = other.indexOf('MZ:') === 0 ? mgEntry(other.slice(3), e.biz, V.acc, e.date, amt, $('vcDesc').value) : null;   // хувийн зээл — Дт 7024
+  if (other.indexOf('MZ:') === 0 && !mz) { toast('Зээл олдсонгүй'); return; }
+  if (mz) { e.dr = mz.entry.dr; e.desc = mz.entry.desc; e.partner = partner || mz.entry.partner; }
   var bd = backdateReason(e.date, e.desc); if (bd === null) return; e.desc = bd;
   var req = vcReq; vcReq = '';
-  var done = function (no) { closeSheet('voucherSheet'); toast(no + ' бүртгэгдлээ'); if (req) reqSetStatus(req, 'Төлсөн', no); if (confirm(no + ' баримтыг хэвлэх үү?')) printVoucher(e, no); };
+  var done = function (no) { closeSheet('voucherSheet'); toast(no + ' бүртгэгдлээ'); if (mz && mz.closes) loanClose(other.slice(3)); if (req) reqSetStatus(req, 'Төлсөн', no); if (confirm(no + ' баримтыг хэвлэх үү?')) printVoucher(e, no); };
   if (!API_URL) {
     var n = journal.filter(function (j) { return j.biz === e.biz && String(j.no || '').indexOf(vKind + '-') === 0; }).length + 1;
     e.id = 'J' + Date.now(); e.by = ownerName; e.no = vKind + '-' + ('000' + n).slice(-4);

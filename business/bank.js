@@ -15,7 +15,7 @@ var BANK_PAY = [['1404', 'Бараа татан авалт'], ['3101', 'Нийл
 function bankOutOpts() {
   var grp = function (c) { return /^70/.test(c) ? 'Ерөнхий ба удирдлагын зардал' : /^71/.test(c) ? 'Борлуулалт, маркетингийн зардал' : 'Бусад зардал'; };
   return BANK_PAY.map(function (a) { return [a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1], 'Төлбөр, шилжүүлэг']; })
-    .concat(ACCOUNTS.filter(function (a) { return a[2] === 'exp' && !accHidden(a[0]) && !(state.biz !== 'mgmt' && BUSINESSES.mgmt && /^70/.test(a[0])); }).map(function (a) { return ['A:' + a[0], a[0] + ' ' + a[1], grp(a[0])]; }));
+    .concat(ACCOUNTS.filter(function (a) { return a[2] === 'exp' && !accHidden(a[0]) && a[0] !== MG_ACC && !(state.biz !== 'mgmt' && BUSINESSES.mgmt && /^70/.test(a[0])); }).map(function (a) { return ['A:' + a[0], a[0] + ' ' + a[1], grp(a[0])]; }));
 }
 var BOOST_RE = /boost|буст|реклам|фэйсбүүк|facebook|meta/i;
 var BANK_RULES = [[/boost|реклам|фэйсбүүк|facebook|meta|зар/i, '7120'],   // 2026-11-02: Boost-ыг банкаар төлсөн дүнгээр зардал (Дт 7120) — ажилтны Boost бүртгэл зөвхөн шинжилгээнд
@@ -250,6 +250,7 @@ function bankView() {
         BANK_IN.forEach(function (a) { opts.push([a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1], 'Бусад']); });
       } else {
         bankXOpts(l).forEach(function (o) { opts.push(o); });
+        mgOpts(biz).forEach(function (o) { opts.push(o); });
         bbBankOpts().forEach(function (o) { opts.push(o); });
         opts.push(['BST:set', 'Boost нэхэмжлэх сонгох…', 'Boost нэхэмжлэх']);
         bstInvoices().filter(function (v) { return v.state !== 'paid'; }).forEach(function (v) {
@@ -305,7 +306,7 @@ function bankXOpts(l) {
 // ── Дүрэм (Rules): гүйлгээний утгад түлхүүр үг → алгасах / шилжүүлэг / ангилал ──
 function bankActLabel(a) {
   a = String(a || ''); var c = a.replace(/^\w+:/, '');
-  return a === 'skip' ? 'Алгасах' : /^TR:/.test(a) ? 'Шилжүүлэг · ' + c + ' ' + accName(c) : /^MG:/.test(a) ? 'Захирлын зарлага' : /^IC:/.test(a) ? 'Компани хооронд · ' + (BUSINESSES[c] ? BUSINESSES[c].name : c) : c + ' ' + accName(c);
+  return a === 'skip' ? 'Алгасах' : /^TR:/.test(a) ? 'Шилжүүлэг · ' + c + ' ' + accName(c) : /^MG:/.test(a) ? 'Захирлын зарлага' : /^MZ:/.test(a) ? MG_EXP + ' · ' + ((loanById(c) || {}).partner || c) : /^IC:/.test(a) ? 'Компани хооронд · ' + (BUSINESSES[c] ? BUSINESSES[c].name : c) : c + ' ' + accName(c);
 }
 function bankRuleAdd(id) {
   var l = bankLines.filter(function (x) { return x.id === id; })[0], act = bankPick[id] || ''; if (!l) return;
@@ -449,6 +450,7 @@ function bankApply(ids, quiet) {
                  p0.indexOf('R:') === 0 ? 'мөнгөний хүсэлт: ' + ([].filter.call(document.querySelectorAll('option'), function (o) { return o.value === p0; })[0] || {}).textContent + ' — зардлаар бичигдэж хүсэлт «Төлсөн» болно' :
                  p0.indexOf('D:') === 0 ? (bankDebt(p0) ? debtLabel(bankDebt(p0)) + ' — хаана' : 'өр / авлага') :
                  p0.indexOf('MG:') === 0 || p0 === 'A:1208' ? 'захирлын зарлага — Дт 1208 / Кт банк (Захирал)' :
+                 p0.indexOf('MZ:') === 0 ? 'Удирдлагын зарлага (7024, зардал) · ' + (loanById(p0.slice(3)) || {}).partner + ' — ' + loanIntSuggest(p0, l0) :
                  /^(IC|L|PO|BG):/.test(p0) ? ([].filter.call(document.querySelectorAll('option'), function (o) { return o.value === p0; })[0] || {}).textContent || p0 :
                  p0.slice(2) + ' ' + accName(p0.slice(2));
       if (!confirm(l0.date + ' · ' + (l0.credit ? '+' + fmt(l0.credit) : '−' + fmt(l0.debit)) + '\n«' + l0.desc + '»\n\n→ ' + what + '\n\nТулгах уу?')) return;
@@ -498,6 +500,12 @@ function bankApply(ids, quiet) {
     if (pick.indexOf('MG:') === 0 && !l.credit) {   // хуучин «Удирдлагын зарлага» сонголт (дүрэм) → захирлын зарлага 1208
       entries.push({ biz: biz, date: d, dr: '1208', cr: acc, amount: amt, desc: l.desc.slice(0, 120) || 'Захирлын зарлага', partner: DIRECTOR });
       updates.push({ id: id, status: 'Тулгасан', link: 'Захирлын зарлага' });
+      return;
+    }
+    if (pick.indexOf('MZ:') === 0) {   // хувийн зээлийг компанийн данснаас төлсөн — Дт 7024 / Кт банк
+      var mz = mgEntry(pick.slice(3), biz, acc, d, amt, l.desc.slice(0, 80)); if (!mz) return;
+      entries.push(mz.entry); updates.push({ id: id, status: 'Тулгасан', link: mz.link });
+      if (mz.closes) loanCloseIds.push(pick.slice(3));
       return;
     }
     if (pick.indexOf('IC:') === 0) {   // компани хооронд (1290, харилцагч = нөгөө компани)

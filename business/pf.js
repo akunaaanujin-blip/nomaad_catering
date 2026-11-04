@@ -20,12 +20,35 @@ function pfL(t) { var L = (PF[t] || []).filter(function (x) { return x.status !=
 // Компаниас захирлын өмнөөс төлсөн зарлага (компанийн журналд Дт 1208, удирдлагын 7023 «Бусад компаниас авсан зарлага») — хувийн зарлагад орно, дансанд нөлөөлөхгүй.
 // Хувийн санхүүгээс «Компаниас авсан»-аар үүссэн (#PT…) болон эхний үлдэгдлийн бичилт орохгүй. Засах/цуцлах — тухайн компанийн журналаас.
 var PF_COEXP = 'Бусад компаниас авсан зарлага', _pfV = { j: null, n: -1, v: [] };
+// Удирдлагын зардал: Cozy / аяллын дэлгүүрийн данснаас хувийн зээл төлөх. Компанид Дт 7024 / Кт мөнгө (ашигт нөлөөлнө), хувийн санхүүд pfVirt-ээр зээлийн төлөлт зарлага.
+var MG_ACC = '7024', MG_EXP = 'Удирдлагын зарлага', MG_BIZ = { travel: 1, cozy: 1 }, MG_TAG = /#(L\w+)/;
+function mgOpts(biz) {
+  if (!MG_BIZ[biz] || !isOwner()) return [];
+  return pfLoans('Авсан').filter(pfLoanOpen).map(function (L) { return ['MZ:' + L.id, L.partner + ' · үлдэгдэл ' + mny(loanStat(L).left), 'Удирдлагын зардал']; });
+}
+function mgSplit(L, amt, d) {   // хувийн зээлийн төлөлтийн цонхтой ижил дүрмээр
+  var i = L.rate ? pfLoanInt(L, d).i : (L.schedule || []).length ? loanSplit(L, amt).intr : 0;
+  i = Math.max(0, Math.min(i, amt));
+  return { intr: r0(i), prin: r0(amt - i) };
+}
+function mgEntry(id, biz, acc, d, amt, note) {
+  var L = loanById(id); if (!L || !pfLoanOpen(L)) return null;
+  var sp = mgSplit(L, amt, d), txt = String(note || '').replace(/#/g, '').trim();
+  return { entry: { biz: biz, date: d, dr: MG_ACC, cr: acc, amount: r0(amt), partner: L.partner, desc: (MG_EXP + ' · ' + L.partner + (sp.intr ? ' · хүү ' + sp.intr : '') + (txt ? ' · ' + txt : '')).slice(0, 170) + ' #' + L.id },
+           closes: loanStat(L).left - sp.prin <= 0.5, link: MG_EXP + ' · ' + L.partner + ' #' + L.id };
+}
 function pfVirt() {
   var J0 = typeof journal !== 'undefined' ? journal : [];
   if (_pfV.j === J0 && _pfV.n === J0.length) return _pfV.v;
   var v = J0.filter(function (j) {
-    return j.biz !== 'mgmt' && BUSINESSES[j.biz] && !/^(Устгасан|Цуцалсан)$/.test(j.status || '') && accMig(j.dr, j.id, j.desc) === '1208' && !/#P[TF][0-9A-Z]/.test(String(j.desc)) && !/эхний үлдэгдэл|^Он нээлт/i.test(String(j.desc));
+    if (j.biz === 'mgmt' || !BUSINESSES[j.biz] || /^(Устгасан|Цуцалсан)$/.test(j.status || '')) return false;
+    if (j.dr === MG_ACC) return MG_TAG.test(String(j.desc));
+    return accMig(j.dr, j.id, j.desc) === '1208' && !/#P[TF][0-9A-Z]/.test(String(j.desc)) && !/эхний үлдэгдэл|^Он нээлт/i.test(String(j.desc));
   }).map(function (j) {
+    if (j.dr === MG_ACC) {   // компаниас төлсөн хувийн зээл: журнал нь цорын ганц эх сурвалж — цуцлахад зээл автоматаар сэргэнэ
+      var it = Math.min(j.amount, Number((String(j.desc).match(/· хүү (\d+)/) || [])[1]) || 0);
+      return { id: 'J' + j.id, date: j.date, type: 'Зарлага', acc: '', toAcc: '', amount: j.amount, cat: 'Зээлийн төлөлт', desc: String(j.desc).replace(/\s*#L\w+.*$/, '') + ' · ' + BUSINESSES[j.biz].name + '-аас төлсөн', link: String(j.desc).match(MG_TAG)[1], rec: '', prin: r0(j.amount - it), intr: it, fee: 0, co: j.biz, virt: 1, status: 'Идэвхтэй' };
+    }
     return { id: 'J' + j.id, date: j.date, type: 'Зарлага', acc: '', toAcc: '', amount: j.amount, cat: PF_COEXP, desc: (j.desc || 'Захирлын зарлага') + ' · ' + BUSINESSES[j.biz].name + '-аас төлсөн', link: '', rec: '', co: j.biz, virt: 1, status: 'Идэвхтэй' };
   });
   _pfV = { j: J0, n: J0.length, v: v };
@@ -154,7 +177,7 @@ function pfView() {
 
 // ═══════════ ЗЭЭЛ (хувийн) ═══════════
 function pfLoans(kind, withFx) { return loanList('mgmt').filter(function (L) { return (!kind || L.kind === kind) && (withFx || !lnFx(L)); }); }   // тогтмол зардал өр биш
-function pfLoanTx(id, all) { return (PF.tx || []).filter(function (t) { return t.link === id && (all || t.status !== 'Цуцалсан'); }); }
+function pfLoanTx(id, all) { return (PF.tx || []).concat(pfVirt()).filter(function (t) { return t.link === id && (all || t.status !== 'Цуцалсан'); }); }
 function pfLoanOpen(L) { var s = loanStat(L); return L.status !== 'Хаагдсан' && s.left > 0.5; }
 function pfDebt() { return r0(pfLoans('Авсан').filter(pfLoanOpen).reduce(function (a, L) { return a + loanStat(L).left; }, 0)); }
 function pfRecv() { return r0(pfLoans('Өгсөн').filter(pfLoanOpen).reduce(function (a, L) { return a + loanStat(L).left; }, 0)); }
@@ -230,7 +253,8 @@ function pfLoanReopen(L) {
 // Зээл устгах: зээл «Устгасан», түүний төлөлтүүд «Цуцалсан» (Sheet-д түүх хадгалагдана); хуучин журналын бичилт хогийн саванд
 function pfLoanDel(id) {
   var L = loanById(id); if (!L) return;
-  var T = pfLoanTx(id), js = journal.filter(function (j) { return hasTag(j.desc, id); });
+  var T = pfLoanTx(id), js = journal.filter(function (j) { return j.biz === 'mgmt' && hasTag(j.desc, id); });
+  if (T.some(function (t) { return t.virt; })) { toast('Компаниас төлсөн төлөлттэй — эхлээд тухайн компанийн журналаас цуцална уу'); return; }
   if (!confirm('«' + L.partner + '» зээлийг устгах уу?' + (T.length ? '\n\n' + T.length + ' төлөлт (' + fmt(T.reduce(function (a, t) { return a + t.amount; }, 0)) + ') мөн цуцлагдаж, дансны үлдэгдэлд буцна.' : '') +
     (js.length ? '\nХуучин журналын ' + js.length + ' бичилт хогийн саванд орно (сэргээж болно).' : '') + '\n\nТүүх Sheet-д хадгалагдана.')) return;
   var fin = function () {
@@ -243,15 +267,15 @@ function pfLoanDel(id) {
 function pfLoanHist(id) {
   var L = loanById(id); if (!L) return;
   var T = pfLoanTx(id, true).sort(function (a, b) { return a.date < b.date ? -1 : 1; }), tot = { a: 0, p: 0, i: 0, f: 0 };
-  var J0 = journal.filter(function (j) { return hasTag(j.desc, id); });
+  var J0 = journal.filter(function (j) { return j.biz === 'mgmt' && hasTag(j.desc, id); });
   gOpen('<h2>Төлөлтийн түүх · ' + esc(L.partner) + '</h2>' +
     '<div class="scroll" style="max-height:60vh"><table class="rep-t"><tr><th>Огноо</th><th class="n">Нийт</th><th class="n">Хүү</th><th class="n">Үндсэн</th><th class="n">Торгууль</th><th>Данс</th><th>Тэмдэглэл</th><th></th></tr>' +
     (T.length ? T.map(function (t) {
       var off = t.status === 'Цуцалсан';
       if (!off) { tot.a += t.amount; tot.p += t.prin || 0; tot.i += t.intr || 0; tot.f += t.fee || 0; }
       return '<tr' + (off ? ' style="opacity:.5;text-decoration:line-through"' : '') + '><td class="nw">' + esc(t.date) + '</td><td class="n">' + mny(t.amount) + '</td><td class="n">' + mny(t.intr) + '</td><td class="n">' + mny(t.prin) + '</td>' +
-        '<td class="n">' + (t.fee ? mny(t.fee) : '') + '</td><td>' + esc(pfAccName(t.acc)) + '</td><td>' + esc(t.desc) + '</td><td class="nw">' +
-        (off ? '<small>цуцалсан</small>' : '<button class="mini" onclick="pfLoanPay(\'' + id + '\',\'pay\',\'' + t.id + '\')">Засах</button><button class="mini" onclick="pfTxCancel(\'' + t.id + '\')">Цуцлах</button>') + '</td></tr>';
+        '<td class="n">' + (t.fee ? mny(t.fee) : '') + '</td><td>' + esc(pfTxAccName(t)) + '</td><td>' + esc(t.desc) + '</td><td class="nw">' +
+        (t.virt ? '<small class="muted" title="Тухайн компанийн журналаас засна">компанийн журнал</small>' : off ? '<small>цуцалсан</small>' : '<button class="mini" onclick="pfLoanPay(\'' + id + '\',\'pay\',\'' + t.id + '\')">Засах</button><button class="mini" onclick="pfTxCancel(\'' + t.id + '\')">Цуцлах</button>') + '</td></tr>';
     }).join('') + '<tr class="tot"><td>Нийт</td><td class="n">' + mny(tot.a) + '</td><td class="n">' + mny(tot.i) + '</td><td class="n">' + mny(tot.p) + '</td><td class="n">' + mny(tot.f) + '</td><td></td><td></td><td></td></tr>'
       : '<tr><td colspan="8" class="muted">Төлөлт бүртгэгдээгүй</td></tr>') + '</table></div>' +
     (J0.length ? '<p class="muted" style="font-size:12.5px">Өмнөх (журналын) бичилт: ' + J0.length + ' — «Тохиргоо → Хуучин бүртгэл»-д.</p>' : '') +
