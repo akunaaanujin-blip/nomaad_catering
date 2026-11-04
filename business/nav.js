@@ -286,7 +286,9 @@ function homeView() {
   }).join('') + '</svg>';
   var chart = '<div class="card"><h2>Өдрийн орлого, зардал · ' + t.slice(0, 7) + '</h2><div class="fn-leg"><span><i style="background:var(--income)"></i>Орлого</span><span><i style="background:var(--expense)"></i>Зардал</span></div>' + svg + '</div>';
   // Сүүлийн 10 гүйлгээ
-  var last = E.filter(function (e) { return e.date <= t; }).slice().sort(function (a, b) { var x = a.date + (a.time || ''), y = b.date + (b.time || ''); return x < y ? 1 : x > y ? -1 : 0; }).slice(0, 10);
+  // Өртөг, барааны дотоод бичилтийг харуулахгүй — борлуулалт, мөнгөний гүйлгээ л үлдэнэ
+  var cogsA = accsOf('cogs'), hideDoc = ['Буцаалт хүлээн авсан', 'Барааны эхний үлдэгдэл', 'Эхний тооллого'];
+  var last = E.filter(function (e) { return e.date <= t && cogsA.indexOf(e.dr) < 0 && cogsA.indexOf(e.cr) < 0 && hideDoc.indexOf(e.doc) < 0; }).slice().sort(function (a, b) { var x = a.date + (a.time || ''), y = b.date + (b.time || ''); return x < y ? 1 : x > y ? -1 : 0; }).slice(0, 10);
   var tx = '<div class="card"><h2>Сүүлийн 10 гүйлгээ</h2>' + (last.length ? '<div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Баримт</th><th>Тайлбар</th><th>Дебет</th><th>Кредит</th><th class="n">Дүн</th></tr>' + last.map(function (e) {
       return '<tr><td class="nw">' + e.date + (e.time ? ' ' + esc(String(e.time).slice(0, 5)) : '') + '</td><td>' + esc(e.doc) + '</td><td class="fn-ell" title="' + esc(e.desc) + '">' + esc(e.desc) + '</td><td>' + esc(accName(e.dr)) + '</td><td>' + esc(accName(e.cr)) + '</td><td class="n">' + mny(e.amount) + '</td></tr>'; }).join('') + '</table></div>'
     : '<p class="muted">Гүйлгээ алга.</p>') + '</div>';
