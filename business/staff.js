@@ -1043,7 +1043,7 @@ function sendCount() {
 }
 
 // ── Бараа ирсэн, карго: ажилтан зөвхөн ирсэн тоо, каргоны дүнг бичнэ (үнэ, өртөг харахгүй); үлдэгдэлд удирдлага баталмагц орно ──
-var piPos = [], piSent = [];
+var piPos = [], piSent = [], piSending = false;
 function loadPoIn() {
   if (!API_URL) {
     piPos = load('nb_demo_pos', []).filter(function (p) { return p.biz === BIZ_KEY && p.status !== 'Цуцалсан'; }).map(function (p) {
@@ -1128,12 +1128,20 @@ function piSend(b) {
     all.push({ id: 'PI' + Date.now(), at: todayStr() + ' ' + timeStr(), biz: BIZ_KEY, poId: b.poId, poNo: p.no, kind: b.kind, data: x, by: staffName, status: 'Хүлээгдэж' });
     save('nb_demo_poinbox', all); done(); return;
   }
+  // Сервер 2–5 секунд хариулдаг: товчийг түгжинэ, давхар илгээхгүй
+  if (piSending) return;
+  piSending = true;
+  var btn = document.querySelector('#piPanel .btn:not(.ghost)'), txt = btn ? btn.textContent : '';
+  var unlock = function () { piSending = false; if (btn) { btn.disabled = false; btn.textContent = txt; } };
+  if (btn) { btn.disabled = true; btn.textContent = 'Илгээж байна…'; }
   b.type = 'staff_po_in'; b.token = session ? session.token : '';
   fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(b) })
     .then(function (r) { return r.json(); }).then(function (d) {
-      if (!d || d.status !== 'ok') { toast(d && d.error === 'auth' ? 'Дахин нэвтэрнэ үү' : d && d.error === 'pending' ? 'Энэ захиалгын бараа ирсэн бүртгэл батлагдаагүй байна' : d && d.error === 'state' ? 'Захиалга хаагдсан байна' : 'Илгээж чадсангүй — дахин оролдоно уу'); return; }
+      unlock();
+      if (d && d.error === 'pending') { closeSheet('piSheet'); toast('Энэ бараа ирсэн бүртгэл аль хэдийн илгээгдсэн — удирдлага батлахыг хүлээнэ үү'); loadPoIn(); return; }
+      if (!d || d.status !== 'ok') { toast(d && d.error === 'auth' ? 'Дахин нэвтэрнэ үү' : d && d.error === 'state' ? 'Захиалга хаагдсан байна' : 'Илгээж чадсангүй — дахин оролдоно уу'); return; }
       done();
-    }).catch(function () { toast('Интернэт холболтоо шалгана уу — илгээгдсэнгүй'); });
+    }).catch(function () { unlock(); closeSheet('piSheet'); toast('Хариу ирсэнгүй — «Илгээсэн бүртгэл»-ээс шалгаад, байхгүй бол дахин илгээнэ үү'); loadPoIn(); });   // сервер бичсэн байж болно
 }
 
 // ── Касс хаах ──
