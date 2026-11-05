@@ -93,7 +93,7 @@ function fetchAll(cb) {
     bankLines = load('nb_demo_bank', []); window.payInfoAll = load('nb_demo_payinfo', {}); window.salesTargets = load('nb_demo_targets', {}); window.boostBud = load('nb_demo_boostbud', []); window.companyInfo = load('nb_demo_company', {}); window.ebOld = load('nb_demo_ebold', {}); tasks = load('nb_demo_tasks', []); taxCfg = load('nb_demo_taxcfg', {}); customDocs = load('nb_demo_docs', []);
     accountsX = load('nb_demo_accx', []); applyCustomAccounts(accountsX); meta.lock = load('nb_demo_lock', '');
     window.PF_RAW = [load('nb_demo_pf', {}), load('nb_demo_pfcfg', {})]; if (typeof pfApply === 'function') pfApply(PF_RAW[0], PF_RAW[1]);   // хувийн санхүү
-    window.loans = load('nb_demo_loans', []); window.pos = load('nb_demo_pos', []); window.poInbox = load('nb_demo_poinbox', []).filter(function (x) { return x.status === 'Хүлээгдэж'; }); window.bankLinks = load('nb_demo_banklinks', []);
+    window.loans = load('nb_demo_loans', []); window.pos = load('nb_demo_pos', []); window.poInbox = load('nb_demo_poinbox', []).filter(function (x) { return x.status === 'Хүлээгдэж'; }); window.poLog = load('nb_demo_poinbox', []).filter(function (x) { return x.status !== 'Хүлээгдэж'; }); window.bankLinks = load('nb_demo_banklinks', []);
     window.kpiCfg = load('nb_demo_kpi', {}); window.assets = load('nb_demo_assets', []); faPoCost(); window.minStock = load('nb_demo_minstock', {});
     window.digestCfg = load('nb_demo_digest', { on: false, to: '' }); window.priceLog = load('nb_demo_pricelog', []); window.stockCounts = load('nb_demo_counts', []).filter(function (m) { return m.status === 'Хүлээгдэж'; }); window.reviewNotes = load('nb_review', {});
     applyRole(load('nb_demo_role', 'Эзэн'), load('nb_demo_rolebiz', 'all'));
@@ -119,7 +119,7 @@ function applyRead(d) {
    window.salesTargets = d.targets || {}; window.boostBud = d.boostbud || []; tasks = d.tasks || []; taxCfg = d.taxcfg || {}; customDocs = d.docs || [];
   accountsX = d.accountsX || []; applyCustomAccounts(accountsX); meta.lock = d.lock || '';
   window.kpiCfg = d.kpi || {}; window.assets = d.assets || []; faPoCost(); window.minStock = d.minstock || {};
-  window.digestCfg = d.digest || { on: false, to: '' }; window.priceLog = d.priceLog || []; window.stockCounts = d.counts || []; window.poInbox = d.poInbox || [];
+  window.digestCfg = d.digest || { on: false, to: '' }; window.priceLog = d.priceLog || []; window.stockCounts = d.counts || []; window.poInbox = d.poInbox || []; window.poLog = d.poLog || [];
   window.reviewNotes = Object.assign(load('nb_review', {}), d.review || {});
   window.ebOld = d.ebold || {};   // буухиа: эхний үлдэгдлээс өмнөх (тооцоо хийгдсэн) хүргэлт
   window.companyInfo = d.company || {}; if (typeof applyCompany === 'function') applyCompany();   // сервер түрүүлнэ; хадгалагдаагүй бол энэ төхөөрөмжийнх
@@ -432,7 +432,7 @@ function companyView() {
   if (mod === 'review') return reviewView();
   if (mod === 'reports') return pageHead('Бүх тайлан', '<button class="b-btn primary" onclick="exportAll()">Бүх тайланг Excel-ээр татах</button>', true) + reportsModule();
   var sub = state.sub[mod], noPeriod = /^(monrep|counts|requests|accounts|stock|suppliers|poin|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary|months|payroll|debts|acct|setup|loans|banklink|po|assets|customers|digest|other|recv|payb|buuhia|ebrec|boostp|boostbud|api|partners|audit|trash|company)$/.test(sub);   // авлага, өглөг — өнөөдрийн байдлаар (хугацаагаар шүүхгүй)
-  var acts = /^(boostp|boostbud|counts|requests|overview|dash|stock|close|bank|opening|lock|simple|monthly|glossary|acct|setup|loans|banklink|po|assets|digest|other|daily|expcat|cashacc)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
+  var acts = /^(boostp|boostbud|counts|requests|overview|dash|stock|close|bank|opening|lock|simple|monthly|glossary|acct|setup|loans|banklink|po|poin|assets|digest|other|daily|expcat|cashacc)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
   // Харилцахын (банкны) гүйлгээг гараар бичихгүй — зөвхөн банкны хуулгаар тулгана (давхар бичигдэхээс сэргийлнэ)
   if (sub === 'money') acts = '<button class="b-btn primary" onclick="setSub(\'bank\')">Банкны хуулгаар тулгах</button>' +
     '<button class="b-btn" onclick="openVoucher(\'КО\')">+ Орлого (касс)</button><button class="b-btn" onclick="openVoucher(\'КЗ\')">+ Зарлага (касс)</button>' + acts;

@@ -76,26 +76,26 @@ function poInCard() {
       '<td class="n" style="white-space:nowrap"><button class="mini" style="color:var(--green)" onclick="poInOpen(\'' + x.id + '\')">Батлах</button> <button class="mini" onclick="poInReject(\'' + x.id + '\')">Татгалзах</button></td></tr>';
   }).join('') + '</table></div></div>';
 }
-// Ажилтны хийсэн бүртгэл (Бараа ирсэн, карго): хөдөлгөөн + журналаас, хамгийн шинэ нь эхэнд
+// Ажилтны бүртгэл: зөвхөн ажилтны илгээснийг «Бараа ирсэн бүртгэл»-ээс (poLog) харуулна — удирдлагын өөрөө бичсэн нь энд орохгүй.
+// Өртөг: хөдөлгөөнөөс. Хамт бичсэн карго нь энэ өртөгт аль хэдийн орсон тул тусад нь нэмэхгүй.
 function poInLog() {
-  var biz = state.biz, L = (window.pos || []).filter(function (p) { return p.biz === biz; }), R0 = [];
-  var po = function (t) { return L.filter(function (p) { return hasTag(t, p.id); })[0]; };
-  (moves || []).forEach(function (m) {
-    if (m.biz !== biz || m.kind !== 'Орлого' || m.pay !== 'Захиалга') return;
-    var P = po(m.note); if (!P) return;
-    R0.push({ d: String(m.date), by: m.by, P: P, what: m.item + ' × ' + m.qty + (hasWarehouse(biz) ? ' · ' + m.loc : ''), v: (Number(m.cost) || 0) * (Number(m.qty) || 0), id: m.id });
-  });
-  (journal || []).forEach(function (j) {
-    if (j.biz !== biz || !/карго \(дараа төлнө\)/.test(j.desc)) return;
-    var P = po(j.desc); if (!P) return;
-    R0.push({ d: String(j.date), by: j.by, P: P, what: 'Карго · ' + (j.partner || ''), v: Number(j.amount) || 0 });
-  });
-  R0.sort(function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; });
-  return poInCard() + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Хэн</th><th>Захиалга</th><th>Юу</th><th class="n">Өртөг</th><th></th></tr>' +
-    (R0.length ? R0.slice(0, 200).map(function (r) {
-      return '<tr><td class="nw">' + esc(r.d.slice(0, 16)) + '</td><td>' + esc(r.by || '') + '</td><td>' + esc(poTitle(r.P)) + '<br><small class="muted">' + esc(r.P.no) + '</small></td><td>' + esc(r.what) + '</td><td class="n">' + (r.v ? fmt(r.v) : '<span class="neg">0</span>') + '</td>' +
-        '<td class="n">' + (r.id ? '<button class="mini" onclick="cancelMove(' + esc(JSON.stringify(r.id)) + ')">Устгах</button>' : '') + '</td></tr>'; }).join('')
-      : '<tr><td colspan="6" class="muted">Ажилтны бүртгэл алга</td></tr>') + '</table></div></div>';
+  var biz = state.biz, used = {}, L = (window.poLog || []).filter(function (x) { return x.biz === biz; }).slice().reverse();
+  var mv = function (x, i) { return (moves || []).filter(function (m) { return !used[m.id] && m.biz === biz && m.kind === 'Орлого' && m.pay === 'Захиалга' && m.item === i.name && Number(m.qty) === Number(i.qty) && hasTag(m.note, x.poId); })[0]; };
+  var rows = L.map(function (x) {
+    var P = poById(x.poId), d = x.data || {}, off = x.status === 'Татгалзсан', what, v = 0, ids = [];
+    if (x.kind === 'recv') {
+      what = esc((d.items || []).map(function (i) {
+        var m = off ? null : mv(x, i);
+        if (m) { used[m.id] = 1; ids.push(m.id); v += (Number(m.cost) || 0) * (Number(m.qty) || 0); }
+        return i.name + ' × ' + i.qty;
+      }).join(', ') + (hasWarehouse(biz) && d.loc ? ' · ' + d.loc : '')) + (d.cargo ? '<br><small class="muted">Карго ' + fmt(d.cargo) + ' өртөгт орсон</small>' : '');
+    } else { what = 'Карго · ' + esc(d.co || ''); v = off ? 0 : Number(d.amount) || 0; }
+    var st = off ? (x.doneBy === 'Дахин илгээв' ? 'Дахин илгээсэн' : 'Татгалзсан') : x.doneBy === 'Шууд' ? 'Бүртгэгдсэн' : 'Батлагдсан';
+    return '<tr' + (off ? ' class="muted"' : '') + '><td class="nw">' + esc(String(x.at).slice(0, 16)) + '</td><td>' + esc(x.by || '') + '</td><td>' + esc(P ? poTitle(P) : x.poNo) + '<br><small class="muted">' + esc(x.poNo) + '</small></td><td style="white-space:normal">' + what + '</td><td>' + st + '</td><td class="n">' + (v ? fmt(v) : '') + '</td>' +
+      '<td class="n">' + ids.map(function (id) { return '<button class="mini" onclick="cancelMove(' + esc(JSON.stringify(id)) + ')">Устгах</button>'; }).join(' ') + '</td></tr>';
+  }).join('');
+  return poInCard() + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Ажилтан</th><th>Захиалга</th><th>Юу</th><th>Төлөв</th><th class="n">Өртөг</th><th></th></tr>' +
+    (rows || '<tr><td colspan="7" class="muted">Ажилтны бүртгэл алга</td></tr>') + '</table></div></div>';
 }
 function poInOpen(id) {
   var x = (window.poInbox || []).filter(function (r) { return r.id === id; })[0]; if (!x) return;
