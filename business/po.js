@@ -88,7 +88,7 @@ function poInLog() {
         var m = off ? null : mv(x, i);
         if (m) { used[m.id] = 1; ids.push(m.id); v += (Number(m.cost) || 0) * (Number(m.qty) || 0); }
         return i.name + ' × ' + i.qty;
-      }).join(', ') + (hasWarehouse(biz) && d.loc ? ' · ' + d.loc : '')) + (d.cargo ? '<br><small class="muted">Карго ' + fmt(d.cargo) + ' өртөгт орсон</small>' : '');
+      }).join(', ') + (hasWarehouse(biz) && d.loc ? ' · ' + d.loc : '')) + (d.cargo && !off ? '<br><small class="muted">Карго ' + fmt(d.cargo) + ' өртөгт орсон</small>' : '');
     } else { what = 'Карго · ' + esc(d.co || ''); v = off ? 0 : Number(d.amount) || 0; }
     var st = off ? (x.doneBy === 'Дахин илгээв' ? 'Дахин илгээсэн' : 'Татгалзсан') : x.doneBy === 'Шууд' ? 'Бүртгэгдсэн' : 'Батлагдсан';
     return '<tr' + (off ? ' class="muted"' : '') + '><td class="nw">' + esc(String(x.at).slice(0, 16)) + '</td><td>' + esc(x.by || '') + '</td><td>' + esc(P ? poTitle(P) : x.poNo) + '<br><small class="muted">' + esc(x.poNo) + '</small></td><td style="white-space:normal">' + what + '</td><td>' + st + '</td><td class="n">' + (v ? fmt(v) : '') + '</td>' +
