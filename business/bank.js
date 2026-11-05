@@ -118,14 +118,18 @@ function importBank(input) {
     // Үлдэгдлийн гинж: өмнөх үлдэгдэл + орлого − зарлага = эцсийн үлдэгдэл. Таарахгүй бол мөр дутуу / хуулгын завсар байна
     var chn = bankChain(lines), gaps = 0, hasBal = lines.some(function (l) { return l.bal; });
     for (var ci = 1; ci < chn.length; ci++) if (Math.abs(chn[ci - 1].bal + chn[ci].credit - chn[ci].debit - chn[ci].bal) >= 1) gaps++;
-    var prevL = bankChain(mine).pop(), openB = chn[0].bal - chn[0].credit + chn[0].debit, jump = hasBal && prevL && !overlap && Math.abs(openB - prevL.bal) >= 1;
+    // Холбоос: системийн сүүлийн мөрийн эцсийн үлдэгдэл = эхний шинэ мөрийн өмнөх үлдэгдэл. Хуучин огноотой шинэ мөр бол завсраас мөр нэмэгдэж байна
+    var prevL = bankChain(mine).pop(), fc = bankChain(fresh)[0], openB = fc.bal - fc.credit + fc.debit, older = prevL ? fresh.filter(function (l) { return l.date < prevL.date; }).length : 0;
+    var jump = hasBal && prevL && !older && Math.abs(openB - prevL.bal) >= 1, joined = hasBal && prevL && !older && !jump;
     if (!hasBal) gaps = 0;
     if (!confirm('****' + String(acct).slice(-4) + ' дансны хуулга · ' + from.slice(0, 10) + ' — ' + to.slice(0, 10) + '\n\n' +
       'Нийт ' + (lines.length + pre) + ' мөр: оруулах ' + fresh.length + (dup ? ', давхардсан ' + dup : '') + (pre ? ', эхний үлдэгдлээс өмнөх ' + pre + ' (алгасна)' : '') + '.' +
       (lastTo ? '\nЭнэ дансны сүүлийн хуулга: ' + lastTo.slice(0, 16) + ' хүртэл.' : '') +
       (overlap ? '\n\nАНХААР: хугацаа өмнөх хуулгатай давхцаж байна — давхардсан мөрүүдийг шүүсэн, үлдсэнийг шалгана уу.' : '') +
       (gaps ? '\n\nАНХААР: хуулга дотор ' + gaps + ' газар үлдэгдэл таарахгүй байна — мөр дутуу байж магадгүй.' : '') +
-      (jump ? '\n\nАНХААР: өмнөх хуулгын эцсийн үлдэгдэл ' + fmt(prevL.bal) + ', энэ хуулгын эхний үлдэгдэл ' + fmt(openB) + ' — хооронд нь хуулга дутуу байж магадгүй.' : '') +
+      (joined ? '\n\nҮлдэгдэл холбогдож байна: системийн сүүлийн үлдэгдэл ' + fmt(prevL.bal) + ' = шинэ мөрийн эхний үлдэгдэл ' + fmt(openB) + '.' : '') +
+      (jump ? '\n\nАНХААР: системийн сүүлийн үлдэгдэл ' + fmt(prevL.bal) + ', шинэ мөрийн эхний үлдэгдэл ' + fmt(openB) + ' — зөрүү ' + mny(openB - prevL.bal) + '. Хооронд нь хуулга дутуу байна, оруулахгүй байхыг зөвлөж байна.' : '') +
+      (older ? '\n\nАНХААР: ' + older + ' шинэ мөр системийн сүүлийн мөрөөс (' + String(prevL.date).slice(0, 16) + ') өмнөх огноотой — өмнө нь устгасан эсвэл эхний үлдэгдэлд орсон мөр байж магадгүй. Шалгаж байж оруулна уу.' : '') +
       (twins ? '\n\nАНХААР: нэг хуулга дотор яг ижил ' + twins + ' мөр байна (огноо, дүн, утга ижил) — хоёуланг нь оруулна, шалгана уу.' : '') +
       '\n\nОруулсан мөрүүд «Тулгаагүй» жагсаалтад орно — санхүүд зөвхөн таны баталснаар бичигдэнэ.\n\nОруулах уу?')) return;
     var log = { id: imp, acct: acct, biz: biz, from: from, to: to, total: lines.length + pre, skipped: pre, dup: dup, endBal: endL.bal, restored: restore.length };
