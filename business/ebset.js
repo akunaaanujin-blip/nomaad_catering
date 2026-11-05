@@ -119,7 +119,7 @@ function ebSetExcel() {
 // ── Банкны хуулга: Буухиагаас орсон мөнгөөр тооцоо хаах (захиалгыг чагтаар сонгоно) ──
 var ebBk = null;
 function ebBankOpen(lineId) {
-  var l = bankLines.filter(function (x) { return x.id === lineId; })[0]; if (!l || !l.credit) return;
+  var l = bankLines.filter(function (x) { return x.id === lineId; })[0]; if (!l) return;
   var D = ebSetData();
   ebBk = { l: l, rows: D.rows.filter(function (r) { return r.colLeft > 0.5 || r.feeLeft > 0.5; }), old: D.old.filter(function (it) { return !it.closed; }), unl: ebSetUnlinked(D.M) };
   var tr = function (k, i, d, who, col, fee, extra) {
@@ -132,12 +132,29 @@ function ebBankOpen(lineId) {
   }).join('') + ebBk.unl.map(function (u, i) {
     return tr('u', i, String(u.x.created).slice(0, 10).replace(/\//g, '-'), 'Захиалгагүй хүргэлт · ' + esc(u.x.phone) + ' <small class="muted">' + esc(u.x.code) + '</small>', 0, u.fee, '−' + fmt(u.fee));
   }).join('');
-  gOpen('<h2>Буухиагийн тооцоо</h2><p class="rep-note">Банк: ' + esc(l.date.slice(0, 10)) + ' · +' + fmt(l.credit) + ' · «' + esc(l.desc) + '»</p>' +
-    '<p class="muted" style="font-size:12.5px">Энэ шилжүүлэгт орсон захиалгуудыг сонгоно. Сонгосон хураасан мөнгө − хөлс − хуучин өр = банкаар орсон дүн байх ёстой.</p>' +
+  gOpen('<h2>Буухиагийн тооцоо</h2><p class="rep-note">Банк: ' + esc(l.date.slice(0, 10)) + ' · ' + mny(ebBkAmt(l)) + ' · «' + esc(l.desc) + '»</p><p id="ebBkAuto" class="muted" style="font-size:12.5px"></p>' +
+    '<p class="muted" style="font-size:12.5px">Энэ шилжүүлэгт орсон захиалгуудыг сонгоно. Тайлан нийлсэн хүргэлтүүдээ сонгоно. Хураасан мөнгө − хөлс − хуучин өр = банкны дүн байх ёстой (буухиад төлсөн бол хасах дүн).</p>' +
     '<div class="scroll" style="max-height:50vh"><table class="rep-t"><tr><th><input type="checkbox" onchange="[].forEach.call(document.querySelectorAll(\'#gBody input[data-k=r]\'),function(c,i){c.checked=this.checked}.bind(this));ebBkCalc()"></th><th>Огноо</th><th>Захиалга</th><th class="n">Хураасан</th><th class="n">Хөлс / хасах</th></tr>' +
     (body || '<tr><td colspan="5" class="muted">Хаагдаагүй тооцоо алга</td></tr>') + '</table></div><div id="ebBkSum" style="margin:10px 0"></div>' +
     '<div class="row2"><button class="b-btn" onclick="gClose()">Болих</button><button class="b-btn primary" id="ebBkGo" onclick="ebBankSave()" disabled>Тулгах</button></div>');
-  ebBkCalc();
+  ebBkPick(); ebBkCalc();
+}
+function ebBkAmt(l) { return r0((+l.credit || 0) - (+l.debit || 0)); }   // + орсон, − буухиад төлсөн
+// Тайлан нийлсэн багц: дүн нь яг банкны гүйлгээтэй таарвал хүргэлтүүдийг автоматаар чагтална (Буухиагийн багц эсвэл оруулсан тайлан)
+function ebBkPick() {
+  var amt = ebBkAmt(ebBk.l), G = [], B = typeof ebSettledByEb === 'function' ? ebSettledByEb(ebAdm.list || []) : {}, by = {};
+  Object.keys(B).forEach(function (c) { (by[B[c]] = by[B[c]] || {})[c] = 1; });
+  Object.keys(by).sort().reverse().forEach(function (u) { G.push({ t: 'Буухиагийн нийлсэн багц ' + String(u).slice(0, 10), c: by[u] }); });
+  if (typeof ebRec !== 'undefined' && ebRec.rows) { var rc = {}; ebRec.rows.forEach(function (x) { if (x.code) rc[x.code] = 1; }); G.push({ t: 'Оруулсан Буухиагийн тайлан', c: rc }); }
+  for (var i = 0; i < G.length; i++) {
+    var ix = []; ebBk.rows.forEach(function (r, k) { if (G[i].c[r.code]) ix.push(k); });
+    var net = r0(ix.reduce(function (a, k) { return a + ebBk.rows[k].colLeft - ebBk.rows[k].feeLeft; }, 0));
+    if (ix.length && Math.abs(net - amt) < 1) {
+      ix.forEach(function (k) { var c = document.querySelector('#gBody input[data-k=r][data-i="' + k + '"]'); if (c) c.checked = true; });
+      var el = document.getElementById('ebBkAuto'); if (el) el.textContent = G[i].t + ' · ' + ix.length + ' хүргэлт автоматаар сонгогдлоо — шалгаад тулгана уу.';
+      return;
+    }
+  }
 }
 function ebBkSel() {
   var S = { r: [], o: [], u: [] };
@@ -146,14 +163,14 @@ function ebBkSel() {
   S.r.forEach(function (i) { var r = ebBk.rows[i]; col += r.colLeft; fee += r.feeLeft; });
   S.o.forEach(function (i) { var it = ebBk.old[i], v = Math.min(Number(($('ebBkOld' + i) || {}).value) || 0, it.amt - it.paid); if (it.eb) oeb += Math.max(0, v); else old += Math.max(0, v); });
   S.u.forEach(function (i) { unl += ebBk.unl[i].fee; }); unl += oeb;
-  S.col = r0(col); S.fee = r0(fee); S.old = r0(old); S.unl = r0(unl); S.exp = r0(col - fee - old - unl); S.diff = r0(ebBk.l.credit - S.exp);
+  S.col = r0(col); S.fee = r0(fee); S.old = r0(old); S.unl = r0(unl); S.exp = r0(col - fee - old - unl); S.diff = r0(ebBkAmt(ebBk.l) - S.exp);
   return S;
 }
 function ebBkCalc() {
   if (!ebBk) return; var S = ebBkSel(), ok = (S.r.length || S.o.length || S.u.length) && Math.abs(S.diff) < 1;
   $('ebBkSum').innerHTML = '<table class="rep-t"><tr><td>Хураасан (' + S.r.length + ' захиалга)</td><td class="n">' + mny(S.col) + '</td></tr><tr><td>− Хөлс</td><td class="n">' + mny(S.fee) + '</td></tr>' +
     (S.unl ? '<tr><td>− Захиалгагүй хүргэлтийн хөлс</td><td class="n">' + mny(S.unl) + '</td></tr>' : '') + (S.old ? '<tr><td>− Хуучин өр</td><td class="n">' + mny(S.old) + '</td></tr>' : '') +
-    '<tr class="b"><td>= Орох ёстой</td><td class="n">' + mny(S.exp) + '</td></tr><tr><td>Банкаар орсон</td><td class="n">' + mny(ebBk.l.credit) + '</td></tr>' +
+    '<tr class="b"><td>= Тооцооны цэвэр дүн</td><td class="n">' + mny(S.exp) + '</td></tr><tr><td>Банкны гүйлгээ</td><td class="n">' + mny(ebBkAmt(ebBk.l)) + '</td></tr>' +
     '<tr class="b"><td>Зөрүү</td><td class="n"' + (Math.abs(S.diff) < 1 ? '' : ' style="color:var(--red)"') + '>' + mny(S.diff) + '</td></tr></table>';
   $('ebBkGo').disabled = !ok;
 }
@@ -174,7 +191,7 @@ function ebBankSave() {
   if (recv > 0.5) E.unshift({ biz: biz, date: d, dr: acc, cr: '1201', amount: r0(recv), partner: BUUHIA, desc: 'Буухиа тооцоо · орсон мөнгө · ' + S.r.length + ' захиалга ' + tags.join(' ') });
   E.forEach(function (e) { e.bankId = l.id; });
   var upd = [{ id: l.id, status: 'Тулгасан', link: 'Буухиа тооцоо · ' + S.r.length + ' захиалга' }];
-  if (!confirm('Буухиагийн тооцоо ' + d + ': ' + S.r.length + ' захиалга, банкаар ' + fmt(l.credit) + '\nХураасан ' + fmt(S.col) + ' − хөлс ' + fmt(S.fee + S.unl) + (S.old ? ' − хуучин өр ' + fmt(S.old) : '') + '\n\n' + E.length + ' журналын бичилт үүснэ. Тулгах уу?')) return;
+  if (!confirm('Буухиагийн тооцоо ' + d + ': ' + S.r.length + ' захиалга, банкаар ' + mny(ebBkAmt(l)) + '\nХураасан ' + fmt(S.col) + ' − хөлс ' + fmt(S.fee + S.unl) + (S.old ? ' − хуучин өр ' + fmt(S.old) : '') + '\n\n' + E.length + ' журналын бичилт үүснэ. Тулгах уу?')) return;
   gClose();
   if (!API_URL) { E.forEach(function (e, i) { e.id = 'J' + Date.now() + '-' + i; e.by = ownerName; journal.push(e); }); l.status = 'Тулгасан'; l.link = upd[0].link; render(); return; }
   l.status = 'Тулгасан'; l.link = upd[0].link; delete bankPick[l.id];
