@@ -64,6 +64,9 @@ function bankChain(lines) {
   return out;
 }
 
+// Эхний үлдэгдэлд шингэсэн мөрийн цаг: түүнээс өмнөх гүйлгээ эхний үлдэгдэлд аль хэдийн орсон — дахин оруулахад сэргээхгүй (сэргээвэл мөнгө давхар хасагдана)
+function bankOpenCut(acct) { return bankLines.filter(function (b) { return String(b.acct).slice(-4) === String(acct).slice(-4) && /^Эхний үлдэгдэлд орсон/.test(b.link); }).map(function (b) { return String(b.date).slice(0, 19); }).sort().pop() || ''; }
+
 // ── Хуулга унших (Хаан банк: «Гүйлгээний огноо | Салбар | Эхний үлдэгдэл | Кредит | Дебит | Эцсийн үлдэгдэл | Гүйлгээний утга | Харьцсан данс») ──
 function importBank(input) {
   var f = input.files && input.files[0]; input.value = '';
@@ -84,11 +87,11 @@ function importBank(input) {
     var biz = info.biz;
     var num = function (v) { var n = Number(String(v).replace(/[,\s]/g, '')); return isFinite(n) ? n : 0; };
     var cRef = gi(/гүйлгээний дугаар|лавлах|reference|^ref/i);   // банкны гүйлгээний дугаар (байвал түлхүүр болно)
-    var from0 = bankFrom(), lines = [], pre = 0, seen = {}, twins = 0;
+    var from0 = bankFrom(), cut0 = bankOpenCut(acct), lines = [], pre = 0, seen = {}, twins = 0;
     rows.slice(h + 1).forEach(function (r) {
       var dt = String(r[cD] || '').trim();
       if (!/^\d{4}-\d{2}-\d{2}/.test(dt)) return;
-      if (dt.slice(0, 10) < from0) { pre++; return; }   // систем эхлэхээс өмнөх гүйлгээ — алгасна
+      if (dt.slice(0, 10) < from0 || (cut0 && dt.slice(0, 19) <= cut0)) { pre++; return; }   // систем эхлэхээс өмнөх гүйлгээ — алгасна
       var cr = Math.abs(num(r[cCr])), db = Math.abs(num(r[cDb])), desc = String(r[cDesc] || '').trim(), ref = cRef >= 0 ? String(r[cRef] || '').trim() : '';
       var l = { id: ref ? acct + '|' + ref : acct + '|' + dt + '|' + cr + '|' + db + '|' + desc.slice(0, 40) + '|' + bankHash(desc), acct: acct, date: dt, credit: cr, debit: db, bal: num(r[cBal]), desc: desc, party: String(r[cParty] || '').trim(), biz: biz, ref: ref };
       // нэг хуулга дотор яг ижил мөр (огноо, дүн, утга) — хоёуланг нь оруулна, 2 дахь нь «#2»
@@ -118,7 +121,7 @@ function importBank(input) {
     var prevL = bankChain(mine).pop(), openB = chn[0].bal - chn[0].credit + chn[0].debit, jump = hasBal && prevL && !overlap && Math.abs(openB - prevL.bal) >= 1;
     if (!hasBal) gaps = 0;
     if (!confirm('****' + String(acct).slice(-4) + ' дансны хуулга · ' + from.slice(0, 10) + ' — ' + to.slice(0, 10) + '\n\n' +
-      'Нийт ' + (lines.length + pre) + ' мөр: оруулах ' + fresh.length + (dup ? ', давхардсан ' + dup : '') + (pre ? ', ' + from0 + '-аас өмнөх ' + pre + ' (алгасна)' : '') + '.' +
+      'Нийт ' + (lines.length + pre) + ' мөр: оруулах ' + fresh.length + (dup ? ', давхардсан ' + dup : '') + (pre ? ', эхний үлдэгдлээс өмнөх ' + pre + ' (алгасна)' : '') + '.' +
       (lastTo ? '\nЭнэ дансны сүүлийн хуулга: ' + lastTo.slice(0, 16) + ' хүртэл.' : '') +
       (overlap ? '\n\nАНХААР: хугацаа өмнөх хуулгатай давхцаж байна — давхардсан мөрүүдийг шүүсэн, үлдсэнийг шалгана уу.' : '') +
       (gaps ? '\n\nАНХААР: хуулга дотор ' + gaps + ' газар үлдэгдэл таарахгүй байна — мөр дутуу байж магадгүй.' : '') +
@@ -270,9 +273,11 @@ function bankView() {
   all.forEach(function (l) { var i0 = bankAcctInfo(l.acct), a0 = i0 ? i0.acc : '1101', k0 = String(l.acct).slice(-4), g0 = G[a0] = G[a0] || { acc: a0, seen: {}, bal: 0, date: '' }; if (g0.seen[k0]) return; g0.seen[k0] = 1; g0.bal += l.bal; if (l.date > g0.date) g0.date = l.date; });
   var sure = todo.filter(function (l) { var s = bankSuggest(l); return (s.kind === 'order' && s.sure) || (s.kind === 'shop' && s.sure) || (s.kind === 'req' && s.sure) || s.kind === 'paid'; }).length;
   var pay = (window.payInfoAll || {})[biz] || '';
+  // Зөрүү нь яг тулгаагүй мөрүүдийн дүн бол алдаа биш — тулгавал таарна
+  var pendOf = function (a, df) { var L0 = todo.filter(function (l) { var i0 = bankAcctInfo(l.acct); return (i0 ? i0.acc : '1101') === a; }), v = L0.reduce(function (s0, l) { return s0 + (+l.credit || 0) - (+l.debit || 0); }, 0); return L0.length && Math.abs(v - df) < 1 ? '<span class="muted">Тулгаагүй ' + L0.length + ' мөр: ' + mny(v) + ' — тулгавал таарна</span>' : ''; };
   var head = '<div class="kpis">' + kpi('Тулгах гүйлгээ', todo.length) +
     Object.keys(G).map(function (k) { var g = G[k], d0 = g.date.slice(0, 10), led = balances(E0, d0)[g.acc] || 0;
-      return kpi('Хуулгын үлдэгдэл (' + d0 + ')', fmt(g.bal)) + kpi('Санхүүгийн ' + g.acc + ' үлдэгдэл', fmt(led), Math.abs(g.bal - led) < 1 ? '<span style="color:var(--green)">Таарч байна</span>' : '<span style="color:var(--red)">Зөрүү ' + fmt(g.bal - led) + '</span>'); }).join('') + '</div>';
+      return kpi('Хуулгын үлдэгдэл (' + d0 + ')', fmt(g.bal)) + kpi('Санхүүгийн ' + g.acc + ' үлдэгдэл', fmt(led), Math.abs(g.bal - led) < 1 ? '<span style="color:var(--green)">Таарч байна</span>' : pendOf(g.acc, g.bal - led) || '<span style="color:var(--red)">Зөрүү ' + mny(g.bal - led) + '</span>'); }).join('') + '</div>';
   var tabs = '<div class="fn-fr">' + stBar('Төлөв', [['todo', 'Тулгаагүй', todo.length], ['done', 'Тулгасан', all.length - todo.length], ['all', 'Бүгд', all.length]], bankTab, "bankTab='%'") +
     (todo.length ? '<button class="b-btn danger" style="margin-left:auto" onclick="bankDel(null)">Тулгаагүй ' + todo.length + ' гүйлгээг устгах</button>' : '') + '</div>' +
     (todo.length && bankTab !== 'done' ? '<div class="bk-bar"><button class="b-btn" onclick="bankSelSure()">Таарсныг сонгох' + (sure ? ' (' + sure + ')' : '') + '</button>' +
