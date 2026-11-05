@@ -336,7 +336,7 @@ function bankView() {
         (bankLineJ(l).some(function (x) { return jidSet[x]; }) ? ' <small style="color:var(--red)">бичилт аль хэдийн бичигдсэн — давхар тулгахгүй, «Буцаах» дарж цэвэрлэнэ үү</small> <button class="mini" onclick="bankUnmatch(\'' + jsq(l.id) + '\')">Буцаах</button>' : '') +
         (/#\d+$/.test(l.id) ? ' <small style="color:var(--red)">ижил мөр ' + String(l.id).match(/#(\d+)$/)[1] + ' — шалгана уу</small>' : '');
     }
-    var noJ = l.status === 'Тулгасан' && bankLineJ(l).length && !bankLineJ(l).some(function (x) { return jidSet[x]; });   // бичилт нь цуцлагдсан
+    var noJ = l.status === 'Тулгасан' && !/^Эхний үлдэгдэлд орсон/.test(l.link) && bankLineJ(l).length && !bankLineJ(l).some(function (x) { return jidSet[x]; });   // бичилт нь цуцлагдсан
     var match = s && !dupPick && ((s.kind === 'order' && s.sure) || (s.kind === 'shop' && s.sure) || (s.kind === 'req' && s.sure) || s.kind === 'paid');   // утас, дүн таарсан — ногооноор
     var fee = !l.credit && /хураамж|хураа$|шимтгэл/i.test(String(l.desc).trim());   // банкны хураамж — ягаан
     var boost = !l.credit && BOOST_RE.test(String(l.desc));   // Boost (зар сурталчилгаа) — цэнхэр
