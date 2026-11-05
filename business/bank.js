@@ -245,14 +245,17 @@ function bankManual(l, used) {
 // Посын мөнгө орсон мөр: борлуулалт аль хэдийн бичигдсэн тул орлого биш — Cozy-д посын авлага хаана, аяллын дэлгүүрт «Карт (POS)»-оос шилжинэ
 function posSuggest(l) {
   if (!posBiz(l.biz) || !/(^|[^a-zа-яөүё])(pos|пос)([^a-zа-яөүё]|$)/i.test(String(l.desc))) return null;
-  if (l.biz === POS_SHARE.to) return { kind: 'rule', v: 'TR:110106', kw: 'pos' };
-  var it = debtCache().rec.filter(function (x) { return x.who === POS_SHARE.rec && !x.np; })[0];
+  if (l.biz === POS_SHARE.to && l.credit) return { kind: 'rule', v: 'TR:110106', kw: 'pos' };
+  if (l.biz === POS_SHARE.from && !l.credit) return null;
+  var c = debtCache(), who = l.credit ? POS_SHARE.rec : POS_SHARE.pay;   // аяллын дэлгүүрээс Cozy руу шилжүүлсэн бол посын өглөгийг хаана — бараа татан авалт биш
+  var it = (l.credit ? c.rec : c.pay).filter(function (x) { return x.who === who && !x.np; })[0];
   return it ? { kind: 'debt', v: 'D:' + it.acc + '|' + it.key, it: it } : null;
 }
 function bankSuggest(l) {
   var rh = bankRuleHit(l), rule = rh ? { kind: 'rule', v: rh.act, kw: rh.kw } : null, mm = bankManual(l);
   var man = mm.length ? { kind: 'man', v: 'M:' + mm[0].j.id, sure: mm.length === 1, tr: mm[0].tr } : null;
   if (l.credit) { var ps = posSuggest(l); if (ps) return ps; var m = bankMatch(l); if (m) return m; var sh = shopMatch(l); if (sh) return sh; if (man) return man; if (rule) return rule; var dc = debtByName(l, debtCache().rec); if (dc) return dc; var lc = loanSuggest(l); if (lc) return lc; return { kind: 'acc', acc: '' }; }
+  var pz = posSuggest(l); if (pz) return pz;
   var bg = bbSuggest(l); if (bg) return bg;   // Boost төсөв (boostbud.js)
   var bno = bstNoIn(l.desc), inv = bno && bstInvoices().filter(function (v) { return v.no === bno; })[0];   // Boost нэхэмжлэх: утганд BST- дугаар
   if (inv) return { kind: 'bst', v: 'BST:' + bno, sure: true };
