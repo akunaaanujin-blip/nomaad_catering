@@ -9,7 +9,7 @@ function stmtDesc(d) { return String(d || '').replace(/\s*#\S+/g, '').replace('�
 function stmtBankOrder(L) {
   var rank = {}, used = {}, done = {};
   var put = function (i, n) { rank[i] = n; used[i] = 1; }, mine = function (l, x) { var inf = bankAcctInfo(l.acct); return inf && inf.acc === x.acc; };
-  var B = bankChain(bankLines.filter(function (l) { return l.biz === state.biz; }));
+  var B = bankChain(bankLines.filter(function (l) { return l.biz === state.biz && l.status === 'Тулгасан' && !/^Эхний үлдэгдэл/.test(String(l.link)); }));
   B.forEach(function (l, n) {
     String(l.jids || '').split(',').filter(Boolean).forEach(function (id) { L.forEach(function (x, i) { if (x.ref === id && !used[i] && mine(l, x)) { put(i, n); done[n] = 1; } }); });
   });
@@ -25,20 +25,28 @@ function stmtBankOrder(L) {
     });
   });
   var key = function (i) { return rank[i] !== undefined ? rank[i] : L[i].other === '4201' ? -1 : 1e9; };
+  L.forEach(function (x, i) { if (rank[i] !== undefined) x.bl = B[rank[i]]; });
   return L.map(function (x, i) { return i; }).sort(function (a, b) { return L[a].date < L[b].date ? -1 : L[a].date > L[b].date ? 1 : key(a) - key(b) || a - b; }).map(function (i) { return L[i]; });
 }
 
-// ── Дансны хуулга: касс, банк — огноо, төрөл, тайлбар, орсон, гарсан, үлдэгдэл ──
+// ── Дансны хуулга: банкны хуулгын хэлбэрээр — нэг банкны гүйлгээ нэг мөр, банкны цаг, утга, харьцсан данс; хуулгагүй (касс г.м) мөр журналын тайлбараар ──
 function repStmt(E, from, to, code) {
   var all = code === 'cashall', A = all ? cashCodes() : [code];
-  var d = drillLines({ acc: A, from: from, to: to, sign: 1, bal: true, grp: 'type' }, E), bal = d.open, tin = 0, tout = 0;
-  var rows = [{ date: from, type: '', desc: 'Эхний үлдэгдэл', acc: '', in: '', out: '', bal: r0(d.open), _b: 1 }];
+  var d = drillLines({ acc: A, from: from, to: to, sign: 1, bal: true, grp: 'type' }, E), bal = d.open, tin = 0, tout = 0, G = [];
   stmtBankOrder(d.lines).forEach(function (x) {
-    bal += x.v; if (x.v > 0) tin += x.v; else tout -= x.v;
-    rows.push({ date: x.date, type: x.key, desc: stmtDesc(x.desc), acc: accName(x.acc), in: x.v > 0 ? r0(x.v) : '', out: x.v < 0 ? r0(-x.v) : '', bal: r0(bal) });
+    var g = G[G.length - 1];
+    if (x.bl && g && g.bl === x.bl && g.acc === x.acc) g.v += x.v;   // Boost-ыг бараагаар хуваасан ч банкинд нэг гүйлгээ
+    else G.push({ bl: x.bl, acc: x.acc, v: x.v, date: x.date, key: x.key, desc: x.desc });
   });
-  var cols = [c('date', 'Огноо'), c('type', 'Төрөл'), c('desc', 'Тайлбар')].concat(all ? [c('acc', 'Данс')] : [], [m('in', 'Орсон'), m('out', 'Гарсан'), m('bal', 'Үлдэгдэл')]);
-  return { title: 'Дансны хуулга · ' + (all ? 'бүх данс' : accName(code)), cols: cols, rows: rows, hideCount: true, open: r0(d.open), tin: r0(tin), tout: r0(tout), close: r0(bal),
+  var rows = [{ date: from, open: '', in: '', out: '', bal: r0(d.open), desc: 'Эхний үлдэгдэл', party: '', acc: '', type: '', _b: 1 }];
+  G.forEach(function (g) {
+    var l = g.bl, st = bal; bal += g.v; if (g.v > 0) tin += g.v; else tout -= g.v;
+    rows.push({ date: l ? String(l.date).slice(0, 16) : g.date, open: r0(st), in: g.v > 0 ? r0(g.v) : '', out: g.v < 0 ? r0(-g.v) : '', bal: r0(bal),
+      desc: l ? l.desc : stmtDesc(g.desc), party: l ? l.party : '', acc: accName(g.acc), type: g.key });
+  });
+  var cols = [c('date', 'Гүйлгээний огноо')].concat(all ? [c('acc', 'Данс')] : [], [m('open', 'Эхний үлдэгдэл'), m('in', 'Орсон'), m('out', 'Гарсан'), m('bal', 'Эцсийн үлдэгдэл'), c('desc', 'Гүйлгээний утга'), c('party', 'Харьцсан данс'), c('type', 'Төрөл')]);
+  var pend = bankLines.filter(function (l) { var inf = bankAcctInfo(l.acct); return l.biz === state.biz && l.status === 'Шинэ' && inf && A.indexOf(inf.acc) >= 0; }).length;
+  return { title: 'Дансны хуулга · ' + (all ? 'бүх данс' : accName(code)), cols: cols, rows: rows, hideCount: true, note: pend ? 'Тулгаагүй ' + pend + ' гүйлгээ энд ороогүй — «Банкны хуулга»-д тулгасны дараа орно.' : '', open: r0(d.open), tin: r0(tin), tout: r0(tout), close: r0(bal),
     total: { desc: 'Эцсийн үлдэгдэл', in: r0(tin), out: r0(tout), bal: r0(bal) } };
 }
 function stmtPre(rep) {
