@@ -10,7 +10,15 @@ function poById(id) { return (window.pos || []).filter(function (p) { return p.i
 // Төрөл: тэмдэглэлийн эхэнд «[Хөрөнгө]» — ирэлт нь үлдэгдэлд биш, Үндсэн хөрөнгөд орно (Дт 2001 / Кт 1505 «ирэлт N · нэр × тоо #FA… #PO…»)
 var PO_FA = '[Хөрөнгө]';
 function poIsAsset(P) { return String((P || {}).note || '').indexOf(PO_FA) === 0; }
-function poNoteText(P) { return String((P || {}).note || '').replace(PO_FA, '').trim(); }
+function poNoteText(P) { return String((P || {}).note || '').replace(PO_FA, '').replace(/\[Нэр: [^\]]*\]/, '').trim(); }
+// Захиалгын нэр: хэрэглэгчийн өгсөн нэр («Тэмдэглэл»-д [Нэр: …] хэлбэрээр), нэргүй хуучин захиалгад барааны нэрс
+function poNameOwn(P) { return (String((P || {}).note || '').match(/\[Нэр: ([^\]]*)\]/) || [])[1] || ''; }
+function poTitle(P) {
+  var n = poNameOwn(P); if (n) return n;
+  var it = (P || {}).items; if (typeof it === 'string') { try { it = JSON.parse(it); } catch (e) { it = []; } }
+  it = (it || []).map(function (x) { return x.name; }).filter(Boolean);
+  return it.length ? it.slice(0, 2).join(', ') + (it.length > 2 ? ' +' + (it.length - 2) : '') : (P || {}).no || '';
+}
 function poAssetTag(P, n) {   // тэр ирэлтийн хамгийн их өртөгтэй хөрөнгө — дараа ирсэн карго түүний өртөгт нэмэгдэнэ
   var best = null;
   Jc().forEach(function (e) { if (e.dr === '2001' && e.cr === '1505' && hasTag(e.desc, P.id) && poShipRe(n).test(e.desc) && (!best || e.amount > best.amount)) best = e; });
@@ -112,7 +120,7 @@ function poView() {
     }).join('');
     var st = P.status === 'Ирсэн' ? '<span class="tag">Ирсэн ' + esc(P.recvDate || '') + '</span>' : P.status === 'Цуцалсан' ? '<span class="tag r">Цуцалсан</span>' :
       '<span class="tag b">' + (L.length ? 'Хэсэгчлэн ирсэн' : s.paid ? 'Төлбөр хийгдсэн' : 'Захиалсан') + '</span>';
-    return '<tr' + (P.status === 'Цуцалсан' ? ' style="opacity:.55"' : '') + '><td style="white-space:nowrap"><b>' + esc(P.no) + '</b><br><small class="muted">' + esc(P.date) + '</small></td><td style="min-width:110px">' + esc(P.supplier) + (P.cargoCo ? '<br><small class="muted">Карго: ' + esc(P.cargoCo) + '</small>' : '') + '</td>' +
+    return '<tr' + (P.status === 'Цуцалсан' ? ' style="opacity:.55"' : '') + '><td><b>' + esc(poTitle(P)) + '</b><br><small class="muted">' + esc(P.no) + ' · ' + esc(P.date) + '</small></td><td style="min-width:110px">' + esc(P.supplier) + (P.cargoCo ? '<br><small class="muted">Карго: ' + esc(P.cargoCo) + '</small>' : '') + '</td>' +
       '<td style="white-space:normal;min-width:180px">' + (poIsAsset(P) ? '<small class="muted">Үндсэн хөрөнгө</small><br>' : '') + esc(its.map(function (i) { return i.name + ' × ' + (rq[i.name] ? round2(rq[i.name]) + '/' : '') + i.qty; }).join(', ')) + shipTxt + '</td>' +
       '<td class="n">' + poCurAmt(P, P.total) + '</td>' +
       '<td class="n">' + (s.paid ? dl(Object.assign({}, spec, { t: spec.t + ' — нийлүүлэгчид төлсөн' }), mny(s.paid)) : '') + '</td>' +
@@ -166,6 +174,7 @@ function openPo(id, preset) {   // preset — «Захиалах» бараан�
   gOpen('<h2>' + (P ? 'Захиалга засах · ' + esc(P.no) : 'Шинэ бараа захиалга') + '</h2>' +
     '<label for="pqKind">Төрөл</label><select id="pqKind" onchange="pqRender()"' + (shipped ? ' disabled title="Ирэлт бүртгэгдсэн тул солихгүй"' : '') + '>' + (P || preset ? '' : '<option value="">Сонгоно уу</option>') +
       '<option value="goods">Дэлгүүрийн бараа — үлдэгдэлд орж зарагдана</option><option value="asset">Үндсэн хөрөнгө — дэлгүүрт өөрөө ашиглана</option></select>' +
+    '<label for="pqName">Захиалгын нэр</label><input id="pqName" maxlength="60" placeholder="Жишээ: Зүлэг 11 сар, Лего шал" autocomplete="off">' +
     '<div class="row2"><div><label for="pqSup">Нийлүүлэгч</label><input id="pqSup" list="pqSups" placeholder="Жишээ: Yiwu ..."><datalist id="pqSups">' + partnerOptions() + '</datalist></div>' +
     '<div><label for="pqDate">Огноо</label><input id="pqDate" type="date"></div></div>' +
     '<div class="row2"><div><label for="pqCur">Валют</label><select id="pqCur" onchange="pqRender()"><option value="CNY">¥ юань</option><option value="USD">$ доллар</option><option value="MNT">₮ төгрөг</option></select></div>' +
@@ -176,7 +185,7 @@ function openPo(id, preset) {   // preset — «Захиалах» бараан�
     '<label for="pqNote">Тэмдэглэл</label><input id="pqNote">' +
     '<button class="btn" onclick="savePo(' + (P ? '\'' + P.id + '\'' : '') + ')">Хадгалах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
   $('pqSup').value = P ? P.supplier : preset ? preset.supplier || '' : ''; $('pqDate').value = P ? P.date : todayStr(); $('pqCur').value = P ? P.cur : load('nb_cur', 'CNY');
-  $('pqCargo').value = P ? P.cargoCo : load('nb_cargoco', ''); $('pqNote').value = P ? poNoteText(P) : preset ? preset.note || '' : '';
+  $('pqCargo').value = P ? P.cargoCo : load('nb_cargoco', ''); $('pqNote').value = P ? poNoteText(P) : preset ? preset.note || '' : ''; $('pqName').value = P ? poNameOwn(P) : '';
   $('pqKind').value = P ? (poIsAsset(P) ? 'asset' : 'goods') : preset ? 'goods' : '';
   pqRender();
 }
@@ -201,10 +210,10 @@ function pqTot() {
 }
 function savePo(id) {
   var items = pqIt.filter(function (i) { return String(i.name).trim() && Number(i.qty) > 0; }).map(function (i) { return { name: String(i.name).trim(), qty: Number(i.qty), price: Number(i.price) || 0, cn: Number(i.cn) || 0 }; });
-  var x = { biz: state.biz, supplier: $('pqSup').value.trim(), date: $('pqDate').value, cur: $('pqCur').value, cargoCo: $('pqCargo').value.trim(), note: $('pqNote').value.trim(), items: items };
+  var x = { biz: state.biz, supplier: $('pqSup').value.trim(), date: $('pqDate').value, cur: $('pqCur').value, cargoCo: $('pqCargo').value.trim(), note: (($('pqName').value.trim() ? '[Нэр: ' + $('pqName').value.trim().replace(/[\[\]]/g, '').slice(0, 60) + '] ' : '') + $('pqNote').value.trim()).trim(), items: items };
   var kind = $('pqKind').value;
   if (!kind) { toast('Төрлөө сонгоно уу: дэлгүүрийн бараа эсвэл үндсэн хөрөнгө'); return; }
-  if (kind === 'asset') x.note = (PO_FA + ' ' + x.note).trim();
+  if (kind === 'asset') x.note = (PO_FA + ' ' + x.note).trim();   // нэр нь дээр нэмэгдсэн
   if (x.supplier.length < 2) { toast('Нийлүүлэгчийн нэрийг бичнэ үү'); return; }
   if (!items.length) { toast('Дор хаяж нэг бараа, тоотой нь бичнэ үү'); return; }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(x.date)) { toast('Огноо оруулна уу'); return; }
@@ -236,18 +245,18 @@ function poPayEntry(spec, acc, d, amt, note, cco) {   // spec: «PO123|s» (s �
   var id = spec.split('|')[0], type = spec.split('|')[1] || 's', P = poById(id); if (!P) return null;
   var ship = /^k\d+$/.test(type), fa = ship && poIsAsset(P), tag = fa ? poAssetTag(P, type.slice(1)) : '', label = poPayLabel(P, type), partner = type === 'c' || ship ? (cco || P.cargoCo || 'Карго') : P.supplier;
   return { entry: { biz: P.biz, date: d, dr: fa ? '2001' : ship ? '1404' : '1505', cr: acc, amount: amt, partner: partner, desc: ((note ? note + ' · ' : '') + P.no + ' · ' + label + ' · ' + partner).slice(0, 170) + (tag ? ' #' + tag : '') + ' #' + P.id },
-           link: 'Бараа захиалга ' + P.no + ' · ' + label };
+           link: 'Бараа захиалга · ' + poTitle(P) + ' · ' + label };
 }
 function poOpts(biz) {
   var out = [], from = todayStr(new Date(Date.now() - 180 * 864e5)), E = Jc();
   poList(biz).forEach(function (P) {
     var open = P.status === 'Захиалсан';
-    if (open) out.push(['PO:' + P.id + '|s', 'Бараа захиалга ' + P.no + ' · ' + P.supplier + ' — ' + poPayLabel(P, 's').toLowerCase()]);
+    if (open) out.push(['PO:' + P.id + '|s', poTitle(P) + ' · ' + P.supplier + ' — ' + poPayLabel(P, 's').toLowerCase()]);
     poShips(P, E).filter(function (x) { return x.date >= from; }).forEach(function (x) {
       var c = x.cargoPre + x.cargoPost;
-      out.push(['PO:' + P.id + '|k' + x.n, 'Бараа захиалга ' + P.no + ' — ' + x.n + '-р ирэлтийн карго (' + x.date.slice(5) + '-нд ирсэн' + (c ? ', бүртгэсэн ' + fmt(c) : '') + ')' + (P.cargoCo ? ' · ' + P.cargoCo : '')]);
+      out.push(['PO:' + P.id + '|k' + x.n, poTitle(P) + ' — ' + x.n + '-р ирэлтийн карго (' + x.date.slice(5) + '-нд ирсэн' + (c ? ', бүртгэсэн ' + fmt(c) : '') + ')' + (P.cargoCo ? ' · ' + P.cargoCo : '')]);
     });
-    if (open) out.push(['PO:' + P.id + '|c', 'Бараа захиалга ' + P.no + ' — карго, бараа ирэхээс өмнө' + (P.cargoCo ? ' (' + P.cargoCo + ')' : '')]);
+    if (open) out.push(['PO:' + P.id + '|c', poTitle(P) + ' — карго, бараа ирэхээс өмнө' + (P.cargoCo ? ' (' + P.cargoCo + ')' : '')]);
   });
   return out;
 }
