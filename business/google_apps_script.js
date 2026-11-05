@@ -2040,6 +2040,7 @@ function staffPo(d) {
   const cut = Utilities.formatDate(new Date(Date.now() - 60 * 864e5), TZ, 'yyyy-MM-dd'), cut30 = Utilities.formatDate(new Date(Date.now() - 30 * 864e5), TZ, 'yyyy-MM-dd');
   const list = cacheGet('po', poRows).filter(function (p) { return p.biz === who.biz && (p.status === 'Захиалсан' || (p.status === 'Ирсэн' && p.recvDate >= cut)); });
   const mv = stockMoves().filter(function (m) { return m.biz === who.biz && m.kind === 'Орлого' && m.pay === 'Захиалга'; });
+  const cargoJ = cacheGet('jr', journalRows).filter(function (e) { return e.biz === who.biz && e.status !== 'Цуцалсан' && /карго/i.test(e.desc); });
   const pos = list.map(function (p) {
     const re = new RegExp('#' + p.id + '(?![\\w])'), got = {}, S = {};
     mv.forEach(function (m) {
@@ -2050,6 +2051,10 @@ function staffPo(d) {
     return { id: p.id, no: p.no, date: p.date, supplier: p.supplier, cargoCo: p.cargoCo, status: p.status,   // үнэ буцаахгүй
       items: (p.items || []).map(function (i) { return { name: i.name, qty: i.qty, got: Math.round((got[i.name] || 0) * 1000) / 1000 }; }),
       ships: Object.keys(S).map(function (n) { return { n: Number(n), date: S[n] }; }).sort(function (a, b) { return a.n - b.n; }) };
+  }).filter(function (p) {   // бүрэн ирсэн, карго нь бүртгэгдсэн захиалга хүлээгдэхгүй — ажилтны жагсаалтаас нуух (нэмэлт каргог удирдлага бүртгэнэ)
+    if (p.status !== 'Ирсэн' || !p.items.every(function (i) { return i.got >= i.qty; })) return true;
+    const re = new RegExp('#' + p.id + '(?![\\w])');
+    return !cargoJ.some(function (e) { return re.test(e.desc); });
   });
   const sent = poInRows().filter(function (x) { return x.biz === who.biz && (x.status === 'Хүлээгдэж' || x.at.slice(0, 10) >= cut30); }).map(function (x) { delete x.row; return x; }).reverse();
   return { status: 'ok', pos: pos, sent: sent };
