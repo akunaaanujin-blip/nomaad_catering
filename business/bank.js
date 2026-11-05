@@ -345,11 +345,8 @@ function bankView() {
       if (def) defSeen[def] = 1;
       bankPick[l.id] = def;
       var iv = loanIntSuggest(def, l);
-      var groups = [], byG = {};
-      opts.forEach(function (o) { var g = o[2] || 'Бусад'; if (!byG[g]) { byG[g] = []; groups.push(g); } byG[g].push(o); });
-      sel = '<select onchange="bankPick[\'' + jsq(l.id) + '\']=this.value;bankPickChange(\'' + jsq(l.id) + '\')" style="max-width:280px"><option value="">— Сонгох —</option>' + groups.map(function (g) {
-        return '<optgroup label="' + esc(g) + '">' + byG[g].map(function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] === def ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</optgroup>';
-      }).join('') + '</select>' +
+      bankOptsBy[l.id] = opts;
+      sel = '<span id="bp_' + esc(l.id) + '">' + bankPickHtml(l, def) + '</span>' +
         '<small class="muted bk-int" id="bi_' + esc(l.id) + '" style="display:' + (iv === null ? 'none' : 'block') + '">' + esc(iv || '') + '</small>' +
         (s.kind === 'order' ? ' <small class="muted">санал: ' + (s.sure ? 'утас, дүн таарсан' : 'шалгаж сонгоно уу') + (s.fee > 0 ? ' · буухиагийн хөлс ' + fmt(s.fee) : '') + '</small>' : '') +
         (s.kind === 'debt' ? ' <small class="muted">санал: нэр таарсан — шалгаж сонгоно уу</small>' : '') +
@@ -376,6 +373,54 @@ function bankView() {
     tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th class="bk-ck">' + (list.some(function (l) { return l.status === 'Шинэ'; }) ? '<input type="checkbox" title="Бүгдийг сонгох" onchange="bankSelAll(this.checked)">' : '') + '</th><th>Огноо</th><th>Гүйлгээний утга</th><th class="n">Орлого</th><th class="n">Зарлага</th><th class="n">Эцсийн үлдэгдэл</th><th>Тулгах баримт</th><th></th></tr>' +
     (rows || '<tr><td colspan="8" class="muted">' + (all.length ? 'Тулгах гүйлгээ алга' : 'Хуулга оруулаагүй байна — «Хуулга оруулах» дарна уу') + '</td></tr>') + '</table></div></div>' +
     bankLogCard(biz) + bankRulesCard(biz);
+}
+// ── «Тулгах баримт» хоёр алхмаар: эхлээд төрөл (Юу вэ?), дараа нь тэр төрлийн доторхоос (Аль нь?) ──
+var bankOptsBy = {}, bankCatNow = {};
+var BK_CAT_IN = ['Захиалгын төлбөр', 'Буухиа тооцоо', 'Дэлгүүрийн борлуулалт', 'Авлага орсон', 'Бүртгэлтэй бичилттэй холбох', 'Шилжүүлэг (данс, компани хооронд)', 'Зээл', 'Хөрөнгө оруулалт', 'Удирдлага буцааж төлсөн', 'Бусад орлого', 'Алгасах (тулгахгүй)'];
+var BK_CAT_OUT = ['Зардал', 'Бараа, нийлүүлэгч', 'Boost, зар сурталчилгаа', 'Батлагдсан мөнгөний хүсэлт', 'Цалин, татвар', 'Удирдлагын зарлага', 'Бүртгэлтэй бичилттэй холбох', 'Шилжүүлэг (данс, компани хооронд)', 'Зээл', 'Эзэмшигч мөнгө авсан', 'Алгасах (тулгахгүй)'];
+function bankCat(v, credit) {
+  var k = String(v).split(':')[0], c = String(v).slice(k.length + 1);
+  if (v === 'skip') return 'Алгасах (тулгахгүй)';
+  if (k === 'M' || k === 'P') return 'Бүртгэлтэй бичилттэй холбох';
+  if (k === 'TR' || k === 'IC') return 'Шилжүүлэг (данс, компани хооронд)';
+  if (k === 'L' || k === 'LN' || c === '3501') return 'Зээл';
+  if (credit) return k === 'O' ? 'Захиалгын төлбөр' : k === 'EB' ? 'Буухиа тооцоо' : k === 'S' || c === '5101' ? 'Дэлгүүрийн борлуулалт' : k === 'D' || c === '1201' ? 'Авлага орсон' : c === '4101' ? 'Хөрөнгө оруулалт' : c === '1208' ? 'Удирдлага буцааж төлсөн' : 'Бусад орлого';
+  if (k === 'R') return 'Батлагдсан мөнгөний хүсэлт';
+  if (k === 'BG' || k === 'BST' || c === '3801' || c === '7120') return 'Boost, зар сурталчилгаа';
+  if (k === 'PO' || k === 'D' || c === '1404' || c === '3101') return 'Бараа, нийлүүлэгч';
+  if (/^(3301|3403|3404)$/.test(c)) return 'Цалин, татвар';
+  if (k === 'MZ' || c === '1208') return 'Удирдлагын зарлага';
+  if (c === '4101') return 'Эзэмшигч мөнгө авсан';
+  return 'Зардал';
+}
+function bankOptName(id, v) { var o = (bankOptsBy[id] || []).filter(function (x) { return x[0] === v; })[0]; return o ? o[1] : ''; }
+function bankItemsHtml(l, cat, pick) {
+  var cr = !!l.credit, L = (bankOptsBy[l.id] || []).filter(function (o) { return bankCat(o[0], cr) === cat; });
+  if (!L.length) return '';
+  if (L.length === 1) return '<small class="muted" style="display:block;max-width:280px">' + esc(L[0][1]) + '</small>';
+  if (cat === 'Зардал') {   // хамгийн их хэрэглэсэн зардал эхэнд
+    var use = {}; (journal || []).forEach(function (j) { if (j.biz === l.biz) use[j.dr] = (use[j.dr] || 0) + 1; });
+    var u = function (o) { return use[String(o[0]).slice(2)] || 0; };
+    L = L.slice().sort(function (a, b) { return u(b) - u(a); }).map(function (o) { return [o[0], o[1], u(o) ? 'Хэрэглэж байсан' : 'Бусад зардал']; });
+  }
+  var G = [], B = {}; L.forEach(function (o) { var g = o[2] || cat; if (!B[g]) { B[g] = []; G.push(g); } B[g].push(o); });
+  var op = function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] === pick ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; };
+  return '<select onchange="bankPick[\'' + jsq(l.id) + '\']=this.value;bankPickChange(\'' + jsq(l.id) + '\')" style="max-width:280px;display:block;margin-top:4px"><option value="">— Аль нь? —</option>' +
+    (G.length > 1 ? G.map(function (g) { return '<optgroup label="' + esc(g) + '">' + B[g].map(op).join('') + '</optgroup>'; }).join('') : L.map(op).join('')) + '</select>';
+}
+function bankPickHtml(l, pick) {
+  var cr = !!l.credit, have = {}; (bankOptsBy[l.id] || []).forEach(function (o) { have[bankCat(o[0], cr)] = 1; });
+  var cat = pick ? bankCat(pick, cr) : bankCatNow[l.id] || '';
+  if (cat && !have[cat]) cat = '';
+  return '<select onchange="bankCatSet(\'' + jsq(l.id) + '\',this.value)" style="max-width:280px;display:block"><option value="">— Юу вэ? —</option>' +
+    (cr ? BK_CAT_IN : BK_CAT_OUT).filter(function (c) { return have[c]; }).map(function (c) { return '<option' + (c === cat ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select>' + (cat ? bankItemsHtml(l, cat, pick) : '');
+}
+function bankCatSet(id, cat) {
+  var l = bankLines.filter(function (x) { return x.id === id; })[0]; if (!l) return;
+  var L = (bankOptsBy[id] || []).filter(function (o) { return bankCat(o[0], !!l.credit) === cat; });
+  bankCatNow[id] = cat; bankPick[id] = L.length === 1 ? L[0][0] : '';
+  var el = document.getElementById('bp_' + id); if (el) el.innerHTML = bankPickHtml(l, bankPick[id]);
+  bankPickChange(id);
 }
 // Мөрийн сонголтод: гараар оруулсан бүртгэл (±3 хоног, ижил дүн) ба данс хоорондын шилжүүлэг
 function bankXOpts(l) {
@@ -535,14 +580,14 @@ function bankApply(ids, quiet) {
     if (l0 && p0 && p0 !== 'skip') {
       var what = p0.indexOf('O:') === 0 ? 'захиалга ' + (((window.adminOrders || []).filter(function (o) { return o.id === p0.slice(2); })[0]) || {}).phone + ' — төлбөрийг баталгаажуулж санхүүд бичнэ' + bankDiffNote(l0, p0) :
                  p0.indexOf('P:') === 0 ? 'өмнө баталгаажсан захиалга (давхар бичихгүй)' :
-                 p0.indexOf('M:') === 0 ? 'бүртгэлтэй тулгана (шинэ бичилт үүсгэхгүй): ' + ([].filter.call(document.querySelectorAll('option'), function (o) { return o.value === p0; })[0] || {}).textContent :
+                 p0.indexOf('M:') === 0 ? 'бүртгэлтэй тулгана (шинэ бичилт үүсгэхгүй): ' + bankOptName(ids[0], p0) :
                  p0.indexOf('TR:') === 0 ? 'данс хоорондын шилжүүлэг ' + (l0.credit ? p0.slice(3) + ' → ' : '→ ') + accName(p0.slice(3)) + ' (орлого, зардалд орохгүй)' :
                  p0.indexOf('S:') === 0 ? 'дэлгүүрийн борлуулалттай тулгана (орлого бүртгэлтэй — мөнгө «Баталгаажаагүй шилжүүлэг»-ээс харилцах руу орно)' + bankDiffNote(l0, p0) :
-                 p0.indexOf('R:') === 0 ? 'мөнгөний хүсэлт: ' + ([].filter.call(document.querySelectorAll('option'), function (o) { return o.value === p0; })[0] || {}).textContent + ' — зардлаар бичигдэж хүсэлт «Төлсөн» болно' :
+                 p0.indexOf('R:') === 0 ? 'мөнгөний хүсэлт: ' + bankOptName(ids[0], p0) + ' — зардлаар бичигдэж хүсэлт «Төлсөн» болно' :
                  p0.indexOf('D:') === 0 ? (bankDebt(p0) ? debtLabel(bankDebt(p0)) + ' — хаана' : 'өр / авлага') :
                  p0.indexOf('MG:') === 0 || p0 === 'A:1208' ? 'удирдлагын зарлага — Дт 1208 / Кт банк (Удирдлагын авлага, ашигт нөлөөлөхгүй)' :
                  p0.indexOf('MZ:') === 0 ? 'удирдлагын зарлага (Удирдлагын авлага, ашигт нөлөөлөхгүй) · ' + (loanById(p0.slice(3)) || {}).partner + ' — ' + loanIntSuggest(p0, l0) :
-                 /^(IC|L|PO|BG):/.test(p0) ? ([].filter.call(document.querySelectorAll('option'), function (o) { return o.value === p0; })[0] || {}).textContent || p0 :
+                 /^(IC|L|PO|BG):/.test(p0) ? bankOptName(ids[0], p0) || p0 :
                  accName(p0.slice(2)) + bankDupNote(l0, p0);
       askMsg = l0.date + ' · ' + (l0.credit ? '+' + fmt(l0.credit) : '−' + fmt(l0.debit)) + '\n«' + l0.desc + '»\n\n→ ' + what;   // бичилт бэлэн болмогц нөлөөтэй нь асууна
     }
