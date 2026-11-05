@@ -138,7 +138,7 @@ function ordStTag(o) {
 function payStTag(o) {
   if (o.saleDone === 'returned' && o.confirmed) return stTag('Буцаан олгосон', 'r');
   if (o.confirmed && /буухиа хураасан/.test(o.confirmed)) return stTag('Буухиа хураасан', 'b');   // мөнгө буухиа дээр — шилжүүлэхэд хаагдана
-  if (o.confirmed) return stTag('Төлсөн', 'g');
+  if (o.confirmed) return ordDue(o) > 0.5 ? stTag('Хэсэгчлэн төлсөн · үлдэгдэл ' + fmt(ordDue(o)), 'y') : stTag('Төлсөн', 'g');
   if (ordEbDone(o)) return stTag('Төлсөн · буухиа тооцоо', 'g');
   if (ordDead(o)) return stTag('—', 'n');
   return stTag(o.paid === 'Орсон' ? 'Төлөөгүй · ажилтан «орсон»' : 'Төлөөгүй', 'y');

@@ -7,15 +7,15 @@
 var DIRECTOR = 'Удирдлагын авлага';   // удирдлагын зарлага (1208) — харилцагч
 var bankLines = [], bankTab = 'todo', bankPick = {}, bankSel = {}, bankWho = {};
 var BANK_IN = [['5201', 'Бусад орлого'], ['5101', 'Борлуулалт (системээс гадуур)'], ['4101', 'Хөрөнгө оруулалт (эзэн, хөрөнгө оруулагч)'], ['1201', 'Авлага орж ирсэн'],
-  ['3501', 'Зээл авсан (бүртгэлгүй)'], ['5202', 'Хүүгийн орлого'], ['1208', 'Удирдлага зарлагаа буцааж төлсөн'], ['10003', 'Кассаас тушаасан'], ['skip', 'Тулгахгүй (алгасах)']];
+  ['3501', 'Зээл авсан (бүртгэлгүй)'], ['5202', 'Хүүгийн орлого'], ['1208', 'Удирдлага зарлагаа буцааж төлсөн'], ['skip', 'Тулгахгүй (алгасах)']];
 // Зарлагын «Тулгах баримт»: төлбөр, шилжүүлэг + Baaz-ын зардлын данс бүлгээрээ (дансны төлөвлөгөөнөөс)
 var BANK_PAY = [['1404', 'Бараа татан авалт'], ['3101', 'Нийлүүлэгчид төлсөн'], ['3301', 'Цалин олгосон'], ['3403', 'НДШ төлсөн'], ['3404', 'ХХОАТ төлсөн'],
-  ['3801', 'Сурталчилгаа (Boost) төлсөн — ажилтны бүртгэлийн өглөг'], ['1208', 'Бусад удирдлагын зарлага'], ['3501', 'Зээл төлсөн (бүртгэлгүй)'], ['4101', 'Эзэмшигч мөнгө авсан'], ['10003', 'Касс руу бэлэн гаргасан'], ['skip', 'Тулгахгүй (алгасах)']];
+  ['3801', 'Сурталчилгаа (Boost) төлсөн — ажилтны бүртгэлийн өглөг'], ['1208', 'Бусад удирдлагын зарлага'], ['3501', 'Зээл төлсөн (бүртгэлгүй)'], ['4101', 'Эзэмшигч мөнгө авсан'], ['skip', 'Тулгахгүй (алгасах)']];
 // 70xx (удирдлагын) зардлыг компанид сонгохгүй — удирдлагын зардлыг «Удирдлагын зарлага» (1208, ашигт нөлөөлөхгүй)-аар; удирдлагын санхүүд өөрөө шууд сонгоно
 function bankOutOpts() {
   var grp = function (c) { return /^70/.test(c) ? 'Ерөнхий ба удирдлагын зардал' : /^71/.test(c) ? 'Борлуулалт, маркетингийн зардал' : 'Бусад зардал'; };
   return BANK_PAY.map(function (a) { return [a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1], a[0] === '1208' ? 'Удирдлагын зардал' : 'Төлбөр, шилжүүлэг']; })
-    .concat(ACCOUNTS.filter(function (a) { return a[2] === 'exp' && !accHidden(a[0]) && !(state.biz !== 'mgmt' && BUSINESSES.mgmt && /^70/.test(a[0])); }).map(function (a) { return ['A:' + a[0], a[0] + ' ' + a[1], grp(a[0])]; }));
+    .concat(ACCOUNTS.filter(function (a) { return a[2] === 'exp' && !accHidden(a[0]) && !(state.biz !== 'mgmt' && BUSINESSES.mgmt && /^70/.test(a[0])); }).map(function (a) { return ['A:' + a[0], a[1], grp(a[0])]; }));
 }
 var BOOST_RE = /boost|буст|реклам|фэйсбүүк|facebook|\bmeta\b/i;
 var BANK_RULES = [[/boost|реклам|фэйсбүүк|facebook|\bmeta\b|(^|[^а-яөүё])зар([^а-яөүё]|$)/i, '7120'],   // 2026-11-02: Boost-ыг банкаар төлсөн дүнгээр зардал (Дт 7120) — ажилтны Boost бүртгэл зөвхөн шинжилгээнд
@@ -212,7 +212,7 @@ function bankUsed() {
     if (b.status === 'Устгасан') return;
     var inf = bankAcctInfo(b.acct), a = inf ? inf.acc : '';
     String(b.jids || '').split(',').forEach(function (j) { if (j) u[j + '|' + a] = b.id; });
-    var m = String(b.link || '').match(/#([\w-]+)$/); if (m) u[m[1] + '|' + a] = b.id;
+    var m = String(b.link || '').match(/#([\w-]+)$/); if (m) { u[m[1] + '|' + a] = b.id; (debtCache().grp[m[1]] || []).forEach(function (r) { u[r + '|' + a] = b.id; }); }
   });
   return u;
 }
@@ -279,7 +279,7 @@ function bankView() {
       '<button class="b-btn primary" id="bkSelBtn" onclick="bankApplySel()">Сонгосныг тулгах (' + Object.keys(bankSel).length + ')</button>' +
       '<span class="muted" style="font-size:12.5px">Мөр бүрийн «Тулгах баримт» сонголтоор тулгана. Сонголтгүй мөр алгасагдана.</span></div>' : '');
   var defSeen = {};
-  var rows = list.map(function (l) {
+  var rows = list.slice().reverse().map(function (l) {   // хуучнаас нь: ижил баримтын санал эхний гүйлгээнд очно
     var s = l.status === 'Шинэ' ? bankSuggest(l) : null, sel = '', dupPick = false;
     if (s) {
       var opts = [], cur = bankPick[l.id];   // [утга, нэр, бүлэг]
@@ -311,6 +311,7 @@ function bankView() {
       }
       var def = cur || (l.credit && /буух|ebuu/i.test(l.desc) && typeof ebBankOpen === 'function' ? 'EB:set' : '') || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id + '|' + s.j.id : s.kind === 'shop' || s.kind === 'req' || s.kind === 'man' || s.kind === 'rule' || s.kind === 'bst' || s.kind === 'bg' ? s.v : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : '');
       if (/^MG:/.test(def)) def = 'A:1208';   // хуучин дүрэм
+      if (def === 'A:10003') def = 'TR:10003';   // касс — данс хоорондын шилжүүлэг
       if (def && !opts.some(function (o) { return o[0] === def; })) def = '';   // жагсаалтад байхгүй сонголт далд үлдэхгүй
       dupPick = /^[ORMSP]:/.test(def) && !!defSeen[def];   // нэг баримтыг хоёр мөр зэрэг санал болгохгүй
       if (dupPick && def !== cur) def = '';
@@ -332,6 +333,7 @@ function bankView() {
         (s.kind === 'bst' ? ' <small class="muted">' + (s.sure ? 'утганд нэхэмжлэхийн дугаар таарсан' : 'Boost — нэхэмжлэхээ сонгож тулгана') + ' · «Тулгах» дарахад хуваарилалт харагдана</small>' : '') +
         (s.kind === 'bg' ? ' <small class="muted">санал: Boost төсөв' + (s.sure ? ' (дугаар таарсан)' : ' (дүн таарсан — шалгана уу)') + '</small>' : '') +
         (dupPick ? ' <small style="color:var(--red)">энэ баримт өөр мөрт сонгогдсон — шалгана уу</small>' : '') +
+        (bankLineJ(l).some(function (x) { return jidSet[x]; }) ? ' <small style="color:var(--red)">бичилт аль хэдийн бичигдсэн — давхар тулгахгүй, «Буцаах» дарж цэвэрлэнэ үү</small> <button class="mini" onclick="bankUnmatch(\'' + jsq(l.id) + '\')">Буцаах</button>' : '') +
         (/#\d+$/.test(l.id) ? ' <small style="color:var(--red)">ижил мөр ' + String(l.id).match(/#(\d+)$/)[1] + ' — шалгана уу</small>' : '');
     }
     var noJ = l.status === 'Тулгасан' && bankLineJ(l).length && !bankLineJ(l).some(function (x) { return jidSet[x]; });   // бичилт нь цуцлагдсан
@@ -339,9 +341,9 @@ function bankView() {
     var fee = !l.credit && /хураамж|хураа$|шимтгэл/i.test(String(l.desc).trim());   // банкны хураамж — ягаан
     var boost = !l.credit && BOOST_RE.test(String(l.desc));   // Boost (зар сурталчилгаа) — цэнхэр
     return '<tr' + (match ? ' class="bk-match" title="Утас, дүн таарсан"' : fee ? ' class="bk-fee" title="Банкны хураамж"' : boost ? ' class="bk-boost" title="Boost (зар сурталчилгаа)"' : '') + '><td class="bk-ck">' + (s ? '<input type="checkbox" data-id="' + esc(l.id) + '"' + (bankSel[l.id] ? ' checked' : '') + ' onchange="bankSelSet(this)">' : '') + '</td><td>' + esc(l.date) + '</td><td>' + esc(l.desc) + '</td><td class="n" style="color:var(--green)">' + (l.credit ? '+' + fmt(l.credit).slice(1) : '') + '</td>' +
-      '<td class="n neg">' + (l.debit ? '−' + fmt(l.debit).slice(1) : '') + '</td><td class="n nw">' + (l.bal || l.bal === 0 ? fmt(l.bal).slice(1) : '') + '</td><td>' + (s ? sel : '<span class="tag">' + esc(l.status) + '</span> <small class="muted">' + esc(l.link) + '</small>' + (noJ ? ' <small style="color:var(--red)">бичилт алга — буцааж дахин тулгана уу</small>' : '')) + '</td>' +
+      '<td class="n neg">' + (l.debit ? '−' + fmt(l.debit).slice(1) : '') + '</td><td class="n nw">' + (l.bal || l.bal === 0 ? fmt(l.bal).slice(1) : '') + '</td><td>' + (s ? sel : '<span class="tag">' + esc(l.status) + '</span> <small class="muted">' + esc(String(l.link).replace(/^\d{4,6} /, '').replace(/ #[\w-]+/g, '')) + '</small>' + (noJ ? ' <small style="color:var(--red)">бичилт алга — буцааж дахин тулгана уу</small>' : '')) + '</td>' +
       '<td class="n" style="white-space:nowrap">' + (s ? '<button class="mini" style="color:var(--accent)" onclick="bankApply([\'' + jsq(l.id) + '\'])">Тулгах</button> <button class="mini" title="Энэ утгатай гүйлгээнд сонгосон үйлдлийг дараа нь урьдчилан бөглөнө" onclick="bankRuleAdd(\'' + jsq(l.id) + '\')">Дүрэм болгох</button> <button class="mini" title="Хуулгаас устгах" onclick="bankDel([\'' + jsq(l.id) + '\'])">Устгах</button>' : '<button class="mini" title="Тулгалтыг буцааж дахин «Тулгаагүй» болгоно" onclick="bankUnmatch(\'' + jsq(l.id) + '\')">Буцаах</button>') + '</td></tr>';
-  }).join('');
+  }).reverse().join('');
   return head + '<div class="card"><h2>Төлбөрийн мэдээлэл (хэрэглэгчид илгээх мессежид)</h2><div class="bar-row"><input id="payInfo" value="' + esc(pay) + '" placeholder="Жишээ: Хаан банк 53xxxxxxxx (Н.Анужин)" style="flex:1;min-width:220px">' +
     '<button class="b-btn" onclick="savePayInfo()">Хадгалах</button></div><p class="muted" style="font-size:12.5px;margin-top:6px">Ажилтан захиалга бүртгэхэд «Төлбөрийн мессеж»-д энэ данс, дүн, «Гүйлгээний утга: утасны дугаар» бичигдэнэ — тулгалт автоматаар таарна.</p></div>' +
     tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th class="bk-ck">' + (list.some(function (l) { return l.status === 'Шинэ'; }) ? '<input type="checkbox" title="Бүгдийг сонгох" onchange="bankSelAll(this.checked)">' : '') + '</th><th>Огноо</th><th>Гүйлгээний утга</th><th class="n">Орлого</th><th class="n">Зарлага</th><th class="n">Эцсийн үлдэгдэл</th><th>Тулгах баримт</th><th></th></tr>' +
@@ -352,9 +354,9 @@ function bankView() {
 function bankXOpts(l) {
   var inf = bankAcctInfo(l.acct), acc = inf ? inf.acc : '';
   var o = bankManual(l).map(function (m) { var j = m.j, other = l.credit ? j.cr : j.dr;
-    return ['M:' + j.id, j.date + ' · ' + String(j.desc || '').slice(0, 50) + ' · ' + fmt(j.amount) + ' · ' + other + ' ' + accName(other), m.tr ? 'Данс хоорондын шилжүүлэг (нөгөө хуулгаас бүртгэгдсэн)' : 'Гараар оруулсан бүртгэлтэй тулгах']; });
+    return ['M:' + j.id, j.date + ' · ' + String(j.desc || '').slice(0, 50) + ' · ' + fmt(j.amount) + ' · ' + accName(other), m.tr ? 'Данс хоорондын шилжүүлэг (нөгөө хуулгаас бүртгэгдсэн)' : 'Гараар оруулсан бүртгэлтэй тулгах']; });
   cashCodes().filter(function (c) { return c !== acc && !accHidden(c); }).forEach(function (c) {
-    o.push(['TR:' + c, (l.credit ? c + ' ' + accName(c) + '-аас орсон' : c + ' ' + accName(c) + ' руу'), 'Данс хоорондын шилжүүлэг']); });
+    o.push(['TR:' + c, (l.credit ? accName(c) + '-аас орсон' : accName(c) + ' руу'), 'Данс хоорондын шилжүүлэг']); });
   return o;
 }
 // ── Дүрэм (Rules): гүйлгээний утгад түлхүүр үг → алгасах / шилжүүлэг / ангилал ──
@@ -500,6 +502,7 @@ function bankApply(ids, quiet) {
     if (!w0 || !w0.trim()) { toast('Харилцагчгүй бол авлага, өглөг хаагдахгүй — нэрээ бичнэ үү'); return; }
     bankWho[ids[0]] = w0.trim();
   }
+  var askMsg = '';
   if (!quiet && ids.length === 1) {   // хэрэглэгчээс баталгаажуулна
     var l0 = bankLines.filter(function (x) { return x.id === ids[0]; })[0], p0 = bankPick[ids[0]] || '';
     if (l0 && p0 && p0 !== 'skip') {
@@ -513,11 +516,13 @@ function bankApply(ids, quiet) {
                  p0.indexOf('MG:') === 0 || p0 === 'A:1208' ? 'удирдлагын зарлага — Дт 1208 / Кт банк (Удирдлагын авлага, ашигт нөлөөлөхгүй)' :
                  p0.indexOf('MZ:') === 0 ? 'удирдлагын зарлага (Удирдлагын авлага, ашигт нөлөөлөхгүй) · ' + (loanById(p0.slice(3)) || {}).partner + ' — ' + loanIntSuggest(p0, l0) :
                  /^(IC|L|PO|BG):/.test(p0) ? ([].filter.call(document.querySelectorAll('option'), function (o) { return o.value === p0; })[0] || {}).textContent || p0 :
-                 p0.slice(2) + ' ' + accName(p0.slice(2));
-      if (!confirm(l0.date + ' · ' + (l0.credit ? '+' + fmt(l0.credit) : '−' + fmt(l0.debit)) + '\n«' + l0.desc + '»\n\n→ ' + what + '\n\nТулгах уу?')) return;
+                 accName(p0.slice(2)) + bankDupNote(l0, p0);
+      askMsg = l0.date + ' · ' + (l0.credit ? '+' + fmt(l0.credit) : '−' + fmt(l0.debit)) + '\n«' + l0.desc + '»\n\n→ ' + what;   // бичилт бэлэн болмогц нөлөөтэй нь асууна
     }
   }
-  var entries = [], orderUpd = [], updates = [], biz = state.biz, loanCloseIds = [], reqDone = [], seen = {}, dupN = 0, noWho = 0;
+  var entries = [], orderUpd = [], updates = [], biz = state.biz, loanCloseIds = [], reqDone = [], seen = {}, dupN = 0, noWho = 0, liveN = 0, ordLocal = [], jl = {};
+  (journal || []).forEach(function (j) { jl[j.id] = 1; });
+  ids = ids.filter(function (id) { var x = bankLines.filter(function (y) { return y.id === id; })[0]; if (x && bankLineJ(x).some(function (j) { return jl[j]; })) { liveN++; return false; } return true; });   // өмнө нь бичилт үүссэн (сүлжээ тасарсан) мөрийг дахин бичихгүй
   ids = ids.filter(function (id) { var p = bankPick[id] || ''; if (!/^[ORMSP]:/.test(p)) return true; if (seen[p]) { dupN++; return false; } seen[p] = 1; return true; });   // нэг баримтад нэг мөр
   // мөр бүрээс үүссэн бичилтэд bankId — сервер тэр мөрийн «Бичилт»-д ID-г хадгална (импорт буцаахад цуцлагдана)
   ids.forEach(function (id) { var n0 = entries.length; bankOne(id); for (var k = n0; k < entries.length; k++) entries[k].bankId = id; });
@@ -555,7 +560,7 @@ function bankApply(ids, quiet) {
       var pe = orderPayEntries(o, biz, acc, d, l.credit, fee, '7124', 'банк');
       entries = entries.concat(pe.entries);
       orderUpd.push({ id: o.id, fields: { confirmed: d + ' банк', saleDone: pe.saleDone, note: 'Банк ' + d } });
-      o.paid = 'Орсон'; o.confirmed = d + ' банк'; if (pe.saleDone) o.saleDone = pe.saleDone;
+      ordLocal.push({ o: o, d: d, sd: pe.saleDone });
       updates.push({ id: id, status: 'Тулгасан', link: 'Захиалга ' + o.phone + ' #' + o.id });
       return;
     }
@@ -609,14 +614,16 @@ function bankApply(ids, quiet) {
                           : { biz: biz, date: d, dr: a2, cr: acc, amount: amt, desc: l.desc.slice(0, 120) || 'Банкны зарлага', partner: who || (a2 === '1208' ? DIRECTOR : (a2 === '7120' || a2 === '3801') && BOOST_RE.test(l.desc) ? BOOST_PARTNER : '') });
     updates.push({ id: id, status: 'Тулгасан', link: a2 === '1208' ? MG_EXP : a2 + ' ' + accName(a2) });
   }
-  var skipMsg = (dupN ? dupN + ' мөр ижил баримттай тул алгаслаа. ' : '') + (noWho ? noWho + ' мөрийг харилцагчгүй тул алгаслаа — нэг нэгээр тулгана уу. ' : '');
+  var skipMsg = (liveN ? liveN + ' мөрт бичилт бичигдсэн байна — «Буцаах» дарна уу. ' : '') + (dupN ? dupN + ' мөр ижил баримттай тул алгаслаа. ' : '') + (noWho ? noWho + ' мөрийг харилцагчгүй тул алгаслаа — нэг нэгээр тулгана уу. ' : '');
   if (!updates.length) { if (skipMsg) toast(skipMsg); return; }
+  if (askMsg && !confirm(askMsg + '\n\n' + bankEffect(entries, biz) + '\n\nТулгах уу?')) return;
   // Өглөг хасах гарах уу (өр байхгүй атал төлсөн): тулгахаас өмнө анхааруулна
   if (typeof liabNegative === 'function') {
     var nb = {}; liabNegative(J(), '9999-12-31').forEach(function (n) { nb[n.acc + '|' + n.who] = n.v; });
     var ng = liabNegative(J().concat(entries.filter(function (e) { return e.biz === biz; })), '9999-12-31').filter(function (n) { var p = nb[n.acc + '|' + n.who]; return p === undefined || n.v < p - TOL; });
     if (ng.length && !confirm('Анхаар: өглөг хасах гарна (өр байхгүй атал төлж байна):\n' + ng.map(function (n) { return n.acc + ' ' + accName(n.acc) + ' · ' + n.who + ' · ' + fmt(n.v); }).join('\n') + '\n\nЗөв ангилсан эсэхээ шалгана уу. Үргэлжлүүлэх үү?')) return;
   }
+  ordLocal.forEach(function (x) { x.o.paid = 'Орсон'; x.o.confirmed = x.d + ' банк'; if (x.sd) x.o.saleDone = x.sd; });
   if (!API_URL) {
     entries.forEach(function (e, i) { e.id = 'J' + Date.now() + '-' + i; e.by = ownerName; journal.push(e); });
     updates.forEach(function (u) { bankLines.forEach(function (l) { if (l.id === u.id) { l.status = u.status; l.link = u.link; } }); });
@@ -638,6 +645,22 @@ function bankApply(ids, quiet) {
   };
   if (entries.length) post({ type: 'admin_journal', by: ownerName, entries: entries }, function (err) { if (err) { if (err !== 'locked') toast('Журнал бичигдсэнгүй: ' + err); refresh(); return; } rest(); });
   else rest();
+}
+// Батлахын өмнө нөлөөг энгийнээр: Мөнгө, Авлага, Өглөг, Ашиг
+function bankEffect(E, biz) {
+  E = E.filter(function (e) { return e.biz === biz; });
+  if (!E.length) return 'Шинэ бичилтгүй — зөвхөн холбоно.';
+  var m = 0, r = 0, p = 0, a = 0, sg = function (v) { return (v > 0 ? '+' : '−') + fmt(Math.abs(v)); };
+  E.forEach(function (e) { [[e.dr, e.amount], [e.cr, -e.amount]].forEach(function (x) {
+    var A = ACC[x[0]] || {}, v = x[1];
+    if (A.cash) m += v; else if (/^(1201|1207|1208|1209|1210|1290|1298)$/.test(x[0])) r += v; else if (A.type === 'liab') p -= v; else if (/^[5-9]/.test(x[0])) a -= v;
+  }); });
+  return [['Мөнгө', m], ['Авлага', r], ['Өглөг, зээл', p], ['Ашиг', a]].filter(function (x) { return Math.abs(x[1]) >= 0.5; }).map(function (x) { return x[0] + ': ' + sg(x[1]); }).join('\n') || 'Мөнгө, ашигт нөлөөлөхгүй.';
+}
+// Ижил дүнтэй бүртгэл (цалин, бараа орлого, журнал) байхад шинээр бичвэл давхар болно
+function bankDupNote(l, p) {
+  if (!/^A:/.test(p)) return '';
+  var m = bankManual(l)[0]; return m ? '\n\nАНХААР: ижил дүнтэй бүртгэл байна (' + m.j.date + ' · ' + String(m.j.desc).slice(0, 50) + ') — шинээр бичвэл давхар болно. Жагсаалтаас тэр бүртгэлийг сонгоно уу.' : '';
 }
 // Тулгалтын зөрүүг батлахаас өмнө хэлнэ: илүү / дутуу төлбөр
 function bankDiffNote(l, p) {
@@ -821,10 +844,10 @@ function bankApplySel() {
   var sel = bankLines.filter(function (l) { return bankSel[l.id] && l.biz === state.biz && l.status === 'Шинэ'; });
   if (!sel.length) { toast('Тулгах мөрөө сонгоно уу'); return; }
   var ok = sel.filter(function (l) { var p = bankPick[l.id]; return p && !/^(LN:new|EB:set|BST:)/.test(p) && !(/^A:(1201|3101)$/.test(p) && !bankWho[l.id]); }), miss = sel.length - ok.length;
-  var offN = ok.filter(function (l) { return /^[OS]:/.test(bankPick[l.id]) && bankDiffNote(l, bankPick[l.id]); }).length;
+  var offN = ok.filter(function (l) { var p = bankPick[l.id]; return (/^[OS]:/.test(p) && bankDiffNote(l, p)) || bankDupNote(l, p); }).length;
   if (!ok.length) { toast('Сонгосон мөрүүдэд «Тулгах баримт» сонгогдоогүй байна'); return; }
   var inn = ok.reduce(function (a, l) { return a + (+l.credit || 0); }, 0), out = ok.reduce(function (a, l) { return a + (+l.debit || 0); }, 0);
-  if (!confirm(ok.length + ' гүйлгээг тулгах уу?\n\nОрлого: ' + fmt(inn) + '\nЗарлага: ' + fmt(out) + (offN ? '\n\nАНХААР: ' + offN + ' мөрийн дүн баримтаас өөр байна.' : '') + (miss ? '\n\n' + miss + ' мөрийг алгасна — сонголтгүй, эсвэл нэг нэгээр тулгах (буухиа, Boost нэхэмжлэх, зээл, харилцагч шаардах) мөр.' : ''))) return;
+  if (!confirm(ok.length + ' гүйлгээг тулгах уу?\n\nОрлого: ' + fmt(inn) + '\nЗарлага: ' + fmt(out) + (offN ? '\n\nАНХААР: ' + offN + ' мөрийн дүн баримтаас өөр, эсвэл ижил дүнтэй бүртгэлтэй (давхар болж болзошгүй).' : '') + (miss ? '\n\n' + miss + ' мөрийг алгасна — сонголтгүй, эсвэл нэг нэгээр тулгах (буухиа, Boost нэхэмжлэх, зээл, харилцагч шаардах) мөр.' : ''))) return;
   ok.forEach(function (l) { delete bankSel[l.id]; });
   bankApply(ok.map(function (l) { return l.id; }), true);
 }
