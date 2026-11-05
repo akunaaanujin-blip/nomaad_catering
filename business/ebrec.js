@@ -62,8 +62,50 @@ function ebRecSys() {
   return { S: S, byCode: byCode, O: O, codeOf: codeOf, un: r0(un), tot: r0(tot) };
 }
 
+// Буухиагийн «Харилцагчийн ерөнхий тайлан»-тай ижил: нийлсэн багц бүр нэг мөр (партнерын API-д тайлан байхгүй тул хүргэлтүүдээс гаргана).
+// Багц = ижил updated_at-тай, хаагдсаны дараа шинэчлэгдсэн ≥2 хүргэлт (ebSettledByEb); тоо, авсан дүн нь Хүргэгдсэн (st 10) хүргэлтүүдээр.
+function ebGenTime(u) {   // UTC → Улаанбаатар «2026/11/05 14:28»
+  var s = String(u || ''); if (!/[TZ]/.test(s)) return s.slice(0, 16).replace(/-/g, '/');
+  var d = new Date(s); if (isNaN(d)) return s.slice(0, 16);
+  return new Date(d.getTime() + 8 * 36e5).toISOString().slice(0, 16).replace('T', ' ').replace(/-/g, '/');
+}
+function ebGenRows() {
+  if (!ebAdm.list || ebAdm.biz !== state.biz) return [];
+  var B = ebSettledByEb(ebAdm.list), D = ebSetData(), R = {}, G = {}, def = ebFeeOf(state.biz);
+  D.rows.forEach(function (r) { if (r.code) R[r.code] = r; });
+  ebAdm.list.forEach(function (x) { var u = B[x.code]; if (!u || x.st !== 10) return; (G[u] = G[u] || []).push(x); });
+  return Object.keys(G).sort().reverse().map(function (u) {
+    var got = 0, fee = 0, open = 0, known = 0;
+    G[u].forEach(function (x) {
+      var r = R[x.code]; got += Number(x.got) || 0; fee += x.fee > 0 ? x.fee : r && r.fee > 0 ? r.fee : def;
+      if (r) { known++; if (!r.done) open++; }
+    });
+    return { u: u, at: ebGenTime(u), L: G[u], n: G[u].length, got: r0(got), fee: r0(fee), net: r0(got - fee), pay: open ? 'Шилжээгүй' : known ? 'Шилжсэн' : '—' };
+  });
+}
+function ebGenCard() {
+  if ((!ebAdm.list || ebAdm.biz !== state.biz) && !ebAdm.busy && API_URL && Date.now() - (ebAdm.t || 0) > 60000) setTimeout(ebAdmPull, 0);
+  var L = ebGenRows(), T = { n: 0, got: 0, fee: 0, net: 0 }, nm = BUSINESSES[state.biz].name;
+  var rows = L.map(function (g, i) {
+    T.n += g.n; T.got += g.got; T.fee += g.fee; T.net += g.net;
+    return '<tr><td class="nw">' + esc(g.at) + '</td><td>' + esc(nm) + '</td><td class="n">' + g.n + '</td><td class="n">' + fmt(g.got) + '</td><td class="n">' + fmt(g.fee) + '</td><td class="n"><b>' + mny(g.net) + '</b></td><td>' + esc(g.pay) + '</td><td class="n"><button class="mini" onclick="ebGenOpen(' + i + ')">Хүргэлтүүд</button></td></tr>';
+  }).join('');
+  return '<div class="card" id="ebGenBox"><div class="bar-row" style="justify-content:space-between"><h2 style="margin:0">Харилцагчийн ерөнхий тайлан</h2><span>' + (ebAdm.at ? '<span class="muted" style="font-size:12px;margin-right:8px">Буухиа: ' + esc(ebAdm.at) + '</span>' : '') +
+    '<button class="b-btn ghost" onclick="ebAdmPull(true)"' + (ebAdm.busy ? ' disabled' : '') + '>' + (ebAdm.busy ? 'Татаж байна…' : 'Шинэчлэх') + '</button></span></div>' +
+    (ebAdm.err ? '<p style="color:var(--red);margin:6px 0 0">' + esc(ebAdm.err) + '</p>' : '') +
+    '<div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Дэлгүүр</th><th class="n">Хүргэлтийн тоо</th><th class="n">Нийт авсан дүн</th><th class="n">Нийт хүргэлтийн үнэ</th><th class="n">Зөрүү</th><th>Төлбөр</th><th></th></tr>' +
+    (rows || '<tr><td colspan="8" class="muted">' + (ebAdm.busy ? 'Буухиагаас татаж байна…' : 'Нийлсэн тайлан алга') + '</td></tr>') +
+    (L.length ? '<tr class="tot"><td colspan="2">Нийт</td><td class="n">' + T.n + '</td><td class="n">' + fmt(T.got) + '</td><td class="n">' + fmt(T.fee) + '</td><td class="n">' + mny(T.net) + '</td><td colspan="2"></td></tr>' : '') + '</table></div></div>';
+}
+function ebGenOpen(i) {
+  var g = ebGenRows()[i]; if (!g) return;
+  gOpen('<h2>Тайлан ' + esc(g.at) + '</h2><div class="scroll" style="max-height:60vh"><table class="rep-t"><tr><th>Код</th><th>Утас</th><th>Хүлээн авагч</th><th class="n">Авсан</th><th>Жолооч</th></tr>' +
+    g.L.map(function (x) { return '<tr><td>' + esc(x.code) + '</td><td class="nw">' + esc(x.phone) + '</td><td>' + esc(x.cust || '') + '</td><td class="n">' + fmt(x.got) + '</td><td>' + esc(x.driver || '') + '</td></tr>'; }).join('') +
+    '</table></div><button class="btn ghost" style="margin-top:10px" onclick="gClose()">Хаах</button>');
+}
+
 function ebRecView() {
-  var head = '<div class="card"><p class="muted" style="margin:0 0 10px">Буухиагийн тайланг (Excel/CSV — ebuuhia.com → Харилцагчийн тайлан → Татах) оруулна. Хүргэлт бүрийг системийн «Буухиагаас авах» дүнтэй харьцуулна. Зөрүүг зөвхөн мөр бүрээр шалгаж, баталгаажуулж засна.</p>' +
+  var head = ebGenCard() + '<div class="card"><p class="muted" style="margin:0 0 10px">Буухиагийн тайланг (Excel/CSV — ebuuhia.com → Харилцагчийн тайлан → Татах) оруулна. Хүргэлт бүрийг системийн «Буухиагаас авах» дүнтэй харьцуулна. Зөрүүг зөвхөн мөр бүрээр шалгаж, баталгаажуулж засна.</p>' +
     '<label class="b-btn ghost" style="cursor:pointer">Тайлан сонгох<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="ebRecFile(this)"></label>' +
     (ebRec.file ? ' <span class="muted">' + esc(ebRec.file) + '</span> <button class="mini" onclick="ebRec={rows:null,file:\'\',cols:\'\',err:\'\'};ebRecSave();render()">Арилгах</button>' : '') +
     (ebRec.cols ? '<p class="muted" style="font-size:12.5px;margin:6px 0 0">Танигдсан багана: ' + esc(ebRec.cols) + '</p>' : '') +

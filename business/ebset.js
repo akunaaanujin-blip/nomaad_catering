@@ -132,7 +132,7 @@ function ebBatches() {
     return { u: u, n: n, amt: r0(amt) };
   }).filter(function (b) { return b.n; });
 }
-function ebBatchOpts(L) { return L.map(function (b) { return ['EB:b|' + b.u, 'Тайлан нийлсэн ' + String(b.u).slice(0, 10) + ' · ' + b.n + ' хүргэлт · ' + mny(b.amt), 'Буухиа']; }); }
+function ebBatchOpts(L) { return L.map(function (b) { return ['EB:b|' + b.u, 'Тайлан нийлсэн ' + ebGenTime(b.u) + ' · ' + b.n + ' хүргэлт · ' + mny(b.amt), 'Буухиа']; }); }
 function ebBatchDef(L, l) { var a = ebBkAmt(l), m = L.filter(function (b) { return Math.abs(b.amt - a) < 1; }); return m.length === 1 ? 'EB:b|' + m[0].u : 'EB:set'; }
 // Сонгосон багцын хүргэлтүүдийг чагтална — дүн зөрвөл доорх «Зөрүү»-д харагдана
 function ebBkBatch(u) {
@@ -140,7 +140,7 @@ function ebBkBatch(u) {
   ebBk.rows.forEach(function (r, i) { if (B[r.code] === u) on('r', i); });
   ebBk.old.forEach(function (it, i) { if (it.eb && B[it.eb] === u) on('o', i); });
   ebBk.unl.forEach(function (x, i) { if (B[x.x.code] === u) on('u', i); });
-  var el = document.getElementById('ebBkAuto'); if (el) el.textContent = 'Тайлан нийлсэн ' + String(u).slice(0, 10) + ' · ' + n + ' хүргэлт сонгогдлоо — шалгаад тулгана уу.';
+  var el = document.getElementById('ebBkAuto'); if (el) el.textContent = 'Тайлан нийлсэн ' + ebGenTime(u) + ' · ' + n + ' хүргэлт сонгогдлоо — шалгаад тулгана уу.';
 }
 function ebBankOpen(lineId, batch) {
   var l = bankLines.filter(function (x) { return x.id === lineId; })[0]; if (!l) return;
@@ -231,5 +231,6 @@ function ebBankSave() {
 (function () {
   var base = window.ebRedraw;
   window.ebRedraw = function (keep) { if (base) base(keep); if (state.module === 'finance' && (state.sub || {}).finance === 'ebset' && document.getElementById('ebSetBox')) render();
-    else if (state.module === 'finance' && (state.sub || {}).finance === 'bank' && window.__ebBSig !== JSON.stringify(ebBatches())) render(); };
+    else if (state.module === 'finance' && (state.sub || {}).finance === 'bank' && window.__ebBSig !== JSON.stringify(ebBatches())) render();
+    else if (state.module === 'sales' && (state.sub || {}).sales === 'ebrec' && document.getElementById('ebGenBox')) render(); };
 })();
