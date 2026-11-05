@@ -45,6 +45,23 @@ function bankKey(l, withTwin) {
   return k + (tw ? '#' + tw : '');
 }
 
+// Банкны мөрүүдийг цагийн дарааллаар. Нэг секундэд хийгдсэн мөрүүдийг (гүйлгээ + хураамж) үлдэгдлийн гинжээр эрэмбэлнэ:
+// дараагийн мөрийн өмнөх үлдэгдэл (bal − орсон + гарсан) = өмнөх мөрийн bal. Сүүлийн элемент нь хуулгын жинхэнэ эцсийн мөр.
+function bankChain(lines) {
+  var near = function (x, y) { return Math.abs(x - y) < 0.005; }, G = {}, keys = [], out = [];
+  lines.forEach(function (l) { var k = String(l.acct).slice(-4) + '|' + l.date; if (!G[k]) { G[k] = []; keys.push(k); } G[k].push(l); });
+  keys.sort(function (a, b) { var x = a.slice(a.indexOf('|') + 1), y = b.slice(b.indexOf('|') + 1); return x < y ? -1 : x > y ? 1 : 0; });
+  keys.forEach(function (k) {
+    var g = G[k].slice(), before = function (l) { return l.bal - (Number(l.credit) || 0) + (Number(l.debit) || 0); };
+    while (g.length) {
+      var i = g.findIndex(function (l) { return !g.some(function (o) { return o !== l && near(o.bal, before(l)); }); });
+      var cur = g.splice(i < 0 ? 0 : i, 1)[0]; out.push(cur);
+      for (var j = 0; j >= 0;) { j = g.findIndex(function (l) { return near(before(l), cur.bal); }); if (j >= 0) { cur = g.splice(j, 1)[0]; out.push(cur); } }
+    }
+  });
+  return out;
+}
+
 // ── Хуулга унших (Хаан банк: «Гүйлгээний огноо | Салбар | Эхний үлдэгдэл | Кредит | Дебит | Эцсийн үлдэгдэл | Гүйлгээний утга | Харьцсан данс») ──
 function importBank(input) {
   var f = input.files && input.files[0]; input.value = '';
@@ -78,7 +95,7 @@ function importBank(input) {
       lines.push(l);
     });
     if (!lines.length) { toast(pre ? pre + ' гүйлгээ бүгд ' + from0 + '-аас өмнөх тул алгаслаа' : 'Гүйлгээ олдсонгүй'); return; }
-    var endL = lines.reduce(function (m, l) { return !m || l.date >= m.date ? l : m; }, null);   // хуулгын эцсийн үлдэгдэл (хамгийн сүүлийн мөр)
+    var endL = bankChain(lines).pop();   // хуулгын эцсийн үлдэгдэл (хамгийн сүүлийн мөр)
     // Давхардал: txn_key (данс + гүйлгээний дугаар, эсвэл данс + огноо + ±дүн + цэвэрлэсэн утга) аль хэдийн байвал оруулахгүй
     var mine = bankLines.filter(function (b) { return String(b.acct).slice(-4) === String(acct).slice(-4); });
     var have = {}; mine.forEach(function (b) { have[bankKey(b, true)] = 1; });
@@ -218,12 +235,12 @@ function debtByName(l, list) {
 
 // ── Дэлгэц ──
 function bankView() {
-  var biz = state.biz, all = bankLines.filter(function (l) { return l.biz === biz; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+  var biz = state.biz, all = bankChain(bankLines.filter(function (l) { return l.biz === biz; })).reverse();
   var todo = all.filter(function (l) { return l.status === 'Шинэ'; });
   var list = bankTab === 'todo' ? todo : bankTab === 'done' ? all.filter(function (l) { return l.status !== 'Шинэ'; }) : all;
-  var last = all.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0];
+  var last = all[0];
   var info = last ? bankAcctInfo(last.acct) : null, acc = info ? info.acc : '1101';
-  var ledger = balances(J(), todayStr())[acc] || 0;
+  var ledger = balances(J(), last ? last.date.slice(0, 10) : todayStr())[acc] || 0;   // хуулгын сүүлийн өдрөөр — түүнээс хойшхи бичилт зөрүү гаргахгүй
   var sure = todo.filter(function (l) { var s = bankSuggest(l); return (s.kind === 'order' && s.sure) || (s.kind === 'shop' && s.sure) || (s.kind === 'req' && s.sure) || s.kind === 'paid'; }).length;
   var pay = (window.payInfoAll || {})[biz] || '';
   var head = '<div class="kpis">' + kpi('Тулгах гүйлгээ', todo.length) +

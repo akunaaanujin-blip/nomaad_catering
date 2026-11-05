@@ -2,14 +2,38 @@
 // Нягтлан биш хүнд: дансны код, дебет, кредит, журналын бичилтгүй. Албан ёсны тайлан зөвхөн «Нягтлан» цэсэнд.
 
 // Журналын дотоод тэмдэглэгээг (#O123, #BGT:…) харуулахгүй
-function stmtDesc(d) { return String(d || '').replace(/\s*#\S+/g, '').trim(); }
+function stmtDesc(d) { return String(d || '').replace(/\s*#\S+/g, '').replace('Захирлын зарлага', 'Удирдлагын зарлага').trim(); }
+
+// Нэг өдрийн бичилтийг банкны хуулгын дарааллаар — журналд цаг байхгүй тул мөр бүрийн үлдэгдэл банктай таарахгүй байсан.
+// Холбоо: 1) мөрийн «Бичилт» ID; 2) ижил өдөр, ижил дүн; 3) нэг багц бичилтийн нийлбэр (Boost-ыг бараагаар хуваасан). Эхний үлдэгдэл эхэнд, банкны мөргүй нь өдрийн сүүлд.
+function stmtBankOrder(L) {
+  var rank = {}, used = {}, done = {};
+  var put = function (i, n) { rank[i] = n; used[i] = 1; }, mine = function (l, x) { var inf = bankAcctInfo(l.acct); return inf && inf.acc === x.acc; };
+  var B = bankChain(bankLines.filter(function (l) { return l.biz === state.biz; }));
+  B.forEach(function (l, n) {
+    String(l.jids || '').split(',').filter(Boolean).forEach(function (id) { L.forEach(function (x, i) { if (x.ref === id && !used[i] && mine(l, x)) { put(i, n); done[n] = 1; } }); });
+  });
+  var free = function (l, f) { var d = l.date.slice(0, 10), R = []; L.forEach(function (x, i) { if (!used[i] && x.date === d && mine(l, x) && (!f || f(x))) R.push(i); }); return R; };
+  B.forEach(function (l, n) {
+    if (done[n]) return;
+    var v = (Number(l.credit) || 0) - (Number(l.debit) || 0), one = free(l, function (x) { return Math.abs(x.raw - v) < 0.5; });
+    if (one.length) { put(one[0], n); done[n] = 1; return; }
+    var G = {}; free(l).forEach(function (i) { var k = String(L[i].ref).replace(/-\d+$/, ''); (G[k] = G[k] || []).push(i); });
+    Object.keys(G).some(function (k) {
+      if (Math.abs(G[k].reduce(function (a, i) { return a + L[i].raw; }, 0) - v) >= 0.5) return false;
+      G[k].forEach(function (i) { put(i, n); }); done[n] = 1; return true;
+    });
+  });
+  var key = function (i) { return rank[i] !== undefined ? rank[i] : L[i].other === '4201' ? -1 : 1e9; };
+  return L.map(function (x, i) { return i; }).sort(function (a, b) { return L[a].date < L[b].date ? -1 : L[a].date > L[b].date ? 1 : key(a) - key(b) || a - b; }).map(function (i) { return L[i]; });
+}
 
 // ── Дансны хуулга: касс, банк — огноо, төрөл, тайлбар, орсон, гарсан, үлдэгдэл ──
 function repStmt(E, from, to, code) {
   var all = code === 'cashall', A = all ? cashCodes() : [code];
   var d = drillLines({ acc: A, from: from, to: to, sign: 1, bal: true, grp: 'type' }, E), bal = d.open, tin = 0, tout = 0;
   var rows = [{ date: from, type: '', desc: 'Эхний үлдэгдэл', acc: '', in: '', out: '', bal: r0(d.open), _b: 1 }];
-  d.lines.forEach(function (x) {
+  stmtBankOrder(d.lines).forEach(function (x) {
     bal += x.v; if (x.v > 0) tin += x.v; else tout -= x.v;
     rows.push({ date: x.date, type: x.key, desc: stmtDesc(x.desc), acc: accName(x.acc), in: x.v > 0 ? r0(x.v) : '', out: x.v < 0 ? r0(-x.v) : '', bal: r0(bal) });
   });

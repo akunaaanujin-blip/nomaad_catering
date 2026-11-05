@@ -20,6 +20,7 @@ function moneyType(x) {
   if (ACC[o] && ACC[o].cash) return 'Данс хооронд';
   if (o === '5101' || o === '5102') return x.acc === '110106' ? 'Пос (карт) орлого' : 'Борлуулалтын орлого';
   if (o === '1201') return /#O\d|Захиалгын/.test(String(x.desc)) ? 'Захиалгын орлого' : 'Авлага төлөгдсөн';
+  if (o === '1298') return 'Борлуулалтын орлого';   // дэлгүүрийн шилжүүлэг хуулгаар баталгаажсан
   if (o === '3802') return 'Захиалгын урьдчилгаа';
   if (o === '6001') return 'Бараа буцаалт';
   if (o === '6002') return 'Хөнгөлөлт';
@@ -56,7 +57,7 @@ function drillLines(s, E) {
     if (s.partner !== undefined && (e.partner || '(харилцагч заагаагүй)') !== s.partner) return;
     if (s.tag && !hasTag(e.desc, s.tag)) return;   // зээл / захиалгын «#ID»
     var raw = inD ? e.amount : -e.amount;
-    var x = { date: e.date, time: e.time || '', doc: e.doc, desc: e.desc, partner: e.partner, acc: inD ? e.dr : e.cr, other: inD ? e.cr : e.dr, raw: raw, v: raw * (s.sign || 1) };
+    var x = { date: e.date, time: e.time || '', ref: e.ref || '', doc: e.doc, desc: e.desc, partner: e.partner, acc: inD ? e.dr : e.cr, other: inD ? e.cr : e.dr, raw: raw, v: raw * (s.sign || 1) };
     if (s.other && s.other.indexOf(x.other) < 0) return;
     if (from && e.date < from) { if (s.bal) open += x.v; return; }
     if (s.dir && x.v * s.dir <= 0) return;
