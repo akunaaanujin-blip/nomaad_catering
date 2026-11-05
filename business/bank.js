@@ -304,7 +304,7 @@ function bankView() {
     (todo.length ? '<button class="b-btn danger" style="margin-left:auto" onclick="bankDel(null)">Тулгаагүй ' + todo.length + ' гүйлгээг устгах</button>' : '') + '</div>' +
     (todo.length && bankTab !== 'done' ? '<div class="bk-bar"><button class="b-btn" onclick="bankSelSure()">Таарсныг сонгох' + (sure ? ' (' + sure + ')' : '') + '</button>' +
       '<button class="b-btn primary" id="bkSelBtn" onclick="bankApplySel()">Сонгосныг тулгах (' + Object.keys(bankSel).length + ')</button>' +
-      '<span class="muted" style="font-size:12.5px">Мөр бүрийн «Тулгах баримт» сонголтоор тулгана. Сонголтгүй мөр алгасагдана.</span></div>' : '');
+      '<span class="muted" style="font-size:12.5px">Мөр бүрийн гүйлгээний ангиллаар тулгана. Сонголтгүй мөр алгасагдана.</span></div>' : '');
   var defSeen = {};
   var rows = list.slice().reverse().map(function (l) {   // хуучнаас нь: ижил баримтын санал эхний гүйлгээнд очно
     var s = l.status === 'Шинэ' ? bankSuggest(l) : null, sel = '', dupPick = false;
@@ -370,57 +370,67 @@ function bankView() {
   }).reverse().join('');
   return head + '<div class="card"><h2>Төлбөрийн мэдээлэл (хэрэглэгчид илгээх мессежид)</h2><div class="bar-row"><input id="payInfo" value="' + esc(pay) + '" placeholder="Жишээ: Хаан банк 53xxxxxxxx (Н.Анужин)" style="flex:1;min-width:220px">' +
     '<button class="b-btn" onclick="savePayInfo()">Хадгалах</button></div><p class="muted" style="font-size:12.5px;margin-top:6px">Ажилтан захиалга бүртгэхэд «Төлбөрийн мессеж»-д энэ данс, дүн, «Гүйлгээний утга: утасны дугаар» бичигдэнэ — тулгалт автоматаар таарна.</p></div>' +
-    tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th class="bk-ck">' + (list.some(function (l) { return l.status === 'Шинэ'; }) ? '<input type="checkbox" title="Бүгдийг сонгох" onchange="bankSelAll(this.checked)">' : '') + '</th><th>Огноо</th><th>Гүйлгээний утга</th><th class="n">Орлого</th><th class="n">Зарлага</th><th class="n">Эцсийн үлдэгдэл</th><th>Тулгах баримт</th><th></th></tr>' +
+    tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th class="bk-ck">' + (list.some(function (l) { return l.status === 'Шинэ'; }) ? '<input type="checkbox" title="Бүгдийг сонгох" onchange="bankSelAll(this.checked)">' : '') + '</th><th>Огноо</th><th>Гүйлгээний утга</th><th class="n">Орлого</th><th class="n">Зарлага</th><th class="n">Эцсийн үлдэгдэл</th><th>Гүйлгээний ангилал</th><th></th></tr>' +
     (rows || '<tr><td colspan="8" class="muted">' + (all.length ? 'Тулгах гүйлгээ алга' : 'Хуулга оруулаагүй байна — «Хуулга оруулах» дарна уу') + '</td></tr>') + '</table></div></div>' +
     bankLogCard(biz) + bankRulesCard(biz);
 }
-// ── «Тулгах баримт» хоёр алхмаар: эхлээд төрөл (Юу вэ?), дараа нь тэр төрлийн доторхоос (Аль нь?) ──
-var bankOptsBy = {}, bankCatNow = {};
-var BK_CAT_IN = ['Захиалгын төлбөр', 'Буухиа тооцоо', 'Дэлгүүрийн борлуулалт', 'Авлага орсон', 'Бүртгэлтэй бичилттэй холбох', 'Шилжүүлэг (данс, компани хооронд)', 'Зээл', 'Хөрөнгө оруулалт', 'Удирдлага буцааж төлсөн', 'Бусад орлого', 'Алгасах (тулгахгүй)'];
-var BK_CAT_OUT = ['Зардал', 'Бараа, нийлүүлэгч', 'Boost, зар сурталчилгаа', 'Батлагдсан мөнгөний хүсэлт', 'Цалин, татвар', 'Удирдлагын зарлага', 'Бүртгэлтэй бичилттэй холбох', 'Шилжүүлэг (данс, компани хооронд)', 'Зээл', 'Эзэмшигч мөнгө авсан', 'Алгасах (тулгахгүй)'];
+// ── Гүйлгээний ангилал: мөр бүрд нэг товч, дарахад хайлттай нэг цонх ──
+var bankOptsBy = {}, bankPk = null;
+var BK_CAT_IN = ['Захиалгын төлбөр', 'Буухиагийн тооцоо', 'Дэлгүүрийн борлуулалт', 'Авлагын төлөлт', 'Бүртгэлтэй гүйлгээтэй холбох', 'Дотоод шилжүүлэг', 'Зээлийн гүйлгээ', 'Хөрөнгө оруулалт', 'Удирдлагын авлагын төлөлт', 'Бусад орлого', 'Тулгалтаас хасах'];
+var BK_CAT_OUT = ['Үйл ажиллагааны зардал', 'Бараа материал, нийлүүлэгчийн төлбөр', 'Зар сурталчилгааны төлбөр', 'Батлагдсан зарлагын хүсэлт', 'Цалин, татвар, НДШ', 'Удирдлагын зарлага', 'Бүртгэлтэй гүйлгээтэй холбох', 'Дотоод шилжүүлэг', 'Зээлийн гүйлгээ', 'Эзэмшигчийн татан авалт', 'Тулгалтаас хасах'];
 function bankCat(v, credit) {
   var k = String(v).split(':')[0], c = String(v).slice(k.length + 1);
-  if (v === 'skip') return 'Алгасах (тулгахгүй)';
-  if (k === 'M' || k === 'P') return 'Бүртгэлтэй бичилттэй холбох';
-  if (k === 'TR' || k === 'IC') return 'Шилжүүлэг (данс, компани хооронд)';
-  if (k === 'L' || k === 'LN' || c === '3501') return 'Зээл';
-  if (credit) return k === 'O' ? 'Захиалгын төлбөр' : k === 'EB' ? 'Буухиа тооцоо' : k === 'S' || c === '5101' ? 'Дэлгүүрийн борлуулалт' : k === 'D' || c === '1201' ? 'Авлага орсон' : c === '4101' ? 'Хөрөнгө оруулалт' : c === '1208' ? 'Удирдлага буцааж төлсөн' : 'Бусад орлого';
-  if (k === 'R') return 'Батлагдсан мөнгөний хүсэлт';
-  if (k === 'BG' || k === 'BST' || c === '3801' || c === '7120') return 'Boost, зар сурталчилгаа';
-  if (k === 'PO' || k === 'D' || c === '1404' || c === '3101') return 'Бараа, нийлүүлэгч';
-  if (/^(3301|3403|3404)$/.test(c)) return 'Цалин, татвар';
+  if (v === 'skip') return 'Тулгалтаас хасах';
+  if (k === 'M' || k === 'P') return 'Бүртгэлтэй гүйлгээтэй холбох';
+  if (k === 'TR' || k === 'IC') return 'Дотоод шилжүүлэг';
+  if (k === 'L' || k === 'LN' || c === '3501') return 'Зээлийн гүйлгээ';
+  if (credit) return k === 'O' ? 'Захиалгын төлбөр' : k === 'EB' ? 'Буухиагийн тооцоо' : k === 'S' || c === '5101' ? 'Дэлгүүрийн борлуулалт' : k === 'D' || c === '1201' ? 'Авлагын төлөлт' : c === '4101' ? 'Хөрөнгө оруулалт' : c === '1208' ? 'Удирдлагын авлагын төлөлт' : 'Бусад орлого';
+  if (k === 'R') return 'Батлагдсан зарлагын хүсэлт';
+  if (k === 'BG' || k === 'BST' || c === '3801' || c === '7120') return 'Зар сурталчилгааны төлбөр';
+  if (k === 'PO' || k === 'D' || c === '1404' || c === '3101') return 'Бараа материал, нийлүүлэгчийн төлбөр';
+  if (/^(3301|3403|3404)$/.test(c)) return 'Цалин, татвар, НДШ';
   if (k === 'MZ' || c === '1208') return 'Удирдлагын зарлага';
-  if (c === '4101') return 'Эзэмшигч мөнгө авсан';
-  return 'Зардал';
+  if (c === '4101') return 'Эзэмшигчийн татан авалт';
+  return 'Үйл ажиллагааны зардал';
 }
 function bankOptName(id, v) { var o = (bankOptsBy[id] || []).filter(function (x) { return x[0] === v; })[0]; return o ? o[1] : ''; }
-function bankItemsHtml(l, cat, pick) {
-  var cr = !!l.credit, L = (bankOptsBy[l.id] || []).filter(function (o) { return bankCat(o[0], cr) === cat; });
-  if (!L.length) return '';
-  if (L.length === 1) return '<small class="muted" style="display:block;max-width:280px">' + esc(L[0][1]) + '</small>';
-  if (cat === 'Зардал') {   // хамгийн их хэрэглэсэн зардал эхэнд
-    var use = {}; (journal || []).forEach(function (j) { if (j.biz === l.biz) use[j.dr] = (use[j.dr] || 0) + 1; });
-    var u = function (o) { return use[String(o[0]).slice(2)] || 0; };
-    L = L.slice().sort(function (a, b) { return u(b) - u(a); }).map(function (o) { return [o[0], o[1], u(o) ? 'Хэрэглэж байсан' : 'Бусад зардал']; });
-  }
-  var G = [], B = {}; L.forEach(function (o) { var g = o[2] || cat; if (!B[g]) { B[g] = []; G.push(g); } B[g].push(o); });
-  var op = function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] === pick ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; };
-  return '<select onchange="bankPick[\'' + jsq(l.id) + '\']=this.value;bankPickChange(\'' + jsq(l.id) + '\')" style="max-width:280px;display:block;margin-top:4px"><option value="">— Аль нь? —</option>' +
-    (G.length > 1 ? G.map(function (g) { return '<optgroup label="' + esc(g) + '">' + B[g].map(op).join('') + '</optgroup>'; }).join('') : L.map(op).join('')) + '</select>';
-}
 function bankPickHtml(l, pick) {
-  var cr = !!l.credit, have = {}; (bankOptsBy[l.id] || []).forEach(function (o) { have[bankCat(o[0], cr)] = 1; });
-  var cat = pick ? bankCat(pick, cr) : bankCatNow[l.id] || '';
-  if (cat && !have[cat]) cat = '';
-  return '<select onchange="bankCatSet(\'' + jsq(l.id) + '\',this.value)" style="max-width:280px;display:block"><option value="">— Юу вэ? —</option>' +
-    (cr ? BK_CAT_IN : BK_CAT_OUT).filter(function (c) { return have[c]; }).map(function (c) { return '<option' + (c === cat ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select>' + (cat ? bankItemsHtml(l, cat, pick) : '');
+  var nm = pick ? bankOptName(l.id, pick) : '';
+  return '<button class="b-btn" style="max-width:280px;white-space:normal;text-align:left" onclick="bankPickOpen(\'' + jsq(l.id) + '\')">' + (nm ? esc(nm) : 'Ангилал сонгох') + '</button>';
 }
-function bankCatSet(id, cat) {
+function bankPickOpen(id) {
   var l = bankLines.filter(function (x) { return x.id === id; })[0]; if (!l) return;
-  var L = (bankOptsBy[id] || []).filter(function (o) { return bankCat(o[0], !!l.credit) === cat; });
-  bankCatNow[id] = cat; bankPick[id] = L.length === 1 ? L[0][0] : '';
-  var el = document.getElementById('bp_' + id); if (el) el.innerHTML = bankPickHtml(l, bankPick[id]);
-  bankPickChange(id);
+  var use = {}; (journal || []).forEach(function (j) { if (j.biz === l.biz) use[j.dr] = (use[j.dr] || 0) + 1; });
+  var u = function (o) { return use[String(o[0]).slice(2)] || 0; };
+  bankPk = { id: id, l: l, L: (bankOptsBy[id] || []).slice().sort(function (a, b) { return u(b) - u(a); }) };   // хэрэглэж байсан нь эхэнд
+  gOpen('<h2>Гүйлгээний ангилал</h2><p class="rep-note">' + esc(String(l.date).slice(0, 16)) + ' · ' + (l.credit ? '+' + fmt(l.credit) : '−' + fmt(l.debit)) + ' · ' + esc(l.desc) + '</p>' +
+    '<input id="bkQ" placeholder="Хайх: нэр, утас, дүн" autocomplete="off" oninput="bankPkList()" style="width:100%"><div id="bkPk" style="max-height:55vh;overflow:auto;margin:8px 0"></div><button class="btn ghost" onclick="gClose()">Болих</button>');
+  bankPkList();
+  var q = document.getElementById('bkQ'); if (q) q.focus();
+}
+function bankPkHtml(q) {
+  var P = bankPk, cr = !!P.l.credit, cur = bankPick[P.id] || '', curCat = cur ? bankCat(cur, cr) : '';
+  var row = function (o) { return '<div onclick="bankPkSet(' + P.L.indexOf(o) + ')" style="padding:7px 10px;cursor:pointer;border-top:1px solid #eee' + (o[0] === cur ? ';font-weight:600' : '') + '">' + esc(o[1]) + '</div>'; };
+  if (q) {
+    var F = P.L.filter(function (o) { return (o[1] + ' ' + bankCat(o[0], cr)).toLowerCase().indexOf(q) >= 0; });
+    return F.length ? F.map(row).join('') : '<p class="muted">Олдсонгүй</p>';
+  }
+  return (cr ? BK_CAT_IN : BK_CAT_OUT).map(function (c) {
+    var L = P.L.filter(function (o) { return bankCat(o[0], cr) === c; });
+    if (!L.length) return '';
+    if (L.length === 1) return '<div onclick="bankPkSet(' + P.L.indexOf(L[0]) + ')" style="padding:8px 10px;cursor:pointer;font-weight:600;border-top:1px solid #eee">' + esc(c) + (L[0][1] !== c ? ' <small class="muted" style="font-weight:400">' + esc(L[0][1]) + '</small>' : '') + '</div>';
+    return '<details' + (c === curCat ? ' open' : '') + ' style="border-top:1px solid #eee"><summary style="padding:8px 10px;cursor:pointer;font-weight:600">' + esc(c) + ' <small class="muted" style="font-weight:400">' + L.length + '</small></summary>' + L.map(row).join('') + '</details>';
+  }).join('');
+}
+function bankPkList() {
+  var el = document.getElementById('bkPk'), q = document.getElementById('bkQ'); if (!el || !bankPk) return;
+  el.innerHTML = bankPkHtml(String(q ? q.value : '').trim().toLowerCase());
+}
+function bankPkSet(i) {
+  var P = bankPk, o = P && P.L[i]; if (!o) return;
+  bankPick[P.id] = o[0];
+  var el = document.getElementById('bp_' + P.id); if (el) el.innerHTML = bankPickHtml(P.l, o[0]);
+  gClose(); bankPickChange(P.id);
 }
 // Мөрийн сонголтод: гараар оруулсан бүртгэл (±3 хоног, ижил дүн) ба данс хоорондын шилжүүлэг
 function bankXOpts(l) {
