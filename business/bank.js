@@ -158,7 +158,7 @@ function debtByWho(list) {
   list.forEach(function (it) { var k = it.acc + '|' + it.who; if (!G[k]) { G[k] = { it: it, n: 0, left: 0 }; out.push(G[k]); } G[k].n++; G[k].left += it.left; });
   return out.map(function (g) {
     var it = g.it, kind = it.acc === '1201' ? 'Авлага' : /^35/.test(it.acc) ? 'Зээл' : 'Өглөг';
-    return ['D:' + it.acc + '|' + it.key, kind + ' · ' + it.who + ' · ' + fmt(r0(g.left)) + (g.n > 1 ? ' (' + g.n + ' баримт)' : ' (' + it.date + ')')];
+    return ['D:' + it.acc + '|' + it.key, kind + ' · ' + it.who + ' · ' + fmt(r0(g.left)) + (g.n > 1 ? ' (' + g.n + ' баримт — нэг нэгээр сонгоно)' : ' (' + it.date + ')')];
   });
 }
 function ordCust(o) { return (o.customer ? o.customer + ' ' : '') + o.phone; }
@@ -330,6 +330,7 @@ function bankView() {
           opts.push(['BST:' + v.no, v.no + ' · $' + v.usd + ' · ' + v.cos.map(function (c) { return bstCoName(c.biz) + (c.isPaid ? ' (төлсөн)' : ''); }).join(', ') + ' · ' + v.status, 'Boost нэхэмжлэх']); });
         reqOpen(biz).forEach(function (x) { opts.push(['R:' + x.id, x.category + ' · ' + (x.customer || '') + ' · ' + fmt(x.amount) + ' (' + (x.staff || '') + ')', 'Батлагдсан мөнгөний хүсэлт']); });
         debtByWho(debtCache().pay).forEach(function (o) { opts.push(o.concat(['Өглөг хаах'])); });
+        bankXOpts2(biz).forEach(function (o) { opts.push(o); });
         poOpts(biz).forEach(function (o) { opts.push(o.concat(['Бараа захиалга'])); });
         loanOpts(biz, false).forEach(function (o) { opts.push(o); });
         icOpts(biz, false).forEach(function (o) { opts.push(o.concat(['Компани хооронд'])); });
@@ -377,7 +378,7 @@ function bankView() {
 // ── Гүйлгээний ангилал: мөр бүрд нэг товч, дарахад хайлттай нэг цонх ──
 var bankOptsBy = {}, bankPk = null;
 var BK_CAT_IN = ['Захиалгын төлбөр', 'Буухиагийн тооцоо', 'Дэлгүүрийн борлуулалт', 'Авлагын төлөлт', 'Бүртгэлтэй гүйлгээтэй холбох', 'Дотоод шилжүүлэг', 'Зээлийн гүйлгээ', 'Хөрөнгө оруулалт', 'Удирдлагын авлагын төлөлт', 'Бусад орлого', 'Тулгалтаас хасах'];
-var BK_CAT_OUT = ['Үйл ажиллагааны зардал', 'Бараа материал, нийлүүлэгчийн төлбөр', 'Зар сурталчилгааны төлбөр', 'Батлагдсан зарлагын хүсэлт', 'Цалин, татвар, НДШ', 'Удирдлагын зарлага', 'Бүртгэлтэй гүйлгээтэй холбох', 'Дотоод шилжүүлэг', 'Зээлийн гүйлгээ', 'Эзэмшигчийн татан авалт', 'Тулгалтаас хасах'];
+var BK_CAT_OUT = ['Үйл ажиллагааны зардал', 'Бараа материал, нийлүүлэгчийн төлбөр', 'Өөр компанийн өглөг төлөх', 'Зар сурталчилгааны төлбөр', 'Батлагдсан зарлагын хүсэлт', 'Цалин, татвар, НДШ', 'Удирдлагын зарлага', 'Бүртгэлтэй гүйлгээтэй холбох', 'Дотоод шилжүүлэг', 'Зээлийн гүйлгээ', 'Эзэмшигчийн татан авалт', 'Тулгалтаас хасах'];
 function bankCat(v, credit) {
   var k = String(v).split(':')[0], c = String(v).slice(k.length + 1);
   if (v === 'skip') return 'Тулгалтаас хасах';
@@ -385,6 +386,7 @@ function bankCat(v, credit) {
   if (k === 'TR' || k === 'IC') return 'Дотоод шилжүүлэг';
   if (k === 'L' || k === 'LN' || c === '3501') return 'Зээлийн гүйлгээ';
   if (credit) return k === 'O' ? 'Захиалгын төлбөр' : k === 'EB' ? 'Буухиагийн тооцоо' : k === 'S' || c === '5101' ? 'Дэлгүүрийн борлуулалт' : k === 'D' || c === '1201' ? 'Авлагын төлөлт' : c === '4101' ? 'Хөрөнгө оруулалт' : c === '1208' ? 'Удирдлагын авлагын төлөлт' : 'Бусад орлого';
+  if (k === 'XP') return 'Өөр компанийн өглөг төлөх';
   if (k === 'R') return 'Батлагдсан зарлагын хүсэлт';
   if (k === 'BG' || k === 'BST' || c === '3801' || c === '7120') return 'Зар сурталчилгааны төлбөр';
   if (k === 'PO' || k === 'D' || c === '1404' || c === '3101') return 'Бараа материал, нийлүүлэгчийн төлбөр';
@@ -578,6 +580,10 @@ function bankApplyAll() {
 function bankApply(ids, quiet) {
   if (!quiet && ids.length === 1 && bankPick[ids[0]] === 'LN:new') { openLoanFromBank(ids[0]); return; }
   if (!quiet && ids.length === 1 && bankPick[ids[0]] === 'EB:set') { ebBankOpen(ids[0]); return; }
+  if (!quiet && ids.length === 1 && /^XP:/.test(bankPick[ids[0]] || '')) { bankXOpen(ids[0], bankPick[ids[0]].slice(3)); return; }   // өөр компанийн өглөг
+  if (!quiet && ids.length === 1 && /^D:/.test(bankPick[ids[0]] || '') && bankDebtDocs(bankPick[ids[0]]).length > 1) {   // олон баримт — аль нь хаагдахыг нэг нэгээр нь харуулна
+    var lq = bankLines.filter(function (x) { return x.id === ids[0]; })[0]; debtClose(lq.credit ? 'r' : 'p', bankDebtDocs(bankPick[ids[0]]).map(function (x) { return x.key; }), ids[0]); return;
+  }
   if (!quiet && ids.length === 1 && /^BST:/.test(bankPick[ids[0]] || '')) { bstBankOpen(ids[0], bankPick[ids[0]].slice(4)); return; }   // Boost нэхэмжлэх — хуваарилалтыг цонхонд   // захиалгыг чагтаар сонгоно (ebset.js)   // шинэ зээл үүсгэж тулгана
   if (!quiet && ids.length === 1 && /^A:(1201|3101)$/.test(bankPick[ids[0]] || '')) {   // авлага, өглөг харилцагчгүй бол жагсаалтад хаагдахгүй
     var lw = bankLines.filter(function (x) { return x.id === ids[0]; })[0], w0 = lw ? prompt('Харилцагчийн нэрийг бичнэ үү (Авлага, Өглөгийн жагсаалттай ижил нэрээр):', bankWho[ids[0]] || lw.party || '') : '';
@@ -613,7 +619,7 @@ function bankApply(ids, quiet) {
     var pick = bankPick[id] || '', info = bankAcctInfo(l.acct), acc = info ? info.acc : '1101', d = l.date.slice(0, 10), amt = l.credit || l.debit;
     if (!pick) { if (!quiet) toast('Тулгах баримтаа сонгоно уу'); return; }
     if (pick === 'skip') { updates.push({ id: id, status: 'Алгассан', link: '' }); return; }
-    if (pick === 'LN:new' || pick === 'EB:set' || /^BST:/.test(pick)) return;   // нэг нэгээр нь (цонхоор) тулгана
+    if (pick === 'LN:new' || pick === 'EB:set' || /^(BST|XP):/.test(pick)) return;   // нэг нэгээр нь (цонхоор) тулгана
     if (pick.indexOf('S:') === 0) {   // орлого борлуулах үед бичигдсэн (Дт 1298); мөнгө хуулгаар баталгаажмагц харилцах руу
       var sr = (window.records || []).filter(function (x) { return x.bill === pick.slice(2) && x.customer; })[0], sp = (String(l.desc).match(/(?:^|\D)(\d{8})(?!\d)/) || [])[1] || (String(l.desc).match(/ХААНААС:\s*\d+\s+(.+)$/i) || [])[1] || '';
       entries.push({ biz: biz, date: d, dr: acc, cr: '1298', amount: amt, desc: 'Дэлгүүрийн шилжүүлэг баталгаажсан · баримт #' + pick.slice(2), partner: sr ? String(sr.customer).slice(0, 80) : sp });   // харилцагч: баримтын хэрэглэгч, эсвэл гүйлгээний утган дахь утас / илгээгчийн нэр
@@ -758,7 +764,7 @@ function bankLineOf(jid) { return bankLines.filter(function (l) { return l.statu
 function bankLineOrders(l) {   // мөрийн бичилтүүдэд #тэмдэглэгдсэн, баталгаажсан захиалгууд
   var js = bankLineJ(l), O = {}, out = {}, txt = String(l.link || '');
   (window.adminOrders || []).forEach(function (o) { if (o.confirmed) O[o.id] = o; });
-  (journal || []).forEach(function (j) { if (js.indexOf(j.id) >= 0) txt += ' ' + j.desc; });
+  (journal || []).forEach(function (j) { if (js.indexOf(j.id) >= 0 && /^(1201|3802)$/.test(j.cr)) txt += ' ' + j.desc; });   // зөвхөн хэрэглэгчийн төлбөр — буухиагийн өглөг захиалгын төлбөр биш
   (txt.match(/#[\w-]+/g) || []).forEach(function (t) { var o = O[t.slice(1)]; if (o) out[o.id] = o; });
   return Object.keys(out).map(function (k) { return out[k]; });
 }
@@ -792,6 +798,8 @@ function bankUnmatch(id) {
   else next();
 }
 
+// Сонгосон харилцагчийн хаагдаагүй бүх баримт (нэг данс)
+function bankDebtDocs(pick) { var it = bankDebt(pick), c = debtCache(); return it ? c.rec.concat(c.pay).filter(function (x) { return x.acc === it.acc && x.who === it.who; }) : []; }
 function bankDebt(pick) {
   var v = pick.slice(2), acc = v.split('|')[0], key = v.slice(acc.length + 1), c = debtCache();
   return c.rec.concat(c.pay).filter(function (x) { return x.acc === acc && x.key === key; })[0] || null;
@@ -919,13 +927,13 @@ function bankSelAll(on) {
   bankSelCount();
 }
 function bankSelSure() {   // утас, дүн таарсан захиалгын төлбөрүүдийг сонгоно
-  bankLines.forEach(function (l) { if (l.biz !== state.biz || l.status !== 'Шинэ' || !bankPick[l.id] || /^(EB:set|BST:|LN:new)/.test(bankPick[l.id])) return; var s = bankSuggest(l); if ((s.kind === 'order' && s.sure) || (s.kind === 'shop' && s.sure) || (s.kind === 'req' && s.sure) || s.kind === 'paid') bankSel[l.id] = 1; });
+  bankLines.forEach(function (l) { if (l.biz !== state.biz || l.status !== 'Шинэ' || !bankPick[l.id] || /^(EB:set|BST:|LN:new|XP:)/.test(bankPick[l.id])) return; var s = bankSuggest(l); if ((s.kind === 'order' && s.sure) || (s.kind === 'shop' && s.sure) || (s.kind === 'req' && s.sure) || s.kind === 'paid') bankSel[l.id] = 1; });
   render();
 }
 function bankApplySel() {
   var sel = bankLines.filter(function (l) { return bankSel[l.id] && l.biz === state.biz && l.status === 'Шинэ'; });
   if (!sel.length) { toast('Тулгах мөрөө сонгоно уу'); return; }
-  var ok = sel.filter(function (l) { var p = bankPick[l.id]; return p && !/^(LN:new|EB:set|BST:)/.test(p) && !(/^A:(1201|3101)$/.test(p) && !bankWho[l.id]); }), miss = sel.length - ok.length;
+  var ok = sel.filter(function (l) { var p = bankPick[l.id]; return p && !/^(LN:new|EB:set|BST:|XP:)/.test(p) && !(/^A:(1201|3101)$/.test(p) && !bankWho[l.id]) && !(/^D:/.test(p) && bankDebtDocs(p).length > 1); }), miss = sel.length - ok.length;
   var offN = ok.filter(function (l) { var p = bankPick[l.id]; return (/^[OS]:/.test(p) && bankDiffNote(l, p)) || bankDupNote(l, p); }).length;
   if (!ok.length) { toast('Сонгосон мөрүүдэд «Тулгах баримт» сонгогдоогүй байна'); return; }
   var inn = ok.reduce(function (a, l) { return a + (+l.credit || 0); }, 0), out = ok.reduce(function (a, l) { return a + (+l.debit || 0); }, 0);
@@ -954,7 +962,7 @@ function debtSelCount() {   // сонгосон үед л доод талд «С
   document.getElementById('dSelTxt').innerHTML = '<b>' + ks.length + '</b> баримт сонгосон · <b>' + fmt(ks.reduce(function (a, k) { return a + debtSel[k]; }, 0)) + '</b>';
 }
 function debtCloseSel() { var ks = Object.keys(debtSel); if (!ks.length) { toast('Хаах баримтаа чагтална уу'); return; } debtClose(debtTabOf(state.sub.finance), ks); }
-function debtClose(k, keys) {
+function debtClose(k, keys, lineId) {
   if (typeof keys === 'string') keys = [keys];
   var all = k === 'r' ? debtItems(['1201', '1208'], 1) : debtItems(['3101', '3802'], -1);
   var its = all.filter(function (x) { return keys.indexOf(x.key) >= 0; });
@@ -977,14 +985,15 @@ function debtClose(k, keys) {
     if (Math.abs(amt - total) < 1) sc += 1;
     return { l: l, amt: amt, sc: sc };
   }).sort(function (a, b) { return b.sc - a.sc || (a.l.date < b.l.date ? 1 : -1); });
+  if (lineId) L = L.filter(function (x) { return x.l.id === lineId; });   // банкны мөрөөс нээсэн — тэр мөрөөр л хаана
   dcState = { k: k, units: units, total: total, L: L };
   var lines = L.slice(0, 60).map(function (x, i) {
-    return '<label class="dc-l' + (x.sc >= 2 ? ' hit' : '') + '"><input type="radio" name="dcLine" value="' + i + '"' + (i === 0 && x.sc >= 2 ? ' checked' : '') + ' onchange="dcAlloc(true)">' +
+    return '<label class="dc-l' + (x.sc >= 2 ? ' hit' : '') + '"><input type="radio" name="dcLine" value="' + i + '"' + (i === 0 && (x.sc >= 2 || lineId) ? ' checked' : '') + ' onchange="dcAlloc(true)">' +
       '<span>' + esc(x.l.date.slice(0, 16)) + '</span><span class="dc-d">' + esc(x.l.desc) + '</span><b>' + fmt(x.amt) + '</b>' +
       (x.sc >= 2 ? '<em>' + (x.sc === 3 ? 'нэр/утас, дүн таарсан' : 'нэр/утас таарсан') + '</em>' : x.sc === 1 ? '<em class="g">дүн таарсан</em>' : '') + '</label>';
   }).join('');
   var urows = units.map(function (u, i) {
-    return '<tr><td>' + esc(u.who) + '<br><small class="muted">' + esc(u.date) + ' · ' + esc(u.desc) + '</small></td><td class="n">' + fmt(u.due) + '</td>' +
+    return '<tr><td><input type="checkbox" class="dc-c" checked onchange="dcAlloc(true)"></td><td>' + esc(u.who) + '<br><small class="muted">' + esc(u.date) + ' · ' + esc(u.desc) + '</small></td><td class="n">' + fmt(u.due) + '</td>' +
       '<td class="n"><input class="dc-a" data-i="' + i + '" type="number" min="0" step="1" style="width:110px;text-align:right" oninput="dcAlloc(false)"></td></tr>';
   }).join('');
   gOpen('<h2>' + (k === 'r' ? 'Авлага хаах' : 'Өглөг хаах') + (units.length > 1 ? ' — ' + units.length + ' баримт' : '') + '</h2>' +
@@ -994,8 +1003,8 @@ function debtClose(k, keys) {
       '<p class="muted">Тулгаагүй ' + (k === 'r' ? 'орлогын' : 'зарлагын') + ' гүйлгээ алга — эхлээд банкны хуулгаа оруулна уу.</p>') + '</div>' +
     '<div id="dcCash" style="display:none;margin-top:8px"><div class="row2"><div><label for="dcCashAmt">Дүн</label><input id="dcCashAmt" type="number" min="0" value="' + total + '" oninput="dcAlloc(true)"></div>' +
       '<div><label for="dcCashDate">Огноо</label><input id="dcCashDate" type="date" value="' + todayStr() + '"></div></div></div>' +
-    '<table class="rep-t dc-t" style="margin-top:10px"><tr><th>' + (k === 'r' ? 'Авлага' : 'Өглөг') + '</th><th class="n">Үлдэгдэл</th><th class="n">Хаах дүн</th></tr>' + urows +
-      '<tr class="tot"><td>Нийт</td><td class="n">' + fmt(total) + '</td><td class="n" id="dcSum"></td></tr></table>' +
+    (units.length > 1 ? '<p class="muted" style="font-size:12.5px;margin:8px 0 0">Хаах баримтаа чагтлаад дүнг шалгана уу. Хуучин баримтаас эхэлж хуваарилагдана.</p>' : '') + '<table class="rep-t dc-t" style="margin-top:10px"><tr><th></th><th>' + (k === 'r' ? 'Авлага' : 'Өглөг') + '</th><th class="n">Үлдэгдэл</th><th class="n">Хаах дүн</th></tr>' + urows +
+      '<tr class="tot"><td></td><td>Нийт</td><td class="n">' + fmt(total) + '</td><td class="n" id="dcSum"></td></tr></table>' +
     '<p id="dcInfo" class="muted" style="font-size:12.5px;margin:6px 0"></p>' +
     (k === 'r' ? '<label for="dcWo">Хаагдаагүй үлдсэн хэсэг</label><select id="dcWo" onchange="dcAlloc(true)"><option value="">Авлага хэвээр үлдэнэ (дараа төлнө)</option>' +
       '<option value="7124">Буухиа хөлсөө суутгасан — хүргэлтийн зардал болгож бүрэн хаах</option><option value="6002">Хөнгөлөлт болгож бүрэн хаах</option></select>' : '') +
@@ -1013,11 +1022,11 @@ function dcAmount() {   // сонгосон гүйлгээний / бэлэн м
 }
 function dcAlloc(refill) {   // refill — дүнг хуучнаас нь (FIFO) дахин хуваарилна
   var S = dcState; if (!S) return;
-  var amt = dcAmount(), inp = document.querySelectorAll('input.dc-a');
+  var amt = dcAmount(), inp = document.querySelectorAll('input.dc-a'), chk = document.querySelectorAll('input.dc-c'), on = function (i) { return !chk[i] || chk[i].checked; };
   var wo0 = $('dcWo') ? $('dcWo').value : '';
   if (refill && wo0 === '7124') {   // буухиа хөлсөө суутгасан: захиалга бүрээс өөрийнх нь хүргэлтийн хөлсийг хасна
-    S.units.forEach(function (u, i) { var a = Math.max(0, r0(u.due - (u.ord ? ordFeeAdm(u.ord) : 0))); inp[i].value = a ? a : ''; });
-  } else if (refill) { var rest = amt; S.units.forEach(function (u, i) { var a = Math.min(u.due, Math.max(0, rest)); rest = r0(rest - a); inp[i].value = a ? r0(a) : ''; }); }
+    S.units.forEach(function (u, i) { var a = on(i) ? Math.max(0, r0(u.due - (u.ord ? ordFeeAdm(u.ord) : 0))) : 0; inp[i].value = a ? a : ''; });
+  } else if (refill) { var rest = amt; S.units.forEach(function (u, i) { var a = on(i) ? Math.min(u.due, Math.max(0, rest)) : 0; rest = r0(rest - a); inp[i].value = a ? r0(a) : ''; }); }
   var sum = 0; [].forEach.call(inp, function (x) { sum += Number(x.value) || 0; }); sum = r0(sum);
   $('dcSum').textContent = fmt(sum);
   var left = r0(S.total - sum), over = r0(amt - sum), wo = $('dcWo') ? $('dcWo').value : '';
@@ -1047,14 +1056,16 @@ function dcSave() {
     var rest = r0(u.due - A[i]);
     if (wo && R2 && rest > 0.5) E = wo === '7124' ? E.concat(buuhiaNet(biz, d, rest, pn, ' · ' + u.desc + ' ' + u.tag, !!u.ord && ebOrdAuto(u.ord)))
                                                   : E.concat([{ biz: biz, date: d, dr: wo, cr: u.acc, amount: rest, partner: pn, desc: (u.ord ? 'Хөнгөлөлт (захиалга, авлага) · ' : 'Хөнгөлөлт · ' + u.desc + ' ') + u.tag }]);
-    if (u.ord && !u.ord.confirmed && A[i] > 0) ordUpd.push(u.ord);
+    if (R2 && u.ord && !u.ord.confirmed && A[i] > 0) ordUpd.push(u.ord);   // өглөг төлөх нь хэрэглэгчийн төлбөр биш
   });
-  if (!confirm((S.units.length > 1 ? S.units.length + ' баримтыг' : '«' + S.units[0].who + '»-ийн баримтыг') + ' ' + fmt(amt) + '-өөр хаах уу?\n' + (cash ? 'Касс · ' + d : x.l.date.slice(0, 16) + ' · «' + x.l.desc + '»') +
+  var picked = S.units.map(function (u, i) { return A[i] > 0 ? u.date + ' · ' + u.desc + ' · ' + fmt(A[i]) : ''; }).filter(Boolean);
+  if (!confirm((picked.length > 1 ? picked.length + ' баримтыг' : '«' + S.units[0].who + '»-ийн баримтыг') + ' ' + fmt(amt) + '-өөр хаах уу?\n' + (cash ? 'Касс · ' + d : x.l.date.slice(0, 16) + ' · «' + x.l.desc + '»') +
+    '\n\nХаагдах баримт:\n' + picked.slice(0, 15).join('\n') + (picked.length > 15 ? '\n… нийт ' + picked.length : '') +
     (over > 0.5 ? '\n\n' + fmt(over) + ' илүү төлөлт болно.' : '') + (!wo && r0(S.total - sum) > 0.5 ? '\n' + fmt(r0(S.total - sum)) + ' нь хаагдаагүй үлдэнэ.' : ''))) return;
   gClose(); debtSel = {};
   // серверийг хүлээлгүй харуулна
   E.forEach(function (e, i) { journal.push(Object.assign({ id: 'tmp' + Date.now() + '-' + i, by: ownerName }, e)); });
-  if (x) { x.l.status = 'Тулгасан'; x.l.link = (R2 ? 'Авлага · ' : 'Өглөг · ') + S.units.map(function (u) { return u.who; }).join(', ').slice(0, 90); }   // захиалгын холбоо нь бичилтийн #тэмдэглэгээгээр (bankLineOrders)
+  if (x) { x.l.status = 'Тулгасан'; x.l.link = (R2 ? 'Авлага · ' : 'Өглөг · ') + S.units.filter(function (u, i) { return A[i] > 0; }).map(function (u) { return u.who; }).filter(function (w, i, a) { return a.indexOf(w) === i; }).join(', ').slice(0, 80) + ' · ' + A.filter(function (v) { return v > 0; }).length + ' баримт'; }   // захиалгын холбоо нь бичилтийн #тэмдэглэгээгээр (bankLineOrders)
   ordUpd.forEach(function (o) { o.confirmed = d + (cash ? ' гараар' : ' банк'); o.paid = 'Орсон'; });
   _debtCache = null; render();
   if (!API_URL) { save('nb_demo_journal', journal); save('nb_demo_bank', bankLines); save('nb_orders_cozy', window.adminOrders); return; }
@@ -1065,6 +1076,85 @@ function dcSave() {
     fin();
     if (x) post({ type: 'admin_bank', by: ownerName, updates: [{ id: x.l.id, status: 'Тулгасан', link: x.l.link }] }, function () { fin(); });
     ordUpd.forEach(function (o) { post({ type: 'admin_order', id: o.id, by: ownerName, what: ordAudWhat(o, { confirmed: o.confirmed }), fields: { confirmed: o.confirmed, note: (cash ? 'Бэлэн ' : 'Банк ') + d } }, function () { fin(); }); });
+  });
+}
+
+// ═══════════ Өөр компанийн өглөгийг энэ компанийн данснаас төлөх ═══════════
+// Төлсөн компани: Дт 1290 (нөгөө компани) / Кт банк — мөнгө хасагдаж, нөгөө компаниас авах авлага үүснэ.
+// Өглөгтэй компани: Дт 3101 (нийлүүлэгч) / Кт 1299, Дт 1299 / Кт 1290 (төлсөн компани) — нийлүүлэгчийн өглөг хаагдаж, төлсөн компанид өгөх өр үүснэ.
+// 1299 дамжуулга нь харилцагчийг хоёуланд нь зөв үлдээнэ (3101 — нийлүүлэгч, 1290 — компани). Ашигт нөлөөлөхгүй.
+var bankX = null;
+function bankXItems(b) {
+  var c = debtCache(); c.xp = c.xp || {};
+  if (!c.xp[b]) c.xp[b] = openItems(buildJournal(b, R()), ['3101'], -1, '9999-12-31').items.filter(function (it) { return !it.closed; }).map(function (it) { it.left = r0(it.amt - it.paid); return it; }).filter(function (it) { return it.left > 0.5; });
+  return c.xp[b];
+}
+function bankXOpts2(biz) {
+  return KEYS.filter(function (k) { return k !== biz; }).map(function (k) {
+    var L = bankXItems(k), who = {}; L.forEach(function (it) { who[it.who] = 1; }); if (!L.length) return null;
+    return ['XP:' + k, BUSINESSES[k].name + ' — ' + Object.keys(who).slice(0, 3).join(', ') + ' · ' + fmt(r0(L.reduce(function (a, it) { return a + it.left; }, 0))), 'Өөр компанийн өглөг төлөх'];
+  }).filter(Boolean);
+}
+function bankXOpen(lineId, b) {
+  var l = bankLines.filter(function (x) { return x.id === lineId; })[0]; if (!l || l.credit) return;
+  var L = bankXItems(b), W = []; L.forEach(function (it) { if (W.indexOf(it.who) < 0) W.push(it.who); });
+  if (!L.length) { toast(BUSINESSES[b].name + '-д хаагдаагүй өглөг алга — эхлээд тэр компанид бараа орлого, карго бүртгэнэ үү'); return; }
+  var d0 = String(l.desc).toLowerCase(), hit = W.filter(function (w) { return w.length >= 3 && d0.indexOf(w.toLowerCase()) >= 0; })[0];
+  bankX = { l: l, b: b, W: W, who: hit || W[0], on: {}, a: {} };
+  gOpen('<h2>Өөр компанийн өглөг төлөх</h2><p class="rep-note">' + esc(String(l.date).slice(0, 16)) + ' · −' + fmt(l.debit) + ' · ' + esc(l.desc) + '</p>' +
+    '<table class="rep-t"><tr><td>Төлсөн данс</td><td><b>' + esc(BUSINESSES[l.biz].name) + '</b></td></tr><tr><td>Өглөгтэй компани</td><td><b>' + esc(BUSINESSES[b].name) + '</b></td></tr></table>' +
+    '<label for="bxWho" style="margin-top:8px">Харилцагч (нийлүүлэгч)</label><select id="bxWho" onchange="bankX.who=this.value;bankXFill();bankXDraw()">' + W.map(function (w) { return '<option' + (w === bankX.who ? ' selected' : '') + '>' + esc(w) + '</option>'; }).join('') + '</select>' +
+    '<div id="bxBody" style="margin-top:8px"></div><div class="row2" style="margin-top:10px"><button class="b-btn" onclick="gClose()">Болих</button><button class="b-btn primary" id="bxGo" onclick="bankXSave()">Тулгах</button></div>');
+  bankXFill(); bankXDraw();
+}
+function bankXDocs() { return bankXItems(bankX.b).filter(function (it) { return it.who === bankX.who; }); }
+function bankXFill() {   // хуучин баримтаас эхлэн банкны дүнгээр хуваарилна
+  var X = bankX, rest = X.l.debit; X.on = {}; X.a = {};
+  bankXDocs().forEach(function (it, i) { var v = Math.min(it.left, rest); rest = r0(rest - v); X.on[i] = v > 0; X.a[i] = v; });
+}
+function bankXTog(i, on) { var X = bankX, D = bankXDocs(); X.on[i] = on; var rest = X.l.debit; D.forEach(function (it, k) { var v = X.on[k] ? Math.min(it.left, rest) : 0; rest = r0(rest - v); X.a[k] = v; }); bankXDraw(); }
+function bankXAmt(i, v) { bankX.a[i] = Math.max(0, Math.min(Number(v) || 0, bankXDocs()[i].left)); bankXSum(); }
+function bankXPlan() {
+  var X = bankX, D = bankXDocs(), rows = D.map(function (it, i) { return { it: it, v: X.on[i] ? r0(X.a[i] || 0) : 0 }; }).filter(function (r) { return r.v > 0; });
+  var sum = r0(rows.reduce(function (a, r) { return a + r.v; }, 0));
+  return { rows: rows, sum: sum, over: r0(X.l.debit - sum), payer: BUSINESSES[X.l.biz].name, other: BUSINESSES[X.b].name };
+}
+function bankXDraw() {
+  var el = document.getElementById('bxBody'); if (!el) return;
+  el.innerHTML = '<table class="rep-t dc-t"><tr><th></th><th>Огноо</th><th>Баримт</th><th class="n">Үлдэгдэл</th><th class="n">Хаах дүн</th></tr>' + bankXDocs().map(function (it, i) {
+    return '<tr><td><input type="checkbox"' + (bankX.on[i] ? ' checked' : '') + ' onchange="bankXTog(' + i + ',this.checked)"></td><td class="nw">' + esc(it.date) + '</td><td>' + esc(String(it.desc).slice(0, 60)) + '</td><td class="n">' + fmt(it.left) + '</td>' +
+      '<td class="n"><input type="number" min="0" value="' + (bankX.on[i] ? bankX.a[i] : '') + '" style="width:105px;text-align:right" oninput="bankXAmt(' + i + ',this.value)"></td></tr>'; }).join('') + '</table><div id="bxSum" style="margin-top:8px"></div>';
+  bankXSum();
+}
+function bankXSum() {
+  var P = bankXPlan(), el = document.getElementById('bxSum'), go = document.getElementById('bxGo'), W = bankX.who, ok = P.rows.length && P.over > -0.5, v = bankX.l.debit;
+  if (go) go.disabled = !ok;
+  if (!el) return;
+  el.innerHTML = '<table class="rep-t"><tr><th>Компани</th><th>Юу болох вэ</th></tr>' +
+    '<tr><td>' + esc(P.payer) + '</td><td>Мөнгө −' + fmt(v) + ' · ' + esc(P.other) + '-оос авах авлага +' + fmt(v) + ' · Ашигт нөлөөгүй</td></tr>' +
+    '<tr><td>' + esc(P.other) + '</td><td>' + esc(W) + '-ийн өглөг −' + fmt(v) + ' · ' + esc(P.payer) + '-д өгөх өглөг +' + fmt(v) + ' · Мөнгө, ашигт нөлөөгүй</td></tr></table>' +
+    (P.over < -0.5 ? '<p class="neg" style="font-size:12.5px">Хаах дүн гүйлгээнээс ' + fmt(-P.over) + '-өөр их байна.</p>' : P.over > 0.5 ? '<p class="muted" style="font-size:12.5px">' + fmt(P.over) + ' хуваарилаагүй — ' + esc(W) + '-д илүү төлөлт (урьдчилгаа) болно.</p>' : '');
+}
+function bankXEntries() {
+  var X = bankX, P = bankXPlan(), l = X.l, inf = bankAcctInfo(l.acct), acc = inf ? inf.acc : '1101', d = l.date.slice(0, 10), E = [];
+  E.push({ biz: l.biz, date: d, dr: '1290', cr: acc, amount: l.debit, partner: P.other, desc: 'Өглөг төлсөн · ' + X.who + ' · ' + P.other + '-ийн өмнөөс · ' + String(l.desc).slice(0, 60) });
+  P.rows.forEach(function (r, i) { var v = i === 0 ? r0(r.v + Math.max(0, P.over)) : r.v, tg = debtTag(r.it);
+    E.push({ biz: X.b, date: d, dr: '3101', cr: '1299', amount: v, partner: X.who, desc: 'Өглөг төлсөн · ' + String(r.it.desc).slice(0, 50) + ' · ' + P.payer + ' данснаас' + (tg ? ' #' + tg : '') }); });
+  E.push({ biz: X.b, date: d, dr: '1299', cr: '1290', amount: l.debit, partner: P.payer, desc: 'Өглөг төлсөн · ' + X.who + ' · ' + P.payer + ' данснаас төлсөн' });
+  E.forEach(function (e) { e.bankId = l.id; });
+  return E;
+}
+function bankXSave() {
+  var X = bankX, P = bankXPlan(), l = X.l; if (!P.rows.length || P.over < -0.5) return;
+  var E = bankXEntries(), link = 'Өөр компанийн өглөг · ' + P.other + ' · ' + X.who + ' · ' + P.rows.length + ' баримт';
+  if (!confirm(P.payer + ' данснаас ' + P.other + '-ийн өглөг төлөх үү?\n\n' + X.who + ' · ' + fmt(l.debit) + '\n' + P.rows.slice(0, 12).map(function (r) { return r.it.date + ' · ' + String(r.it.desc).slice(0, 40) + ' · ' + fmt(r.v); }).join('\n'))) return;
+  gClose();
+  if (!API_URL) { E.forEach(function (e, i) { e.id = 'J' + Date.now() + '-' + i; e.by = ownerName; journal.push(e); }); l.status = 'Тулгасан'; l.link = link; save('nb_demo_journal', journal); save('nb_demo_bank', bankLines); render(); return; }
+  l.status = 'Тулгасан'; l.link = link; delete bankPick[l.id];
+  E.forEach(function (e, i) { journal.push(Object.assign({ id: 'tmp' + Date.now() + '-' + i, by: ownerName }, e)); }); _debtCache = null; render();
+  post({ type: 'admin_journal', by: ownerName, entries: E }, function (err) {
+    if (err) { if (err !== 'locked') toast('Журнал бичигдсэнгүй: ' + err); refresh(); return; }
+    post({ type: 'admin_bank', by: ownerName, updates: [{ id: l.id, status: 'Тулгасан', link: link }] }, function (e2) { toast(e2 ? 'Алдаа: ' + e2 : 'Тулгагдлаа'); refresh(); });
   });
 }
 
