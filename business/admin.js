@@ -357,7 +357,7 @@ function subVisible(biz, k) {
   if (k === 'boostp' || k === 'boostbud') return !B.finOnly;
   if (k === 'daily') return !B.finOnly;   // удирдлагын өөрийн санхүүд борлуулалт байхгүй
   if (k === 'ebarimt') return B.ebarimt !== false;
-  if (B.finOnly && /^(simple|months|profit|payroll|expenses|assets|requests)$/.test(k)) return false;   // Удирдлага: үр дүн, бараа, ажилчидгүй
+  if (B.finOnly && /^(monrep|simple|months|profit|payroll|expenses|assets|requests)$/.test(k)) return false;   // Удирдлага: үр дүн, бараа, ажилчидгүй
   if (!isOwner() && /^(payroll|loans|setup|banklink|opening|accounts|lock|close|assets|digest|api)$/.test(k)) return false;   // менежерт эзний хуудас харагдахгүй
   return true;
 }
@@ -431,7 +431,7 @@ function companyView() {
   if (mod === 'staff') return pageHead('Ажилчид', '') + staffView(state.biz);
   if (mod === 'review') return reviewView();
   if (mod === 'reports') return pageHead('Бүх тайлан', '<button class="b-btn primary" onclick="exportAll()">Бүх тайланг Excel-ээр татах</button>', true) + reportsModule();
-  var sub = state.sub[mod], noPeriod = /^(counts|requests|accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary|months|payroll|debts|acct|setup|loans|banklink|po|assets|customers|digest|other|recv|payb|buuhia|ebrec|boostp|boostbud|api|partners|audit|trash|company)$/.test(sub);   // авлага, өглөг — өнөөдрийн байдлаар (хугацаагаар шүүхгүй)
+  var sub = state.sub[mod], noPeriod = /^(monrep|counts|requests|accounts|stock|suppliers|catalog|close|bank|opening|lock|aging_r|aging_p|monthly|glossary|months|payroll|debts|acct|setup|loans|banklink|po|assets|customers|digest|other|recv|payb|buuhia|ebrec|boostp|boostbud|api|partners|audit|trash|company)$/.test(sub);   // авлага, өглөг — өнөөдрийн байдлаар (хугацаагаар шүүхгүй)
   var acts = /^(boostp|boostbud|counts|requests|overview|dash|stock|close|bank|opening|lock|simple|monthly|glossary|acct|setup|loans|banklink|po|assets|digest|other|daily|expcat|cashacc)$/.test(sub) ? '' : '<button class="b-btn" onclick="exportCurrent()">Excel</button><button class="b-btn" onclick="window.print()">Хэвлэх</button>';
   // Харилцахын (банкны) гүйлгээг гараар бичихгүй — зөвхөн банкны хуулгаар тулгана (давхар бичигдэхээс сэргийлнэ)
   if (sub === 'money') acts = '<button class="b-btn primary" onclick="setSub(\'bank\')">Банкны хуулгаар тулгах</button>' +
@@ -1266,6 +1266,7 @@ function makeReport(mod, sub) {
   if (sub === 'ledger') return repLedger(E, f, t, state.acc);
   if (sub === 'stmt') return repStmt(E, f, t, state.stmtAcc || 'cashall');
   if (sub === 'mrep') return repMgmt(E, f, t);
+  if (sub === 'monrep') return repMonRep();
   if (sub === 'cash') return repCash(E, f, t);
   if (sub === 'pl') return repPL(E, f, t);
   if (sub === 'balance') return repBalance(E, t);
@@ -1455,6 +1456,7 @@ function subBody() {
   if (mod === 'finance' && sub === 'simple') return simpleView();
   if (mod === 'finance' && sub === 'daily') return dailyView();
   if (mod === 'finance' && sub === 'mrep') return mrepView();
+  if (mod === 'finance' && sub === 'monrep') return monrepView();
   if (mod === 'finance' && sub === 'accounts') return accountsView();
   if (mod === 'finance' && sub === 'cashacc') return cashAccView();
   if (mod === 'finance' && sub === 'expcat') return expcatView();
@@ -2151,7 +2153,7 @@ function reportsModule() {
 
 // ── Excel ──
 function repAoa(rep) {
-  var r = range(), aoa = [[rep.title], [BUSINESSES[state.biz].name + ' · ' + r[0] + ' — ' + r[1]], []];
+  var r = range(), aoa = [[rep.title], [BUSINESSES[state.biz].name + ' · ' + (rep.period || r[0] + ' — ' + r[1])], []];
   aoa.push(rep.cols.map(function (cl) { return cl.label; }));
   rep.rows.forEach(function (row) { aoa.push(rep.cols.map(function (cl) { var v = row[cl.k]; return v == null ? '' : v.__html ? String(v) : v; })); });
   if (rep.total) aoa.push(rep.cols.map(function (cl) { var v = rep.total[cl.k]; return v == null ? '' : v; }));
@@ -2160,13 +2162,13 @@ function repAoa(rep) {
   ws['!cols'] = rep.cols.map(function (cl) { return { wch: cl.num ? 14 : 28 }; });
   return ws;
 }
-function xlsxName(t) { var r = range(); return (BUSINESSES[state.biz].name + ' ' + t + ' ' + r[0] + '_' + r[1]).replace(/[\\/:*?"<>|]/g, '') + '.xlsx'; }
+function xlsxName(t, per) { var r = range(); return (BUSINESSES[state.biz].name + ' ' + t + ' ' + (per || r[0] + '_' + r[1])).replace(/[\\/:*?"<>|]/g, '') + '.xlsx'; }
 function exportCurrent() {
   if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин оролдоно уу'); ensureXlsx(function () {}); return; }
   var rep = makeReport(state.module, state.sub[state.module]);
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, repAoa(rep), 'Тайлан');
-  XLSX.writeFile(wb, xlsxName(rep.title));
+  XLSX.writeFile(wb, xlsxName(rep.file || rep.title, rep.period));
 }
 // Одоогийн компанийн бүх тайланг wb-д нэмнэ (pre — хуудасны нэрийн угтвар, олон компани нэг файлд). Алдаатай тайлангийн нэрсийг буцаана
 function addAllReports(wb, used, pre) {

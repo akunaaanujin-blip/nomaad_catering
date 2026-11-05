@@ -59,10 +59,10 @@ function stmtPre(rep) {
 }
 
 // ── Удирдлагын тайлан ──
-function mrepDebt(E, k) {   // «Авлага», «Өглөг» хуудасны үлдэгдэлтэй ижил
-  var td = todayStr(), T = DEBT_TABS[k], left = 0, who = {};
+function mrepDebt(E, k, to, n) {   // «Авлага», «Өглөг» хуудасны үлдэгдэлтэй ижил; to — тухайн өдрийн байдлаар, n — нэрсийн тоо
+  var td = to || todayStr(), T = DEBT_TABS[k], left = 0, who = {};
   openItems(debtE(E, k, td), debtAccs(k), T[3], td, false).items.forEach(function (it) { if (debtStatus(it) !== 'closed') { var v = it.amt - it.paid; left += v; who[it.who] = (who[it.who] || 0) + v; } });
-  return { left: r0(left), top: Object.keys(who).filter(function (w) { return who[w] > 0.5; }).sort(function (a, b) { return who[b] - who[a]; }).slice(0, 5).map(function (w) { return [nameTel(w), who[w]]; }) };
+  return { left: r0(left), top: Object.keys(who).filter(function (w) { return who[w] > 0.5; }).sort(function (a, b) { return who[b] - who[a]; }).slice(0, n || 5).map(function (w) { return [nameTel(w), who[w]]; }) };
 }
 function mrepData(E, f, t) {
   var td = todayStr(), p = plData(E, f, t), b = balances(E, td), g = function (k) { return b[k] || 0; }, cash = cashCodes();
@@ -102,4 +102,173 @@ function mrepView() {
       card('Бидэнд өгөх мөнгө', D.recv.top.map(function (x) { return ln(x[0], x[1]); }).join('') + ln('Нийт', D.recv.left, 'tot'), 'finance/recv', 'Авлага') +
       card('Бидний өгөх мөнгө', D.payb.top.map(function (x) { return ln(x[0], x[1]); }).join('') + ln('Нийт', D.payb.left, 'tot') + (D.loan > 0.5 ? ln('Зээлийн үлдэгдэл', D.loan) : ''), 'finance/payb', 'Өглөг') +
     '</div>';
+}
+
+// ═══════════ САРЫН ТАЙЛАН ═══════════
+// Цаасан «Санхүүгийн дотоод тайлан»-гийн хэлбэрээр: сар бүрийн багана, нэг хэвлэмэл баримт. Бүх тоо журнал, борлуулалтаас — гараар бичихгүй.
+// Хүснэгт бүр { t: гарчиг, h: баганууд, r: [{ c: нүднүүд, k: 'tot'|'hd'|'sub' }] } — дэлгэц, хэвлэх, Excel нэг өгөгдлөөс.
+var MR_ACC = { '1298': 'Баталгаажаагүй шилжүүлэг', '1404': 'Барааны үлдэгдэл', '1503': 'Барааны урьдчилгаа', '1505': 'Замд яваа бараа', '1208': 'Удирдлагаас авах', '1207': 'Ажилчдаас авах', '3101': 'Өглөг', '3301': 'Цалингийн өглөг', '3402': 'НӨАТ-ын өр',
+  '3403': 'НДШ-ийн өглөг', '3404': 'ХХОАТ-ын өглөг', '3802': 'Хэрэглэгчийн урьдчилгаа' };
+var MR_SIGN = { travel: { signBoss: 'Г.Мэнх-Учрал', signOps: 'Б.Дэлгэрбат', signAcct: 'Н.Анужин' } };
+function mrMoName(m) { return Number(m.slice(5, 7)) + ' сар'; }
+function mrMonths() {   // сонгосон сарууд (хамгийн ихдээ 12)
+  var cur = todayStr().slice(0, 7), to = state.mrTo || cur, from = state.mrFrom || rvPrevMo(cur), out = [];
+  if (from > to) { var x = from; from = to; to = x; }
+  for (var m = to; m >= from && out.length < 12; m = rvPrevMo(m)) out.unshift(m);
+  return out;
+}
+function mrTitle(ms) {
+  var a = ms[0], b = ms[ms.length - 1], y = a.slice(0, 4), n = function (m) { return Number(m.slice(5, 7)); };
+  var per = y !== b.slice(0, 4) ? y + ' оны ' + n(a) + ' сараас ' + b.slice(0, 4) + ' оны ' + n(b) + ' сарын' : y + ' оны ' + (ms.length > 3 ? n(a) + '–' + n(b) : ms.map(n).join(', ')) + ' сарын';
+  var nm = BUSINESSES[state.biz].name;
+  return nm + (/[а-яөүё]$/i.test(nm) ? 'ийн ' : '-ийн ') + per + ' санхүүгийн дотоод тайлан';
+}
+function mrSigns() { var c = (window.companyInfo || {})[state.biz] || {}, d = MR_SIGN[state.biz] || {}; return ['signBoss', 'signOps', 'signAcct'].map(function (k) { return c[k] || d[k] || ''; }); }
+function mrPct(a, b) { return b ? Math.round(a / b * 1000) / 10 + '%' : '—'; }
+function mrChg(a, b) { if (!(b > 0)) return '—'; var v = Math.round((a - b) / b * 1000) / 10; return (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + '%'; }
+function mrSum(L) { return L.reduce(function (a, v) { return a + (Number(v) || 0); }, 0); }
+function mrData(ms) {
+  var biz = state.biz, E = J(), Rr = R(), td = todayStr(), cash = cashCodes(), n = ms.length, many = n > 1;
+  var M = ms.map(function (mm) {
+    var f = mm + '-01', e = lastDayOf(mm), t = e < td ? e : td, p = plData(E, f, t), b = balances(E, t), b0 = balances(E, prevDay(f)), io = { i: {}, o: {} }, spFee = 0, sp = 0;
+    drillLines({ acc: cash, from: f, to: t, sign: 1, grp: 'type' }, E).lines.forEach(function (x) { var g = x.v > 0 ? io.i : io.o; g[x.key] = (g[x.key] || 0) + Math.abs(x.v); });
+    E.forEach(function (x) {
+      if (x.partner === 'StorePay' && x.date <= t) { if (x.dr === '1201') sp += x.amount; if (x.cr === '1201') sp -= x.amount; }
+      if (x.partner === 'StorePay' && x.date >= f && x.date <= t) { if (ACC[x.dr] && ACC[x.dr].type === 'exp') spFee += x.amount; if (ACC[x.cr] && ACC[x.cr].type === 'exp') spFee -= x.amount; }
+    });
+    return { m: mm, f: f, t: t, part: t !== e, p: p, b: b, io: io, sp: sp, spFee: spFee, open: mrSum(cash.map(function (k) { return b0[k]; })),
+      bills: groupBills(salesIn(Rr, biz, f, t)).filter(function (x) { return x.gross > 0; }).length,
+      pay: repSalesBy(Rr, biz, f, t, 'pay').rows, cat: repSalesBy(Rr, biz, f, t, 'cat').rows };
+  });
+  var head = ['Үзүүлэлт'].concat(M.map(function (x) { return mrMoName(x.m); }));
+  var cmp = many && !M[n - 1].part;   // дуусаагүй сарыг бүтэн сартай харьцуулахгүй
+  var flow = function (name, get, k, noChg) {   // сарын дүн + нийт + сүүлийн 2 сарын өөрчлөлт
+    var v = M.map(get), r = [name].concat(v);
+    if (many) r.push(mrSum(v)); if (cmp) r.push(noChg ? '' : mrChg(v[n - 1], v[n - 2]));
+    return { c: r, k: k };
+  };
+  var hFlow = head.concat(many ? ['Нийт'] : [], cmp ? ['Өөрчлөлт'] : []);
+  // ── Санхүүгийн байдал (сарын эцэст) ──
+  var hBal = ['Үзүүлэлт'].concat(M.map(function (x) { return Number(x.t.slice(5, 7)) + ' сарын ' + Number(x.t.slice(8, 10)) + '-нд'; }));
+  var rowsOf = function (L, sign) { return L.map(function (a) { return { n: a[1], v: M.map(function (x) { return (x.b[a[0]] || 0) * sign; }), code: a[0] }; }); };
+  var live = function (r) { return r.v.some(function (v) { return Math.abs(v) >= 0.5; }); };
+  var money = rowsOf(ACCOUNTS.filter(function (a) { return a[3] === 'cash'; }), 1).filter(live), bal = [];
+  var other = rowsOf(ACCOUNTS.filter(function (a) { return a[2] === 'asset' && a[3] !== 'cash'; }), 1).filter(live), liab = rowsOf(ACCOUNTS.filter(function (a) { return a[2] === 'liab'; }), -1).filter(live);
+  var rec = other.filter(function (r) { return r.code === '1201'; })[0], spV = M.map(function (x) { return x.sp; });
+  if (rec && spV.some(function (v) { return Math.abs(v) >= 0.5; })) {   // StorePay-ийн төлөгдөөгүй тооцоо — цаасан тайлан шиг тусдаа мөр
+    rec.v = rec.v.map(function (v, i) { return v - spV[i]; });
+    other.splice(other.indexOf(rec) + 1, 0, { n: 'Төлөгдөөгүй тооцоо (StorePay)', v: spV, code: 'sp' });
+  }
+  var nm = function (r) { return r.code === '1201' ? 'Авлага (бусдаас авах төлбөр)' : MR_ACC[r.code] || r.n; };
+  var tot = function (L) { return M.map(function (x, i) { return mrSum(L.map(function (r) { return r.v[i]; })); }); };
+  var line = function (r) { bal.push({ c: [nm(r)].concat(r.v) }); };
+  var tMoney = tot(money), tOther = tot(other), tA = tMoney.map(function (v, i) { return v + tOther[i]; }), tL = tot(liab);
+  bal.push({ c: ['Мөнгө'].concat(M.map(function () { return ''; })), k: 'hd' }); money.forEach(line); bal.push({ c: ['Нийт мөнгө'].concat(tMoney), k: 'sub' });
+  bal.push({ c: ['Авлага, бараа, бусад хөрөнгө'].concat(M.map(function () { return ''; })), k: 'hd' }); other.forEach(line);
+  bal.push({ c: ['Нийт хөрөнгө'].concat(tA), k: 'tot' });
+  liab.forEach(line); bal.push({ c: ['Нийт өглөг, өр төлбөр'].concat(tL), k: 'sub' });
+  bal.push({ c: ['Өглөгийн дараах цэвэр үлдэгдэл'].concat(tA.map(function (v, i) { return v - tL[i]; })), k: 'tot' });
+  // ── Орлого, ашиг ──
+  var P = function (k, s) { return function (x) { return (s || 1) * x.p[k]; }; }, pl = [], hasRet = M.some(function (x) { return x.p.ret; }), hasDisc = M.some(function (x) { return x.p.disc; });
+  if (hasRet || hasDisc) pl.push(flow('Борлуулалт', P('sales')));
+  if (hasRet) pl.push(flow('Буцаалт', P('ret', -1), '', 1));
+  if (hasDisc) pl.push(flow('Хөнгөлөлт', P('disc', -1), '', 1));
+  pl.push(flow('Борлуулалтын орлого', P('net'), 'sub'), flow('Барааны өртөг', P('cogs', -1), '', 1), flow('Нийт ашиг', P('gross'), 'sub'), flow('Зардал', P('expT', -1), '', 1));
+  if (M.some(function (x) { return x.p.other; })) pl.push(flow('Бусад орлого', P('other'), '', 1));
+  pl.push(flow('Цэвэр ашиг (алдагдал)', P('profit'), 'tot'));
+  var ratio = function (name, g, all) { var r = [name].concat(M.map(g)); if (many) r.push(all); if (cmp) r.push(''); return { c: r }; };
+  var sN = mrSum(M.map(P('net'))), sG = mrSum(M.map(P('gross'))), sP = mrSum(M.map(P('profit'))), sB = mrSum(M.map(function (x) { return x.bills; }));
+  pl.push(ratio('Нийт ашгийн хувь', function (x) { return mrPct(x.p.gross, x.p.net); }, mrPct(sG, sN)), ratio('Цэвэр ашгийн хувь', function (x) { return mrPct(x.p.profit, x.p.net); }, mrPct(sP, sN)));
+  var cnt = ['Борлуулалтын баримт (ш)'].concat(M.map(function (x) { return String(x.bills); })); if (many) cnt.push(String(sB)); if (cmp) cnt.push(mrChg(M[n - 1].bills, M[n - 2].bills)); pl.push({ c: cnt });
+  pl.push(ratio('Дундаж баримт', function (x) { return x.bills ? mny(x.p.net / x.bills) : '—'; }, sB ? mny(sN / sB) : '—'));
+  // ── Зардал ──
+  var X = {}; M.forEach(function (x, i) { x.p.exps.forEach(function (e) { (X[e.code] = X[e.code] || M.map(function () { return 0; }))[i] = e.v; }); });
+  var ex = Object.keys(X).sort(function (a, b) { return mrSum(X[b]) - mrSum(X[a]); }).map(function (k) { return flow(EXP_SHORT[k] || accName(k), function (x, i) { return X[k][i]; }); });
+  ex.push(flow('Нийт зардал', P('expT'), 'tot'));
+  // ── Мөнгөний урсгал ──
+  var keys = function (g) { var o = {}; M.forEach(function (x) { Object.keys(x.io[g]).forEach(function (k) { o[k] = (o[k] || 0) + x.io[g][k]; }); }); return Object.keys(o).filter(function (k) { return k !== 'Данс хооронд' && o[k] >= 0.5; }).sort(function (a, b) { return o[b] - o[a]; }); };
+  var cf = [], hCash = head.concat(many ? ['Нийт'] : []), row = function (name, v, k, all) { cf.push({ c: [name].concat(v, many ? [all] : []), k: k }); };
+  var part = function (g, label) {
+    var K = keys(g), V = M.map(function (x) { return mrSum(K.map(function (k) { return x.io[g][k]; })); });
+    row(label, V, 'sub', mrSum(V));
+    K.forEach(function (k) { var v = M.map(function (x) { return x.io[g][k] || 0; }); row(k, v, '', mrSum(v)); });
+    return V;
+  };
+  var opens = M.map(function (x) { return x.open; });
+  row('Эхний үлдэгдэл', opens, 'sub', opens[0]);
+  var vin = part('i', 'Орсон мөнгө'), vout = part('o', 'Гарсан мөнгө'), closes = M.map(function (x, i) { return x.open + vin[i] - vout[i]; });
+  row('Эцсийн үлдэгдэл', closes, 'tot', closes[n - 1]);
+  // ── Бараа: хугацааны нийтээр ──
+  var f0 = M[0].f, t1 = M[n - 1].t, pr = repProfit(Rr, biz, f0, t1), P2 = BUSINESSES[biz].products || [], code = function (k) { var q = P2.filter(function (x) { return x.name === k; })[0]; return q && q.code || ''; };
+  var sold = pr.rows.filter(function (r) { return r.cogs !== '' && r.net > 0; }), hasCode = sold.some(function (r) { return code(r.key); }), noCost = pr.rows.filter(function (r) { return r.cogs === '' && r.net > 0; }).length;
+  var iHead = ['№'].concat(hasCode ? ['Барааны код'] : [], ['Барааны нэр', 'Тоо ширхэг', 'Нийт нэгж өртөг', 'Борлуулалтын дүн', 'Ашиг']);
+  var iTbl = function (t, L) {
+    var rows = L.map(function (r, i) { return { c: [String(i + 1)].concat(hasCode ? [code(r.key)] : [], [r.key, String(r.qty), Number(r.cogs), r.net, Number(r.margin)]) }; });
+    var g = function (k) { return mrSum(L.map(function (r) { return r[k]; })); };
+    if (L.length) rows.push({ c: ['Нийт'].concat(hasCode ? [''] : [], ['', String(r0(g('qty'))), g('cogs'), g('net'), g('margin')]), k: 'tot' });
+    return { t: t, h: iHead, r: rows, left: hasCode ? 3 : 2, empty: 'Борлуулалт алга' };
+  };
+  var pLab = n > 1 ? mrMoName(ms[0]) + ' – ' + mrMoName(ms[n - 1]) + ' ' + ms[n - 1].slice(0, 4) : mrMoName(ms[0]) + ' ' + ms[0].slice(0, 4);
+  var best = sold.slice(0, 5), low = sold.slice().sort(function (a, b) { return Number(a.margin) - Number(b.margin); }).filter(function (r) { return best.indexOf(r) < 0; }).slice(0, 5);
+  // ── Ангилал ──
+  var C = {}; M.forEach(function (x, i) { x.cat.forEach(function (r) { (C[r.key] = C[r.key] || M.map(function () { return 0; }))[i] = r.net; }); });
+  var cAll = mrSum(Object.keys(C).map(function (k) { return mrSum(C[k]); }));
+  var cat = Object.keys(C).filter(function (k) { return Math.abs(mrSum(C[k])) >= 0.5; }).sort(function (a, b) { return mrSum(C[b]) - mrSum(C[a]); }).map(function (k) {
+    return { c: [k].concat(C[k], many ? [mrSum(C[k])] : [], [mrPct(mrSum(C[k]), cAll)]) }; });
+  if (cat.length) cat.push({ c: ['Нийт'].concat(M.map(function (x, i) { return mrSum(Object.keys(C).map(function (k) { return C[k][i]; })); }), many ? [cAll] : [], ['100%']), k: 'tot' });
+  // ── Төлбөрийн хэлбэр (сар бүр) ──
+  var pays = M.map(function (x) {
+    var L = x.pay.filter(function (r) { return Math.abs(r.net) >= 0.5; }).sort(function (a, b) { return b.net - a.net; }).map(function (r) {
+      var fee = r.key === 'Карт' && posBiz(biz) ? r.net - posNet(r.net) : r.key === 'StorePay' ? x.spFee : 0;
+      return { c: [r.key, r.net, fee, r.net - fee] }; });
+    var s = function (i) { return mrSum(L.map(function (r) { return r.c[i]; })); };
+    if (L.length) L.push({ c: ['Нийт', s(1), s(2), s(3)], k: 'tot' });
+    return { t: mrMoName(x.m) + 'ын борлуулалтын төлбөрийн арга', h: ['Төлбөрийн хэлбэр', 'Борлуулалтын дүн', 'Шимтгэл', 'Шимтгэл хасагдсан дүн'], r: L, empty: 'Борлуулалт алга' };
+  });
+  // ── Авлага, өглөг: сүүлийн өдрийн байдлаар ──
+  var debt = function (k, t) { var D = mrepDebt(E, k, t1, 8), R2 = D.top.map(function (x) { return { c: [x[0], x[1]] }; }), rest = D.left - mrSum(D.top.map(function (x) { return x[1]; })); if (rest >= 0.5) R2.push({ c: ['Бусад', rest] }); if (R2.length) R2.push({ c: ['Нийт', D.left], k: 'tot' }); return { t: t, h: ['Харилцагч', 'Үлдэгдэл'], r: R2, empty: 'Үлдэгдэл алга' }; };
+  var asOf = Number(t1.slice(5, 7)) + ' сарын ' + Number(t1.slice(8, 10)) + '-ны байдлаар';
+  return { M: M, noCost: noCost, part: M[n - 1].part, t1: t1, groups: [
+    [{ t: 'Дансны хураангуй', h: hBal, r: bal }, { t: 'Орлого, ашиг', h: hFlow, r: pl }],
+    [{ t: 'Зардал', h: hFlow, r: ex, empty: 'Зардал алга' }, { t: 'Мөнгөний урсгал', h: hCash, r: cf }],
+    [iTbl('Ашгийн хамгийн өндөр борлуулалттай 5 бараа · ' + pLab, best), iTbl('Хамгийн бага ашигтай 5 бараа · ' + pLab, low)],
+    [{ t: 'Борлуулалт ангиллаар', h: ['Ангилал'].concat(M.map(function (x) { return mrMoName(x.m); }), many ? ['Нийт'] : [], ['Эзлэх хувь']), r: cat, empty: 'Борлуулалт алга' }],
+    pays,
+    [debt('r', 'Авлага · ' + asOf), debt('p', 'Өглөг · ' + asOf)]
+  ] };
+}
+function mrTable(T) {
+  var left = T.left || 1, cell = function (v, i, tag) {
+    var num = typeof v === 'number', txt = num ? (Math.abs(v) < 0.5 ? '—' : mny(v)) : esc(v == null ? '' : v);
+    return '<' + tag + (i >= left ? ' class="n' + (num && v < -0.5 ? ' neg' : '') + '"' : '') + '>' + txt + '</' + tag + '>'; };
+  var body = T.r.length ? T.r.map(function (r) { return '<tr' + (r.k ? ' class="mr-' + r.k + '"' : '') + '>' + r.c.map(function (v, i) { return cell(v, i, 'td'); }).join('') + '</tr>'; }).join('')
+    : '<tr><td class="muted" colspan="' + T.h.length + '">' + esc(T.empty || 'Мэдээлэл алга') + '</td></tr>';
+  return '<div class="mr-b"><h3>' + esc(T.t) + '</h3><table class="rep-t mr-t"><thead><tr>' + T.h.map(function (v, i) { return cell(v, i, 'th'); }).join('') + '</tr></thead><tbody>' + body + '</tbody></table></div>';
+}
+function mrOpts(cur) {
+  var td = todayStr().slice(0, 7), first = td, out = '';
+  journal.concat(records).forEach(function (x) { if (x.biz === state.biz) { var m = String(x.date).slice(0, 7); if (/^20\d\d-\d\d$/.test(m) && m < first) first = m; } });
+  var f2 = rvPrevMo(td); if (f2 < first) first = f2;
+  for (var m = td; m >= first; m = rvPrevMo(m)) out += '<option value="' + m + '"' + (m === cur ? ' selected' : '') + '>' + m.slice(0, 4) + ' оны ' + mrMoName(m) + '</option>';
+  return out;
+}
+function monrepView() {
+  var ms = mrMonths(), D = mrData(ms), S = mrSigns(), one = ms.length > 3 ? ' one' : '', pend = bankLines.filter(function (l) { return l.biz === state.biz && l.status === 'Шинэ'; }).length;
+  var note = [D.part ? 'Сүүлийн сар дуусаагүй — ' + D.t1 + '-ны байдлаар.' : '', pend ? 'Тулгаагүй ' + pend + ' банкны гүйлгээ тайланд ороогүй.' : '', D.noCost ? D.noCost + ' барааны өртөг бүртгэгдээгүй тул барааны ашгийн жагсаалтад ороогүй.' : ''].filter(Boolean).join(' ');
+  var sg = function (role, name) { return '<div><span>' + role + '</span><i></i><b>' + esc(name) + '</b></div>'; };
+  var grp = function (g) { return '<div class="mr-g' + (g.length < 2 ? ' one' : one) + '">' + g.map(mrTable).join('') + '</div>'; };
+  return '<style>@page{size:A4 landscape;margin:10mm}</style><div class="st-pick no-print"><label>Эхний сар <select onchange="state.mrFrom=this.value;render()">' + mrOpts(ms[0]) + '</select></label>' +
+      '<label>Сүүлийн сар <select onchange="state.mrTo=this.value;render()">' + mrOpts(ms[ms.length - 1]) + '</select></label></div>' +
+    (note ? '<p class="muted no-print mr-note">' + esc(note) + '</p>' : '') +
+    '<div class="card mr"><h2 class="mr-h">' + esc(mrTitle(ms)) + '</h2>' +
+      grp(D.groups[0]) + grp(D.groups[1]) + '<div class="mr-pb"></div>' + grp(D.groups[2]) + grp(D.groups[3]) + '<div class="mr-pb"></div>' + grp(D.groups[4]) + grp(D.groups[5]) +
+      '<div class="mr-sign">' + sg('Гүйцэтгэх захирал', S[0]) + sg('Үйл ажиллагаа хариуцсан захирал', S[1]) + sg('Нягтлан', S[2]) + '</div></div>';
+}
+function repMonRep() {   // Excel — бүх хүснэгт нэг хуудсанд дараалж
+  var ms = mrMonths(), D = mrData(ms), W = 0, rows = [], T = [];
+  D.groups.forEach(function (g) { g.forEach(function (t) { T.push(t); W = Math.max(W, t.h.length); }); });
+  var cols = []; for (var i = 0; i < W; i++) cols.push(i ? m('c' + i, '') : c('c0', ''));
+  var put = function (L, b) { var o = {}; L.forEach(function (v, i) { o['c' + i] = typeof v === 'number' ? r0(v) : v; }); if (b) o._b = 1; rows.push(o); };
+  T.forEach(function (t) { rows.push({}); put([t.t], 1); put(t.h, 1); t.r.forEach(function (r) { put(r.c, r.k === 'tot' || r.k === 'sub' || r.k === 'hd'); }); });
+  return { title: mrTitle(ms), file: 'Сарын тайлан', period: ms[0] + ' — ' + ms[ms.length - 1], cols: cols, rows: rows };
 }

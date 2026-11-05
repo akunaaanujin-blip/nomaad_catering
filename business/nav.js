@@ -22,7 +22,7 @@ var MNAV = [
     ['products/counts', 'Тооллого'], ['products/move', 'Хөдөлгөөн']]],
   ['Мөнгө', 'money', [['finance/cashacc', 'Данснууд'], ['finance/stmt', 'Дансны хуулга'], ['finance/bank', 'Банк тулгах'], ['finance/vouchers', 'Касс'], ['finance/requests', 'Мөнгөний хүсэлт']]],
   ['Тооцоо', 'people', [['finance/recv', 'Авлага'], ['finance/payb', 'Өглөг'], ['finance/partners', 'Харилцагчид'], ['finance/loans', 'Зээл'], ['finance/fixed', 'Тогтмол зардал, төлбөр'], ['finance/payroll', 'Цалин, НДШ']]],
-  ['Тайлан', 'reports', [['finance/mrep', 'Удирдлагын тайлан'], ['finance/daily', 'Өдрийн орлого'], ['finance/months', '12 сарын дүн'], ['finance/expcat', 'Зардлын задаргаа'],
+  ['Тайлан', 'reports', [['finance/mrep', 'Удирдлагын тайлан'], ['finance/monrep', 'Сарын тайлан'], ['finance/daily', 'Өдрийн орлого'], ['finance/months', '12 сарын дүн'], ['finance/expcat', 'Зардлын задаргаа'],
     ['finance/profit', 'Барааны ашиг'], ['sales/item', 'Борлуулалтын тайлан']]],
   ['Нягтлан', 'book', [['finance/pl', 'Орлогын тайлан'], ['finance/balance', 'Санхүүгийн байдал'], ['finance/cashflow', 'Мөнгөн гүйлгээний тайлан'], ['finance/equity', 'Өмчийн өөрчлөлт'],
     ['v:tax:entpl', 'Нэгтгэсэн орлогын тайлан'], ['finance/trial', 'Гүйлгээ баланс'], ['finance/gl', 'Ерөнхий дэвтэр'], ['finance/journal', 'Журнал'], ['finance/aging_r', 'Насжилт'],
@@ -48,7 +48,7 @@ navTabs('Авлага, өглөгийн насжилт', [['aging_r', 'Авла�
 navTabs('Удирдлагын тайлан', [['mrep', 'Товч'], ['review', 'Дэлгэрэнгүй тойм']]);
 
 // Үг хэллэг (хуудасны гарчиг = цэсний нэр); шинэ хуудсууд
-SUBS.finance.push(['audit', 'Өөрчлөлтийн түүх'], ['trash', 'Хогийн сав'], ['company', 'Компанийн мэдээлэл'], ['mrep', 'Удирдлагын тайлан'], ['stmt', 'Дансны хуулга'], ['fixed', 'Тогтмол зардал']);
+SUBS.finance.push(['audit', 'Өөрчлөлтийн түүх'], ['trash', 'Хогийн сав'], ['company', 'Компанийн мэдээлэл'], ['mrep', 'Удирдлагын тайлан'], ['monrep', 'Сарын тайлан'], ['stmt', 'Дансны хуулга'], ['fixed', 'Тогтмол зардал']);
 REP_HELP.company = 'Нэр, татварын горим, ТТД, НӨАТ, И-баримт, холбоо барих, санхүүгийн жил, буухиагийн нэг хүргэлтийн хөлс. Татварын хуудсууд эндээс хамаарч харагдана.';
 REP_HELP.audit = 'Хэн, хэзээ, юу өөрчилсөн — удирдлагын бүх бичилт, захиалга, тооллого.';
 REP_HELP.trash = 'Сүүлийн 30 хоногт цуцалсан баримт, барааны хөдөлгөөн, журналын бичилт. Сэргээвэл санхүү, үлдэгдэлд дахин тусна.';
@@ -544,13 +544,15 @@ function companyView2() {
     '<div class="row2">' + sel('vat', 'НӨАТ төлөгч', c.vat || 'no', [['no', 'Үгүй'], ['yes', 'Тийм']]) + sel('ebarimt', 'И-баримт ашиглах', c.ebarimt || (B.ebarimt === false ? 'no' : 'yes'), [['yes', 'Тийм'], ['no', 'Үгүй']]) + '</div>' +
     '<div class="row2">' + f('addr', 'Хаяг', c.addr || '') + f('phone', 'Утас', c.phone || '') + '</div>' +
     '<div class="row2">' + f('email', 'Имэйл', c.email || '', '', 'email') + f('fyStart', 'Санхүүгийн жилийн эхлэл (сар-өдөр)', c.fyStart || '01-01', '01-01') + '</div>' +
+    '<div class="row2">' + f('signBoss', 'Гүйцэтгэх захирал (сарын тайланд)', c.signBoss || (MR_SIGN[k] || {}).signBoss || '') + f('signOps', 'Үйл ажиллагаа хариуцсан захирал', c.signOps || (MR_SIGN[k] || {}).signOps || '') + '</div>' +
+    '<div class="row2">' + f('signAcct', 'Нягтлан', c.signAcct || (MR_SIGN[k] || {}).signAcct || '') + '<div></div></div>' +
     '<div class="row2">' + f('color', 'Өнгө', c.color || B.color || '#1F4E79', '', 'color') + (B.orders ? f('ebFee', 'Буухиагийн нэг хүргэлтийн хөлс (₮)', c.ebFee || 7000, '', 'number') : '<div></div>') + '</div>' +
     '<p class="muted" style="font-size:12.5px">Татварын горим «Хувь хүн» бол e-Balance, ААНОАТ хуудас нуугдана. Хөлс нь хүргэгдсэн захиалга бүрт хүргэлтийн зардал (7124) болж бичигдэнэ.' + (E.biz && E.biz.length > 1 ? ' Энэ компани «' + esc(E.name) + '» хуулийн этгээдэд бусад компанитай хамт байгаа тул горим тэр хуулийн этгээдээр хэвээр.' : '') + '</p>' +
     '<button class="b-btn primary" onclick="saveCompany()">Хадгалах</button></div>';
 }
 function saveCompany() {
   var k = state.biz, all = JSON.parse(JSON.stringify(window.companyInfo || {})), c = {};
-  ['name', 'short', 'taxMode', 'tin', 'vat', 'ebarimt', 'addr', 'phone', 'email', 'fyStart', 'color', 'ebFee'].forEach(function (x) { var el = $('co_' + x); if (el) c[x] = x === 'ebFee' ? Number(el.value) || 0 : String(el.value).trim().slice(0, 120); });
+  ['name', 'short', 'taxMode', 'tin', 'vat', 'ebarimt', 'addr', 'phone', 'email', 'fyStart', 'color', 'ebFee', 'signBoss', 'signOps', 'signAcct'].forEach(function (x) { var el = $('co_' + x); if (el) c[x] = x === 'ebFee' ? Number(el.value) || 0 : String(el.value).trim().slice(0, 120); });
   if (c.fyStart && !/^\d{2}-\d{2}$/.test(c.fyStart)) { toast('Санхүүгийн жилийн эхлэлийг «01-01» хэлбэрээр бичнэ үү'); return; }
   all[k] = c; window.companyInfo = all; applyCompany();
   if (!API_URL) { save('nb_demo_company', all); toast('Хадгаллаа'); render(); return; }
