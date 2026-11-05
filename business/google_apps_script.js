@@ -1038,7 +1038,7 @@ function adminRecord(d) {
     for (let i = 0; i < v.length; i++) {
       if (String(v[i][0]) !== String(d.statusId)) continue;
       const cur = String(v[i][18] || '');   // Хүлээгдэж ('') → Батлагдсан / Төлсөн / Татгалзсан; Батлагдсан → Төлсөн / Татгалзсан
-      if (String(v[i][16]) !== 'request' || (cur && !(cur === 'Батлагдсан' && d.status !== 'Батлагдсан'))) return { status: 'error', error: 'state' };
+      if (String(v[i][16]) !== 'request' || (cur && !(cur === 'Батлагдсан' && d.status !== 'Батлагдсан') && !(cur === 'Төлсөн' && d.status === 'Батлагдсан' && d.undo))) return { status: 'error', error: 'state' };   // undo — банкны тулгалт буцаахад
       sh.getRange(i + 2, 19).setValue(d.status);
       sh.getRange(i + 2, 15).setValue(String(v[i][14] || '') + ' [' + d.status.toLowerCase() + ': ' + String(d.by || '').slice(0, 30) + (d.ref ? ' ' + String(d.ref).slice(0, 30) : '') + ']');
       return { status: 'ok' };

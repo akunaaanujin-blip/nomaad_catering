@@ -578,8 +578,20 @@ function debtCache() {   // render бүрт нэг удаа
   if (!_debtCache) {
     var ords = {}, all = debtItems(['1201'], 1), ordLeft = {}; (window.adminOrders || []).forEach(function (o) { ords[o.id] = 1; });
     all.forEach(function (it) { if (ords[it.bill]) ordLeft[it.bill] = r0((ordLeft[it.bill] || 0) + it.left); });   // захиалга бүрийн үлдсэн авлага (хэсэгчлэн төлсөн)
+    var ordAdv = {}, ebDone = {}, jIds = {}, G = {}, drv = [];   // ordAdv — захиалгын орсон урьдчилгаа (3802); ebDone — Буухиа тооцоогоор хаагдсан; drv — бүртгэлээс үүссэн мөнгөний бичилт
+    (journal || []).forEach(function (j) {
+      jIds[j.id] = 1; if (j.biz !== state.biz) return;
+      var tg = String(j.desc).match(/#[\w-]+/g) || [];
+      tg.forEach(function (t) { var k = t.slice(1); if (!ords[k]) return; if (j.cr === '3802') ordAdv[k] = r0((ordAdv[k] || 0) + Number(j.amount)); if (j.dr === '3802') ordAdv[k] = r0((ordAdv[k] || 0) - Number(j.amount)); if (/^Буухиа тооцоо/.test(j.desc)) ebDone[k] = 1; });
+    });
+    J().forEach(function (e) {
+      if (!e.ref || jIds[e.ref] || !(ACC[e.dr] || {}).cash === !(ACC[e.cr] || {}).cash) return;
+      var x = { id: e.ref, biz: state.biz, date: e.date, dr: e.dr, cr: e.cr, amount: e.amount, desc: e.desc }, k = e.doc + '|' + e.date + '|' + (e.partner || '') + '|' + e.dr + '|' + e.cr;
+      drv.push(x); (G[k] = G[k] || []).push(x);
+    });
+    Object.keys(G).forEach(function (k) { if (G[k].length > 1) drv.push(Object.assign({}, G[k][0], { amount: r0(G[k].reduce(function (a, x) { return a + x.amount; }, 0)), desc: k.split('|')[0] + ' · ' + G[k].length + ' мөр нийт' })); });   // нэг гүйлгээгээр төлсөн олон мөр
     _debtCache = { rec: all.filter(function (it) { return !ords[it.bill]; }),   // захиалгын авлагыг «Захиалга»-аар тулгана
-                   pay: debtItems(['3101'], -1), ordLeft: ordLeft };   // зээлийг «Зээл» бүртгэлээр (L:) тулгана
+                   pay: debtItems(['3101'], -1), ordLeft: ordLeft, ordAdv: ordAdv, ebDone: ebDone, drv: drv };   // зээлийг «Зээл» бүртгэлээр (L:) тулгана
   }
   return _debtCache;
 }

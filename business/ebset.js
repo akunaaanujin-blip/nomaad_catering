@@ -180,8 +180,10 @@ function ebBankSave() {
   l.status = 'Тулгасан'; l.link = upd[0].link; delete bankPick[l.id];
   E.forEach(function (e, i) { journal.push(Object.assign({ id: 'tmp' + Date.now() + '-' + i, by: ownerName }, e)); }); _debtCache = null; render();
   var n = 2, fin = function () { if (--n === 0) { toast('Буухиагийн тооцоо тулгагдлаа'); refresh(); } };
-  post({ type: 'admin_journal', by: ownerName, entries: E }, function (err) { if (err) toast('Журнал: ' + err); fin(); });
-  post({ type: 'admin_bank', by: ownerName, updates: upd }, function (err) { if (err) toast('Алдаа: ' + err); fin(); });
+  post({ type: 'admin_journal', by: ownerName, entries: E }, function (err) {
+    if (err) { if (err !== 'locked') toast('Журнал бичигдсэнгүй: ' + err); refresh(); return; }
+    fin(); post({ type: 'admin_bank', by: ownerName, updates: upd }, function (e2) { if (e2) toast('Алдаа: ' + e2); fin(); });
+  });
 }
 // Буухиагийн мэдээлэл ирэхэд самбарыг шинэчилнэ
 (function () {

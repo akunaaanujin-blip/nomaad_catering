@@ -139,11 +139,12 @@ function payStTag(o) {
   if (o.saleDone === 'returned' && o.confirmed) return stTag('Буцаан олгосон', 'r');
   if (o.confirmed && /буухиа хураасан/.test(o.confirmed)) return stTag('Буухиа хураасан', 'b');   // мөнгө буухиа дээр — шилжүүлэхэд хаагдана
   if (o.confirmed) return stTag('Төлсөн', 'g');
+  if (ordEbDone(o)) return stTag('Төлсөн · буухиа тооцоо', 'g');
   if (ordDead(o)) return stTag('—', 'n');
   return stTag(o.paid === 'Орсон' ? 'Төлөөгүй · ажилтан «орсон»' : 'Төлөөгүй', 'y');
 }
 // Захиалгын авлага: илгээгдсэн (Шинэ биш), цуцлаагүй, төлбөр нь баталгаажаагүй захиалгын дүн
-function ordOpenAmt(list) { return list.filter(function (o) { return o.status !== 'Шинэ' && !o.confirmed && !ordDead(o); }).reduce(function (a, o) { return a + (Number(o.amount) || 0); }, 0); }
+function ordOpenAmt(list) { return list.filter(function (o) { return o.status !== 'Шинэ' && !o.confirmed && !ordDead(o) && !ordEbDone(o); }).reduce(function (a, o) { return a + (Number(o.amount) || 0); }, 0); }
 // Ижил утас + ижил бараа 48 цагийн дотор өөр захиалга байвал давхар байж болзошгүй (⚠)
 function dupOf(o) {
   if (ordDead(o)) return null;
@@ -235,9 +236,9 @@ function ordBankMatch(id) {
 // Захиалгын шүүлтүүр: check — ажилтан «орсон» гэсэн ч баталгаажаагүй; wait — баталгаажаагүй бүгд; conf — баталгаажсан
 function ordFilt(f) {
   return function (o) {
-    if (f === 'check') return !o.confirmed && o.paid === 'Орсон' && !ordDead(o);
-    if (f === 'wait') return !o.confirmed && !ordDead(o);
-    if (f === 'conf') return !!o.confirmed && !ordDead(o);
+    if (f === 'check') return !o.confirmed && o.paid === 'Орсон' && !ordDead(o) && !ordEbDone(o);
+    if (f === 'wait') return !o.confirmed && !ordDead(o) && !ordEbDone(o);
+    if (f === 'conf') return (!!o.confirmed || ordEbDone(o)) && !ordDead(o);
     if (f === 'canc') return ordDead(o);   // цуцалсан + буухиа цуцалсан/буцаасан
     return !ordDead(o);   // «Бүгд» — цуцалсан, буцаасан орохгүй
   };

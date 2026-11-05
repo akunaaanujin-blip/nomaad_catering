@@ -2226,6 +2226,7 @@ function jePreset(v) {
 var entryEditId = '';
 function editEntry(id) {
   var j = journal.filter(function (x) { return x.id === id; })[0]; if (!j) return;
+  if (typeof bankLineOf === 'function' && bankLineOf(id)) { toast('Энэ бичилт банкны мөртэй холбоотой — Банк тулгах → «Тулгасан» табаас «Буцаах»-аар буцааж дахин тулгана уу'); return; }
   openEntry(); entryEditId = id;
   $('jeDate').value = j.date; $('jeDr').value = j.dr; $('jeCr').value = j.cr; $('jeAmount').value = j.amount; $('jePartner').value = j.partner || ''; $('jeDesc').value = j.desc || '';
 }
@@ -2250,11 +2251,14 @@ function saveEntry() {
   });
 }
 function cancelEntry(id) {
+  var bl0 = typeof bankLineOf === 'function' ? bankLineOf(id) : null;   // банкны мөрөөс үүссэн бичилт: мөр, бичилт хамт буцна (мөр «Тулгасан» хэвээр үлдэхгүй)
+  if (bl0 && bankLineJ(bl0).length) { bankUnmatch(bl0.id); return; }
   if (!confirm('Энэ журналын бичилтийг цуцлах уу? (Sheet-д «Устгасан» төлөвтэй үлдэнэ)')) return;
   if (!API_URL) { journal = journal.filter(function (j) { return j.id !== id; }); save('nb_demo_journal', journal); render(); return; }
   var jx = journal.filter(function (j) { return j.id === id; })[0];
   post({ type: 'admin_journal', cancelId: id, what: jx ? jx.date + ' · ' + jx.dr + '/' + jx.cr + ' · ' + fmt(jx.amount) + ' · ' + jx.desc : '' }, function (err) {
     if (err) { toast('Алдаа: ' + err); return; }
+    if (bl0) { post({ type: 'admin_bank', by: ownerName, updates: [{ id: bl0.id, status: 'Шинэ', link: '' }] }, function () { toast('Цуцлагдлаа, банкны мөр дахин тулгаагүй боллоо'); refresh(); }); return; }
     toast('Цуцлагдлаа'); refresh();
   });
 }

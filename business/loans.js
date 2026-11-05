@@ -420,11 +420,12 @@ function saveLoan(id) {
                desc: (bl.desc.slice(0, 80) + ' · ' + (taken ? 'Зээл авсан' : 'Зээл олгосон') + ' · ' + L.partner).slice(0, 170) + tag });
       var upd = [{ id: bl.id, status: 'Тулгасан', link: (taken ? 'Зээл · ' : 'Өгсөн зээл · ') + L.partner + ' #' + lid }];
       if (!API_URL) upd.forEach(function (u) { bankLines.forEach(function (x) { if (x.id === u.id) { x.status = u.status; x.link = u.link; } }); }), save('nb_demo_bank', bankLines);
-      else post({ type: 'admin_bank', by: ownerName, updates: upd }, function () {});
+      else var lnUpd = upd;   // журнал бичигдсэний дараа л мөр «Тулгасан» болно
     }
     if (money === 'open') E.push({ biz: L.biz, date: L.date, dr: taken ? '4201' : '1210', cr: taken ? '3501' : '4201', amount: L.amount, partner: L.partner, desc: 'Зээлийн эхний үлдэгдэл · ' + L.partner + tag });
     else if (money && money !== 'later') E.push({ biz: L.biz, date: L.date, dr: taken ? money : '1210', cr: taken ? '3501' : money, amount: L.amount, partner: L.partner, desc: (taken ? 'Зээл авсан' : 'Зээл олгосон') + ' · ' + L.partner + tag });
     postEntries(E, function () {
+      if (lnUpd) post({ type: 'admin_bank', by: ownerName, updates: lnUpd }, function () {});
       if (remind) {
         var rm = { date: nextPayDate(L.payDay), title: (taken ? 'Зээл төлөх · ' : 'Зээлийн төлбөр авах · ') + L.partner, kind: taken ? 'Зээл төлөх' : 'Авлага авах', amount: 0,
                    partner: L.partner, co: L.biz, repeat: 'Сар бүр', note: 'Зээлийн бүртгэлээс' };
