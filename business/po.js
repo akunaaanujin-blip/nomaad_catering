@@ -76,6 +76,27 @@ function poInCard() {
       '<td class="n" style="white-space:nowrap"><button class="mini" style="color:var(--green)" onclick="poInOpen(\'' + x.id + '\')">Батлах</button> <button class="mini" onclick="poInReject(\'' + x.id + '\')">Татгалзах</button></td></tr>';
   }).join('') + '</table></div></div>';
 }
+// Ажилтны хийсэн бүртгэл (Бараа ирсэн, карго): хөдөлгөөн + журналаас, хамгийн шинэ нь эхэнд
+function poInLog() {
+  var biz = state.biz, L = (window.pos || []).filter(function (p) { return p.biz === biz; }), R0 = [];
+  var po = function (t) { return L.filter(function (p) { return hasTag(t, p.id); })[0]; };
+  (moves || []).forEach(function (m) {
+    if (m.biz !== biz || m.kind !== 'Орлого' || m.pay !== 'Захиалга') return;
+    var P = po(m.note); if (!P) return;
+    R0.push({ d: String(m.date), by: m.by, P: P, what: m.item + ' × ' + m.qty + (hasWarehouse(biz) ? ' · ' + m.loc : ''), v: (Number(m.cost) || 0) * (Number(m.qty) || 0), id: m.id });
+  });
+  (journal || []).forEach(function (j) {
+    if (j.biz !== biz || !/карго \(дараа төлнө\)/.test(j.desc)) return;
+    var P = po(j.desc); if (!P) return;
+    R0.push({ d: String(j.date), by: j.by, P: P, what: 'Карго · ' + (j.partner || ''), v: Number(j.amount) || 0 });
+  });
+  R0.sort(function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; });
+  return poInCard() + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Хэн</th><th>Захиалга</th><th>Юу</th><th class="n">Өртөг</th><th></th></tr>' +
+    (R0.length ? R0.slice(0, 200).map(function (r) {
+      return '<tr><td class="nw">' + esc(r.d.slice(0, 16)) + '</td><td>' + esc(r.by || '') + '</td><td>' + esc(poTitle(r.P)) + '<br><small class="muted">' + esc(r.P.no) + '</small></td><td>' + esc(r.what) + '</td><td class="n">' + (r.v ? fmt(r.v) : '<span class="neg">0</span>') + '</td>' +
+        '<td class="n">' + (r.id ? '<button class="mini" onclick="cancelMove(' + esc(JSON.stringify(r.id)) + ')">Устгах</button>' : '') + '</td></tr>'; }).join('')
+      : '<tr><td colspan="6" class="muted">Ажилтны бүртгэл алга</td></tr>') + '</table></div></div>';
+}
 function poInOpen(id) {
   var x = (window.poInbox || []).filter(function (r) { return r.id === id; })[0]; if (!x) return;
   var P = poById(x.poId), d = x.data || {}; if (!P) { toast('Захиалга олдсонгүй'); return; }
