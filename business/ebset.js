@@ -118,7 +118,31 @@ function ebSetExcel() {
 
 // ── Банкны хуулга: Буухиагаас орсон мөнгөөр тооцоо хаах (захиалгыг чагтаар сонгоно) ──
 var ebBk = null;
-function ebBankOpen(lineId) {
+// Буухиатай тайлан нийлсэн багц бүр: хаагдаагүй хүргэлтүүдийн цэвэр дүн (хураасан − хөлс), тус тусад нь
+function ebBatches() {
+  if (!ebAdm.list || ebAdm.biz !== state.biz || typeof ebSettledByEb !== 'function') return [];
+  var B = ebSettledByEb(ebAdm.list), by = {}; Object.keys(B).forEach(function (c) { (by[B[c]] = by[B[c]] || {})[c] = 1; });
+  if (!Object.keys(by).length) return [];
+  var D = ebSetData(), unl = ebSetUnlinked(D.M);
+  return Object.keys(by).sort().reverse().map(function (u) {
+    var c = by[u], n = 0, amt = 0;
+    D.rows.forEach(function (r) { if (c[r.code] && (r.colLeft > 0.5 || r.feeLeft > 0.5)) { n++; amt += r.colLeft - r.feeLeft; } });
+    D.old.forEach(function (it) { if (it.eb && c[it.eb] && !it.closed) { n++; amt -= it.amt - it.paid; } });
+    unl.forEach(function (x) { if (c[x.x.code]) { n++; amt -= x.fee; } });
+    return { u: u, n: n, amt: r0(amt) };
+  }).filter(function (b) { return b.n; });
+}
+function ebBatchOpts(L) { return L.map(function (b) { return ['EB:b|' + b.u, 'Тайлан нийлсэн ' + String(b.u).slice(0, 10) + ' · ' + b.n + ' хүргэлт · ' + mny(b.amt), 'Буухиа']; }); }
+function ebBatchDef(L, l) { var a = ebBkAmt(l), m = L.filter(function (b) { return Math.abs(b.amt - a) < 1; }); return m.length === 1 ? 'EB:b|' + m[0].u : 'EB:set'; }
+// Сонгосон багцын хүргэлтүүдийг чагтална — дүн зөрвөл доорх «Зөрүү»-д харагдана
+function ebBkBatch(u) {
+  var B = ebSettledByEb(ebAdm.list || []), n = 0, on = function (k, i) { var c = document.querySelector('#gBody input[data-k=' + k + '][data-i="' + i + '"]'); if (c) { c.checked = true; n++; } };
+  ebBk.rows.forEach(function (r, i) { if (B[r.code] === u) on('r', i); });
+  ebBk.old.forEach(function (it, i) { if (it.eb && B[it.eb] === u) on('o', i); });
+  ebBk.unl.forEach(function (x, i) { if (B[x.x.code] === u) on('u', i); });
+  var el = document.getElementById('ebBkAuto'); if (el) el.textContent = 'Тайлан нийлсэн ' + String(u).slice(0, 10) + ' · ' + n + ' хүргэлт сонгогдлоо — шалгаад тулгана уу.';
+}
+function ebBankOpen(lineId, batch) {
   var l = bankLines.filter(function (x) { return x.id === lineId; })[0]; if (!l) return;
   var D = ebSetData();
   ebBk = { l: l, rows: D.rows.filter(function (r) { return r.colLeft > 0.5 || r.feeLeft > 0.5; }), old: D.old.filter(function (it) { return !it.closed; }), unl: ebSetUnlinked(D.M) };
@@ -137,7 +161,8 @@ function ebBankOpen(lineId) {
     '<div class="scroll" style="max-height:50vh"><table class="rep-t"><tr><th><input type="checkbox" onchange="[].forEach.call(document.querySelectorAll(\'#gBody input[data-k=r]\'),function(c,i){c.checked=this.checked}.bind(this));ebBkCalc()"></th><th>Огноо</th><th>Захиалга</th><th class="n">Хураасан</th><th class="n">Хөлс / хасах</th></tr>' +
     (body || '<tr><td colspan="5" class="muted">Хаагдаагүй тооцоо алга</td></tr>') + '</table></div><div id="ebBkSum" style="margin:10px 0"></div>' +
     '<div class="row2"><button class="b-btn" onclick="gClose()">Болих</button><button class="b-btn primary" id="ebBkGo" onclick="ebBankSave()" disabled>Тулгах</button></div>');
-  ebBkPick(); ebBkCalc();
+  if (batch) ebBkBatch(batch); else ebBkPick();
+  ebBkCalc();
 }
 function ebBkAmt(l) { return r0((+l.credit || 0) - (+l.debit || 0)); }   // + орсон, − буухиад төлсөн
 // Тайлан нийлсэн багц: дүн нь яг банкны гүйлгээтэй таарвал хүргэлтүүдийг автоматаар чагтална (Буухиагийн багц эсвэл оруулсан тайлан)
@@ -205,5 +230,6 @@ function ebBankSave() {
 // Буухиагийн мэдээлэл ирэхэд самбарыг шинэчилнэ
 (function () {
   var base = window.ebRedraw;
-  window.ebRedraw = function (keep) { if (base) base(keep); if (state.module === 'finance' && (state.sub || {}).finance === 'ebset' && document.getElementById('ebSetBox')) render(); };
+  window.ebRedraw = function (keep) { if (base) base(keep); if (state.module === 'finance' && (state.sub || {}).finance === 'ebset' && document.getElementById('ebSetBox')) render();
+    else if (state.module === 'finance' && (state.sub || {}).finance === 'bank' && window.__ebBSig !== JSON.stringify(ebBatches())) render(); };
 })();
