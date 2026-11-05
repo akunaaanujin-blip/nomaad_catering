@@ -284,6 +284,7 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--accent:v
 .bz-admin #view table.mr-t tr.mr-sub td{font-weight:600;background:var(--surface-alt)}
 .bz-admin #view table.mr-t tr.mr-tot td{font-weight:700;background:var(--row-tot)}
 .mr-note{font-size:12.5px;margin:-4px 0 10px}
+.mr-chk{font-size:12.5px;color:var(--text-2);margin:0 0 10px}.mr-chk.bad{color:var(--warning)}.mr-chk ul{margin:4px 0 0 18px}
 .mr-sign{display:flex;flex-direction:column;gap:14px;max-width:620px;margin:34px auto 6px;break-inside:avoid}
 .mr-sign div{display:flex;align-items:flex-end;gap:8px;font-size:13px}
 .mr-sign span{flex:none}.mr-sign i{flex:1;border-bottom:1px dotted currentColor}.mr-sign b{flex:none;min-width:110px;font-weight:500}

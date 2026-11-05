@@ -59,9 +59,9 @@ function stmtPre(rep) {
 }
 
 // ── Удирдлагын тайлан ──
-function mrepDebt(E, k, to, n) {   // «Авлага», «Өглөг» хуудасны үлдэгдэлтэй ижил; to — тухайн өдрийн байдлаар, n — нэрсийн тоо
+function mrepDebt(E, k, to, n, skip) {   // «Авлага», «Өглөг» хуудасны үлдэгдэлтэй ижил; to — тухайн өдрийн байдлаар, n — нэрсийн тоо
   var td = to || todayStr(), T = DEBT_TABS[k], left = 0, who = {};
-  openItems(debtE(E, k, td), debtAccs(k), T[3], td, false).items.forEach(function (it) { if (debtStatus(it) !== 'closed') { var v = it.amt - it.paid; left += v; who[it.who] = (who[it.who] || 0) + v; } });
+  openItems(debtE(E, k, td), debtAccs(k), T[3], td, false).items.forEach(function (it) { if (debtStatus(it) !== 'closed' && it.who !== skip) { var v = it.amt - it.paid; left += v; who[it.who] = (who[it.who] || 0) + v; } });
   return { left: r0(left), top: Object.keys(who).filter(function (w) { return who[w] > 0.5; }).sort(function (a, b) { return who[b] - who[a]; }).slice(0, n || 5).map(function (w) { return [nameTel(w), who[w]]; }) };
 }
 function mrepData(E, f, t) {
@@ -127,16 +127,24 @@ function mrSigns() { var c = (window.companyInfo || {})[state.biz] || {}, d = MR
 function mrPct(a, b) { return b ? Math.round(a / b * 1000) / 10 + '%' : '—'; }
 function mrChg(a, b) { if (!(b > 0)) return '—'; var v = Math.round((a - b) / b * 1000) / 10; return (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + '%'; }
 function mrSum(L) { return L.reduce(function (a, v) { return a + (Number(v) || 0); }, 0); }
+// Посын тооцоо: Cozy-ийн картын мөнгө аяллын дэлгүүрийн посоор дамждаг. Нэг мөнгө хоёр компанид тоологдохгүйн тулд
+// аяллын дэлгүүрийн мөнгө, өглөгөөс хасна (өөрийн мөнгө биш); Cozy-д банкинд ороогүй хэсгийг «Посын авлага» гэж тусад нь харуулна.
+function mrPos(E, to, biz) {
+  var who = biz === POS_SHARE.to ? POS_SHARE.pay : POS_SHARE.rec, acc = biz === POS_SHARE.to ? '3101' : '1201', sg = biz === POS_SHARE.to ? -1 : 1, v = 0;
+  E.forEach(function (x) { if (x.partner !== who || x.date > to) return; if (x.dr === acc) v += sg * x.amount; if (x.cr === acc) v -= sg * x.amount; });
+  return v;
+}
 function mrData(ms) {
-  var biz = state.biz, E = J(), Rr = R(), td = todayStr(), cash = cashCodes(), n = ms.length, many = n > 1;
+  var biz = state.biz, E = J(), Rr = R(), td = todayStr(), cash = cashCodes(), n = ms.length, many = n > 1, isTo = biz === POS_SHARE.to, isFrom = biz === POS_SHARE.from;
   var M = ms.map(function (mm) {
     var f = mm + '-01', e = lastDayOf(mm), t = e < td ? e : td, p = plData(E, f, t), b = balances(E, t), b0 = balances(E, prevDay(f)), io = { i: {}, o: {} }, spFee = 0, sp = 0;
-    drillLines({ acc: cash, from: f, to: t, sign: 1, grp: 'type' }, E).lines.forEach(function (x) { var g = x.v > 0 ? io.i : io.o; g[x.key] = (g[x.key] || 0) + Math.abs(x.v); });
+    drillLines({ acc: cash, from: f, to: t, sign: 1, grp: 'type' }, E).lines.forEach(function (x) { if (x.partner === POS_SHARE.pay) return; var g = x.v > 0 ? io.i : io.o; g[x.key] = (g[x.key] || 0) + Math.abs(x.v); });
     E.forEach(function (x) {
       if (x.partner === 'StorePay' && x.date <= t) { if (x.dr === '1201') sp += x.amount; if (x.cr === '1201') sp -= x.amount; }
       if (x.partner === 'StorePay' && x.date >= f && x.date <= t) { if (ACC[x.dr] && ACC[x.dr].type === 'exp') spFee += x.amount; if (ACC[x.cr] && ACC[x.cr].type === 'exp') spFee -= x.amount; }
     });
-    return { m: mm, f: f, t: t, part: t !== e, p: p, b: b, io: io, sp: sp, spFee: spFee, open: mrSum(cash.map(function (k) { return b0[k]; })),
+    var pos = posBiz(biz) ? mrPos(E, t, biz) : 0, pos0 = isTo ? mrPos(E, prevDay(f), biz) : 0;
+    return { m: mm, f: f, t: t, part: t !== e, p: p, b: b, io: io, sp: sp, spFee: spFee, pos: pos, open: mrSum(cash.map(function (k) { return b0[k]; })) - pos0,
       bills: groupBills(salesIn(Rr, biz, f, t)).filter(function (x) { return x.gross > 0; }).length,
       pay: repSalesBy(Rr, biz, f, t, 'pay').rows, cat: repSalesBy(Rr, biz, f, t, 'cat').rows };
   });
@@ -154,11 +162,20 @@ function mrData(ms) {
   var live = function (r) { return r.v.some(function (v) { return Math.abs(v) >= 0.5; }); };
   var money = rowsOf(ACCOUNTS.filter(function (a) { return a[3] === 'cash'; }), 1).filter(live), bal = [];
   var other = rowsOf(ACCOUNTS.filter(function (a) { return a[2] === 'asset' && a[3] !== 'cash'; }), 1).filter(live), liab = rowsOf(ACCOUNTS.filter(function (a) { return a[2] === 'liab'; }), -1).filter(live);
-  var rec = other.filter(function (r) { return r.code === '1201'; })[0], spV = M.map(function (x) { return x.sp; });
-  if (rec && spV.some(function (v) { return Math.abs(v) >= 0.5; })) {   // StorePay-ийн төлөгдөөгүй тооцоо — цаасан тайлан шиг тусдаа мөр
-    rec.v = rec.v.map(function (v, i) { return v - spV[i]; });
-    other.splice(other.indexOf(rec) + 1, 0, { n: 'Төлөгдөөгүй тооцоо (StorePay)', v: spV, code: 'sp' });
+  var rec = other.filter(function (r) { return r.code === '1201'; })[0];
+  var split = function (name, v, code) {   // авлагаас тусдаа мөр — цаасан тайлан шиг
+    if (!rec || !v.some(function (x) { return Math.abs(x) >= 0.5; })) return;
+    rec.v = rec.v.map(function (x, i) { return x - v[i]; });
+    other.splice(other.indexOf(rec) + 1, 0, { n: name, v: v, code: code });
+  };
+  split('Төлөгдөөгүй тооцоо (StorePay)', M.map(function (x) { return x.sp; }), 'sp');
+  if (isFrom) split('Посын авлага (банкинд ороогүй)', M.map(function (x) { return x.pos; }), 'pos');
+  if (isTo && M.some(function (x) { return Math.abs(x.pos) >= 0.5; })) {
+    money.push({ n: 'Хасах: ' + BUSINESSES[POS_SHARE.from].name + '-ийн посын мөнгө', v: M.map(function (x) { return -x.pos; }), code: 'pos' });
+    liab.forEach(function (r) { if (r.code === '3101') r.v = r.v.map(function (x, i) { return x - M[i].pos; }); });
+    liab = liab.filter(live);
   }
+  other = other.filter(live);
   var nm = function (r) { return r.code === '1201' ? 'Авлага (бусдаас авах төлбөр)' : MR_ACC[r.code] || r.n; };
   var tot = function (L) { return M.map(function (x, i) { return mrSum(L.map(function (r) { return r.v[i]; })); }); };
   var line = function (r) { bal.push({ c: [nm(r)].concat(r.v) }); };
@@ -226,9 +243,31 @@ function mrData(ms) {
     return { t: mrMoName(x.m) + 'ын борлуулалтын төлбөрийн арга', h: ['Төлбөрийн хэлбэр', 'Борлуулалтын дүн', 'Шимтгэл', 'Шимтгэл хасагдсан дүн'], r: L, empty: 'Борлуулалт алга' };
   });
   // ── Авлага, өглөг: сүүлийн өдрийн байдлаар ──
-  var debt = function (k, t) { var D = mrepDebt(E, k, t1, 8), R2 = D.top.map(function (x) { return { c: [x[0], x[1]] }; }), rest = D.left - mrSum(D.top.map(function (x) { return x[1]; })); if (rest >= 0.5) R2.push({ c: ['Бусад', rest] }); if (R2.length) R2.push({ c: ['Нийт', D.left], k: 'tot' }); return { t: t, h: ['Харилцагч', 'Үлдэгдэл'], r: R2, empty: 'Үлдэгдэл алга' }; };
+  var debt = function (k, t) { var D = mrepDebt(E, k, t1, 8, isTo && k === 'p' ? POS_SHARE.pay : ''), R2 = D.top.map(function (x) { return { c: [x[0], x[1]] }; }), rest = D.left - mrSum(D.top.map(function (x) { return x[1]; })); if (rest >= 0.5) R2.push({ c: ['Бусад', rest] }); if (R2.length) R2.push({ c: ['Нийт', D.left], k: 'tot' }); return { t: t, h: ['Харилцагч', 'Үлдэгдэл'], r: R2, empty: 'Үлдэгдэл алга' }; };
+  // ── Тулгалт: тайлан доторх тоонууд өөр хоорондоо таарч байна уу ──
+  var chk = [], bad = function (t) { chk.push(t); }, last = M[n - 1], g1 = function (k) { return last.b[k] || 0; };
+  M.forEach(function (x, i) {
+    if (Math.abs(closes[i] - tMoney[i]) >= 1) bad(mrMoName(x.m) + ': мөнгөний урсгалын эцсийн үлдэгдэл дансны үлдэгдлээс ' + mny(closes[i] - tMoney[i]) + '-өөр зөрж байна.');
+    var fee = posBiz(biz) ? mrSum(x.pay.filter(function (r) { return r.key === 'Карт'; }).map(function (r) { return r.net - posNet(r.net); })) : 0, d = mrSum(x.pay.map(function (r) { return r.net; })) - fee - x.p.net;
+    if (Math.abs(d) >= 1) bad(mrMoName(x.m) + ': төлбөрийн хэлбэрийн нийт дүн борлуулалтын орлогоос ' + mny(d) + '-өөр зөрж байна.');
+  });
+  if (isFrom && Math.abs(g1('110106')) >= 0.5) bad('Cozy-д «Карт (POS)» данс ' + mny(g1('110106')) + ' үлдэгдэлтэй — энэ компанид 0 байх ёстой. Посын мөнгийг «Посын авлага»-аар хаана уу, эс бөгөөс мөнгө, авлага давхар гарна.');
+  if (isTo) {
+    var pAcc = g1('110106'), d3 = todayStr(new Date(new Date(t1 + 'T00:00:00') - 3 * 864e5)), rc = mrSum(E.filter(function (x) { return x.dr === '110106' && x.cr !== '1101' && x.date > d3 && x.date <= t1; }).map(function (x) { return x.amount; }));
+    if (pAcc <= -0.5) bad('«Карт (POS)» данс хасах үлдэгдэлтэй (' + mny(pAcc) + ') — бүртгэснээс их мөнгө дансанд орсон гэж тулгагдсан байна.');
+    else if (pAcc > rc + 1) bad('«Карт (POS)» дансанд ' + mny(pAcc) + ' байгаа нь сүүлийн 3 хоногийн картын орлогоос их — банкинд орсон посын мөнгийг тулгаагүй байж болзошгүй, «Нийт мөнгө» тэр хэмжээгээр өндөр гарна.');
+  }
+  if (posBiz(biz)) {
+    var side = mrPos(buildJournal(isTo ? POS_SHARE.from : POS_SHARE.to, Rr), t1, isTo ? POS_SHARE.from : POS_SHARE.to), dif = last.pos - side;
+    if (Math.abs(dif) >= 1) bad('Посын тооцоо хоёр компанид зөрж байна: Cozy авлага ' + mny(isTo ? side : last.pos) + ', аяллын дэлгүүр өглөг ' + mny(isTo ? last.pos : side) + ' — нэг талд нь банкаар хаагаагүй.');
+  }
+  var dbl = bankLines.filter(function (l) { var d = String(l.date).slice(0, 10); return l.biz === biz && l.status === 'Тулгасан' && +l.credit > 0 && d >= f0 && d <= t1 && /(^|[^a-zа-яөүё])(pos|пос)([^a-zа-яөүё]|$)/i.test(String(l.desc)) && /^(5101|5201|5202|Дэлгүүрийн|Захиалга)/.test(String(l.link)); });
+  if (dbl.length) bad(dbl.length + ' посын мөнгө (' + mny(mrSum(dbl.map(function (l) { return l.credit; }))) + ') банкнаас орлого болж тулгагдсан — картын борлуулалт аль хэдийн бичигдсэн тул орлого давхардсан байна. «Банк тулгах»-д «Буцаах» дарж, посын тооцоогоор хаана уу.');
+  var accSum = function (L) { return mrSum(L.map(function (k) { return g1(k); })); }, dr = mrepDebt(E, 'r', t1, 8), dp = mrepDebt(E, 'p', t1, 8);
+  if (Math.abs(dr.left - accSum(['1201', '1209', '1208']) - Math.max(0, g1('1290'))) >= 1) bad('Авлагын жагсаалт (' + mny(dr.left) + ') дансны үлдэгдлээс зөрж байна — илүү төлсөн эсвэл нэргүй бичилт бий.');
+  if (Math.abs(dp.left + accSum(['3101', '3802']) + Math.min(0, g1('1290'))) >= 1) bad('Өглөгийн жагсаалт (' + mny(dp.left) + ') дансны үлдэгдлээс зөрж байна — илүү төлсөн эсвэл нэргүй бичилт бий.');
   var asOf = Number(t1.slice(5, 7)) + ' сарын ' + Number(t1.slice(8, 10)) + '-ны байдлаар';
-  return { M: M, noCost: noCost, part: M[n - 1].part, t1: t1, groups: [
+  return { M: M, chk: chk, noCost: noCost, part: M[n - 1].part, t1: t1, groups: [
     [{ t: 'Дансны хураангуй', h: hBal, r: bal }, { t: 'Орлого, ашиг', h: hFlow, r: pl }],
     [{ t: 'Зардал', h: hFlow, r: ex, empty: 'Зардал алга' }, { t: 'Мөнгөний урсгал', h: hCash, r: cf }],
     [iTbl('Ашгийн хамгийн өндөр борлуулалттай 5 бараа · ' + pLab, best), iTbl('Хамгийн бага ашигтай 5 бараа · ' + pLab, low)],
@@ -260,6 +299,7 @@ function monrepView() {
   return '<style>@page{size:A4 landscape;margin:10mm}</style><div class="st-pick no-print"><label>Эхний сар <select onchange="state.mrFrom=this.value;render()">' + mrOpts(ms[0]) + '</select></label>' +
       '<label>Сүүлийн сар <select onchange="state.mrTo=this.value;render()">' + mrOpts(ms[ms.length - 1]) + '</select></label></div>' +
     (note ? '<p class="muted no-print mr-note">' + esc(note) + '</p>' : '') +
+    '<div class="no-print mr-chk' + (D.chk.length ? ' bad' : '') + '">' + (D.chk.length ? '<b>Тулгалт: ' + D.chk.length + ' зөрүү</b><ul>' + D.chk.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : 'Тулгалт: мөнгө, борлуулалт, посын тооцоо, авлага, өглөг таарч байна.') + '</div>' +
     '<div class="card mr"><h2 class="mr-h">' + esc(mrTitle(ms)) + '</h2>' +
       grp(D.groups[0]) + grp(D.groups[1]) + '<div class="mr-pb"></div>' + grp(D.groups[2]) + grp(D.groups[3]) + '<div class="mr-pb"></div>' + grp(D.groups[4]) + grp(D.groups[5]) +
       '<div class="mr-sign">' + sg('Гүйцэтгэх захирал', S[0]) + sg('Үйл ажиллагаа хариуцсан захирал', S[1]) + sg('Нягтлан', S[2]) + '</div></div>';

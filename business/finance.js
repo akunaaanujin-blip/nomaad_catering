@@ -18,6 +18,8 @@ var EXP_SHORT = { '7023': 'Бусад компаниас авсан', '7101': '�
 function moneyType(x) {
   var o = String(x.other), isIn = (x.raw !== undefined ? x.raw : x.v) > 0;   // raw — тэмдэг солихоос өмнөх чиглэл (данс руу орсон бол +)
   if (ACC[o] && ACC[o].cash) return 'Данс хооронд';
+  if (x.partner === POS_SHARE.pay) return isIn ? 'Cozy-ийн посын мөнгө орсон' : 'Cozy-д посын мөнгө шилжүүлсэн';   // бараа татан авалт биш
+  if (x.partner === POS_SHARE.rec) return 'Посын мөнгө орсон';
   if (o === '5101' || o === '5102') return x.acc === '110106' ? 'Пос (карт) орлого' : 'Борлуулалтын орлого';
   if (o === '1201') return /#O\d|Захиалгын/.test(String(x.desc)) ? 'Захиалгын орлого' : 'Авлага төлөгдсөн';
   if (o === '1298') return 'Борлуулалтын орлого';   // дэлгүүрийн шилжүүлэг хуулгаар баталгаажсан
