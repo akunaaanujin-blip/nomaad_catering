@@ -1524,7 +1524,7 @@ function ebAdmPull(fresh) {
     ebAdm.busy = false;
     ebAdm.err = err ? 'Татаж чадсангүй: ' + ebAdmErr(err) : '';
     if (err === 'auth') { ebAdm.err = ''; ebAdm.t = 0; }   // нэвтрэлт дууссан — дахин нэвтэрмэгц шууд татна, хуучин алдаа үлдэхгүй
-    if (!err) { ebAdm.list = d.list || []; ebAdm.at = new Date().toTimeString().slice(0, 5); try { sessionStorage.setItem('nb_ebadm_' + ebAdm.biz, JSON.stringify({ list: ebAdm.list, at: ebAdm.at })); } catch (e) {} if (d.delivered || d.cancelled) { toast([d.delivered ? d.delivered + ' захиалга «Хүргэгдсэн»' : '', d.cancelled ? d.cancelled + ' захиалга буухиа цуцалсан → «Цуцалсан, буцаасан»' : ''].filter(Boolean).join(', ') + ' боллоо'); refresh(); } ebAutoBook(); }
+    if (!err) { ebAdm.list = d.list || []; ebAdm.gone = d.gone || []; ebAdm.at = new Date().toTimeString().slice(0, 5); try { sessionStorage.setItem('nb_ebadm_' + ebAdm.biz, JSON.stringify({ list: ebAdm.list, at: ebAdm.at })); } catch (e) {} if (d.delivered || d.cancelled) { toast([d.delivered ? d.delivered + ' захиалга «Хүргэгдсэн»' : '', d.cancelled ? d.cancelled + ' захиалга буухиа цуцалсан → «Цуцалсан, буцаасан»' : ''].filter(Boolean).join(', ') + ' боллоо'); refresh(); } ebAutoBook(); }
     ebRedraw();
   });
 }
@@ -1593,6 +1593,18 @@ window.ebDel = function (code) {
     toast('Буухиагаас устгагдлаа'); refresh(); ebAdmPull();
   });
 };
+// Буухиагийн сайтаас устгасан хүргэлт — кодыг арилгаж «Буухиа руу илгээх» жагсаалтад оруулна
+window.ebUnlink = function (id) {
+  var x = (ebAdm.gone || []).filter(function (g) { return g.id === id; })[0];
+  if (!x || ebAdm.busy || !ebUnlinkAsk(x)) return;
+  ebAdm.busy = true; ebRedraw();
+  post({ type: 'admin_eb', op: 'unlink', biz: state.biz, id: id, by: ownerName, what: x.phone + ' · ' + x.code + ' · буухиа дээр устгагдсан' }, function (err) {
+    ebAdm.busy = false;
+    if (err) { alert(ebUnlinkErr(ebAdmErr(err))); ebRedraw(); return; }
+    ebAdm.gone = ebAdm.gone.filter(function (g) { return g.id !== id; });
+    toast('Дахин илгээх жагсаалтад орлоо'); refresh(); ebAdmPull();
+  });
+};
 function ebAdmBody() {
   var fresh = ebAdmFresh(), nSel = fresh.filter(function (o) { return ebAdm.sel[o.id]; }).length, dups = ebAdmDups();
   var dupBox = dups.length ? '<div class="alert"><div><b>Шийдэх ' + dups.length + '</b> — давхар байж болзошгүй захиалга (ижил утас, бараа 48 цагт). Шийдэх хүртэл илгээхгүй.<br>' + dups.map(function (o) {
@@ -1605,7 +1617,7 @@ function ebAdmBody() {
       return '<tr><td><input type="checkbox"' + (ebAdm.sel[o.id] ? ' checked' : '') + ' onchange="ebAdm.sel[\'' + o.id + '\']=this.checked;ebRedraw()"></td><td>' + esc(o.date) + '</td><td><b>' + esc(o.phone) + '</b>' + (o.customer ? '<br><small class="muted">' + esc(o.customer) + '</small>' : '') + '</td>' +
         '<td class="eb-addr">' + esc(addrText(addrFinal(o))) + (addrFinal(o).ok ? '' : ' <small style="color:#B45309">' + esc(addrFinal(o).why) + '</small>') + '</td><td>' + esc(ebAdmItems(o)) + '</td><td class="n">' + fmt(o.amount) + '</td><td>' + esc(o.status) + '</td></tr>';
     }).join('') + '</table></div></div>' : '';
-  return dupBox + send + '<div class="ord-bar" style="margin-top:' + (send ? '18px' : '0') + '"><h3 style="margin:0;flex:1">Буухиа дээрх хүргэлтүүд</h3>' +
+  return ebGoneHtml(ebAdm.biz === state.biz ? ebAdm.gone : null, 'alert') + dupBox + send + '<div class="ord-bar" style="margin-top:' + (send ? '18px' : '0') + '"><h3 style="margin:0;flex:1">Буухиа дээрх хүргэлтүүд</h3>' +
     '<a class="b-btn" href="https://ebuuhia.com/report/customer" target="_blank" rel="noopener">Буухиа руу нэвтэрч тооцоо нийлэх</a>' +
     '<button class="b-btn ghost" onclick="ebAdmPull(true)"' + (ebAdm.busy ? ' disabled' : '') + '>' + (ebAdm.busy ? 'Хүлээнэ үү…' : 'Шинэчлэх') + '</button></div>' +
     (ebAdm.err ? '<p style="color:#B91C1C">' + esc(ebAdm.err) + '</p>' : '') +

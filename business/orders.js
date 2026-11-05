@@ -418,7 +418,7 @@ function copyPayMsg(id) {
 // ═══════════ ХҮРГЭЛТ — Буухиа (ebuuhia API) ═══════════
 // «Шинэ» захиалгыг сонгоод «Буухиа руу илгээх» → сервер буухиад өгсөн болгож (борлуулалт бичигдэнэ) ebuuhia-д хүргэлт үүсгэнэ, кодыг хадгална.
 // «Буухиагаас төлөв татах» → ebuuhia-ийн төлөв, авсан мөнгө; хүргэгдсэн (10) захиалга автоматаар «Хүргэгдсэн» болно.
-var dlvAddrEd = '', dlvNotDup = {}, dlvSel = {}, dlvSync = {}, dlvErr = '', dlvBusy = false, dlvPulled = 0;
+var dlvAddrEd = '', dlvNotDup = {}, dlvSel = {}, dlvSync = {}, dlvErr = '', dlvBusy = false, dlvPulled = 0, dlvGone = [];
 // сүүлд татсан жагсаалтыг төхөөрөмжид хадгалж шууд харуулна — буухиагаас ард нь шинэчилнэ
 var dlvMem = load('nb_eb_' + BIZ_KEY, null) || {}, dlvAll = dlvMem.list || null, dlvSyncAt = dlvMem.at || '';
 function dlvWrap() {
@@ -455,7 +455,7 @@ function renderDlv() {
   var otherHtml = other.length ? '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Бусад хүргэлтээр <small class="muted" style="font-weight:400">«Шинэ» ' + other.length + '</small></h2>' +
       '<button class="btn sm" onclick="dlvOther(' + esc(JSON.stringify(other.map(function (o) { return o.id; }))) + ')"' + (dlvBusy ? ' disabled' : '') + '>Гаргах (' + other.length + ')</button></div>' +
       other.map(function (o) { return '<div style="margin-top:6px">' + esc((o.customer ? o.customer + ' ' : '') + o.phone + ' · ' + ordItemsText(o) + ' · ' + fmt(o.amount)) + '</div>'; }).join('') + '</div>' : '';
-  w.innerHTML = dupHtml + otherHtml + (fresh.length ? '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиа руу илгээх <small class="muted" style="font-weight:400">«Шинэ» захиалга ' + fresh.length + '</small></h2>' +
+  w.innerHTML = ebGoneHtml(dlvGone, 'card') + dupHtml + otherHtml + (fresh.length ? '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиа руу илгээх <small class="muted" style="font-weight:400">«Шинэ» захиалга ' + fresh.length + '</small></h2>' +
       '<button class="btn sm ghost2" onclick="dlvOther()"' + (nSel && !dlvBusy ? '' : ' disabled') + '>Бусад хүргэлтээр (' + nSel + ')</button>' +
       '<button class="btn sm ghost2" onclick="var ids=Object.keys(dlvSel).filter(function(k){return dlvSel[k]});if(ids.length)openLabels(ids)"' + (nSel ? '' : ' disabled') + '>Шошго хэвлэх</button>' +
       '<button class="btn sm" onclick="dlvSend()"' + (nSel && !dlvBusy ? '' : ' disabled') + '>Сонгосныг илгээх' + (nSel ? ' (' + nSel + ')' : '') + '</button></div>' +
@@ -490,6 +490,18 @@ window.ebDel = function (code) {
     dlvBusy = false;
     if (err) { alert('Устгаж чадсангүй: ' + err); renderDlv(); return; }
     toast('Буухиагаас устгагдлаа'); loadOrders(); dlvPull();
+  });
+};
+// Буухиагийн сайтаас устгасан хүргэлт — кодыг арилгаж «Буухиад дахин илгээх» жагсаалтад оруулна
+window.ebUnlink = function (id) {
+  var x = dlvGone.filter(function (g) { return g.id === id; })[0];
+  if (!x || dlvBusy || !ebUnlinkAsk(x)) return;
+  dlvBusy = true; renderDlv();
+  ordPost({ type: 'eb_unlink', id: id, what: x.phone + ' · ' + x.code + ' · буухиа дээр устгагдсан' }, function (err) {
+    dlvBusy = false;
+    if (err) { alert(ebUnlinkErr(err)); renderDlv(); return; }
+    dlvGone = dlvGone.filter(function (g) { return g.id !== id; });
+    toast('Дахин илгээх жагсаалтад орлоо'); loadOrders(); dlvPull();
   });
 };
 // Буухиад өгөхгүй захиалга — өөрсдөө / бусад хүргэлтээр гаргана (борлуулалт бичигдэнэ, буухиагийн хөлс бичигдэхгүй)
@@ -550,7 +562,7 @@ function dlvPull(fresh) {
   ordPost({ type: 'eb_sync', fresh: !!fresh }, function (err, d) {
     dlvBusy = false;
     if (err) { dlvErr = err === 'eb_off' ? 'Буухиа API тохируулаагүй байна (удирдлага → Санхүү → «API холболт»).' : 'Татаж чадсангүй: ' + err; renderDlv(); return; }
-    dlvErr = ''; dlvAll = d.list || []; dlvSync = {}; dlvAll.forEach(function (x) { if (x.id) dlvSync[x.id] = x; }); dlvSyncAt = new Date().toTimeString().slice(0, 5); dlvPulled = Date.now(); save('nb_eb_' + BIZ_KEY, { list: dlvAll, at: dlvSyncAt });
+    dlvErr = ''; dlvAll = d.list || []; dlvGone = d.gone || []; dlvSync = {}; dlvAll.forEach(function (x) { if (x.id) dlvSync[x.id] = x; }); dlvSyncAt = new Date().toTimeString().slice(0, 5); dlvPulled = Date.now(); save('nb_eb_' + BIZ_KEY, { list: dlvAll, at: dlvSyncAt });
     if (d.delivered) { toast(d.delivered + ' захиалга «Хүргэгдсэн» боллоо'); loadOrders(); if (typeof syncToday === 'function') syncToday(); }
     dlvMarkPaid();
     renderDlv();

@@ -164,6 +164,15 @@ function ebBack(x) {
   if (!/^yes:/.test(x.sd || '')) return '<br><small class="muted">үлдэгдлээс хасаагүй</small>';
   return window.ebRecv ? '<br><button class="mini" onclick="event.stopPropagation();ebRecv(\'' + esc(x.id) + '\')">Хүлээн авсан</button>' : '<br><small style="color:#B45309">Бараа ирээгүй</small>';
 }
+// Буухиагийн сайтаас устгасан хүргэлт: манай захиалга кодтой хэвээр тул дахин илгээгдэхгүй — кодыг арилгаж илгээх жагсаалтад оруулна
+function ebGoneHtml(L, cls) {
+  if (!L || !L.length) return '';
+  return '<div class="' + cls + '"><div><b>Буухиа дээр олдсонгүй ' + L.length + '</b> — буухиагийн сайтаас устгагдсан.<br>' + L.map(function (x) {
+    return esc((x.cust ? x.cust + ' ' : '') + x.phone + ' · ' + x.date + ' · ' + fmt(x.amount) + ' · ' + x.code) + ' <button class="mini" onclick="ebUnlink(\'' + esc(x.id) + '\')">Дахин илгээх</button>';
+  }).join('<br>') + '</div></div>';
+}
+function ebUnlinkAsk(x) { return confirm('Захиалга ' + x.phone + ' буухиа дээр олдсонгүй (' + x.code + ').\n\nДахин илгээх жагсаалтад оруулах уу? Борлуулалт, үлдэгдэл өөрчлөгдөхгүй.'); }
+function ebUnlinkErr(err) { return err === 'still_there' ? 'Энэ хүргэлт буухиа дээр байна — «Шинэчлэх» дарна уу' : err === 'state' ? 'Энэ захиалгыг дахин илгээх боломжгүй' : 'Алдаа: ' + err; }
 var EB_CLS = { 1: 'n', 2: 'b', 3: 'b', 5: 'y', 10: 'g', 11: 'c', 12: 'r' };
 var EB_LBL = { code: 'Код', external_order_id: 'Манай захиалгын №', status: 'Төлөв', status_name: 'Төлөвийн нэр', created_at: 'Бүртгэсэн', updated_at: 'Шинэчилсэн', delivered_at: 'Хүргэсэн',
   'customer.name': 'Хүлээн авагч', 'customer.phone': 'Утас', 'customer.phone2': 'Утас 2', 'address.city': 'Хот', 'address.district': 'Дүүрэг', 'address.committee': 'Хороо', 'address.addition': 'Дэлгэрэнгүй хаяг',
