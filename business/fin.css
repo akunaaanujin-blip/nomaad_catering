@@ -3,25 +3,25 @@
 :root{
   --bg:#F6F7F9;--surface:#FFFFFF;--surface-alt:#F9FAFB;--border:#E5E7EB;--border-strong:#D1D5DB;
   --text:#111827;--text-2:#4B5563;--text-3:#9CA3AF;
-  --primary:#7B2D26;--primary-hover:#5F211C;--primary-soft:#EEE6FA;--sidebar:#7B2D26;--row-l1:#7B2D26;--row-l2:#E0D2F5;--row-tot:#EADFDD;--sub-line:#B79CE0;
+  --primary:#1457D9;--primary-hover:#0F46B0;--primary-soft:#E9F1FE;--sidebar:#1457D9;--row-l1:#1457D9;--row-l2:#D3E2FB;--row-tot:#DFE9FA;--sub-line:#9DBBF0;
   --income:#15803D;--income-soft:#E8F5EC;--expense:#B91C1C;--expense-soft:#FDECEC;
-  --warning:#B45309;--warning-soft:#FEF3E2;--info:#6B4FA0;--info-soft:#EEE6FA;--neutral-soft:#F3F4F6;
+  --warning:#B45309;--warning-soft:#FEF3E2;--info:#1457D9;--info-soft:#E9F1FE;--neutral-soft:#F3F4F6;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]) body.bz-admin{
     --bg:#0F141A;--surface:#161C24;--surface-alt:#1C232D;--border:#2A3340;--border-strong:#364152;
     --text:#E5E7EB;--text-2:#A3ADBB;--text-3:#6B7685;
-    --primary:#E0A097;--primary-hover:#EBB8B0;--primary-soft:#2C2340;--sidebar:#5A211C;--row-l1:#7B2D26;--row-l2:#3A2C52;--row-tot:#3A2A28;--sub-line:#7D62AD;
+    --primary:#6EA8FF;--primary-hover:#8DBBFF;--primary-soft:#1A2A44;--sidebar:#1B4FC0;--row-l1:#1B4FC0;--row-l2:#24385A;--row-tot:#1F2F4A;--sub-line:#5B82C4;
     --income:#4ADE80;--income-soft:#13261B;--expense:#F87171;--expense-soft:#2A1616;
-    --warning:#FBBF24;--warning-soft:#2A2112;--info:#C9B3EC;--info-soft:#2C2340;--neutral-soft:#1C232D;
+    --warning:#FBBF24;--warning-soft:#2A2112;--info:#9EC1FF;--info-soft:#1A2A44;--neutral-soft:#1C232D;
   }
 }
 :root[data-theme="dark"] body.bz-admin{
   --bg:#0F141A;--surface:#161C24;--surface-alt:#1C232D;--border:#2A3340;--border-strong:#364152;
   --text:#E5E7EB;--text-2:#A3ADBB;--text-3:#6B7685;
-  --primary:#E0A097;--primary-hover:#EBB8B0;--primary-soft:#2C2340;--sidebar:#5A211C;--row-l1:#7B2D26;--row-l2:#3A2C52;--row-tot:#3A2A28;--sub-line:#7D62AD;
+  --primary:#6EA8FF;--primary-hover:#8DBBFF;--primary-soft:#1A2A44;--sidebar:#1B4FC0;--row-l1:#1B4FC0;--row-l2:#24385A;--row-tot:#1F2F4A;--sub-line:#5B82C4;
   --income:#4ADE80;--income-soft:#13261B;--expense:#F87171;--expense-soft:#2A1616;
-  --warning:#FBBF24;--warning-soft:#2A2112;--info:#C9B3EC;--info-soft:#2C2340;--neutral-soft:#1C232D;
+  --warning:#FBBF24;--warning-soft:#2A2112;--info:#9EC1FF;--info-soft:#1A2A44;--neutral-soft:#1C232D;
 }
 /* хуучин хувьсагчдыг шинэ утгад холбоно */
 body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var(--bg);--b-line:var(--border);--b-ink:var(--text);--b-mut:var(--text-2);
@@ -256,7 +256,7 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--b-bg:var
 .bz-admin #view tr.ddoc td:first-child{padding-left:28px}
 .bz-admin #view tr.ddoc a.dl{color:var(--text-2)}
 .bz-admin #view table.rep-t tr.tot td,.bz-admin #view .fd-t tr.tot td{background:var(--row-tot);color:var(--text);font-weight:700;border-top:2px solid var(--text-2)}
-/* Нэг өнгө: үндсэн — улаан хүрэн (--primary), дэд сэдэв — усан ягаан (--primary-soft, --row-l2). Өнгө солих бол дээрх :root-оос */
+/* Нэг өнгө: үндсэн — тод хөх (--primary), дэд сэдэв — бүдэг хөх (--primary-soft, --row-l2). Өнгө солих бол дээрх :root-оос */
 body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--accent:var(--primary)}
 .bz-admin .seg button.on,.bz-admin #view .seg button.on{background:var(--primary)!important;border-color:var(--primary)!important;color:#fff!important}
 .bz-admin .fn-seg button.on{background:var(--primary);border-color:var(--primary);color:#fff}
@@ -267,7 +267,7 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--accent:v
 .bz-admin #view tr.bk-boost td{background:var(--primary-soft)}
 .bz-admin #view tr.bk-boost td:first-child{box-shadow:inset 3px 0 0 var(--sub-line)}
 .fn-brand{background:var(--sidebar);border-bottom-color:rgba(255,255,255,.16)}
-.fn-gb{color:#F1E3E0}
+.fn-gb{color:#E4EDFD}
 .fn-gb.sel{box-shadow:inset 3px 0 0 var(--sub-line)}
 .fn-panel{background:var(--primary-soft)}
 .fn-panel li button:hover{background:var(--row-l2)}
