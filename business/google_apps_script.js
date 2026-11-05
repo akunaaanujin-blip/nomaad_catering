@@ -52,6 +52,7 @@ const LOAN_HEAD = ['ID', 'Огноо', 'biz', 'Төрөл', 'Харилцагч'
   'Төлөх нийт (хүүтэй)', 'Төлөлтийн хуваарь', 'Сарын төлөх дүн', 'Төлөх данс', 'Хүү бодох'];   // хуваарь: [{d: огноо, p: үндсэн, i: хүү}]
 const SHEET_PO = 'Бараа захиалга';
 const SHEET_POIN = 'Бараа ирсэн бүртгэл';
+const PO_FA = '[Хөрөнгө]';   // po.js-тэй ижил: үндсэн хөрөнгийн захиалгын тэмдэг
 const POIN_HEAD = ['ID', 'Огноо', 'biz', 'PO ID', 'PO дугаар', 'Төрөл', 'Мэдээлэл', 'Ажилтан', 'Төлөв', 'Шийдсэн', 'Шийдсэн огноо'];
 const PO_HEAD = ['ID', 'Дугаар', 'Огноо', 'biz', 'Нийлүүлэгч', 'Бараа', 'Валют', 'Нийт (валютаар)', 'Карго компани', 'Төлөв', 'Ирсэн огноо', 'Тэмдэглэл', 'Үүсгэсэн'];
 const SHEET_DOC = 'Маягт';
@@ -271,7 +272,7 @@ function adminRestore(d) {
 // Sheet-ийг гараар засвал 5 минутын дотор шинэчлэгдэнэ.
 const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'imp', 'rule', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf', 'pf'];
 const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_other: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_send: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord', 'rec'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
-  staff_po_in: [], admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr', 'bank'], admin_bank: ['bank', 'jr', 'ord', 'imp', 'rule'], admin_partner: ['pt'], admin_reminder: ['rem'],
+  staff_po_in: ['mov', 'stk', 'jr', 'po'], admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr', 'bank'], admin_bank: ['bank', 'jr', 'ord', 'imp', 'rule'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_pf: ['pf'], admin_po: ['po', 'jr'],
   admin_restore: ['rec', 'stk', 'mov', 'jr'], admin_staff: ['adm', 'stf'], staff_pin: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
 const CACHE_READ = { staff_po: 1, admin_audit: 1, eb_sync: 1, requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
@@ -2041,23 +2042,75 @@ function staffPoIn(d) {
   const today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), date = String(d.date || ''), note = String(d.note || '').trim().slice(0, 200);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) return { status: 'error', error: 'date' };
   let x;
+  const fa = String(p.note || '').indexOf(PO_FA) === 0;   // үндсэн хөрөнгө — ашиглах хугацаа шаардана, удирдлага батална
   if (d.kind === 'recv') {
     if (p.status !== 'Захиалсан') return { status: 'error', error: 'state' };
-    if (poInRows().some(function (r) { return r.poId === p.id && r.kind === 'recv' && r.status === 'Хүлээгдэж'; })) return { status: 'error', error: 'pending' };
+    const pend = poInRows().filter(function (r) { return r.poId === p.id && r.kind === 'recv' && r.status === 'Хүлээгдэж'; });
+    if (fa && pend.length) return { status: 'error', error: 'pending' };
     const names = {}; (p.items || []).forEach(function (i) { names[i.name] = 1; });
     const items = (Array.isArray(d.items) ? d.items : []).filter(function (i) { return names[i.name] && Number(i.qty) > 0; }).map(function (i) { return { name: String(i.name), qty: Number(i.qty) }; });
     if (!items.length) return { status: 'error', error: 'fields' };
     const cargo = Math.max(0, Math.round((Number(d.cargo) || 0) * 100) / 100), cco = String(d.co || '').trim().slice(0, 80);
     if (cargo > 0 && !cco) return { status: 'error', error: 'fields' };
     x = { date: date, loc: STOCK_LOCS[d.loc] ? d.loc : 'Дэлгүүр', items: items, note: note, cargo: cargo, co: cco };
+    if (!fa) {   // шууд хүлээн авна: өмнөх хүлээгдэж буй бүртгэлийг энэ орлоно
+      if (lockedDate(date)) return { status: 'error', error: 'locked' };
+      const r = poDirectRecv(p, x, who);
+      if (r.status !== 'ok') return r;
+      pend.forEach(function (q) { poInSheet().getRange(q.row, 9, 1, 3).setValues([['Татгалзсан', 'Дахин илгээв', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')]]); });
+      const id0 = 'PI' + Date.now(), t0 = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
+      poInSheet().appendRow([id0, t0, who.biz, p.id, p.no, 'recv', JSON.stringify(x).slice(0, 45000), who.staff.name, 'Батлагдсан', 'Шууд', t0]);
+      return { status: 'ok', id: id0, direct: true, total: r.total, noCost: !(r.total > 0) };
+    }
   } else if (d.kind === 'cargo') {
     const amount = Math.round(Number(d.amount) * 100) / 100, co = String(d.co || '').trim().slice(0, 80);
     if (!(amount > 0) || !co) return { status: 'error', error: 'fields' };
     x = { date: date, amount: amount, co: co, ship: Number(d.ship) || 0, note: note };
+    if (!fa) {   // шууд: өртөгт нэмж, карго компанид өглөг (кассаас хасагдахгүй)
+      if (lockedDate(date)) return { status: 'error', error: 'locked' };
+      const cj = adminJournal({ by: who.staff.name, entries: [x.ship ? { biz: p.biz, date: date, dr: '1404', cr: '3101', amount: amount, partner: co, desc: p.no + ' · ирэлт ' + x.ship + ' · карго (дараа төлнө) · ' + co + ' #' + p.id }
+        : { biz: p.biz, date: date, dr: '1505', cr: '3101', amount: amount, partner: co, desc: p.no + ' · карго (дараа төлнө) · ' + co + ' #' + p.id }] });
+      if (cj.status !== 'ok') return cj;
+      const id1 = 'PI' + Date.now(), t1 = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
+      poInSheet().appendRow([id1, t1, who.biz, p.id, p.no, 'cargo', JSON.stringify(x).slice(0, 45000), who.staff.name, 'Батлагдсан', 'Шууд', t1]);
+      return { status: 'ok', id: id1, direct: true, total: amount };
+    }
   } else return { status: 'error', error: 'fields' };
   const id = 'PI' + Date.now();
   poInSheet().appendRow([id, Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), who.biz, p.id, p.no, d.kind, JSON.stringify(x).slice(0, 45000), who.staff.name, 'Хүлээгдэж', '', '']);
   return { status: 'ok', id: id };
+}
+// Ажилтны «Бараа ирсэн»-ийг шууд үлдэгдэлд оруулна. Өртөг: po.js prAlloc-той ижил — захиалгад бүртгэгдсэн төлбөр (1505)-өөс ирэлтэд ногдох хэсэг + карго
+function poDirectRecv(p, x, who) {
+  const r2 = function (n) { return Math.round((Number(n) || 0) * 100) / 100; }, re = new RegExp('#' + p.id + '(?![\\w])');
+  let gIn = 0, cIn = x.cargo;
+  journalRows().forEach(function (e) { if (e.biz !== p.biz || e.dr !== '1505' || !re.test(e.desc)) return; if (/карго/i.test(e.desc)) cIn += e.amount; else gIn += e.amount; });
+  let gDone = 0, cDone = 0, n = 0; const prev = {};
+  stockMoves().forEach(function (m) {
+    if (m.biz !== p.biz || m.kind !== 'Орлого' || m.pay !== 'Захиалга' || !re.test(m.note)) return;
+    const q = Number(m.qty) || 0, s = String(m.note).match(/ирэлт (\d+)/); n = Math.max(n, s ? Number(s[1]) : 1);
+    prev[m.item] = (prev[m.item] || 0) + q; gDone += q * ((Number(m.cost) || 0) - (Number(m.cargo) || 0)); cDone += q * (Number(m.cargo) || 0);
+  });
+  n += 1;
+  const got = {}; x.items.forEach(function (i) { got[i.name] = (got[i.name] || 0) + i.qty; });
+  const rows = (p.items || []).map(function (it) { return { name: it.name, price: Number(it.price) || 0, cn: Number(it.cn) || 0, ord: Number(it.qty) || 0, prev: prev[it.name] || 0, qty: got[it.name] || 0 }; });
+  const useQty = !rows.some(function (r) { return r.price > 0; }), wt = function (r, q) { return useQty ? q : q * r.price + (r.ord ? r.cn * q / r.ord : 0); };
+  const remV = rows.reduce(function (a, r) { return a + wt(r, Math.max(0, r.ord - r.prev)); }, 0), shipV = rows.reduce(function (a, r) { return a + wt(r, r.qty); }, 0);
+  const fin = rows.every(function (r) { return r.prev + r.qty >= r.ord - 1e-9; }), share = fin || !(remV > 0) ? 1 : Math.min(1, shipV / remV);
+  const goods = r2(Math.max(0, gIn - gDone) * share), cargo = r2(Math.max(0, cIn - cDone)), total = r2(goods + cargo), live = rows.filter(function (r) { return r.qty > 0; });
+  let left = total;
+  live.forEach(function (r, k) {
+    const w = shipV ? wt(r, r.qty) / shipV : 0, t = k === live.length - 1 ? left : r2(total * w);
+    left = r2(left - t); r.unit = r2(t / r.qty); r.cargoU = r2(cargo * w / r.qty);
+  });
+  const value = rows.reduce(function (a, r) { return a + r.qty * r.price; }, 0), rate = p.cur !== 'MNT' && value ? r2(goods / value) : '';
+  if (x.cargo > 0) { const j = adminJournal({ by: who.staff.name, entries: [{ biz: p.biz, date: x.date, dr: '1505', cr: '3101', amount: x.cargo, partner: x.co, desc: p.no + ' · карго (дараа төлнө) · ' + x.co + ' #' + p.id }] }); if (j.status !== 'ok') return j; }
+  const st = adminStock({ by: who.staff.name, moves: live.map(function (r) {
+    return { biz: p.biz, loc: x.loc, item: r.name, kind: 'Орлого', qty: r.qty, cost: r.unit, pay: 'Захиалга', partner: p.supplier, note: p.no + ' · ирэлт ' + n + ' #' + p.id, buy: r.price || '', cur: r.price ? p.cur : '', rate: rate, cargo: r.cargoU || '', cargoPay: '', cargoPartner: '' };
+  }) });
+  if (st.status !== 'ok') return st;
+  if (fin && goods > 0) poSheet().getRange(p.row, 10, 1, 2).setValues([['Ирсэн', x.date]]);   // төлбөр бүртгэгдээгүй бол нээлттэй — дараа нь төлбөрийг нь тулгана
+  return { status: 'ok', total: total };
 }
 function poInDecide(d) {
   const r = poInRows().filter(function (x) { return x.id === String(d.inboxId); })[0];

@@ -1090,7 +1090,7 @@ function openPiRecv(id) {
     '<div class="row2"><div><label for="piAmt">Каргоны дүн (₮)</label><input id="piAmt" type="number" min="0" inputmode="numeric"></div>' +
     '<div><label for="piCo">Карго компани</label><input id="piCo" value="' + esc(p.cargoCo || '') + '"></div></div>' +
     '<label for="piNote">Тэмдэглэл</label><input id="piNote" placeholder="Жишээ: 2 ширхэг гэмтэлтэй">' +
-    '<p class="muted" style="font-size:12.5px;margin-top:8px">Бодит тоолсон тоогоо бичнэ. Удирдлага баталсны дараа үлдэгдэлд орно. Каргоны дүн мэдэгдээгүй бол хоосон орхиод дараа нь «Карго» товчоор бичнэ.</p>' +
+    '<p class="muted" style="font-size:12.5px;margin-top:8px">Бодит тоолсон тоогоо бичнэ. Илгээмэгц үлдэгдэлд шууд орно. Каргоны дүн мэдэгдээгүй бол хоосон орхиод дараа нь «Карго» товчоор бичнэ.</p>' +
     '<button class="btn" onclick="sendPiRecv(\'' + id + '\')">Илгээх</button><button class="btn ghost" onclick="closeSheet(\'piSheet\')">Болих</button>');
 }
 function sendPiRecv(id) {
@@ -1110,7 +1110,7 @@ function openPiCargo(id) {
     '<div><label for="piDate">Огноо</label><input id="piDate" type="date" value="' + todayStr() + '" max="' + todayStr() + '"></div></div>' +
     '<label for="piCo">Карго компани</label><input id="piCo" value="' + esc(p.cargoCo || '') + '">' +
     '<label for="piNote">Тэмдэглэл</label><input id="piNote" placeholder="Жишээ: 3 хайрцаг, 45 кг">' +
-    '<p class="muted" style="font-size:12.5px;margin-top:8px">Кассаас хасагдахгүй. Удирдлага баталсны дараа барааны өртөгт нэмэгдэнэ.</p>' +
+    '<p class="muted" style="font-size:12.5px;margin-top:8px">Кассаас хасагдахгүй. Илгээмэгц барааны өртөгт нэмэгдэнэ.</p>' +
     '<button class="btn" onclick="sendPiCargo(\'' + id + '\')">Илгээх</button><button class="btn ghost" onclick="closeSheet(\'piSheet\')">Болих</button>');
 }
 function sendPiCargo(id) {
@@ -1121,7 +1121,7 @@ function sendPiCargo(id) {
 }
 function piSend(b) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(b.date) || b.date > todayStr()) { toast('Огноогоо шалгана уу'); return; }
-  var done = function () { closeSheet('piSheet'); toast('Илгээгдлээ — удирдлага батална'); loadPoIn(); };
+  var done = function (d) { closeSheet('piSheet'); toast(d && d.direct ? (b.kind === 'recv' ? (d.noCost ? 'Үлдэгдэлд орлоо — төлбөр бүртгэгдээгүй тул өртөг 0, удирдлагад мэдэгдэнэ үү' : 'Үлдэгдэлд орлоо') : 'Карго бүртгэгдлээ') : 'Илгээгдлээ — удирдлага батална'); loadPoIn(); if (typeof loadStock === 'function') loadStock(); };
   if (!API_URL) {
     var p = piById(b.poId), all = load('nb_demo_poinbox', []), x = { date: b.date, note: b.note };
     if (b.kind === 'recv') { x.loc = b.loc; x.items = b.items; x.cargo = b.cargo; x.co = b.co; } else { x.amount = b.amount; x.co = b.co; x.ship = b.ship; }
@@ -1139,8 +1139,8 @@ function piSend(b) {
     .then(function (r) { return r.json(); }).then(function (d) {
       unlock();
       if (d && d.error === 'pending') { closeSheet('piSheet'); toast('Энэ бараа ирсэн бүртгэл аль хэдийн илгээгдсэн — удирдлага батлахыг хүлээнэ үү'); loadPoIn(); return; }
-      if (!d || d.status !== 'ok') { toast(d && d.error === 'auth' ? 'Дахин нэвтэрнэ үү' : d && d.error === 'state' ? 'Захиалга хаагдсан байна' : 'Илгээж чадсангүй — дахин оролдоно уу'); return; }
-      done();
+      if (!d || d.status !== 'ok') { toast(d && d.error === 'auth' ? 'Дахин нэвтэрнэ үү' : d && d.error === 'state' ? 'Захиалга хаагдсан байна' : d && d.error === 'locked' ? 'Энэ хугацаа түгжигдсэн байна' : 'Илгээж чадсангүй — дахин оролдоно уу'); return; }
+      done(d);
     }).catch(function () { unlock(); closeSheet('piSheet'); toast('Хариу ирсэнгүй — «Илгээсэн бүртгэл»-ээс шалгаад, байхгүй бол дахин илгээнэ үү'); loadPoIn(); });   // сервер бичсэн байж болно
 }
 
