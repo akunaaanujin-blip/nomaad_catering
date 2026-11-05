@@ -87,20 +87,21 @@ function importBank(input) {
     var biz = info.biz;
     var num = function (v) { var n = Number(String(v).replace(/[,\s]/g, '')); return isFinite(n) ? n : 0; };
     var cRef = gi(/гүйлгээний дугаар|лавлах|reference|^ref/i);   // банкны гүйлгээний дугаар (байвал түлхүүр болно)
-    var from0 = bankFrom(), cut0 = bankOpenCut(acct), lines = [], pre = 0, seen = {}, twins = 0;
+    var from0 = bankFrom(), cut0 = bankOpenCut(acct), lines = [], preL = [], pre = 0, seen = {}, twins = 0;
     rows.slice(h + 1).forEach(function (r) {
       var dt = String(r[cD] || '').trim();
       if (!/^\d{4}-\d{2}-\d{2}/.test(dt)) return;
-      if (dt.slice(0, 10) < from0 || (cut0 && dt.slice(0, 19) <= cut0)) { pre++; return; }   // систем эхлэхээс өмнөх гүйлгээ — алгасна
+      var isPre = dt.slice(0, 10) < from0 || (cut0 && dt.slice(0, 19) <= cut0);   // эхний үлдэгдэлд шингэсэн — идэвхгүй мөр болж хуулгад харагдана
+      if (isPre) pre++;
       var cr = Math.abs(num(r[cCr])), db = Math.abs(num(r[cDb])), desc = String(r[cDesc] || '').trim(), ref = cRef >= 0 ? String(r[cRef] || '').trim() : '';
       var l = { id: ref ? acct + '|' + ref : acct + '|' + dt + '|' + cr + '|' + db + '|' + desc.slice(0, 40) + '|' + bankHash(desc), acct: acct, date: dt, credit: cr, debit: db, bal: num(r[cBal]), desc: desc, party: String(r[cParty] || '').trim(), biz: biz, ref: ref };
       // нэг хуулга дотор яг ижил мөр (огноо, дүн, утга) — хоёуланг нь оруулна, 2 дахь нь «#2»
       var k = bankKey(l), n = seen[k] = (seen[k] || 0) + 1;
       if (n > 1) { l.id += '#' + n; l.twin = n; twins++; }
-      lines.push(l);
+      (isPre ? preL : lines).push(l);
     });
-    if (!lines.length) { toast(pre ? pre + ' гүйлгээ бүгд ' + from0 + '-аас өмнөх тул алгаслаа' : 'Гүйлгээ олдсонгүй'); return; }
-    var endL = bankChain(lines).pop();   // хуулгын эцсийн үлдэгдэл (хамгийн сүүлийн мөр)
+    if (!lines.length && !preL.length) { toast('Гүйлгээ олдсонгүй'); return; }
+    var endL = bankChain(lines.length ? lines : preL).pop();   // хуулгын эцсийн үлдэгдэл (хамгийн сүүлийн мөр)
     // Давхардал: txn_key (данс + гүйлгээний дугаар, эсвэл данс + огноо + ±дүн + цэвэрлэсэн утга) аль хэдийн байвал оруулахгүй
     var mine = bankLines.filter(function (b) { return String(b.acct).slice(-4) === String(acct).slice(-4); });
     var have = {}; mine.forEach(function (b) { have[bankKey(b, true)] = 1; });
@@ -108,22 +109,23 @@ function importBank(input) {
     var keyN = function (l) { return bankKey(l) + (l.twin ? '#' + l.twin : ''); };
     var fresh = lines.filter(function (l) { return !have[keyN(l)]; }), dup = lines.length - fresh.length;
     twins = fresh.filter(function (l) { return l.twin; }).length;   // анхааруулга зөвхөн шинээр орох ижил мөрөнд
-    if (!fresh.length) { toast('Шинэ гүйлгээ алга — ' + lines.length + ' гүйлгээ бүгд өмнө орсон (давхардсан)'); return; }
+    var idle = preL.filter(function (l) { return !have[keyN(l)]; });   // идэвхгүй оруулах: санхүүд, үлдэгдэлд нөлөөлөхгүй
+    if (!fresh.length && !idle.length) { toast('Шинэ гүйлгээ алга — ' + lines.length + ' гүйлгээ бүгд өмнө орсон (давхардсан)'); return; }
     fresh.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
     // Өмнөх импорт: тухайн дансны хамгийн сүүлийн «дуусах огноо»; хугацаа давхцвал анхааруулна (давхардсан мөр аль хэдийн шүүгдсэн)
     var logs = (window.importLog || []).filter(function (m) { return m.status !== 'Буцаасан' && String(m.acct).slice(-4) === String(acct).slice(-4); }).sort(function (a, b) { return a.to < b.to ? -1 : 1; });
     var lastTo = logs.length ? logs[logs.length - 1].to : (mine.map(function (b) { return b.date; }).sort().pop() || '');
-    var from = lines.map(function (l) { return l.date; }).sort()[0], to = endL.date, overlap = lastTo && from <= lastTo;
+    var from = (lines.length ? lines : preL).map(function (l) { return l.date; }).sort()[0], to = endL.date, overlap = lastTo && from <= lastTo;
     var restore = fresh.filter(function (l) { return delK[keyN(l)]; }), imp = 'IMP' + Date.now();
     // Үлдэгдлийн гинж: өмнөх үлдэгдэл + орлого − зарлага = эцсийн үлдэгдэл. Таарахгүй бол мөр дутуу / хуулгын завсар байна
-    var chn = bankChain(lines), gaps = 0, hasBal = lines.some(function (l) { return l.bal; });
+    var chn = bankChain(lines.length ? lines : preL), gaps = 0, hasBal = chn.some(function (l) { return l.bal; });
     for (var ci = 1; ci < chn.length; ci++) if (Math.abs(chn[ci - 1].bal + chn[ci].credit - chn[ci].debit - chn[ci].bal) >= 1) gaps++;
     // Холбоос: системийн сүүлийн мөрийн эцсийн үлдэгдэл = эхний шинэ мөрийн өмнөх үлдэгдэл. Хуучин огноотой шинэ мөр бол завсраас мөр нэмэгдэж байна
-    var prevL = bankChain(mine).pop(), fc = bankChain(fresh)[0], openB = fc.bal - fc.credit + fc.debit, older = prevL ? fresh.filter(function (l) { return l.date < prevL.date; }).length : 0;
+    var prevL = bankChain(mine).pop(), fc = bankChain(fresh.length ? fresh : lines.length ? lines : preL)[0], openB = fc.bal - fc.credit + fc.debit, older = prevL ? fresh.filter(function (l) { return l.date < prevL.date; }).length : 0;
     var jump = hasBal && prevL && !older && Math.abs(openB - prevL.bal) >= 1, joined = hasBal && prevL && !older && !jump;
     if (!hasBal) gaps = 0;
     if (!confirm('****' + String(acct).slice(-4) + ' дансны хуулга · ' + from.slice(0, 10) + ' — ' + to.slice(0, 10) + '\n\n' +
-      'Нийт ' + (lines.length + pre) + ' мөр: оруулах ' + fresh.length + (dup ? ', давхардсан ' + dup : '') + (pre ? ', эхний үлдэгдлээс өмнөх ' + pre + ' (алгасна)' : '') + '.' +
+      'Нийт ' + (lines.length + pre) + ' мөр: оруулах ' + fresh.length + (dup ? ', давхардсан ' + dup : '') + (idle.length ? ', идэвхгүй ' + idle.length + ' (эхний үлдэгдлээс өмнөх, санхүүд орохгүй)' : '') + '.' +
       (lastTo ? '\nЭнэ дансны сүүлийн хуулга: ' + lastTo.slice(0, 16) + ' хүртэл.' : '') +
       (overlap ? '\n\nАНХААР: хугацаа өмнөх хуулгатай давхцаж байна — давхардсан мөрүүдийг шүүсэн, үлдсэнийг шалгана уу.' : '') +
       (gaps ? '\n\nАНХААР: хуулга дотор ' + gaps + ' газар үлдэгдэл таарахгүй байна — мөр дутуу байж магадгүй.' : '') +
@@ -133,12 +135,17 @@ function importBank(input) {
       (twins ? '\n\nАНХААР: нэг хуулга дотор яг ижил ' + twins + ' мөр байна (огноо, дүн, утга ижил) — хоёуланг нь оруулна, шалгана уу.' : '') +
       '\n\nОруулсан мөрүүд «Тулгаагүй» жагсаалтад орно — санхүүд зөвхөн таны баталснаар бичигдэнэ.\n\nОруулах уу?')) return;
     var log = { id: imp, acct: acct, biz: biz, from: from, to: to, total: lines.length + pre, skipped: pre, dup: dup, endBal: endL.bal, restored: restore.length };
-    var back = restore.map(function (l) { return { id: delK[keyN(l)], status: 'Шинэ', link: '', imp: imp }; });
+    var IDLE = 'Эхний үлдэгдлээс өмнөх';
+    var back = restore.map(function (l) { return { id: delK[keyN(l)], status: 'Шинэ', link: '', imp: imp }; }).concat(idle.filter(function (l) { return delK[keyN(l)]; }).map(function (l) { return { id: delK[keyN(l)], status: 'Идэвхгүй', link: IDLE, imp: imp }; }));
     var add = fresh.filter(function (l) { return !delK[keyN(l)]; }).map(function (l) { l.imp = imp; return l; });
-    if (!API_URL) { add.forEach(function (l) { l.status = 'Шинэ'; bankLines.push(l); }); log.added = fresh.length; log.at = todayStr(); (window.importLog = window.importLog || []).push(log); save('nb_demo_bank', bankLines); state.biz = biz; render(); toast(fresh.length + ' шинэ гүйлгээ'); return; }
-    post({ type: 'admin_bank', by: ownerName, lines: add, updates: back, import: log }, function (err, d) {
+    var idleNew = idle.filter(function (l) { return !delK[keyN(l)]; }).map(function (l) { l.imp = imp; return l; });
+    log.restored = restore.length - idleNew.length;   // сервер оруулсан тоонд идэвхгүйг тоолохгүй
+    if (!API_URL) { idleNew.forEach(function (l) { l.status = 'Идэвхгүй'; l.link = IDLE; bankLines.push(l); }); add.forEach(function (l) { l.status = 'Шинэ'; bankLines.push(l); }); log.added = fresh.length; log.at = todayStr(); (window.importLog = window.importLog || []).push(log); save('nb_demo_bank', bankLines); state.biz = biz; render(); toast(fresh.length + ' шинэ гүйлгээ'); return; }
+    post({ type: 'admin_bank', by: ownerName, lines: add.concat(idleNew), updates: back, import: log }, function (err, d) {
       if (err) { toast('Алдаа: ' + err); return; }
-      toast((d.added + back.length) + ' шинэ гүйлгээ орлоо' + (dup ? ' · ' + dup + ' давхардсан' : '') + (pre ? ' · ' + pre + ' өмнөх алгасав' : '')); refresh();
+      var done1 = function () { toast(fresh.length + ' шинэ гүйлгээ орлоо' + (dup ? ' · ' + dup + ' давхардсан' : '') + (idle.length ? ' · ' + idle.length + ' идэвхгүй' : '')); refresh(); };
+      if (!idleNew.length) { done1(); return; }
+      post({ type: 'admin_bank', by: ownerName, updates: idleNew.map(function (l) { return { id: l.id, status: 'Идэвхгүй', link: IDLE }; }) }, function (e2) { if (e2) toast('Алдаа: ' + e2); done1(); });
     });
   };
   rd.readAsArrayBuffer(f);
@@ -278,7 +285,8 @@ function debtByName(l, list) {
 function bankView() {
   var biz = state.biz, all = bankChain(bankLines.filter(function (l) { return l.biz === biz; })).reverse();
   var todo = all.filter(function (l) { return l.status === 'Шинэ'; });
-  var list = bankTab === 'todo' ? todo : bankTab === 'done' ? all.filter(function (l) { return l.status !== 'Шинэ'; }) : all;
+  var idleL = all.filter(function (l) { return l.status === 'Идэвхгүй'; }), doneL = all.filter(function (l) { return l.status !== 'Шинэ' && l.status !== 'Идэвхгүй'; });
+  var list = bankTab === 'todo' ? todo : bankTab === 'done' ? doneL : bankTab === 'idle' ? idleL : all;
   // Санхүүгийн данс бүрээр: бүх банкны дансны сүүлийн мөр (all нь шинэ нь эхэндээ) — хуулгын сүүлийн өдрөөр тулгана
   var G = {}, E0 = J(), jidSet = {}; (journal || []).forEach(function (j) { jidSet[j.id] = 1; });
   all.forEach(function (l) { var i0 = bankAcctInfo(l.acct), a0 = i0 ? i0.acc : '1101', k0 = String(l.acct).slice(-4), g0 = G[a0] = G[a0] || { acc: a0, seen: {}, bal: 0, date: '' }; if (g0.seen[k0]) return; g0.seen[k0] = 1; g0.bal += l.bal; if (l.date > g0.date) g0.date = l.date; });
@@ -289,7 +297,7 @@ function bankView() {
   var head = '<div class="kpis">' + kpi('Тулгах гүйлгээ', todo.length) +
     Object.keys(G).map(function (k) { var g = G[k], d0 = g.date.slice(0, 10), led = balances(E0, d0)[g.acc] || 0;
       return kpi('Хуулгын үлдэгдэл (' + d0 + ')', fmt(g.bal)) + kpi('Санхүүгийн ' + g.acc + ' үлдэгдэл', fmt(led), Math.abs(g.bal - led) < 1 ? '<span style="color:var(--green)">Таарч байна</span>' : pendOf(g.acc, g.bal - led) || '<span style="color:var(--red)">Зөрүү ' + mny(g.bal - led) + '</span>'); }).join('') + '</div>';
-  var tabs = '<div class="fn-fr">' + stBar('Төлөв', [['todo', 'Тулгаагүй', todo.length], ['done', 'Тулгасан', all.length - todo.length], ['all', 'Бүгд', all.length]], bankTab, "bankTab='%'") +
+  var tabs = '<div class="fn-fr">' + stBar('Төлөв', [['todo', 'Тулгаагүй', todo.length], ['done', 'Тулгасан', doneL.length]].concat(idleL.length ? [['idle', 'Идэвхгүй', idleL.length]] : []).concat([['all', 'Бүгд', all.length]]), bankTab, "bankTab='%'") +
     (todo.length ? '<button class="b-btn danger" style="margin-left:auto" onclick="bankDel(null)">Тулгаагүй ' + todo.length + ' гүйлгээг устгах</button>' : '') + '</div>' +
     (todo.length && bankTab !== 'done' ? '<div class="bk-bar"><button class="b-btn" onclick="bankSelSure()">Таарсныг сонгох' + (sure ? ' (' + sure + ')' : '') + '</button>' +
       '<button class="b-btn primary" id="bkSelBtn" onclick="bankApplySel()">Сонгосныг тулгах (' + Object.keys(bankSel).length + ')</button>' +
@@ -356,9 +364,9 @@ function bankView() {
     var match = s && !dupPick && ((s.kind === 'order' && s.sure) || (s.kind === 'shop' && s.sure) || (s.kind === 'req' && s.sure) || s.kind === 'paid');   // утас, дүн таарсан — ногооноор
     var fee = !l.credit && /хураамж|хураа$|шимтгэл/i.test(String(l.desc).trim());   // банкны хураамж — ягаан
     var boost = !l.credit && BOOST_RE.test(String(l.desc));   // Boost (зар сурталчилгаа) — цэнхэр
-    return '<tr' + (match ? ' class="bk-match" title="Утас, дүн таарсан"' : fee ? ' class="bk-fee" title="Банкны хураамж"' : boost ? ' class="bk-boost" title="Boost (зар сурталчилгаа)"' : '') + '><td class="bk-ck">' + (s ? '<input type="checkbox" data-id="' + esc(l.id) + '"' + (bankSel[l.id] ? ' checked' : '') + ' onchange="bankSelSet(this)">' : '') + '</td><td>' + esc(l.date) + '</td><td>' + esc(l.desc) + '</td><td class="n" style="color:var(--green)">' + (l.credit ? '+' + fmt(l.credit).slice(1) : '') + '</td>' +
+    return '<tr' + (l.status === 'Идэвхгүй' ? ' style="opacity:.5" title="Эхний үлдэгдэлд орсон — санхүүд, тулгалтад нөлөөлөхгүй"' : match ? ' class="bk-match" title="Утас, дүн таарсан"' : fee ? ' class="bk-fee" title="Банкны хураамж"' : boost ? ' class="bk-boost" title="Boost (зар сурталчилгаа)"' : '') + '><td class="bk-ck">' + (s ? '<input type="checkbox" data-id="' + esc(l.id) + '"' + (bankSel[l.id] ? ' checked' : '') + ' onchange="bankSelSet(this)">' : '') + '</td><td>' + esc(l.date) + '</td><td>' + esc(l.desc) + '</td><td class="n" style="color:var(--green)">' + (l.credit ? '+' + fmt(l.credit).slice(1) : '') + '</td>' +
       '<td class="n neg">' + (l.debit ? '−' + fmt(l.debit).slice(1) : '') + '</td><td class="n nw">' + (l.bal || l.bal === 0 ? fmt(l.bal).slice(1) : '') + '</td><td>' + (s ? sel : '<span class="tag">' + esc(l.status) + '</span> <small class="muted">' + esc(String(l.link).replace(/^\d{4,6} /, '').replace(/ #[\w-]+/g, '')) + '</small>' + (noJ ? ' <small style="color:var(--red)">бичилт алга — буцааж дахин тулгана уу</small>' : '')) + '</td>' +
-      '<td class="n" style="white-space:nowrap">' + (s ? '<button class="mini" style="color:var(--accent)" onclick="bankApply([\'' + jsq(l.id) + '\'])">Тулгах</button> <button class="mini" title="Энэ утгатай гүйлгээнд сонгосон үйлдлийг дараа нь урьдчилан бөглөнө" onclick="bankRuleAdd(\'' + jsq(l.id) + '\')">Дүрэм болгох</button> <button class="mini" title="Хуулгаас устгах" onclick="bankDel([\'' + jsq(l.id) + '\'])">Устгах</button>' : '<button class="mini" title="Тулгалтыг буцааж дахин «Тулгаагүй» болгоно" onclick="bankUnmatch(\'' + jsq(l.id) + '\')">Буцаах</button>') + '</td></tr>';
+      '<td class="n" style="white-space:nowrap">' + (s ? '<button class="mini" style="color:var(--accent)" onclick="bankApply([\'' + jsq(l.id) + '\'])">Тулгах</button> <button class="mini" title="Энэ утгатай гүйлгээнд сонгосон үйлдлийг дараа нь урьдчилан бөглөнө" onclick="bankRuleAdd(\'' + jsq(l.id) + '\')">Дүрэм болгох</button> <button class="mini" title="Хуулгаас устгах" onclick="bankDel([\'' + jsq(l.id) + '\'])">Устгах</button>' : l.status === 'Идэвхгүй' ? '' : '<button class="mini" title="Тулгалтыг буцааж дахин «Тулгаагүй» болгоно" onclick="bankUnmatch(\'' + jsq(l.id) + '\')">Буцаах</button>') + '</td></tr>';
   }).reverse().join('');
   return head + '<div class="card"><h2>Төлбөрийн мэдээлэл (хэрэглэгчид илгээх мессежид)</h2><div class="bar-row"><input id="payInfo" value="' + esc(pay) + '" placeholder="Жишээ: Хаан банк 53xxxxxxxx (Н.Анужин)" style="flex:1;min-width:220px">' +
     '<button class="b-btn" onclick="savePayInfo()">Хадгалах</button></div><p class="muted" style="font-size:12.5px;margin-top:6px">Ажилтан захиалга бүртгэхэд «Төлбөрийн мессеж»-д энэ данс, дүн, «Гүйлгээний утга: утасны дугаар» бичигдэнэ — тулгалт автоматаар таарна.</p></div>' +
@@ -415,7 +423,7 @@ function bankLogCard(biz) {
       var inf = bankAcctInfo(m.acct), acc = inf ? inf.acc : '', to = String(m.to).slice(0, 10), sys = acc ? balances(E, to)[acc] || 0 : 0, diff = Math.round(m.endBal - sys), undone = m.status === 'Буцаасан';
       var mine = bankLines.filter(function (b) { return String(b.acct).slice(-4) === String(m.acct).slice(-4) && String(b.date).slice(0, 10) <= to; });
       var pend = mine.filter(function (b) { return b.status === 'Шинэ'; }).length, skip = mine.filter(function (b) { return b.status === 'Алгассан'; }).length;
-      var fst = bankChain(mine)[0], open0 = fst ? fst.bal - fst.credit + fst.debit : 0, sys0 = fst && acc ? balances(E, prevDay(fst.date.slice(0, 10)))[acc] || 0 : 0;
+      var fst = bankChain(mine.filter(function (b) { return b.status !== 'Идэвхгүй'; }))[0], open0 = fst ? fst.bal - fst.credit + fst.debit : 0, sys0 = fst && acc ? balances(E, prevDay(fst.date.slice(0, 10)))[acc] || 0 : 0;
       var oHint = fst && Math.abs(Math.round(open0 - sys0) - diff) < 1 && Math.abs(diff) >= 1 ? ' · эхний үлдэгдэл дутуу: хуулгад ' + fmt(open0) + ', системд ' + fmt(sys0) : '';
       var chk = undone ? '<span class="muted">Буцаасан</span>' : Math.abs(diff) < 1 ? '<span style="color:var(--green)">✓ Тулж таарсан</span>' :
         '<span style="color:var(--red)">Зөрүү ' + mny(diff) + '</span><br><small class="muted">систем ' + fmt(sys) + (pend ? ' · тулгаагүй ' + pend : '') + (skip ? ' · алгассан ' + skip : '') + (m.dup ? ' · давхардсан ' + m.dup : '') + oHint + '</small>';
