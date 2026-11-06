@@ -2425,10 +2425,16 @@ function repCatalog(biz) {
     return { name: p.name, type: svc ? 'Үйлчилгээ' : 'Бараа', cat: p.cat, unit: p.unit, price: p.price || '', cost: svc ? '' : cost || '', margin: cost && p.price ? Math.round((p.price - cost) / p.price * 100) + '%' : '',
              cls: p.cls, st: p.off ? 'Идэвхгүй' : 'Идэвхтэй', _id: p.name };
   });
+  // Үлдэгдэлд байгаа ч бүртгэлгүй бараа (ажилтны «Бараа ирсэн»-ээр орсон шинэ нэр) — зарах үнэ оруулмагц дэлгүүрт гарна
+  var reg = {}; BUSINESSES[biz].products.forEach(function (p) { reg[String(p.name).trim().toLowerCase()] = 1; });
+  var unreg = stockRows(biz).filter(function (r) { return !reg[String(r.name).trim().toLowerCase()] && round2(r.shop + r.wh) > 0; }).map(function (r) {
+    return { name: r.name, type: 'Бараа', cat: '', unit: r.unit, price: '', cost: Math.round(r.cost) || '', margin: '', cls: '', st: 'Үнэ оруулаагүй', _id: r.name };
+  });
+  rows = unreg.concat(rows);
   var off = rows.filter(function (r) { return r.st === 'Идэвхгүй'; }).length;
   return { title: 'Барааны бүртгэл', master: 'бараа', empty: 'Бараа алга. <button class="b-btn primary" onclick="openProduct()">+ Шинэ бараа</button> <button class="b-btn" onclick="$(\'prodFile\').click()">Excel-ээр бүртгэх</button>', cols: [c('name', 'Бараа'), c('type', 'Төрөл'), c('cat', 'Ангилал'), c('unit', 'Нэгж'), m('price', 'Зарах үнэ'), m('cost', 'Дундаж өртөг'),
     c('margin', 'Ашиг %'), c('cls', 'БҮНА код'), c('st', 'Төлөв')], rows: rows,
-    note: rows.length + ' бараа' + (off ? ' · ' + off + ' идэвхгүй (дэлгүүрт харагдахгүй)' : '') + '. Ангиллыг «Үйлчилгээ» болговол (жишээ: хүргэлт) үлдэгдэл, тооллого, өртөг, барааны ашигт орохгүй, орлого нь 5102.' };
+    note: rows.length + ' бараа' + (off ? ' · ' + off + ' идэвхгүй (дэлгүүрт харагдахгүй)' : '') + (unreg.length ? ' · ' + unreg.length + ' бараанд зарах үнэ оруулаагүй — үнэ оруулах хүртэл дэлгүүрт зарагдахгүй' : '') + '. Ангиллыг «Үйлчилгээ» болговол (жишээ: хүргэлт) үлдэгдэл, тооллого, өртөг, барааны ашигт орохгүй, орлого нь 5102.' };
 }
 var prodEdit = '';
 function openProduct(name) {
@@ -2438,6 +2444,7 @@ function openProduct(name) {
   $('pdName').value = p ? p.name : ''; $('pdName').readOnly = !!p;   // нэр солиход үлдэгдэл, түүх тасрах тул солихгүй
   $('pdUnit').value = p ? p.unit : BUSINESSES[biz].unit; $('pdPrice').value = p ? p.price : ''; $('pdPrice').placeholder = '';
   $('pdCat').value = p ? p.cat : ''; $('pdCls').value = p ? p.cls : ''; $('pdOff').checked = p ? !!p.off : false;
+  if (name && !p) { $('pdName').value = name; $('pdName').readOnly = true; }   // үлдэгдэлд байгаа нэрээр нь бүртгэнэ — нэр зөрвөл үлдэгдэл, өртөг тусдаа болно
   var cats = {}; BUSINESSES[biz].products.forEach(function (x) { if (x.cat) cats[x.cat] = 1; });
   $('pdCats').innerHTML = Object.keys(cats).sort().map(function (k) { return '<option value="' + esc(k) + '">'; }).join('');
   openSheet('productSheet');
