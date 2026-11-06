@@ -71,13 +71,13 @@ function ebGenTime(u) {   // UTC → Улаанбаатар «2026/11/05 14:28»
 }
 function ebGenRows() {
   if (!ebAdm.list || ebAdm.biz !== state.biz) return [];
-  var B = ebSettledByEb(ebAdm.list), D = ebSetData(), R = {}, G = {}, def = ebFeeOf(state.biz);
+  var B = ebSettledByEb(ebAdm.list), D = ebSetData(), R = {}, G = {};
   D.rows.forEach(function (r) { if (r.code) R[r.code] = r; });
   ebAdm.list.forEach(function (x) { var u = B[x.code]; if (!u || x.st !== 10) return; (G[u] = G[u] || []).push(x); });
   return Object.keys(G).sort().reverse().map(function (u) {
     var got = 0, fee = 0, open = 0, known = 0;
     G[u].forEach(function (x) {
-      var r = R[x.code]; got += Number(x.got) || 0; fee += x.fee > 0 ? x.fee : r && r.fee > 0 ? r.fee : def;
+      var r = R[x.code]; got += Number(x.got) || 0; fee += x.fee > 0 ? x.fee : r && r.fee > 0 ? r.fee : ebFeeOf(state.biz, x.created);
       if (r) { known++; if (!r.done) open++; }
     });
     return { u: u, at: ebGenTime(u), L: G[u], n: G[u].length, got: r0(got), fee: r0(fee), net: r0(got - fee), pay: open ? 'Шилжээгүй' : known ? 'Шилжсэн' : '—' };

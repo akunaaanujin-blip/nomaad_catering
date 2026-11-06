@@ -100,7 +100,9 @@ var EB_FEE_DATE = {};   // захиалгын ID → хүргэлтийн хөл
 function ebOrdAuto(o) { return !!o && (ebFeeAuto(EB_FEE_DATE[o.id] || o.date) || ebAccrues(o)); }
 // Шинэ дүрэм: буухиагаар хүргэгдсэн захиалга бүрт хөлсийг хүргэгдсэн мөчид зардал болгоно (Дт 7124 / Кт 3101 Буухиа), тооцоо нийлэхэд өглөг хаагдана
 function ebAccrues(o) { return !!o && !!o.ebCode && o.ebCode !== 'бусад' && o.status === 'Хүргэгдсэн' && !ebFeeAuto(EB_FEE_DATE[o.id] || o.date); }
-function ebFeeOf(biz) { var c = (typeof window !== 'undefined' && window.companyInfo || {})[biz] || {}; return Number(c.ebFee) > 0 ? Number(c.ebFee) : 7000; }
+// Буухиагийн хөлс: 2026-11-01-нээс 8,000 (өмнө нь 7,000). d — хүргэлтийн огноо; байхгүй бол өнөөдрийн үнэ. Компанийн тохиргоо зөвхөн 8,000-аас дээш бол үйлчилнэ.
+var EB_FEE_NEW_FROM = '2026-11-01';
+function ebFeeOf(biz, d) { var c = (typeof window !== 'undefined' && window.companyInfo || {})[biz] || {}; if (d && String(d).slice(0, 10).replace(/\//g, '-') < EB_FEE_NEW_FROM) return 7000; return Math.max(8000, Number(c.ebFee) || 0); }
 // Хуучин зардлын код → Baaz код. Шинэ төлөвлөгөөнд байхгүй хуучин код үргэлж хөрвүүлэгдэнэ; давхцах 7201, 7401 нь
 // зөвхөн шилжүүлэлтийн мөчөөс (MIG_TS) өмнө бичигдсэн гараар бичилтэд хөрвүүлэгдэнэ (Sheet-ийн өгөгдлийг өөрчлөхгүй).
 var OLD_EXP = { '7024': '1208', '7201': '7114', '7202': '7111', '7203': '7117', '7204': '7123', '7205': '7120', '7206': '7112', '7207': '7124', '7301': '7122',
@@ -361,7 +363,7 @@ function buildJournal(biz, R) {
   Object.keys(ORD).forEach(function (id) {
     var o = ORD[id]; if (!ebAccrues(o) || ebDone[id]) return;
     var d = String(EB_FEE_DATE[id] || o.date).slice(0, 10); if (R.closed && d <= R.closed) return;
-    add(d, 'Буухиагийн хөлс', id, '7124', '3101', ebFeeOf(biz), 'Хүргэлтийн зардал · ' + o.phone + ' #' + id, BUUHIA);
+    add(d, 'Буухиагийн хөлс', id, '7124', '3101', ebFeeOf(biz, d), 'Хүргэлтийн зардал · ' + o.phone + ' #' + id, BUUHIA);
   });
   ce.adj.forEach(function (a) { add(a.date, 'Карго · зарагдсан бараа', a.ref, '6101', '1404', a.amount, 'Карго · ' + a.item + ' (бараа нь зарагдсан тул өртөгт)'); });
   R.salary.forEach(function (e) {

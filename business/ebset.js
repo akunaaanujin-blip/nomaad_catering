@@ -45,7 +45,7 @@ function ebSetUnlinked(M) {
   var seen = {}; J().forEach(function (e) { (String(e.desc).match(/#EB:[\w-]+/g) || []).forEach(function (t) { seen[t.slice(4)] = 1; }); if (e.partner === BUUHIA && e.dr === '7124') (String(e.desc).match(/\([KQ][\w-]+\)/g) || []).forEach(function (t) { seen[t.slice(1, -1)] = 1; }); });
   return (ebAdm.list || []).filter(function (x) {
     return x.st === 10 && !M[x.code] && !seen[x.code] && !(window.ebOld || {})[x.code] && String(x.created || '').slice(0, 10).replace(/\//g, '-') >= EB_SET_FROM;
-  }).map(function (x) { return { x: x, fee: ebAdm.fee[x.code] != null ? ebAdm.fee[x.code] : 7000 }; });
+  }).map(function (x) { return { x: x, fee: ebXFee(x) }; });
 }
 function ebSetChecks(D) {
   var out = [], line = function (ok, t) { out.push('<div class="fn-todo ' + (ok ? 'ok' : 'bad') + '"><span class="fn-ck">' + (ok ? '✓' : '!') + '</span><span' + (ok ? '' : ' style="color:var(--red)"') + '>' + t + '</span></div>'); };
@@ -191,16 +191,20 @@ function ebBkSel() {
   S.col = r0(col); S.fee = r0(fee); S.old = r0(old); S.unl = r0(unl); S.exp = r0(col - fee - old - unl); S.diff = r0(ebBkAmt(ebBk.l) - S.exp);
   return S;
 }
+// Буухиа суутгасан хөлс манай тооцооноос бага зэрэг зөрвөл гараар чагтлаад зөрүүг хөлсний зардалд (7124) бичнэ
+var EB_BK_FIX_MAX = 30000;
+function ebBkFixOk(S) { return !!ebBk.fix && Math.abs(S.diff) >= 1 && Math.abs(S.diff) <= EB_BK_FIX_MAX; }
 function ebBkCalc() {
-  if (!ebBk) return; var S = ebBkSel(), ok = (S.r.length || S.o.length || S.u.length) && Math.abs(S.diff) < 1;
+  if (!ebBk) return; var S = ebBkSel(), ok = (S.r.length || S.o.length || S.u.length) && (Math.abs(S.diff) < 1 || ebBkFixOk(S));
   $('ebBkSum').innerHTML = '<table class="rep-t"><tr><td>Хураасан (' + S.r.length + ' захиалга)</td><td class="n">' + mny(S.col) + '</td></tr><tr><td>− Хөлс</td><td class="n">' + mny(S.fee) + '</td></tr>' +
     (S.unl ? '<tr><td>− Захиалгагүй хүргэлтийн хөлс</td><td class="n">' + mny(S.unl) + '</td></tr>' : '') + (S.old ? '<tr><td>− Хуучин өр</td><td class="n">' + mny(S.old) + '</td></tr>' : '') +
     '<tr class="b"><td>= Тооцооны цэвэр дүн</td><td class="n">' + mny(S.exp) + '</td></tr><tr><td>Банкны гүйлгээ</td><td class="n">' + mny(ebBkAmt(ebBk.l)) + '</td></tr>' +
-    '<tr class="b"><td>Зөрүү</td><td class="n"' + (Math.abs(S.diff) < 1 ? '' : ' style="color:var(--red)"') + '>' + mny(S.diff) + '</td></tr></table>';
+    '<tr class="b"><td>Зөрүү</td><td class="n"' + (Math.abs(S.diff) < 1 ? '' : ' style="color:var(--red)"') + '>' + mny(S.diff) + '</td></tr></table>' +
+    (Math.abs(S.diff) >= 1 && Math.abs(S.diff) <= EB_BK_FIX_MAX ? '<label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox"' + (ebBk.fix ? ' checked' : '') + ' onchange="ebBk.fix=this.checked;ebBkCalc()" style="width:auto">Зөрүү ' + mny(Math.abs(S.diff)) + '-ийг Буухиагийн хөлсөнд тооцох</label>' : '');
   $('ebBkGo').disabled = !ok;
 }
 function ebBankSave() {
-  var S = ebBkSel(); if (!(S.r.length || S.o.length || S.u.length) || Math.abs(S.diff) >= 1) return;
+  var S = ebBkSel(); if (!(S.r.length || S.o.length || S.u.length) || (Math.abs(S.diff) >= 1 && !ebBkFixOk(S))) return;
   var l = ebBk.l, info = bankAcctInfo(l.acct), acc = info ? info.acc : '1101', d = l.date.slice(0, 10), biz = state.biz, E = [], tags = [], recv = 0;
   S.r.forEach(function (i) {
     var r = ebBk.rows[i], tg = ' · ' + r.phone + ' #' + r.id, f = Math.min(r.feeLeft, r.colLeft);
@@ -214,9 +218,10 @@ function ebBankSave() {
   });
   S.u.forEach(function (i) { var u = ebBk.unl[i]; E.push({ biz: biz, date: d, dr: '7124', cr: acc, amount: u.fee, partner: BUUHIA, desc: 'Буухиа тооцоо · хөлс (захиалгагүй) · ' + u.x.phone + ' #EB:' + u.x.code }); });
   if (recv > 0.5) E.unshift({ biz: biz, date: d, dr: acc, cr: '1201', amount: r0(recv), partner: BUUHIA, desc: 'Буухиа тооцоо · орсон мөнгө · ' + S.r.length + ' захиалга ' + tags.join(' ') });
+  if (Math.abs(S.diff) >= 1) E.push({ biz: biz, date: d, dr: S.diff < 0 ? '7124' : acc, cr: S.diff < 0 ? acc : '7124', amount: Math.abs(S.diff), partner: BUUHIA, desc: 'Буухиа тооцоо · хөлсний зөрүү' });
   E.forEach(function (e) { e.bankId = l.id; });
   var upd = [{ id: l.id, status: 'Тулгасан', link: 'Буухиа тооцоо · ' + S.r.length + ' захиалга' }];
-  if (!confirm('Буухиагийн тооцоо ' + d + ': ' + S.r.length + ' захиалга, банкаар ' + mny(ebBkAmt(l)) + '\nХураасан ' + fmt(S.col) + ' − хөлс ' + fmt(S.fee + S.unl) + (S.old ? ' − хуучин өр ' + fmt(S.old) : '') + '\n\n' + E.length + ' журналын бичилт үүснэ. Тулгах уу?')) return;
+  if (!confirm('Буухиагийн тооцоо ' + d + ': ' + S.r.length + ' захиалга, банкаар ' + mny(ebBkAmt(l)) + '\nХураасан ' + fmt(S.col) + ' − хөлс ' + fmt(S.fee + S.unl) + (S.old ? ' − хуучин өр ' + fmt(S.old) : '') + (Math.abs(S.diff) >= 1 ? '\nХөлсний зөрүү ' + mny(S.diff) : '') + '\n\n' + E.length + ' журналын бичилт үүснэ. Тулгах уу?')) return;
   gClose();
   if (!API_URL) { E.forEach(function (e, i) { e.id = 'J' + Date.now() + '-' + i; e.by = ownerName; journal.push(e); }); l.status = 'Тулгасан'; l.link = upd[0].link; render(); return; }
   l.status = 'Тулгасан'; l.link = upd[0].link; delete bankPick[l.id];

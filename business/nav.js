@@ -547,7 +547,7 @@ function companyView2() {
     '<div class="row2">' + f('email', 'Имэйл', c.email || '', '', 'email') + f('fyStart', 'Санхүүгийн жилийн эхлэл (сар-өдөр)', c.fyStart || '01-01', '01-01') + '</div>' +
     '<div class="row2">' + f('signBoss', 'Гүйцэтгэх захирал (сарын тайланд)', c.signBoss || (MR_SIGN[k] || {}).signBoss || '') + f('signOps', 'Үйл ажиллагаа хариуцсан захирал', c.signOps || (MR_SIGN[k] || {}).signOps || '') + '</div>' +
     '<div class="row2">' + f('signAcct', 'Нягтлан', c.signAcct || (MR_SIGN[k] || {}).signAcct || '') + '<div></div></div>' +
-    '<div class="row2">' + f('color', 'Өнгө', c.color || B.color || '#1F4E79', '', 'color') + (B.orders ? f('ebFee', 'Буухиагийн нэг хүргэлтийн хөлс (₮)', c.ebFee || 7000, '', 'number') : '<div></div>') + '</div>' +
+    '<div class="row2">' + f('color', 'Өнгө', c.color || B.color || '#1F4E79', '', 'color') + (B.orders ? f('ebFee', 'Буухиагийн нэг хүргэлтийн хөлс (₮)', c.ebFee || 8000, '', 'number') : '<div></div>') + '</div>' +
     '<p class="muted" style="font-size:12.5px">Татварын горим «Хувь хүн» бол e-Balance, ААНОАТ хуудас нуугдана. Хөлс нь хүргэгдсэн захиалга бүрт хүргэлтийн зардал (7124) болж бичигдэнэ.' + (E.biz && E.biz.length > 1 ? ' Энэ компани «' + esc(E.name) + '» хуулийн этгээдэд бусад компанитай хамт байгаа тул горим тэр хуулийн этгээдээр хэвээр.' : '') + '</p>' +
     '<button class="b-btn primary" onclick="saveCompany()">Хадгалах</button></div>';
 }

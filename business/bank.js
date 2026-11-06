@@ -173,7 +173,7 @@ function ordDue(o) {
 function ordEbDone(o) { return !o.confirmed && !!(debtCache().ebDone || {})[o.id]; }   // Буухиа тооцоогоор мөнгө нь орсон
 function ordOpen(o) { return !ordEbDone(o) && (!o.confirmed || ordDue(o) > 0.5); }
 // Буухиа хөлсөө суутгасан зөрүү: зөвхөн хүргэлтийн хөлсний хэмжээнд. Үүнээс их зөрүү бол дутуу төлбөр — авлага хэвээр үлдэнэ
-function ebFeeDiff(o, amt) { var d = r0(ordDue(o) - amt); return d > 0.5 && d <= Math.max(ordFeeAdm(o), ebFeeOf(o.biz)) + 0.5 ? d : 0; }
+function ebFeeDiff(o, amt) { var d = r0(ordDue(o) - amt); return d > 0.5 && d <= Math.max(ordFeeAdm(o), ebFeeOf(o.biz, o.date)) + 0.5 ? d : 0; }
 // Захиалгын төлбөр өмнө нь гараар бичигдсэн бөгөөд банкны мөртэй холбогдоогүй бичилт (ижил данс, ижил дүн)
 function ordPayEntry(o, l) {
   var inf = bankAcctInfo(l.acct), acc = inf ? inf.acc : '', used = bankUsed();
