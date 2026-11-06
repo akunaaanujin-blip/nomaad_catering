@@ -21,8 +21,9 @@ function ebRecFile(inp) {
         var hi = -1, C = {};
         for (var r = 0; r < Math.min(A.length, 15); r++) {
           var H = A[r];
-          C = { code: find(H, /код|code|дугаар|№/, /утас|phone/), phone: find(H, /утас|phone/), got: find(H, /авсан|хураасан|received|collected/),
-                fee: find(H, /хөлс|хүргэлтийн(төлбөр|үнэ)|fee|үйлчилгээ/), net: find(H, /цэвэр|шилжүүлэх|net|тооцоо|үлдэгдэл/), st: find(H, /төлөв|status/) };
+          var f0 = find(H, /^хүргэлт$/);   // Буухиагийн Excel: Хүргэлт_ID, Хүргэлт (хөлс), Нэмэлт, Овор, Оператор, Мессеж_үйлчилгээ
+          C = { code: find(H, /код|code|дугаар|№|хүргэлтid|deliveryid/, /утас|phone/), phone: find(H, /утас|phone/), got: find(H, /авсан|хураасан|received|collected/),
+                fee: f0 >= 0 ? f0 : find(H, /хөлс|хүргэлтийн(төлбөр|үнэ)|fee|үйлчилгээ/, /мессеж/), ad: find(H, /^нэмэлт$/), ov: find(H, /^овор$/), op: find(H, /^оператор$/), ms: find(H, /^мессеж/), net: find(H, /цэвэр|шилжүүлэх|net|тооцоо|үлдэгдэл/), st: find(H, /төлөв|status/) };
           if ((C.code >= 0 || C.phone >= 0) && (C.got >= 0 || C.net >= 0)) { hi = r; break; }
         }
         if (hi < 0) { ebRec = { rows: null, file: f.name, cols: '', err: 'Толгой мөр танигдсангүй — «Код»/«Утас» болон «Авсан мөнгө»/«Цэвэр» багана хэрэгтэй. Эхний мөр: ' + (A[0] || []).join(', ').slice(0, 200) }; ebRecSave(); render(); return; }
@@ -31,10 +32,11 @@ function ebRecFile(inp) {
           var code = C.code >= 0 ? String(v[C.code]).trim() : '', ph = C.phone >= 0 ? String(v[C.phone]).trim() : '';
           if (!code && !ph) return;
           if (/нийт|total/i.test(code + ph)) return;   // нийлбэрийн мөр
-          var got = C.got >= 0 ? ebRecNum(v[C.got]) : 0, fee = C.fee >= 0 ? ebRecNum(v[C.fee]) : 0;
-          rows.push({ code: code, phone: ph, got: got, fee: fee, net: C.net >= 0 ? ebRecNum(v[C.net]) : r0(got - fee), st: C.st >= 0 ? String(v[C.st]) : '' });
+          var ext = ['ad', 'ov', 'op', 'ms'].reduce(function (a, k) { return a + (C[k] >= 0 ? ebRecNum(v[C[k]]) : 0); }, 0);   // хөлсөөс гадуурх нэмэлт төлбөр
+          var got = C.got >= 0 ? ebRecNum(v[C.got]) : 0, fee = (C.fee >= 0 ? ebRecNum(v[C.fee]) : 0) + ext;
+          rows.push({ code: code, phone: ph, got: got, fee: fee, ext: ext, net: C.net >= 0 ? ebRecNum(v[C.net]) : r0(got - fee), st: C.st >= 0 ? String(v[C.st]) : '' });
         });
-        var used = Object.keys(C).filter(function (k) { return C[k] >= 0; }).map(function (k) { return { code: 'Код', phone: 'Утас', got: 'Авсан', fee: 'Хөлс', net: 'Цэвэр', st: 'Төлөв' }[k] + ' = «' + Hd[C[k]] + '»'; }).join(' · ');
+        var used = Object.keys(C).filter(function (k) { return C[k] >= 0; }).map(function (k) { return { code: 'Код', phone: 'Утас', got: 'Авсан', fee: 'Хөлс', ad: 'Нэмэлт', ov: 'Овор', op: 'Оператор', ms: 'Мессеж', net: 'Цэвэр', st: 'Төлөв' }[k] + ' = «' + Hd[C[k]] + '»'; }).join(' · ');
         ebRec = { rows: rows, file: f.name, cols: used + (C.net < 0 ? ' · Цэвэр = Авсан − Хөлс' : ''), err: '' };
       } catch (e) { ebRec = { rows: null, file: f.name, cols: '', err: 'Файл уншиж чадсангүй: ' + e.message }; }
       ebRecSave(); render();
