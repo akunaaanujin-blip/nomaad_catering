@@ -299,3 +299,34 @@ body.bz-admin{--b-blue:var(--primary);--b-blue-d:var(--primary-hover);--accent:v
   .bz-admin #view table.mr-t tr.mr-hd td,.bz-admin #view table.mr-t tr.mr-sub td,.bz-admin #view table.mr-t tr.mr-tot td{background:#E6E6E6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .bz-admin #view table.mr-t th{background:#F0F0F0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+/* ═══ Загвар 2 «Бараан цэстэй» (2026-11-12): Roboto, бараан цэс, ногоон хөх үндсэн өнгө ═══ */
+:root{
+  --primary:#0F766E;--primary-hover:#0B5E58;--primary-soft:#E6F4F2;--sidebar:#1E293B;--row-l1:#0F766E;--row-l2:#E6F4F2;--row-tot:#EEF2F6;--sub-line:#5EB3A9;
+  --bg:#F4F6F8;--surface-alt:#F8FAFC;--border:#E5E7EB;--text:#1F2933;--text-2:#475569;--text-3:#94A3B8;--info:#0F766E;--info-soft:#E6F4F2;
+  --nav-2:#273449;--nav-ink:#CBD5E1;--nav-ink-2:#94A3B8;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) body.bz-admin{--primary:#5EEAD4;--on-primary:#0F141A;--primary-hover:#99F6E4;--primary-soft:#123331;--sidebar:#0B1220;--row-l1:#134E4A;--row-l2:#163B39;--row-tot:#1C2733;--sub-line:#2DD4BF;--info:#5EEAD4;--info-soft:#123331;--nav-2:#111A2B}
+}
+:root[data-theme="dark"] body.bz-admin{--primary:#5EEAD4;--on-primary:#0F141A;--primary-hover:#99F6E4;--primary-soft:#123331;--sidebar:#0B1220;--row-l1:#134E4A;--row-l2:#163B39;--row-tot:#1C2733;--sub-line:#2DD4BF;--info:#5EEAD4;--info-soft:#123331;--nav-2:#111A2B}
+body.bz-admin,.bz-admin button,.bz-admin input,.bz-admin select,.bz-admin textarea{font-family:"Roboto","Noto Sans",system-ui,sans-serif}
+.bz-admin b,.bz-admin strong,.bz-admin th,.bz-admin h1,.bz-admin h2,.bz-admin h3{font-weight:500}
+.fn-brand{background:var(--sidebar);border-bottom-color:rgba(255,255,255,.08)}
+.fn-brand b{color:#fff}.fn-logo{background:var(--primary);color:#fff}
+.fn-col{background:var(--sidebar)}
+.fn-gb{color:var(--nav-ink-2)}.fn-gb:hover{background:rgba(255,255,255,.06);color:#fff}.fn-gb.on{color:#fff}
+.fn-gb.sel{background:rgba(255,255,255,.10);color:#fff;box-shadow:inset 3px 0 0 var(--sub-line)}
+.fn-panel{background:var(--nav-2);border-right:0}
+.fn-panel li button{color:var(--nav-ink)}
+.fn-panel li button:hover{background:rgba(255,255,255,.06);color:#fff}
+.fn-panel li button.on,.fn-panel li button.on:hover{background:#0F766E;color:#fff;box-shadow:none}
+.fn-panel li.fn-sub,.fn-panel li button.fn-subh{color:var(--nav-ink-2)}.fn-panel li button.fn-subh:hover{color:#fff}
+.fn-panel h2,.fn-panel h3,.fn-panel b{color:#fff}
+.bz-admin #view table.rep-t th,.bz-admin #view .fd-t th{background:#F1F5F9;color:#475569;font-weight:500}
+.fn-ph{color:#fff;font-weight:500}
+.bz-admin .subnav{background:var(--nav-2);border-right:0;color:var(--nav-ink)}
+.bz-admin .subnav .fn-h,.bz-admin .subnav .fn-top{color:#fff}.bz-admin .subnav .fn-h:hover,.bz-admin .subnav .fn-top:hover{background:rgba(255,255,255,.06)}
+.bz-admin .subnav .fn-g li button{color:var(--nav-ink)}.bz-admin .subnav .fn-g li button:hover{background:rgba(255,255,255,.06);color:#fff}
+.bz-admin .subnav .fn-g li button.on,.bz-admin .subnav .fn-top.on{background:#0F766E;color:#fff;box-shadow:none}
+.bz-admin .subnav .fn-i{color:var(--nav-ink-2)}
