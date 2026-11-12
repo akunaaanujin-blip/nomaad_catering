@@ -272,6 +272,8 @@ function buildJournal(biz, R) {
   // 8-р ээлж: цуцлалтын орлого 6001 «Борлуулалтын буцаалт»-д (Хасах: буцаалт). Бараа буцаж ирсэн (saleDone returned) бол буцаалтын мөр
   // ердийнхөөрөө Дт 6001 / Кт авлага + Дт 1404 / Кт 6101 бичнэ; буцаалтын мөр хараахан үүсээгүй (yes:) үед л цуцалсан өдөр Дт 6001 / Кт авлага.
   var EBC = {}; Object.keys(ORD).forEach(function (id) { var k = /^(yes:|returned)/.test(ORD[id].saleDone || '') && ordEbCancel(ORD[id]); if (k) EBC[id] = k; });   // буцаж ирсэн ч цуцалсан өдрийн бичилт хэвээр
+  // Буухиа хураасан (#EBR) бичилттэй захиалга — «confirmed» тэмдэг хадгалагдаагүй ч авлага нь хэрэглэгч дээр (хураасан бичилт тэр нэрээр хаадаг); цуцалсан (#EBX) бол буцна
+  var EBR = {}; (R.journal || []).forEach(function (j) { if (j.biz && j.biz !== biz) return; if (j.cr !== '1201' && j.dr !== '1201') return; var t = String(j.desc || ''), m = t.match(/#(O\d+) #EB([RX]):/); if (!m || j.partner === BUUHIA) return; EBR[m[1]] = (EBR[m[1]] || 0) + (m[2] === 'R' ? 1 : -1); });
   var DUP = dupReturns(biz, R);   // нэг захиалгын давхар буцаалтын мөр — журналд бичихгүй
   R.records.forEach(function (x) {
     if (x.biz !== biz) return;
@@ -280,7 +282,7 @@ function buildJournal(biz, R) {
     var a = Number(x.amount) || 0, d = x.date;
     if (x.type === 'sale') {
       var oo = ORD[x.bill] && x.pay === 'Шилжүүлэг' ? ORD[x.bill] : null;
-      var cash = oo ? '1201' : salePayAcc(biz, x.pay) || '10003', cust = oo ? ordParty(oo) : x.pay === 'StorePay' ? 'StorePay' : x.pay === 'Зээлээр' || x.pay === 'Урьдчилгаа' ? (x.customer || '(нэргүй харилцагч)') : '';
+      var cash = oo ? '1201' : salePayAcc(biz, x.pay) || '10003', cust = oo ? (EBR[oo.id] > 0 ? (oo.customer ? oo.customer + ' ' : '') + oo.phone : ordParty(oo)) : x.pay === 'StorePay' ? 'StorePay' : x.pay === 'Зээлээр' || x.pay === 'Урьдчилгаа' ? (x.customer || '(нэргүй харилцагч)') : '';
       var item = String(x.item).replace(/ \(буцаалт\)$/, ''), bt = cust === BUUHIA_T ? ' #' + x.bill : '';   // олон захиалга нэг харилцагчид — #ID-аар өөрийн авлагаас хасна
       var c = Math.abs(ce.rec[x.id] || 0);
       // StorePay мөнгөө 8% суутгаж шилжүүлдэг — борлуулалтын мөр бүрт шимтгэлийг зардалд (Дт 7201 / Кт 1201 StorePay), авлага 92% үлдэнэ
