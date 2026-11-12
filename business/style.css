@@ -1669,3 +1669,11 @@ body.pos10 .login,body:not(.bz-admin) .login{background:linear-gradient(180deg,#
 body:not(.bz-admin) .login .btn{background:#1F4E79}
 body.pos10 .sum-sub{color:#6B7280}
 body:not(.bz-admin) .login a{color:#1F4E79}
+/* Хүргэлтийн самбарын табууд — тод, том (2026-11-12) */
+.eb-tabs{gap:8px;border-bottom:0;margin:8px 0 14px}
+.eb-tabs button{font-size:15px;font-weight:700;color:#1F2937;padding:9px 14px;border:1.5px solid #D1D5DB;border-radius:8px;background:#fff;margin-bottom:0}
+.eb-tabs button small{font-size:14px;font-weight:700;color:#374151;margin-left:4px}
+.eb-tabs button:hover{border-color:#6B7280}
+.eb-tabs button.on,body.pos10 .eb-tabs button.on{background:#111827;border-color:#111827;color:#fff}
+.eb-tabs button.on small{color:#fff}
+body.pos10 .eb-tabs button.on{background:var(--p);border-color:var(--p)}

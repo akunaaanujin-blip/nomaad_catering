@@ -293,7 +293,7 @@ function shipOrders(ids, to, done) {
 }
 
 // ── Жагсаалт ──
-var ORD_TABS = [['new', 'Илгээх'], ['sent', 'Буухиад'], ['back', 'Буцаасан, цуцалсан'], ['all', 'Бүгд']];   // «Төлбөр ороогүй» таб нуусан (2026-11-12)
+var ORD_TABS = [['new', 'Илгээх'], ['sent', 'Хүргэлтэд'], ['back', 'Буцаасан, цуцалсан'], ['all', 'Бүгд']];   // «Төлбөр ороогүй» таб нуусан (2026-11-12)
 function ordFilter(o) {
   if (ordTab === 'bills') return false;   // өнөөдрийн баримт — тусдаа жагсаалт (todayList)
   if (ordTab === 'new') return o.status === 'Шинэ';
