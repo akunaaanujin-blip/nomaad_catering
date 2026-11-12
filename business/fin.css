@@ -330,3 +330,17 @@ body.bz-admin,.bz-admin button,.bz-admin input,.bz-admin select,.bz-admin textar
 .bz-admin .subnav .fn-g li button{color:var(--nav-ink)}.bz-admin .subnav .fn-g li button:hover{background:rgba(255,255,255,.06);color:#fff}
 .bz-admin .subnav .fn-g li button.on,.bz-admin .subnav .fn-top.on{background:#0F766E;color:#fff;box-shadow:none}
 .bz-admin .subnav .fn-i{color:var(--nav-ink-2)}
+/* Хүснэгт (загвар 2): бүлгийн мөр цайвар, зүүн талд нарийн өнгөт зураас; мөрүүд нам, огноо нэг мөрөнд */
+.bz-admin #view tr.dcat td{background:#F1F5F9;color:var(--text);font-weight:500;border-top:1px solid var(--border);padding-top:9px;padding-bottom:9px}
+.bz-admin #view tr.dcat td:first-child{box-shadow:inset 3px 0 0 var(--primary)}
+.bz-admin #view tr.dcat td:nth-child(n+4){color:var(--text)}
+.bz-admin #view tr.dcat a.dl,.bz-admin #view tr.dcat .muted{color:var(--text-2)}
+.bz-admin #view tr.dcat td:nth-child(3){color:var(--text-2);font-weight:400}
+.bz-admin #view table.rep-t tr.b td,.bz-admin #view .fd-t tr.fd-g td{background:#F8FAFC;font-weight:500}
+.bz-admin #view tr.ddoc td{font-weight:400;font-size:13px;color:var(--text);padding-top:7px;padding-bottom:7px}
+.bz-admin #view tr.ddoc td:nth-child(3){color:var(--text-2)}
+.bz-admin #view table.rep-t td,.bz-admin #view table.rep-t th{white-space:normal}
+.bz-admin #view table.rep-t td:nth-child(2),.bz-admin #view table.rep-t th:nth-child(2),.bz-admin #view table.rep-t td.n,.bz-admin #view table.rep-t th.n{white-space:nowrap}
+.bz-admin #view table.rep-t tr.tot td{font-weight:500}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bz-admin #view tr.dcat td{background:#1C2733}}
+:root[data-theme="dark"] .bz-admin #view tr.dcat td{background:#1C2733}
