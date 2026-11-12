@@ -300,8 +300,6 @@ function buildJournal(biz, R) {
       var c = Math.abs(ce.rec[x.id] || 0);
       // StorePay мөнгөө 8% суутгаж шилжүүлдэг — борлуулалтын мөр бүрт шимтгэлийг зардалд (Дт 7201 / Кт 1201 StorePay), авлага 92% үлдэнэ
       var spf = x.pay === 'StorePay' && !oo ? Math.round(Math.abs(a) * SP_FEE) : 0;
-      if (spf) { if (a > 0) add(d, 'StorePay шимтгэл', x.id + '-spf', '7201', '1201', spf, 'StorePay шимтгэл ' + SP_FEE * 100 + '% · ' + item + ' #' + x.bill, 'StorePay', x.bill);
-                 else if (a < 0) add(d, 'StorePay шимтгэл (буцаалт)', x.id + '-spf', '1201', '7201', spf, 'StorePay шимтгэл буцаав · ' + item + ' #' + x.bill, 'StorePay', x.bill); }
       if (baseItem(x.item) === SPLIT_ITEM) {   // хуваан төлсөн: орлого өөрчлөгдөхгүй, мөнгө нэг хэлбэрээс нөгөөд
         if (a >= 0) add(d, 'Төлбөр хуваалт', x.id, cash, '5101', a, 'Хуваан төлсөн (' + (x.pay || 'Бэлэн') + ')' + bt, cust, x.bill);
         else add(d, 'Төлбөр хуваалт', x.id, '5101', cash, -a, 'Хуваан төлсөн (' + (x.pay || 'Бэлэн') + ')' + bt, cust, x.bill);
@@ -311,6 +309,7 @@ function buildJournal(biz, R) {
         var kd = EBC[x.bill];
         if (kd && a > 0) return;   // буухиа цуцалсан захиалгын буцаалтын мөр — хөнгөлөлт цуцлах үед буцаагдсан
         add(d, 'Борлуулалтын хөнгөлөлт', x.id, '6002', cash, -a, (oo ? 'Хөнгөлөлт (захиалга, авлага)' : 'Хөнгөлөлт · баримт ' + (x.bill || '')) + bt, cust, x.bill);   // захиалгад баримт (И-баримт) гардаггүй
+        if (spf && a < 0) add(d, 'StorePay шимтгэл (хөнгөлөлт)', x.id + '-spf', '1201', '7201', spf, 'StorePay шимтгэл · хөнгөлөлтийн хэсэг #' + x.bill, 'StorePay', x.bill);
         if (kd && a < 0 && !(R.closed && kd.date <= R.closed)) add(kd.date, 'Буухиа цуцалсан', x.id + '-ebc', cash, '6002', -a, 'Буухиа ' + kd.kind + ' · хөнгөлөлт буцаав #EBC:' + x.bill + bt, cust, x.bill);
         return;
       }
@@ -318,6 +317,7 @@ function buildJournal(biz, R) {
       var ownFee = isNonGoods(item) && !isAdj(item);   // хүргэлтийн төлбөр, үйлчилгээ — 5102 үйлчилгээний (хүргэлтийн) орлого, барааны орлогоос тусдаа
       if (a >= 0) {
         add(d, 'Борлуулалт', x.id, cash, ownFee ? '5102' : '5101', a, item + ' × ' + x.qty + ' (' + (oo ? 'захиалга, авлага' : x.pay || 'Бэлэн') + ')' + (bt ? ' · ' + (oo.customer ? oo.customer + ' ' : '') + oo.phone : ''), cust, x.bill);
+        if (spf) add(d, 'StorePay шимтгэл', x.id + '-spf', '7201', '1201', spf, 'StorePay шимтгэл ' + SP_FEE * 100 + '% · ' + item + ' #' + x.bill, 'StorePay', x.bill);   // борлуулалтын дараа — авлагаас «хассан» гэж харагдана
         // Хуучин (EB_PAY_FROM-оос өмнө буухиад өгсөн) захиалга: буухиад өгмөгц Дт 7124 / Кт 3101 Өглөг (Буухиа). Шинэд өглөг зөвхөн тооцоо нийлэхэд үүснэ
         if (oo && isFee(item) && oo.ebCode !== 'бусад' && ebFeeAuto(d)) add(d, 'Буухиагийн хөлс', x.id, '7124', '3101', a, 'Хүргэлт · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
         if (c) add(d, 'Борлуулалт · өртөг', x.id, '6101', '1404', c, item + ' × ' + x.qty);
@@ -329,6 +329,7 @@ function buildJournal(biz, R) {
         }
       } else {
         if (!EBC[x.bill]) add(d, 'Борлуулалтын буцаалт', x.id, '6001', cash, -a, item + ' × ' + Math.abs(x.qty) + bt, cust, x.bill);   // буухиа цуцалсан бол орлого аль хэдийн буцаагдсан
+        if (spf) add(d, 'StorePay шимтгэл (буцаалт)', x.id + '-spf', '1201', '7201', spf, 'StorePay шимтгэл буцаав · ' + item + ' #' + x.bill, 'StorePay', x.bill);
         // буцаасан/цуцалсан хүргэлтэд буухиа хөлс авдаггүй — хүргэх үед бичсэн өглөгийг буцаана
         if (oo && isFee(item) && oo.ebCode !== 'бусад' && ebFeeAuto(EB_FEE_DATE[oo.id] || d)) add(d, 'Буухиагийн хөлс (буцаалт)', x.id, '3101', '7124', -a, 'Хүргэлт буцаасан · ' + oo.phone + ' #' + oo.id, BUUHIA, x.bill);
         if (c && EBC[x.bill]) add(d, 'Буцаалт хүлээн авсан', x.id, '1404', '1209', c, item + ' × ' + Math.abs(x.qty) + ' · буухиагаас буцаж ирсэн #' + x.bill, BUUHIA_G, x.bill);
