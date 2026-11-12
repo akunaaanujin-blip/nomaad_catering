@@ -337,7 +337,7 @@ function renderOrders() {
   $('orderTabs').innerHTML = ORD_TABS.map(function (t) { return '<button class="' + (ordTab === t[0] ? 'on' : '') + '" onclick="ordTab=\'' + t[0] + '\';renderOrders()">' + t[1] + ' <small>' + cnt(t[0]) + '</small></button>'; }).join('');
   if (typeof renderNav === 'function') renderNav();
   var list = (ordQ.trim() ? orders : orders.filter(ordFilter)).filter(ordMatch).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
-  var STC = { 'Шинэ': 'n', 'Буухиад өгсөн': 'b', 'Хүргэгдсэн': 'g', 'Буцаасан': 'r', 'Цуцалсан': 'n' };   // удирдлагын хуудастай ижил өнгө
+  var STC = { 'Шинэ': 'n', 'Буухиад өгсөн': 'b', 'Хүргэгдсэн': 'g', 'Буцаасан': 'r', 'Цуцалсан': 'r' };   // бусад хүргэлтэд яваа — шар (y)   // удирдлагын хуудастай ижил өнгө
   var row = function (o, idx) {
     var fee = ordFee(o), opts = [];
     if (o.status === 'Шинэ') opts.push(['s:Буухиад өгсөн', 'Буухиад өгсөн'], ['s:Цуцалсан', 'Цуцлах']);
@@ -356,7 +356,7 @@ function renderOrders() {
       '<td class="c-a" data-l="Хаяг">' + esc([o.city && o.city !== 'Улаанбаатар' ? o.city : '', o.district, o.address].filter(Boolean).join(' ')).slice(0, 80) + '</td>' +
       '<td class="c-i" data-l="Бараа">' + esc(ordItemsText(o)) + '</td>' +
       '<td class="c-m num" data-l="Дүн">' + fmt(o.amount) + (fee ? '<small>хүргэлт ' + fmt(fee) + '</small>' : '') + '</td>' +
-      '<td class="c-s" data-l="Төлөв"><span class="st ' + (STC[o.status] || 'b') + '">' + esc(ordStName(o)) + '</span>' + ret +
+      '<td class="c-s" data-l="Төлөв"><span class="st ' + (o.ebCode === 'бусад' && o.status === 'Буухиад өгсөн' ? 'y' : STC[o.status] || 'b') + '">' + esc(ordStName(o)) + '</span>' + ret +
         '<small><span class="st ' + (o.confirmed || o.paid === 'Орсон' ? 'g' : 'n') + '">' + (o.confirmed ? 'Төлбөр баталгаажсан' : 'Төлбөр ' + esc((o.paid || 'Ороогүй').toLowerCase())) + '</span></small></td>' +
       '<td class="c-x" data-l="">' + (o.pending ? '' : '<button class="mini lbl-q" onclick="lblQuick([\'' + o.id + '\'])" title="Шошго хэвлэх">Хэвлэх</button>') + acts + '</td></tr>';
   };
@@ -452,10 +452,14 @@ function renderDlv() {
   };
   var dupHtml = dups.length ? '<div class="card" style="border-left:3px solid #B45309"><b>Шийдэх ' + dups.length + '</b> <small class="muted">— давхар байж болзошгүй (ижил утас, бараа 48 цагт)</small>' + dups.map(function (o) {
       return '<div style="margin-top:6px">⚠ ' + esc((o.customer ? o.customer + ' ' : '') + o.phone + ' · ' + ordItemsText(o) + ' · ' + fmt(o.amount)) + ' <button class="mini" onclick="quickOrd(\'' + o.id + '\',\'status\',\'Цуцалсан\')">Цуцлах</button> <button class="mini" onclick="dlvNotDup[\'' + o.id + '\']=1;renderDlv()">Давхар биш</button></div>'; }).join('') + '</div>' : '';
+  var going = orders.filter(function (o) { return o.status === 'Буухиад өгсөн' && o.ebCode === 'бусад'; }).sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });   // бусад хүргэлтээр гарсан, хүргэгдээгүй
+  var goingHtml = going.length ? '<div class="card" style="border-left:3px solid #D97706"><h2 style="margin:0">Бусад хүргэлтэд яваа <small class="muted" style="font-weight:400">' + going.length + '</small></h2>' +
+      going.map(function (o) { return '<div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap"><span style="flex:1;min-width:200px">' + esc(o.date + ' · ' + (o.customer ? o.customer + ' ' : '') + o.phone + ' · ' + ordItemsText(o) + ' · ' + fmt(o.amount)) + '</span>' +
+        '<button class="btn sm" onclick="quickOrd(\'' + o.id + '\',\'status\',\'Хүргэгдсэн\')">Хүргэгдсэн</button> <button class="btn sm ghost2" onclick="quickOrd(\'' + o.id + '\',\'status\',\'Буцаасан\')">Буцаасан</button></div>'; }).join('') + '</div>' : '';
   var otherHtml = other.length ? '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Бусад хүргэлтээр <small class="muted" style="font-weight:400">«Шинэ» ' + other.length + '</small></h2>' +
       '<button class="btn sm" onclick="dlvOther(' + esc(JSON.stringify(other.map(function (o) { return o.id; }))) + ')"' + (dlvBusy ? ' disabled' : '') + '>Гаргах (' + other.length + ')</button></div>' +
       other.map(function (o) { return '<div style="margin-top:6px">' + esc((o.customer ? o.customer + ' ' : '') + o.phone + ' · ' + ordItemsText(o) + ' · ' + fmt(o.amount)) + '</div>'; }).join('') + '</div>' : '';
-  w.innerHTML = ebGoneHtml(dlvGone, 'card') + dupHtml + otherHtml + (fresh.length ? '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиа руу илгээх <small class="muted" style="font-weight:400">«Шинэ» захиалга ' + fresh.length + '</small></h2>' +
+  w.innerHTML = ebGoneHtml(dlvGone, 'card') + dupHtml + otherHtml + goingHtml + (fresh.length ? '<div class="card"><div class="ord-bar"><h2 style="margin:0;flex:1">Буухиа руу илгээх <small class="muted" style="font-weight:400">«Шинэ» захиалга ' + fresh.length + '</small></h2>' +
       '<button class="btn sm ghost2" onclick="dlvOther()"' + (nSel && !dlvBusy ? '' : ' disabled') + '>Бусад хүргэлтээр (' + nSel + ')</button>' +
       '<button class="btn sm ghost2" onclick="var ids=Object.keys(dlvSel).filter(function(k){return dlvSel[k]});if(ids.length)openLabels(ids)"' + (nSel ? '' : ' disabled') + '>Шошго хэвлэх</button>' +
       '<button class="btn sm" onclick="dlvSend()"' + (nSel && !dlvBusy ? '' : ' disabled') + '>Сонгосныг илгээх' + (nSel ? ' (' + nSel + ')' : '') + '</button></div>' +

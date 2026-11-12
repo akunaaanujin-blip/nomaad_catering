@@ -132,7 +132,7 @@ function remCancel(id) {
 function stTag(txt, cls) { return { __html: '<span class="st ' + cls + '">' + esc(txt) + '</span>', toString: function () { return txt; } }; }
 function ordStTag(o) {
   if (ordEbCancel(o)) { var k = ordEbCancel(o); return stTag('Цуцалсан, буцаасан' + (k.why ? ' · ' + k.why : '') + (/^yes:/.test(o.saleDone || '') ? ' · бараа буухиад' : ''), 'r'); }
-  var s = o.status, L = { 'Шинэ': ['Шинэ', 'n'], 'Буухиад өгсөн': [o.ebCode === 'бусад' ? 'Бусад хүргэлтэд' : 'Буухиад өгсөн', 'b'], 'Хүргэгдсэн': ['Хүргэгдсэн', 'g'], 'Цуцалсан': ['Цуцалсан', 'n'], 'Буцаасан': ['Буцаасан', 'r'] }[s] || [s || '—', 'n'];
+  var s = o.status, L = { 'Шинэ': ['Шинэ', 'n'], 'Буухиад өгсөн': [o.ebCode === 'бусад' ? 'Бусад хүргэлтэд' : 'Буухиад өгсөн', o.ebCode === 'бусад' ? 'y' : 'b'], 'Хүргэгдсэн': ['Хүргэгдсэн', 'g'], 'Цуцалсан': ['Цуцалсан', 'r'], 'Буцаасан': ['Буцаасан', 'r'] }[s] || [s || '—', 'n'];
   return stTag(L[0], L[1]);
 }
 function payStTag(o) {
