@@ -88,8 +88,21 @@ function accHidden(code) { return !!(ACC[code] && ACC[code].hide); }
 var BUUHIA = 'Буухиа', BUUHIA_G = 'Буухиа (буцаалтын бараа)', BUUHIA_T = 'Буухиад байгаа бараа';
 // Захиалгын авлага хэн дээр: Буухиад илгээгдсэн бараа хүргэгдэх хүртэл «Буухиад байгаа бараа»; үнийн дүнтэй (ebCod 1) нь хүргэгдсэн ч
 // хураасан мөнгө бичигдэх хүртэл тэнд, дараа нь Буухиа хураасан мөнгө; үнийн дүнгүй нь хүргэгдмэгц захиалагчийн авлага. Төлбөр баталгаажвал захиалагч дээр хаагдана.
+// Буухиа хүргэсэн ч мөнгө хураагаагүй (received_money 0) хүргэлт — авлага буухиа дээр биш, захиалагч дээр (удирдлагын хуудсанд буухиагийн жагсаалт ачаалсан үед)
+var _ebNoCod = { k: null, M: {} };
+function ebNoCod(o) {
+  var L = typeof ebAdm !== 'undefined' && ebAdm && ebAdm.biz === o.biz && ebAdm.list, raw = '';
+  if (!L) { try { raw = sessionStorage.getItem('nb_ebadm_' + o.biz) || ''; } catch (e) {} }   // буухиа хуудсыг энэ удаад нээгээгүй бол кэшээс
+  var k = L || o.biz + raw.length + raw.slice(-40);
+  if (_ebNoCod.k !== k) {
+    if (!L && raw) { try { L = (JSON.parse(raw) || {}).list; } catch (e) {} }
+    var M = {}; (L || []).forEach(function (x) { if (Number(x.st) === 10 && !(Number(x.got) > 0)) { if (x.ext) M[x.ext] = 1; if (x.code) M['c:' + x.code] = 1; } });
+    _ebNoCod = { k: k, M: M };
+  }
+  return !!(_ebNoCod.M[o.id] || (o.ebCode && _ebNoCod.M['c:' + o.ebCode]));
+}
 function ordParty(o) {
-  if (!o.confirmed && o.ebCode && o.ebCode !== 'бусад' && (o.status === 'Буухиад өгсөн' || (o.status === 'Хүргэгдсэн' && String(o.ebCod) === '1'))) return BUUHIA_T;
+  if (!o.confirmed && !ebNoCod(o) && o.ebCode && o.ebCode !== 'бусад' && (o.status === 'Буухиад өгсөн' || (o.status === 'Хүргэгдсэн' && String(o.ebCod) === '1'))) return BUUHIA_T;
   return (o.customer ? o.customer + ' ' : '') + o.phone;
 }
 // Буухиагийн өглөг зөвхөн «Буухиа тооцоо» нийлэх үед үүснэ. Үүнээс өмнөх огноотой захиалгад хөлсийг хүргэх үед өглөгөөр бичдэг байсан (хуучин хаалтууд таарахын тулд хэвээр).
