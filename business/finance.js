@@ -398,7 +398,7 @@ function repDebts(E, k, flt) {
     var L = G[w], p = oi.P[w] || { open: [], over: 0 }, left = L.reduce(function (a, it) { return a + it.amt - it.paid; }, 0) - (p.over || 0);
     return { w: w, L: L, left: left, open: L.filter(function (it) { return !it.closed; }) };
   }).filter(function (g) { return g.L.some(keep) || (flt === 'open' && Math.abs(g.left) > 0.5 && !g.L.length && hasQ(g.w)); }).forEach(function (g) {
-    g.amt = (flt === 'open' ? g.open : g.L).reduce(function (a, it) { return a + it.amt; }, 0);   // хаагдаагүйг харж байхад хаагдсан баримт нийт дүнд орохгүй g.cat = debtCat(k, g); GL.push(g);
+    g.amt = (flt === 'open' ? g.open : g.L).reduce(function (a, it) { return a + it.amt; }, 0); g.cat = debtCat(k, g); GL.push(g);   // хаагдаагүйг харж байхад хаагдсан баримт нийт дүнд орохгүй
   });
   // бүлэг (харилцагчийн төрөл) → харилцагч → баримт
   var C = {}, cats = [];
