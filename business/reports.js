@@ -753,21 +753,24 @@ function repBoost(R, biz, from, to) {
     total: { key: 'Нийт', usd: sum(rows, '_usd') ? '$' + sum(rows, '_usd') : '', boost: sum(rows, 'boost'), qty: sum(rows, 'qty'), before: sum(rows, 'before'), orders: tq, cpo: tq ? Math.round(sum(rows, 'boost') / tq) : '', sales: sum(rows, 'sales'), uplift: sum(rows, 'uplift'), net: sum(rows, 'net') },
     note: 'Нэмэлт ашиг = boost үеийн нийт ашиг (борлуулалт − өртөг) − өмнөх ижил үеийн нийт ашиг; Цэвэр үр дүн = нэмэлт ашиг − boost зардал (≥ 0 бол ашигтай). Boost үе = эхэлсэн өдрөөс хоногийн тоогоор (дуусаагүй бол өнөөдрийг хүртэл); «Өмнөх ижил үе» — түүнээс өмнөх ижил олон хоног. Захиалга — тэр хугацаанд тухайн бараатай ирсэн Cozy захиалга. Boost — зөвхөн бүртгэл, санхүүд банкны хуулгаар (7205) орно.' };
 }
-// Хөнгөлөлт ба буцаалт: хэн, хэдэн, ямар шалтгаанаар
+// Хөнгөлөлт ба буцаалт: нэг буцаалт (баримт) = нэг мөр (бараа + хүргэлтийн төлбөр хамт)
 function repDiscRet(R, biz, from, to) {
-  var list = salesIn(R, biz, from, to), rows = [];
+  var list = salesIn(R, biz, from, to), rows = [], G = {};
   list.forEach(function (x) {
     var a = Number(x.amount) || 0;
-    if (baseItem(x.item) === DISC_ITEM && a < 0) rows.push({ date: x.date + ' ' + (x.time || ''), kind: 'Хөнгөлөлт', staff: x.staff || '', item: String(x.note || '').replace(/^Хөнгөлөлт /, ''), why: '', amount: r0(-a), _bill: billKey(x) });
-    else if (/ \(буцаалт\)$/.test(x.item) && !isAdj(x.item)) rows.push({ date: x.date + ' ' + (x.time || ''), kind: 'Буцаалт', staff: x.staff || '', item: baseItem(x.item) + ' ×' + Math.abs(x.qty),
-      why: String(x.note || '').replace(/^Буцаалт:? ?/, '').replace(/^· /, ''), amount: r0(-a), _bill: billKey(x) });
+    if (baseItem(x.item) === DISC_ITEM && a < 0) { rows.push({ date: x.date + ' ' + (x.time || ''), kind: 'Хөнгөлөлт', staff: x.staff || '', item: String(x.note || '').replace(/^Хөнгөлөлт /, '').replace(/ · [^·]*$/, ''), why: '', amount: r0(-a), _bill: billKey(x) }); return; }
+    if (!/ \(буцаалт\)$/.test(x.item) || isAdj(x.item)) return;
+    var k = billKey(x) + '|' + x.date, g = G[k], nm = baseItem(x.item), fee = isFee(nm);
+    if (!g) { g = G[k] = { date: x.date + ' ' + (x.time || ''), kind: 'Буцаалт', staff: x.staff || '', it: [], fee: 0, why: String(x.note || '').replace(/^Буцаалт:? ?/, '').replace(/^· /, ''), amount: 0, _bill: billKey(x) }; rows.push(g); }
+    if (fee) g.fee += -a; else g.it.push(nm + (Math.abs(x.qty) !== 1 ? ' ×' + Math.abs(x.qty) : ''));
+    g.amount = r0(g.amount - a);
   });
+  rows.forEach(function (r) { if (r.it) { r.item = r.it.join(', ') + (r.fee ? (r.it.length ? ' + ' : '') + 'хүргэлт ' + fmt(r.fee) : ''); delete r.it; delete r.fee; } });
   rows.sort(function (a, b) { return a.date < b.date ? 1 : -1; });
-  var by = {}; rows.forEach(function (r) { var k = r.kind + ' · ' + (r.staff || '—'); by[k] = (by[k] || 0) + r.amount; });
-  var sumD = rows.filter(function (r) { return r.kind === 'Хөнгөлөлт'; }).reduce(function (a, r) { return a + r.amount; }, 0), sumR = rows.filter(function (r) { return r.kind === 'Буцаалт'; }).reduce(function (a, r) { return a + r.amount; }, 0);
-  return { title: 'Хөнгөлөлт, буцаалт', cols: [c('date', 'Огноо'), c('kind', 'Төрөл'), c('staff', 'Ажилтан'), c('item', 'Бараа / хэмжээ'), c('why', 'Шалтгаан'), m('amount', 'Дүн')], rows: rows,
-    total: { date: 'Нийт', item: 'Хөнгөлөлт ' + fmt(sumD) + ' · Буцаалт ' + fmt(sumR), amount: r0(sumD + sumR) },
-    note: Object.keys(by).length ? 'Ажилтнаар: ' + Object.keys(by).map(function (k) { return k + ' ' + fmt(by[k]); }).join(' · ') : '' };
+  var D = rows.filter(function (r) { return r.kind === 'Хөнгөлөлт'; }), B = rows.filter(function (r) { return r.kind === 'Буцаалт'; });
+  var sum = function (L) { return L.reduce(function (a, r) { return a + r.amount; }, 0); };
+  return { title: 'Хөнгөлөлт, буцаалт', cols: [c('date', 'Огноо'), c('kind', 'Төрөл'), c('item', 'Бараа'), c('why', 'Шалтгаан'), c('staff', 'Хэн'), m('amount', 'Дүн')], rows: rows,
+    total: { date: 'Нийт', item: 'Буцаалт ' + B.length + ' · ' + fmt(sum(B)) + '   Хөнгөлөлт ' + D.length + ' · ' + fmt(sum(D)), amount: r0(sum(D) + sum(B)) } };
 }
 // Удаан эргэлттэй бараа: үлдэгдэлтэй боловч сүүлийн N хоногт зарагдаагүй (мөнгө хөлдсөн)
 function repSlow(R, biz, days, stockMap) {
