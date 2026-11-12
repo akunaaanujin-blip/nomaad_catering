@@ -1677,3 +1677,10 @@ body:not(.bz-admin) .login a{color:#1F4E79}
 .eb-tabs button.on,body.pos10 .eb-tabs button.on{background:#111827;border-color:#111827;color:#fff}
 .eb-tabs button.on small{color:#fff}
 body.pos10 .eb-tabs button.on{background:var(--p);border-color:var(--p)}
+/* Бараа буцаж ирэх (хүлээн аваагүй) — анзаарагдахуйц */
+#orderTabs button.tab-alert{color:#B91C1C;font-weight:700}
+#orderTabs button.tab-alert small{background:#DC2626;color:#fff;border-radius:999px;padding:1px 7px}
+#orderTabs button.tab-alert.on{color:#fff}
+tr.tr-ret td{background:#FFF7ED!important}
+tr.tr-ret td:first-child{box-shadow:inset 4px 0 0 #EA580C}
+.ret-btn{display:block;margin-top:6px;background:#EA580C!important;border-color:#EA580C!important;color:#fff!important;font-weight:700;white-space:nowrap}

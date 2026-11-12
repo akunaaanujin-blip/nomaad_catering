@@ -293,12 +293,13 @@ function shipOrders(ids, to, done) {
 }
 
 // ── Жагсаалт ──
-var ORD_TABS = [['new', 'Илгээх'], ['sent', 'Хүргэлтэд'], ['back', 'Буцаасан, цуцалсан'], ['all', 'Бүгд']];   // «Төлбөр ороогүй» таб нуусан (2026-11-12)
+var ORD_TABS = [['new', 'Илгээх'], ['sent', 'Хүргэлтэд'], ['ret', 'Бараа буцаж ирэх'], ['back', 'Буцаасан, цуцалсан'], ['all', 'Бүгд']];   // «Бараа буцаж ирэх» — хүргэлтэд гарсан ч буцсан, бараа хүлээн аваагүй   // «Төлбөр ороогүй» таб нуусан (2026-11-12)
 function ordFilter(o) {
   if (ordTab === 'bills') return false;   // өнөөдрийн баримт — тусдаа жагсаалт (todayList)
   if (ordTab === 'new') return o.status === 'Шинэ';
   if (ordTab === 'sent') return o.status === 'Буухиад өгсөн';
-  if (ordTab === 'back') return ordDead(o);
+  if (ordTab === 'ret') return ordAwaitReturn(o);
+  if (ordTab === 'back') return ordDead(o) && !ordAwaitReturn(o);
   return true;
 }
 function ordRetry(id) {
@@ -333,7 +334,8 @@ function renderOrders() {
     if (t === 'bills') { var k = {}; (typeof todayRecords === 'function' ? todayRecords() : []).forEach(function (r) { if (r.type === 'sale') k[billKey(r)] = 1; }); return Object.keys(k).length; }
     var keep = ordTab; ordTab = t; var n = orders.filter(ordFilter).length; ordTab = keep; return n; };
   var bills = ordTab === 'bills';
-  $('orderTabs').innerHTML = ORD_TABS.map(function (t) { return '<button class="' + (ordTab === t[0] ? 'on' : '') + '" onclick="ordTab=\'' + t[0] + '\';renderOrders()">' + t[1] + ' <small>' + cnt(t[0]) + '</small></button>'; }).join('');
+  $('orderTabs').innerHTML = ORD_TABS.map(function (t) { var n = cnt(t[0]); if (t[0] === 'ret' && !n && ordTab !== 'ret') return '';
+    return '<button class="' + (ordTab === t[0] ? 'on' : '') + (t[0] === 'ret' && n ? ' tab-alert' : '') + '" onclick="ordTab=\'' + t[0] + '\';renderOrders()">' + t[1] + ' <small>' + n + '</small></button>'; }).join('');
   if (typeof renderNav === 'function') renderNav();
   var list = (ordQ.trim() ? orders : orders.filter(ordFilter)).filter(ordMatch).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
   var STC = { 'Шинэ': 'n', 'Буухиад өгсөн': 'b', 'Хүргэгдсэн': 'g', 'Буцаасан': 'r', 'Цуцалсан': 'r' };   // бусад хүргэлтэд яваа — шар (y)   // удирдлагын хуудастай ижил өнгө
@@ -348,8 +350,9 @@ function renderOrders() {
     opts.push(['l', 'Шошго хэвлэх'], ['m', 'Төлбөрийн мессеж хуулах'], ['e', 'Засах']);
     var acts = o.pending ? '<small class="muted">Хадгалж байна…</small>' : o.failed ? '<button class="mini neg" onclick="ordRetry(\'' + o.id + '\')">Дахин хадгалах</button>' :   // ⋯ товч + цэс (удирдлагын хуудастай ижил)
       '<button class="mini dd-btn" title="Үйлдэл" aria-haspopup="menu" onclick="ddMenu(this,' + esc(JSON.stringify(opts.map(function (x) { return [x[1], 'ordAct(' + JSON.stringify(o.id) + ',' + JSON.stringify(x[0]) + ')']; }))) + ')">⋯</button>';
-    var kc = ordEbCancel(o), ret = ordAwaitReturn(o) ? '<small class="warn">Бараа буухиад байгаа' + (kc && kc.why ? ' · ' + esc(kc.why) : '') + '</small>' : o.saleDone === 'returned' ? '<small>Бараа буцаж ирсэн</small>' : '';
-    return '<tr>' +
+    var kc = ordEbCancel(o), ret = ordAwaitReturn(o) ? '<small class="warn">Бараа хүргэлтэд байгаа' + (kc && kc.why ? ' · ' + esc(kc.why) : '') + '</small><button class="btn sm ret-btn" onclick="ordReceive(\'' + o.id + '\')">Бараа хүлээн авсан</button>'
+      : o.saleDone === 'returned' ? '<small style="color:#15803D">Бараа буцаж ирсэн</small>' : ordDead(o) ? '<small class="muted">Хүргэлтэд гараагүй</small>' : '';
+    return '<tr' + (ordAwaitReturn(o) ? ' class="tr-ret"' : '') + '>' +
       '<td class="c-d" data-l="Огноо">' + esc(String(o.date || '').slice(5).replace('-', '/')) + '<small>' + esc(o.time || '') + '</small></td>' +
       '<td class="c-p" data-l="Хэрэглэгч" onclick="openOrder(\'' + o.id + '\')"><b>' + (ordIsDup(o) ? '<span title="' + esc(ordDupOf(o)) + '" style="color:#B45309">⚠ </span>' : '') + esc(o.phone) + '</b><small>' + esc(o.customer || '') + '</small></td>' +
       '<td class="c-a" data-l="Хаяг">' + esc([o.city && o.city !== 'Улаанбаатар' ? o.city : '', o.district, o.address].filter(Boolean).join(' ')).slice(0, 80) + '</td>' +
