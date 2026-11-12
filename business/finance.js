@@ -337,7 +337,7 @@ function openItems(E, accs, sign, to, loanKey) {
       var rest = -v, tags = (String(e.desc).match(/#[\w\-.]+/g) || []).map(function (t) { return t.slice(1); });
       var hit = function (o) { return tags.indexOf(o.ref) >= 0 || (o.bill && tags.indexOf(o.bill) >= 0) || (o.tags || []).some(function (t) { return tags.indexOf(t) >= 0; }) ? 0 : 1; };
       // Буухиа хураасан мөнгөнөөсөө хөлсөө суутгасан (Дт 3101 / 7124) — төлбөр биш, «хөлс хассан» гэж тусад нь харуулна
-      var isFee = inC && (e.dr === '3101' || e.dr === '7124') && e.partner === BUUHIA;
+      var isFee = inC && (((e.dr === '3101' || e.dr === '7124') && e.partner === BUUHIA) || (e.dr === '7201' && e.partner === 'StorePay'));   // StorePay-ийн 8% шимтгэл бас төлбөр биш
       var order = tags.length ? p.open.slice().sort(function (a, b) { return hit(a) - hit(b); }) : p.open.slice();
       for (var q = 0; q < order.length && rest > 0.005; q++) { var o = order[q], u2 = Math.min(rest, o.amt - o.paid); o.paid += u2; if (isFee) o.fee += u2; rest -= u2; o.pays.push({ date: e.date, time: e.time || '', doc: e.doc, desc: e.desc, partner: e.partner, acc: acc, other: inD ? e.cr : e.dr, v: u2, key: '' }); if (o.paid >= o.amt - 0.5) o.closed = e.date; }
       p.open = p.open.filter(function (o) { return !o.closed; });
@@ -398,7 +398,7 @@ function repDebts(E, k, flt) {
     var L = G[w], p = oi.P[w] || { open: [], over: 0 }, left = L.reduce(function (a, it) { return a + it.amt - it.paid; }, 0) - (p.over || 0);
     return { w: w, L: L, left: left, open: L.filter(function (it) { return !it.closed; }) };
   }).filter(function (g) { return g.L.some(keep) || (flt === 'open' && Math.abs(g.left) > 0.5 && !g.L.length && hasQ(g.w)); }).forEach(function (g) {
-    g.amt = g.L.reduce(function (a, it) { return a + it.amt; }, 0); g.cat = debtCat(k, g); GL.push(g);
+    g.amt = (flt === 'open' ? g.open : g.L).reduce(function (a, it) { return a + it.amt; }, 0);   // хаагдаагүйг харж байхад хаагдсан баримт нийт дүнд орохгүй g.cat = debtCat(k, g); GL.push(g);
   });
   // бүлэг (харилцагчийн төрөл) → харилцагч → баримт
   var C = {}, cats = [];
