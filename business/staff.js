@@ -439,7 +439,7 @@ function saleTinInput() {
 // ── StorePay: хэрэглэгч хувааж төлнө — хүсэлт илгээж, апп дээрээ баталгаажуулахыг хүлээнэ (сервер дамжуулна, түлхүүр серверт) ──
 var spTimer = null;
 function spEnabled() { return !!load('nb_sp_' + BIZ_KEY, false) || !API_URL; }
-function spShowBtn() { var b = document.querySelector('#paySeg [data-v="StorePay"]'); if (b) { b.style.display = ''; b.classList.toggle('off', !spEnabled()); } var g = $('paySeg'); if (g) g.classList.add('seg5'); }
+function spShowBtn() { var b = document.querySelector('#paySeg [data-v="StorePay"]'); if (b) { b.style.display = ''; b.classList.remove('off'); } var g = $('paySeg'); if (g) g.classList.add('seg5'); }   // API тохируулаагүй ч гараар бүртгэнэ
 function spErrText(e) {
   return e === 'storepay_off' ? 'StorePay тохируулаагүй — удирдлагад хэлнэ үү' : e === 'phone' ? 'Утасны дугаар 8 оронтой байна' : e === 'network' ? 'Интернэт холболтоо шалгана уу'
     : /storepay_auth/.test(e) ? 'StorePay-д нэвтэрч чадсангүй — удирдлага түлхүүрээ шалгана уу' : e === 'auth' ? 'Дахин нэвтэрнэ үү' : 'StorePay: ' + e;
@@ -693,14 +693,15 @@ function stepQty(i, d) {
 }
 function removeLine(i) { sale.cart.splice(i, 1); renderChips(); renderCart(); }
 function setPay(v) {
-  if (v === 'StorePay' && !spEnabled()) { toast('StorePay тохируулаагүй — удирдлага «Банкны хуулга → StorePay холболт»-оос тохируулна'); return; }
   sale.pay = v;
   if ($('saleSplitP1') && /^(Бэлэн|Карт|Шилжүүлэг)$/.test(v)) $('saleSplitP1').value = v;
   var b = $('paySeg').children;
   for (var k = 0; k < b.length; k++) b[k].classList.toggle('on', b[k].dataset.v === v);
   $('saleCustWrap').style.display = v === 'Зээлээр' ? 'block' : 'none';   // зээлээр бол хэнд өгснийг заавал бичнэ
   if ($('saleCashWrap')) $('saleCashWrap').style.display = v === 'Бэлэн' ? '' : 'none';   // бэлэн бол хариулт тооцно
-  if ($('saleSpWrap')) $('saleSpWrap').style.display = v === 'StorePay' ? '' : 'none';
+  if ($('saleSpWrap')) { $('saleSpWrap').style.display = v === 'StorePay' ? '' : 'none';
+    var lb = document.querySelector('#saleSpWrap .sp-row button'); if (lb) lb.style.display = spEnabled() ? '' : 'none';   // гар горимд лимит шалгахгүй
+    if (v === 'StorePay' && !spEnabled()) { $('saleSpInfo').className = 'sp-info'; $('saleSpInfo').textContent = 'StorePay апп дээр хэрэглэгч баталгаажуулсныг шалгаад хадгална'; } }
   if ($('saleSplitLbl')) { var noSp = /Зээлээр|StorePay/.test(v); $('saleSplitLbl').style.display = noSp ? 'none' : ''; if (noSp) { $('saleSplitOn').checked = false; $('saleSplitWrap').style.display = 'none'; } }
   if (sale.cart) calcSale();
   calcChange();
@@ -829,16 +830,19 @@ function submitSale() {
   var cust = $('saleCust').value.trim();
   if (sale.pay === 'Зээлээр' && cust.length < 2) { toast('Зээлээр авсан хүн / байгууллагын нэрийг бичнэ үү'); $('saleCust').focus(); return; }
   if (sale.pay === 'Зээлээр' && phone.length !== 8) { toast('Зээлээр авсан хүний утас (8 орон) заавал'); $('salePhone').focus(); return; }
-  if (sale.pay === 'StorePay' && sale.edit) { toast('Баримт засварт StorePay ашиглах боломжгүй'); return; }
-  if (sale.pay === 'StorePay' && !sale.spPaid) { spStart(); return; }   // эхлээд хэрэглэгч StorePay апп дээрээ батална
-  var bill = BIZ_KEY + '-' + (sale.pay === 'StorePay' ? 'SP' + sale.spPaid : Date.now());
+  var spMan = sale.pay === 'StorePay' && !spEnabled();   // API холбоогүй: хэрэглэгч StorePay-ээр төлснийг ажилтан гараар бүртгэнэ
+  if (spMan && spPhone().length !== 8) { toast('StorePay: хэрэглэгчийн утасны дугаарыг бичнэ үү'); $('saleSpPhone').focus(); return; }
+  if (spMan) sale.spPhone = spPhone();
+  if (sale.pay === 'StorePay' && sale.edit && !spMan) { toast('Баримт засварт StorePay ашиглах боломжгүй'); return; }
+  if (sale.pay === 'StorePay' && !spMan && !sale.spPaid) { spStart(); return; }   // эхлээд хэрэглэгч StorePay апп дээрээ батална
+  var bill = BIZ_KEY + '-' + (sale.pay === 'StorePay' && !spMan ? 'SP' + sale.spPaid : Date.now());
   var lines = sale.cart.map(function (l) {
     var r = {
       type: 'sale', item: l.name, qty: Number(l.qty), unit: l.unit, price: Number(l.price),
       amount: Math.round(Number(l.qty) * Number(l.price)), pay: sale.pay, bill: bill,
     };
     if (sale.pay === 'Зээлээр') r.customer = cust; else if (phone) r.customer = phone.slice(-8);
-    if (sale.pay === 'StorePay') { r.customer = 'StorePay'; r.note = 'StorePay #' + sale.spPaid + ' · ' + sale.spPhone; }
+    if (sale.pay === 'StorePay') { r.customer = 'StorePay'; r.note = (spMan ? 'StorePay (гараар)' : 'StorePay #' + sale.spPaid) + ' · ' + sale.spPhone; }
     if (l.cls) r.classificationCode = l.cls;   // БҮНА код (И-баримтад)
     return r;
   });

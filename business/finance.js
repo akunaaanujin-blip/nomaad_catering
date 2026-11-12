@@ -324,9 +324,10 @@ function openItems(E, accs, sign, to, loanKey) {
     if (v > 0) {
       // нэг захиалгын (баримтын) барааны мөр + хүргэлтийн мөр → нэг авлага
       var same = e.bill ? p.open.filter(function (o) { return o.bill === e.bill && o.date === e.date && !o.paid; })[0] : null;
-      if (same && !(p.over > 0)) { same.amt += v; return; }
+      if (same && !(p.over > 0)) { same.amt += v; if (e.retail) same.retail = (same.retail || 0) + e.retail; return; }
       var it = { date: e.date, who: who, desc: e.desc, other: inD ? e.cr : e.dr, amt: v, paid: 0, fee: 0, closed: '', acc: acc, np: !e.partner, ref: e.ref || '', bill: e.bill || '', tags: (String(e.desc).match(/#O\d+/g) || []).map(function (t) { return t.slice(1); }),
                  key: (e.ref || '') + '|' + e.date + '|' + Math.round(v) };
+      if (e.retail) it.retail = e.retail;
       it.pays = [];
       if (p.over > 0) { var u = Math.min(p.over, v); it.paid += u; p.over -= u; it.pays.push({ date: e.date, desc: 'Өмнө илүү төлсөн дүнгээс', partner: who, other: '', v: u, key: '' }); }
       if (it.paid >= it.amt - 0.5) it.closed = e.date; else p.open.push(it);
@@ -344,6 +345,14 @@ function openItems(E, accs, sign, to, loanKey) {
     }
   });
   return { items: items, P: P };
+}
+// Буухиад байгаа буцаалтын бараа: дансанд өртгөөр (1209), харин авлагын жагсаалтад зарах үнээр харуулна (төлсөн хэсгийг ижил харьцаагаар)
+function debtRetail(items) {
+  items.forEach(function (it) {
+    if (!(it.retail > 0) || !(it.amt > 0)) return; var k = it.retail / it.amt;
+    it.amt = it.retail; it.paid = it.paid * k; (it.pays || []).forEach(function (q) { q.v = q.v * k; });
+  });
+  return items;
 }
 var DEBT_ST = [['open', 'Хаагдаагүй'], ['part', 'Хэсэгчлэн төлсөн'], ['closed', 'Хаагдсан'], ['all', 'Бүгд']];
 // Харилцагчийн төрөл (бүлэг): захиалгын хэрэглэгчид, буухиа, StorePay, нийлүүлэгч, карго, компани хооронд, бусад
@@ -373,7 +382,7 @@ function repDebts(E, k, flt) {
   var hasQ = function (t) { var s = String(t || '').toLowerCase(); return !q || s.indexOf(q) >= 0 || (qd && ('-' + s).indexOf(qd) >= 0); };
   var keep0 = function (it) { var s2 = debtStatus(it); return flt === 'all' || (flt === 'open' ? s2 !== 'closed' : s2 === flt); };
   var keep = function (it) { return keep0(it) && (hasQ(it.who) || hasQ(it.desc) || hasQ(it.date) || hasQ(it.closed)); };
-  var T = DEBT_TABS[k], accs = debtAccs(k), td = todayStr(), oi = openItems(debtE(E, k, td), accs, T[3], td, k === 'l');
+  var T = DEBT_TABS[k], accs = debtAccs(k), td = todayStr(), oi = openItems(debtE(E, k, td), accs, T[3], td, k === 'l'); debtRetail(oi.items);
   // Нэг хүснэгт: харилцагч бүрийн нийт мөр (тод), доор нь тэр харилцагчийн баримтууд
   var days = function (d) { return Math.round((new Date(td) - new Date(d)) / 864e5); };
   var G = {}, order = [];
@@ -468,7 +477,7 @@ function icReconCard() {
 function debtsPre(E) {
   var sub = state.sub.finance, k = debtTabOf(sub), td = todayStr(), b = balances(E, td), T = DEBT_TABS[k];
   // Товч үзүүлэлт
-  var oiC = openItems(debtE(E, k, td), debtAccs(k), T[3], td, k === 'l').items, cnt = { open: 0, part: 0, closed: 0, all: oiC.length }, left = 0, late = 0, who = {};
+  var oiC = debtRetail(openItems(debtE(E, k, td), debtAccs(k), T[3], td, k === 'l').items), cnt = { open: 0, part: 0, closed: 0, all: oiC.length }, left = 0, late = 0, who = {};
   oiC.forEach(function (it) { var s2 = debtStatus(it); cnt[s2]++; if (s2 !== 'closed') { cnt.open++; var l = it.amt - it.paid; left += l; who[it.who] = 1; if ((new Date(td) - new Date(it.date)) / 864e5 > 30) late += l; } });
   var kp = function (lbl, v, cls) { return '<div class="dk2' + (cls ? ' ' + cls : '') + '"><small>' + lbl + '</small><b>' + v + '</b></div>'; };
   var kpis = '<div class="dk2-row">' + kp(k === 'p' ? 'Төлөх үлдэгдэл' : k === 'r' ? 'Авах үлдэгдэл' : 'Үлдэгдэл', mny(left)) + kp(k === 'r' ? 'Захиалга, баримт' : 'Хаагдаагүй баримт', cnt.open) +
