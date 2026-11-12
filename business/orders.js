@@ -114,6 +114,7 @@ function ordBook(o, prev) {
     delete o.receive;
   }
 }
+function ordEbRet(o) { return ordDead(o) && (/^yes:/.test(o.saleDone || '') || o.saleDone === 'returned'); }   // хүргэлтэд гарсан ба буцсан — бараа ирэх эсвэл ирсэн
 function ordAwaitReturn(o) { return ordDead(o) && /^yes:/.test(o.saleDone || ''); }   // бараа буухиа дээр, буцааж аваагүй
 function ordReceive(id) { (function (cb) { cb(); })(function () {
   var o = orders.filter(function (x) { return x.id === id; })[0]; if (!o || !ordAwaitReturn(o)) { renderOrders(); return; }
@@ -293,13 +294,13 @@ function shipOrders(ids, to, done) {
 }
 
 // ── Жагсаалт ──
-var ORD_TABS = [['new', 'Илгээх'], ['sent', 'Хүргэлтэд'], ['ret', 'Бараа буцаж ирэх'], ['back', 'Буцаасан, цуцалсан'], ['all', 'Бүгд']];   // «Бараа буцаж ирэх» — хүргэлтэд гарсан ч буцсан, бараа хүлээн аваагүй   // «Төлбөр ороогүй» таб нуусан (2026-11-12)
+var ORD_TABS = [['new', 'Илгээх'], ['sent', 'Хүргэлтэд'], ['ret', 'Буухиа буцаалт'], ['back', 'Буцаасан, цуцалсан'], ['all', 'Бүгд']];   // «Бараа буцаж ирэх» — хүргэлтэд гарсан ч буцсан, бараа хүлээн аваагүй   // «Төлбөр ороогүй» таб нуусан (2026-11-12)
 function ordFilter(o) {
   if (ordTab === 'bills') return false;   // өнөөдрийн баримт — тусдаа жагсаалт (todayList)
   if (ordTab === 'new') return o.status === 'Шинэ';
   if (ordTab === 'sent') return o.status === 'Буухиад өгсөн';
-  if (ordTab === 'ret') return ordAwaitReturn(o);
-  if (ordTab === 'back') return ordDead(o) && !ordAwaitReturn(o);
+  if (ordTab === 'ret') return ordEbRet(o);
+  if (ordTab === 'back') return ordDead(o) && !ordEbRet(o);
   return true;
 }
 function ordRetry(id) {
@@ -334,10 +335,10 @@ function renderOrders() {
     if (t === 'bills') { var k = {}; (typeof todayRecords === 'function' ? todayRecords() : []).forEach(function (r) { if (r.type === 'sale') k[billKey(r)] = 1; }); return Object.keys(k).length; }
     var keep = ordTab; ordTab = t; var n = orders.filter(ordFilter).length; ordTab = keep; return n; };
   var bills = ordTab === 'bills';
-  $('orderTabs').innerHTML = ORD_TABS.map(function (t) { var n = cnt(t[0]); if (t[0] === 'ret' && !n && ordTab !== 'ret') return '';
-    return '<button class="' + (ordTab === t[0] ? 'on' : '') + (t[0] === 'ret' && n ? ' tab-alert' : '') + '" onclick="ordTab=\'' + t[0] + '\';renderOrders()">' + t[1] + ' <small>' + n + '</small></button>'; }).join('');
+  $('orderTabs').innerHTML = ORD_TABS.map(function (t) { var n = cnt(t[0]), wait = t[0] === 'ret' ? orders.filter(ordAwaitReturn).length : 0;   // буцаалт: ирээгүй бараа байвал улаан тоогоор
+    return '<button class="' + (ordTab === t[0] ? 'on' : '') + (wait ? ' tab-alert' : '') + '" onclick="ordTab=\'' + t[0] + '\';renderOrders()"' + (wait ? ' title="' + wait + ' захиалгын бараа хүлээн аваагүй"' : '') + '>' + t[1] + ' <small>' + (wait ? wait + ' ирээгүй · ' + n : n) + '</small></button>'; }).join('');
   if (typeof renderNav === 'function') renderNav();
-  var list = (ordQ.trim() ? orders : orders.filter(ordFilter)).filter(ordMatch).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
+  var list = (ordQ.trim() ? orders : orders.filter(ordFilter)).filter(ordMatch).sort(function (a, b) { var w = ordTab === 'ret' ? (ordAwaitReturn(b) ? 1 : 0) - (ordAwaitReturn(a) ? 1 : 0) : 0; return w || ((b.date + b.time) < (a.date + a.time) ? -1 : 1); });   // буцаалт: ирээгүй нь дээр
   var STC = { 'Шинэ': 'n', 'Буухиад өгсөн': 'b', 'Хүргэгдсэн': 'g', 'Буцаасан': 'r', 'Цуцалсан': 'r' };   // бусад хүргэлтэд яваа — шар (y)   // удирдлагын хуудастай ижил өнгө
   var row = function (o, idx) {
     var fee = ordFee(o), opts = [];
