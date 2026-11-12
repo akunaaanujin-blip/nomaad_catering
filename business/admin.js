@@ -3352,3 +3352,5 @@ function saveLock() {
   if (!API_URL) { meta.lock = v; save('nb_demo_lock', v); render(); return; }
   post({ type: 'admin_setting', key: 'lock', value: v }, function (err) { toast(err ? 'Алдаа: ' + err : 'Хадгалагдлаа'); refresh(); });
 }
+// Буухиа хуудасны «Бусад хүргэлтээр гарсан» таб — энэ компанийн бусад хүргэлтээр гарсан захиалгууд
+window.ebOtherSrc = function () { return (window.adminOrders || []).filter(function (o) { return o.biz === state.biz && o.ebCode === 'бусад' && o.status !== 'Шинэ'; }); };

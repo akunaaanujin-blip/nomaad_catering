@@ -152,7 +152,7 @@ document.addEventListener('focusin', function (e) {
 // list — серверийн ebNorm хэлбэр. ebF — шүүлтүүр (төлөв, хайлт, нээсэн мөр). Дахин зурахдаа window.ebRedraw()-г дуудна.
 // Захиалга, Хүргэлт хоёр хуудсанд нэг нэр томьёо: Шинэ → Буухиад өгсөн → Жолоочид → Хүргэгдсэн / Цуцалсан / Буцаасан
 var EB_UNI = { 1: 'Буухиад өгсөн', 2: 'Буухиад өгсөн', 3: 'Жолоочид', 5: 'Жолоочид', 10: 'Хүргэгдсэн', 11: 'Цуцалсан', 12: 'Буцаасан' };
-var EB_TABS = [['all', 'Бүгд'], ['sent', 'Буухиад өгсөн'], ['drv', 'Жолоочид'], [10, 'Хүргэгдсэн'], ['back', 'Цуцалсан, буцаасан']];
+var EB_TABS = [['all', 'Бүгд'], ['sent', 'Буухиад өгсөн'], ['drv', 'Жолоочид'], ['other', 'Бусад хүргэлтээр гарсан'], [10, 'Хүргэгдсэн'], ['back', 'Цуцалсан, буцаасан']];
 function ebIn(x, t) { return t === 'all' || (t === 'back' ? x.st === 11 || x.st === 12 : t === 'sent' ? x.st === 1 || x.st === 2 : t === 'drv' ? x.st === 3 || x.st === 5 : String(x.st) === String(t)); }
 // Буцаасан/цуцалсан хүргэлтийн бараа: буухиад өгөхөд борлуулалт бичигдэж үлдэгдлээс хасагдсан тул гарт ирэхэд «Хүлээн авсан» дарж л үлдэгдэлд буцаана.
 // window.ebRecv байвал (ажилтны хуудас) товч, үгүй бол (удирдлага) зөвхөн төлөв.
@@ -180,12 +180,25 @@ var EB_LBL = { code: 'Код', external_order_id: 'Манай захиалгын
   item_name: 'Бараа', quantity: 'Тоо', total_price: 'Авах дүн', verified: 'Баталгаажсан', driver_desc: 'Жолоочийн тайлбар', closed_at: 'Хаагдсан', delivery_fee: 'Хүргэлтийн хөлс', delivery_price: 'Хүргэлтийн хөлс', 'driver.name': 'Жолооч', 'driver.phone': 'Жолоочийн утас', driver_name: 'Жолооч', driver_phone: 'Жолоочийн утас', return_reason: 'Буцаасан шалтгаан', cancel_reason: 'Цуцалсан шалтгаан', comment: 'Тэмдэглэл' };
 var ebF = { st: 'all', q: '', open: '' };
 function ebHay(x) { return [x.code, x.ext, x.cust, x.phone, x.phone2, x.addr, x.item, x.driver, x.dphone, x.name, x.created, x.at, x.note, x.our].join(' ').toLowerCase(); }
+function ebOtherTable(L) {
+  L = L.slice().sort(function (a, b) { return (b.date + (b.time || '')) < (a.date + (a.time || '')) ? -1 : 1; });
+  if (!L.length) return '<p class="muted" style="margin:14px 0">Бусад хүргэлтээр гарсан захиалга алга.</p>';
+  var dead = function (o) { return o.status === 'Цуцалсан' || o.status === 'Буцаасан'; };
+  var st = function (o) { return o.status === 'Буухиад өгсөн' ? ['Бусад хүргэлтэд', 'y'] : o.status === 'Хүргэгдсэн' ? ['Хүргэгдсэн', 'g'] : [o.status, dead(o) ? 'r' : 'n']; };
+  var items = function (o) { return typeof ordItemsText === 'function' ? ordItemsText(o) : typeof admOrdItems === 'function' ? admOrdItems(o) : ''; };
+  return '<div class="eb-wrap"><table class="tbl eb-t"><tr><th>Огноо</th><th>Хүлээн авагч</th><th>Бараа</th><th class="n">Дүн</th><th>Төлөв</th><th></th></tr>' + L.map(function (o) {
+    var s2 = st(o), act = o.status === 'Буухиад өгсөн' && typeof quickOrd === 'function' ? '<button class="mini" onclick="quickOrd(\'' + o.id + '\',\'status\',\'Хүргэгдсэн\')">Хүргэгдсэн</button> <button class="mini" onclick="quickOrd(\'' + o.id + '\',\'status\',\'Буцаасан\')">Буцаасан</button>' : '';
+    return '<tr><td>' + esc(o.date) + '</td><td><b>' + esc(o.phone) + '</b>' + (o.customer ? '<br><small class="muted">' + esc(o.customer) + '</small>' : '') + '</td><td>' + esc(items(o)) + '</td><td class="n">' + fmt(o.amount) + '</td>' +
+      '<td><span class="st ' + s2[1] + '">' + esc(s2[0]) + '</span></td><td>' + act + '</td></tr>';
+  }).join('') + '</table></div>';
+}
 function ebBoard(list, at) {
   list = (list || []).filter(function (x) { return x.id || (x.st !== 11 && x.st !== 12); })   // захиалгатай холбогдоогүй буцаасан/цуцалсныг харуулахгүй
     .sort(function (a, b) { return (b.created || '') < (a.created || '') ? -1 : 1; });
   var cnt = {}; list.forEach(function (x) { cnt[x.st] = (cnt[x.st] || 0) + 1; ['back', 'sent', 'drv'].forEach(function (t) { if (ebIn(x, t)) cnt[t] = (cnt[t] || 0) + 1; }); });
   if (ebF.st === '11' || ebF.st === '12') ebF.st = 'back'; if (ebF.st === '1' || ebF.st === '2') ebF.st = 'sent'; if (ebF.st === '3' || ebF.st === '5') ebF.st = 'drv';
   if (ebF.st === 'rec' && !window.ebRecPanel) ebF.st = 'all';
+  var oth = typeof window.ebOtherSrc === 'function' ? window.ebOtherSrc() : []; cnt.other = oth.length;   // буухиагүй, бусад хүргэлтээр гарсан захиалга
   var q = ebF.q.toLowerCase().trim();
   var L = list.filter(function (x) { return ebIn(x, ebF.st) && (!q || ebHay(x).indexOf(q) >= 0); });
   var sum = function (k) { return L.reduce(function (a, x) { return a + (Number(x[k]) || 0); }, 0); };
@@ -195,6 +208,7 @@ function ebBoard(list, at) {
     return '<button class="' + (String(ebF.st) === String(t[0]) ? 'on' : '') + '" onclick="ebF.st=\'' + t[0] + '\';ebF.open=\'\';ebRedraw()">' + t[1] + ' <small>' + n + '</small></button>';
   }).join('') + (window.ebRecPanel ? '<button class="' + (ebF.st === 'rec' ? 'on' : '') + '" title="Манай захиалгатай холбогдоогүй, эсвэл мөнгө нь буухиатай тооцоо нийлээгүй хүргэлт" onclick="ebF.st=\'rec\';ebF.open=\'\';ebRedraw()">Нийлээгүй' + (window.ebRecCount ? ' <small>' + window.ebRecCount() + '</small>' : '') + '</button>' : '') + '</div>';
   if (ebF.st === 'rec') return tabs + window.ebRecPanel();
+  if (ebF.st === 'other') return tabs + ebOtherTable(oth);
   var tool = '<div class="eb-tool"><input type="search" id="ebQ" placeholder="Код, утас, нэр, хаяг, бараа, огноогоор хайх…" value="' + esc(ebF.q) + '" oninput="ebF.q=this.value;ebRedraw(1)">' +
     '<small class="muted">' + L.length + ' хүргэлт · авах ' + fmt(sum('price')) + ' · авсан ' + fmt(sum('got')) + (at ? ' · ' + esc(at) + '-д шинэчилсэн' : '') + '</small></div>';
   if (!L.length) return tabs + tool + '<p class="muted" style="margin:14px 0">' + (list.length ? 'Илэрц алга.' : 'Сүүлийн 31 хоногт буухиад хүргэлт алга.') + '</p>';

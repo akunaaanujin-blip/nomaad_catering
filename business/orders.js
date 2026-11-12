@@ -293,12 +293,11 @@ function shipOrders(ids, to, done) {
 }
 
 // ── Жагсаалт ──
-var ORD_TABS = [['new', 'Илгээх'], ['sent', 'Буухиад'], ['unpaid', 'Төлбөр ороогүй'], ['back', 'Буцаасан, цуцалсан'], ['all', 'Бүгд']];
+var ORD_TABS = [['new', 'Илгээх'], ['sent', 'Буухиад'], ['back', 'Буцаасан, цуцалсан'], ['all', 'Бүгд']];   // «Төлбөр ороогүй» таб нуусан (2026-11-12)
 function ordFilter(o) {
   if (ordTab === 'bills') return false;   // өнөөдрийн баримт — тусдаа жагсаалт (todayList)
   if (ordTab === 'new') return o.status === 'Шинэ';
   if (ordTab === 'sent') return o.status === 'Буухиад өгсөн';
-  if (ordTab === 'unpaid') return o.paid !== 'Орсон' && !ordDead(o);
   if (ordTab === 'back') return ordDead(o);
   return true;
 }
@@ -527,6 +526,8 @@ function dlvAddrSave(id) {
   if (!n.city) { toast('Хот / аймаг сонгоно уу'); return; }
   dlvAddrEd = ''; saveOrder(n, function () { toast('Хаяг хадгалагдлаа'); renderDlv(); });
 }
+// Хүргэлтийн самбарын «Бусад хүргэлтээр гарсан» таб — бусад хүргэлтээр гарсан захиалгууд
+window.ebOtherSrc = function () { return orders.filter(function (o) { return o.ebCode === 'бусад' && o.status !== 'Шинэ'; }); };
 function ordStName(o) { return ordEbCancel(o) ? 'Буцаасан, цуцалсан' : o.ebCode === 'бусад' && o.status === 'Буухиад өгсөн' ? 'Бусад хүргэлтэд' : o.status; }
 function fresh_all(on) { orders.filter(function (o) { return o.status === 'Шинэ' && !o.pending; }).forEach(function (o) { dlvSel[o.id] = on && addrFinal(o).ok; }); renderDlv(); }
 function dlvSend(mode, given, noAmt) {
