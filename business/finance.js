@@ -408,7 +408,7 @@ function repDebts(E, k, flt) {
   var OPEN = state.dOpen = state.dOpen || {}, SHUT = state.dShut = state.dShut || {};
   var ebFee = k === 'r' ? openItems(debtE(E, 'p', td), debtAccs('p'), -1, td).items.filter(function (it) { return it.who === BUUHIA && !it.closed; }).reduce(function (a, it) { return a + it.amt - it.paid; }, 0) : 0;   // Буухиад төлөх хөлс
   cats.forEach(function (cg) {
-    var ebCat = /Буухиа/.test(cg.n), shut = (ebCat ? !SHUT[k + cg.n] : SHUT[k + cg.n]) && !q;   // Буухиа — анх хураасан, дэлгэрэнгүй нь «Буухиа → Тооцоо»-д
+    var ebCat = /Буухиа/.test(cg.n), shut = !SHUT[k + cg.n] && !q;   // бүх бүлэг анх хураасан (нэг мөр, нийт дүнтэй) — дарахад задарна   // Буухиа — анх хураасан, дэлгэрэнгүй нь «Буухиа → Тооцоо»-д
     var g0 = cg.G[0], dsc = cg.G.length > 1 ? cg.G.length + ' харилцагч' : (g0.w !== cg.n && !/^Буухиа/.test(g0.w) ? nameTel(g0.w) + ' · ' : '') + g0.open.length + ' баримт';
     if (cg.n === 'Буухиа (хураасан мөнгө)' && ebFee > 0.5) dsc = 'Хөлс ' + mny(ebFee) + ' хасвал цэвэр ' + mny(cg.left - ebFee);
     else if (cg.n === 'Буухиа (хүргэлтийн хөлс)') dsc = 'Хураасан мөнгөнөөс суутгагдана';

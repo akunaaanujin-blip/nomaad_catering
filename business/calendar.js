@@ -158,7 +158,7 @@ function repOrders(biz) {
     var t = nz([o.phone, o.phone2, o.customer, o.address, o.district, o.ebCode, o.id, o.status, typeof o.items === 'string' ? o.items : JSON.stringify(o.items || '')].join(' '));
     return q.split(/\s+/).every(function (w) { return t.indexOf(w) >= 0; }) || (qd.length >= 4 && qd.length === q.replace(/[\s-]/g, '').length && t.replace(/[\s-]/g, '').indexOf(qd) >= 0);
   }) : all.filter(ordFilt(state.ordF || 'wait'));
-  var items = function (o) { try { var arr = typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []); return arr.map(function (i) { return i.name + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); } catch (e) { return String(o.items); } };
+  var items = function (o) { try { var arr = typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []); return arr.filter(function (i) { return arr.length < 2 || (i.name !== FEE_ITEM && i.name !== DISC_ITEM); }).map(function (i) { return i.name + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); } catch (e) { return String(o.items); } };
   var billed = {}; (window.records || []).forEach(function (x) { if (x.type === 'sale' && x.bill) billed[x.bill] = 1; });
   var cand = ordBankCands(biz);   // захиалга бүрт таарах банкны хуулгын гүйлгээ
   var rows = list.map(function (o) {
@@ -184,7 +184,8 @@ function repOrders(biz) {
 }
 // ── Харилцагчид (утасны дугаараар): хэдэн удаа, хэдийг захиалсан ──
 function phoneKey(p) { return String(p || '').replace(/\D/g, '').slice(-8); }
-function admOrdItems(o) { try { var arr = typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []); return arr.map(function (i) { return i.name + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); } catch (e) { return String(o.items); } }
+// хүргэлт, хөнгөлөлтийг барааны жагсаалтад бичихгүй (ганц мөр бол хэвээр)
+function admOrdItems(o) { try { var arr = typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || []); return arr.filter(function (i) { return arr.length < 2 || (i.name !== FEE_ITEM && i.name !== DISC_ITEM); }).map(function (i) { return i.name + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); } catch (e) { return String(o.items); } }
 function custGroups(biz) {
   var g = {};
   (window.adminOrders || []).filter(function (o) { return o.biz === biz && phoneKey(o.phone).length === 8; }).forEach(function (o) {

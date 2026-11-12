@@ -640,3 +640,5 @@ setInterval(function () {
 
 // admin.js ачаалах үед нэвтэрсэн бол аль хэдийн зурагдсан — шинэ цэсээр дахин зурна
 if ($('main') && $('main').style.display !== 'none') render();
+// Тайлбар бичвэр (rep-note) нэг мөрөөр хураагдсан — дарахад бүтнээр нээгдэнэ
+document.addEventListener('click', function (e) { var n = e.target.closest && e.target.closest('.bz-admin .rep-note'); if (n && !n.classList.contains('bad') && !n.classList.contains('warn') && !e.target.closest('a,button,input,select')) n.classList.toggle('open'); });

@@ -344,3 +344,50 @@ body.bz-admin,.bz-admin button,.bz-admin input,.bz-admin select,.bz-admin textar
 .bz-admin #view table.rep-t tr.tot td{font-weight:500}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bz-admin #view tr.dcat td{background:#1C2733}}
 :root[data-theme="dark"] .bz-admin #view tr.dcat td{background:#1C2733}
+
+/* ═══ v10 «Том, цэвэрхэн» (2026-11-12): том үсэг, илүү зай, тайлбар хураагдсан, хүснэгт уншихад хялбар ═══ */
+body.bz-admin{font-size:15px;line-height:1.5}
+.bz-admin #view{padding:24px 28px 48px}
+.bz-admin .pg-head{margin-bottom:18px}
+.bz-admin .pg-head h1{font-size:24px;font-weight:500;color:var(--text);letter-spacing:0}
+.bz-admin .card{border:1px solid var(--border);border-radius:10px;box-shadow:none}
+.bz-admin .rep-cap{padding:14px 18px}.bz-admin .rep-cap b{font-size:16px;font-weight:500}.bz-admin .rep-cap span{font-size:13px}
+/* Товч үзүүлэлт */
+.bz-admin .dk2-row{gap:14px;margin:0 0 18px}
+.bz-admin .dk2{border:1px solid var(--border);border-radius:10px;padding:16px 18px;background:var(--surface)}
+.bz-admin .dk2 small{font-size:13px;color:var(--text-2)}
+.bz-admin .dk2 b{font-size:26px;font-weight:500;color:var(--text);margin-top:6px}
+.bz-admin .dk2:first-child{background:var(--primary);border-color:var(--primary)}
+.bz-admin .dk2:first-child small{color:#CCFBF1}.bz-admin .dk2:first-child b{color:#fff}
+/* Хүснэгт */
+.bz-admin #view table.rep-t,.bz-admin #view .fd-t{font-size:14.5px}
+.bz-admin #view table.rep-t th,.bz-admin #view .fd-t th{font-size:13px;padding:10px 12px;background:#F8FAFC;color:var(--text-2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
+.bz-admin #view table.rep-t td,.bz-admin #view .fd-t td{padding:10px 12px;border-bottom:1px solid #EEF2F6;vertical-align:middle}
+.bz-admin #view table.rep-t td.n{font-variant-numeric:tabular-nums}
+.bz-admin #view table.rep-t tbody tr:hover td,.bz-admin #view table.rep-t tr:hover td{background:#F8FAFC}
+.bz-admin #view tr.dcat td{background:var(--surface);font-size:15px;font-weight:500;padding-top:14px;padding-bottom:14px;cursor:pointer;border-top:1px solid var(--border)}
+.bz-admin #view tr.dcat:hover td{background:#F1F5F9}
+.bz-admin #view tr.ddoc td{font-size:14px;background:#FBFCFD}
+.bz-admin #view table.rep-t tr.tot td{font-size:15px;background:#F1F5F9;border-top:2px solid var(--border-strong)}
+.bz-admin #view .mini,.bz-admin #view button.mini{font-size:13px;padding:5px 10px}
+/* Тайлбар бичвэр: нэг мөр, дарахад бүтэн */
+.bz-admin .rep-note:not(.bad):not(.warn){font-size:13px;color:var(--text-2);background:none;padding:4px 2px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
+.bz-admin .rep-note:not(.bad):not(.warn).open{-webkit-line-clamp:unset}
+/* Товч, шүүлтүүр */
+.bz-admin .b-btn,.bz-admin .btn{font-size:14px;min-height:38px;border-radius:8px}
+.bz-admin .seg button,.bz-admin .fn-seg button{font-size:14px;padding:8px 14px}
+.bz-admin input.search,.bz-admin .fn-q input{font-size:14px;height:38px}
+/* Цэс */
+.fn-panel li button{font-size:14.5px;padding:9px 12px}
+.fn-ph{font-size:18px}
+.fn-gb{font-size:12px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bz-admin #view table.rep-t th,:root:not([data-theme="light"]) .bz-admin #view tr.ddoc td,:root:not([data-theme="light"]) .bz-admin #view table.rep-t tr.tot td{background:var(--surface-alt)}}
+.bz-admin #view table.rep-t td,.bz-admin #view table.rep-t th{overflow-wrap:normal;word-break:normal;hyphens:none}
+.bz-admin #view table.rep-t th{white-space:nowrap}
+.bz-admin #view table.rep-t td{min-width:64px}
+.bz-admin #view table.rep-t td:nth-child(3){min-width:180px}
+.bz-admin #view table.rep-t tr.b td{font-weight:400;padding-top:10px;padding-bottom:10px;background:var(--surface)}
+.bz-admin #view table.rep-t tr.b td:first-child{font-weight:500}
+.bz-admin #view tr.dcat td:first-child{white-space:nowrap}
+/* KPI картууд — олон өнгийн зураасгүй, нэг загвар */
+.bz-admin #view .kpi,.bz-admin #view .kc,.bz-admin #view [class*="kpi"] > div{border-left-width:1px!important;border-left-color:var(--border)!important}

@@ -1507,7 +1507,7 @@ function subBody() {
   if (sub === 'suppliers') rep.edit = 'editPartner';
   if (mod === 'sales' && sub === 'shop') pre = shopHead(rep);
   if (mod === 'sales' && /^(shop|receipts|orders|item|disc)$/.test(sub)) pre += sub === 'orders' ? '<div class="fn-flt fn-q"><input class="search" id="oqIn" type="search" placeholder="Утас, нэр, бараа, буухиа кодоор хайх (цуцалсан ч)…" value="' + esc(state.oq || '') + '" oninput="state.oq=this.value;render();var e=$(\'oqIn\');if(e){e.focus();e.setSelectionRange(e.value.length,e.value.length)}"></div>' : searchBox(sub === 'shop' ? 'Бараа, худалдагч, хэрэглэгч, төлбөр, ДДТД-аар хайх…' : sub === 'orders' ? 'Утас, нэр, бараагаар хайх…' : sub === 'item' ? 'Барааны нэрээр хайх…' : 'Бараа, хэрэглэгч, утас, ажилтан, ДДТД-аар хайх…');
-  else if (sub !== 'ledger' && sub !== 'stmt' && rep && rep.rows && rep.rows.length > 8) pre += searchBox('Энэ хүснэгтээс хайх — нэр, утас, дүн, огноо, тайлбар…');   // урт хүснэгт бүрт
+  else if (sub !== 'ledger' && sub !== 'stmt' && !/^(debts|recv|payb)$/.test(sub) && rep && rep.rows && rep.rows.length > 8) pre += searchBox('Энэ хүснэгтээс хайх — нэр, утас, дүн, огноо, тайлбар…');   // урт хүснэгт бүрт
   return pre + reportCard(rep, { entry: 'cancelEntry', in: 'cancelMove', expenses: 'cancelRecord', boost: 'cancelRecord', vouchers: 'cancelEntry', catalog: 'openProduct', suppliers: 'delPartner' }[sub]) + post;
 }
 
