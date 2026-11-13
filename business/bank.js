@@ -657,7 +657,11 @@ function bankAutoSure(l) {
   var p = bankPick[l.id] || ''; if (!p || p === 'skip' || /^(LN:new|EB:|XP:|XO:|BST:set|A:1201$|A:3101$)/.test(p)) return false;
   if (/^D:/.test(p) && bankDebtDocs(p).length > 1) return false;
   var s = bankSuggest(l);
-  return !!(s.sure || s.kind === 'paid' || s.kind === 'rule' || (s.kind === 'acc' && s.acc));
+  // дэлгүүрийн борлуулалт зөвхөн дүнгээр таардаг — мессеж шууд ирдэг тул тэр өдөр / маргааш нь л автоматаар
+  if (s.kind === 'shop') return !!s.sure && Math.abs(new Date(String(s.b.date).slice(0, 10)) - new Date(String(l.date).slice(0, 10))) <= 864e5;
+  // ерөнхий үгээр таасан зардлаас буухиа (тооцоо эсвэл хөлс аль нь болох нь тодорхойгүй), зээл (үндсэн/хүү)-ийг гараар
+  if (s.kind === 'acc') return !!s.acc && s.acc !== '7124' && s.acc !== '3501';
+  return !!(s.sure || s.kind === 'paid' || s.kind === 'rule');
 }
 function bankAutoApply() {
   if (bankAutoBusy || !API_URL || !isOwner()) return;

@@ -170,7 +170,7 @@ function openOrder(id) {
   $('orCity').value = o ? o.city || '' : '';
   $('orDate').value = o ? o.deliverDate || '' : todayStr(new Date(Date.now() + 864e5));
   $('orPayType').value = o ? o.payType || 'Шилжүүлэг' : 'Шилжүүлэг'; $('orPaid').value = o ? o.paid || 'Ороогүй' : 'Ороогүй';
-  $('orPaid').disabled = !!(o && o.confirmed); $('orPaidHint').textContent = o && o.confirmed ? '(удирдлага баталгаажуулсан)' : '';
+  $('orPaid').disabled = true; $('orPaidHint').textContent = o && o.confirmed ? '(баталгаажсан)' : '(банкны гүйлгээ эсвэл буухиагаар баталгаажна)';
   $('orStatus').value = o ? o.status || 'Шинэ' : 'Шинэ'; $('orNote').value = o ? o.note || '' : '';
   $('orStatusWrap').style.display = o ? 'block' : 'none';
   if ($('orPrint')) $('orPrint').checked = typeof lblAuto === 'function' && lblAuto();
@@ -347,7 +347,7 @@ function renderOrders() {
     if (o.status === 'Хүргэгдсэн') opts.push(['s:Буцаасан', 'Буцаасан']);
     if (o.status === 'Цуцалсан') opts.push(['x', 'Бүр устгах']);
     if (ordAwaitReturn(o)) opts.push(['r', 'Буцаалт хүлээн авсан']);
-    if (!o.confirmed && !ordDead(o)) opts.push(o.paid !== 'Орсон' ? ['p:Орсон', 'Төлбөр орсон'] : ['p:Ороогүй', 'Төлбөр ороогүй']);
+    // төлбөрийг ажилтан тэмдэглэхгүй — банкны гүйлгээ эсвэл буухиа хураасанаар баталгаажна
     opts.push(['l', 'Шошго хэвлэх'], ['m', 'Төлбөрийн мессеж хуулах'], ['e', 'Засах']);
     var acts = o.pending ? '<small class="muted">Хадгалж байна…</small>' : o.failed ? '<button class="mini neg" onclick="ordRetry(\'' + o.id + '\')">Дахин хадгалах</button>' :   // ⋯ товч + цэс (удирдлагын хуудастай ижил)
       '<button class="mini dd-btn" title="Үйлдэл" aria-haspopup="menu" onclick="ddMenu(this,' + esc(JSON.stringify(opts.map(function (x) { return [x[1], 'ordAct(' + JSON.stringify(o.id) + ',' + JSON.stringify(x[0]) + ')']; }))) + ')">⋯</button>';
