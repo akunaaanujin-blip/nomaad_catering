@@ -1684,3 +1684,4 @@ body.pos10 .eb-tabs button.on{background:var(--p);border-color:var(--p)}
 tr.tr-ret td{background:#FFF7ED!important}
 tr.tr-ret td:first-child{box-shadow:inset 4px 0 0 #EA580C}
 .ret-btn{display:block;margin-top:6px;background:#EA580C!important;border-color:#EA580C!important;color:#fff!important;font-weight:700;white-space:nowrap}
+.eb-tabs .eb-wait{background:#DC2626;color:#fff;border-radius:999px;padding:2px 8px;font-size:12.5px;margin-left:4px}

@@ -205,7 +205,8 @@ function ebBoard(list, at) {
   var tabs = '<div class="eb-tabs">' + EB_TABS.map(function (t) {
     var n = t[0] === 'all' ? list.length : cnt[t[0]] || 0;
     if (t[0] !== 'all' && !n && String(ebF.st) !== String(t[0])) return '';
-    return '<button class="' + (String(ebF.st) === String(t[0]) ? 'on' : '') + '" onclick="ebF.st=\'' + t[0] + '\';ebF.open=\'\';ebRedraw()">' + t[1] + ' <small>' + n + '</small></button>';
+    var wait = t[0] === 'back' ? list.filter(function (x) { return (x.st === 11 || x.st === 12) && x.id && /^yes:/.test(x.sd || ''); }).length : 0;   // буцсан ч бараа нь хүлээн аваагүй
+    return '<button class="' + (String(ebF.st) === String(t[0]) ? 'on' : '') + '" onclick="ebF.st=\'' + t[0] + '\';ebF.open=\'\';ebRedraw()">' + t[1] + ' <small>' + n + '</small>' + (wait ? ' <b class="eb-wait">' + wait + ' бараа ирээгүй</b>' : '') + '</button>';
   }).join('') + (window.ebRecPanel ? '<button class="' + (ebF.st === 'rec' ? 'on' : '') + '" title="Манай захиалгатай холбогдоогүй, эсвэл мөнгө нь буухиатай тооцоо нийлээгүй хүргэлт" onclick="ebF.st=\'rec\';ebF.open=\'\';ebRedraw()">Нийлээгүй' + (window.ebRecCount ? ' <small>' + window.ebRecCount() + '</small>' : '') + '</button>' : '') + '</div>';
   if (ebF.st === 'rec') return tabs + window.ebRecPanel();
   if (ebF.st === 'other') return tabs + ebOtherTable(oth);
