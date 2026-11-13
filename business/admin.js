@@ -113,7 +113,7 @@ function applyRead(d) {
   Object.keys(stockData).forEach(function (b) { if (stockData[b]) [FEE_ITEM, DISC_ITEM, SPLIT_ITEM].forEach(function (k) { delete stockData[b][k]; }); });   // бараа биш мөрүүд
   journal = d.journal || []; partners = d.partners || []; sheetProducts = d.products || []; applyProducts(); meta = d.meta || {};
   window.PF_RAW = [d.pf || {}, d.pfcfg || {}]; if (typeof pfApply === 'function') pfApply(PF_RAW[0], PF_RAW[1]);   // хувийн санхүү (зөвхөн Эзэнд ирнэ)
-  reminders = d.reminders || []; window.adminOrders = d.orders || []; window.loans = d.loans || []; window.pos = d.pos || []; window.bankLinks = d.bankLinks || [];
+  reminders = d.reminders || []; window.adminOrders = d.orders || []; window.loans = d.loans || []; window.pos = d.pos || []; window.bankLinks = d.bankLinks || []; window.bankAuto = d.bankAuto || {};
   window.importLog = d.importLog || []; window.bankRules = d.bankRules || [];
   window.bankDeleted = (d.bank || []).filter(function (l) { return l.status === 'Устгасан'; }); bankLines = (d.bank || []).filter(function (l) { return l.status !== 'Устгасан'; }); window.payInfoAll = d.payInfo || {}; window.spAll = d.storepay || {}; window.ebOnAll = d.ebuuhia != null ? !!d.ebuuhia : !!window.ebOnAll;   // хариунд байхгүй бол өмнөхийг хадгална («Хүргэлт» цэс алга болохгүй)
    window.salesTargets = d.targets || {}; window.boostBud = d.boostbud || []; tasks = d.tasks || []; taxCfg = d.taxcfg || {}; customDocs = d.docs || [];

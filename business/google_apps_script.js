@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v8.8 (admin_read: poLog — ажилтны шийдэгдсэн бүртгэл; Буухиагийн сайтаас устгасан хүргэлтийг дахин илгээх: eb_unlink; Буухиа руу үнийн дүнтэй / дүнгүй илгээх: noAmt, «Буухиа дүн» багана; ажилтны «Бараа ирсэн»-д каргоны дүн; «Бараа ирсэн», карго — удирдлага батална: staff_po, staff_po_in, admin_po inboxId; буухиа: Cozy-ийн бүртгэлтэй хүргэлт NOMAAD-д харагдахгүй — EB_HOME; засах: барааны хөдөлгөөн admin_stock editId, зарлага admin_record editId, харилцагч admin_partner editId / delId; цуцалсан/буцаасан захиалгын бараа үлдэгдэлд зөвхөн «Бараа буцаж ирсэн»-ээр — буухиа цуцлахад шууд нэмэхгүй; Boost төсөв: удирдлага BOOST_BUD-д гаргана, ажилтан boost_bud-аар төсөв + задаргаагаа харна; хуучин JS хувилбарын хүсэлтийг бичихгүй — MIN_JS; ажилтны нэвтрэлт 11-02-оос өмнөх шигээ: нэвтрэх нэр + код, нийтлэг эрх зөвшөөрнө, 4 оронтой код, PIN албадан солихгүй; Boost нэхэмжлэх: олон компанийн мөр, Meta баримтын зураг «Boost баримт», admin_boost; буухиа руу илгээхэд дүүрэг/сум заавал биш; захиалгын хүргэлтийн төлбөр, хөнгөлөлт засахад борлуулалтын мөр дагана — orderSyncAdj; удирдлагаас хүргэлт/хөнгөлөлт засах, «Хүргэлтийн компани» багана; банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v8.9 (банкны мэдэгдлээр автоматаар оруулах: шилжүүлгийн баримтын и-мэйл bankMailScan, утаснаас дамжуулсан мессеж bank_sms, тохиргоо admin_setting bankauto, хуулгатай нийлүүлэх admin_bank updates.fix; admin_read: poLog — ажилтны шийдэгдсэн бүртгэл; Буухиагийн сайтаас устгасан хүргэлтийг дахин илгээх: eb_unlink; Буухиа руу үнийн дүнтэй / дүнгүй илгээх: noAmt, «Буухиа дүн» багана; ажилтны «Бараа ирсэн»-д каргоны дүн; «Бараа ирсэн», карго — удирдлага батална: staff_po, staff_po_in, admin_po inboxId; буухиа: Cozy-ийн бүртгэлтэй хүргэлт NOMAAD-д харагдахгүй — EB_HOME; засах: барааны хөдөлгөөн admin_stock editId, зарлага admin_record editId, харилцагч admin_partner editId / delId; цуцалсан/буцаасан захиалгын бараа үлдэгдэлд зөвхөн «Бараа буцаж ирсэн»-ээр — буухиа цуцлахад шууд нэмэхгүй; Boost төсөв: удирдлага BOOST_BUD-д гаргана, ажилтан boost_bud-аар төсөв + задаргаагаа харна; хуучин JS хувилбарын хүсэлтийг бичихгүй — MIN_JS; ажилтны нэвтрэлт 11-02-оос өмнөх шигээ: нэвтрэх нэр + код, нийтлэг эрх зөвшөөрнө, 4 оронтой код, PIN албадан солихгүй; Boost нэхэмжлэх: олон компанийн мөр, Meta баримтын зураг «Boost баримт», admin_boost; буухиа руу илгээхэд дүүрэг/сум заавал биш; захиалгын хүргэлтийн төлбөр, хөнгөлөлт засахад борлуулалтын мөр дагана — orderSyncAdj; удирдлагаас хүргэлт/хөнгөлөлт засах, «Хүргэлтийн компани» багана; банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -138,6 +138,7 @@ function route(data) {
   if (data.type === 'admin_stock') return isAdmin(data) ? adminStock(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_journal') return isAdmin(data) ? adminJournal(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_doc') return isAdmin(data) ? adminDoc(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'bank_sms') return bankSms(data);   // утаснаас дамжуулсан банкны мессеж (нууц түлхүүртэй)
   if (data.type === 'admin_bank') return !isAdmin(data) ? { status: 'error', error: 'auth' } : data.undoImport ? bankUndoImport(data) : data.rule || data.ruleCancel ? bankRule(data) : adminBank(data);
   if (data.type === 'admin_order') return isAdmin(data) ? adminOrder(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_task') return isAdmin(data) ? adminTask(data) : { status: 'error', error: 'auth' };
@@ -184,7 +185,7 @@ function route(data) {
 // Удирдлагын бүх бичилт, захиалга, тооллого: хэн · хэзээ · юу (амжилттай болсныг л). Нууц утга (түлхүүр, код, нууц үг) бичигдэхгүй.
 // Ажилтны борлуулалт, зарлагын мөр өөрөө ажилтан, цагтай тул энд давхар бичихгүй.
 const SHEET_AUDIT = 'Түүх', AUDIT_HEAD = ['Цаг', 'Хэн', 'Компани', 'Үйлдэл', 'Тайлбар', 'Төрөл', 'ID', 'Дэлгэрэнгүй'];
-const AUDIT_SKIP = { boost_img: 1, staff_pin: 1, register: 1, admin_login: 1, record_receipt: 1, barcode_set: 1, admin_backup: 1, admin_audit: 1, admin_restore: 0 };
+const AUDIT_SKIP = { bank_sms: 1, boost_img: 1, staff_pin: 1, register: 1, admin_login: 1, record_receipt: 1, barcode_set: 1, admin_backup: 1, admin_audit: 1, admin_restore: 0 };
 function auditSheet() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   let sh = ss.getSheetByName(SHEET_AUDIT);
@@ -272,7 +273,7 @@ function adminRestore(d) {
 // Sheet-ийг гараар засвал 5 минутын дотор шинэчлэгдэнэ.
 const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'imp', 'rule', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf', 'pf'];
 const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_other: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_unlink: ['ord'], eb_send: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord', 'rec'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
-  staff_po_in: ['mov', 'stk', 'jr', 'po'], admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr', 'bank'], admin_bank: ['bank', 'jr', 'ord', 'imp', 'rule'], admin_partner: ['pt'], admin_reminder: ['rem'],
+  staff_po_in: ['mov', 'stk', 'jr', 'po'], admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr', 'bank'], admin_bank: ['bank', 'jr', 'ord', 'imp', 'rule'], bank_sms: ['bank'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_pf: ['pf'], admin_po: ['po', 'jr'],
   admin_restore: ['rec', 'stk', 'mov', 'jr'], admin_staff: ['adm', 'stf'], staff_pin: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
 const CACHE_READ = { staff_po: 1, admin_audit: 1, eb_sync: 1, requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
@@ -415,6 +416,7 @@ function adminRead(d) {
   a.poInbox = poIn0.filter(function (x) { return x.status === 'Хүлээгдэж'; });   // ажилтны «Бараа ирсэн», карго — батлах
   a.poLog = poIn0.filter(function (x) { return x.status !== 'Хүлээгдэж'; }).slice(-300);   // шийдэгдсэн ажилтны бүртгэл — хэн илгээснийг хадгална («Ажилтны бүртгэл» таб)
   a.bankLinks = JSON.parse(pr.getProperty('BANKLINKS') || '[]');
+  a.bankAuto = bankAutoInfo();   // мэдэгдлээр автоматаар оруулах: асаалттай эсэх, сүүлд ирсэн (түлхүүр буцаахгүй)
   a.kpi = JSON.parse(pr.getProperty('KPI') || '{}');
   a.boostbud = JSON.parse(pr.getProperty('BOOST_BUD') || '[]');   // Boost төсөв [{ id, biz, from, days, mnt, usd, note, by, at }]
   a.targets = JSON.parse(pr.getProperty('TARGETS') || '{}');   // борлуулалтын зорилт { 'biz|YYYY-MM': { total, staff: { нэр: дүн } } }
@@ -1415,6 +1417,11 @@ function adminBank(d) {
   bankRows().forEach(function (r, i) { pos[r.id] = i + 2; });
   (d.updates || []).forEach(function (u) {
     const r = pos[String(u.id)]; if (!r) return;
+    if (u.fix && /\|N\|/.test(String(u.id))) {   // мэдэгдлээр орсон мөр хуулгын ижил гүйлгээтэй нийлэв: хуулгын огноо, үлдэгдэл, утга, харьцсан дансыг бичнэ (төлөв, тулгалт хэвээр)
+      const f = u.fix; sh.getRange(r, 3).setValue(String(f.date || '').slice(0, 19));
+      sh.getRange(r, 6, 1, 3).setValues([[Number(f.bal) || 0, String(f.desc || '').slice(0, 250), String(f.party || '').slice(0, 30)]]);
+      sh.getRange(r, 14).setValue(String(u.imp || 'IMP').slice(0, 30)); upd++; return;
+    }
     sh.getRange(r, 10, 1, 3).setValues([[String(u.status || '').slice(0, 20), String(u.link || '').slice(0, 120), by]]); upd++;
     if (u.status === 'Шинэ' || u.status === 'Устгасан') sh.getRange(r, 15).setValue('');   // тулгалт буцаавал бичилтийн холбоос арилна
     if (u.imp) sh.getRange(r, 14).setValue(String(u.imp).slice(0, 30));   // устгасан мөрийг дахин импортлоход шинэ импорттой холбоно
@@ -1436,6 +1443,151 @@ function bankUndoImport(d) {
   mine.forEach(function (r) { sh.getRange(r, 10, 1, 3).setValues([['Устгасан', '', by]]); sh.getRange(r, 15).setValue(''); });
   lg.getRange(li + 2, 14).setValue('Буцаасан');
   return { status: 'ok', lines: mine.length, entries: hit.length };
+}
+// ── МЭДЭГДЛЭЭР АВТОМАТААР ОРУУЛАХ ──
+// 1) Шилжүүлгийн баримтын и-мэйл (noreply@khanbank.com) — 10 минут тутам уншина (bankMailScan, зөвхөн зарлага)
+// 2) Утаснаас дамжуулсан банкны мессеж — bank_sms (нууц түлхүүртэй)
+// Мөр нь «Банк» хуудсанд «Шинэ» төлөвтэй, import_id = MAIL / SMS, ID = данс|N|огноо цаг|±дүн. Санхүүд юу ч бичихгүй — удирдлага өөрөө тулгана.
+// Дараа нь хуулга оруулахад ижил гүйлгээтэй нийлнэ (admin_bank updates.fix) — давхардахгүй.
+const BANK_ACC4 = { '5790': 'cozy', '2825': 'travel' };   // config.js BANK_ACCOUNTS-тай ижил (сүүлийн 4 орон)
+const BANK_MAIL_FROM = 'noreply@khanbank.com';
+function bankNoteBiz(no) {
+  const L = JSON.parse(PropertiesService.getScriptProperties().getProperty('BANKLINKS') || '[]');
+  const mk = String(no || '').match(/^(\d*)[*xX]+(\d*)$/);   // мессежид данс нуугдсан (5313***790): эхлэл, төгсгөлөөр холбосон данснаас хайна
+  if (mk) { const f = L.filter(function (x) { const n = String(x.no); return n.length >= 8 && n.indexOf(mk[1]) === 0 && n.slice(-mk[2].length) === mk[2] && mk[1].length + mk[2].length >= 4; }); if (f.length === 1) return { biz: f[0].biz, no: String(f[0].no) }; no = mk[2]; }
+  const d = String(no || '').replace(/\D/g, ''); if (d.length < 4) return null;
+  const l = L.filter(function (x) { const n = String(x.no); return n.length <= 4 || d.length <= 4 ? n.slice(-4) === d.slice(-4) : d.length >= n.length ? d.slice(-n.length) === n : n.slice(-d.length) === d; })[0];
+  if (l) return { biz: l.biz, no: d.length >= String(l.no).length ? d : String(l.no) };
+  return BANK_ACC4[d.slice(-4)] ? { biz: BANK_ACC4[d.slice(-4)], no: d } : null;
+}
+function bankNoteMs(s) { const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)) : NaN; }
+// notes: [{ no, date 'yyyy-MM-dd HH:mm:ss', credit, debit, bal, desc, party }], src: 'MAIL' | 'SMS'. Дуудагч түгжээтэй байх ёстой.
+function bankNoteAdd(notes, src) {
+  if (!notes.length) return 0;
+  const sh = bankSheet(), cur = bankRows(), have = {}, rows = [], now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
+  cur.forEach(function (r) { have[r.id] = 1; });
+  const pr = PropertiesService.getScriptProperties(); let paired = []; try { paired = JSON.parse(pr.getProperty('BANK_NOTE_IDS') || '[]'); } catch (e) {}   // нөгөө эх сурвалжийн мөртэй нийлсэн мэдэгдлийн ID — дахин уншихад давхардахгүй
+  const n0 = paired.length; paired.forEach(function (x) { have[x] = 1; });
+  const same = function (r, n, a4) { return String(r.acct).slice(-4) === a4 && Math.abs(r.credit - n.credit) < 0.005 && Math.abs(r.debit - n.debit) < 0.005; };
+  notes.forEach(function (n) {
+    const inf = bankNoteBiz(n.no); if (!inf) return;
+    n.credit = Math.abs(Number(n.credit) || 0); n.debit = Math.abs(Number(n.debit) || 0);
+    if (!(n.credit > 0) === !(n.debit > 0)) return;
+    const a4 = inf.no.slice(-4), id = (inf.no + '|N|' + n.date + '|' + (n.credit ? '+' + n.credit : '-' + n.debit)).slice(0, 120);
+    if (have[id]) return;
+    const t = bankNoteMs(n.date); if (isNaN(t)) return;
+    let hit = -1, twin = false;
+    cur.forEach(function (r, i) {
+      if (hit >= 0 || twin || !same(r, n, a4)) return;
+      const dt = Math.abs(bankNoteMs(r.date) - t), prov = /^(SMS|MAIL)$/.test(r.imp) && /\|N\|/.test(r.id);
+      if (r.imp === src && /\|N\|/.test(r.id)) return;   // ижил эх сурвалжийн өөр мэдэгдэл — тусдаа гүйлгээ
+      if (prov && dt <= 5 * 6e4) hit = i;                // нөгөө эх сурвалжаас (мессеж ↔ и-мэйл) аль хэдийн орсон
+      else if (!/\|N\|/.test(r.id) && dt <= 15 * 6e4) twin = true;   // хуулгаар аль хэдийн орсон
+    });
+    if (twin) return;
+    if (hit >= 0) {   // нэг гүйлгээ: и-мэйлийн утга, харьцсан данс илүү бүрэн — нөхнө; дахин нийлэхгүйгээр тэмдэглэнэ
+      const r = cur[hit];
+      if (src === 'MAIL') sh.getRange(hit + 2, 7, 1, 2).setValues([[String(n.desc || r.desc).slice(0, 250), String(n.party || r.party).slice(0, 30)]]);
+      else if (n.bal && !r.bal) sh.getRange(hit + 2, 6).setValue(Number(n.bal) || 0);
+      sh.getRange(hit + 2, 14).setValue(r.imp + '+' + src); r.imp = r.imp + '+' + src; have[id] = 1; paired.push(id); return;
+    }
+    have[id] = 1;
+    const row = { id: id, acct: inf.no, date: n.date, credit: n.credit, debit: n.debit, bal: Number(n.bal) || 0, desc: String(n.desc || '').slice(0, 250), party: String(n.party || '').slice(0, 30), biz: inf.biz, imp: src };
+    cur.push(row);
+    rows.push([row.id, row.acct, row.date, row.credit, row.debit, row.bal, row.desc, row.party, row.biz, 'Шинэ', '', src === 'MAIL' ? 'И-мэйл' : 'Мессеж', now, src, '']);
+  });
+  if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, BANK_HEAD.length).setValues(rows);
+  if (paired.length !== n0) pr.setProperty('BANK_NOTE_IDS', JSON.stringify(paired.slice(-150)));
+  return rows.length;
+}
+// «Шилжүүлгийн баримт» и-мэйлийн HTML → гүйлгээ. Бүтэц: Огноо/Date | Журналын No | Дт/From: данс, нэр, дүн, валют | Кт/To: дүн, валют, банк, данс, нэр | Гүйлгээний утга
+function bankMailParse(html) {
+  const T = String(html).replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ').replace(/<!--[\s\S]*?-->/g, ' ').replace(/<\/?(span|b|i|u|strong|em|font|a)\b[^>]*>/gi, '').replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#\d+;|&\w+;/g, ' ')
+    .split('\n').map(function (x) { return x.replace(/\s+/g, ' ').trim(); }).filter(Boolean);
+  const all = T.join('\n'), dm = all.match(/Date:\s*(\d{4})\.(\d{2})\.(\d{2})\s+(\d{2}:\d{2}:\d{2})/);
+  if (!dm) return null;
+  const num = function (x) { return Number(String(x).replace(/,/g, '')); }, isAmt = function (x) { return /^\d{1,3}(,\d{3})*\.\d{2}$|^\d+\.\d{2}$/.test(x); };
+  const iTo = T.findIndex(function (x) { return /^[KК][тt]\/To$/i.test(x); }), iFrom = T.findIndex(function (x) { return /^Дт\/From$/i.test(x); });
+  const iDesc = T.findIndex(function (x) { return /Transaction description/i.test(x); });
+  if (iFrom < 0 || iTo < iFrom || iDesc < iTo) return null;
+  const F = T.slice(iFrom + 1, iTo), K = T.slice(iTo + 1, iDesc);
+  const fa = F.findIndex(function (x) { return /^\d{8,20}$/.test(x); }); if (fa < 0) return null;
+  const fm = F.findIndex(function (x, i) { return i > fa && isAmt(x); }); if (fm < 0) return null;
+  const ka = K.filter(function (x) { return /^\d{6,20}$/.test(x); }).pop() || '', kn = ka ? K[K.lastIndexOf(ka) + 1] || '' : '';
+  let desc = [];
+  for (let i = iDesc + 1; i < T.length && !/^-{5,}$|Харилцагч танд баярлалаа|Thank you/.test(T[i]); i++) desc.push(T[i]);
+  desc = desc.join(' ').trim();
+  return { no: F[fa], date: dm[1] + '-' + dm[2] + '-' + dm[3] + ' ' + dm[4], credit: 0, debit: num(F[fm]), bal: 0, desc: (desc + (kn && !/[\/:*]/.test(kn) ? ' · ' + kn : '')).trim(), party: ka };
+}
+function bankMailScan() {
+  const pr = PropertiesService.getScriptProperties();
+  if (pr.getProperty('BANK_MAIL') !== 'on') return;
+  const since = Number(pr.getProperty('BANK_MAIL_SEEN') || 0), notes = []; let top = since, bad = 0;
+  GmailApp.search('from:' + BANK_MAIL_FROM + ' subject:"Transaction receipt" newer_than:3d', 0, 40).forEach(function (th) {
+    th.getMessages().forEach(function (m) {
+      const t = m.getDate().getTime();
+      if (t <= since || m.getFrom().toLowerCase().indexOf(BANK_MAIL_FROM) < 0) return;
+      if (t > top) top = t;
+      let n = null; try { n = bankMailParse(m.getBody()); } catch (e) {}
+      if (n) notes.push(n); else bad++;
+    });
+  });
+  let added = 0;
+  if (notes.length) {
+    const lock = LockService.getScriptLock(); lock.waitLock(20000);
+    try { added = bankNoteAdd(notes, 'MAIL'); SpreadsheetApp.flush(); if (added) cacheDrop(['bank']); } finally { lock.releaseLock(); }
+  }
+  pr.setProperty('BANK_MAIL_SEEN', String(top));
+  pr.setProperty('BANK_MAIL_LAST', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + (notes.length || bad ? ' · ' + notes.length + ' баримт, ' + added + ' шинэ' + (bad ? ', ' + bad + ' уншигдаагүй' : '') : ''));
+}
+// Редактороос нэг удаа ажиллуулж Gmail унших зөвшөөрөл өгнө (и-мэйл унших асаахын өмнө)
+function bankMailAuth() { Logger.log('Хаан банкны баримт: ' + GmailApp.search('from:' + BANK_MAIL_FROM + ' newer_than:3d', 0, 5).length + ' и-мэйл олдлоо — зөвшөөрөл өгөгдсөн'); }
+// Банкны мессеж → гүйлгээ. Латин / кирилл аль алинаар: данс, орлого / зарлага, дүн, үлдэгдэл, гүйлгээний утга
+function bankSmsParse(text) {
+  const s = String(text || '').replace(/\s+/g, ' ').trim(), lo = s.toLowerCase();
+  const isIn = /orlogo|орлого|credit/.test(lo), isOut = /zarlaga|зарлага|debit/.test(lo);
+  if (isIn === isOut) return null;
+  const am = s.match(/(\d[\d*xX]{5,19})\s*(?:toot\s*)?(?:dans|данс)|(?:dans|данс|account|acc)[^\d*x]{0,12}([\d*xX]{4,20})/i) || s.match(/\b(\d{10})\b/) || s.match(/(\d{0,6}[*xX]{2,}\d{3,4})\b/);
+  const no = am ? String(am[1] || am[2] || '') : '';
+  const nums = function (str) { return (str.match(/\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+\.\d{1,2}|\d+/g) || []).map(function (x) { return { raw: x, v: Number(x.replace(/,/g, '')) }; }); };
+  const bm = s.match(/(?:uldegdel|үлдэгдэл|balance)\D{0,8}([\d,]+(?:\.\d{1,2})?)/i), um = s.match(/(?:guilgeenii utga|гүйлгээний утга|utga|утга)\s*[:\-]?\s*(.+)$/i);
+  let head = s; if (um) head = head.slice(0, um.index); if (bm) head = head.replace(bm[0], ' '); if (no) head = head.replace(no, ' ');
+  const cand = nums(head).filter(function (x) { return x.raw.replace(/\D/g, '').length < 10 && !(no && no.indexOf(x.raw) >= 0); });
+  const pick = cand.filter(function (x) { return /[.,]/.test(x.raw); })[0] || cand.filter(function (x) { return x.v >= 100; })[0];
+  if (!pick || !no) return null;
+  let desc = um ? um[1].trim() : ''; if (bm && desc.indexOf(bm[0]) >= 0) desc = desc.slice(0, desc.indexOf(bm[0])).trim();
+  return { no: no, credit: isIn ? pick.v : 0, debit: isOut ? pick.v : 0, bal: bm ? Number(bm[1].replace(/,/g, '')) : 0, desc: desc.replace(/[.\s]+$/, ''), party: '' };
+}
+function bankSms(d) {
+  const pr = PropertiesService.getScriptProperties(), key = pr.getProperty('BANK_SMS_KEY') || '';
+  if (!key || String(d.secret || '') !== key) return { status: 'error', error: 'auth' };
+  const text = String(d.text || '').slice(0, 600), now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
+  let n = null; try { n = bankSmsParse(text); } catch (e) {}
+  const known = n && bankNoteBiz(n.no);
+  let added = 0;
+  if (known) { n.date = now; added = bankNoteAdd([n], 'SMS'); }
+  // оношлогоо: сүүлийн мессеж уншигдсан эсэх (зөвхөн эзэнд харагдана). Уншигдаагүй бол бичвэрийг нь хадгална — загварыг засахад хэрэгтэй
+  pr.setProperty('BANK_SMS_LAST', JSON.stringify({ at: now.slice(0, 16), ok: !!known, added: added, why: !n ? 'загвар танигдсангүй' : !known ? 'данс холбогдоогүй' : '', text: known ? '' : text.slice(0, 300) }));
+  return { status: 'ok', added: added, parsed: !!n };
+}
+function bankAutoInfo() {
+  const pr = PropertiesService.getScriptProperties(); let sms = {}; try { sms = JSON.parse(pr.getProperty('BANK_SMS_LAST') || '{}'); } catch (e) {}
+  return { mail: pr.getProperty('BANK_MAIL') === 'on', mailLast: pr.getProperty('BANK_MAIL_LAST') || '', sms: !!pr.getProperty('BANK_SMS_KEY'), smsLast: sms };
+}
+// Тохиргоо (зөвхөн эзэн): value.mail true/false — и-мэйл унших; value.sms 'new' — мессежийн түлхүүр шинээр үүсгэж нэг удаа буцаана, 'off' — унтраана
+function bankAutoSetting(d) {
+  if (!d._who || d._who.role !== 'Эзэн') return { status: 'error', error: 'role' };
+  const pr = PropertiesService.getScriptProperties(), v = d.value || {}, out = { status: 'ok' };
+  if (v.mail !== undefined) {
+    if (v.mail) { try { GmailApp.search('from:' + BANK_MAIL_FROM + ' newer_than:1d', 0, 1); } catch (e) { return { status: 'error', error: 'gmail_auth' }; } }
+    ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'bankMailScan') ScriptApp.deleteTrigger(t); });
+    if (v.mail) { ScriptApp.newTrigger('bankMailScan').timeBased().everyMinutes(10).create(); if (!pr.getProperty('BANK_MAIL_SEEN')) pr.setProperty('BANK_MAIL_SEEN', String(Date.now())); }   // асаасан мөчөөс хойших баримт — өмнөхийг хуулгаар оруулсан
+    pr.setProperty('BANK_MAIL', v.mail ? 'on' : 'off');
+  }
+  if (v.sms === 'new') { const k = Utilities.getUuid().replace(/-/g, ''); pr.setProperty('BANK_SMS_KEY', k); out.smsKey = k; }
+  if (v.sms === 'off') pr.deleteProperty('BANK_SMS_KEY');
+  out.auto = bankAutoInfo();
+  return out;
 }
 // Банкны дүрэм: нэмэх (rule: {kw, act, biz}) / устгах (ruleCancel: ID)
 function bankRule(d) {
@@ -1535,6 +1687,7 @@ function adminOrder(d) {
 function adminSetting(d) {
   if (d.key === 'storepay') return storePaySetting(d);
   if (d.key === 'ebuuhia') return ebSetting(d);
+  if (d.key === 'bankauto') return bankAutoSetting(d);
   if (d.key === 'accounts') { PropertiesService.getScriptProperties().setProperty('ACCOUNTS_X', JSON.stringify(d.value || []).slice(0, 8000)); return { status: 'ok' }; }
   if (d.key === 'delcode') { const v = String(d.value || '').trim(); if (v && !/^\d{4,12}$/.test(v)) return { status: 'error', error: 'fields' }; PropertiesService.getScriptProperties().setProperty('DELETE_CODE', v); return { status: 'ok', set: !!v }; }   // цуцалсан захиалга устгах код (зөвхөн эзэн)
   if (d.key === 'lock') { const v = String(d.value || ''); if (v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) return { status: 'error', error: 'fields' }; PropertiesService.getScriptProperties().setProperty('LOCK', v); return { status: 'ok' }; }

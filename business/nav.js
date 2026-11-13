@@ -225,7 +225,7 @@ render = function () {
 function alertsOf(biz) {
   var B = BUSINESSES[biz] || {}, t = todayStr(), out = [], add = function (txt, n, fn, bad) { if (n) out.push({ txt: txt, n: n, fn: fn, bad: !!bad }); };
   add('Банкны ' + navCount('bank') + ' гүйлгээ тулгагдаагүй', navCount('bank'), "navGo('finance/bank')", true);
-  var bl = (typeof bankLines !== 'undefined' ? bankLines : []).filter(function (l) { return l.biz === biz; }).map(function (l) { return l.date; }).sort().pop() || '';
+  var bl = (typeof bankLines !== 'undefined' ? bankLines : []).filter(function (l) { return l.biz === biz && !bankProv(l); }).map(function (l) { return l.date; }).sort().pop() || '';
   if (bl && bl < todayStr(new Date(Date.now() - 7 * 864e5))) add('Банкны хуулга 7 хоног оруулаагүй (сүүлд ' + bl + ')', 1, "navGo('finance/bank')");
   add(pendRequests(biz).length + ' мөнгөний хүсэлт хүлээгдэж байна', pendRequests(biz).length, "navGo('finance/requests')", true);
   add(pendCounts(biz).length + ' тооллого батлах', pendCounts(biz).length, "navGo('products/counts')");
@@ -290,7 +290,7 @@ function homeView() {
     var sold = records.some(function (x) { return x.biz === biz && x.type === 'sale' && x.date === t; }), closed = records.some(function (x) { return x.biz === biz && x.type === 'close' && x.date === t; });
     if (sold) daily.push({ txt: 'Касс хаах', ok: closed, fn: "navGo('finance/expenses')" });
   }
-  var lastBk = (typeof bankLines !== 'undefined' ? bankLines : []).filter(function (l) { return l.biz === biz; }).map(function (l) { return String(l.date).slice(0, 10); }).sort().pop() || '';
+  var lastBk = (typeof bankLines !== 'undefined' ? bankLines : []).filter(function (l) { return l.biz === biz && !bankProv(l); }).map(function (l) { return String(l.date).slice(0, 10); }).sort().pop() || '';
   daily.push({ txt: 'Банкны хуулга оруулж тулгах', ok: !navCount('bank') && lastBk >= todayStr(new Date(Date.now() - 7 * 864e5)), fn: "navGo('finance/bank')", hint: lastBk ? 'сүүлд ' + lastBk : 'хуулга оруулаагүй' });
   if (!B.finOnly) daily.push({ txt: 'Мөнгөний хүсэлт шийдэх', ok: !pendRequests(biz).length, fn: "navGo('finance/requests')" });
   var todo = '<div class="card"><h2>Өнөөдөр хийх ажил</h2>' + (L.length ? L.map(function (a) {
