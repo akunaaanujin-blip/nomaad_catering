@@ -373,6 +373,7 @@ function loadProducts() {
     sheetProducts = data.products;
     save(LS_PROD, sheetProducts);
     if (data.payInfo !== undefined) save('nb_payinfo_' + BIZ_KEY, data.payInfo);   // захиалгын төлбөрийн мессежид
+    if (data.notices) { save('nb_notice_' + BIZ_KEY, data.notices); noticeShow(); }   // удирдлагын санамж
     save('nb_sp_' + BIZ_KEY, !!data.storepay); spShowBtn();   // StorePay тохируулсан эсэх
     if (data.barcodes) save('nb_bc_' + BIZ_KEY, data.barcodes);   // баркод → барааны нэр
     products = mergeProducts(BIZ.products, sheetProducts);
@@ -1598,3 +1599,19 @@ function taskDone(id) {
     .then(function (r) { return r.json(); }).then(function (d) { if (d && d.status === 'ok') { toast('Тэмдэглэгдлээ'); loadTasks(); } else toast('Алдаа гарлаа'); })
     .catch(function () { toast('Интернэт холболтоо шалгана уу'); });
 }
+
+// ── Санамж: удирдлагын бичсэн (серверээс) + системийн шинэчлэлийн санамж — хуудасны дээд хэсэгт ──
+var SYS_NOTICES = [
+  { id: 'upd-20261113', until: '2026-11-30', text: 'Шинэчлэл (11-13): шилжүүлгийн төлбөр банкны мессежээр автоматаар баталгаажна. «Төлбөр орсон» гэж дарах шаардлагагүй болсон.\nХарилцагчаар гүйлгээний утгад ЗААВАЛ захиалгын утасны дугаарыг бичүүлнэ үү — утга, дүн нь захиалгатай таарахгүй бол төлбөр баталгаажихгүй. «Төлбөрийн мессеж хуулах»-аар илгээвэл зөв утга нь бичигдсэн байна.' }
+];
+function noticeShow() {
+  var wrap = document.querySelector('#main .wrap'); if (!wrap) return;
+  var today = new Date().toISOString().slice(0, 10), L = (load('nb_notice_' + BIZ_KEY, []) || []).concat(SYS_NOTICES.filter(function (n) { return today <= n.until; }));
+  var box = document.getElementById('noticeBox');
+  if (!box) { box = document.createElement('div'); box.id = 'noticeBox'; wrap.insertBefore(box, wrap.firstChild); }
+  box.innerHTML = L.map(function (n) {
+    return '<div style="border:1px solid var(--line,#ddd);border-left:3px solid var(--accent,#c9a227);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:14px;white-space:pre-wrap;background:var(--card,#fff)">' +
+      esc(n.text) + (n.at ? '<div style="font-size:12px;opacity:.6;margin-top:4px">Удирдлага · ' + esc(n.at) + '</div>' : '') + '</div>';
+  }).join('');
+}
+document.addEventListener('DOMContentLoaded', noticeShow);

@@ -115,7 +115,7 @@ function applyRead(d) {
   window.PF_RAW = [d.pf || {}, d.pfcfg || {}]; if (typeof pfApply === 'function') pfApply(PF_RAW[0], PF_RAW[1]);   // хувийн санхүү (зөвхөн Эзэнд ирнэ)
   reminders = d.reminders || []; window.adminOrders = d.orders || []; window.loans = d.loans || []; window.pos = d.pos || []; window.bankLinks = d.bankLinks || []; window.bankAuto = d.bankAuto || {};
   window.importLog = d.importLog || []; window.bankRules = d.bankRules || [];
-  window.bankDeleted = (d.bank || []).filter(function (l) { return l.status === 'Устгасан'; }); bankLines = (d.bank || []).filter(function (l) { return l.status !== 'Устгасан'; }); window.payInfoAll = d.payInfo || {}; window.spAll = d.storepay || {}; window.ebOnAll = d.ebuuhia != null ? !!d.ebuuhia : !!window.ebOnAll;   // хариунд байхгүй бол өмнөхийг хадгална («Хүргэлт» цэс алга болохгүй)
+  window.bankDeleted = (d.bank || []).filter(function (l) { return l.status === 'Устгасан'; }); bankLines = (d.bank || []).filter(function (l) { return l.status !== 'Устгасан'; }); window.payInfoAll = d.payInfo || {}; window.staffNotices = d.notices || window.staffNotices || []; window.spAll = d.storepay || {}; window.ebOnAll = d.ebuuhia != null ? !!d.ebuuhia : !!window.ebOnAll;   // хариунд байхгүй бол өмнөхийг хадгална («Хүргэлт» цэс алга болохгүй)
    window.salesTargets = d.targets || {}; window.boostBud = d.boostbud || []; tasks = d.tasks || []; taxCfg = d.taxcfg || {}; customDocs = d.docs || [];
   accountsX = d.accountsX || []; applyCustomAccounts(accountsX); meta.lock = d.lock || '';
   window.kpiCfg = d.kpi || {}; window.assets = d.assets || []; faPoCost(); window.minStock = d.minstock || {};
@@ -992,6 +992,26 @@ function staffSales(s, month) {
   return records.filter(function (x) { return x.type === 'sale' && x.staff === s.name && x.date.slice(0, 7) === month && staffIn(s, x.biz); })
     .reduce(function (a, x) { return a + (Number(x.amount) || 0); }, 0);
 }
+// Ажилтанд санамж — ажилтны хуудасны дээд хэсэгт харагдана (зөвхөн эзэн бичнэ)
+function noticeCard() {
+  if (!isOwner()) return '';
+  var L = window.staffNotices || [], bo = '<option value="all">Бүх ажилтан</option>' + KEYS.map(function (k) { return '<option value="' + k + '">' + esc(bizLabel(k)) + '</option>'; }).join('');
+  return '<div class="card"><h2>Ажилтанд санамж</h2>' +
+    '<div class="bar-row"><textarea id="ntText" rows="2" style="flex:1;min-width:220px" placeholder="Жишээ: Маргааш 10 цагт хурал болно"></textarea><select id="ntBiz">' + bo + '</select><button class="b-btn primary" onclick="noticeSave()">Нийтлэх</button></div>' +
+    (L.length ? '<table class="rep-t" style="margin-top:8px">' + L.map(function (n) {
+      return '<tr><td style="white-space:pre-wrap">' + esc(n.text) + '</td><td class="muted nw">' + esc(n.biz === 'all' ? 'Бүгд' : bizLabel(n.biz)) + ' · ' + esc(n.at) + '</td><td class="n"><button class="mini" onclick="noticeDel(\'' + esc(n.id) + '\')">Устгах</button></td></tr>';
+    }).join('') + '</table>' : '<p class="muted" style="font-size:12.5px;margin-top:6px">Санамж алга. Нийтэлсэн санамж ажилтны хуудасны дээд хэсэгт, таныг устгах хүртэл харагдана.</p>') + '</div>';
+}
+function noticePost(v) {
+  if (!API_URL) { toast('Сервергүй үед ажиллахгүй'); return; }
+  post({ type: 'admin_setting', key: 'notice', by: ownerName, value: v }, function (err, d) {
+    if (err) { toast(err === 'fields' ? 'Санамжаа бичнэ үү' : 'Алдаа: ' + err); return; }
+    if (!d || !d.notices) { toast('Сервер шинэчлэгдээгүй байна (v8.10 deploy хийнэ үү)'); return; }
+    window.staffNotices = d.notices; toast(v.add ? 'Нийтлэгдлээ' : 'Устгагдлаа'); render();
+  });
+}
+function noticeSave() { var t = $('ntText').value.trim(); if (!t) { toast('Санамжаа бичнэ үү'); return; } noticePost({ add: { text: t, biz: $('ntBiz').value } }); }
+function noticeDel(id) { if (confirm('Санамжийг устгах уу?')) noticePost({ del: id }); }
 function staffView(fixedBiz) {
   if (state.staffBiz !== 'all' && KEYS.indexOf(state.staffBiz) < 0) state.staffBiz = 'all';   // «Удирдлага» (mgmt) г.м ажилтангүй компани — бүгдийг харуулна
   var bizF = fixedBiz || state.staffBiz;
@@ -1008,7 +1028,7 @@ function staffView(fixedBiz) {
   var reg = 'register.html' + (fixedBiz ? '?biz=' + fixedBiz : '');
   var sf = state.staffSt || 'all', showP = sf === 'all' || sf === 'pend', showA = sf === 'all' || sf === 'act', showO = sf === 'all' || sf === 'off';
   var stTabs = stBar('Төлөв', [['all', 'Бүгд', list.length], ['act', 'Идэвхтэй', act.length], ['pend', 'Хүлээгдэж буй', pend.length], ['off', 'Идэвхгүй', off.length]], sf, "state.staffSt='%'");
-  return '<div class="card bar-row">' + (fixedBiz ? '<h2 style="margin:0">Ажилчид</h2>' : filt) +
+  return noticeCard() + '<div class="card bar-row">' + (fixedBiz ? '<h2 style="margin:0">Ажилчид</h2>' : filt) +
     '<label class="month">Сар <input type="month" value="' + m + '" onchange="setMonth(this.value)"></label></div>' +
     (!API_URL ? '<div class="card muted">Ажилчдын бүртгэл Google Sheet-тэй холбогдсон үед ажиллана.</div>' : '') +
     '<div class="kpis">' + kpi('Идэвхтэй ажилтан', act.length + (pend.length ? ' <span class="tag r">+' + pend.length + '</span>' : '')) +

@@ -672,7 +672,7 @@ function bankAutoApply() {
   if (!ids.length) return;
   ids.forEach(function (id) { bankAutoTried[id] = 1; });
   bankAutoBusy = true; setTimeout(function () { bankAutoBusy = false; }, 15000);
-  bankApply(ids, true);
+  bankApply(ids, true, true);
 }
 function bankApplyAll() {
   var ids = bankLines.filter(function (l) { if (l.biz !== state.biz || l.status !== 'Шинэ') return false; var s = bankSuggest(l); return (s.kind === 'order' && s.sure) || (s.kind === 'shop' && s.sure) || s.kind === 'paid'; }).map(function (l) { return l.id; });
@@ -681,7 +681,7 @@ function bankApplyAll() {
   bankApply(ids, true);
 }
 // Сонголтын дагуу: захиалга → «Төлбөр орсон» + журнал; данс → кассын/харилцахын баримт; алгасах → тэмдэглэнэ
-function bankApply(ids, quiet) {
+function bankApply(ids, quiet, auto) {   // auto — автомат тулгалт: эргэлзээтэй (өглөг хасах гарах) бол асуухгүй, гараар үлдээнэ
   if (!quiet && ids.length === 1 && bankPick[ids[0]] === 'LN:new') { openLoanFromBank(ids[0]); return; }
   if (!quiet && ids.length === 1 && /^EB:/.test(bankPick[ids[0]] || '')) { ebBankOpen(ids[0], bankPick[ids[0]].indexOf('EB:b|') === 0 ? bankPick[ids[0]].slice(5) : ''); return; }
   if (!quiet && ids.length === 1 && /^XO:/.test(bankPick[ids[0]] || '') && /\|[ck]/.test(bankPick[ids[0]])) {   // каргоны компани заавал
@@ -827,6 +827,7 @@ function bankApply(ids, quiet) {
   if (typeof liabNegative === 'function') {
     var nb = {}; liabNegative(J(), '9999-12-31').forEach(function (n) { nb[n.acc + '|' + n.who] = n.v; });
     var ng = liabNegative(J().concat(entries.filter(function (e) { return e.biz === biz; })), '9999-12-31').filter(function (n) { var p = nb[n.acc + '|' + n.who]; return p === undefined || n.v < p - TOL; });
+    if (ng.length && auto) return;
     if (ng.length && !confirm('Анхаар: өглөг хасах гарна (өр байхгүй атал төлж байна):\n' + ng.map(function (n) { return n.acc + ' ' + accName(n.acc) + ' · ' + n.who + ' · ' + fmt(n.v); }).join('\n') + '\n\nЗөв ангилсан эсэхээ шалгана уу. Үргэлжлүүлэх үү?')) return;
   }
   ordLocal.forEach(function (x) { x.o.paid = 'Орсон'; x.o.confirmed = x.d + ' банк'; if (x.sd) x.o.saleDone = x.sd; });

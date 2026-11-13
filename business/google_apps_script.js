@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v8.9.1 (Хаан банкны мессежийн бодит загвар; банкны мэдэгдлээр автоматаар оруулах: шилжүүлгийн баримтын и-мэйл bankMailScan, утаснаас дамжуулсан мессеж bank_sms, тохиргоо admin_setting bankauto, хуулгатай нийлүүлэх admin_bank updates.fix; admin_read: poLog — ажилтны шийдэгдсэн бүртгэл; Буухиагийн сайтаас устгасан хүргэлтийг дахин илгээх: eb_unlink; Буухиа руу үнийн дүнтэй / дүнгүй илгээх: noAmt, «Буухиа дүн» багана; ажилтны «Бараа ирсэн»-д каргоны дүн; «Бараа ирсэн», карго — удирдлага батална: staff_po, staff_po_in, admin_po inboxId; буухиа: Cozy-ийн бүртгэлтэй хүргэлт NOMAAD-д харагдахгүй — EB_HOME; засах: барааны хөдөлгөөн admin_stock editId, зарлага admin_record editId, харилцагч admin_partner editId / delId; цуцалсан/буцаасан захиалгын бараа үлдэгдэлд зөвхөн «Бараа буцаж ирсэн»-ээр — буухиа цуцлахад шууд нэмэхгүй; Boost төсөв: удирдлага BOOST_BUD-д гаргана, ажилтан boost_bud-аар төсөв + задаргаагаа харна; хуучин JS хувилбарын хүсэлтийг бичихгүй — MIN_JS; ажилтны нэвтрэлт 11-02-оос өмнөх шигээ: нэвтрэх нэр + код, нийтлэг эрх зөвшөөрнө, 4 оронтой код, PIN албадан солихгүй; Boost нэхэмжлэх: олон компанийн мөр, Meta баримтын зураг «Boost баримт», admin_boost; буухиа руу илгээхэд дүүрэг/сум заавал биш; захиалгын хүргэлтийн төлбөр, хөнгөлөлт засахад борлуулалтын мөр дагана — orderSyncAdj; удирдлагаас хүргэлт/хөнгөлөлт засах, «Хүргэлтийн компани» багана; банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v8.10 (ажилтанд санамж: admin_setting notice, products → notices; Хаан банкны мессежийн бодит загвар; банкны мэдэгдлээр автоматаар оруулах: шилжүүлгийн баримтын и-мэйл bankMailScan, утаснаас дамжуулсан мессеж bank_sms, тохиргоо admin_setting bankauto, хуулгатай нийлүүлэх admin_bank updates.fix; admin_read: poLog — ажилтны шийдэгдсэн бүртгэл; Буухиагийн сайтаас устгасан хүргэлтийг дахин илгээх: eb_unlink; Буухиа руу үнийн дүнтэй / дүнгүй илгээх: noAmt, «Буухиа дүн» багана; ажилтны «Бараа ирсэн»-д каргоны дүн; «Бараа ирсэн», карго — удирдлага батална: staff_po, staff_po_in, admin_po inboxId; буухиа: Cozy-ийн бүртгэлтэй хүргэлт NOMAAD-д харагдахгүй — EB_HOME; засах: барааны хөдөлгөөн admin_stock editId, зарлага admin_record editId, харилцагч admin_partner editId / delId; цуцалсан/буцаасан захиалгын бараа үлдэгдэлд зөвхөн «Бараа буцаж ирсэн»-ээр — буухиа цуцлахад шууд нэмэхгүй; Boost төсөв: удирдлага BOOST_BUD-д гаргана, ажилтан boost_bud-аар төсөв + задаргаагаа харна; хуучин JS хувилбарын хүсэлтийг бичихгүй — MIN_JS; ажилтны нэвтрэлт 11-02-оос өмнөх шигээ: нэвтрэх нэр + код, нийтлэг эрх зөвшөөрнө, 4 оронтой код, PIN албадан солихгүй; Boost нэхэмжлэх: олон компанийн мөр, Meta баримтын зураг «Boost баримт», admin_boost; буухиа руу илгээхэд дүүрэг/сум заавал биш; захиалгын хүргэлтийн төлбөр, хөнгөлөлт засахад борлуулалтын мөр дагана — orderSyncAdj; удирдлагаас хүргэлт/хөнгөлөлт засах, «Хүргэлтийн компани» багана; банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -403,6 +403,7 @@ function adminRead(d) {
   a.docs = cacheGet('docs', docRows);
   a.tasks = cacheGet('task', taskRows);
   a.payInfo = payInfoAll();
+  a.notices = staffNoticeList();
   a.storepay = {}; Object.keys(BIZ_NAMES).forEach(function (b) { a.storepay[b] = spOn(b); });
   a.ebuuhia = ebOn();   // буухиа API асаалттай эсэх (түлхүүр буцаахгүй)   // зөвхөн асаалттай эсэх — түлхүүр буцаахгүй
   a.orders = cacheGet('ord', orderRows).map(function (o) { delete o.row; return o; });
@@ -1692,6 +1693,7 @@ function adminSetting(d) {
   if (d.key === 'storepay') return storePaySetting(d);
   if (d.key === 'ebuuhia') return ebSetting(d);
   if (d.key === 'bankauto') return bankAutoSetting(d);
+  if (d.key === 'notice') return staffNoticeSet(d);
   if (d.key === 'accounts') { PropertiesService.getScriptProperties().setProperty('ACCOUNTS_X', JSON.stringify(d.value || []).slice(0, 8000)); return { status: 'ok' }; }
   if (d.key === 'delcode') { const v = String(d.value || '').trim(); if (v && !/^\d{4,12}$/.test(v)) return { status: 'error', error: 'fields' }; PropertiesService.getScriptProperties().setProperty('DELETE_CODE', v); return { status: 'ok', set: !!v }; }   // цуцалсан захиалга устгах код (зөвхөн эзэн)
   if (d.key === 'lock') { const v = String(d.value || ''); if (v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) return { status: 'error', error: 'fields' }; PropertiesService.getScriptProperties().setProperty('LOCK', v); return { status: 'ok' }; }
@@ -1718,6 +1720,20 @@ function adminSetting(d) {
   return { status: 'ok' };
 }
 function minStockAll() { const p = PropertiesService.getScriptProperties(), o = {}; Object.keys(BIZ_NAMES).forEach(function (b) { if (b !== 'mgmt') o[b] = JSON.parse(p.getProperty('MINSTOCK_' + b) || '{}'); }); return o; }
+// Ажилтанд санамж (удирдлага бичнэ): NOTICES = [{id, biz: 'all'|meat|cozy|travel, text, at, by}]. Ажилтны хуудасны дээд хэсэгт харагдана
+function staffNoticeList() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('NOTICES') || '[]'); } catch (e) { return []; } }
+function staffNoticeSet(d) {
+  const v = d.value || {}, L = staffNoticeList();
+  if (v.del) { const i = L.findIndex(function (x) { return x.id === String(v.del); }); if (i >= 0) L.splice(i, 1); }
+  if (v.add) {
+    const t = String(v.add.text || '').trim().slice(0, 600), b = String(v.add.biz || 'all');
+    if (!t || (b !== 'all' && !BIZ_NAMES[b])) return { status: 'error', error: 'fields' };
+    L.unshift({ id: 'N' + Date.now(), biz: b, text: t, at: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), by: String(d.by || '').slice(0, 40) });
+  }
+  const out = JSON.stringify(L.slice(0, 12)); if (out.length > 8500) return { status: 'error', error: 'too_big' };
+  PropertiesService.getScriptProperties().setProperty('NOTICES', out);
+  return { status: 'ok', notices: L.slice(0, 12) };
+}
 function payInfoAll() { const p = PropertiesService.getScriptProperties(), o = {}; Object.keys(BIZ_NAMES).forEach(function (b) { o[b] = p.getProperty('PAYINFO_' + b) || ''; }); return o; }
 
 // ═══════════ STOREPAY (хэрэглэгч хувааж төлөх — merchant API) ═══════════
@@ -2600,7 +2616,8 @@ function products(biz) {
   const list = cacheGet('prod', productRows).filter(function (p) { return p.biz === biz; })   // кэш — бараа засахад цэвэрлэгдэнэ
     .map(function (p) { return { name: p.name, unit: p.unit, price: p.price, cls: p.cls, cat: p.cat, off: p.off }; });
   let bc = {}; try { bc = JSON.parse(PropertiesService.getScriptProperties().getProperty('BARCODES_' + biz) || '{}'); } catch (e) {}
-  return { status: 'ok', products: list, payInfo: PropertiesService.getScriptProperties().getProperty('PAYINFO_' + biz) || '', storepay: spOn(biz), barcodes: bc };
+  return { status: 'ok', products: list, payInfo: PropertiesService.getScriptProperties().getProperty('PAYINFO_' + biz) || '', storepay: spOn(biz), barcodes: bc,
+    notices: staffNoticeList().filter(function (x) { return x.biz === 'all' || x.biz === biz; }) };
 }
 // Баркод → барааны нэр (дэлгүүр тус бүр Script Property BARCODES_<biz>). Ажилтан кассаас уншуулж сургана; name хоосон бол баркодыг устгана.
 function barcodeSet(d) {
