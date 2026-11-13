@@ -389,6 +389,7 @@ function bankView() {
       '<td class="n neg">' + (l.debit ? '−' + fmt(l.debit).slice(1) : '') + '</td><td class="n nw">' + (bankProv(l) && !l.bal ? '' : l.bal || l.bal === 0 ? fmt(l.bal).slice(1) : '') + '</td><td>' + (s ? sel : '<span class="tag">' + esc(l.status) + '</span> <small class="muted">' + esc(String(l.link).replace(/^\d{4,6} /, '').replace(/ #[\w-]+/g, '')) + '</small>' + (noJ ? ' <small style="color:var(--red)">бичилт алга — буцааж дахин тулгана уу</small>' : '')) + '</td>' +
       '<td class="n" style="white-space:nowrap">' + (s ? '<button class="mini" style="color:var(--accent)" onclick="bankApply([\'' + jsq(l.id) + '\'])">Тулгах</button> <button class="mini" title="Энэ утгатай гүйлгээнд сонгосон үйлдлийг дараа нь урьдчилан бөглөнө" onclick="bankRuleAdd(\'' + jsq(l.id) + '\')">Дүрэм болгох</button> <button class="mini" title="Хуулгаас устгах" onclick="bankDel([\'' + jsq(l.id) + '\'])">Устгах</button>' : l.status === 'Идэвхгүй' ? '' : '<button class="mini" title="Тулгалтыг буцааж «Тулгаагүй» жагсаалтад шилжүүлнэ — ангиллаа сонгоод дахин «Тулгах» дарна" onclick="bankUnmatch(\'' + jsq(l.id) + '\', 1)">Засах</button>') + '</td></tr>';
   }).reverse().join('');
+  if (API_URL && isOwner()) setTimeout(bankAutoApply, 0);   // санал нь тодорхой мөрүүдийг автоматаар тулгана
   return head + '<div class="card"><h2>Төлбөрийн мэдээлэл (хэрэглэгчид илгээх мессежид)</h2><div class="bar-row"><input id="payInfo" value="' + esc(pay) + '" placeholder="Жишээ: Хаан банк 53xxxxxxxx (Н.Анужин)" style="flex:1;min-width:220px">' +
     '<button class="b-btn" onclick="savePayInfo()">Хадгалах</button></div><p class="muted" style="font-size:12.5px;margin-top:6px">Ажилтан захиалга бүртгэхэд «Төлбөрийн мессеж»-д энэ данс, дүн, «Гүйлгээний утга: утасны дугаар» бичигдэнэ — тулгалт автоматаар таарна.</p></div>' +
     tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th class="bk-ck">' + (list.some(function (l) { return l.status === 'Шинэ'; }) ? '<input type="checkbox" title="Бүгдийг сонгох" onchange="bankSelAll(this.checked)">' : '') + '</th><th>Огноо</th><th>Гүйлгээний утга</th><th class="n">Орлого</th><th class="n">Зарлага</th><th class="n">Эцсийн үлдэгдэл</th><th>Гүйлгээний ангилал</th><th></th></tr>' +
@@ -647,6 +648,24 @@ function savePayInfo() {
   window.payInfoAll = window.payInfoAll || {}; window.payInfoAll[state.biz] = v;
   if (!API_URL) { save('nb_demo_payinfo', window.payInfoAll); toast('Хадгалагдлаа'); return; }
   post({ type: 'admin_setting', biz: state.biz, payInfo: v }, function (err) { toast(err ? 'Алдаа: ' + err : 'Хадгалагдлаа'); });
+}
+// Автомат тулгалт: санал нь тодорхой (захиалга/дэлгүүр/хүсэлт таарсан, дүрэм, хураамж гэх мэт ангилалтай) «Тулгаагүй» мөрүүдийг
+// харсан даруйд санхүүд бичнэ. Ангилалгүй, эсвэл нэмэлт асуулт хэрэгтэй (зээл, буухиа, карго, харилцагчийн нэр, олон баримт) мөр гараар үлдэнэ.
+// Буруу бол «Тулгасан» табаас «Засах». Мөр бүрийг сессэд нэг л удаа оролдоно.
+var bankAutoTried = {}, bankAutoBusy = false;
+function bankAutoSure(l) {
+  var p = bankPick[l.id] || ''; if (!p || p === 'skip' || /^(LN:new|EB:|XP:|XO:|BST:set|A:1201$|A:3101$)/.test(p)) return false;
+  if (/^D:/.test(p) && bankDebtDocs(p).length > 1) return false;
+  var s = bankSuggest(l);
+  return !!(s.sure || s.kind === 'paid' || s.kind === 'rule' || (s.kind === 'acc' && s.acc));
+}
+function bankAutoApply() {
+  if (bankAutoBusy || !API_URL || !isOwner()) return;
+  var ids = bankLines.filter(function (l) { return l.biz === state.biz && l.status === 'Шинэ' && !bankAutoTried[l.id] && bankAutoSure(l); }).map(function (l) { return l.id; });
+  if (!ids.length) return;
+  ids.forEach(function (id) { bankAutoTried[id] = 1; });
+  bankAutoBusy = true; setTimeout(function () { bankAutoBusy = false; }, 15000);
+  bankApply(ids, true);
 }
 function bankApplyAll() {
   var ids = bankLines.filter(function (l) { if (l.biz !== state.biz || l.status !== 'Шинэ') return false; var s = bankSuggest(l); return (s.kind === 'order' && s.sure) || (s.kind === 'shop' && s.sure) || s.kind === 'paid'; }).map(function (l) { return l.id; });
