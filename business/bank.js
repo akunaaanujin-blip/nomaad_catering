@@ -666,6 +666,9 @@ function bankAutoSure(l) {
 function bankAutoApply() {
   if (bankAutoBusy || !API_URL || !isOwner()) return;
   var ids = bankLines.filter(function (l) { return l.biz === state.biz && l.status === 'Шинэ' && !bankAutoTried[l.id] && bankAutoSure(l); }).map(function (l) { return l.id; });
+  // Буухиагийн тооцоо: тайлан нийлсэн ганц багц дүнгээр таарсан мөр — нэг удаад нэгийг (ebset.js ebAutoSettle)
+  var eb = typeof ebAutoSettle === 'function' && bankLines.filter(function (l) { return l.biz === state.biz && l.status === 'Шинэ' && !bankAutoTried[l.id] && /^EB:b\|/.test(bankPick[l.id] || ''); })[0];
+  if (eb) { bankAutoTried[eb.id] = 1; if (ebAutoSettle(eb.id, bankPick[eb.id].slice(5))) { bankAutoBusy = true; setTimeout(function () { bankAutoBusy = false; }, 15000); return; } }
   if (!ids.length) return;
   ids.forEach(function (id) { bankAutoTried[id] = 1; });
   bankAutoBusy = true; setTimeout(function () { bankAutoBusy = false; }, 15000);

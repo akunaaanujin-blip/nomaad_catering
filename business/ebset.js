@@ -187,12 +187,13 @@ function ebBkExt(code) {
   if (J().some(function (e) { return String(e.desc).indexOf('#EBT:' + code) >= 0; })) return 0;
   return ebRec.rows.reduce(function (a, x) { return a + (x.code === code ? Number(x.ext) || 0 : 0); }, 0);
 }
-function ebBkSel() {
-  var S = { r: [], o: [], u: [] }, ext = 0;
-  [].forEach.call(document.querySelectorAll('#gBody input[data-k]'), function (c) { if (c.checked) S[c.getAttribute('data-k')].push(+c.getAttribute('data-i')); });
+function ebBkOldV(i) { var it = ebBk.old[i], el = $('ebBkOld' + i); return Math.min(el ? Number(el.value) || 0 : it.amt - it.paid, it.amt - it.paid); }   // цонхгүй (автомат) бол бүтэн үлдэгдэл
+function ebBkSel(sel) {
+  var S = sel ? { r: sel.r.slice(), o: sel.o.slice(), u: sel.u.slice() } : { r: [], o: [], u: [] }, ext = 0;
+  if (!sel) [].forEach.call(document.querySelectorAll('#gBody input[data-k]'), function (c) { if (c.checked) S[c.getAttribute('data-k')].push(+c.getAttribute('data-i')); });
   var col = 0, fee = 0, old = 0, unl = 0, oeb = 0;
   S.r.forEach(function (i) { var r = ebBk.rows[i]; col += r.colLeft; fee += r.feeLeft; ext += ebBkExt(r.code); });
-  S.o.forEach(function (i) { var it = ebBk.old[i], v = Math.min(Number(($('ebBkOld' + i) || {}).value) || 0, it.amt - it.paid); if (it.eb) { oeb += Math.max(0, v); ext += ebBkExt(it.eb); } else old += Math.max(0, v); });
+  S.o.forEach(function (i) { var it = ebBk.old[i], v = ebBkOldV(i); if (it.eb) { oeb += Math.max(0, v); ext += ebBkExt(it.eb); } else old += Math.max(0, v); });
   S.u.forEach(function (i) { unl += ebBk.unl[i].fee; ext += ebBkExt(ebBk.unl[i].x.code); }); unl += oeb;
   S.col = r0(col); S.fee = r0(fee); S.old = r0(old); S.unl = r0(unl); S.ext = r0(ext); S.exp = r0(col - fee - old - unl - ext); S.diff = r0(ebBkAmt(ebBk.l) - S.exp);
   return S;
@@ -209,8 +210,8 @@ function ebBkCalc() {
     (Math.abs(S.diff) >= 1 && Math.abs(S.diff) <= EB_BK_FIX_MAX ? '<label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox"' + (ebBk.fix ? ' checked' : '') + ' onchange="ebBk.fix=this.checked;ebBkCalc()" style="width:auto">Зөрүү ' + mny(Math.abs(S.diff)) + '-ийг Буухиагийн хөлсөнд тооцох</label>' : '');
   $('ebBkGo').disabled = !ok;
 }
-function ebBankSave() {
-  var S = ebBkSel(); if (!(S.r.length || S.o.length || S.u.length) || (Math.abs(S.diff) >= 1 && !ebBkFixOk(S))) return;
+function ebBankSave(sel) {
+  var S = ebBkSel(sel); if (!(S.r.length || S.o.length || S.u.length) || (Math.abs(S.diff) >= 1 && !ebBkFixOk(S))) return;
   var l = ebBk.l, info = bankAcctInfo(l.acct), acc = info ? info.acc : '1101', d = l.date.slice(0, 10), biz = state.biz, E = [], tags = [], recv = 0;
   S.r.forEach(function (i) {
     var r = ebBk.rows[i], tg = ' · ' + r.phone + ' #' + r.id, f = Math.min(r.feeLeft, r.colLeft);
@@ -219,7 +220,7 @@ function ebBankSave() {
     if (r.colLeft - f > 0.5) { recv += r.colLeft - f; tags.push('#' + r.id); }
   });
   S.o.forEach(function (i) {
-    var it = ebBk.old[i], v = r0(Math.min(Number(($('ebBkOld' + i) || {}).value) || 0, it.amt - it.paid));
+    var it = ebBk.old[i], v = r0(ebBkOldV(i));
     if (v > 0.5) E.push({ biz: biz, date: d, dr: '3101', cr: acc, amount: v, partner: BUUHIA, desc: 'Буухиа тооцоо · ' + (it.eb ? 'захиалгагүй хүргэлтийн хөлс (' + it.eb + ')' : 'хуучин өрөөс суутгасан') + ' #' + debtTag(it) });
   });
   S.u.forEach(function (i) { var u = ebBk.unl[i]; E.push({ biz: biz, date: d, dr: '7124', cr: acc, amount: u.fee, partner: BUUHIA, desc: 'Буухиа тооцоо · хөлс (захиалгагүй) · ' + u.x.phone + ' #EB:' + u.x.code }); });
@@ -228,16 +229,30 @@ function ebBankSave() {
   if (Math.abs(S.diff) >= 1) E.push({ biz: biz, date: d, dr: S.diff < 0 ? '7124' : acc, cr: S.diff < 0 ? acc : '7124', amount: Math.abs(S.diff), partner: BUUHIA, desc: 'Буухиа тооцоо · хөлсний зөрүү' });
   E.forEach(function (e) { e.bankId = l.id; });
   var upd = [{ id: l.id, status: 'Тулгасан', link: 'Буухиа тооцоо · ' + S.r.length + ' захиалга' }];
-  if (!confirm('Буухиагийн тооцоо ' + d + ': ' + S.r.length + ' захиалга, банкаар ' + mny(ebBkAmt(l)) + '\nХураасан ' + fmt(S.col) + ' − хөлс ' + fmt(S.fee + S.unl) + (S.old ? ' − хуучин өр ' + fmt(S.old) : '') + (S.ext ? ' − нэмэлт төлбөр ' + fmt(S.ext) : '') + (Math.abs(S.diff) >= 1 ? '\nХөлсний зөрүү ' + mny(S.diff) : '') + '\n\n' + E.length + ' журналын бичилт үүснэ. Тулгах уу?')) return;
+  if (!sel && !confirm('Буухиагийн тооцоо ' + d + ': ' + S.r.length + ' захиалга, банкаар ' + mny(ebBkAmt(l)) + '\nХураасан ' + fmt(S.col) + ' − хөлс ' + fmt(S.fee + S.unl) + (S.old ? ' − хуучин өр ' + fmt(S.old) : '') + (S.ext ? ' − нэмэлт төлбөр ' + fmt(S.ext) : '') + (Math.abs(S.diff) >= 1 ? '\nХөлсний зөрүү ' + mny(S.diff) : '') + '\n\n' + E.length + ' журналын бичилт үүснэ. Тулгах уу?')) return;
   gClose();
   if (!API_URL) { E.forEach(function (e, i) { e.id = 'J' + Date.now() + '-' + i; e.by = ownerName; journal.push(e); }); l.status = 'Тулгасан'; l.link = upd[0].link; render(); return; }
   l.status = 'Тулгасан'; l.link = upd[0].link; delete bankPick[l.id];
   E.forEach(function (e, i) { journal.push(Object.assign({ id: 'tmp' + Date.now() + '-' + i, by: ownerName }, e)); }); _debtCache = null; render();
-  var n = 2, fin = function () { if (--n === 0) { toast('Буухиагийн тооцоо тулгагдлаа'); refresh(); } };
+  var n = 2, fin = function () { if (--n === 0) { toast('Буухиагийн тооцоо тулгагдлаа' + (sel ? ' (автоматаар · ' + S.r.length + ' захиалга)' : '')); refresh(); } };
   post({ type: 'admin_journal', by: ownerName, entries: E }, function (err) {
     if (err) { if (err !== 'locked') toast('Журнал бичигдсэнгүй: ' + err); refresh(); return; }
     fin(); post({ type: 'admin_bank', by: ownerName, updates: upd }, function (e2) { if (e2) toast('Алдаа: ' + e2); fin(); });
   });
+}
+// Автомат: Буухиатай тайлан нийлсэн ганц багцын цэвэр дүн банкны гүйлгээтэй яг таарвал цонхгүйгээр тулгана.
+// Нэмэлт төлбөр, хуучин өр зэргээс болж зөрвөл (diff ≥ 1₮) тулгахгүй — гараар үлдэнэ. true — тулгаж эхэлсэн
+function ebAutoSettle(lineId, u) {
+  var l = bankLines.filter(function (x) { return x.id === lineId; })[0]; if (!l || !ebAdm.list) return false;
+  var D = ebSetData(), B = ebSettledByEb(ebAdm.list);
+  ebBk = { l: l, rows: D.rows.filter(function (r) { return r.colLeft > 0.5 || r.feeLeft > 0.5; }), old: D.old.filter(function (it) { return !it.closed; }), unl: ebSetUnlinked(D.M) };
+  var sel = { r: [], o: [], u: [] };
+  ebBk.rows.forEach(function (r, i) { if (B[r.code] === u) sel.r.push(i); });
+  ebBk.old.forEach(function (it, i) { if (it.eb && B[it.eb] === u) sel.o.push(i); });
+  ebBk.unl.forEach(function (x, i) { if (B[x.x.code] === u) sel.u.push(i); });
+  var S = ebBkSel(sel);
+  if (!(S.r.length || S.o.length || S.u.length) || Math.abs(S.diff) >= 1) { ebBk = null; return false; }
+  ebBankSave(sel); return true;
 }
 // Буухиагийн мэдээлэл ирэхэд самбарыг шинэчилнэ
 (function () {
