@@ -1749,3 +1749,79 @@ body.pos10 #saleSheet .pos-foot .btn::before{content:'✓';margin-right:10px;fon
 body.pos10 #saleSheet .pos-foot .btn:hover{background:#000}
 body.pos10 #saleSheet .pos-foot .btn:disabled{background:#C9C9C9;opacity:1}
 @media(max-width:820px){body.pos10 #saleSheet .pos-total span::after{color:var(--mb-teal)}}
+/* ── v11 · Касс: сагсны мөр 2 давхар (нэр + дүн / тоо, үнэ, хөнгөлөлттэй үнэ), төлбөр сонголт тусдаа дэлгэцэнд ── */
+body.pos10 #saleSheet .pos-right>.pos-pay{display:none!important}
+body.pos10 #saleSheet .pos-cart .cart-line.cl1{grid-template-columns:auto 1fr 1fr auto 28px;grid-template-areas:"n n n s d" "q p dp dp dp";row-gap:8px;padding:12px 0}
+body.pos10 #saleSheet .cl1 .cl-name{grid-area:n;-webkit-line-clamp:1}
+body.pos10 #saleSheet .cl1 .cl-sum{grid-area:s}
+body.pos10 #saleSheet .cl1 .cl-del{grid-area:d;justify-self:end}
+body.pos10 #saleSheet .cl1 .cl-qty{grid-area:q}
+body.pos10 #saleSheet .cl1 .cl-price{grid-area:p;width:100%;min-width:0}
+body.pos10 #saleSheet .cl1 .cl-dprice{grid-area:dp;width:100%;min-width:0;height:32px;padding:5px 8px;font-size:13.5px;text-align:right;border:1px solid var(--mb-line);border-radius:10px}
+body.pos10 #saleSheet .cl1 .cl-dprice:not(:placeholder-shown){border-color:var(--mb-teal);background:var(--mb-mint)}
+/* төлбөрийн дэлгэц */
+#saleSheet .pv{position:absolute;inset:0;z-index:6;background:#fff;grid-template-columns:minmax(0,1.75fr) minmax(320px,1fr);font-family:'Onest','Inter',sans-serif;color:#111}
+#saleSheet .pv-l{padding:0 26px 26px;overflow-y:auto;border-right:1px solid #E9E9E9}
+#saleSheet .pv-r{padding:18px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+#saleSheet .pv-head{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:72px;margin:0 -26px 18px;padding:0 26px;border-bottom:1px solid #E9E9E9}
+#saleSheet .pv-head b{font-size:17px;font-weight:600}
+#saleSheet .pv-back{justify-self:start;border:0;background:none;font:inherit;font-size:16px;font-weight:600;cursor:pointer;color:#111;padding:8px 0}
+#saleSheet .pv-cap{font-size:17px;font-weight:700;letter-spacing:-.01em;margin:6px 0 10px}
+#saleSheet .pv-amts{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:14px}
+#saleSheet .pv-amts>div:first-child{flex:0 1 460px}
+#saleSheet #pvAmt{height:72px;font-size:34px;font-weight:700;padding:0 18px;border:1px solid #E2E2E2;border-radius:14px;font-variant-numeric:tabular-nums}
+#saleSheet #pvAmt:disabled{background:#fff;color:#BDBDBD}
+#saleSheet .pv-totbox{text-align:right}
+#saleSheet .pv-totbox b{display:inline-block;background:#F1F1F1;border-radius:14px;padding:16px 22px;font-size:34px;font-weight:700;font-variant-numeric:tabular-nums}
+#saleSheet .pv-types{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+#saleSheet .pv-type{display:flex;align-items:center;gap:14px;height:88px;padding:0 22px;background:#fff;border:1px solid #E2E2E2;border-radius:16px;font:inherit;font-size:17px;font-weight:500;color:#111;cursor:pointer;text-align:left}
+#saleSheet .pv-type:hover:not(:disabled){border-color:#111}
+#saleSheet .pv-type.on{border-color:#111;box-shadow:inset 0 0 0 1px #111}
+#saleSheet .pv-type:disabled{color:#BDBDBD;cursor:default}
+#saleSheet .pv-type svg,#saleSheet .pv-out svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+#saleSheet .pv-type:disabled svg{stroke:#111}
+#saleSheet #pvSpecial>div{margin-top:14px}
+#saleSheet .pv-paid{display:grid;grid-template-columns:28px auto 1fr auto 34px;align-items:center;gap:12px;border:1px solid #E2E2E2;border-radius:14px;padding:16px 18px;margin-bottom:8px}
+#saleSheet .pv-paid i{width:26px;height:26px;border-radius:50%;background:#1FC59A;color:#fff;font-style:normal;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px}
+#saleSheet .pv-paid span{font-size:18px;font-weight:600}
+#saleSheet .pv-paid small{justify-self:end;color:#111;font-size:15px}
+#saleSheet .pv-paid b{font-size:22px;font-weight:700;padding-left:18px;border-left:1px solid #E2E2E2;font-variant-numeric:tabular-nums}
+#saleSheet .pv-paid button{width:30px;height:30px;border-radius:50%;border:0;background:#F1F1F1;cursor:pointer;color:#555}
+#saleSheet .pv-empty{display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px 0;color:#444}
+#saleSheet .pv-logo{width:120px;height:120px;border-radius:50%;background:#EFEFEF;display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:800;color:#C8C8C8}
+#saleSheet .pv-r .pos-extra{border:0!important;padding:0}
+#saleSheet .pv-info{border-top:1px solid #E9E9E9;padding-top:14px}
+#saleSheet .pv-row{display:flex;justify-content:space-between;font-size:15px;color:#444;padding:6px 0}
+#saleSheet .pv-row b{color:#111;font-weight:600;font-variant-numeric:tabular-nums}
+#saleSheet .pv-due{border-top:1px dashed #DADADA;margin-top:6px;padding-top:12px;font-weight:700;color:#111;font-size:16px}
+#saleSheet .pv-due b{font-weight:700}
+#saleSheet #pvOut .pv-cap{font-size:15px;margin:10px 0 8px}
+#saleSheet .pv-out{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:68px;border:0;border-radius:14px;background:#EDEDED;color:#111;font:inherit;font-size:17px;font-weight:600;cursor:pointer;margin-bottom:10px}
+#saleSheet .pv-out:hover:not(:disabled){background:#E2E2E2}
+#saleSheet .pv-out.main{background:#111;color:#fff}
+#saleSheet .pv-out.main:hover:not(:disabled){background:#000}
+#saleSheet .pv-out:disabled,#saleSheet .pv-out.main:disabled{background:#EDEDED;color:#BDBDBD;cursor:default}
+#saleSheet #pvTinSlot>div{margin-bottom:8px}
+/* амжилттай */
+#saleSheet .pv-done{position:absolute;inset:0;z-index:7;background:#fff;flex-direction:column;font-family:'Onest','Inter',sans-serif}
+#saleSheet .pd-in{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+#saleSheet .pd-ok{width:76px;height:76px;border-radius:50%;background:#3DB87A;display:flex;align-items:center;justify-content:center;animation:pdpop .35s ease-out}
+#saleSheet .pd-ok svg{width:42px;height:42px;fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+@keyframes pdpop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+#saleSheet .pd-t{color:#777;font-size:17px;font-weight:600}
+#saleSheet .pd-sum{font-size:44px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+#saleSheet .pd-pay{background:#F1F1F1;border-radius:10px;padding:8px 16px;color:#777;font-size:16px}
+#saleSheet .pd-pay b{color:#111}
+#saleSheet .pd-go{height:84px;border:0;background:#111;color:#fff;font:inherit;font-size:18px;font-weight:700;cursor:pointer}
+@media(max-width:820px){
+  #saleSheet .pv{grid-template-columns:1fr;overflow-y:auto;display:block}
+  #saleSheet .pv-l{border-right:0;padding:0 14px 14px;overflow:visible}
+  #saleSheet .pv-head{margin:0 -14px 14px;padding:0 14px;height:60px}
+  #saleSheet .pv-r{overflow:visible;padding:14px}
+  #saleSheet .pv-amts{flex-direction:column;align-items:stretch}#saleSheet .pv-amts>div:first-child{flex:none}#saleSheet .pv-totbox{text-align:left}
+  #saleSheet #pvAmt,#saleSheet .pv-totbox b{font-size:26px;height:60px;padding:12px 16px}
+  #saleSheet .pv-types{grid-template-columns:repeat(2,1fr)}
+  #saleSheet .pv-type{height:64px;padding:0 14px;font-size:15px}
+  #saleSheet .pv-paid{grid-template-columns:24px 1fr auto 30px}#saleSheet .pv-paid small{display:none}
+  #saleSheet .pd-sum{font-size:34px}
+}

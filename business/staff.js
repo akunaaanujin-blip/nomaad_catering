@@ -669,11 +669,12 @@ function renderCart() {
     el.innerHTML = sale.cart.map(function (l, i) {
       var lock = !isManager && l.listPrice > 0;   // худалдагч жагсаалтын үнийг сольж чадахгүй
       return '<li class="cart-line cl1"><span class="cl-name">' + esc(l.name) + '</span>' +
+        '<input class="cl-dprice" type="number" inputmode="numeric" min="0" placeholder="Хөнг. үнэ" title="Хөнгөлөлттэй үнэ (нэгжийн)" value="' + (l.dprice || '') + '" oninput="setLine(' + i + ',\'dprice\',this.value)">' +
         '<span class="cl-qty"><button onclick="stepQty(' + i + ',-1)">−</button>' +
         '<input type="number" inputmode="decimal" step="any" min="0" value="' + l.qty + '" oninput="setLine(' + i + ',\'qty\',this.value)">' +
         '<button onclick="stepQty(' + i + ',1)">＋</button></span>' +
         '<input class="cl-price" type="number" inputmode="numeric" min="0" value="' + l.price + '"' + (lock ? ' readonly title="Үнийг менежер л солино"' : '') + ' oninput="setLine(' + i + ',\'price\',this.value)">' +
-        '<b class="cl-sum" id="clSum' + i + '">' + fmt((Number(l.qty) || 0) * (Number(l.price) || 0)) + '</b>' +
+        '<b class="cl-sum" id="clSum' + i + '">' + fmt(lineNet(l)) + '</b>' +
         '<button class="cl-del" onclick="removeLine(' + i + ')" aria-label="Хасах">✕</button></li>';
     }).join('');
   }
@@ -682,7 +683,7 @@ function renderCart() {
 function setLine(i, f, v) {
   sale.cart[i][f] = v;
   var l = sale.cart[i];
-  $('clSum' + i).textContent = fmt((Number(l.qty) || 0) * (Number(l.price) || 0));
+  $('clSum' + i).textContent = fmt(lineNet(l));
   calcSale();
 }
 function stepQty(i, d) {
@@ -717,11 +718,15 @@ function calcChange() {
 function cartGross() {
   return sale.cart.reduce(function (a, l) { return a + Math.round((Number(l.qty) || 0) * (Number(l.price) || 0)); }, 0);
 }
+// Мөрийн хөнгөлөлттэй үнэ (нэгжийн): жагсаалтын үнээс бага бол зөрүү нь хөнгөлөлтөд орно
+function lineDisc(l) { var p = Number(l.price) || 0, d = Number(l.dprice) || 0; return d > 0 && d < p ? Math.round((p - d) * (Number(l.qty) || 0)) : 0; }
+function lineNet(l) { return Math.round((Number(l.qty) || 0) * (Number(l.price) || 0)) - lineDisc(l); }
+function linesDisc() { return (sale.cart || []).reduce(function (a, l) { return a + lineDisc(l); }, 0); }
 function discAmt() {
-  var el = $('saleDisc'); if (!el) return 0;
-  var v = Number(el.value) || 0, g = cartGross();
-  if (v <= 0) return 0;
-  return Math.min(g, Math.round(sale.discU === '%' ? g * Math.min(v, 100) / 100 : v));
+  var el = $('saleDisc'), ld = linesDisc(), g = cartGross() - ld;
+  var v = el ? Number(el.value) || 0 : 0;
+  var bd = v > 0 ? Math.min(g, Math.round(sale.discU === '%' ? g * Math.min(v, 100) / 100 : v)) : 0;
+  return ld + bd;
 }
 function cartTotal() { return cartGross() - discAmt() + dlvFee(); }   // төлөх дүн (хөнгөлөлтийн дараа, хүргэлттэй бол хүргэлтийн төлбөр нэмэгдэнэ)
 function dFeeFreeTog() { var c = $('dFeeFree').checked; $('dFee').disabled = c; $('dFee').value = c ? 0 : (typeof FEE_DEFAULT !== 'undefined' ? FEE_DEFAULT : 7000); calcSale(); }
@@ -816,6 +821,7 @@ function submitSale() {
     var l = sale.cart[i];
     if (!(Number(l.qty) > 0)) { toast(l.name + ' — тоо хэмжээ оруулна уу'); return; }
     if (!(Number(l.price) > 0)) { toast(l.name + ' — үнэ оруулна уу'); return; }
+    if (Number(l.dprice) >= Number(l.price)) { toast(l.name + ' — хөнгөлөлттэй үнэ үндсэн үнээс бага байх ёстой'); return; }
   }
   var short = stockShort(sale.cart.map(function (l) {   // засвар бол хуучин баримтын тоо үлдэгдэлд буцна
     var back = sale.edit ? sale.edit.lines.filter(function (x) { return x.item === l.name; }).reduce(function (a, x) { return a + Number(x.qty); }, 0) : 0;
@@ -849,11 +855,11 @@ function submitSale() {
   });
   var cu = lines[0] && lines[0].customer;
   if (dsc) lines.push({ type: 'sale', item: DISC_ITEM, qty: 1, unit: '', price: -dsc, amount: -dsc, pay: sale.pay, bill: bill, customer: cu || '',
-    note: 'Хөнгөлөлт ' + (sale.discU === '%' ? $('saleDisc').value + '%' : fmt(dsc)) + ' · ' + discWhy() + ' · ' + staffName });
-  if (sp) {   // нэг хэлбэрээс нөгөө рүү: орлого өөрчлөгдөхгүй, касс/карт зөв хуваагдана
-    lines.push({ type: 'sale', item: SPLIT_ITEM, qty: 1, unit: '', price: -sp.amt2, amount: -sp.amt2, pay: sale.pay, bill: bill, customer: cu || '' });
-    lines.push({ type: 'sale', item: SPLIT_ITEM, qty: 1, unit: '', price: sp.amt2, amount: sp.amt2, pay: sp.pay2, bill: bill, customer: cu || '' });
-  }
+    note: 'Хөнгөлөлт ' + (linesDisc() ? 'мөрөөр ' + fmt(linesDisc()) + (dsc > linesDisc() ? ' + ' : '') : '') + (dsc > linesDisc() ? (sale.discU === '%' ? $('saleDisc').value + '%' : fmt(dsc - linesDisc())) : '') + ' · ' + discWhy() + ' · ' + staffName });
+  if (sp) (sp.list || [sp]).forEach(function (x) {   // нэг хэлбэрээс нөгөө рүү: орлого өөрчлөгдөхгүй, касс/карт зөв хуваагдана
+    lines.push({ type: 'sale', item: SPLIT_ITEM, qty: 1, unit: '', price: -x.amt2, amount: -x.amt2, pay: sale.pay, bill: bill, customer: cu || '' });
+    lines.push({ type: 'sale', item: SPLIT_ITEM, qty: 1, unit: '', price: x.amt2, amount: x.amt2, pay: x.pay2, bill: bill, customer: cu || '' });
+  });
   if (!ebEnabled()) { if (sale.edit) { toast('Засвар хийхэд И-баримт асаалттай байх ёстой'); return; } finishSale(lines); return; }
   var noCls = lines.filter(function (r) { return !isAdj(r.item) && !r.classificationCode && !ebConfig().classificationCode; });
   if (noCls.length) {
@@ -900,8 +906,9 @@ function submitSale() {
 function finishSale(lines) {
   lines.forEach(function (r) { stockTake(r.item, r.qty); });
   addRecords(lines);
-  closeSheet('saleSheet'); parkBtnUpd();
-  toast('✓ Борлуулалт бичигдлээ: ' + fmt(lines.reduce(function (a, r) { return a + r.amount; }, 0)));
+  if (!(typeof posDone === 'function' && posDone(lines))) closeSheet('saleSheet');
+  parkBtnUpd();
+  if (!window.pvShown) toast('✓ Борлуулалт бичигдлээ: ' + fmt(lines.reduce(function (a, r) { return a + r.amount; }, 0)));
 }
 
 // ── Кассаас зардал / Мөнгөний хүсэлт ──
