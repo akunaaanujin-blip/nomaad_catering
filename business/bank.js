@@ -18,7 +18,9 @@ function bankOutOpts() {
     .concat(ACCOUNTS.filter(function (a) { return a[2] === 'exp' && !accHidden(a[0]) && !(state.biz !== 'mgmt' && BUSINESSES.mgmt && /^70/.test(a[0])); }).map(function (a) { return ['A:' + a[0], a[1], grp(a[0])]; }));
 }
 var BOOST_RE = /boost|буст|реклам|фэйсбүүк|facebook|\bmeta\b/i;
-var BANK_RULES = [[/boost|реклам|фэйсбүүк|facebook|\bmeta\b|(^|[^а-яөүё])зар([^а-яөүё]|$)/i, '7120'],   // 2026-11-02: Boost-ыг банкаар төлсөн дүнгээр зардал (Дт 7120) — ажилтны Boost бүртгэл зөвхөн шинжилгээнд
+var BANK_RULES = [[/qpay\b.*\bTRX:/i, '7201'],   // QPay-ийн шимтгэл (төлбөрийн 1%, «TRX:» гэсэн тусдаа мөр) — санхүүгийн зардал
+  [/\btaxi\b|такси/i, '7117'],   // такси — тээврийн зардал
+  [/boost|реклам|фэйсбүүк|facebook|\bmeta\b|(^|[^а-яөүё])зар([^а-яөүё]|$)/i, '7120'],   // 2026-11-02: Boost-ыг банкаар төлсөн дүнгээр зардал (Дт 7120) — ажилтны Boost бүртгэл зөвхөн шинжилгээнд
    [/хураамж|шимтгэл|\bfee\b/i, '7201'], [/түрээс/i, '7114'], [/цалин/i, '3301'],
   [/шатахуун|бензин|benzin|petrovis|шунхлай|магнай/i, '7118'], [/unitel|mobicom|skytel|gmobile|интернет|univision/i, '7106'], [/ндш|даатгал/i, '3403'],
   [/цахилгаан|ус хангамж|дулаан/i, '7111'], [/буухиа|ebuuhia|booklo|хүргэлт/i, '7124'], [/зээл/i, '3501']];
@@ -662,6 +664,8 @@ function bankAutoSure(l) {
   if (s.kind === 'shop') return !!s.sure && Math.abs(new Date(String(s.b.date).slice(0, 10)) - new Date(String(l.date).slice(0, 10))) <= 864e5;
   // ерөнхий үгээр таасан зардлаас буухиа (тооцоо эсвэл хөлс аль нь болох нь тодорхойгүй), зээл (үндсэн/хүү)-ийг гараар
   if (s.kind === 'acc') return !!s.acc && s.acc !== '7124' && s.acc !== '3501';
+  // «pos» гэсэн утгатай Cozy ↔ аяллын дэлгүүрийн посын мөнгө — посын авлага/өглөгийг хаана (posSuggest)
+  if (s.kind === 'debt' && posBiz(l.biz) && /(^|[^a-zа-яөүё])(pos|пос)([^a-zа-яөүё]|$)/i.test(String(l.desc))) return true;
   return !!(s.sure || s.kind === 'paid' || s.kind === 'rule');
 }
 function bankAutoApply() {
