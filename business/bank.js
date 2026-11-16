@@ -17,7 +17,6 @@ function bankOutOpts() {
   return BANK_PAY.map(function (a) { return [a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1], a[0] === '1208' ? 'Удирдлагын зардал' : 'Төлбөр, шилжүүлэг']; })
     .concat(ACCOUNTS.filter(function (a) { return a[2] === 'exp' && !accHidden(a[0]) && !(state.biz !== 'mgmt' && BUSINESSES.mgmt && /^70/.test(a[0])); }).map(function (a) { return ['A:' + a[0], a[1], grp(a[0])]; }));
 }
-var BANK_OTHER = '7122', BANK_OTHER_MAX = 1000000;   // танигдаагүй зарлагыг «Бусад зардал»-аар автоматаар — их дүнтэйг гараар шалгана
 var BOOST_RE = /boost|буст|реклам|фэйсбүүк|facebook|\bmeta\b/i;
 var BANK_RULES = [[/qpay\b.*\bTRX:/i, '7201'],   // QPay-ийн шимтгэл (төлбөрийн 1%, «TRX:» гэсэн тусдаа мөр) — санхүүгийн зардал
   [/\btaxi\b|такси/i, '7117'],   // такси — тээврийн зардал
@@ -370,7 +369,7 @@ function bankView() {
     var s = l.status === 'Шинэ' ? bankSuggest(l) : null, sel = '', dupPick = false;
     if (s) {
       var opts = bankLineOpts(l, s, ebB, biz), cur = bankPick[l.id] === 'EB:set' ? '' : bankPick[l.id];   // [утга, нэр, бүлэг]; «EB:set» — Буухиагийн мэдээлэл ирэхээс өмнөх санал, дахин тооцно
-      var def = cur || (/буух|ebuu/i.test(l.desc) && typeof ebBankOpen === 'function' ? ebBatchDef(ebB, l) : '') || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id + '|' + s.j.id : s.kind === 'shop' || s.kind === 'req' || s.kind === 'man' || s.kind === 'rule' || s.kind === 'bst' || s.kind === 'bg' ? s.v : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : !l.credit && s.kind === 'acc' ? 'A:' + BANK_OTHER : '');   // ангилал танигдаагүй зарлага → Бусад зардал
+      var def = cur || (/буух|ebuu/i.test(l.desc) && typeof ebBankOpen === 'function' ? ebBatchDef(ebB, l) : '') || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id + '|' + s.j.id : s.kind === 'shop' || s.kind === 'req' || s.kind === 'man' || s.kind === 'rule' || s.kind === 'bst' || s.kind === 'bg' ? s.v : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : '');   // танигдаагүй зарлага — сонголтгүй, гараар (2026-11-16: «Бусад зардал» автоматаар болгохыг болиулсан)
       if (/^MG:/.test(def)) def = 'A:1208';   // хуучин дүрэм
       if (def === 'A:10003') def = 'TR:10003';   // касс — данс хоорондын шилжүүлэг
       if (def && !opts.some(function (o) { return o[0] === def; })) def = '';   // жагсаалтад байхгүй сонголт далд үлдэхгүй
@@ -402,7 +401,7 @@ function bankView() {
       '<td class="n neg">' + (l.debit ? '−' + fmt(l.debit).slice(1) : '') + '</td><td class="n nw">' + (bankProv(l) && !l.bal ? '' : l.bal || l.bal === 0 ? fmt(l.bal).slice(1) : '') + '</td><td>' + (s ? sel : '<span class="tag">' + esc(l.status) + '</span> <small class="muted">' + esc(String(l.link).replace(/^\d{4,6} /, '').replace(/ #[\w-]+/g, '')) + '</small>' + (noJ ? ' <small style="color:var(--red)">бичилт алга — буцааж дахин тулгана уу</small>' : '')) + '</td>' +
       '<td class="n" style="white-space:nowrap">' + (s ? '<button class="mini" style="color:var(--accent)" onclick="bankApply([\'' + jsq(l.id) + '\'])">Тулгах</button> <button class="mini" title="Энэ утгатай гүйлгээнд сонгосон үйлдлийг дараа нь урьдчилан бөглөнө" onclick="bankRuleAdd(\'' + jsq(l.id) + '\')">Дүрэм болгох</button> <button class="mini" title="Хуулгаас устгах" onclick="bankDel([\'' + jsq(l.id) + '\'])">Устгах</button>' : l.status === 'Идэвхгүй' ? '' : '<button class="mini" title="Ангиллыг нь шууд солино" onclick="bankEdit(\'' + jsq(l.id) + '\')">Засах</button>') + '</td></tr>';
   }).reverse().join('');
-  // 2026-11-16: хэрэглэгчийн шийдвэрээр автомат тулгалт унтраасан — санал гарна, тулгалтыг гараар («Тулгах» / «Сонгосныг тулгах»)
+  if (API_URL && isOwner()) setTimeout(bankAutoApply, 0);   // санал нь тодорхой мөрүүдийг автоматаар тулгана (Буухиа, pos, хураамж, Boost, захиалга г.м); тодорхойгүй зарлага гараар
   return head + '<div class="card"><h2>Төлбөрийн мэдээлэл (хэрэглэгчид илгээх мессежид)</h2><div class="bar-row"><input id="payInfo" value="' + esc(pay) + '" placeholder="Жишээ: Хаан банк 53xxxxxxxx (Н.Анужин)" style="flex:1;min-width:220px">' +
     '<button class="b-btn" onclick="savePayInfo()">Хадгалах</button></div><p class="muted" style="font-size:12.5px;margin-top:6px">Ажилтан захиалга бүртгэхэд «Төлбөрийн мессеж»-д энэ данс, дүн, «Гүйлгээний утга: утасны дугаар» бичигдэнэ — тулгалт автоматаар таарна.</p></div>' +
     tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th class="bk-ck">' + (list.some(function (l) { return l.status === 'Шинэ'; }) ? '<input type="checkbox" title="Бүгдийг сонгох" onchange="bankSelAll(this.checked)">' : '') + '</th><th>Огноо</th><th>Гүйлгээний утга</th><th class="n">Орлого</th><th class="n">Зарлага</th><th class="n">Эцсийн үлдэгдэл</th><th>Гүйлгээний ангилал</th><th></th></tr>' +
@@ -692,7 +691,6 @@ function bankAutoSure(l) {
   // дэлгүүрийн борлуулалт зөвхөн дүнгээр таардаг — мессеж шууд ирдэг тул тэр өдөр / маргааш нь л автоматаар
   if (s.kind === 'shop') return !!s.sure && Math.abs(new Date(String(s.b.date).slice(0, 10)) - new Date(String(l.date).slice(0, 10))) <= 864e5;
   // ерөнхий үгээр таасан зардлаас буухиа (тооцоо эсвэл хөлс аль нь болох нь тодорхойгүй), зээл (үндсэн/хүү)-ийг гараар
-  if (s.kind === 'acc' && !s.acc && !l.credit) return p === 'A:' + BANK_OTHER && (+l.debit || 0) < BANK_OTHER_MAX;
   if (s.kind === 'acc') return !!s.acc && s.acc !== '7124' && s.acc !== '3501';
   // утганд харилцагчийн нэр (HiCargo г.м) — тэр харилцагчийн ганц өглөг/авлага, үлдэгдэл нь гүйлгээтэй яг таарвал
   if (s.kind === 'debt' && s.it && bankDebtDocs(p).length === 1 && Math.abs((Number(s.it.left) || 0) - (Number(l.credit) || Number(l.debit) || 0)) < 1) return true;
