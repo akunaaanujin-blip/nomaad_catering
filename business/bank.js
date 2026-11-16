@@ -232,9 +232,9 @@ function shopMatch(l) {
   if (!c.length) return null;
   return { kind: 'shop', v: 'S:' + c[0].key, b: c[0], sure: dd(c[0].date, l.date) <= 5 && (c.length === 1 || dd(c[1].date, l.date) > 5) };
 }
-// Хэрэглэгчийн дүрэм (Rules): гүйлгээний утгад түлхүүр үг байвал үйлдлийг урьдчилан сонгоно (батлах хүртэл бүртгэгдэхгүй)
+// Хэрэглэгчийн дүрэм (Rules): гүйлгээний утга эсвэл харьцсан дансны дугаарт түлхүүр үг байвал үйлдлийг урьдчилан сонгоно (батлах хүртэл бүртгэгдэхгүй)
 function bankRuleHit(l) {
-  var d = String(l.desc || '').toLowerCase();
+  var d = (String(l.desc || '') + ' ' + String(l.party || '')).toLowerCase();
   return (window.bankRules || []).filter(function (r) { return r.biz === l.biz && r.kw && d.indexOf(String(r.kw).toLowerCase()) >= 0; })[0] || null;
 }
 // Гараар оруулсан (эсвэл нөгөө дансны хуулгаас бичигдсэн) бүртгэл: ижил данс, ижил дүн, ±3 хоног; аль хэдийн хуулгын мөртэй тулгасныг санал болгохгүй
@@ -534,7 +534,7 @@ function bankRuleAdd(id) {
   var l = bankLines.filter(function (x) { return x.id === id; })[0], act = bankPick[id] || ''; if (!l) return;
   if (!/^(skip|A:\d{4,6}|TR:\d{4,6}|MG:\d{4,6}|IC:\w+)$/.test(act)) { toast('Эхлээд мөрийн үйлдлээ сонгоно уу — дүрэм зөвхөн алгасах, шилжүүлэг, данс (ангилал)-д'); return; }
   var def = String(l.desc || '').replace(/[\d.,:;#№\/-]+/g, ' ').replace(/\s+/g, ' ').trim().split(' ').slice(0, 3).join(' ');
-  var kw = prompt('Гүйлгээний утгад энэ үг байвал «' + bankActLabel(act) + '» гэж урьдчилан сонгоно (батлах хүртэл бүртгэгдэхгүй).\n\nТүлхүүр үг:', def);
+  var kw = prompt('Гүйлгээний утга эсвэл харьцсан дансны дугаарт энэ үг байвал «' + bankActLabel(act) + '» гэж автоматаар тулгана.\n\nТүлхүүр үг (эсвэл дансны дугаар ' + (l.party || '') + '):', def);
   if (kw === null) return; kw = kw.trim();
   if (kw.length < 2) { toast('Түлхүүр үг хэт богино'); return; }
   var r = { kw: kw, act: act, biz: l.biz };
@@ -549,7 +549,7 @@ function bankRuleDel(id) {
 }
 function bankRulesCard(biz) {
   var L = (window.bankRules || []).filter(function (r) { return r.biz === biz; });
-  return '<div class="card"><h2>Автомат дүрэм</h2><p class="muted" style="font-size:12.5px;margin:0 0 8px">Гүйлгээний утгад түлхүүр үг байвал үйлдлийг урьдчилан сонгоно — батлах хүртэл бүртгэлд орохгүй. Тулгаагүй мөрийн «Дүрэм болгох»-оор нэмнэ.</p>' +
+  return '<div class="card"><h2>Автомат дүрэм</h2><p class="muted" style="font-size:12.5px;margin:0 0 8px">Гүйлгээний утга эсвэл харьцсан дансны дугаарт түлхүүр үг байвал Банк тулгах хуудсыг нээхэд автоматаар тулгана. Тулгаагүй мөрийн «Дүрэм болгох»-оор нэмнэ.</p>' +
     (L.length ? '<div class="scroll"><table class="rep-t"><tr><th>Түлхүүр үг</th><th>Үйлдэл</th><th>Нэмсэн</th><th></th></tr>' + L.map(function (r) {
       return '<tr><td>«' + esc(r.kw) + '»</td><td>' + esc(bankActLabel(r.act)) + '</td><td class="muted">' + esc((r.by || '') + ' ' + (r.at || '')) + '</td><td class="n"><button class="mini" onclick="bankRuleDel(\'' + jsq(r.id) + '\')">Устгах</button></td></tr>'; }).join('') + '</table></div>'
       : '<p class="muted" style="margin:0">Дүрэм алга.</p>') + '</div>';
