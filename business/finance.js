@@ -346,14 +346,9 @@ function openItems(E, accs, sign, to, loanKey) {
   });
   return { items: items, P: P };
 }
-// Буухиад байгаа буцаалтын бараа: дансанд өртгөөр (1209), харин авлагын жагсаалтад зарах үнээр харуулна (төлсөн хэсгийг ижил харьцаагаар)
-function debtRetail(items) {
-  items.forEach(function (it) {
-    if (!(it.retail > 0) || !(it.amt > 0)) return; var k = it.retail / it.amt;
-    it.amt = it.retail; it.paid = it.paid * k; (it.pays || []).forEach(function (q) { q.v = q.v * k; });
-  });
-  return items;
-}
+// Буухиад байгаа буцаалтын бараа: журнал (1209)-тай ижил өртгөөр харуулна — авлагын нийт дүн хаана ч ижил (2026-11-16, өмнө нь зарах үнээр харуулж зөрдөг байсан).
+// Зарах үнэ нь мөрийн тайлбарт («үнэ ₮…») үлдэнэ.
+function debtRetail(items) { return items; }
 // Авлага/өглөгийн мөрийн тайлбарыг уншихад хялбар болгоно: техникийн код (#O…, #EBR:…, (K…)) болон давхар үгийг хасна
 function debtDesc(t) {
   return String(t || '').replace(/\s*#[\w:.\-]+/g, '').replace(/\s*\([A-Z]\d{6,}\)/g, '').replace(/ \(захиалга, авлага\)/g, '')

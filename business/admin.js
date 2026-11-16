@@ -918,6 +918,14 @@ function saveMove() {
 }
 var moveSending = false;
 function sendMoves(ms, done) {
+  // Эхний үлдэгдэл: нэг бараа, нэг огноотой давхар мөр (энэ удаад давхардсан эсвэл өнөөдөр аль хэдийн оруулсан) — анхааруулна
+  var op = ms.filter(function (m) { return m.kind === 'Эхний үлдэгдэл'; });
+  if (op.length && !ms._dupOk) {
+    var td = todayStr(), seen = {}, dup = [];
+    moves.forEach(function (m) { if (m.biz === op[0].biz && m.kind === 'Эхний үлдэгдэл' && String(m.date).slice(0, 10) === td) seen[m.item + '|' + m.loc] = 1; });
+    op.forEach(function (m) { var k = m.item + '|' + m.loc; if (seen[k]) dup.push(m.item + ' (' + m.loc + ')'); seen[k] = 1; });
+    if (dup.length && !confirm('Анхаар: эхний үлдэгдэлд ижил бараа, ижил өдөр давхар орох гэж байна (' + dup.length + '):\n' + dup.slice(0, 8).join('\n') + (dup.length > 8 ? '\n…' : '') + '\n\nДахин оруулбал үлдэгдэл давхардна. Үргэлжлүүлэх үү?')) return;
+  }
   if (!API_URL) {   // туршилтын горим
     ms.forEach(function (m) {
       var b = stockData[m.biz] = stockData[m.biz] || {};

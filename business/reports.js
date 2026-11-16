@@ -352,6 +352,25 @@ function buildJournal(biz, R) {
   // «Засвар: тооллого → эхний үлдэгдэл #M…» — эхний тооллого (эхний үлдэгдэл оруулсны дараах анхны) зөрүүг эхний үлдэгдлийн засвар (4201) болгоно
   var OPENFIX = {}, isOpenFix = function (j) { return j.biz === biz && /^Засвар: (бараа орлого|тооллого) → эхний үлдэгдэл/.test(String(j.desc)); };
   R.journal.forEach(function (j) { if (isOpenFix(j)) (String(j.desc).match(/#M[\w\-]+/g) || []).forEach(function (t) { OPENFIX[t.slice(1)] = 1; }); });
+  // Автомат «эхний тооллого»: бараа эхний үлдэгдэлтэй, эхний үлдэгдлээс хойш тэр бараагаар борлуулалт / орлого / хасалт огт болоогүй байхад
+  // хийсэн анхны тооллого бол зөрүү нь эхний үлдэгдлийн засвар (4201) — ашиг, алдагдал биш (2026-11-16)
+  (function () {
+    var OP = {}, ACT = {}, CNT = {}, ts = function (x) { return String(x.date).slice(0, 10) + ' ' + String(x.time || String(x.date).slice(11, 16) || ''); };
+    R.moves.forEach(function (m) {
+      if (m.biz !== biz) return; var t = String(m.date).slice(0, 16);
+      if (m.kind === 'Эхний үлдэгдэл') { if (!OP[m.item] || t < OP[m.item]) OP[m.item] = t; }
+      else if (m.kind === 'Тооллого') (CNT[m.item] = CNT[m.item] || []).push(m);
+      else if (m.kind === 'Орлого' || m.kind === 'Хасалт') (ACT[m.item] = ACT[m.item] || []).push(t);
+    });
+    R.records.forEach(function (x) { if (x.biz === biz && x.type === 'sale') (ACT[baseItem(x.item)] = ACT[baseItem(x.item)] || []).push(ts(x)); });
+    Object.keys(CNT).forEach(function (it) {
+      var o = OP[it]; if (!o) return;
+      var L = CNT[it].filter(function (m) { return String(m.date).slice(0, 16) >= o; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+      if (!L.length) return; var c1 = String(L[0].date).slice(0, 10);
+      var busy = (ACT[it] || []).some(function (t) { return t >= o && t.slice(0, 10) < c1; });
+      if (!busy) L.filter(function (m) { return String(m.date).slice(0, 10) === c1; }).forEach(function (m) { OPENFIX[m.id] = 1; });   // тэр өдрийн тооллогын бүх мөр
+    });
+  })();
   R.moves.forEach(function (m) {
     if (m.biz !== biz) return;
     var d = String(m.date).slice(0, 10);
@@ -774,11 +793,22 @@ function repDiscRet(R, biz, from, to) {
     g.amount = r0(g.amount - a);
   });
   rows.forEach(function (r) { if (r.it) { r.item = r.it.join(', ') + (r.fee ? (r.it.length ? ' + ' : '') + 'хүргэлт ' + fmt(r.fee) : ''); delete r.it; delete r.fee; } });
+  // Буухиа цуцалсан/буцаасан захиалга: борлуулалтын «(буцаалт)» мөргүй ч журналд Дт 6001 «Буухиа цуцалсан» бичигддэг — энд захиалга бүрээр харуулна
+  var seenB = {}; rows.forEach(function (r) { if (r.kind === 'Буцаалт') seenB[r._bill] = 1; });
+  var EC = {};
+  (typeof buildJournal === 'function' ? buildJournal(biz, R) : []).forEach(function (e) {
+    if (e.doc !== 'Буухиа цуцалсан' || e.date < from || e.date > to || !e.bill || seenB[e.bill]) return;
+    var g = EC[e.bill]; if (!g) { g = EC[e.bill] = { date: e.date, kind: 'Буухиа цуцалсан', staff: '', it: [], why: '', amount: 0, _bill: e.bill }; rows.push(g); }
+    var v = e.dr === '6001' ? e.amount : e.cr === '6002' ? -e.amount : 0; if (!v) return;
+    g.amount = r0(g.amount + v);
+    var m = String(e.desc).match(/^Буухиа (\S+) · (.+?)(?: · (.+?))? #EBC/); if (m) { if (!/хөнгөлөлт/.test(m[2])) g.it.push(m[2]); if (m[3] && !g.why) g.why = m[3]; if (!g.why) g.why = m[1]; }
+  });
+  rows.forEach(function (r) { if (r.kind === 'Буухиа цуцалсан' && r.it) { r.item = r.it.join(', '); delete r.it; } });
   rows.sort(function (a, b) { return a.date < b.date ? 1 : -1; });
-  var D = rows.filter(function (r) { return r.kind === 'Хөнгөлөлт'; }), B = rows.filter(function (r) { return r.kind === 'Буцаалт'; });
+  var D = rows.filter(function (r) { return r.kind === 'Хөнгөлөлт'; }), B = rows.filter(function (r) { return r.kind === 'Буцаалт'; }), K = rows.filter(function (r) { return r.kind === 'Буухиа цуцалсан'; });
   var sum = function (L) { return L.reduce(function (a, r) { return a + r.amount; }, 0); };
   return { title: 'Хөнгөлөлт, буцаалт', cols: [c('date', 'Огноо'), c('kind', 'Төрөл'), c('item', 'Бараа'), c('why', 'Шалтгаан'), c('staff', 'Хэн'), m('amount', 'Дүн')], rows: rows,
-    total: { date: 'Нийт', item: 'Буцаалт ' + B.length + ' · ' + fmt(sum(B)) + '   Хөнгөлөлт ' + D.length + ' · ' + fmt(sum(D)), amount: r0(sum(D) + sum(B)) } };
+    total: { date: 'Нийт', item: 'Буцаалт ' + B.length + ' · ' + fmt(sum(B)) + (K.length ? '   Буухиа цуцалсан ' + K.length + ' · ' + fmt(sum(K)) : '') + '   Хөнгөлөлт ' + D.length + ' · ' + fmt(sum(D)), amount: r0(sum(D) + sum(B) + sum(K)) } };
 }
 // Удаан эргэлттэй бараа: үлдэгдэлтэй боловч сүүлийн N хоногт зарагдаагүй (мөнгө хөлдсөн)
 function repSlow(R, biz, days, stockMap) {

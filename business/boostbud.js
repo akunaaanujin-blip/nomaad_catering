@@ -97,9 +97,13 @@ function boostBudView() {
 function bbBankOpts() {
   return bbUnpaid().map(function (b) { return ['BG:' + b.id, b.id + ' · ' + bstName(b.biz) + ' · ' + b.from.slice(5) + ' ' + b.days + ' хоног · ' + bbAmt(b), 'Boost төсөв']; });
 }
+// Гүйлгээний утган дахь Boost төсвийн дугаар («BGT-261105-1», «bg-261109-2») → «BGT-261105-1»
+function bbNoIn(desc) { var m = String(desc || '').match(/(?:^|[^a-z])bgt?-?\s?(\d{6}-\d+)/i); return m ? 'BGT-' + m[1] : ''; }
+// Утганд Boost төсвийн дугаар байгаа ч системд тийм төсөв алга — анхааруулга (bank.js)
+function bbNoMissing(l) { var no = bbNoIn(l.desc); return no && typeof bbFind === 'function' && !bbFind(no) ? no : ''; }
 function bbSuggest(l) {   // утганд дугаар таарвал итгэлтэй; эс бөгөөс ₮ дүн таарсан ганц төсөв
   var U = bbUnpaid(); if (!U.length) return null;
-  var m = String(l.desc || '').match(/BGT-?\s?(\d{6}-\d+)/i), b = m && U.filter(function (x) { return x.id === 'BGT-' + m[1]; })[0];
+  var no = bbNoIn(l.desc), b = no && U.filter(function (x) { return x.id === no; })[0];
   if (b) return { kind: 'bg', v: 'BG:' + b.id, sure: true };
   var A = U.filter(function (x) { return x.mnt && Math.abs(x.mnt - l.debit) < 1; });
   return A.length ? { kind: 'bg', v: 'BG:' + A[0].id, sure: false } : null;
