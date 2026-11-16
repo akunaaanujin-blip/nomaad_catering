@@ -132,15 +132,34 @@ function ebBatches() {
     return { u: u, n: n, amt: r0(amt) };
   }).filter(function (b) { return b.n; });
 }
-function ebBatchOpts(L) { return L.map(function (b) { return ['EB:b|' + b.u, 'Тайлан нийлсэн ' + ebGenTime(b.u) + ' · ' + b.n + ' хүргэлт · ' + mny(b.amt), 'Буухиа']; }); }
-function ebBatchDef(L, l) { var a = ebBkAmt(l), m = L.filter(function (b) { return Math.abs(b.amt - a) < 1; }); return m.length === 1 ? 'EB:b|' + m[0].u : 'EB:set'; }
+function ebBatchOpts(L, l) {
+  var o = L.map(function (b) { return ['EB:b|' + b.u, 'Тайлан нийлсэн ' + ebGenTime(b.u) + ' · ' + b.n + ' хүргэлт · ' + mny(b.amt), 'Буухиа']; });
+  var cm = l ? ebBatchCombo(L, l) : null;
+  if (cm) o.unshift(['EB:b|' + cm.us.join(','), 'Тайлан нийлсэн ' + cm.us.length + ' багц (' + cm.us.map(function (u) { return String(u).slice(5, 10).replace('/', '-'); }).join(', ') + ') · ' + cm.n + ' хүргэлт · ' + mny(cm.amt), 'Буухиа']);
+  return o;
+}
+// Буухиа нэг шилжүүлгээр хэд хэдэн багцыг хамт төлдөг (жишээ: 11-13, 11-15-ны багц → 11-16-нд нэг дүнгээр).
+// Гүйлгээний цагаас өмнөх хамгийн сүүлийн багцаас хойш тоолон нэмж, яг таарсан ганц хослол байвал түүнийг санал болгоно.
+function ebBatchCombo(L, l) {
+  var a = ebBkAmt(l), t = String(l.date || '').slice(0, 16).replace(/-/g, '/');
+  if (!t || a <= 0) return null;
+  var P = L.filter(function (b) { return String(b.u) < t; }).sort(function (x, y) { return x.u < y.u ? 1 : -1; });   // шинээс хуучин руу
+  var s = 0, n = 0, us = [], hit = [];
+  for (var i = 0; i < P.length; i++) {
+    s = r0(s + P[i].amt); n += P[i].n; us.unshift(P[i].u);
+    if (i > 0 && Math.abs(s - a) < 1) hit.push({ us: us.slice(), n: n, amt: s });
+  }
+  return hit.length === 1 ? hit[0] : null;
+}
+function ebBatchDef(L, l) { var a = ebBkAmt(l), m = L.filter(function (b) { return Math.abs(b.amt - a) < 1; }); if (m.length === 1) return 'EB:b|' + m[0].u; var cm = ebBatchCombo(L, l); return cm ? 'EB:b|' + cm.us.join(',') : 'EB:set'; }
+function ebBU(u) { var o = {}; String(u || '').split(',').forEach(function (x) { if (x) o[x] = 1; }); return o; }   // «EB:b|u1,u2» → {u1:1, u2:1}
 // Сонгосон багцын хүргэлтүүдийг чагтална — дүн зөрвөл доорх «Зөрүү»-д харагдана
 function ebBkBatch(u) {
-  var B = ebSettledByEb(ebAdm.list || []), n = 0, on = function (k, i) { var c = document.querySelector('#gBody input[data-k=' + k + '][data-i="' + i + '"]'); if (c) { c.checked = true; n++; } };
-  ebBk.rows.forEach(function (r, i) { if (B[r.code] === u) on('r', i); });
-  ebBk.old.forEach(function (it, i) { if (it.eb && B[it.eb] === u) on('o', i); });
-  ebBk.unl.forEach(function (x, i) { if (B[x.x.code] === u) on('u', i); });
-  var el = document.getElementById('ebBkAuto'); if (el) el.textContent = 'Тайлан нийлсэн ' + ebGenTime(u) + ' · ' + n + ' хүргэлт сонгогдлоо — шалгаад тулгана уу.';
+  var B = ebSettledByEb(ebAdm.list || []), U = ebBU(u), n = 0, on = function (k, i) { var c = document.querySelector('#gBody input[data-k=' + k + '][data-i="' + i + '"]'); if (c) { c.checked = true; n++; } };
+  ebBk.rows.forEach(function (r, i) { if (U[B[r.code]]) on('r', i); });
+  ebBk.old.forEach(function (it, i) { if (it.eb && U[B[it.eb]]) on('o', i); });
+  ebBk.unl.forEach(function (x, i) { if (U[B[x.x.code]]) on('u', i); });
+  var uk = Object.keys(U), el = document.getElementById('ebBkAuto'); if (el) el.textContent = 'Тайлан нийлсэн ' + (uk.length > 1 ? uk.length + ' багц' : ebGenTime(u)) + ' · ' + n + ' хүргэлт сонгогдлоо — шалгаад тулгана уу.';
 }
 function ebBankOpen(lineId, batch) {
   var l = bankLines.filter(function (x) { return x.id === lineId; })[0]; if (!l) return;
@@ -244,12 +263,12 @@ function ebBankSave(sel) {
 // Нэмэлт төлбөр, хуучин өр зэргээс болж зөрвөл (diff ≥ 1₮) тулгахгүй — гараар үлдэнэ. true — тулгаж эхэлсэн
 function ebAutoSettle(lineId, u) {
   var l = bankLines.filter(function (x) { return x.id === lineId; })[0]; if (!l || !ebAdm.list) return false;
-  var D = ebSetData(), B = ebSettledByEb(ebAdm.list);
+  var D = ebSetData(), B = ebSettledByEb(ebAdm.list), U = ebBU(u);
   ebBk = { l: l, rows: D.rows.filter(function (r) { return r.colLeft > 0.5 || r.feeLeft > 0.5; }), old: D.old.filter(function (it) { return !it.closed; }), unl: ebSetUnlinked(D.M) };
   var sel = { r: [], o: [], u: [] };
-  ebBk.rows.forEach(function (r, i) { if (B[r.code] === u) sel.r.push(i); });
-  ebBk.old.forEach(function (it, i) { if (it.eb && B[it.eb] === u) sel.o.push(i); });
-  ebBk.unl.forEach(function (x, i) { if (B[x.x.code] === u) sel.u.push(i); });
+  ebBk.rows.forEach(function (r, i) { if (U[B[r.code]]) sel.r.push(i); });
+  ebBk.old.forEach(function (it, i) { if (it.eb && U[B[it.eb]]) sel.o.push(i); });
+  ebBk.unl.forEach(function (x, i) { if (U[B[x.x.code]]) sel.u.push(i); });
   var S = ebBkSel(sel);
   if (!(S.r.length || S.o.length || S.u.length) || Math.abs(S.diff) >= 1) { ebBk = null; return false; }
   ebBankSave(sel); return true;

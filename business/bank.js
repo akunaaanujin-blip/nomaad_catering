@@ -329,10 +329,10 @@ function bankView() {
   var rows = list.slice().reverse().map(function (l) {   // хуучнаас нь: ижил баримтын санал эхний гүйлгээнд очно
     var s = l.status === 'Шинэ' ? bankSuggest(l) : null, sel = '', dupPick = false;
     if (s) {
-      var opts = [], cur = bankPick[l.id];   // [утга, нэр, бүлэг]
+      var opts = [], cur = bankPick[l.id] === 'EB:set' ? '' : bankPick[l.id];   // [утга, нэр, бүлэг]; «EB:set» — Буухиагийн мэдээлэл ирэхээс өмнөх санал, дахин тооцно
       if (l.credit) {
         if (s.kind === 'paid') opts.push(['P:' + s.o.id + '|' + s.j.id, 'Аль хэдийн бичигдсэн төлбөр: ' + s.o.phone + ' · ' + s.j.date + ' (давхар бичихгүй)', 'Захиалгын төлбөр']);
-        if (typeof ebBankOpen === 'function') { ebBatchOpts(ebB).forEach(function (o) { opts.push(o); }); opts.push(['EB:set', 'Буухиагийн тооцоо — захиалга сонгох', 'Буухиа']); }
+        if (typeof ebBankOpen === 'function') { ebBatchOpts(ebB, l).forEach(function (o) { opts.push(o); }); opts.push(['EB:set', 'Буухиагийн тооцоо — захиалга сонгох', 'Буухиа']); }
         (window.adminOrders || []).filter(function (o) { return o.biz === biz && !ordDead(o) && ordOpen(o); }).forEach(function (o) {
           opts.push(['O:' + o.id, 'Захиалга ' + o.phone + ' · ' + (o.confirmed ? 'үлдэгдэл ' + fmt(ordDue(o)) + ' / ' : '') + fmt(o.amount) + ' · ' + ordStLabel(o) + (o.paid === 'Орсон' ? ' · ажилтан: орсон' : ''), 'Захиалгын төлбөр']); });
         shopBills(biz).forEach(function (b) { opts.push(['S:' + b.key, 'Дэлгүүр · ' + b.date + ' · ' + fmt(b.amt) + ' · шилжүүлэг (орлого бүртгэлтэй)', 'Дэлгүүрийн борлуулалт']); });
@@ -349,7 +349,7 @@ function bankView() {
         bstInvoices().filter(function (v) { return v.state !== 'paid'; }).forEach(function (v) {
           opts.push(['BST:' + v.no, v.no + ' · $' + v.usd + ' · ' + v.cos.map(function (c) { return bstCoName(c.biz) + (c.isPaid ? ' (төлсөн)' : ''); }).join(', ') + ' · ' + v.status, 'Boost нэхэмжлэх']); });
         reqOpen(biz).forEach(function (x) { opts.push(['R:' + x.id, x.category + ' · ' + (x.customer || '') + ' · ' + fmt(x.amount) + ' (' + (x.staff || '') + ')', 'Батлагдсан мөнгөний хүсэлт']); });
-        if (typeof ebBankOpen === 'function') { ebBatchOpts(ebB).forEach(function (o) { opts.push(o); }); opts.push(['EB:set', 'Буухиагийн тооцоо — захиалга сонгох', 'Буухиа']); }
+        if (typeof ebBankOpen === 'function') { ebBatchOpts(ebB, l).forEach(function (o) { opts.push(o); }); opts.push(['EB:set', 'Буухиагийн тооцоо — захиалга сонгох', 'Буухиа']); }
         debtByWho(debtCache().pay.filter(function (x) { return x.who !== BUUHIA; })).forEach(function (o) { opts.push(o.concat(['Өглөг хаах'])); });   // буухиа — зөвхөн тооцоогоор
         bankXOpts2(biz).forEach(function (o) { opts.push(o); });
         bankXPoOpts(biz).forEach(function (o) { opts.push(o); });
