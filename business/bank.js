@@ -440,7 +440,7 @@ function bankAutoCard() {
     '<table class="rep-t"><tr><td>Шилжүүлгийн баримтын и-мэйл (зарлага)</td><td>' + (a.mail ? 'Асаалттай' + (a.mailLast ? ' · сүүлд шалгасан ' + esc(a.mailLast) : '') : 'Унтраалттай') + '</td>' +
     '<td class="n"><button class="b-btn" onclick="bankAutoSet({mail:' + (a.mail ? 'false' : 'true') + '})">' + (a.mail ? 'Унтраах' : 'Асаах') + '</button></td></tr>' +
     '<tr><td>Банкны мессеж (утаснаас дамжуулна)</td><td>' + smsSt + (a.sms && s.at && !s.ok && s.text ? '<br><small class="muted">' + esc(s.text) + '</small>' : '') + '</td>' +
-    '<td class="n"><button class="b-btn" onclick="bankAutoSet({sms:\'new\'})">' + (a.sms ? 'Түлхүүр шинэчлэх' : 'Асаах') + '</button>' + (a.sms ? ' <button class="b-btn" onclick="bankAutoSet({sms:\'off\'})">Унтраах</button>' : '') + '</td></tr></table>' +
+    '<td class="n">' + (a.sms ? '<button class="b-btn" title="Дарсны дараа 10 минутын дотор утсан дээрээ «NOMAAD Bank»-ыг нэг ажиллуулна — утсан дээрх түлхүүрийг сервер авна" onclick="bankAutoSet({sms:\'pair\'})">Утсыг холбох</button> ' : '') + '<button class="b-btn" onclick="bankAutoSet({sms:\'new\'})">' + (a.sms ? 'Түлхүүр шинэчлэх' : 'Асаах') + '</button>' + (a.sms ? ' <button class="b-btn" onclick="bankAutoSet({sms:\'off\'})">Унтраах</button>' : '') + '</td></tr></table>' +
     '<div id="bankAutoMsg" class="muted" style="font-size:12.5px;margin-top:6px">Орсон гүйлгээ «Тулгаагүй» жагсаалтад «хуулгаар баталгаажаагүй» тэмдэгтэй харагдана. Хуулга оруулахад ижил гүйлгээтэй нийлнэ — давхардахгүй.</div>' + bankSmsCheckHtml() + '</div>';
 }
 function bankAutoSet(v) {
@@ -450,6 +450,7 @@ function bankAutoSet(v) {
     if (err) { $('bankAutoMsg').textContent = err === 'gmail_auth' ? 'Gmail унших зөвшөөрөл өгөөгүй байна — Apps Script редактороос bankMailAuth-ийг нэг удаа ажиллуулж зөвшөөрнө үү.' : 'Алдаа: ' + err; return; }
     window.bankAuto = d.auto || {}; render();
     if (d.smsKey) $('bankAutoMsg').innerHTML = 'Утасны Shortcut-д тавих (одоо л нэг удаа харагдана):<br>URL: <code style="user-select:all;word-break:break-all">' + esc(API_URL) + '</code><br>Түлхүүр: <code style="user-select:all">' + esc(d.smsKey) + '</code><br>Илгээх JSON: type = bank_sms, secret = түлхүүр, text = мессежийн бичвэр';
+    else if (v.sms === 'pair') $('bankAutoMsg').innerHTML = '<b>10 минутын дотор</b> утсан дээрээ Shortcuts → «NOMAAD Bank»-ыг нэг дарна уу. Утасны түлхүүрийг сервер авч, холбогдоно. Дараа нь энэ хуудсыг шинэчилнэ.';
     else toast('Хадгалагдлаа');
   });
 }
