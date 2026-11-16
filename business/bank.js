@@ -664,6 +664,8 @@ function bankAutoSure(l) {
   if (s.kind === 'shop') return !!s.sure && Math.abs(new Date(String(s.b.date).slice(0, 10)) - new Date(String(l.date).slice(0, 10))) <= 864e5;
   // ерөнхий үгээр таасан зардлаас буухиа (тооцоо эсвэл хөлс аль нь болох нь тодорхойгүй), зээл (үндсэн/хүү)-ийг гараар
   if (s.kind === 'acc') return !!s.acc && s.acc !== '7124' && s.acc !== '3501';
+  // утганд харилцагчийн нэр (HiCargo г.м) — тэр харилцагчийн ганц өглөг/авлага, үлдэгдэл нь гүйлгээтэй яг таарвал
+  if (s.kind === 'debt' && s.it && bankDebtDocs(p).length === 1 && Math.abs((Number(s.it.left) || 0) - (Number(l.credit) || Number(l.debit) || 0)) < 1) return true;
   // «pos» гэсэн утгатай Cozy ↔ аяллын дэлгүүрийн посын мөнгө — посын авлага/өглөгийг хаана (posSuggest)
   if (s.kind === 'debt' && posBiz(l.biz) && /(^|[^a-zа-яөүё])(pos|пос)([^a-zа-яөүё]|$)/i.test(String(l.desc))) return true;
   return !!(s.sure || s.kind === 'paid' || s.kind === 'rule');
