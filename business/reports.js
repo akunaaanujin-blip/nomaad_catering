@@ -665,6 +665,13 @@ function groupBills(list, byDate) {
   return order.map(function (k) { return g[k]; });
 }
 function payText(pays) { return Object.keys(pays).filter(function (k) { return pays[k] > 0; }).map(function (k) { return k + (Object.keys(pays).length > 1 ? ' ' + fmt(pays[k]) : ''); }).join(' + '); }
+// Захиалгаас үүссэн «Шилжүүлэг» баримт нь мөнгө орохоос өмнө авлага (Дт 1201) — жагсаалтад «Шилжүүлэг» биш «Авлага» гэж харуулна
+function ordPays(pays, ord) {
+  if (!ord || !pays['Шилжүүлэг']) return pays;
+  var p = {}, k2 = ord.paid === 'Орсон' ? 'Авлага (орсон)' : 'Авлага (хүлээгдэж буй)';
+  Object.keys(pays).forEach(function (k) { var kk = k === 'Шилжүүлэг' ? k2 : k; p[kk] = (p[kk] || 0) + pays[k]; });
+  return p;
+}
 // Дэлгүүрийн борлуулалт — захиалгаас (Cozy онлайн) үүсээгүй, дэлгүүрт кассаар гарсан баримт
 function shopOnly(src) {   // src: shop — дэлгүүрийн касс, online — онлайн захиалга, all — бүгд
   var ids = {}; (window.adminOrders || []).forEach(function (o) { ids[o.id] = 1; });
@@ -678,11 +685,11 @@ function repShop(R, biz, from, to, view) {
 }
 // Өдөр бүр: баримтын тоо, төлбөрийн хэлбэр тус бүрийн дүн, нийт
 function repShopDays(R, biz, from, to, only) {
-  var D = {}, P = {};
+  var D = {}, P = {}, ords = {}; (window.adminOrders || []).forEach(function (o) { ords[o.id] = o; });
   groupBills(salesIn(R, biz, from, to).filter(only), true).forEach(function (o) {
-    var d = D[o.date] = D[o.date] || { key: o.date, n: 0, net: 0 };
+    var d = D[o.date] = D[o.date] || { key: o.date, n: 0, net: 0 }, ps = ordPays(o.pays, ords[o.key]);
     if (o.gross > 0) d.n++; d.net += o.net;
-    Object.keys(o.pays).forEach(function (k) { P[k] = 1; d[k] = (d[k] || 0) + o.pays[k]; });
+    Object.keys(ps).forEach(function (k) { P[k] = 1; d[k] = (d[k] || 0) + ps[k]; });
     if (o.ret) d.ret = (d.ret || 0) + o.ret;
   });
   var pays = Object.keys(P).sort(function (a, b) { return a === 'Бэлэн' ? -1 : b === 'Бэлэн' ? 1 : a < b ? -1 : 1; });
@@ -695,7 +702,7 @@ function repReceipts(R, biz, from, to, only) {
   var custOf = function (o) { var d = ords[o.key]; return o.customer || (d ? (d.customer ? d.customer + ' ' : '') + d.phone : ''); };   // Cozy захиалгын баримтад захиалгаас
   var ce = costEngine(biz, R), costOf = function (o) { return o.lines.reduce(function (s, x) { var v = Math.abs(ce.rec[x.id] || 0); return s + (Number(x.amount) < 0 ? -v : v); }, 0); };
   var rows = groupBills(salesIn(R, biz, from, to).filter(only || function () { return true; }), true).map(function (o) {
-    return { date: o.date + ' ' + o.time, staff: o.staff, items: o.items.join(', ') || (o.retItems.length ? 'Буцаалт: ' + o.retItems.join(', ') : ''), customer: custOf(o), pay: payText(o.pays), disc: o.disc ? r0(o.disc) : '', ret: o.ret ? r0(o.ret) : '', fee: o.fee ? r0(o.fee) : '', cost: r0(costOf(o)) || '',
+    return { date: o.date + ' ' + o.time, staff: o.staff, items: o.items.join(', ') || (o.retItems.length ? 'Буцаалт: ' + o.retItems.join(', ') : ''), customer: custOf(o), pay: payText(ordPays(o.pays, ords[o.key])), disc: o.disc ? r0(o.disc) : '', ret: o.ret ? r0(o.ret) : '', fee: o.fee ? r0(o.fee) : '', cost: r0(costOf(o)) || '',
              ebarimt: o.ddtd || '—', amount: r0(o.net), _bill: o.key, _act: typeof payFixOpen === 'function' && o.net > 0 ? '<button class="mini" onclick="event.stopPropagation();payFixOpen(' + esc(JSON.stringify(o.key)) + ')">Төлбөр засах</button>' : '', order: ords[o.key] ? ordStLabel(ords[o.key]) + (ords[o.key].confirmed ? ' · баталгаажсан' : '') : '' };
   }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
   var oc = rows.some(function (r) { return r.order; }) ? [c('order', 'Захиалга')] : [];   // Cozy: захиалгаас үүссэн баримтын хүргэлтийн төлөв
