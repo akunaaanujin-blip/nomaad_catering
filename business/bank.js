@@ -266,7 +266,12 @@ function posSuggest(l) {
   if (l.biz === POS_SHARE.to && l.credit) return { kind: 'rule', v: 'TR:110106', kw: 'pos' };
   if (l.biz === POS_SHARE.from && !l.credit) return null;
   var c = debtCache(), who = l.credit ? POS_SHARE.rec : POS_SHARE.pay;   // аяллын дэлгүүрээс Cozy руу шилжүүлсэн бол посын өглөгийг хаана — бараа татан авалт биш
-  var it = (l.credit ? c.rec : c.pay).filter(function (x) { return x.who === who && !x.np; })[0];
+  // посын мөнгө борлуулалт бүрээр (1% хассан) орно — гүйлгээний өдрөөс өмнөх баримтаас дүнгээр нь таарсныг, үгүй бол дүн хүрэлцэх хамгийн ойрыг сонгоно
+  var amt = Number(l.credit) || Number(l.debit) || 0, d = String(l.date).slice(0, 10), left = function (x) { return x.amt - (x.paid || 0); };
+  var all = (l.credit ? c.rec : c.pay).filter(function (x) { return x.who === who && !x.np && !x.closed && left(x) > 0.5; });
+  var L = all.filter(function (x) { return String(x.date) <= d; }); if (!L.length) L = all;
+  var it = L.filter(function (x) { return Math.abs(x.amt - amt) < 1 || Math.abs(left(x) - amt) < 1; })[0] ||
+    L.filter(function (x) { return left(x) >= amt - 0.5; }).sort(function (a, b) { return left(a) - left(b); })[0] || L[0];
   return it ? { kind: 'debt', v: 'D:' + it.acc + '|' + it.key, it: it } : null;
 }
 function bankSuggest(l) {
@@ -658,8 +663,10 @@ function savePayInfo() {
 var bankAutoTried = {}, bankAutoBusy = false;
 function bankAutoSure(l) {
   var p = bankPick[l.id] || ''; if (!p || p === 'skip' || /^(LN:new|EB:|XP:|XO:|BST:set|A:1201$|A:3101$)/.test(p)) return false;
-  if (/^D:/.test(p) && bankDebtDocs(p).length > 1) return false;
   var s = bankSuggest(l);
+  // «pos» утгатай посын мөнгө — олон борлуулалтын баримттай ч тохирох нэгийг posSuggest сонгосон тул автоматаар
+  if (s.kind === 'debt' && posBiz(l.biz) && p === s.v && /(^|[^a-zа-яөүё])(pos|пос)([^a-zа-яөүё]|$)/i.test(String(l.desc))) return true;
+  if (/^D:/.test(p) && bankDebtDocs(p).length > 1) return false;
   // дэлгүүрийн борлуулалт зөвхөн дүнгээр таардаг — мессеж шууд ирдэг тул тэр өдөр / маргааш нь л автоматаар
   if (s.kind === 'shop') return !!s.sure && Math.abs(new Date(String(s.b.date).slice(0, 10)) - new Date(String(l.date).slice(0, 10))) <= 864e5;
   // ерөнхий үгээр таасан зардлаас буухиа (тооцоо эсвэл хөлс аль нь болох нь тодорхойгүй), зээл (үндсэн/хүү)-ийг гараар
