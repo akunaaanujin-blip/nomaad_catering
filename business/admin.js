@@ -2009,13 +2009,21 @@ function reportCard(rep, cancellable) {
 }
 
 // ── Хянах самбар + «нэг ч алдагдалгүй» шалгалт ──
+// Буухиагаар буцсан (цуцалсан) захиалгын борлуулалтын буцаалт журналд «Буухиа цуцалсан» (Дт 6001, #EBC:захиалга) нэрээр бичигддэг.
+// Бараа нь ирэхэд үүсэх бүртгэлийн «(буцаалт)» мөр журналд дахин бичигдэхгүй — шалгалтад «дутуу» гэж тооцохгүй
+function ebcOrders(E) {
+  var o = {}; E.forEach(function (e) { if (e.doc === 'Буухиа цуцалсан' && e.dr === '6001') (String(e.desc).match(/#EBC:[\w-]+/g) || []).forEach(function (t) { o[t.slice(5)] = 1; }); });
+  return o;
+}
+function ebcReturn(x, ebc, posted) { return Number(x.amount) < 0 && !!x.bill && !!ebc[x.bill] && !posted[x.id]; }
 function journalCheck(E, f, t) {
   // Борлуулалтын мөр бүр журналд яг нэг удаа, яг ижил дүнгээр орсныг шалгана
   var DUP = dupReturns(state.biz, R()), dupN = Object.keys(DUP).length;   // давхар буцаалтын мөр журналд орохгүй — тусдаа шалгалт
-  var sales = records.filter(function (x) { return x.biz === state.biz && x.type === 'sale' && x.date >= f && x.date <= t && Number(x.amount) && !DUP[x.id]; });
   var posted = {};
   var SD = { 'Борлуулалт': 1, 'Борлуулалтын буцаалт': 1, 'Борлуулалтын хөнгөлөлт': 1, 'Төлбөр хуваалт': 1 };
   E.forEach(function (e) { if (SD[e.doc]) posted[e.ref] = (posted[e.ref] || 0) + e.amount; });
+  var ebc = ebcOrders(E);
+  var sales = records.filter(function (x) { return x.biz === state.biz && x.type === 'sale' && x.date >= f && x.date <= t && Number(x.amount) && !DUP[x.id] && !ebcReturn(x, ebc, posted); });
   var bookAmt = function (x) { var v = Number(x.amount); return x.pay === 'Карт' && posBiz(x.biz) ? posNet(v) : v; };   // пос 1% хассан дүнгээр бичигддэг
   var miss = sales.filter(function (x) { return Math.abs((posted[x.id] || 0) - Math.abs(bookAmt(x))) > 0.5; });
   var sAmt = sales.reduce(function (a, x) { return a + bookAmt(x); }, 0);
@@ -2111,7 +2119,18 @@ function extraChecks(E, r, p, line, neq) {
     var pr = repProfit(R(), state.biz, r[0], r[1]).total.margin, rec = {}; records.forEach(function (x) { rec[x.id] = x; });
     var gret = 0; E.forEach(function (e) { if (e.date >= r[0] && e.date <= r[1] && e.doc === 'Борлуулалтын буцаалт' && e.dr === '6001' && rec[e.ref] && !isNonGoods(rec[e.ref].item)) gret += e.amount; });
     // буухиа цуцалсан, бараа нь буцаж ирээгүй захиалга: «Буухиа цуцалсан» Дт 6001 — тайланд мөр байхгүй тул энд тооцохгүй (5101 хөндөгдөөгүй)
-    var acc = -(bp['5101'] || 0) - gret - (bp['6101'] || 0);
+    // Бараа нь ирж бүртгэлд «(буцаалт)» мөр үүссэн бол тайлан буцаалтыг тооцно → энд ч зарах үнээр хасна
+    var ebc = ebcOrders(E), pst = {}, sBill = {}; E.forEach(function (e) { if (e.doc === 'Борлуулалтын буцаалт') pst[e.ref] = 1; });
+    records.forEach(function (x) { sBill[x.id] = x.bill; });
+    var inR = function (x) { return x.biz === state.biz && x.type === 'sale' && x.date >= r[0] && x.date <= r[1]; };
+    var ebRet = records.filter(function (x) { return inR(x) && !isNonGoods(x.item) && ebcReturn(x, ebc, pst); }), retO = {};
+    ebRet.forEach(function (x) { gret -= Number(x.amount); retO[x.bill] = 1; });
+    // Өртөг: цуцлах үед буцаасан өртөг (Кт 6101, «…-ebg») тайланд бараа ирэх өдөр (буцаалтын мөрөөр) тооцогдоно — хугацааг тааруулна
+    var cAdj = 0; E.forEach(function (e) { if (e.cr !== '6101' || !/-ebg$/.test(e.ref || '')) return;
+      if (e.date >= r[0] && e.date <= r[1]) cAdj += e.amount; if (retO[sBill[String(e.ref).replace(/-ebg$/, '')]]) cAdj -= e.amount; });
+    // Картын борлуулалт пос 1% хассан дүнгээр 5101-д бичигддэг (тайлан бүтэн үнээр) — хуваан төлсөн засварын хамт
+    var posAdj = 0; if (posBiz(state.biz)) records.forEach(function (x) { if (inR(x) && x.pay === 'Карт' && (!isNonGoods(x.item) || x.item === 'Төлбөр хуваалт') && !ebcReturn(x, ebc, pst)) posAdj += Number(x.amount) - posNet(Number(x.amount)); });
+    var acc = -(bp['5101'] || 0) - gret - ((bp['6101'] || 0) + cAdj) + posAdj;
     out += line(Math.abs(pr - acc) <= TOL, neq(pr, 'Барааны ашиг тайлангийн нийт ашиг', acc, '5101 − буцаалт − 6101'), 'finance/profit');
   }
   if (BUSINESSES[state.biz].orders) {   // Захиалгын баталгаажаагүй нийт = захиалгын хэрэглэгчдийн авлага (1201)
