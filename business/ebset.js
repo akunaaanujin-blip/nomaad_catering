@@ -42,9 +42,12 @@ function ebSetData() {
 function ebOldLbl(it) { return it.eb ? 'Захиалгагүй хүргэлтийн хөлс · ' + it.eb : 'Хуучин өр (эхний үлдэгдэл)'; }
 // Буухиа дээр Хүргэгдсэн, манай захиалгагүй (жишээ нь буцаалт авчирсан, манай дугаар руу) хүргэлтийн хөлс — журналд бичигдээгүй
 function ebSetUnlinked(M) {
-  var seen = {}; J().forEach(function (e) { (String(e.desc).match(/#EB:[\w-]+/g) || []).forEach(function (t) { seen[t.slice(4)] = 1; }); if (e.partner === BUUHIA && e.dr === '7124') (String(e.desc).match(/\([KQ][\w-]+\)/g) || []).forEach(function (t) { seen[t.slice(1, -1)] = 1; }); });
+  var seen = {}, feeO = {}; J().forEach(function (e) { (String(e.desc).match(/#EB:[\w-]+/g) || []).forEach(function (t) { seen[t.slice(4)] = 1; }); if (e.partner === BUUHIA && e.dr === '7124') (String(e.desc).match(/\([KQ][\w-]+\)/g) || []).forEach(function (t) { seen[t.slice(1, -1)] = 1; });
+    if (e.partner === BUUHIA && (e.dr === '7124' || e.cr === '3101')) (String(e.desc).match(/#O\d+/g) || []).forEach(function (t) { feeO[t.slice(1)] = 1; }); });
+  // Хэрэглэгч хүлээж аваагүй (мөнгө хураагаагүй) ч Буухиа дээр «Хүргэгдсэн», манай захиалга цуцалсан/буцаасан — Буухиа хөлсөө суутгадаг, манайд хөлс бичигдээгүй
+  var refused = function (x) { var o = M[x.code]; return o && /^(Цуцалсан|Буцаасан)$/.test(o.status) && !(Number(x.got) > 0) && !feeO[o.id]; };
   return (ebAdm.list || []).filter(function (x) {
-    return x.st === 10 && !M[x.code] && !seen[x.code] && !(window.ebOld || {})[x.code] && String(x.created || '').slice(0, 10).replace(/\//g, '-') >= EB_SET_FROM;
+    return x.st === 10 && (!M[x.code] || refused(x)) && !seen[x.code] && !(window.ebOld || {})[x.code] && String(x.created || '').slice(0, 10).replace(/\//g, '-') >= EB_SET_FROM;
   }).map(function (x) { return { x: x, fee: ebXFee(x) }; });
 }
 function ebSetChecks(D) {
