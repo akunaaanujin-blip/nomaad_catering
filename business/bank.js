@@ -402,7 +402,7 @@ function bankView() {
       '<td class="n neg">' + (l.debit ? '−' + fmt(l.debit).slice(1) : '') + '</td><td class="n nw">' + (bankProv(l) && !l.bal ? '' : l.bal || l.bal === 0 ? fmt(l.bal).slice(1) : '') + '</td><td>' + (s ? sel : '<span class="tag">' + esc(l.status) + '</span> <small class="muted">' + esc(String(l.link).replace(/^\d{4,6} /, '').replace(/ #[\w-]+/g, '')) + '</small>' + (noJ ? ' <small style="color:var(--red)">бичилт алга — буцааж дахин тулгана уу</small>' : '')) + '</td>' +
       '<td class="n" style="white-space:nowrap">' + (s ? '<button class="mini" style="color:var(--accent)" onclick="bankApply([\'' + jsq(l.id) + '\'])">Тулгах</button> <button class="mini" title="Энэ утгатай гүйлгээнд сонгосон үйлдлийг дараа нь урьдчилан бөглөнө" onclick="bankRuleAdd(\'' + jsq(l.id) + '\')">Дүрэм болгох</button> <button class="mini" title="Хуулгаас устгах" onclick="bankDel([\'' + jsq(l.id) + '\'])">Устгах</button>' : l.status === 'Идэвхгүй' ? '' : '<button class="mini" title="Ангиллыг нь шууд солино" onclick="bankEdit(\'' + jsq(l.id) + '\')">Засах</button>') + '</td></tr>';
   }).reverse().join('');
-  if (API_URL && isOwner()) setTimeout(bankAutoApply, 0);   // санал нь тодорхой мөрүүдийг автоматаар тулгана
+  // 2026-11-16: хэрэглэгчийн шийдвэрээр автомат тулгалт унтраасан — санал гарна, тулгалтыг гараар («Тулгах» / «Сонгосныг тулгах»)
   return head + '<div class="card"><h2>Төлбөрийн мэдээлэл (хэрэглэгчид илгээх мессежид)</h2><div class="bar-row"><input id="payInfo" value="' + esc(pay) + '" placeholder="Жишээ: Хаан банк 53xxxxxxxx (Н.Анужин)" style="flex:1;min-width:220px">' +
     '<button class="b-btn" onclick="savePayInfo()">Хадгалах</button></div><p class="muted" style="font-size:12.5px;margin-top:6px">Ажилтан захиалга бүртгэхэд «Төлбөрийн мессеж»-д энэ данс, дүн, «Гүйлгээний утга: утасны дугаар» бичигдэнэ — тулгалт автоматаар таарна.</p></div>' +
     tabs + '<div class="card rep"><div class="scroll"><table class="rep-t"><tr><th class="bk-ck">' + (list.some(function (l) { return l.status === 'Шинэ'; }) ? '<input type="checkbox" title="Бүгдийг сонгох" onchange="bankSelAll(this.checked)">' : '') + '</th><th>Огноо</th><th>Гүйлгээний утга</th><th class="n">Орлого</th><th class="n">Зарлага</th><th class="n">Эцсийн үлдэгдэл</th><th>Гүйлгээний ангилал</th><th></th></tr>' +
@@ -561,7 +561,7 @@ function bankRuleAdd(id) {
   var l = bankLines.filter(function (x) { return x.id === id; })[0], act = bankPick[id] || ''; if (!l) return;
   if (!/^(skip|A:\d{4,6}|TR:\d{4,6}|MG:\d{4,6}|IC:\w+)$/.test(act)) { toast('Эхлээд мөрийн үйлдлээ сонгоно уу — дүрэм зөвхөн алгасах, шилжүүлэг, данс (ангилал)-д'); return; }
   var def = String(l.desc || '').replace(/[\d.,:;#№\/-]+/g, ' ').replace(/\s+/g, ' ').trim().split(' ').slice(0, 3).join(' ');
-  var kw = prompt('Гүйлгээний утга эсвэл харьцсан дансны дугаарт энэ үг байвал «' + bankActLabel(act) + '» гэж автоматаар тулгана.\n\nТүлхүүр үг (эсвэл дансны дугаар ' + (l.party || '') + '):', def);
+  var kw = prompt('Гүйлгээний утга эсвэл харьцсан дансны дугаарт энэ үг байвал «' + bankActLabel(act) + '» гэж урьдчилан сонгоно (батлах хүртэл бүртгэгдэхгүй).\n\nТүлхүүр үг (эсвэл дансны дугаар ' + (l.party || '') + '):', def);
   if (kw === null) return; kw = kw.trim();
   if (kw.length < 2) { toast('Түлхүүр үг хэт богино'); return; }
   var r = { kw: kw, act: act, biz: l.biz };
@@ -576,7 +576,7 @@ function bankRuleDel(id) {
 }
 function bankRulesCard(biz) {
   var L = (window.bankRules || []).filter(function (r) { return r.biz === biz; });
-  return '<div class="card"><h2>Автомат дүрэм</h2><p class="muted" style="font-size:12.5px;margin:0 0 8px">Гүйлгээний утга эсвэл харьцсан дансны дугаарт түлхүүр үг байвал Банк тулгах хуудсыг нээхэд автоматаар тулгана. Тулгаагүй мөрийн «Дүрэм болгох»-оор нэмнэ.</p>' +
+  return '<div class="card"><h2>Автомат дүрэм</h2><p class="muted" style="font-size:12.5px;margin:0 0 8px">Гүйлгээний утга эсвэл харьцсан дансны дугаарт түлхүүр үг байвал үйлдлийг урьдчилан сонгоно — «Тулгах» дарах хүртэл бүртгэлд орохгүй. Тулгаагүй мөрийн «Дүрэм болгох»-оор нэмнэ.</p>' +
     (L.length ? '<div class="scroll"><table class="rep-t"><tr><th>Түлхүүр үг</th><th>Үйлдэл</th><th>Нэмсэн</th><th></th></tr>' + L.map(function (r) {
       return '<tr><td>«' + esc(r.kw) + '»</td><td>' + esc(bankActLabel(r.act)) + '</td><td class="muted">' + esc((r.by || '') + ' ' + (r.at || '')) + '</td><td class="n"><button class="mini" onclick="bankRuleDel(\'' + jsq(r.id) + '\')">Устгах</button></td></tr>'; }).join('') + '</table></div>'
       : '<p class="muted" style="margin:0">Дүрэм алга.</p>') + '</div>';
