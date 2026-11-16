@@ -1685,3 +1685,67 @@ tr.tr-ret td{background:#FFF7ED!important}
 tr.tr-ret td:first-child{box-shadow:inset 4px 0 0 #EA580C}
 .ret-btn{display:block;margin-top:6px;background:#EA580C!important;border-color:#EA580C!important;color:#fff!important;font-weight:700;white-space:nowrap}
 .eb-tabs .eb-wait{background:#DC2626;color:#fff;border-radius:999px;padding:2px 8px;font-size:12.5px;margin-left:4px}
+
+/* ═══════════ v11 · Касс — M business маяг (цагаан, хар товч, саарал туслах товч, ногоон-цэнхэр тодруулга) ═══════════ */
+body.pos10 #saleSheet{--mb-ink:#111;--mb-gray:#F1F1F1;--mb-gray-d:#E6E6E6;--mb-line:#E9E9E9;--mb-mut:#8A8A8A;--mb-teal:#1FC59A;--mb-mint:#EDFAF5;font-family:'Onest','Inter',-apple-system,'Segoe UI',Roboto,sans-serif;padding:0;align-items:stretch}
+body.pos10 #saleSheet .panel.pos{max-width:none;width:100%;height:100vh;height:100dvh;border-radius:0;background:#fff}
+body.pos10 #saleSheet input,body.pos10 #saleSheet select,body.pos10 #saleSheet button,body.pos10 #saleSheet textarea{font-family:inherit}
+/* дээд мөр */
+body.pos10 #saleSheet .pos-head{background:#fff;color:var(--mb-ink);border-bottom:1px solid var(--mb-line);padding:12px 20px;min-height:64px}
+body.pos10 #saleSheet .pos-head h2{color:var(--mb-ink);font-size:18px;font-weight:700;letter-spacing:-.01em}
+body.pos10 #saleSheet .pos-head .btn,body.pos10 #saleSheet .btn.ghost2,body.pos10 #saleSheet .btn.sm.ghost2{background:var(--mb-gray);border:0;color:var(--mb-ink);border-radius:12px;font-weight:600;box-shadow:none}
+body.pos10 #saleSheet .btn.ghost2:hover{background:var(--mb-gray-d)}
+body.pos10 #saleSheet .pos-x{background:var(--mb-gray);color:var(--mb-ink);border-radius:12px;width:40px;height:40px}
+body.pos10 #saleSheet .pos-x:hover{background:var(--mb-gray-d)}
+/* зүүн тал: хайлт, ангилал, бараа */
+body.pos10 #saleSheet .pos-left{background:#fff}
+body.pos10 #saleSheet .pos-search input{height:48px;border:1px solid var(--mb-line);border-radius:12px;background-color:#fff;font-size:15px}
+body.pos10 #saleSheet .scan-btn{height:48px;padding:0 16px}
+body.pos10 #saleSheet .pos-cat{background:var(--mb-gray);border:0;color:#444;font-weight:500;border-radius:10px;padding:8px 14px}
+body.pos10 #saleSheet .pos-cat.on{background:var(--mb-ink);color:#fff}
+body.pos10 #saleSheet .ptile,body.pos10 #saleSheet .ptile:nth-child(n){border:1px solid var(--mb-line)!important;border-radius:14px;background:#fff;box-shadow:none;min-height:104px;padding:14px}
+body.pos10 #saleSheet .ptile:hover{border-color:#CFCFCF!important;box-shadow:none}
+body.pos10 #saleSheet .ptile.on{background:var(--mb-mint);border-color:var(--mb-teal)!important;box-shadow:inset 0 0 0 1px var(--mb-teal)}
+body.pos10 #saleSheet .pt-n{font-weight:500;color:var(--mb-ink)}
+body.pos10 #saleSheet .pt-f b{color:var(--mb-ink);font-weight:600;font-variant-numeric:tabular-nums}
+body.pos10 #saleSheet .pt-q{background:var(--mb-ink);color:#fff}
+body.pos10 #saleSheet .pos-custom{border:1px dashed #D6D6D6;border-radius:14px}
+/* баруун тал: сагс */
+body.pos10 #saleSheet .pos-right{background:#fff;border-left:1px solid var(--mb-line)}
+body.pos10 #saleSheet .pos-mode{background:var(--mb-gray);margin:14px 18px 0;padding:4px;border-radius:12px;gap:4px}
+body.pos10 #saleSheet .pos-mode button{background:transparent;border:0;border-radius:9px;color:#555;font-weight:600}
+body.pos10 #saleSheet .pos-mode button.on{background:#fff;color:var(--mb-ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+body.pos10 #saleSheet .pos-cart-h b{font-weight:700;font-size:16px}
+body.pos10 #saleSheet .pos-cart .cart-line{border-bottom:1px solid var(--mb-line)}
+body.pos10 #saleSheet .cl1 .cl-name{font-weight:500;color:var(--mb-ink)}
+body.pos10 #saleSheet .cl1 .cl-qty{border:1px solid var(--mb-line);border-radius:10px;gap:0;overflow:hidden;background:#fff}
+body.pos10 #saleSheet .cl1 .cl-qty button{border:0;border-radius:0;background:#fff;width:28px;height:32px;color:var(--mb-ink)}
+body.pos10 #saleSheet .cl1 .cl-qty button:hover{background:var(--mb-gray)}
+body.pos10 #saleSheet .cl1 .cl-qty input{border:0;border-left:1px solid var(--mb-line);border-right:1px solid var(--mb-line);border-radius:0;height:32px;box-shadow:none}
+body.pos10 #saleSheet .cl1 .cl-price{border:1px solid var(--mb-line);border-radius:10px;height:32px}
+body.pos10 #saleSheet .cl1 .cl-price[readonly]{background:#FAFAFA;color:var(--mb-mut)}
+body.pos10 #saleSheet .pos-cart .cl-sum{color:var(--mb-ink);font-weight:600;font-variant-numeric:tabular-nums}
+body.pos10 #saleSheet .cl1 .cl-del{width:28px;height:28px;border-radius:50%;background:var(--mb-gray);color:#555;font-size:12px}
+body.pos10 #saleSheet .cl1 .cl-del:hover{background:var(--mb-gray-d);color:var(--mb-ink)}
+body.pos10 #saleSheet .pos-empty{color:var(--mb-mut);font-weight:500}
+/* хөнгөлөлт, утас, төлбөрийн хэлбэр */
+body.pos10 #saleSheet .pos-extra,body.pos10 #saleSheet .pos-pay,body.pos10 #saleSheet .pos-dlv{border-top:1px solid var(--mb-line)}
+body.pos10 #saleSheet .pos-lbl,body.pos10 #saleSheet .pe-row label,body.pos10 #saleSheet .pos-cash label{color:var(--mb-mut);font-weight:500}
+body.pos10 #saleSheet input,body.pos10 #saleSheet select,body.pos10 #saleSheet textarea{border:1px solid var(--mb-line);border-radius:10px}
+body.pos10 #saleSheet input:focus,body.pos10 #saleSheet select:focus,body.pos10 #saleSheet textarea:focus{border-color:var(--mb-teal);box-shadow:0 0 0 3px rgba(31,197,154,.15)}
+body.pos10 #saleSheet .pe-u{border:1px solid var(--mb-line);border-radius:10px}
+body.pos10 #saleSheet .pe-u button.on{background:var(--mb-ink);color:#fff}
+body.pos10 #saleSheet .pos-pay .seg button,body.pos10 #saleSheet .pos-pay .seg button[data-v]{background:#fff;border:1px solid var(--mb-line);color:var(--mb-ink);font-weight:500;border-radius:12px;padding:12px 4px;box-shadow:none;opacity:1}
+body.pos10 #saleSheet .pos-pay .seg button:hover{border-color:#CFCFCF}
+body.pos10 #saleSheet .pos-pay .seg button.on,body.pos10 #saleSheet .pos-pay .seg button[data-v].on{background:var(--mb-ink);border-color:var(--mb-ink);color:#fff;box-shadow:none}
+body.pos10 #saleSheet .pe-split input,body.pos10 #saleSheet .or-print input{accent-color:var(--mb-teal)}
+body.pos10 #saleSheet .pos-change b{color:#0CA678}
+/* доод мөр: нийт дүн, Төлөх */
+body.pos10 #saleSheet .pos-foot{background:#fff;border-top:1px solid var(--mb-line)}
+body.pos10 #saleSheet .pos-total span{color:var(--mb-mut);font-weight:500}
+body.pos10 #saleSheet .pos-total .total{color:var(--mb-ink);font-weight:700;font-variant-numeric:tabular-nums}
+body.pos10 #saleSheet .pos-foot .btn{background:var(--mb-ink);color:#fff;border-radius:14px;height:56px;padding:0 16px;font-size:16px;font-weight:600;box-shadow:none}
+body.pos10 #saleSheet .pos-foot .btn::before{content:'✓';margin-right:10px;font-weight:700}
+body.pos10 #saleSheet .pos-foot .btn:hover{background:#000}
+body.pos10 #saleSheet .pos-foot .btn:disabled{background:#C9C9C9;opacity:1}
+@media(max-width:820px){body.pos10 #saleSheet .pos-total span::after{color:var(--mb-teal)}}
