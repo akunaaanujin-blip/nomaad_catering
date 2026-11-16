@@ -17,6 +17,7 @@ function bankOutOpts() {
   return BANK_PAY.map(function (a) { return [a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1], a[0] === '1208' ? 'Удирдлагын зардал' : 'Төлбөр, шилжүүлэг']; })
     .concat(ACCOUNTS.filter(function (a) { return a[2] === 'exp' && !accHidden(a[0]) && !(state.biz !== 'mgmt' && BUSINESSES.mgmt && /^70/.test(a[0])); }).map(function (a) { return ['A:' + a[0], a[1], grp(a[0])]; }));
 }
+var BANK_OTHER = '7122', BANK_OTHER_MAX = 1000000;   // танигдаагүй зарлагыг «Бусад зардал»-аар автоматаар — их дүнтэйг гараар шалгана
 var BOOST_RE = /boost|буст|реклам|фэйсбүүк|facebook|\bmeta\b/i;
 var BANK_RULES = [[/qpay\b.*\bTRX:/i, '7201'],   // QPay-ийн шимтгэл (төлбөрийн 1%, «TRX:» гэсэн тусдаа мөр) — санхүүгийн зардал
   [/\btaxi\b|такси/i, '7117'],   // такси — тээврийн зардал
@@ -307,6 +308,40 @@ function debtByName(l, list) {
   return it ? { kind: 'debt', v: 'D:' + it.acc + '|' + it.key, it: it } : null;
 }
 
+// Мөрийн ангиллын сонголтууд [утга, нэр, бүлэг] — жагсаалт болон «Засах» цонх хоёуланд
+function bankLineOpts(l, s, ebB, biz) {
+  var opts = [];
+  if (l.credit) {
+    if (s.kind === 'paid') opts.push(['P:' + s.o.id + '|' + s.j.id, 'Аль хэдийн бичигдсэн төлбөр: ' + s.o.phone + ' · ' + s.j.date + ' (давхар бичихгүй)', 'Захиалгын төлбөр']);
+    if (typeof ebBankOpen === 'function') { ebBatchOpts(ebB, l).forEach(function (o) { opts.push(o); }); opts.push(['EB:set', 'Буухиагийн тооцоо — захиалга сонгох', 'Буухиа']); }
+    (window.adminOrders || []).filter(function (o) { return o.biz === biz && !ordDead(o) && ordOpen(o); }).forEach(function (o) {
+      opts.push(['O:' + o.id, 'Захиалга ' + o.phone + ' · ' + (o.confirmed ? 'үлдэгдэл ' + fmt(ordDue(o)) + ' / ' : '') + fmt(o.amount) + ' · ' + ordStLabel(o) + (o.paid === 'Орсон' ? ' · ажилтан: орсон' : ''), 'Захиалгын төлбөр']); });
+    shopBills(biz).forEach(function (b) { opts.push(['S:' + b.key, 'Дэлгүүр · ' + b.date + ' · ' + fmt(b.amt) + ' · шилжүүлэг (орлого бүртгэлтэй)', 'Дэлгүүрийн борлуулалт']); });
+    debtByWho(debtCache().rec).forEach(function (o) { opts.push(o.concat(['Авлага хаах'])); });
+    loanOpts(biz, true).forEach(function (o) { opts.push(o); });
+    icOpts(biz, true).forEach(function (o) { opts.push(o.concat(['Компани хооронд'])); });
+    bankXOpts(l).forEach(function (o) { opts.push(o); });
+    BANK_IN.forEach(function (a) { opts.push([a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1], 'Бусад']); });
+  } else {
+    bankXOpts(l).forEach(function (o) { opts.push(o); });
+    mgOpts(biz).forEach(function (o) { opts.push(o); });
+    bbBankOpts().forEach(function (o) { opts.push(o); });
+    opts.push(['BST:set', 'Boost нэхэмжлэх сонгох…', 'Boost нэхэмжлэх']);
+    bstInvoices().filter(function (v) { return v.state !== 'paid'; }).forEach(function (v) {
+      opts.push(['BST:' + v.no, v.no + ' · $' + v.usd + ' · ' + v.cos.map(function (c) { return bstCoName(c.biz) + (c.isPaid ? ' (төлсөн)' : ''); }).join(', ') + ' · ' + v.status, 'Boost нэхэмжлэх']); });
+    reqOpen(biz).forEach(function (x) { opts.push(['R:' + x.id, x.category + ' · ' + (x.customer || '') + ' · ' + fmt(x.amount) + ' (' + (x.staff || '') + ')', 'Батлагдсан мөнгөний хүсэлт']); });
+    if (typeof ebBankOpen === 'function') { ebBatchOpts(ebB, l).forEach(function (o) { opts.push(o); }); opts.push(['EB:set', 'Буухиагийн тооцоо — захиалга сонгох', 'Буухиа']); }
+    debtByWho(debtCache().pay.filter(function (x) { return x.who !== BUUHIA; })).forEach(function (o) { opts.push(o.concat(['Өглөг хаах'])); });   // буухиа — зөвхөн тооцоогоор
+    bankXOpts2(biz).forEach(function (o) { opts.push(o); });
+    bankXPoOpts(biz).forEach(function (o) { opts.push(o); });
+    poOpts(biz).forEach(function (o) { opts.push(o.concat(['Бараа захиалга'])); });
+    loanOpts(biz, false).forEach(function (o) { opts.push(o); });
+    icOpts(biz, false).forEach(function (o) { opts.push(o.concat(['Компани хооронд'])); });
+    // «Удирдлагын зарлага» → Дт 1208 / Кт банк (харилцагч Удирдлагын авлага), удирдлага талд толин бичилтгүй
+    bankOutOpts().forEach(function (o) { opts.push(o); });
+  }
+  return opts;
+}
 // ── Дэлгэц ──
 function bankView() {
   var biz = state.biz, all = bankChain(bankLines.filter(function (l) { return l.biz === biz; })).reverse();
@@ -334,37 +369,8 @@ function bankView() {
   var rows = list.slice().reverse().map(function (l) {   // хуучнаас нь: ижил баримтын санал эхний гүйлгээнд очно
     var s = l.status === 'Шинэ' ? bankSuggest(l) : null, sel = '', dupPick = false;
     if (s) {
-      var opts = [], cur = bankPick[l.id] === 'EB:set' ? '' : bankPick[l.id];   // [утга, нэр, бүлэг]; «EB:set» — Буухиагийн мэдээлэл ирэхээс өмнөх санал, дахин тооцно
-      if (l.credit) {
-        if (s.kind === 'paid') opts.push(['P:' + s.o.id + '|' + s.j.id, 'Аль хэдийн бичигдсэн төлбөр: ' + s.o.phone + ' · ' + s.j.date + ' (давхар бичихгүй)', 'Захиалгын төлбөр']);
-        if (typeof ebBankOpen === 'function') { ebBatchOpts(ebB, l).forEach(function (o) { opts.push(o); }); opts.push(['EB:set', 'Буухиагийн тооцоо — захиалга сонгох', 'Буухиа']); }
-        (window.adminOrders || []).filter(function (o) { return o.biz === biz && !ordDead(o) && ordOpen(o); }).forEach(function (o) {
-          opts.push(['O:' + o.id, 'Захиалга ' + o.phone + ' · ' + (o.confirmed ? 'үлдэгдэл ' + fmt(ordDue(o)) + ' / ' : '') + fmt(o.amount) + ' · ' + ordStLabel(o) + (o.paid === 'Орсон' ? ' · ажилтан: орсон' : ''), 'Захиалгын төлбөр']); });
-        shopBills(biz).forEach(function (b) { opts.push(['S:' + b.key, 'Дэлгүүр · ' + b.date + ' · ' + fmt(b.amt) + ' · шилжүүлэг (орлого бүртгэлтэй)', 'Дэлгүүрийн борлуулалт']); });
-        debtByWho(debtCache().rec).forEach(function (o) { opts.push(o.concat(['Авлага хаах'])); });
-        loanOpts(biz, true).forEach(function (o) { opts.push(o); });
-        icOpts(biz, true).forEach(function (o) { opts.push(o.concat(['Компани хооронд'])); });
-        bankXOpts(l).forEach(function (o) { opts.push(o); });
-        BANK_IN.forEach(function (a) { opts.push([a[0] === 'skip' ? 'skip' : 'A:' + a[0], a[1], 'Бусад']); });
-      } else {
-        bankXOpts(l).forEach(function (o) { opts.push(o); });
-        mgOpts(biz).forEach(function (o) { opts.push(o); });
-        bbBankOpts().forEach(function (o) { opts.push(o); });
-        opts.push(['BST:set', 'Boost нэхэмжлэх сонгох…', 'Boost нэхэмжлэх']);
-        bstInvoices().filter(function (v) { return v.state !== 'paid'; }).forEach(function (v) {
-          opts.push(['BST:' + v.no, v.no + ' · $' + v.usd + ' · ' + v.cos.map(function (c) { return bstCoName(c.biz) + (c.isPaid ? ' (төлсөн)' : ''); }).join(', ') + ' · ' + v.status, 'Boost нэхэмжлэх']); });
-        reqOpen(biz).forEach(function (x) { opts.push(['R:' + x.id, x.category + ' · ' + (x.customer || '') + ' · ' + fmt(x.amount) + ' (' + (x.staff || '') + ')', 'Батлагдсан мөнгөний хүсэлт']); });
-        if (typeof ebBankOpen === 'function') { ebBatchOpts(ebB, l).forEach(function (o) { opts.push(o); }); opts.push(['EB:set', 'Буухиагийн тооцоо — захиалга сонгох', 'Буухиа']); }
-        debtByWho(debtCache().pay.filter(function (x) { return x.who !== BUUHIA; })).forEach(function (o) { opts.push(o.concat(['Өглөг хаах'])); });   // буухиа — зөвхөн тооцоогоор
-        bankXOpts2(biz).forEach(function (o) { opts.push(o); });
-        bankXPoOpts(biz).forEach(function (o) { opts.push(o); });
-        poOpts(biz).forEach(function (o) { opts.push(o.concat(['Бараа захиалга'])); });
-        loanOpts(biz, false).forEach(function (o) { opts.push(o); });
-        icOpts(biz, false).forEach(function (o) { opts.push(o.concat(['Компани хооронд'])); });
-        // «Удирдлагын зарлага» → Дт 1208 / Кт банк (харилцагч Удирдлагын авлага), удирдлага талд толин бичилтгүй
-        bankOutOpts().forEach(function (o) { opts.push(o); });
-      }
-      var def = cur || (/буух|ebuu/i.test(l.desc) && typeof ebBankOpen === 'function' ? ebBatchDef(ebB, l) : '') || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id + '|' + s.j.id : s.kind === 'shop' || s.kind === 'req' || s.kind === 'man' || s.kind === 'rule' || s.kind === 'bst' || s.kind === 'bg' ? s.v : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : '');
+      var opts = bankLineOpts(l, s, ebB, biz), cur = bankPick[l.id] === 'EB:set' ? '' : bankPick[l.id];   // [утга, нэр, бүлэг]; «EB:set» — Буухиагийн мэдээлэл ирэхээс өмнөх санал, дахин тооцно
+      var def = cur || (/буух|ebuu/i.test(l.desc) && typeof ebBankOpen === 'function' ? ebBatchDef(ebB, l) : '') || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id + '|' + s.j.id : s.kind === 'shop' || s.kind === 'req' || s.kind === 'man' || s.kind === 'rule' || s.kind === 'bst' || s.kind === 'bg' ? s.v : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : !l.credit && s.kind === 'acc' ? 'A:' + BANK_OTHER : '');   // ангилал танигдаагүй зарлага → Бусад зардал
       if (/^MG:/.test(def)) def = 'A:1208';   // хуучин дүрэм
       if (def === 'A:10003') def = 'TR:10003';   // касс — данс хоорондын шилжүүлэг
       if (def && !opts.some(function (o) { return o[0] === def; })) def = '';   // жагсаалтад байхгүй сонголт далд үлдэхгүй
@@ -385,7 +391,7 @@ function bankView() {
         (s.kind === 'bst' ? ' <small class="muted">' + (s.sure ? 'утганд нэхэмжлэхийн дугаар таарсан' : 'Boost — нэхэмжлэхээ сонгож тулгана') + ' · «Тулгах» дарахад хуваарилалт харагдана</small>' : '') +
         (s.kind === 'bg' ? ' <small class="muted">санал: Boost төсөв' + (s.sure ? ' (дугаар таарсан)' : ' (дүн таарсан — шалгана уу)') + '</small>' : '') +
         (dupPick ? ' <small style="color:var(--red)">энэ баримт өөр мөрт сонгогдсон — шалгана уу</small>' : '') +
-        (bankLineJ(l).some(function (x) { return jidSet[x]; }) ? ' <small style="color:var(--red)">бичилт аль хэдийн бичигдсэн — давхар тулгахгүй, «Буцаах» дарж цэвэрлэнэ үү</small> <button class="mini" onclick="bankUnmatch(\'' + jsq(l.id) + '\', 1)">Засах</button>' : '') +
+        (bankLineJ(l).some(function (x) { return jidSet[x]; }) ? ' <small style="color:var(--red)">бичилт аль хэдийн бичигдсэн — давхар тулгахгүй, «Буцаах» дарж цэвэрлэнэ үү</small> <button class="mini" onclick="bankEdit(\'' + jsq(l.id) + '\')">Засах</button>' : '') +
         (/#\d+$/.test(l.id) ? ' <small style="color:var(--red)">ижил мөр ' + String(l.id).match(/#(\d+)$/)[1] + ' — шалгана уу</small>' : '');
     }
     var noJ = l.status === 'Тулгасан' && !/^Эхний үлдэгдэлд орсон/.test(l.link) && bankLineJ(l).length && !bankLineJ(l).some(function (x) { return jidSet[x]; });   // бичилт нь цуцлагдсан
@@ -394,7 +400,7 @@ function bankView() {
     var boost = !l.credit && BOOST_RE.test(String(l.desc));   // Boost (зар сурталчилгаа) — цэнхэр
     return '<tr' + (l.status === 'Идэвхгүй' ? ' style="opacity:.5" title="Эхний үлдэгдэлд орсон — санхүүд, тулгалтад нөлөөлөхгүй"' : match ? ' class="bk-match" title="Утас, дүн таарсан"' : fee ? ' class="bk-fee" title="Банкны хураамж"' : boost ? ' class="bk-boost" title="Boost (зар сурталчилгаа)"' : '') + '><td class="bk-ck">' + (s ? '<input type="checkbox" data-id="' + esc(l.id) + '"' + (bankSel[l.id] ? ' checked' : '') + ' onchange="bankSelSet(this)">' : '') + '</td><td>' + esc(l.date) + '</td><td>' + esc(l.desc) + (bankProv(l) ? ' <small class="muted" title="Банкны мэдэгдлээр орсон. Хуулга оруулахад ижил гүйлгээтэй нийлж, үлдэгдэл нь бөглөгдөнө">· ' + (/^SMS/.test(l.imp) ? 'мессежээр' : 'и-мэйлээр') + ', хуулгаар баталгаажаагүй</small>' : '') + '</td><td class="n" style="color:var(--green)">' + (l.credit ? '+' + fmt(l.credit).slice(1) : '') + '</td>' +
       '<td class="n neg">' + (l.debit ? '−' + fmt(l.debit).slice(1) : '') + '</td><td class="n nw">' + (bankProv(l) && !l.bal ? '' : l.bal || l.bal === 0 ? fmt(l.bal).slice(1) : '') + '</td><td>' + (s ? sel : '<span class="tag">' + esc(l.status) + '</span> <small class="muted">' + esc(String(l.link).replace(/^\d{4,6} /, '').replace(/ #[\w-]+/g, '')) + '</small>' + (noJ ? ' <small style="color:var(--red)">бичилт алга — буцааж дахин тулгана уу</small>' : '')) + '</td>' +
-      '<td class="n" style="white-space:nowrap">' + (s ? '<button class="mini" style="color:var(--accent)" onclick="bankApply([\'' + jsq(l.id) + '\'])">Тулгах</button> <button class="mini" title="Энэ утгатай гүйлгээнд сонгосон үйлдлийг дараа нь урьдчилан бөглөнө" onclick="bankRuleAdd(\'' + jsq(l.id) + '\')">Дүрэм болгох</button> <button class="mini" title="Хуулгаас устгах" onclick="bankDel([\'' + jsq(l.id) + '\'])">Устгах</button>' : l.status === 'Идэвхгүй' ? '' : '<button class="mini" title="Тулгалтыг буцааж «Тулгаагүй» жагсаалтад шилжүүлнэ — ангиллаа сонгоод дахин «Тулгах» дарна" onclick="bankUnmatch(\'' + jsq(l.id) + '\', 1)">Засах</button>') + '</td></tr>';
+      '<td class="n" style="white-space:nowrap">' + (s ? '<button class="mini" style="color:var(--accent)" onclick="bankApply([\'' + jsq(l.id) + '\'])">Тулгах</button> <button class="mini" title="Энэ утгатай гүйлгээнд сонгосон үйлдлийг дараа нь урьдчилан бөглөнө" onclick="bankRuleAdd(\'' + jsq(l.id) + '\')">Дүрэм болгох</button> <button class="mini" title="Хуулгаас устгах" onclick="bankDel([\'' + jsq(l.id) + '\'])">Устгах</button>' : l.status === 'Идэвхгүй' ? '' : '<button class="mini" title="Ангиллыг нь шууд солино" onclick="bankEdit(\'' + jsq(l.id) + '\')">Засах</button>') + '</td></tr>';
   }).reverse().join('');
   if (API_URL && isOwner()) setTimeout(bankAutoApply, 0);   // санал нь тодорхой мөрүүдийг автоматаар тулгана
   return head + '<div class="card"><h2>Төлбөрийн мэдээлэл (хэрэглэгчид илгээх мессежид)</h2><div class="bar-row"><input id="payInfo" value="' + esc(pay) + '" placeholder="Жишээ: Хаан банк 53xxxxxxxx (Н.Анужин)" style="flex:1;min-width:220px">' +
@@ -487,6 +493,21 @@ function bankPickHtml(l, pick) {
   var nm = pick ? bankOptName(l.id, pick) : '';
   return '<button class="b-btn" style="display:block;width:100%;max-width:280px;height:auto!important;min-height:32px;line-height:1.35;white-space:normal;text-align:left;margin-bottom:3px" onclick="bankPickOpen(\'' + jsq(l.id) + '\')">' + (nm ? esc(nm.replace(/ — нэг нэгээр сонгоно/, '')) : 'Ангилал сонгох') + '</button>';
 }
+// «Засах»: тулгасан мөрийн ангиллыг шууд солих — шинэ ангиллаа сонгомогц хуучин бичилтийг цуцалж, шинээр тулгана (буцаах алхамгүй)
+function bankEdit(id) {
+  var l = bankLines.filter(function (x) { return x.id === id; })[0]; if (!l) return;
+  if (/^Хувийн санхүү/.test(l.link) || /^(Зээл|Өгсөн зээл) · /.test(l.link)) { bankUnmatch(id, 1); return; }
+  var js = bankLineJ(l), keep = journal, st = l.status, opts, s;
+  journal = (journal || []).filter(function (j) { return js.indexOf(j.id) < 0; }); _debtCache = null; l.status = "Шинэ"; if (typeof _jCache !== "undefined") _jCache = null;   // хуучин бичилтгүйгээр санал, сонголт
+  try { s = bankSuggest(l); opts = bankLineOpts(l, s, typeof ebBatches === 'function' ? ebBatches() : [], l.biz); } finally { journal = keep; _debtCache = null; if (typeof _jCache !== "undefined") _jCache = null; l.status = st; }
+  bankOptsBy[id] = opts; bankPickOpen(id); if (bankPk) bankPk.edit = true;
+  var h = document.querySelector('#gBody h2'); if (h) h.textContent = 'Ангилал солих · одоо: ' + String(l.link || '').replace(/ #[\w-]+/g, '');
+}
+function bankEditDo(id, v) {
+  var l = bankLines.filter(function (x) { return x.id === id; })[0]; if (!l) return;
+  if (!confirm('«' + l.desc + '» · ' + fmt(l.credit || l.debit) + '\n\nОдоо: ' + String(l.link || '').replace(/ #[\w-]+/g, '') + '\nШинэ: ' + (bankOptName(id, v) || v) + '\n\nСолих уу?')) return;
+  bankUnmatch(id, function () { bankPick[id] = v; render(); bankApply([id], !/^(EB:|LN:new|XP:|BST:|D:)|^A:(1201|3101)$/.test(v) && !/^XO:.*\|[ck]/.test(v)); });
+}
 function bankPickOpen(id) {
   var l = bankLines.filter(function (x) { return x.id === id; })[0]; if (!l) return;
   var use = {}; (journal || []).forEach(function (j) { if (j.biz === l.biz) use[j.dr] = (use[j.dr] || 0) + 1; });
@@ -517,6 +538,7 @@ function bankPkList() {
 }
 function bankPkSet(i) {
   var P = bankPk, o = P && P.L[i]; if (!o) return;
+  if (P.edit) { gClose(); bankEditDo(P.id, o[0]); return; }
   bankPick[P.id] = o[0];
   var el = document.getElementById('bp_' + P.id); if (el) el.innerHTML = bankPickHtml(P.l, o[0]);
   gClose(); bankPickChange(P.id);
@@ -670,6 +692,7 @@ function bankAutoSure(l) {
   // дэлгүүрийн борлуулалт зөвхөн дүнгээр таардаг — мессеж шууд ирдэг тул тэр өдөр / маргааш нь л автоматаар
   if (s.kind === 'shop') return !!s.sure && Math.abs(new Date(String(s.b.date).slice(0, 10)) - new Date(String(l.date).slice(0, 10))) <= 864e5;
   // ерөнхий үгээр таасан зардлаас буухиа (тооцоо эсвэл хөлс аль нь болох нь тодорхойгүй), зээл (үндсэн/хүү)-ийг гараар
+  if (s.kind === 'acc' && !s.acc && !l.credit) return p === 'A:' + BANK_OTHER && (+l.debit || 0) < BANK_OTHER_MAX;
   if (s.kind === 'acc') return !!s.acc && s.acc !== '7124' && s.acc !== '3501';
   // утганд харилцагчийн нэр (HiCargo г.м) — тэр харилцагчийн ганц өглөг/авлага, үлдэгдэл нь гүйлгээтэй яг таарвал
   if (s.kind === 'debt' && s.it && bankDebtDocs(p).length === 1 && Math.abs((Number(s.it.left) || 0) - (Number(l.credit) || Number(l.debit) || 0)) < 1) return true;
@@ -908,17 +931,18 @@ function bankUnmatch(id, edit) {
   if (!js.length && l.status === 'Тулгасан' && ords.length === 1 && /^Захиалга \d/.test(l.link)) { undoPayOrder(ords[0].id); return; }   // гараар бүртгээд холбосон захиалга
   if (!js.length && /^(Зээл|Өгсөн зээл) · /.test(l.link)) { toast('Энэ мөрийг Зээл хуудаснаас буцаана'); return; }
   var rq = /^Мөнгөний хүсэлт/.test(l.link) ? tags[0] : '', ln = tags.map(loanById).filter(function (L) { return L && L.status === 'Хаагдсан'; })[0];
-  if (!confirm('Тулгалтыг буцаах уу?\n' + String(l.date).slice(0, 16) + ' · ' + fmt(l.credit || l.debit) + '\n«' + l.desc + '»\n' + (l.link || l.status) + '\n\n' + (js.length ? js.length + ' бичилт цуцлагдана. ' : 'Санхүүгийн бичилтэд нөлөөлөхгүй. ') + (ords.length ? ords.length + ' захиалгын төлбөрийн баталгаа шинэчлэгдэнэ. ' : '') + (rq ? 'Мөнгөний хүсэлт «Батлагдсан» болно. ' : '') + 'Мөр дахин «Тулгаагүй» болно.')) return;
+  var cb = typeof edit === 'function' ? edit : null;
+  if (!cb && !confirm('Тулгалтыг буцаах уу?\n' + String(l.date).slice(0, 16) + ' · ' + fmt(l.credit || l.debit) + '\n«' + l.desc + '»\n' + (l.link || l.status) + '\n\n' + (js.length ? js.length + ' бичилт цуцлагдана. ' : 'Санхүүгийн бичилтэд нөлөөлөхгүй. ') + (ords.length ? ords.length + ' захиалгын төлбөрийн баталгаа шинэчлэгдэнэ. ' : '') + (rq ? 'Мөнгөний хүсэлт «Батлагдсан» болно. ' : '') + 'Мөр дахин «Тулгаагүй» болно.')) return;
   var left = function (o) { return (journal || []).some(function (j) { return js.indexOf(j.id) < 0 && j.biz === o.biz && hasTag(j.desc, o.id); }); };
   var clear = ords.filter(function (o) { return !left(o); });
   if (!API_URL) {
     journal = journal.filter(function (j) { return js.indexOf(j.id) < 0; }); l.status = 'Шинэ'; l.link = ''; l.jids = '';
     clear.forEach(function (o) { o.confirmed = ''; if (o.saleDone === 'yes:bank') o.saleDone = 'imported'; }); if (rq) reqSetStatus(rq, 'Батлагдсан', 'банк буцаав');
-    save('nb_demo_journal', journal); save('nb_demo_bank', bankLines); save('nb_orders_cozy', window.adminOrders); if (edit) bankTab = 'todo'; render(); return;
+    save('nb_demo_journal', journal); save('nb_demo_bank', bankLines); save('nb_orders_cozy', window.adminOrders); if (cb) { render(); cb(); return; } if (edit) bankTab = 'todo'; render(); return;
   }
   var i = 0, stop = function (e) { toast(e === 'locked' ? 'Түгжигдсэн хугацааны бичилт — буцаах боломжгүй' : 'Алдаа: ' + e); refresh(); };
   var finish = function () {
-    var n = 1 + clear.length + (ln ? 1 : 0), fin = function () { if (--n === 0) { if (edit) { bankTab = 'todo'; toast('«Тулгаагүй» жагсаалтад шилжлээ — ангиллаа сонгоод «Тулгах» дарна уу'); } else toast('Буцаагдлаа'); refresh(); } };
+    var n = 1 + clear.length + (ln ? 1 : 0), fin = function () { if (--n === 0) { if (cb) { fetchAll(function () { render(); cb(); }); return; } if (edit) { bankTab = 'todo'; toast('«Тулгаагүй» жагсаалтад шилжлээ — ангиллаа сонгоод «Тулгах» дарна уу'); } else toast('Буцаагдлаа'); refresh(); } };
     clear.forEach(function (o) { var f = { confirmed: '', saleDone: o.saleDone === 'yes:bank' ? 'imported' : undefined, note: 'Банк тулгалт буцаав ' + todayStr() }; post({ type: 'admin_order', id: o.id, by: ownerName, what: ordAudWhat(o, f), fields: f }, function () { fin(); }); });
     if (ln) post({ type: 'admin_loan', openId: ln.id }, function () { fin(); });
     post({ type: 'admin_bank', by: ownerName, updates: [{ id: id, status: 'Шинэ', link: '' }] }, function (e) { if (e) toast('Алдаа: ' + e); fin(); });
