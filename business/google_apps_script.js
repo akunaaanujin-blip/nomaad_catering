@@ -67,7 +67,8 @@ const STAFF_HEAD = ['Бизнес (meat / cozy / travel / all)', 'Нэр', 'Ко
                     'Гэрийн хаяг', 'Ажилд орох огноо', 'Гэрээний №', 'Гэрээ байгуулсан', 'Гэрээ дуусах', 'Гэрээний нөхцөл',
                     'НД мэргэжлийн код', 'Даатгуулагчийн төрөл'];
 const USER_RE = /^[a-z0-9._]{3,20}$/;
-const TOKEN_TTL = 8 * 3600;   // удирдагчийн нэвтрэлт 8 цаг
+const TOKEN_TTL = 6 * 3600;   // удирдагчийн нэвтрэлт (CacheService 6 цагаас удаан хадгалдаггүй)
+const ADMIN_REMEMBER_DAYS = 7;   // «Энэ төхөөрөмжийг санах» — гарын үсэгтэй токен 7 хоног
 const SALARY_HEAD = ['ID', 'Огноо', 'Сар', 'Ажилтны ID', 'Нэр', 'Бизнес', 'Төрөл', 'Дүн', 'Тайлбар'];
 const SALARY_KINDS = { 'Урьдчилгаа': 1, 'KPI бонус': 1, 'Шагнал': 1, 'Суутгал': 1, 'Олгосон': 1 };   // «Шагнал» — хуучин нэр (KPI бонус)
 // Үлдэгдлийн хөдөлгөөн: тоо + (нэмэгдэх) / − (хасагдах). Борлуулалт «Бүртгэл»-ээс автоматаар хасагдана.
@@ -115,6 +116,7 @@ function doPost(e) {
     if (/^admin_/.test(String(data.type)) && data.type !== 'admin_login') {   // удирдлагын эрх: Эзэн — бүгд, Менежер — өөрийн дэлгүүр
       const who = adminWho(data);
       if (!who) return json({ status: 'error', error: 'auth' });
+      if (data.type === 'admin_logout') return json(adminLogout(data));
       if (who.role !== 'Эзэн') { const g = mgrGuard(data, who); if (g) return json({ status: 'error', error: g }); }
       data._who = who;
     }
@@ -185,7 +187,7 @@ function route(data) {
 // Удирдлагын бүх бичилт, захиалга, тооллого: хэн · хэзээ · юу (амжилттай болсныг л). Нууц утга (түлхүүр, код, нууц үг) бичигдэхгүй.
 // Ажилтны борлуулалт, зарлагын мөр өөрөө ажилтан, цагтай тул энд давхар бичихгүй.
 const SHEET_AUDIT = 'Түүх', AUDIT_HEAD = ['Цаг', 'Хэн', 'Компани', 'Үйлдэл', 'Тайлбар', 'Төрөл', 'ID', 'Дэлгэрэнгүй'];
-const AUDIT_SKIP = { bank_sms: 1, boost_img: 1, staff_pin: 1, register: 1, admin_login: 1, record_receipt: 1, barcode_set: 1, admin_backup: 1, admin_audit: 1, admin_restore: 0 };
+const AUDIT_SKIP = { admin_logout: 1, bank_sms: 1, boost_img: 1, staff_pin: 1, register: 1, admin_login: 1, record_receipt: 1, barcode_set: 1, admin_backup: 1, admin_audit: 1, admin_restore: 0 };
 function auditSheet() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   let sh = ss.getSheetByName(SHEET_AUDIT);
@@ -276,7 +278,7 @@ const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_other: ['ord', 'rec', 's
   staff_po_in: ['mov', 'stk', 'jr', 'po'], admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr', 'bank'], admin_bank: ['bank', 'jr', 'ord', 'imp', 'rule'], bank_sms: ['bank'], admin_partner: ['pt'], admin_reminder: ['rem'],
   admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_pf: ['pf'], admin_po: ['po', 'jr'],
   admin_restore: ['rec', 'stk', 'mov', 'jr'], admin_staff: ['adm', 'stf'], staff_pin: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
-const CACHE_READ = { staff_po: 1, admin_audit: 1, eb_sync: 1, requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
+const CACHE_READ = { admin_logout: 1, staff_po: 1, admin_audit: 1, eb_sync: 1, requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
 function cacheKeysFor(d) {
   if (!d.type) return ['rec', 'stk'];   // ажилтны бичлэг (борлуулалт, зарлага, касс)
   if (CACHE_READ[d.type]) return null;
@@ -300,10 +302,11 @@ function cacheGet(name, fn) {
   return JSON.parse(s);
 }
 function cacheDrop(names) { CacheService.getScriptCache().removeAll(names.map(function (n) { return 'ck2_' + n; })); }   // ck2_ — 2026-10-22 эвдэрсэн кэшийг хүчингүй болгосон
-// Удирдагчийн токен (admin_login-оор олгоно, 8 цаг хүчинтэй)
+// Удирдагчийн токен (admin_login-оор олгоно: 6 цаг, эсвэл «санах» бол гарын үсэгтэй 7 хоног)
 function isAdmin(data) { return !!adminWho(data); }
 // Токен → { id, role, biz }. Хуучин токен (зөвхөн ID) = Эзэн.
 function adminWho(data) {
+  if (/^adm\|/.test(String(data.token || ''))) return checkAdminTok(data.token);
   if (!(data.token && /^[0-9a-f-]{36}$/.test(String(data.token)))) return null;
   const v = CacheService.getScriptCache().get('tok_' + data.token);
   if (!v) return null;
@@ -379,9 +382,39 @@ function adminLogin(d) {
   const s = cacheGet('stf', staffRows).filter(function (x) { return x.username === user && (x.role === 'Эзэн' || x.role === 'Менежер') && x.status === 'Тийм'; })[0];
   if (!s || s.code !== pass.padStart(4, '0')) { cache.put(key, String(fails + 1), 900); return { status: 'error', error: 'auth' }; }
   cache.remove(key);
+  if (d.remember) return { status: 'ok', token: signAdmin(s.id), name: s.name, role: s.role, biz: s.biz, days: ADMIN_REMEMBER_DAYS };
   const token = Utilities.getUuid();
   cache.put('tok_' + token, s.role === 'Эзэн' ? s.id : JSON.stringify({ id: s.id, role: 'Менежер', biz: s.biz }), TOKEN_TTL);
   return { status: 'ok', token: token, name: s.name, role: s.role, biz: s.biz };
+}
+// ── «Энэ төхөөрөмжийг санах»: «adm | ажилтны ID | дуусах хугацаа | гарын үсэг» (нууц түлхүүр зөвхөн серверт) ──
+// Хүн бүрийн эрх, идэвхийг «Ажилтан» хуудаснаас хүсэлт бүрт шалгана — идэвхгүй болгох, эрх солимогц шууд хүчингүй.
+function adminSecret() {
+  const p = PropertiesService.getScriptProperties();
+  let k = p.getProperty('ADMIN_SECRET');
+  if (!k) { k = Utilities.getUuid() + Utilities.getUuid(); p.setProperty('ADMIN_SECRET', k); }
+  return k;
+}
+function adminSig(body) { return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(body, adminSecret())); }
+function signAdmin(id) { const body = 'adm|' + id + '|' + (Date.now() + ADMIN_REMEMBER_DAYS * 864e5); return body + '|' + adminSig(body); }
+function adminRevoked() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('ADM_REVOKED') || '{}'); } catch (e) { return {}; } }
+function checkAdminTok(tok) {
+  const p = String(tok).split('|');
+  if (p.length !== 4 || !(Number(p[2]) > Date.now())) return null;
+  if (adminSig(p.slice(0, 3).join('|')) !== p[3] || adminRevoked()[p[3]]) return null;
+  const s = cacheGet('stf', staffRows).filter(function (x) { return x.id === p[1]; })[0];
+  if (!s || s.status !== 'Тийм' || (s.role !== 'Эзэн' && s.role !== 'Менежер')) return null;
+  return s.role === 'Эзэн' ? { id: s.id, role: 'Эзэн', biz: 'all' } : { id: s.id, role: 'Менежер', biz: s.biz };
+}
+// «Гарах» — энэ төхөөрөмжийн токеныг хүчингүй болгоно (хугацаа нь дууссаныг жагсаалтаас цэвэрлэнэ)
+function adminLogout(d) {
+  const t = String(d.token || ''), p = t.split('|');
+  if (p[0] === 'adm' && p.length === 4) {
+    const r = adminRevoked(), now = Date.now(); r[p[3]] = Number(p[2]);
+    Object.keys(r).forEach(function (k) { if (!(r[k] > now)) delete r[k]; });
+    PropertiesService.getScriptProperties().setProperty('ADM_REVOKED', JSON.stringify(r));
+  } else CacheService.getScriptCache().remove('tok_' + t);
+  return { status: 'ok' };
 }
 function adminRead(d) {
   const a = cacheGet('adm', adminData);

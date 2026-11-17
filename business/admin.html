@@ -28,6 +28,7 @@
     <input id="userInput" autocomplete="username" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter')$('passInput').focus()">
     <label for="passInput">Нууц код</label>
     <input id="passInput" type="password" inputmode="numeric" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:400"><input type="checkbox" id="rememberInput" style="width:auto;margin:0"> Энэ төхөөрөмжийг 7 хоног санах</label>
     <p class="muted" id="loginMsg" style="margin-top:8px;min-height:20px;color:var(--red)"></p>
     <button class="btn" id="loginBtn" onclick="doLogin()">Нэвтрэх</button>
   </div>
@@ -412,7 +413,7 @@
 <script src="ebrec.js?v=20261106c"></script>
 <script src="ads.js?v=20261104f"></script>
 <script src="boostbud.js?v=20261116k"></script>
-<script src="admin.js?v=20261116k"></script>
+<script src="admin.js?v=20261117a"></script>
 <script src="ebset.js?v=20261116e"></script>
 <script src="nav.js?v=20261116c"></script>
 <script src="mrep.js?v=20261105t"></script>

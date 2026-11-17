@@ -17,8 +17,12 @@ function applyRole(role, biz) {
   ALL_KEYS = isOwner() ? KEYS.concat(['mgmt']) : KEYS.slice();
   if (!isOwner()) { window.loans = []; window.assets = []; salary = []; }   // сервер ч менежерт эдгээрийг өгдөггүй
 }
-var token = sessionStorage.getItem('nb_tok') || '';   // удирдагчийн токен (8 цаг)
-var ownerName = sessionStorage.getItem('nb_owner') || '';
+// Удирдагчийн токен: энгийн — sessionStorage (6 цаг, таб хаахад алга); «санах» — localStorage (7 хоног, сервер гарын үсгээр шалгана)
+function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+function lsDel() { try { localStorage.removeItem('nb_tok'); localStorage.removeItem('nb_owner'); } catch (e) {} }
+var token = sessionStorage.getItem('nb_tok') || lsGet('nb_tok');
+var ownerName = sessionStorage.getItem('nb_owner') || lsGet('nb_owner');
+try { if ($('rememberInput')) $('rememberInput').checked = !!lsGet('nb_remember'); } catch (e) {}
 var records = [], staff = [], salary = [], stockData = {}, moves = [], journal = [], partners = [], sheetProducts = [], meta = {};
 // config.js / products.js-ийн үндсэн жагсаалтыг хадгалж, «Бараа» хуудасны засварыг дээр нь давхарлана
 var BASE_PRODUCTS = {};
@@ -33,7 +37,7 @@ if (token) enter();
 
 // ── Нэвтрэх (нэвтрэх нэр + нууц код → токен) ──
 function doLogin() {
-  var user = $('userInput').value.trim().toLowerCase(), pass = $('passInput').value.trim();
+  var user = $('userInput').value.trim().toLowerCase(), pass = $('passInput').value.trim(), remember = !!($('rememberInput') && $('rememberInput').checked);
   if (!user || !pass) { loginMsg('Нэвтрэх нэр, нууц кодоо оруулна уу'); return; }
   if (!API_URL) {   // туршилтын горим
     if (pass !== '0000') { loginMsg('Туршилтын горимд код: 0000'); return; }
@@ -41,7 +45,7 @@ function doLogin() {
   }
   $('loginBtn').disabled = true;
   loginMsg('Шалгаж байна...');
-  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'admin_login', user: user, pass: pass }) })
+  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'admin_login', user: user, pass: pass, remember: remember }) })
     .then(function (r) { return r.json(); })
     .then(function (d) {
       $('loginBtn').disabled = false;
@@ -52,6 +56,9 @@ function doLogin() {
       token = d.token; ownerName = d.name;
       sessionStorage.setItem('nb_tok', token);
       sessionStorage.setItem('nb_owner', ownerName);
+      lsDel();
+      try { if (remember && /^adm\|/.test(token)) { localStorage.setItem('nb_tok', token); localStorage.setItem('nb_owner', ownerName); }
+        if (remember) localStorage.setItem('nb_remember', '1'); else localStorage.removeItem('nb_remember'); } catch (e) {}
       $('passInput').value = '';
       enter();
     })
@@ -78,9 +85,16 @@ function enter() {
     render();
   });
 }
-function logout() { try { sessionStorage.removeItem(READ_KEY); } catch (e) {} sessionStorage.removeItem('nb_tok'); sessionStorage.removeItem('nb_owner'); location.reload(); }
+function logout() {
+  var done = function () { try { sessionStorage.removeItem(READ_KEY); } catch (e) {} sessionStorage.removeItem('nb_tok'); sessionStorage.removeItem('nb_owner'); lsDel(); location.reload(); };
+  if (!API_URL || !token || token === 'demo') return done();
+  // серверт энэ төхөөрөмжийн токеныг хүчингүй болгоно (санасан 7 хоногийн токен хулгайлагдсан ч ажиллахгүй)
+  var t = setTimeout(done, 4000);
+  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'admin_logout', token: token, v: JS_VER }) })
+    .then(function () { clearTimeout(t); done(); }, function () { clearTimeout(t); done(); });
+}
 function authLost() {
-  sessionStorage.removeItem('nb_tok'); token = '';
+  sessionStorage.removeItem('nb_tok'); lsDel(); token = '';
   $('main').style.display = 'none'; $('login').style.display = 'block';
   loginMsg('Нэвтрэлтийн хугацаа дууссан — дахин нэвтэрнэ үү');
 }
