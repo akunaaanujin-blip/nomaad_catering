@@ -1,1 +1,19 @@
 mcs property.pdf
+
+# Хувийн / санхүүгийн файлыг вэбсайт руу оруулахгүй (2026-11-18)
+.DS_Store
+*.xlsx
+!NOMAAD_Аргачлал.xlsx
+!NOMAAD_Catering_Ports_Standard_v1.0.xlsx
+!business/templates/*.xlsx
+!business/БҮНА_ангилал_шалгах.xlsx
+*.docx
+!NOMAAD_Catering_Brand_Book_v1.0.docx
+*.pdf
+!NOMAAD_Menu_2026.pdf
+viber_image_*
+Чимун ХХК*
+*.md.local
+Болормаа_заавар.md
+business/zaavar/
+реклам/
