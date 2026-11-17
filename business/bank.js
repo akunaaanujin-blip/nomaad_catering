@@ -23,7 +23,7 @@ var BANK_RULES = [[/qpay\b.*\bTRX:/i, '7201'],   // QPay-ийн шимтгэл (
   [/boost|реклам|фэйсбүүк|facebook|\bmeta\b|(^|[^а-яөүё])зар([^а-яөүё]|$)/i, '7120'],   // 2026-11-02: Boost-ыг банкаар төлсөн дүнгээр зардал (Дт 7120) — ажилтны Boost бүртгэл зөвхөн шинжилгээнд
    [/хураамж|шимтгэл|\bfee\b/i, '7201'], [/түрээс/i, '7114'], [/цалин/i, '3301'],
   [/шатахуун|бензин|benzin|petrovis|шунхлай|магнай/i, '7118'], [/unitel|mobicom|skytel|gmobile|интернет|univision/i, '7106'], [/ндш|даатгал/i, '3403'],
-  [/цахилгаан|ус хангамж|дулаан/i, '7111'], [/буухиа|ebuuhia|booklo|хүргэлт/i, '7124'], [/зээл/i, '3501']];
+  [/цахилгаан|ус хангамж|дулаан/i, '7111'], [/буухиа|buuhia|booklo|хүргэлт/i, '7124'], [/зээл/i, '3501']];
 
 // Данс → компани: эхлээд Мөнгө → Данснууд → «+ Банкны данс нэмэх»-оор холбосон (Script Properties), дараа нь config.js
 function bankAcctInfo(acct) {
@@ -370,7 +370,7 @@ function bankView() {
     var s = l.status === 'Шинэ' ? bankSuggest(l) : null, sel = '', dupPick = false;
     if (s) {
       var opts = bankLineOpts(l, s, ebB, biz), cur = bankPick[l.id] === 'EB:set' ? '' : bankPick[l.id];   // [утга, нэр, бүлэг]; «EB:set» — Буухиагийн мэдээлэл ирэхээс өмнөх санал, дахин тооцно
-      var def = cur || (/буух|ebuu/i.test(l.desc) && typeof ebBankOpen === 'function' ? ebBatchDef(ebB, l) : '') || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id + '|' + s.j.id : s.kind === 'shop' || s.kind === 'req' || s.kind === 'man' || s.kind === 'rule' || s.kind === 'bst' || s.kind === 'bg' ? s.v : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : '');   // танигдаагүй зарлага — сонголтгүй, гараар (2026-11-16: «Бусад зардал» автоматаар болгохыг болиулсан)
+      var def = cur || (/буух|ebuu|buuh/i.test(l.desc) && typeof ebBankOpen === 'function' ? ebBatchDef(ebB, l) : '') || (s.kind === 'order' ? 'O:' + s.o.id : s.kind === 'paid' ? 'P:' + s.o.id + '|' + s.j.id : s.kind === 'shop' || s.kind === 'req' || s.kind === 'man' || s.kind === 'rule' || s.kind === 'bst' || s.kind === 'bg' ? s.v : s.kind === 'debt' ? s.v : s.acc ? 'A:' + s.acc : '');   // танигдаагүй зарлага — сонголтгүй, гараар (2026-11-16: «Бусад зардал» автоматаар болгохыг болиулсан)
       if (/^MG:/.test(def)) def = 'A:1208';   // хуучин дүрэм
       if (def === 'A:10003') def = 'TR:10003';   // касс — данс хоорондын шилжүүлэг
       if (def && !opts.some(function (o) { return o[0] === def; })) def = '';   // жагсаалтад байхгүй сонголт далд үлдэхгүй
