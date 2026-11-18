@@ -482,3 +482,17 @@ body.bz-admin{font-size:15px;line-height:1.5}
 :root[data-theme="dark"] .bz-admin .lp-i em,:root[data-theme="dark"] .bz-admin .lp-i span,:root[data-theme="dark"] .bz-admin .lp-i b{color:var(--text-2)}
 :root[data-theme="dark"] .bz-admin .lp-i em.neg{color:var(--expense)}
 :root[data-theme="dark"] .bz-admin .fn-ck{filter:saturate(.7)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .bz-admin #view .fd-t tr.fd-g td,:root:not([data-theme="light"]) .bz-admin .fd-t tr.fd-g td{background:var(--surface-alt);color:var(--text)}
+  :root:not([data-theme="light"]) .bz-admin .eb-tabs button{background:var(--surface);border-color:var(--border-strong);color:var(--text)}
+  :root:not([data-theme="light"]) .bz-admin .eb-tabs button small{color:var(--text-2)}
+  :root:not([data-theme="light"]) .bz-admin .eb-tabs button.on,:root:not([data-theme="light"]) .bz-admin .eb-tabs button.on small{background:var(--primary-soft);border-color:var(--primary);color:var(--text)}
+  :root:not([data-theme="light"]) .bz-admin #view small[style*='15803D'],:root:not([data-theme="light"]) .bz-admin #view span[style*='15803D']{color:var(--income)!important}
+  :root:not([data-theme="light"]) .bz-admin .fn-leg i,:root:not([data-theme="light"]) .bz-admin #view .fd-t i{border-color:var(--border)}
+}
+:root[data-theme="dark"] .bz-admin #view .fd-t tr.fd-g td,:root[data-theme="dark"] .bz-admin .fd-t tr.fd-g td{background:var(--surface-alt);color:var(--text)}
+:root[data-theme="dark"] .bz-admin .eb-tabs button{background:var(--surface);border-color:var(--border-strong);color:var(--text)}
+:root[data-theme="dark"] .bz-admin .eb-tabs button small{color:var(--text-2)}
+:root[data-theme="dark"] .bz-admin .eb-tabs button.on,:root[data-theme="dark"] .bz-admin .eb-tabs button.on small{background:var(--primary-soft);border-color:var(--primary);color:var(--text)}
+:root[data-theme="dark"] .bz-admin #view small[style*='15803D'],:root[data-theme="dark"] .bz-admin #view span[style*='15803D']{color:var(--income)!important}
+:root[data-theme="dark"] .bz-admin .fn-leg i,:root[data-theme="dark"] .bz-admin #view .fd-t i{border-color:var(--border)}
