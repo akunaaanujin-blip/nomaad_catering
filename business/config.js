@@ -57,6 +57,24 @@ var BUSINESSES = {
     products: (typeof TRAVEL_PRODUCTS !== 'undefined') ? TRAVEL_PRODUCTS : [],   // products.js
     expenses: ['Бараа татан авалт', 'Тээвэр', 'Цалин', 'Түрээс', 'Засвар', 'Бусад'],
   },
+  // Шинэ компани (нээгдэж байна, 2026-11-18) — NOMAAD аяллын дэлгүүрийн ИЖИЛ барааг зарна, НӨАТ-гүй И-баримтаар.
+  // Нэг дэлгүүр, нэг касс: үйлчлүүлэгч НӨАТ-тай баримт хүсвэл → travel (Вайс), НӨАТ-гүй бол → travel2 (шинэ компани).
+  // Бараа бүрийн үлдэгдэл компани бүрээр тусдаа. Компани бүртгэгдэж, PosAPI холбогдох хүртэл hidden.
+  travel2: {
+    key: 'travel2',
+    name: 'NOMAAD аялал (шинэ компани)',
+    hidden: true,
+    shareWith: 'travel',                   // бараа, кассыг travel-тэй хуваалцана (ажилтны хуудас travel.html)
+    icon: 'N',
+    color: '#2F6B55',
+    unit: 'ш',
+    orders: true,
+    warehouse: true,
+    barcode: true,
+    boost: true,
+    products: (typeof TRAVEL_PRODUCTS !== 'undefined') ? TRAVEL_PRODUCTS : [],
+    expenses: ['Бараа татан авалт', 'Тээвэр', 'Цалин', 'Түрээс', 'Засвар', 'Бусад'],
+  },
   // Удирдлага — зөвхөн санхүү (удирдлагын өөрийн данс, зээл, хувийн зарлага). Ажилтны хуудасгүй, бараагүй.
   mgmt: {
     key: 'mgmt',
@@ -81,6 +99,8 @@ var EBARIMT = {
   meat:   { legalName: 'Вайс бротерс', regNo: '8330042', merchantTin: '93202187027', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
   cozy:   { legalName: '', merchantTin: '', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
   travel: { legalName: 'Вайс бротерс', regNo: '8330042', merchantTin: '93202187027', branchNo: '002', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
+  // Шинэ компани: нэр, ТТД бүртгэгдсэний дараа бөглөнө (merchantTin хоосон = И-баримт унтраалттай)
+  travel2: { legalName: '', regNo: '', merchantTin: '', branchNo: '001', posNo: '', districtCode: '', taxType: 'NO_VAT', classificationCode: '' },
 };
 
 // Туршилтын орчны мерчант (developer.itc.gov.mn-ийн заавраас). Тохиргоо цонхонд "Туршилт" асаахад ашиглана.
@@ -100,6 +120,7 @@ var BANK_ACCOUNTS = {
 var ENTITIES = {
   weiss: { name: 'Вайс бротерс', type: 'ХХК', regNo: '8330042', tin: '93202187027', biz: ['meat', 'travel'], district: 'Баянзүрх' },
   cozy:  { name: 'Cozy Home Ulaanbaatar', type: 'Хувь хүн', regNo: '', tin: '', biz: ['cozy'] },
+  // newco: { name: '…', type: 'ХХК', regNo: '', tin: '', biz: ['travel2'] },   // ← бүртгэгдмэгц нээнэ (одоо идэвхгүй: tax/calendar-д хоосон компани гарахгүй)
 };
 // ── Татвар, нийгмийн даатгалын хувь (албан эх сурвалж: portal.ndaatgal.mn «Даатгуулагчийн төрөл 20241125», ХХОАТ-ын хууль) ──
 // Хууль өөрчлөгдвөл ЗӨВХӨН энд засна.
