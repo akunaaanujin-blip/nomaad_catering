@@ -425,3 +425,5 @@ body.bz-admin{font-size:15px;line-height:1.5}
 :root[data-theme="dark"] .bz-admin .dk2:first-child{background:var(--row-l1);border-color:var(--row-l1)}
 :root[data-theme="dark"] .bz-admin .dk2:first-child small{color:var(--text-2)}
 :root[data-theme="dark"] .bz-admin .dk2.warn{background:var(--expense-soft);border-color:#4A2422}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bz-admin table.rep-t tr.tot td,:root:not([data-theme="light"]) .bz-admin #view table.rep-t tr.tot td,:root:not([data-theme="light"]) .bz-admin .card.rep .rep-t tr.tot{background:var(--row-tot);color:var(--text);border-top-color:var(--border-strong)}}
+:root[data-theme="dark"] .bz-admin table.rep-t tr.tot td,:root[data-theme="dark"] .bz-admin #view table.rep-t tr.tot td,:root[data-theme="dark"] .bz-admin .card.rep .rep-t tr.tot{background:var(--row-tot);color:var(--text);border-top-color:var(--border-strong)}
