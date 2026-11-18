@@ -642,3 +642,25 @@ setInterval(function () {
 if ($('main') && $('main').style.display !== 'none') render();
 // Тайлбар бичвэр (rep-note) нэг мөрөөр хураагдсан — дарахад бүтнээр нээгдэнэ
 document.addEventListener('click', function (e) { var n = e.target.closest && e.target.closest('.bz-admin .rep-note'); if (n && !n.classList.contains('bad') && !n.classList.contains('warn') && !e.target.closest('a,button,input,select')) n.classList.toggle('open'); });
+
+// ── Урт тайлбарыг нуух (2026-11-19): 110+ тэмдэгттэй тайлбар (muted, rep-note, pg-desc) «Тайлбар» товчны ард орно — дэлгэц цэвэр, хэрэгтэй үед нээнэ.
+// Анхааруулга (.bad, .warn, .alert), хүснэгт, товч/талбартай хэсэгт хүрэхгүй. Бүх хуудас, задрал, цонхонд MutationObserver-ээр автоматаар.
+var HINT_SEL = 'p.muted, div.muted, p.rep-note:not(.bad), p.pg-desc, p.note, div.note';
+function tidyHints(root) {
+  if (!root || !root.querySelectorAll) return;
+  root.querySelectorAll(HINT_SEL).forEach(function (el) {
+    if (el.__th || el.closest('table, details, label, button, .bad, .warn, .alert, .fn-todo, .mr-s') || el.querySelector('input, select, textarea, button, table')) return;
+    el.__th = 1;
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (t.length < 110) return;
+    var d = document.createElement('details'); d.className = 'hint-d';
+    d.innerHTML = '<summary>Тайлбар</summary>';
+    el.parentNode.insertBefore(d, el); d.appendChild(el);
+  });
+}
+(function () {
+  var run = function () { ['view', 'drBody', 'gBody'].forEach(function (id) { tidyHints(document.getElementById(id)); }); }, q = 0;
+  var mo = new MutationObserver(function () { if (q) return; q = 1; requestAnimationFrame(function () { q = 0; run(); }); });
+  var start = function () { ['view', 'drBody', 'gBody'].forEach(function (id) { var el = document.getElementById(id); if (el) mo.observe(el, { childList: true, subtree: true }); }); run(); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();

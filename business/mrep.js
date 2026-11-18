@@ -107,6 +107,7 @@ function mrepWorth(E, td, b) {   // мөр бүр [нэр, дүн, задрал,
 }
 // Нэг дансны одоо үлдсэн дүн харилцагчаар (хэн, хэд, хэзээнээс); ганц харилцагчтай бол шууд үлдсэн мөрүүдээр. Нийлбэр = дансны үлдэгдэл.
 function mrepOpenRows(E, k, sign, td, xp, t) {
+  if (k === '1505') return mrepPoRows(E, td, xp, t);
   var r = openItems(xp ? E.filter(function (e) { return e.partner !== xp; }) : E, [k], sign, td, false), W = {};
   r.items.forEach(function (it) { if (it.closed) return; var v = it.amt - it.paid; if (v < 0.5) return; var w = W[it.who] || (W[it.who] = { v: 0, L: [], d: it.date, over: 0 }); w.v += v; w.L.push(it); if (it.date < w.d) w.d = it.date; });
   Object.keys(r.P).forEach(function (w) { var o = r.P[w].over; if (o > 0.5) { var x = W[w] || (W[w] = { v: 0, L: [], d: '', over: 0 }); x.v -= o; x.over = o; } });
@@ -116,6 +117,22 @@ function mrepOpenRows(E, k, sign, td, xp, t) {
   if (keys.length === 1) return { cols: IC, rows: itemRows(keys[0]), note: 'Харилцагч: ' + nameTel(keys[0]) + ' · зөвхөн хаагдаагүй дүн.' };
   return { cols: [[k === '1208' || k === '3802' ? 'Хэн' : 'Харилцагч'], ['Хэзээнээс'], ['Тоо', 1]], note: 'Зөвхөн хаагдаагүй дүн. Нэр дээр дарахад юу үлдсэн нь гарна.',
     rows: keys.map(function (w) { return { c: [nameTel(w), W[w].d, String(W[w].L.length)], v: W[w].v, sub: { t: t + ' · ' + nameTel(w), to: td, cols: IC, rows: itemRows(w) } }; }) };
+}
+// Замд яваа бараа: бараа захиалгаар (#PO) — карго өөр харилцагчаар төлөгдсөн ч захиалга бүрийн үлдэгдэл зөв (харилцагчаар бүлэглэвэл хасах мөр гардаг)
+function mrepPoRows(E, td, xp, t) {
+  var P = {}, order = [];
+  E.forEach(function (e) {
+    if (e.date > td || (e.dr !== '1505') === (e.cr !== '1505') || (xp && e.partner === xp)) return;
+    var m = String(e.desc || '').match(/#(\S+)\s*$/), id = m ? m[1] : '(захиалгагүй)';
+    var x = P[id] || (P[id] = { v: 0, d: e.date, no: '', who: '', L: [] }); if (!x.L.length) order.push(id);
+    var v = e.dr === '1505' ? e.amount : -e.amount; x.v += v; x.L.push({ c: [e.date, debtDesc(e.desc) || e.desc], v: v });
+    if (e.date < x.d) x.d = e.date;
+    if (!x.no) { var n = String(e.desc).match(/ЗХ-\d+/); if (n) x.no = n[0]; }
+    if (!x.who && e.partner && !/карго/i.test(e.desc)) x.who = e.partner;
+  });
+  var ids = order.filter(function (id) { return Math.abs(P[id].v) >= 0.5; });
+  return { cols: [['Захиалга'], ['Хэзээнээс'], ['Нийлүүлэгч']], note: 'Ирээгүй бараа захиалгаар (бараа + карго).',
+    rows: ids.map(function (id) { var x = P[id]; return { c: [x.no || id, x.d, x.who || '—'], v: x.v, sub: { t: t + ' · ' + (x.no || id), to: td, cols: [['Огноо'], ['Юу']], rows: x.L } }; }) };
 }
 // Барааны үлдэгдэл: бараа бүр (тоо × дундаж өртөг) — «Үлдэгдэл» хуудастай ижил
 function mrepStockRows() {

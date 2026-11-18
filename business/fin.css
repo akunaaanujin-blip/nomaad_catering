@@ -427,3 +427,11 @@ body.bz-admin{font-size:15px;line-height:1.5}
 :root[data-theme="dark"] .bz-admin .dk2.warn{background:var(--expense-soft);border-color:#4A2422}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bz-admin table.rep-t tr.tot td,:root:not([data-theme="light"]) .bz-admin #view table.rep-t tr.tot td,:root:not([data-theme="light"]) .bz-admin .card.rep .rep-t tr.tot{background:var(--row-tot);color:var(--text);border-top-color:var(--border-strong)}}
 :root[data-theme="dark"] .bz-admin table.rep-t tr.tot td,:root[data-theme="dark"] .bz-admin #view table.rep-t tr.tot td,:root[data-theme="dark"] .bz-admin .card.rep .rep-t tr.tot{background:var(--row-tot);color:var(--text);border-top-color:var(--border-strong)}
+/* Урт тайлбар — «Тайлбар» товчны ард (nav.js tidyHints) */
+.bz-admin details.hint-d{margin:2px 0 10px}
+.bz-admin details.hint-d>summary{display:inline-block;cursor:pointer;list-style:none;font-size:12.5px;color:var(--text-3);padding:2px 0;user-select:none}
+.bz-admin details.hint-d>summary::-webkit-details-marker{display:none}
+.bz-admin details.hint-d>summary::before{content:'ⓘ ';}
+.bz-admin details.hint-d>summary:hover{color:var(--text-2)}
+.bz-admin details.hint-d[open]>summary{color:var(--text-2)}
+.bz-admin details.hint-d>*:not(summary){margin-top:4px;font-size:12.5px;color:var(--text-2);max-width:760px;line-height:1.55}
