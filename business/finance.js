@@ -73,7 +73,32 @@ function drillLines(s, E) {
 function drill(i) { var s = DRILL[i]; if (!s) return; drillStack = []; drillCur = s; drillRender(); openSheet('drillSheet'); }
 function drillIn(i) { var s = DRILLM[i]; if (!s) return; drillStack.push(drillCur); drillCur = s; drillRender(); }
 function drillBack() { drillCur = drillStack.pop(); if (!drillCur) { closeSheet('drillSheet'); return; } drillRender(); }
+// Товч задрал (spec.mk эсвэл spec.rows): гүйлгээ биш — одоо юу үлдсэнийг мөр бүрээр (харилцагч, бараа, данс). Бусад тайлангийн задралд нөлөөгүй.
+// spec: { t, mk: fn → { cols: [[гарчиг, тоон]], rows: [{ c: [нүд], v, sub: spec }], note }, want: хүснэгтийн дүн, diffLabel, tx: гүйлгээний spec, go: [nav, нэр] }
+function drillSum(s) {
+  var d = s.mk ? (s._d || (s._d = s.mk())) : s, rows = (d.rows || []).slice().sort(function (a, b) { return b.v - a.v; }), cols = d.cols || [['']];
+  var sum = rows.reduce(function (a, x) { return a + x.v; }, 0), diff = s.want != null ? s.want - sum : 0;
+  if (Math.abs(diff) >= 1) rows.push({ c: [s.diffLabel || 'Бусад (тулгаагүй)'], v: diff, x: 1 });
+  return { cols: cols, rows: rows, note: d.note || '', tot: sum + (Math.abs(diff) >= 1 ? diff : 0) };
+}
+function drillSumRender(s) {
+  var d = drillSum(s), nc = d.cols.length;
+  var td = function (x, i) { var v = x.c[i] === undefined ? '' : x.c[i]; return '<td' + (d.cols[i] && d.cols[i][1] ? ' class="n"' : '') + '>' + (i === 0 && x.sub ? dlm(x.sub, esc(v)) : esc(v)) + '</td>'; };
+  var tb = '<div class="scroll"><table class="rep-t"><tr>' + d.cols.map(function (c) { return '<th' + (c[1] ? ' class="n"' : '') + '>' + esc(c[0]) + '</th>'; }).join('') + '<th class="n">Дүн</th></tr>' +
+    (d.rows.length ? d.rows.map(function (x) {
+      var c = []; for (var i = 0; i < nc; i++) c.push(td(x, i));
+      return '<tr' + (x.x ? ' class="muted"' : '') + '>' + c.join('') + '<td class="n' + (x.v < -0.5 ? ' neg' : '') + '">' + mny(x.v) + '</td></tr>';
+    }).join('') : '<tr><td colspan="' + (nc + 1) + '" class="muted">Үлдэгдэл алга</td></tr>') +
+    '<tr class="tot"><td colspan="' + nc + '">Нийт</td><td class="n">' + mny(d.tot) + '</td></tr></table></div>';
+  var act = (s.tx ? '<button class="link" onclick="drillIn(' + (DRILLM.push(Object.assign({}, s.tx, { t: (s.t || '') + ' · гүйлгээнүүд' })) - 1) + ')">Гүйлгээнүүдийг харах →</button> ' : '') +
+    (s.go ? '<button class="link" onclick="closeSheet(\'drillSheet\');navGo(\'' + s.go[0] + '\')">' + esc(s.go[1]) + ' хуудас →</button>' : '');
+  $('drBody').innerHTML = '<div class="dr-top"><div><div class="muted" style="font-size:12px">' + esc(BUSINESSES[state.biz].name) + (s.to ? ' · ' + esc(s.to) + ' байдлаар' : '') + '</div><h2>' + esc(s.t || 'Задрал') + '</h2></div>' +
+    '<div class="dr-tot"><span class="muted">Үлдэгдэл</span><b>' + mny(d.tot) + '</b></div></div>' +
+    (d.note ? '<p class="muted" style="font-size:12.5px">' + esc(d.note) + '</p>' : '') + tb + (act ? '<div class="mr-more">' + act + '</div>' : '');
+  $('drBack').style.display = drillStack.length ? '' : 'none';
+}
 function drillRender() {
+  if (drillCur && (drillCur.mk || drillCur.rows)) { DRILLM = []; drillSumRender(drillCur); return; }
   var s = drillCur, d = drillLines(s), L = d.lines, mov = L.reduce(function (a, x) { return a + x.v; }, 0), tot = (s.bal ? d.open : 0) + mov;
   DRILLM = [];
   var G = {}, keys = [];
@@ -108,6 +133,12 @@ function drillRender() {
 }
 function drillExcel() {
   if (!drillCur) return; if (!window.XLSX) { toast('Excel сан ачаалж байна — хэдэн секундийн дараа дахин оролдоно уу'); ensureXlsx(function () {}); return; }
+  if (drillCur.mk || drillCur.rows) {
+    var q = drillSum(drillCur), ao = [[drillCur.t || 'Задрал'], [BUSINESSES[state.biz].name + ' · ' + (drillCur.to || '')], [], q.cols.map(function (c) { return c[0]; }).concat(['Дүн'])];
+    q.rows.forEach(function (x) { var r = []; for (var i = 0; i < q.cols.length; i++) r.push(x.c[i] === undefined ? '' : x.c[i]); ao.push(r.concat([r0(x.v)])); });
+    ao.push(['Нийт'].concat(q.cols.slice(1).map(function () { return ''; })).concat([r0(q.tot)]));
+    var wq = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wq, XLSX.utils.aoa_to_sheet(ao), 'Задрал'); XLSX.writeFile(wq, xlsxName(drillCur.t || 'задрал')); return;
+  }
   var s = drillCur, d = drillLines(s), run = s.bal ? d.open : 0;
   var aoa = [[s.t || 'Задрал'], [BUSINESSES[state.biz].name + ' · ' + (s.from || '') + ' — ' + (s.to || '')], [], ['Огноо', 'Гүйлгээний утга', 'Харилцагч', 'Хаанаас / хаашаа', 'Дүн'].concat(s.bal ? ['Үлдэгдэл'] : [])];
   if (s.bal) aoa.push([s.from || '', 'Эхний үлдэгдэл', '', '', '', r0(run)]);

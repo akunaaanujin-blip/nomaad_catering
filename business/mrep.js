@@ -74,20 +74,53 @@ function mrepData(E, f, t) {
 }
 // Нийт хөрөнгө: дансны үлдэгдэл бүрээр (санхүүгийн байдлын тайлантай ижил) — нэг ч данс орхигдохгүй.
 // Аяллын дэлгүүрт Cozy-ийн посын мөнгийг мөнгө, өглөг хоёроос хасна (сарын тайлантай ижил — нэг мөнгө хоёр компанид тоологдохгүй).
-function mrepWorth(E, td, b) {   // мөр бүр [нэр, дүн, задрал] — дүн дээр дарахад тэр дүн юунаас бүрдсэнийг харуулна
+function mrepWorth(E, td, b) {   // мөр бүр [нэр, дүн, задрал, дансууд] — дүн дээр дарахад одоо юу үлдсэнийг товчоор (харилцагч, бараа, данс) харуулна
   var g = function (k) { return b[k] || 0; }, pos = state.biz === POS_SHARE.to ? mrPos(E, td, state.biz) : 0, xp = pos ? POS_SHARE.pay : undefined;
   var nm = function (k) { return k === '1201' ? 'Авлага (бусдаас авах)' : MR_ACC[k] || accName(k); };
   var sp = function (acc, sign, grp, t) { return { acc: acc, to: td, sign: sign, grp: grp, xpartner: xp, t: t }; };
   var grpOf = function (k) { return /^12/.test(k) || /^3[18]/.test(k) || /^35/.test(k) ? 'partner' : 'cat'; };
+  var GO = { '1201': ['finance/recv', 'Авлага'], '1208': ['finance/recv', 'Авлага'], '1209': ['sales/buuhia', 'Буухиа · Хүргэлт'], '1503': ['products/po', 'Худалдан авалт'], '1505': ['products/po', 'Худалдан авалт'],
+    '1404': ['products/stock', 'Барааны үлдэгдэл'], '3101': ['finance/payb', 'Өглөг'], '3802': ['finance/payb', 'Өглөг'] };
+  var goOf = function (k, sign) { return GO[k] || (k === '1290' ? (sign > 0 ? GO['1201'] : GO['3101']) : /^35/.test(k) ? ['finance/loans', 'Зээл'] : /^33|^34/.test(k) ? ['finance/payroll', 'Цалин, НДШ'] : null); };
+  // данс бүр: одоо үлдсэн дүн (хаагдсан гүйлгээгүй) — «Авлага», «Өглөг» хуудастай ижил аргаар
+  var dsp = function (k, sign, t, want) {
+    return { t: t, to: td, want: want, tx: sp([k], sign, grpOf(k), t), go: goOf(k, sign),
+      mk: k === '1404' ? function () { return mrepStockRows(); } : function () { return mrepOpenRows(E, k, sign, td, xp, t); },
+      diffLabel: k === '1404' ? 'Зөрүү (бүртгэл ба барааны үлдэгдлийн өртөг — тооллого, өртөг шалгах)' : 'Бусад (тулгаагүй)' };
+  };
   var cash = cashCodes(), money = cash.reduce(function (a, k) { return a + g(k); }, 0) - pos;
-  var A = [['Мөнгө (касс, данснууд)', money, sp(cash, 1, 'acc', 'Мөнгө (касс, данснууд)'), cash]].concat(ACCOUNTS.filter(function (a) { return a[2] === 'asset' && a[3] !== 'cash'; })
-    .map(function (a) { return [nm(a[0]), g(a[0]), sp([a[0]], 1, grpOf(a[0]), nm(a[0])), [a[0]]]; }));
-  var L = accsOf('liab').map(function (k) { return [nm(k), -g(k) - (k === '3101' ? pos : 0), sp([k], -1, grpOf(k), nm(k)), [k]]; });
+  var mSpec = { t: 'Мөнгө (касс, данснууд)', to: td, want: money, tx: sp(cash, 1, 'acc', 'Мөнгө (касс, данснууд)'), go: ['finance/cashacc', 'Данснууд'], mk: function () {
+    var rows = cash.filter(function (k) { return Math.abs(g(k)) >= 1; }).map(function (k) { return { c: [accName(k)], v: g(k), sub: { acc: [k], to: td, sign: 1, bal: 1, t: accName(k) } }; });
+    if (pos) rows.push({ c: ['Хасах: Cozy-ийн посын мөнгө (Cozy-д шилжүүлэх)'], v: -pos });
+    return { cols: [['Данс']], rows: rows, note: 'Данс дээр дарахад гүйлгээнүүд гарна.' };
+  } };
+  var A = [['Мөнгө (касс, данснууд)', money, mSpec, cash]].concat(ACCOUNTS.filter(function (a) { return a[2] === 'asset' && a[3] !== 'cash'; })
+    .map(function (a) { return [nm(a[0]), g(a[0]), dsp(a[0], 1, nm(a[0]), g(a[0])), [a[0]]]; }));
+  var L = accsOf('liab').map(function (k) { var v = -g(k) - (k === '3101' ? pos : 0); return [nm(k), v, dsp(k, -1, nm(k), v), [k]]; });
   var live = function (x) { return Math.abs(x[1]) >= 1; }, s = function (X) { return X.reduce(function (a, x) { return a + x[1]; }, 0); };
-  A.forEach(function (x) { if (x[3][0] === '1290' && x[1] < 0) { L.push(['Компани хооронд өгөх', -x[1], sp(['1290'], -1, 'partner', 'Компани хооронд өгөх'), ['1290']]); x[1] = 0; } });   // хасах үлдэгдэл = бидний өгөх өр
+  A.forEach(function (x) { if (x[3][0] === '1290' && x[1] < 0) { L.push(['Компани хооронд өгөх', -x[1], dsp('1290', -1, 'Компани хооронд өгөх', -x[1]), ['1290']]); x[1] = 0; } });   // хасах үлдэгдэл = бидний өгөх өр
   A = A.filter(live); L = L.filter(live);
-  var codes = function (X) { return X.reduce(function (a, x) { return a.concat(x[3]); }, []); }, ca = codes(A), cl = codes(L).filter(function (k) { return ca.indexOf(k) < 0; });
-  return { A: A, L: L, a: s(A), l: s(L), sA: sp(ca, 1, 'acc', 'Нийт хөрөнгө'), sN: sp(ca.concat(cl), 1, 'acc', 'Цэвэр хөрөнгө (хөрөнгө − өр төлбөр)') };
+  var sum = function (t, X, Y) { var v = s(X) - s(Y || []); return { t: t, to: td, want: v, mk: function () {
+    return { cols: [['Юу']], rows: X.map(function (x) { return { c: [x[0]], v: x[1], sub: x[2] }; }).concat((Y || []).map(function (x) { return { c: ['Хасах: ' + x[0]], v: -x[1], sub: x[2] }; })), note: 'Мөр дээр дарахад задрал нь гарна.' };
+  } }; };
+  return { A: A, L: L, a: s(A), l: s(L), sA: sum('Нийт хөрөнгө', A), sN: sum('Цэвэр хөрөнгө (хөрөнгө − өр төлбөр)', A, L) };
+}
+// Нэг дансны одоо үлдсэн дүн харилцагчаар (хэн, хэд, хэзээнээс); ганц харилцагчтай бол шууд үлдсэн мөрүүдээр. Нийлбэр = дансны үлдэгдэл.
+function mrepOpenRows(E, k, sign, td, xp, t) {
+  var r = openItems(xp ? E.filter(function (e) { return e.partner !== xp; }) : E, [k], sign, td, false), W = {};
+  r.items.forEach(function (it) { if (it.closed) return; var v = it.amt - it.paid; if (v < 0.5) return; var w = W[it.who] || (W[it.who] = { v: 0, L: [], d: it.date, over: 0 }); w.v += v; w.L.push(it); if (it.date < w.d) w.d = it.date; });
+  Object.keys(r.P).forEach(function (w) { var o = r.P[w].over; if (o > 0.5) { var x = W[w] || (W[w] = { v: 0, L: [], d: '', over: 0 }); x.v -= o; x.over = o; } });
+  var keys = Object.keys(W).filter(function (w) { return Math.abs(W[w].v) >= 0.5; });
+  var itemRows = function (w) { var x = W[w]; return x.L.map(function (it) { return { c: [it.date, debtDesc(it.desc) || '—'], v: it.amt - it.paid }; }).concat(x.over ? [{ c: ['', sign > 0 ? 'Илүү төлсөн (урьдчилгаа)' : 'Илүү төлсөн (бидэнд буцааж өгөх)'], v: -x.over }] : []); };
+  var IC = [['Огноо'], ['Юу']];
+  if (keys.length === 1) return { cols: IC, rows: itemRows(keys[0]), note: 'Харилцагч: ' + nameTel(keys[0]) + ' · зөвхөн хаагдаагүй дүн.' };
+  return { cols: [[k === '1208' || k === '3802' ? 'Хэн' : 'Харилцагч'], ['Хэзээнээс'], ['Тоо', 1]], note: 'Зөвхөн хаагдаагүй дүн. Нэр дээр дарахад юу үлдсэн нь гарна.',
+    rows: keys.map(function (w) { return { c: [nameTel(w), W[w].d, String(W[w].L.length)], v: W[w].v, sub: { t: t + ' · ' + nameTel(w), to: td, cols: IC, rows: itemRows(w) } }; }) };
+}
+// Барааны үлдэгдэл: бараа бүр (тоо × дундаж өртөг) — «Үлдэгдэл» хуудастай ижил
+function mrepStockRows() {
+  var rows = stockRows(state.biz).map(function (r) { var q = round2((r.shop || 0) + (r.wh || 0)); return { c: [r.name, String(q)], v: q * (r.cost || 0), q: q }; }).filter(function (x) { return Math.abs(x.q) > 0.001 && Math.abs(x.v) >= 1; });
+  return { cols: [['Бараа'], ['Тоо', 1]], rows: rows, note: 'Үлдэгдэлтэй бараа бүр — тоо × дундаж өртөг.' };
 }
 function repMgmt(E, f, t) {   // Excel, хэвлэх
   var D = mrepData(E, f, t), p = D.p, rows = [], h = function (n) { rows.push({ name: n, v: '', _b: 1 }); }, l = function (n, v) { rows.push({ name: n, v: r0(v) }); };
