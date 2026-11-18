@@ -1,5 +1,10 @@
 // ── САНХҮҮ → ҮР ДҮН: өнгөлөг самбар (KPI карт + график). Зөвхөн энэ хуудсанд, .fd- class-тай ──
 var FD_C = { in: '#16A34A', out: '#1F3A5F', profit: '#F97316', cash: '#7F9CC0', red: '#B91C1C', pie: ['#1F3A5F', '#A3B4CA', '#4F71A0', '#142740', '#C9D5E4', '#7392BA', '#0D1C30', '#7C8BA0'] };
+// Хар горимд графикийн өнгө: бараан хөх, хар бичиг харагдахгүй тул зөөлөн, цайвар өнгө
+var FD_LIGHT = JSON.parse(JSON.stringify(FD_C)), FD_DARK = { in: '#6DBE8A', out: '#8FA8C8', profit: '#E0A06A', cash: '#7F9CC0', red: '#E08A84', pie: ['#8FA8C8', '#5E7391', '#B9C7DA', '#46586F', '#7F9CC0', '#A3B4CA', '#6B7F99', '#9AA6B5'] };
+function fdDark() { var t = document.documentElement.getAttribute('data-theme'); return t === 'dark' || (t !== 'light' && !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)); }
+function fdTheme() { var d = fdDark() ? FD_DARK : FD_LIGHT; Object.keys(d).forEach(function (k) { FD_C[k] = d[k]; }); }
+fdTheme(); try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { fdTheme(); if (typeof render === 'function') render(); }); } catch (e) {}
 var FD_I = {
   in: '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
   out: '<path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/>',
@@ -66,8 +71,8 @@ function drawFin() {
   var mk = function (id, cfg) { var el = $(id); if (el) _fdCharts.push(new Chart(el, cfg)); };
   var money = { callbacks: { label: function (c) { return (c.dataset.label || c.label) + ': ' + fmt(c.raw); } } };
   var leg = { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true, padding: 12, font: { size: 12 } } };
-  var ax = { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: '#EEF2F7' }, ticks: { callback: fdShort } } };
-  Chart.defaults.font.family = "Inter,-apple-system,'Segoe UI',Roboto,sans-serif"; Chart.defaults.color = '#64748B';
+  var ax = { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: fdDark() ? '#2A3340' : '#EEF2F7' }, ticks: { callback: fdShort } } };
+  Chart.defaults.font.family = "Inter,-apple-system,'Segoe UI',Roboto,sans-serif"; Chart.defaults.color = fdDark() ? '#A3ADBB' : '#64748B';
   if (D.daily) mk('fdDaily', { type: 'bar', data: { labels: D.daily.l, datasets: [{ label: 'Орлого', data: D.daily.v, backgroundColor: FD_C.in, borderRadius: 4, maxBarThickness: 22 }] },
     options: { maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: money }, scales: ax } });
   if (D.M) mk('fdYear', { data: { labels: D.M.l, datasets: [
@@ -77,8 +82,8 @@ function drawFin() {
     options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: leg, tooltip: money }, scales: ax } });
   var center = { id: 'fdCenter', afterDraw: function (c) {
     var a = c.chartArea, x = (a.left + a.right) / 2, y = (a.top + a.bottom) / 2, k = c.ctx; k.save(); k.textAlign = 'center';
-    k.fillStyle = '#0F172A'; k.font = '700 17px Inter,sans-serif'; k.fillText(fdShort(D.tot), x, y + 2);
-    k.fillStyle = '#64748B'; k.font = '12px Inter,sans-serif'; k.fillText('нийт зардал', x, y + 19); k.restore(); } };
+    k.fillStyle = fdDark() ? '#E5E7EB' : '#0F172A'; k.font = '700 17px Inter,sans-serif'; k.fillText(fdShort(D.tot), x, y + 2);
+    k.fillStyle = fdDark() ? '#A3ADBB' : '#64748B'; k.font = '12px Inter,sans-serif'; k.fillText('нийт зардал', x, y + 19); k.restore(); } };
   if (D.exV) mk('fdExp', { type: 'doughnut', data: { labels: D.exL, datasets: [{ data: D.exV, backgroundColor: FD_C.pie, borderWidth: 2, borderColor: '#fff' }] },
     options: { maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true, padding: 9, font: { size: 12 },
       generateLabels: function (c) { var s = D.exV.reduce(function (a, v) { return a + v; }, 0) || 1; return Chart.overrides.doughnut.plugins.legend.labels.generateLabels(c).map(function (l, i) { l.text += '  ' + Math.round(D.exV[i] / s * 100) + '%'; return l; }); } } }, tooltip: money } },
@@ -229,7 +234,7 @@ function cashAccView() {
   return '<div class="fd"><div class="fd-kg">' + rows.map(function (x, n) {
       var nm = x.L.length === 1 ? x.L[0].name : CASH_SHORT[x.k] || accName(x.k);
       return fdCard(x.k === '10003' ? 'cash' : x.k === '110106' ? 'pct' : 'in', FD_C.pie[n % FD_C.pie.length], esc(nm), mny(x.c));
-    }).join('') + fdCard('profit', '#0F172A', 'Нийт мөнгө', mny(tot.c)) + '</div>' +
+    }).join('') + fdCard('profit', fdDark() ? '#A3ADBB' : '#0F172A', 'Нийт мөнгө', mny(tot.c)) + '</div>' +
     '<div class="fd-c"><h3><span class="fd-n" style="background:' + FD_C.cash + '">1</span>Данс тус бүрээр (' + f + ' — ' + t + ')</h3><div class="scroll"><table class="fd-t">' +
     '<tr><th>Данс</th><th class="n">Эхний үлдэгдэл</th><th class="n">Орсон</th><th class="n">Гарсан</th><th class="n">Эцсийн үлдэгдэл</th><th></th></tr>' + body +
     '<tr class="tot"><td><b>Нийт</b></td><td class="n"><b>' + mny(tot.o) + '</b></td><td class="n"><b>+' + mny(tot.i) + '</b></td><td class="n"><b>−' + mny(tot.out) + '</b></td><td class="n"><b>' + mny(tot.c) + '</b></td><td></td></tr></table></div>' +

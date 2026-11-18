@@ -435,3 +435,50 @@ body.bz-admin{font-size:15px;line-height:1.5}
 .bz-admin details.hint-d>summary:hover{color:var(--text-2)}
 .bz-admin details.hint-d[open]>summary{color:var(--text-2)}
 .bz-admin details.hint-d>*:not(summary){margin-top:4px;font-size:12.5px;color:var(--text-2);max-width:760px;line-height:1.55}
+/* Хар горим 2: санхүүгийн самбар (fd-*), дансны жагсаалт (lp-i), шалгалтын тэмдэг, жагсаалтын зураас */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .bz-admin #view .fd-t th,:root:not([data-theme="light"]) .bz-admin #view table.rep-t th,:root:not([data-theme="light"]) .bz-admin .fd-t th{background:var(--surface-alt);color:var(--text-2);border-bottom-color:var(--border)}
+  :root:not([data-theme="light"]) .bz-admin .fd-t td,:root:not([data-theme="light"]) .bz-admin #view .fd-t td,:root:not([data-theme="light"]) .bz-admin table.rep-t td{border-color:var(--border)}
+  :root:not([data-theme="light"]) .bz-admin .fd-c,:root:not([data-theme="light"]) .bz-admin #view .fd-c{background:var(--surface)!important;box-shadow:none;border:1px solid var(--border)}
+  :root:not([data-theme="light"]) .bz-admin .fd-c h3{color:var(--text)}
+  :root:not([data-theme="light"]) .bz-admin .fd-k{background:var(--surface);box-shadow:none;border:1px solid var(--border)}
+  :root:not([data-theme="light"]) .bz-admin .fd-k small{color:var(--text-2)}
+  :root:not([data-theme="light"]) .bz-admin .fd-k b{color:var(--text)}
+  :root:not([data-theme="light"]) .bz-admin .fd-bar{background:var(--surface-alt)}
+  :root:not([data-theme="light"]) .bz-admin .fd-t td,:root:not([data-theme="light"]) .bz-admin .fd-t td.n{background:transparent}
+  :root:not([data-theme="light"]) .bz-admin a.dl{text-decoration-color:var(--text-3)}
+  :root:not([data-theme="light"]) .bz-admin .neg,:root:not([data-theme="light"]) .bz-admin a.dl.neg,:root:not([data-theme="light"]) .bz-admin td.neg{color:var(--expense)}
+  :root:not([data-theme="light"]) .bz-admin .seg{border-color:var(--border)}
+  :root:not([data-theme="light"]) .bz-admin li{border-color:var(--border)}
+  :root:not([data-theme="light"]) .bz-admin .ck.bad{background:var(--surface-alt);border-color:var(--border-strong);color:var(--text-2)}
+  :root:not([data-theme="light"]) .bz-admin .rep-note.ok,:root:not([data-theme="light"]) .bz-admin .rep-note.bad{background:var(--surface-alt)}
+  :root:not([data-theme="light"]) .bz-admin .rep-note.bad{color:var(--expense)}
+  :root:not([data-theme="light"]) .bz-admin .lp-i{background:var(--surface);border-color:var(--border);color:var(--text)}
+  :root:not([data-theme="light"]) .bz-admin .lp-i:hover{background:var(--surface-alt)}
+  :root:not([data-theme="light"]) .bz-admin .lp-i.on{background:var(--primary-soft);border-color:var(--primary)}
+  :root:not([data-theme="light"]) .bz-admin .lp-i em,:root:not([data-theme="light"]) .bz-admin .lp-i span,:root:not([data-theme="light"]) .bz-admin .lp-i b{color:var(--text-2)}
+  :root:not([data-theme="light"]) .bz-admin .lp-i em.neg{color:var(--expense)}
+  :root:not([data-theme="light"]) .bz-admin .fn-ck{filter:saturate(.7)}
+}
+:root[data-theme="dark"] .bz-admin #view .fd-t th,:root[data-theme="dark"] .bz-admin #view table.rep-t th,:root[data-theme="dark"] .bz-admin .fd-t th{background:var(--surface-alt);color:var(--text-2);border-bottom-color:var(--border)}
+:root[data-theme="dark"] .bz-admin .fd-t td,:root[data-theme="dark"] .bz-admin #view .fd-t td,:root[data-theme="dark"] .bz-admin table.rep-t td{border-color:var(--border)}
+:root[data-theme="dark"] .bz-admin .fd-c,:root[data-theme="dark"] .bz-admin #view .fd-c{background:var(--surface)!important;box-shadow:none;border:1px solid var(--border)}
+:root[data-theme="dark"] .bz-admin .fd-c h3{color:var(--text)}
+:root[data-theme="dark"] .bz-admin .fd-k{background:var(--surface);box-shadow:none;border:1px solid var(--border)}
+:root[data-theme="dark"] .bz-admin .fd-k small{color:var(--text-2)}
+:root[data-theme="dark"] .bz-admin .fd-k b{color:var(--text)}
+:root[data-theme="dark"] .bz-admin .fd-bar{background:var(--surface-alt)}
+:root[data-theme="dark"] .bz-admin .fd-t td,:root[data-theme="dark"] .bz-admin .fd-t td.n{background:transparent}
+:root[data-theme="dark"] .bz-admin a.dl{text-decoration-color:var(--text-3)}
+:root[data-theme="dark"] .bz-admin .neg,:root[data-theme="dark"] .bz-admin a.dl.neg,:root[data-theme="dark"] .bz-admin td.neg{color:var(--expense)}
+:root[data-theme="dark"] .bz-admin .seg{border-color:var(--border)}
+:root[data-theme="dark"] .bz-admin li{border-color:var(--border)}
+:root[data-theme="dark"] .bz-admin .ck.bad{background:var(--surface-alt);border-color:var(--border-strong);color:var(--text-2)}
+:root[data-theme="dark"] .bz-admin .rep-note.ok,:root[data-theme="dark"] .bz-admin .rep-note.bad{background:var(--surface-alt)}
+:root[data-theme="dark"] .bz-admin .rep-note.bad{color:var(--expense)}
+:root[data-theme="dark"] .bz-admin .lp-i{background:var(--surface);border-color:var(--border);color:var(--text)}
+:root[data-theme="dark"] .bz-admin .lp-i:hover{background:var(--surface-alt)}
+:root[data-theme="dark"] .bz-admin .lp-i.on{background:var(--primary-soft);border-color:var(--primary)}
+:root[data-theme="dark"] .bz-admin .lp-i em,:root[data-theme="dark"] .bz-admin .lp-i span,:root[data-theme="dark"] .bz-admin .lp-i b{color:var(--text-2)}
+:root[data-theme="dark"] .bz-admin .lp-i em.neg{color:var(--expense)}
+:root[data-theme="dark"] .bz-admin .fn-ck{filter:saturate(.7)}

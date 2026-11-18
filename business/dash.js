@@ -39,11 +39,11 @@ function dashView(biz, list, s, bills) {
 function drawDash() {
   _charts.forEach(function (c) { try { c.destroy(); } catch (e) {} }); _charts = [];
   var D = window.__dash; if (!D || typeof Chart === 'undefined') return;
-  Chart.defaults.font.family = "Inter,-apple-system,'Segoe UI',Roboto,sans-serif"; Chart.defaults.color = '#6B7280'; Chart.defaults.font.size = 11.5;
+  Chart.defaults.font.family = "Inter,-apple-system,'Segoe UI',Roboto,sans-serif"; Chart.defaults.color = fdDark() ? '#A3ADBB' : '#6B7280'; Chart.defaults.font.size = 11.5;
   var mk = function (id, cfg) { var el = $(id); if (el) _charts.push(new Chart(el, cfg)); };
   var money = { callbacks: { label: function (c) { return (c.dataset.label ? c.dataset.label + ': ' : c.label + ': ') + fmt(c.raw); } } };
   var donut = function (id, L, V) {
-    mk(id, { type: 'doughnut', data: { labels: L, datasets: [{ data: V, backgroundColor: DASH_C, borderWidth: 2, borderColor: '#fff' }] },
+    mk(id, { type: 'doughnut', data: { labels: L, datasets: [{ data: V, backgroundColor: DASH_C, borderWidth: 2, borderColor: fdDark() ? '#161C24' : '#fff' }] },
       options: { maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true, padding: 12 } }, tooltip: money } } });
   };
   mk('chSales', { type: 'line', data: { labels: D.days, datasets: [
