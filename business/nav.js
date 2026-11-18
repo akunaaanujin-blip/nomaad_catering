@@ -240,6 +240,8 @@ function alertsOf(biz) {
     var nc = Object.keys(costEngine(biz, R()).noCost).length;
     add(nc + ' бараа өртөггүй зарагдсан', nc, "navGo('finance/dash')", true);
   }
+  // Посын мөнгө: Cozy-ийн картын мөнгө аяллын дэлгүүрийн посоор орж ирдэг — шилжүүлээгүй үлдэгдлийг хоёр компанийн нүүрэнд сануулна
+  try { if (biz === POS_SHARE.to || biz === POS_SHARE.from) { var pv = posOwed(); if (pv >= 1000) out.push({ txt: 'Cozy-ийн посын мөнгө ' + mny(pv) + ' шилжүүлэх', n: 1, fn: 'posHelp()', bad: false }); } } catch (e) {}
   // 30 хоногоос удсан авлага
   try {
     var E = J(), lim = todayStr(new Date(Date.now() - 30 * 864e5)), by = {};
@@ -664,3 +666,17 @@ function tidyHints(root) {
   var start = function () { ['view', 'drBody', 'gBody'].forEach(function (id) { var el = document.getElementById(id); if (el) mo.observe(el, { childList: true, subtree: true }); }); run(); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
+
+// ── Посын мөнгө шилжүүлэх (аяллын дэлгүүр → Cozy): дүн, данс, гүйлгээний утгыг нэг дор; утганд «pos» байвал хоёр талд автоматаар тулгагдана
+function posOwed() { return Math.max(0, r0(mrPos(buildJournal(POS_SHARE.to, R()), todayStr(), POS_SHARE.to))); }
+function posCozyAcct() { var L = (window.bankLinks || []).filter(function (l) { return l.biz === POS_SHARE.from; }); return L.length ? L[0].no : ''; }
+function posHelp() {
+  var v = posOwed(), no = posCozyAcct();
+  gOpen('<h2>Посын мөнгө шилжүүлэх</h2><table class="rep-t">' +
+    '<tr><td>Хаанаас</td><td><b>' + esc(BUSINESSES[POS_SHARE.to].name) + '</b></td></tr>' +
+    '<tr><td>Хаашаа</td><td><b>' + esc(BUSINESSES[POS_SHARE.from].name) + '</b>' + (no ? ' · ' + esc(no) + ' <button class="mini" onclick="navigator.clipboard.writeText(\'' + esc(no) + '\');toast(\'Хуулагдлаа\')">Хуулах</button>' : '') + '</td></tr>' +
+    '<tr><td>Дүн</td><td><b>' + mny(v) + '</b> <button class="mini" onclick="navigator.clipboard.writeText(\'' + Math.round(v) + '\');toast(\'Хуулагдлаа\')">Хуулах</button></td></tr>' +
+    '<tr><td>Гүйлгээний утга</td><td><b>pos</b></td></tr></table>' +
+    '<p class="muted" style="margin:10px 0 0">Утганд «pos» гэж бичвэл банкны мессеж ирэхэд хоёр компанид автоматаар тулгагдана.</p>' +
+    '<div class="pg-act" style="margin-top:12px"><button class="b-btn" onclick="gClose()">Хаах</button></div>');
+}
