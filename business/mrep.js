@@ -111,7 +111,7 @@ function mrepOpenRows(E, k, sign, td, xp, t) {
   r.items.forEach(function (it) { if (it.closed) return; var v = it.amt - it.paid; if (v < 0.5) return; var w = W[it.who] || (W[it.who] = { v: 0, L: [], d: it.date, over: 0 }); w.v += v; w.L.push(it); if (it.date < w.d) w.d = it.date; });
   Object.keys(r.P).forEach(function (w) { var o = r.P[w].over; if (o > 0.5) { var x = W[w] || (W[w] = { v: 0, L: [], d: '', over: 0 }); x.v -= o; x.over = o; } });
   var keys = Object.keys(W).filter(function (w) { return Math.abs(W[w].v) >= 0.5; });
-  var itemRows = function (w) { var x = W[w]; return x.L.map(function (it) { return { c: [it.date, debtDesc(it.desc) || '—'], v: it.amt - it.paid }; }).concat(x.over ? [{ c: ['', sign > 0 ? 'Илүү төлсөн (урьдчилгаа)' : 'Илүү төлсөн (бидэнд буцааж өгөх)'], v: -x.over }] : []); };
+  var itemRows = function (w) { var x = W[w]; return x.L.map(function (it) { return { c: [it.date, debtDesc(it.desc) || '—'], v: it.amt - it.paid }; }).concat(x.over ? [{ c: ['', !/^(1201|1208|1290|3101|3802)$/.test(k) ? 'Хасагдсан дүн (энэ харилцагчаар хаагдсан)' : sign > 0 ? 'Илүү төлсөн (урьдчилгаа)' : 'Илүү төлсөн (бидэнд буцааж өгөх)'], v: -x.over }] : []); };
   var IC = [['Огноо'], ['Юу']];
   if (keys.length === 1) return { cols: IC, rows: itemRows(keys[0]), note: 'Харилцагч: ' + nameTel(keys[0]) + ' · зөвхөн хаагдаагүй дүн.' };
   return { cols: [[k === '1208' || k === '3802' ? 'Хэн' : 'Харилцагч'], ['Хэзээнээс'], ['Тоо', 1]], note: 'Зөвхөн хаагдаагүй дүн. Нэр дээр дарахад юу үлдсэн нь гарна.',
