@@ -69,7 +69,8 @@ function mrepData(E, f, t) {
   var moneyL = cash.filter(function (k) { return Math.abs(g(k)) >= 1; }).map(function (k) { return [accName(k), g(k)]; });
   var exps = p.exps.slice().sort(function (x, y) { return y.v - x.v; }).map(function (x) { return [EXP_SHORT[x.code] || x.name, x.v]; });
   var items = repSalesBy(R(), state.biz, f, t, 'item', function (x) { return !isNonGoods(x.item); }).rows.slice().sort(function (x, y) { return y.net - x.net; }).slice(0, 5).map(function (x) { return [x.key, x.net]; });
-  return { p: p, money: cash.reduce(function (a, k) { return a + g(k); }, 0), moneyL: moneyL, exps: exps, items: items, stock: g('1404'), recv: mrepDebt(E, 'r'), payb: mrepDebt(E, 'p'), loan: -loanCodes().reduce(function (a, k) { return a + g(k); }, 0) };
+  return { p: p, money: cash.reduce(function (a, k) { return a + g(k); }, 0), moneyL: moneyL, exps: exps, items: items, stock: g('1404'), recv: mrepDebt(E, 'r'), payb: mrepDebt(E, 'p'), loan: -loanCodes().reduce(function (a, k) { return a + g(k); }, 0),
+    assets: accsOf('asset').reduce(function (a, k) { return a + g(k); }, 0), liab: -accsOf('liab').reduce(function (a, k) { return a + g(k); }, 0) };   // баланстай ижил
 }
 function repMgmt(E, f, t) {   // Excel, хэвлэх
   var D = mrepData(E, f, t), p = D.p, rows = [], h = function (n) { rows.push({ name: n, v: '', _b: 1 }); }, l = function (n, v) { rows.push({ name: n, v: r0(v) }); };
@@ -77,6 +78,7 @@ function repMgmt(E, f, t) {   // Excel, хэвлэх
   h('Зардал юунд гарсан'); D.exps.forEach(function (x) { l(x[0], x[1]); });
   h('Мөнгө (өнөөдөр)'); D.moneyL.forEach(function (x) { l(x[0], x[1]); }); l('Нийт мөнгө', D.money);
   h('Авах, өгөх (өнөөдөр)'); l('Бидэнд өгөх', D.recv.left); l('Бидний өгөх', D.payb.left); if (D.loan > 0.5) l('Зээлийн үлдэгдэл', D.loan); l('Барааны үлдэгдэл (авсан үнээр)', D.stock);
+  h('Нийт хөрөнгө (өнөөдөр)'); l('Нийт хөрөнгө', D.assets); l('Хасах: өглөг, өр төлбөр', -D.liab); l('Цэвэр хөрөнгө', D.assets - D.liab);
   return { title: 'Удирдлагын тайлан', cols: [c('name', 'Үзүүлэлт'), m('v', 'Дүн')], rows: rows };
 }
 function mrepView() {
@@ -101,7 +103,10 @@ function mrepView() {
     '</div><div class="grid2">' +
       card('Бидэнд өгөх мөнгө', D.recv.top.map(function (x) { return ln(x[0], x[1]); }).join('') + ln('Нийт', D.recv.left, 'tot'), 'finance/recv', 'Авлага') +
       card('Бидний өгөх мөнгө', D.payb.top.map(function (x) { return ln(x[0], x[1]); }).join('') + ln('Нийт', D.payb.left, 'tot') + (D.loan > 0.5 ? ln('Зээлийн үлдэгдэл', D.loan) : ''), 'finance/payb', 'Өглөг') +
-    '</div>';
+    '</div>' +
+    card('Нийт хөрөнгө (өнөөдөр)', ln('Мөнгө', D.money) + ln('Авлага', D.recv.left) + ln('Барааны үлдэгдэл (авсан үнээр)', D.stock) +
+      (Math.abs(D.assets - D.money - D.recv.left - D.stock) >= 1 ? ln('Бусад хөрөнгө', D.assets - D.money - D.recv.left - D.stock) : '') +
+      ln('Нийт хөрөнгө', D.assets, 'tot') + ln('Хасах: өглөг, өр төлбөр', -D.liab) + ln('Цэвэр хөрөнгө', D.assets - D.liab, 'tot'), 'finance/balance', 'Санхүүгийн байдал');
 }
 
 // ═══════════ САРЫН ТАЙЛАН ═══════════
