@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261113a">
+<link rel="stylesheet" href="style.css?v=20261119m">
 <link rel="stylesheet" href="fin.css?v=20261119l">
 </head>
 <body class="bz-admin">
@@ -206,12 +206,12 @@
 <!-- Ажилчдад даалгавар -->
 <div class="sheet" id="taskSheet" onclick="if(event.target===this)closeSheet('taskSheet')">
   <div class="panel">
-    <h2>Ажилчдад даалгавар илгээх</h2>
+    <h2 id="tkHead">Ажилчдад даалгавар илгээх</h2><input type="hidden" id="tkKind" value="Даалгавар">
     <div class="row2">
       <div><label for="tkBiz">Дэлгүүр</label><select id="tkBiz" onchange="tkStaffOpts()"></select></div>
       <div><label for="tkStaff">Хэнд</label><select id="tkStaff"></select></div>
     </div>
-    <label for="tkTitle">Даалгавар</label><input id="tkTitle" placeholder="Жишээ: Сарын тооллого хийх, агуулахаас 32см 10ш авчрах">
+    <label for="tkTitle" id="tkTitleL">Даалгавар</label><input id="tkTitle" placeholder="Жишээ: Сарын тооллого хийх, агуулахаас 32см 10ш авчрах">
     <label for="tkDue">Хугацаа</label><input id="tkDue" type="date">
     <label for="tkNote">Тайлбар</label><input id="tkNote">
     <p class="muted" style="font-size:12.5px;margin-top:6px">Ажилтан өөрийн хуудсанд нэвтэрмэгц дээд хэсэгт харагдана, «Хийсэн» дарахад энд тэмдэглэгдэнэ.</p>
@@ -413,7 +413,7 @@
 <script src="ebrec.js?v=20261119j"></script>
 <script src="ads.js?v=20261104f"></script>
 <script src="boostbud.js?v=20261116k"></script>
-<script src="admin.js?v=20261119j"></script>
+<script src="admin.js?v=20261119m"></script>
 <script src="ebset.js?v=20261116e"></script>
 <script src="nav.js?v=20261119j"></script>
 <script src="mrep.js?v=20261119i"></script>

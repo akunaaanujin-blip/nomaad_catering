@@ -1595,15 +1595,19 @@ function renderTasks() {
   var box = $('taskBox');
   if (!box) { box = document.createElement('div'); box.id = 'taskBox'; var anchor = document.querySelector('#main .big-btns'); anchor.parentNode.insertBefore(box, anchor); }
   var open = myTasks.filter(function (t) { return t.status === 'Шинэ'; });
-  box.innerHTML = open.length ? '<div class="card task-card"><h2>Удирдлагаас ирсэн даалгавар (' + open.length + ')</h2><ul class="list">' + open.map(function (t) {
+  var nq = open.filter(function (t) { return t.kind === 'Асуулт'; }).length;
+  box.innerHTML = open.length ? '<div class="card task-card"><h2>' + (nq === open.length ? 'Удирдлагаас ирсэн асуулт' : nq ? 'Удирдлагаас ирсэн даалгавар, асуулт' : 'Удирдлагаас ирсэн даалгавар') + ' (' + open.length + ')</h2><ul class="list">' + open.map(function (t) {
     var late = t.due && t.due < todayStr();
     return '<li><span>' + esc(t.title) + (t.note ? '<small>' + esc(t.note) + '</small>' : '') + '<small>' + (t.due ? 'Хугацаа: ' + t.due + (late ? ' · хэтэрсэн' : '') : '') + ' · ' + esc(t.from || '') + '</small></span>' +
-      '<button class="mini" style="color:var(--green)" onclick="taskDone(\'' + t.id + '\')">Хийсэн</button></li>';
+      (t.kind === 'Асуулт' ? '<span class="tk-ans"><input id="tkA_' + t.id + '" placeholder="Хариултаа бичнэ үү"><button class="mini" style="color:var(--green)" onclick="taskDone(\'' + t.id + '\')">Хариулах</button></span>'
+        : '<button class="mini" style="color:var(--green)" onclick="taskDone(\'' + t.id + '\')">Хийсэн</button>') + '</li>';
   }).join('') + '</ul></div>' : '';
 }
 function taskDone(id) {
-  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'task_done', id: id, token: session.token }) })
-    .then(function (r) { return r.json(); }).then(function (d) { if (d && d.status === 'ok') { toast('Тэмдэглэгдлээ'); loadTasks(); } else toast('Алдаа гарлаа'); })
+  var a = $('tkA_' + id), ans = a ? a.value.trim() : '';
+  if (a && !ans) { toast('Хариултаа бичнэ үү'); a.focus(); return; }
+  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'task_done', id: id, answer: ans, token: session.token }) })
+    .then(function (r) { return r.json(); }).then(function (d) { if (d && d.status === 'ok') { toast(a ? 'Хариулт илгээгдлээ' : 'Тэмдэглэгдлээ'); loadTasks(); } else toast('Алдаа гарлаа'); })
     .catch(function () { toast('Интернэт холболтоо шалгана уу'); });
 }
 

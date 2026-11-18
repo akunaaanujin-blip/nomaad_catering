@@ -158,7 +158,25 @@ function refresh() {
     if (ok) { render(); toast('Шинэчлэгдлээ'); }
   });
 }
+// Харилцагчийн нэр нэг хэлбэртэй: «хятад», «Хятад », «ХЯТАД» → аль хэдийн байгаа нэг нэр (Харилцагчид жагсаалт, эс бөгөөс хамгийн олон хэрэглэсэн бичлэг).
+// Журнал, бараа захиалгад бичихийн өмнө автоматаар — өөр өөр бичсэнээс тооцоо салж гарахгүй.
+function partnerKey(n) { return String(n || '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+function canonPartner(n, biz) {
+  var k = partnerKey(n); if (!k) return n;
+  var best = null, cnt = {};
+  (partners || []).forEach(function (p) { if ((!biz || !p.biz || p.biz === biz) && partnerKey(p.name) === k && !best) best = p.name; });
+  if (best) return best;
+  (journal || []).forEach(function (e) { if (e.partner && partnerKey(e.partner) === k && (!biz || e.biz === biz)) cnt[e.partner] = (cnt[e.partner] || 0) + 1; });
+  Object.keys(cnt).forEach(function (w) { if (!best || cnt[w] > cnt[best]) best = w; });
+  return best || String(n).replace(/\s+/g, ' ').trim();
+}
+function canonBody(b) {
+  if (!b) return;
+  if (b.type === 'admin_journal') (b.entries || []).concat(b.entry ? [b.entry] : []).forEach(function (e) { if (e && e.partner) e.partner = canonPartner(e.partner, e.biz); });
+  if (b.type === 'admin_po' && b.po) { if (b.po.supplier) b.po.supplier = canonPartner(b.po.supplier, b.po.biz); if (b.po.cargoCo) b.po.cargoCo = canonPartner(b.po.cargoCo, b.po.biz); }
+}
 function post(body, cb) {
+  try { canonBody(body); } catch (e) {}
   var key = JSON.stringify(body);   // яг ижил хүсэлт явж байхад дахин илгээхгүй
   if (INFLIGHT[key]) { toast('Хадгалж байна — түр хүлээнэ үү'); return; }
   INFLIGHT[key] = 1;
@@ -1069,7 +1087,7 @@ function staffPage() {
   var tab = isOwner() ? state.staffTab || 'pay' : 'att';
   var tabs = '<div class="tabs" style="margin-bottom:10px">' + (isOwner() ? [['pay', 'Ажилчид, цалин'], ['att', 'Ирц, ажилласан цаг']] : [['att', 'Ирц, ажилласан цаг']]).map(function (t) {
     return '<button class="' + (tab === t[0] ? 'on' : '') + '" onclick="state.staffTab=\'' + t[0] + '\';render()">' + t[1] + '</button>'; }).join('') + '</div>';
-  var acts = '<button class="b-btn primary" onclick="openTask()">+ Даалгавар илгээх</button>' + (isOwner() ? '<a class="b-btn" href="register.html" target="_blank">+ Бүртгүүлэх хуудас</a>' : '');
+  var acts = '<button class="b-btn primary" onclick="openTask()">+ Даалгавар илгээх</button><button class="b-btn" onclick="openTask(\'Асуулт\')">+ Асуулт асуух</button>' + (isOwner() ? '<a class="b-btn" href="register.html" target="_blank">+ Бүртгүүлэх хуудас</a>' : '');
   return pageHead('Ажилчид', acts) + tabs + tasksCard() + (tab === 'att' ? attendView() : staffView('') + staffLinks() + delCodeCard());
 }
 // ── KPI: сарын борлуулалтын % → «KPI бонус» болгон цалинд («Шагнал» — хуучин нэр) ──
@@ -3165,14 +3183,17 @@ function tasksCard() {
   var open = tasks.filter(function (t) { return t.status === 'Шинэ'; }), done = tasks.filter(function (t) { return t.status === 'Хийсэн'; }).slice(-10).reverse();
   var row = function (t) {
     var late = t.status === 'Шинэ' && t.due && t.due < todayStr();
-    return '<tr><td>' + esc(BUSINESSES[t.biz] ? BUSINESSES[t.biz].name : t.biz) + '</td><td>' + esc(t.staffName) + '</td><td>' + esc(t.title) + (t.note ? '<br><small class="muted">' + esc(t.note) + '</small>' : '') + '</td>' +
+    return '<tr><td>' + esc(BUSINESSES[t.biz] ? BUSINESSES[t.biz].name : t.biz) + '</td><td>' + esc(t.staffName) + '</td><td>' + (t.kind === 'Асуулт' ? '<span class="tag b">Асуулт</span> ' : '') + esc(t.title) + (t.note ? '<br><small class="muted">' + esc(t.note) + '</small>' : '') + (t.answer ? '<br><b>Хариулт:</b> ' + esc(t.answer) : '') + '</td>' +
       '<td>' + esc(t.due || '') + (late ? ' <span class="tag r">хэтэрсэн</span>' : '') + '</td><td>' + (t.status === 'Хийсэн' ? '<span class="tag">Хийсэн · ' + esc(t.doneBy) + ' ' + esc(t.doneAt) + '</span>' : '<span class="tag b">Хүлээгдэж</span>') + '</td>' +
       '<td class="n">' + (t.status === 'Шинэ' ? '<button class="mini" onclick="cancelTask(\'' + t.id + '\')">Цуцлах</button>' : '') + '</td></tr>';
   };
-  return '<div class="card rep"><div class="rep-cap"><b>Ажилчдад илгээсэн даалгавар</b><span>' + open.length + ' хүлээгдэж байна</span></div><div class="scroll"><table class="rep-t"><tr><th>Дэлгүүр</th><th>Хэнд</th><th>Даалгавар</th><th>Хугацаа</th><th>Төлөв</th><th></th></tr>' +
+  return '<div class="card rep"><div class="rep-cap"><b>Ажилчдад илгээсэн даалгавар, асуулт</b><span>' + open.length + ' хүлээгдэж байна</span></div><div class="scroll"><table class="rep-t"><tr><th>Дэлгүүр</th><th>Хэнд</th><th>Даалгавар</th><th>Хугацаа</th><th>Төлөв</th><th></th></tr>' +
     (open.concat(done).map(row).join('') || '<tr><td colspan="6" class="muted">Даалгавар алга — «+ Даалгавар илгээх»</td></tr>') + '</table></div></div>';
 }
-function openTask() {
+function openTask(kind) {
+  kind = kind === 'Асуулт' ? 'Асуулт' : 'Даалгавар'; $('tkKind').value = kind;
+  $('tkHead').textContent = kind === 'Асуулт' ? 'Ажилтнаас асуух' : 'Ажилчдад даалгавар илгээх'; $('tkTitleL').textContent = kind === 'Асуулт' ? 'Асуулт' : 'Даалгавар';
+  $('tkTitle').placeholder = kind === 'Асуулт' ? 'Жишээ: 80902396 захиалгын мөнгийг Буухиа танд өгсөн үү?' : 'Жишээ: Сарын тооллого хийх, агуулахаас 32см 10ш авчрах';
   $('tkBiz').innerHTML = KEYS.map(function (k) { return '<option value="' + k + '"' + (k === (state.staffBiz !== 'all' ? state.staffBiz : state.biz) ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('');
   tkStaffOpts(); $('tkTitle').value = ''; $('tkDue').value = todayStr(); $('tkNote').value = '';
   openSheet('taskSheet');
@@ -3183,11 +3204,11 @@ function tkStaffOpts() {
     .map(function (s) { return '<option value="' + s.id + '">' + esc(full(s)) + '</option>'; }).join('');
 }
 function saveTask() {
-  var t = { biz: $('tkBiz').value, staffId: $('tkStaff').value, title: $('tkTitle').value.trim(), due: $('tkDue').value, note: $('tkNote').value.trim() };
-  if (!t.title) { toast('Даалгавраа бичнэ үү'); return; }
+  var t = { biz: $('tkBiz').value, staffId: $('tkStaff').value, title: $('tkTitle').value.trim(), due: $('tkDue').value, note: $('tkNote').value.trim(), kind: $('tkKind').value };
+  if (!t.title) { toast(t.kind === 'Асуулт' ? 'Асуултаа бичнэ үү' : 'Даалгавраа бичнэ үү'); return; }
   if (!API_URL) { var s = staff.filter(function (x) { return x.id === t.staffId; })[0]; t.id = 'T' + Date.now(); t.status = 'Шинэ'; t.staffName = s ? s.name : 'Бүх ажилтан'; t.created = todayStr();
     tasks.push(t); save('nb_demo_tasks', tasks); closeSheet('taskSheet'); render(); return; }
-  post({ type: 'admin_task', by: ownerName, task: t }, function (err) { if (err) { toast('Алдаа: ' + err); return; } closeSheet('taskSheet'); toast('Даалгавар илгээгдлээ — ажилтан нэвтрэхдээ харна'); refresh(); });
+  post({ type: 'admin_task', by: ownerName, task: t }, function (err) { if (err) { toast('Алдаа: ' + err); return; } closeSheet('taskSheet'); toast(t.kind === 'Асуулт' ? 'Асуулт илгээгдлээ — ажилтан хариулмагц энд харагдана' : 'Даалгавар илгээгдлээ — ажилтан нэвтрэхдээ харна'); refresh(); });
 }
 function cancelTask(id) {
   if (!confirm('Даалгаврыг цуцлах уу?')) return;

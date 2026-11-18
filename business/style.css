@@ -1825,3 +1825,7 @@ body.pos10 #saleSheet .cl1 .cl-dprice:not(:placeholder-shown){border-color:var(-
   #saleSheet .pv-paid{grid-template-columns:24px 1fr auto 30px}#saleSheet .pv-paid small{display:none}
   #saleSheet .pd-sum{font-size:34px}
 }
+/* Ажилтнаас асуух — хариулт бичих талбар */
+.task-card .tk-ans{display:flex;gap:6px;align-items:center;flex:1 1 240px;max-width:420px}
+.task-card .tk-ans input{flex:1;min-width:0;padding:8px 10px;font-size:14px}
+.task-card .list li{flex-wrap:wrap}
