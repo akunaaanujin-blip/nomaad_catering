@@ -131,15 +131,18 @@ function poView() {
   var rows = list.map(function (P) {
     var s = poStat(P, E), L = poShips(P, E), rq = poRecvQty(P, L), open = P.status === 'Захиалсан', its = P.items || [];
     var spec = { acc: ['1505'], tag: P.id, sign: 1, dir: 1, grp: 'cat', t: P.no + ' · ' + P.supplier };
-    var acts = '<button class="mini" title="Захиалсан барааны дэлгэцийн зураг" onclick="poImgs(\'' + P.id + '\')">Зураг</button>' + (open ? '<button class="mini" style="color:var(--accent)" onclick="openPoPay(\'' + P.id + '\',\'s\')">Төлбөр</button>' : '') +
-      (P.status !== 'Цуцалсан' ? '<button class="mini" onclick="openPoPay(\'' + P.id + '\',\'c\')">Карго</button>' : '') +
+    var draft = /^(Ноорог|Батлах)$/.test(P.status);
+    var acts = '<button class="mini" title="Захиалсан барааны дэлгэцийн зураг" onclick="poImgs(\'' + P.id + '\')">Зураг</button>' +
+      (draft ? (P.status === 'Батлах' ? '<button class="mini" style="color:var(--green)" onclick="poApprove(\'' + P.id + '\')">Батлах</button>' : '') +
+        '<button class="mini" onclick="openPo(\'' + P.id + '\')">' + (P.status === 'Ноорог' ? 'Бараа бөглөх' : 'Засах') + '</button><button class="mini" onclick="poCancel(\'' + P.id + '\')">Цуцлах</button>' : '') + (open ? '<button class="mini" style="color:var(--accent)" onclick="openPoPay(\'' + P.id + '\',\'s\')">Төлбөр</button>' : '') +
+      (P.status !== 'Цуцалсан' && !draft ? '<button class="mini" onclick="openPoPay(\'' + P.id + '\',\'c\')">Карго</button>' : '') +
       (open ? '<button class="mini" style="color:var(--green)" onclick="openPoRecv(\'' + P.id + '\')">Бараа ирсэн</button>' +
         '<button class="mini" onclick="openPo(\'' + P.id + '\')">Засах</button>' + (L.length ? '' : '<button class="mini" onclick="poCancel(\'' + P.id + '\')">Цуцлах</button>') : '');
     var shipTxt = L.map(function (x) {
       var c = x.cargoPre + x.cargoPost;
       return '<br><small class="muted">' + x.n + '-р ирэлт ' + esc(x.date.slice(5)) + ' · ' + Object.keys(x.items).length + ' бараа · ' + (c ? 'карго ' + mny(c) : 'карго тооцоогүй') + '</small>';
     }).join('');
-    var st = P.status === 'Ирсэн' ? '<span class="tag">Ирсэн ' + esc(P.recvDate || '') + '</span>' : P.status === 'Цуцалсан' ? '<span class="tag r">Цуцалсан</span>' :
+    var st = P.status === 'Ноорог' ? '<span class="tag">Ноорог — зургаас бараа бөглөнө</span>' : P.status === 'Батлах' ? '<span class="tag b">Батлах хүлээгдэж</span>' : P.status === 'Ирсэн' ? '<span class="tag">Ирсэн ' + esc(P.recvDate || '') + '</span>' : P.status === 'Цуцалсан' ? '<span class="tag r">Цуцалсан</span>' :
       '<span class="tag b">' + (L.length ? 'Хэсэгчлэн ирсэн' : s.paid ? 'Төлбөр хийгдсэн' : 'Захиалсан') + '</span>';
     return '<tr' + (P.status === 'Цуцалсан' ? ' style="opacity:.55"' : '') + '><td><b>' + esc(poTitle(P)) + '</b><br><small class="muted">' + esc(P.no) + ' · ' + esc(P.date) + '</small></td><td style="min-width:110px">' + esc(P.supplier) + (P.cargoCo ? '<br><small class="muted">Карго: ' + esc(P.cargoCo) + '</small>' : '') + '</td>' +
       '<td style="white-space:normal;min-width:180px">' + (poIsAsset(P) ? '<small class="muted">Үндсэн хөрөнгө</small><br>' : '') + esc(its.map(function (i) { return i.name + ' × ' + (rq[i.name] ? round2(rq[i.name]) + '/' : '') + i.qty; }).join(', ')) + shipTxt + '</td>' +
@@ -149,7 +152,7 @@ function poView() {
       '<td class="n">' + (Math.abs(s.bal) >= 1 ? dl(Object.assign({}, spec, { dir: 0, t: spec.t + ' — замд яваа (1505)' }), mny(s.bal)) : '') + '</td>' +
       '<td style="white-space:nowrap">' + st + '</td><td class="n"><div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;min-width:150px">' + acts + '</div></td></tr>';
   }).join('');
-  return poInCard() + '<p class="hint">1) «+ Шинэ захиалга» — ямар бараа, хэдийг, хэдэн юаниар захиалсан. 2) Нийлүүлэгчид төлсөн мөнгийг «Банкны хуулга»-аас энэ захиалгаар тулгана — бараа ирэх хүртэл «Замд» баганад авлага болж харагдана. ' +
+  return poInCard() + '<p class="hint">0) Яаравчлах бол «+ Шинэ захиалга» → зөвхөн дэлгэцийн зураг хавсаргаад хадгална — «Ноорог» болно; Болормаа зургаас бараа, тоо, үнийг бөглөж, та «Батлах» дарна. 1) «+ Шинэ захиалга» — ямар бараа, хэдийг, хэдэн юаниар захиалсан. 2) Нийлүүлэгчид төлсөн мөнгийг «Банкны хуулга»-аас энэ захиалгаар тулгана — бараа ирэх хүртэл «Замд» баганад авлага болж харагдана. ' +
     '3) Бараа ирэх бүрт «Бараа ирсэн» — ирсэн тоогоо оруулна (хэсэг хэсгээр ирж болно); ирсэн барааны хэсэг нь «Замд»-аас хасагдаж үлдэгдэлд орно. ' +
     '4) Каргоны мөнгийг бараа ирсний дараа хуулгаас «… ирэлтийн карго»-оор тулгана (эсвэл «Карго» товч) — тэр ирэлтийн барааны өртөгт нэмэгдэнэ. ' +
     'Төрлийг «Үндсэн хөрөнгө» гэж сонгосон захиалга ирэхэд (ажилтан бүртгэсэн ч) үлдэгдэлд биш, «Үндсэн хөрөнгө»-д орно.</p>' + poLowCard() +
@@ -190,7 +193,8 @@ function msFilter(q) {
 var pqIt = [];
 function openPo(id, preset) {   // preset — «Захиалах» бараанаас үүсгэсэн ноорог { items, supplier, note }
   var P = id ? poById(id) : null;
-  pqIt = P ? (P.items || []).map(function (i) { return { name: i.name, qty: i.qty, price: i.price, cn: i.cn || '' }; }) : preset && preset.items ? preset.items : [{ name: '', qty: '', price: '', cn: '' }];
+  pqIt = P && (P.items || []).length ? (P.items || []).map(function (i) { return { name: i.name, qty: i.qty, price: i.price, cn: i.cn || '' }; }) : preset && preset.items ? preset.items : [{ name: '', qty: '', price: '', cn: '' }];
+  var draft = P && /^(Ноорог|Батлах)$/.test(P.status);
   var shipped = P && poShips(P).length;
   gOpen('<h2>' + (P ? 'Захиалга засах · ' + esc(P.no) : 'Шинэ бараа захиалга') + '</h2>' +
     '<label for="pqKind">Төрөл</label><select id="pqKind" onchange="pqRender()"' + (shipped ? ' disabled title="Ирэлт бүртгэгдсэн тул солихгүй"' : '') + '>' + (P || preset ? '' : '<option value="">Сонгоно уу</option>') +
@@ -233,11 +237,15 @@ function pqTot() {
 function savePo(id) {
   var items = pqIt.filter(function (i) { return String(i.name).trim() && Number(i.qty) > 0; }).map(function (i) { return { name: String(i.name).trim(), qty: Number(i.qty), price: Number(i.price) || 0, cn: Number(i.cn) || 0 }; });
   var x = { biz: state.biz, supplier: $('pqSup').value.trim(), date: $('pqDate').value, cur: $('pqCur').value, cargoCo: $('pqCargo').value.trim(), note: (($('pqName').value.trim() ? '[Нэр: ' + $('pqName').value.trim().replace(/[\[\]]/g, '').slice(0, 60) + '] ' : '') + $('pqNote').value.trim()).trim(), items: items };
-  var kind = $('pqKind').value;
+  var kind = $('pqKind').value, nImg = (($('pqImg') || {}).files || []).length;
+  if (!items.length && nImg && !id) {   // зөвхөн зураг — ноорог: Болормаа зургаас бараа бөглөж, эзэн батална
+    x.draft = 1; if (!kind) kind = 'goods'; if (x.supplier.length < 2) x.supplier = 'Зургаас';
+  }
+  var P0 = id ? poById(id) : null; if (P0 && P0.status === 'Ноорог' && !items.length) x.draft = 1;
   if (!kind) { toast('Төрлөө сонгоно уу: дэлгүүрийн бараа эсвэл үндсэн хөрөнгө'); return; }
   if (kind === 'asset') x.note = (PO_FA + ' ' + x.note).trim();   // нэр нь дээр нэмэгдсэн
   if (x.supplier.length < 2) { toast('Нийлүүлэгчийн нэрийг бичнэ үү'); return; }
-  if (!items.length) { toast('Дор хаяж нэг бараа, тоотой нь бичнэ үү'); return; }
+  if (!items.length && !x.draft) { toast('Дор хаяж нэг бараа бичнэ үү — эсвэл зөвхөн зураг хавсаргавал ноорог болж хадгалагдана'); return; }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(x.date)) { toast('Огноо оруулна уу'); return; }
   save('nb_cur', x.cur); if (x.cargoCo) save('nb_cargoco', x.cargoCo);
   if (!API_URL) {
@@ -299,6 +307,11 @@ function poImgAdd(id) {
   if (!files.length) { toast('Зураг сонгоно уу'); return; }
   toast('Илгээж байна…');
   poImgUpload(id, files, function (ok, bad) { toast(ok + ' зураг нэмэгдлээ' + (bad ? ', ' + bad + ' амжилтгүй (6-аас олон эсвэл хэт том)' : '')); poImgs(id); });
+}
+function poApprove(id) {
+  var P = poById(id); if (!P) return;
+  if (!confirm(P.no + ' · ' + poTitle(P) + '\n\n' + (P.items || []).map(function (i) { return i.name + ' × ' + i.qty + ' @ ' + i.price; }).join('\n') + '\n\nЗургаас бөглөсөн энэ захиалгыг батлах уу?')) return;
+  poSetStatus(id, 'Захиалсан', '', function () { toast('Батлагдлаа'); });
 }
 function poCancel(id) {
   var P = poById(id), s = poStat(P);
