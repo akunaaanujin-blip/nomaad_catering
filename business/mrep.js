@@ -70,15 +70,28 @@ function mrepData(E, f, t) {
   var exps = p.exps.slice().sort(function (x, y) { return y.v - x.v; }).map(function (x) { return [EXP_SHORT[x.code] || x.name, x.v]; });
   var items = repSalesBy(R(), state.biz, f, t, 'item', function (x) { return !isNonGoods(x.item); }).rows.slice().sort(function (x, y) { return y.net - x.net; }).slice(0, 5).map(function (x) { return [x.key, x.net]; });
   return { p: p, money: cash.reduce(function (a, k) { return a + g(k); }, 0), moneyL: moneyL, exps: exps, items: items, stock: g('1404'), recv: mrepDebt(E, 'r'), payb: mrepDebt(E, 'p'), loan: -loanCodes().reduce(function (a, k) { return a + g(k); }, 0),
-    assets: accsOf('asset').reduce(function (a, k) { return a + g(k); }, 0), liab: -accsOf('liab').reduce(function (a, k) { return a + g(k); }, 0) };   // баланстай ижил
+    nw: mrepWorth(E, td, b) };
+}
+// Нийт хөрөнгө: дансны үлдэгдэл бүрээр (санхүүгийн байдлын тайлантай ижил) — нэг ч данс орхигдохгүй.
+// Аяллын дэлгүүрт Cozy-ийн посын мөнгийг мөнгө, өглөг хоёроос хасна (сарын тайлантай ижил — нэг мөнгө хоёр компанид тоологдохгүй).
+function mrepWorth(E, td, b) {
+  var g = function (k) { return b[k] || 0; }, pos = state.biz === POS_SHARE.to ? mrPos(E, td, state.biz) : 0;
+  var nm = function (k) { return k === '1201' ? 'Авлага (бусдаас авах)' : MR_ACC[k] || accName(k); };
+  var money = cashCodes().reduce(function (a, k) { return a + g(k); }, 0) - pos;
+  var A = [['Мөнгө (касс, данснууд)', money]].concat(ACCOUNTS.filter(function (a) { return a[2] === 'asset' && a[3] !== 'cash'; }).map(function (a) { return [nm(a[0]), g(a[0])]; }));
+  var L = accsOf('liab').map(function (k) { return [nm(k), -g(k) - (k === '3101' ? pos : 0)]; });
+  var live = function (x) { return Math.abs(x[1]) >= 1; }, s = function (X) { return X.reduce(function (a, x) { return a + x[1]; }, 0); };
+  A = A.filter(live); L = L.filter(live);
+  return { A: A, L: L, a: s(A), l: s(L) };
 }
 function repMgmt(E, f, t) {   // Excel, хэвлэх
   var D = mrepData(E, f, t), p = D.p, rows = [], h = function (n) { rows.push({ name: n, v: '', _b: 1 }); }, l = function (n, v) { rows.push({ name: n, v: r0(v) }); };
+  h('Нийт хөрөнгө (өнөөдөр)'); D.nw.A.forEach(function (x) { l(x[0], x[1]); }); l('Нийт хөрөнгө', D.nw.a);
+  D.nw.L.forEach(function (x) { l('Хасах: ' + x[0], -x[1]); }); l('Цэвэр хөрөнгө', D.nw.a - D.nw.l);
   h('Ашиг'); l('Борлуулалт', p.net); l('Барааны өртөг', -p.cogs); l('Зардал', -p.expT); if (p.other) l('Бусад орлого', p.other); l('Ашиг', p.profit);
   h('Зардал юунд гарсан'); D.exps.forEach(function (x) { l(x[0], x[1]); });
   h('Мөнгө (өнөөдөр)'); D.moneyL.forEach(function (x) { l(x[0], x[1]); }); l('Нийт мөнгө', D.money);
   h('Авах, өгөх (өнөөдөр)'); l('Бидэнд өгөх', D.recv.left); l('Бидний өгөх', D.payb.left); if (D.loan > 0.5) l('Зээлийн үлдэгдэл', D.loan); l('Барааны үлдэгдэл (авсан үнээр)', D.stock);
-  h('Нийт хөрөнгө (өнөөдөр)'); l('Нийт хөрөнгө', D.assets); l('Хасах: өглөг, өр төлбөр', -D.liab); l('Цэвэр хөрөнгө', D.assets - D.liab);
   return { title: 'Удирдлагын тайлан', cols: [c('name', 'Үзүүлэлт'), m('v', 'Дүн')], rows: rows };
 }
 function mrepView() {
@@ -92,7 +105,9 @@ function mrepView() {
   var top = D.exps.slice(0, 6), rest = D.exps.slice(6).reduce(function (a, x) { return a + x[1]; }, 0);
   var sent = 'Энэ хугацаанд <b>' + mny(p.net) + '</b>-ийн борлуулалт хийж, <b>' + mny(spent) + '</b> зарцуулаад ' +
     (p.profit >= 0 ? '<b class="pos">' + mny(p.profit) + '</b> ашигтай' : '<b class="neg">' + mny(-p.profit) + '</b> алдагдалтай') + ' ажилласан. Өнөөдөр данснуудад <b>' + mny(D.money) + '</b> байна.';
-  return '<div class="fn-kpis">' + kp('Борлуулалт', p.net, 'pos') + kp('Зарцуулсан', spent, 'neg') + kp(p.profit >= 0 ? 'Ашиг' : 'Алдагдал', Math.abs(p.profit), p.profit >= 0 ? 'pos' : 'neg') + kp('Мөнгө (өнөөдөр)', D.money) + '</div>' +
+  var W = D.nw, worth = card('Нийт хөрөнгө (өнөөдөр)', W.A.map(function (x) { return ln(x[0], x[1]); }).join('') + ln('Нийт хөрөнгө', W.a, 'tot') +
+    W.L.map(function (x) { return ln('Хасах: ' + x[0], -x[1]); }).join('') + ln('Цэвэр хөрөнгө', W.a - W.l, 'tot'), 'finance/balance', 'Санхүүгийн байдал');
+  return worth + '<div class="fn-kpis">' + kp('Борлуулалт', p.net, 'pos') + kp('Зарцуулсан', spent, 'neg') + kp(p.profit >= 0 ? 'Ашиг' : 'Алдагдал', Math.abs(p.profit), p.profit >= 0 ? 'pos' : 'neg') + kp('Мөнгө (өнөөдөр)', D.money) + '</div>' +
     '<div class="card"><p class="mr-s">' + sent + '</p></div>' +
     '<div class="grid2">' +
       card('Ашиг хэрхэн гарсан', ln('Борлуулалт', p.net) + ln('Барааны өртөг', -p.cogs) + ln('Зардал', -p.expT) + (p.other ? ln('Бусад орлого', p.other) : '') + ln('Ашиг', p.profit, 'tot'), 'finance/months', '12 сарын дүн') +
@@ -103,10 +118,7 @@ function mrepView() {
     '</div><div class="grid2">' +
       card('Бидэнд өгөх мөнгө', D.recv.top.map(function (x) { return ln(x[0], x[1]); }).join('') + ln('Нийт', D.recv.left, 'tot'), 'finance/recv', 'Авлага') +
       card('Бидний өгөх мөнгө', D.payb.top.map(function (x) { return ln(x[0], x[1]); }).join('') + ln('Нийт', D.payb.left, 'tot') + (D.loan > 0.5 ? ln('Зээлийн үлдэгдэл', D.loan) : ''), 'finance/payb', 'Өглөг') +
-    '</div>' +
-    card('Нийт хөрөнгө (өнөөдөр)', ln('Мөнгө', D.money) + ln('Авлага', D.recv.left) + ln('Барааны үлдэгдэл (авсан үнээр)', D.stock) +
-      (Math.abs(D.assets - D.money - D.recv.left - D.stock) >= 1 ? ln('Бусад хөрөнгө', D.assets - D.money - D.recv.left - D.stock) : '') +
-      ln('Нийт хөрөнгө', D.assets, 'tot') + ln('Хасах: өглөг, өр төлбөр', -D.liab) + ln('Цэвэр хөрөнгө', D.assets - D.liab, 'tot'), 'finance/balance', 'Санхүүгийн байдал');
+    '</div>';
 }
 
 // ═══════════ САРЫН ТАЙЛАН ═══════════
