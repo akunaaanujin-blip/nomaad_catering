@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v8.11 (ажилтнаас асуух: даалгаврын «Асуулт» төрөл, ажилтан хариу бичнэ — Даалгавар sheet «Төрөл», «Хариулт»; банкны мессеж: «Утсыг холбох» — 10 минутын дотор ирсэн түлхүүрийг авна; мессежийн түлхүүрийн зай/шинэ мөрийг тоохгүй, буруу түлхүүрийг оношлогоонд; ажилтанд санамж: admin_setting notice, products → notices; Хаан банкны мессежийн бодит загвар; банкны мэдэгдлээр автоматаар оруулах: шилжүүлгийн баримтын и-мэйл bankMailScan, утаснаас дамжуулсан мессеж bank_sms, тохиргоо admin_setting bankauto, хуулгатай нийлүүлэх admin_bank updates.fix; admin_read: poLog — ажилтны шийдэгдсэн бүртгэл; Буухиагийн сайтаас устгасан хүргэлтийг дахин илгээх: eb_unlink; Буухиа руу үнийн дүнтэй / дүнгүй илгээх: noAmt, «Буухиа дүн» багана; ажилтны «Бараа ирсэн»-д каргоны дүн; «Бараа ирсэн», карго — удирдлага батална: staff_po, staff_po_in, admin_po inboxId; буухиа: Cozy-ийн бүртгэлтэй хүргэлт NOMAAD-д харагдахгүй — EB_HOME; засах: барааны хөдөлгөөн admin_stock editId, зарлага admin_record editId, харилцагч admin_partner editId / delId; цуцалсан/буцаасан захиалгын бараа үлдэгдэлд зөвхөн «Бараа буцаж ирсэн»-ээр — буухиа цуцлахад шууд нэмэхгүй; Boost төсөв: удирдлага BOOST_BUD-д гаргана, ажилтан boost_bud-аар төсөв + задаргаагаа харна; хуучин JS хувилбарын хүсэлтийг бичихгүй — MIN_JS; ажилтны нэвтрэлт 11-02-оос өмнөх шигээ: нэвтрэх нэр + код, нийтлэг эрх зөвшөөрнө, 4 оронтой код, PIN албадан солихгүй; Boost нэхэмжлэх: олон компанийн мөр, Meta баримтын зураг «Boost баримт», admin_boost; буухиа руу илгээхэд дүүрэг/сум заавал биш; захиалгын хүргэлтийн төлбөр, хөнгөлөлт засахад борлуулалтын мөр дагана — orderSyncAdj; удирдлагаас хүргэлт/хөнгөлөлт засах, «Хүргэлтийн компани» багана; банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v8.12 (бараа захиалгад дэлгэцийн зураг хавсаргах — «Захиалгын зураг» хуудас; ажилтнаас асуух: даалгаврын «Асуулт» төрөл, ажилтан хариу бичнэ — Даалгавар sheet «Төрөл», «Хариулт»; банкны мессеж: «Утсыг холбох» — 10 минутын дотор ирсэн түлхүүрийг авна; мессежийн түлхүүрийн зай/шинэ мөрийг тоохгүй, буруу түлхүүрийг оношлогоонд; ажилтанд санамж: admin_setting notice, products → notices; Хаан банкны мессежийн бодит загвар; банкны мэдэгдлээр автоматаар оруулах: шилжүүлгийн баримтын и-мэйл bankMailScan, утаснаас дамжуулсан мессеж bank_sms, тохиргоо admin_setting bankauto, хуулгатай нийлүүлэх admin_bank updates.fix; admin_read: poLog — ажилтны шийдэгдсэн бүртгэл; Буухиагийн сайтаас устгасан хүргэлтийг дахин илгээх: eb_unlink; Буухиа руу үнийн дүнтэй / дүнгүй илгээх: noAmt, «Буухиа дүн» багана; ажилтны «Бараа ирсэн»-д каргоны дүн; «Бараа ирсэн», карго — удирдлага батална: staff_po, staff_po_in, admin_po inboxId; буухиа: Cozy-ийн бүртгэлтэй хүргэлт NOMAAD-д харагдахгүй — EB_HOME; засах: барааны хөдөлгөөн admin_stock editId, зарлага admin_record editId, харилцагч admin_partner editId / delId; цуцалсан/буцаасан захиалгын бараа үлдэгдэлд зөвхөн «Бараа буцаж ирсэн»-ээр — буухиа цуцлахад шууд нэмэхгүй; Boost төсөв: удирдлага BOOST_BUD-д гаргана, ажилтан boost_bud-аар төсөв + задаргаагаа харна; хуучин JS хувилбарын хүсэлтийг бичихгүй — MIN_JS; ажилтны нэвтрэлт 11-02-оос өмнөх шигээ: нэвтрэх нэр + код, нийтлэг эрх зөвшөөрнө, 4 оронтой код, PIN албадан солихгүй; Boost нэхэмжлэх: олон компанийн мөр, Meta баримтын зураг «Boost баримт», admin_boost; буухиа руу илгээхэд дүүрэг/сум заавал биш; захиалгын хүргэлтийн төлбөр, хөнгөлөлт засахад борлуулалтын мөр дагана — orderSyncAdj; удирдлагаас хүргэлт/хөнгөлөлт засах, «Хүргэлтийн компани» багана; банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -177,6 +177,7 @@ function route(data) {
   if (data.type === 'admin_loan') return isAdmin(data) ? adminLoan(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_pf') return data._who && data._who.role === 'Эзэн' ? adminPf(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_po') return isAdmin(data) ? adminPo(data) : { status: 'error', error: 'auth' };
+  if (data.type === 'admin_po_img') return isAdmin(data) ? adminPoImg(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_digest') return isAdmin(data) ? adminDigest(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_audit') return isAdmin(data) ? adminAudit(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_restore') return isAdmin(data) ? adminRestore(data) : { status: 'error', error: 'auth' };
@@ -187,7 +188,7 @@ function route(data) {
 // Удирдлагын бүх бичилт, захиалга, тооллого: хэн · хэзээ · юу (амжилттай болсныг л). Нууц утга (түлхүүр, код, нууц үг) бичигдэхгүй.
 // Ажилтны борлуулалт, зарлагын мөр өөрөө ажилтан, цагтай тул энд давхар бичихгүй.
 const SHEET_AUDIT = 'Түүх', AUDIT_HEAD = ['Цаг', 'Хэн', 'Компани', 'Үйлдэл', 'Тайлбар', 'Төрөл', 'ID', 'Дэлгэрэнгүй'];
-const AUDIT_SKIP = { admin_logout: 1, bank_sms: 1, boost_img: 1, staff_pin: 1, register: 1, admin_login: 1, record_receipt: 1, barcode_set: 1, admin_backup: 1, admin_audit: 1, admin_restore: 0 };
+const AUDIT_SKIP = { admin_po_img: 1, admin_logout: 1, bank_sms: 1, boost_img: 1, staff_pin: 1, register: 1, admin_login: 1, record_receipt: 1, barcode_set: 1, admin_backup: 1, admin_audit: 1, admin_restore: 0 };
 function auditSheet() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   let sh = ss.getSheetByName(SHEET_AUDIT);
@@ -284,7 +285,7 @@ function cacheKeysFor(d) {
   if (CACHE_READ[d.type]) return null;
   if (d.type === 'admin_eb' && d.op !== 'send' && d.op !== 'del' && d.op !== 'other' && d.op !== 'unlink') return null;
   if (d.type === 'admin_boost' && !d.edit) return null;   // зураг унших
-  if (d.type === 'boost_img') return null;   // төлөв татах — бичвэл ebuuhia() өөрөө кэш цэвэрлэнэ
+  if (d.type === 'boost_img' || d.type === 'admin_po_img') return null;   // зураг — үндсэн өгөгдлийн кэшэд нөлөөгүй   // төлөв татах — бичвэл ebuuhia() өөрөө кэш цэвэрлэнэ
   return CACHE_MAP[d.type] || CACHE_ALL;   // мэдэгдэхгүй бичилт (он хаах г.м) — бүгдийг
 }
 const CACHE_OFF = {};   // 2026-11-01: нөөцийн кэш (stk, mov) дахин асаасан — бичилт бүр cacheKeysFor-оор цэвэрлэнэ.  Хуучин: «ТҮР УНТРААСАН:   // ТҮР УНТРААСАН: нөөцийн кэш (сайжруулалт дуустал) — дахин асаахдаа энэ жагсаалтаас хасна
@@ -314,7 +315,7 @@ function adminWho(data) {
   try { return JSON.parse(v); } catch (e) { return null; }
 }
 // Менежер: зөвхөн өөрийн дэлгүүрийн борлуулалт, бараа, захиалга, банк, кассын баримт. Цалин, ажилчид, тохиргоо, зээл, удирдлагын санхүү — эзэнд.
-const MGR_TYPES = { admin_read: 1, admin_order: 1, admin_stock: 1, admin_product: 1, admin_bank: 1, admin_journal: 1, admin_partner: 1, admin_po: 1,
+const MGR_TYPES = { admin_read: 1, admin_order: 1, admin_stock: 1, admin_product: 1, admin_bank: 1, admin_journal: 1, admin_partner: 1, admin_po: 1, admin_po_img: 1,
                     admin_task: 1, admin_reminder: 1, admin_record: 1, admin_import_cozy: 1, admin_setting: 1, admin_eb: 1, admin_boost: 1 };
 function mgrCan(who, b) { b = String(b || ''); return who.biz === 'all' ? (!!BIZ_NAMES[b] && b !== 'mgmt') : staffIn(who, b); }
 function mgrGuard(d, who) {
@@ -349,6 +350,7 @@ function mgrGuard(d, who) {
     const pid = d.statusId || d.updateId; if (pid) { const p = byId(poRows(), pid); if (!p || !ok(p.biz)) return 'role'; }
     return !d.po || ok(d.po.biz) ? '' : 'role';
   }
+  if (t === 'admin_po_img') { const p = byId(poRows(), d.poId); return p && ok(p.biz) ? '' : 'role'; }
   if (t === 'admin_task') {
     if (d.cancelId) { const k = byId(taskRows(), d.cancelId); return k && ok(k.biz) ? '' : 'role'; }
     return ok((d.task || {}).biz) ? '' : 'role';
@@ -2230,6 +2232,31 @@ function adminPo(d) {
   const n = rows.filter(function (y) { return y.biz === x.biz; }).length + 1, no = 'ЗХ-' + ('000' + n).slice(-4), id = 'PO' + Date.now();
   sh.appendRow([id, no].concat(vals, ['Захиалсан', '', String(x.note || '').slice(0, 200), Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')]));
   return { status: 'ok', id: id, no: no };
+}
+
+// ── Бараа захиалгын зураг (захиалсан барааны дэлгэцийн зураг) — Boost-ийн адил Sheet-д 45,000 тэмдэгтээр хувааж хадгална ──
+const SHEET_POIMG = 'Захиалгын зураг', POIMG_MAX = 6;   // нэг захиалгад 6 хүртэл зураг
+function poImgSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_POIMG);
+  if (!sh) { sh = ss.insertSheet(SHEET_POIMG); sh.appendRow(['Захиалга', 'Огноо', 'biz', 'Хэн', 'Хэсэг', 'Зураг']); sh.setFrozenRows(1); }
+  return sh;
+}
+function adminPoImg(d) {
+  const id = String(d.poId || ''), p = poRows().filter(function (x) { return x.id === id; })[0];
+  if (!p) return { status: 'error', error: 'not_found' };
+  const sh = poImgSheet(), last = sh.getLastRow();
+  const v = last >= 2 ? sh.getRange(2, 1, last - 1, Math.min(sh.getLastColumn(), 5 + BSTIMG_MAX)).getValues().filter(function (r) { return String(r[0]) === id; }) : [];
+  if (d.get) return { status: 'ok', imgs: v.map(function (r) { return { at: String(r[1]), img: r.slice(5, 5 + (Number(r[4]) || 1)).join('') }; }) };
+  const img = String(d.img || '');
+  if (!/^data:image\/(jpeg|png|webp);base64,/.test(img)) return { status: 'error', error: 'fields' };
+  if (v.length >= POIMG_MAX) return { status: 'error', error: 'max' };
+  const parts = []; for (let i = 0; i < img.length; i += BSTIMG_CHUNK) parts.push(img.slice(i, i + BSTIMG_CHUNK));
+  if (parts.length > BSTIMG_MAX) return { status: 'error', error: 'size' };
+  if (sh.getMaxColumns() < 5 + parts.length) sh.insertColumnsAfter(sh.getMaxColumns(), 5 + parts.length - sh.getMaxColumns());
+  const who = d._who || {};
+  sh.getRange(last + 1, 1, 1, 5 + parts.length).setValues([[id, Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), p.biz, String(who.name || who.id || 'Удирдлага').slice(0, 40), parts.length].concat(parts)]);
+  return { status: 'ok', n: v.length + 1 };
 }
 
 // ═══════════ АЖИЛТНЫ «БАРАА ИРСЭН», КАРГО — удирдлага батална ═══════════

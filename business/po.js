@@ -131,7 +131,7 @@ function poView() {
   var rows = list.map(function (P) {
     var s = poStat(P, E), L = poShips(P, E), rq = poRecvQty(P, L), open = P.status === 'Захиалсан', its = P.items || [];
     var spec = { acc: ['1505'], tag: P.id, sign: 1, dir: 1, grp: 'cat', t: P.no + ' · ' + P.supplier };
-    var acts = (open ? '<button class="mini" style="color:var(--accent)" onclick="openPoPay(\'' + P.id + '\',\'s\')">Төлбөр</button>' : '') +
+    var acts = '<button class="mini" title="Захиалсан барааны дэлгэцийн зураг" onclick="poImgs(\'' + P.id + '\')">Зураг</button>' + (open ? '<button class="mini" style="color:var(--accent)" onclick="openPoPay(\'' + P.id + '\',\'s\')">Төлбөр</button>' : '') +
       (P.status !== 'Цуцалсан' ? '<button class="mini" onclick="openPoPay(\'' + P.id + '\',\'c\')">Карго</button>' : '') +
       (open ? '<button class="mini" style="color:var(--green)" onclick="openPoRecv(\'' + P.id + '\')">Бараа ирсэн</button>' +
         '<button class="mini" onclick="openPo(\'' + P.id + '\')">Засах</button>' + (L.length ? '' : '<button class="mini" onclick="poCancel(\'' + P.id + '\')">Цуцлах</button>') : '');
@@ -204,6 +204,7 @@ function openPo(id, preset) {   // preset — «Захиалах» бараан�
     '<div id="pqItems"></div><button class="b-btn" style="margin-top:6px" onclick="pqIt.push({name:\'\',qty:\'\',price:\'\',cn:\'\'});pqRender()">+ Мөр нэмэх</button>' +
     '<p id="pqTot" style="margin-top:8px"></p>' +
     '<label for="pqNote">Тэмдэглэл</label><input id="pqNote">' +
+    '<label for="pqImg">Захиалсан барааны зураг (дэлгэцийн зураг)</label><input id="pqImg" type="file" accept="image/*" multiple><small class="muted">1688 / Taobao-ийн захиалгын дэлгэцийн зураг — 6 хүртэл. Хадгалахад хамт илгээгдэнэ.</small>' +
     '<button class="btn" onclick="savePo(' + (P ? '\'' + P.id + '\'' : '') + ')">Хадгалах</button><button class="btn ghost" onclick="gClose()">Болих</button>');
   $('pqSup').value = P ? P.supplier : preset ? preset.supplier || '' : ''; $('pqDate').value = P ? P.date : todayStr(); $('pqCur').value = P ? P.cur : load('nb_cur', 'CNY');
   $('pqCargo').value = P ? P.cargoCo : load('nb_cargoco', ''); $('pqNote').value = P ? poNoteText(P) : preset ? preset.note || '' : ''; $('pqName').value = P ? poNameOwn(P) : '';
@@ -246,7 +247,58 @@ function savePo(id) {
     else { x.id = 'PO' + Date.now(); x.no = 'ЗХ-' + ('000' + (window.pos.filter(function (p) { return p.biz === x.biz; }).length + 1)).slice(-4); x.status = 'Захиалсан'; window.pos.push(x); }
     save('nb_demo_pos', window.pos); gClose(); render(); toast('Хадгалагдлаа'); return;
   }
-  post({ type: 'admin_po', po: x, updateId: id || undefined }, function (err, d) { if (err) { toast('Алдаа: ' + err); return; } gClose(); toast((d.no || '') + ' хадгалагдлаа'); refresh(); });
+  var files = [].slice.call(($('pqImg') || {}).files || []).slice(0, 6);
+  post({ type: 'admin_po', po: x, updateId: id || undefined }, function (err, d) {
+    if (err) { toast('Алдаа: ' + err); return; }
+    gClose(); toast((d.no || '') + ' хадгалагдлаа' + (files.length ? ' · зураг илгээж байна…' : ''));
+    if (!files.length) { refresh(); return; }
+    poImgUpload(d.id || id, files, function (ok, bad) { toast((d.no || '') + ': ' + ok + ' зураг хадгалагдлаа' + (bad ? ', ' + bad + ' амжилтгүй' : '')); refresh(); });
+  });
+}
+// ── Захиалгын зураг: жижигрүүлээд (1280px, JPEG) нэг нэгээр илгээнэ ──
+function poImgShrink(file, cb) {
+  var r = new FileReader();
+  r.onload = function () {
+    var im = new Image();
+    im.onload = function () {
+      var k = Math.min(1, 1280 / Math.max(im.width, im.height)), c = document.createElement('canvas');
+      c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      cb(c.toDataURL('image/jpeg', 0.72));
+    };
+    im.onerror = function () { cb(''); };
+    im.src = r.result;
+  };
+  r.onerror = function () { cb(''); };
+  r.readAsDataURL(file);
+}
+function poImgUpload(poId, files, done) {
+  var ok = 0, bad = 0, i = 0;
+  (function next() {
+    if (i >= files.length) { done(ok, bad); return; }
+    poImgShrink(files[i++], function (img) {
+      if (!img || !API_URL) { bad++; next(); return; }
+      post({ type: 'admin_po_img', poId: poId, img: img }, function (err) { if (err) bad++; else ok++; next(); });
+    });
+  })();
+}
+function poImgs(id) {
+  var P = poById(id);
+  if (!API_URL) { toast('Зураг зөвхөн сервертэй үед харагдана'); return; }
+  post({ type: 'admin_po_img', poId: id, get: 1 }, function (err, d) {
+    if (err) { toast('Зураг ачаалсангүй: ' + err); return; }
+    var L = (d && d.imgs) || [];
+    gOpen('<h2>' + esc(P ? P.no + ' · ' + poTitle(P) : id) + ' · зураг</h2>' +
+      (L.length ? L.map(function (x) { return '<div style="margin-bottom:10px"><img src="' + esc(x.img) + '" alt="" style="max-width:100%;border-radius:8px"><br><small class="muted">' + esc(x.at) + '</small></div>'; }).join('') : '<p class="muted">Зураг алга.</p>') +
+      '<label for="piAdd">Зураг нэмэх</label><input id="piAdd" type="file" accept="image/*" multiple>' +
+      '<div style="margin-top:10px"><button class="btn" onclick="poImgAdd(\'' + id + '\')">Нэмэх</button><button class="btn ghost" onclick="gClose()">Хаах</button></div>');
+  });
+}
+function poImgAdd(id) {
+  var files = [].slice.call(($('piAdd') || {}).files || []).slice(0, 6);
+  if (!files.length) { toast('Зураг сонгоно уу'); return; }
+  toast('Илгээж байна…');
+  poImgUpload(id, files, function (ok, bad) { toast(ok + ' зураг нэмэгдлээ' + (bad ? ', ' + bad + ' амжилтгүй (6-аас олон эсвэл хэт том)' : '')); poImgs(id); });
 }
 function poCancel(id) {
   var P = poById(id), s = poStat(P);
