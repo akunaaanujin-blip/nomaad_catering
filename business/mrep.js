@@ -81,6 +81,7 @@ function mrepWorth(E, td, b) {
   var A = [['Мөнгө (касс, данснууд)', money]].concat(ACCOUNTS.filter(function (a) { return a[2] === 'asset' && a[3] !== 'cash'; }).map(function (a) { return [nm(a[0]), g(a[0])]; }));
   var L = accsOf('liab').map(function (k) { return [nm(k), -g(k) - (k === '3101' ? pos : 0)]; });
   var live = function (x) { return Math.abs(x[1]) >= 1; }, s = function (X) { return X.reduce(function (a, x) { return a + x[1]; }, 0); };
+  A.forEach(function (x) { if (x[0] === nm('1290') && x[1] < 0) { L.push(['Компани хооронд өгөх', -x[1]]); x[1] = 0; } });   // хасах үлдэгдэл = бидний өгөх өр
   A = A.filter(live); L = L.filter(live);
   return { A: A, L: L, a: s(A), l: s(L) };
 }
