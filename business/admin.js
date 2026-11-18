@@ -3193,6 +3193,7 @@ function tasksCard() {
 function openTask(kind) {
   kind = kind === 'Асуулт' ? 'Асуулт' : 'Даалгавар'; $('tkKind').value = kind;
   $('tkHead').textContent = kind === 'Асуулт' ? 'Ажилтнаас асуух' : 'Ажилчдад даалгавар илгээх'; $('tkTitleL').textContent = kind === 'Асуулт' ? 'Асуулт' : 'Даалгавар';
+  $('tkHint').textContent = kind === 'Асуулт' ? 'Ажилтан хуудсандаа хариултаа бичиж «Хариулах» дарна — хариулт энд харагдана.' : 'Ажилтан өөрийн хуудсанд нэвтэрмэгц дээд хэсэгт харагдана, «Хийсэн» дарахад энд тэмдэглэгдэнэ.';
   $('tkTitle').placeholder = kind === 'Асуулт' ? 'Жишээ: 80902396 захиалгын мөнгийг Буухиа танд өгсөн үү?' : 'Жишээ: Сарын тооллого хийх, агуулахаас 32см 10ш авчрах';
   $('tkBiz').innerHTML = KEYS.map(function (k) { return '<option value="' + k + '"' + (k === (state.staffBiz !== 'all' ? state.staffBiz : state.biz) ? ' selected' : '') + '>' + esc(BUSINESSES[k].name) + '</option>'; }).join('');
   tkStaffOpts(); $('tkTitle').value = ''; $('tkDue').value = todayStr(); $('tkNote').value = '';
