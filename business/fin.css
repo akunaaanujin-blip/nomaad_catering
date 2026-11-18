@@ -391,3 +391,37 @@ body.bz-admin{font-size:15px;line-height:1.5}
 .bz-admin #view tr.dcat td:first-child{white-space:nowrap}
 /* KPI картууд — олон өнгийн зураасгүй, нэг загвар */
 .bz-admin #view .kpi,.bz-admin #view .kc,.bz-admin #view [class*="kpi"] > div{border-left-width:1px!important;border-left-color:var(--border)!important}
+
+/* ═══ Хар горим — тайван өнгө (2026-11-19): тод неон ногоон-цэнхэрийг зөөллөж, хатуу бичсэн цайвар өнгийг (цагаан зураас, цагаан товч, шар мөр) хар горимд тохируулна ═══ */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) body.bz-admin{--primary:#7DB8AF;--on-primary:#0F141A;--primary-hover:#9CCBC4;--primary-soft:#1A2B2A;--row-l1:#1F3B38;--row-l2:#1A2B2A;--sub-line:#5E9890;--info:#9CCBC4;--info-soft:#1A2B2A;--income:#6DBE8A;--income-soft:#16261C;--expense:#E08A84;--expense-soft:#2A1A19;--warning:#D9B45A;--warning-soft:#2A2416;}
+  :root:not([data-theme="light"]) .bz-admin #view table.rep-t td,:root:not([data-theme="light"]) .bz-admin #view .fd-t td{border-bottom-color:var(--border)}
+  :root:not([data-theme="light"]) .bz-admin th{background:var(--surface-alt);color:var(--text-2)}
+  :root:not([data-theme="light"]) .bz-admin label{color:var(--text-2)}
+  :root:not([data-theme="light"]) .bz-admin .seg,:root:not([data-theme="light"]) .bz-admin .seg button{background:var(--surface);color:var(--text)}
+  :root:not([data-theme="light"]) .bz-admin .b-btn,:root:not([data-theme="light"]) .bz-admin .mini{border-color:var(--border-strong);color:var(--text)!important;background:var(--surface)}
+  :root:not([data-theme="light"]) .bz-admin .b-btn.primary{background:var(--primary);border-color:var(--primary);color:var(--on-primary)!important}
+  :root:not([data-theme="light"]) .bz-admin tr.st-low td{background:var(--warning-soft)}
+  :root:not([data-theme="light"]) .bz-admin .alert,:root:not([data-theme="light"]) .bz-admin .demo,:root:not([data-theme="light"]) .bz-admin .pending{background:var(--warning-soft);border-color:#4A3B1A;color:var(--warning)}
+  :root:not([data-theme="light"]) .bz-admin .pg-head h1,:root:not([data-theme="light"]) .bz-admin .sub-title,:root:not([data-theme="light"]) .bz-admin .sec-title,:root:not([data-theme="light"]) .bz-admin .card h2,:root:not([data-theme="light"]) .bz-admin .rep-cap b,:root:not([data-theme="light"]) .bz-admin .kpis .biz .rev{color:var(--text)}
+  :root:not([data-theme="light"]) .fn-panel li button.on,:root:not([data-theme="light"]) .fn-panel li button.on:hover{background:rgba(255,255,255,.08);color:#fff;box-shadow:inset 3px 0 0 var(--primary)}
+  :root:not([data-theme="light"]) .bz-admin .sg .sub-list button,:root:not([data-theme="light"]) .bz-admin .dc-l .dc-d{color:var(--text-2)}
+  :root:not([data-theme="light"]) .bz-admin .dk2:first-child{background:var(--row-l1);border-color:var(--row-l1)}
+  :root:not([data-theme="light"]) .bz-admin .dk2:first-child small{color:var(--text-2)}
+  :root:not([data-theme="light"]) .bz-admin .dk2.warn{background:var(--expense-soft);border-color:#4A2422}
+}
+:root[data-theme="dark"] body.bz-admin{--primary:#7DB8AF;--on-primary:#0F141A;--primary-hover:#9CCBC4;--primary-soft:#1A2B2A;--row-l1:#1F3B38;--row-l2:#1A2B2A;--sub-line:#5E9890;--info:#9CCBC4;--info-soft:#1A2B2A;--income:#6DBE8A;--income-soft:#16261C;--expense:#E08A84;--expense-soft:#2A1A19;--warning:#D9B45A;--warning-soft:#2A2416;}
+:root[data-theme="dark"] .bz-admin #view table.rep-t td,:root[data-theme="dark"] .bz-admin #view .fd-t td{border-bottom-color:var(--border)}
+:root[data-theme="dark"] .bz-admin th{background:var(--surface-alt);color:var(--text-2)}
+:root[data-theme="dark"] .bz-admin label{color:var(--text-2)}
+:root[data-theme="dark"] .bz-admin .seg,:root[data-theme="dark"] .bz-admin .seg button{background:var(--surface);color:var(--text)}
+:root[data-theme="dark"] .bz-admin .b-btn,:root[data-theme="dark"] .bz-admin .mini{border-color:var(--border-strong);color:var(--text)!important;background:var(--surface)}
+:root[data-theme="dark"] .bz-admin .b-btn.primary{background:var(--primary);border-color:var(--primary);color:var(--on-primary)!important}
+:root[data-theme="dark"] .bz-admin tr.st-low td{background:var(--warning-soft)}
+:root[data-theme="dark"] .bz-admin .alert,:root[data-theme="dark"] .bz-admin .demo,:root[data-theme="dark"] .bz-admin .pending{background:var(--warning-soft);border-color:#4A3B1A;color:var(--warning)}
+:root[data-theme="dark"] .bz-admin .pg-head h1,:root[data-theme="dark"] .bz-admin .sub-title,:root[data-theme="dark"] .bz-admin .sec-title,:root[data-theme="dark"] .bz-admin .card h2,:root[data-theme="dark"] .bz-admin .rep-cap b,:root[data-theme="dark"] .bz-admin .kpis .biz .rev{color:var(--text)}
+:root[data-theme="dark"] .fn-panel li button.on,:root[data-theme="dark"] .fn-panel li button.on:hover{background:rgba(255,255,255,.08);color:#fff;box-shadow:inset 3px 0 0 var(--primary)}
+:root[data-theme="dark"] .bz-admin .sg .sub-list button,:root[data-theme="dark"] .bz-admin .dc-l .dc-d{color:var(--text-2)}
+:root[data-theme="dark"] .bz-admin .dk2:first-child{background:var(--row-l1);border-color:var(--row-l1)}
+:root[data-theme="dark"] .bz-admin .dk2:first-child small{color:var(--text-2)}
+:root[data-theme="dark"] .bz-admin .dk2.warn{background:var(--expense-soft);border-color:#4A2422}
