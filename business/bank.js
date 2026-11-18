@@ -1235,7 +1235,7 @@ function dcAlloc(refill) {   // refill — дүнг хуучнаас нь (FIFO)
   $('dcSum').textContent = fmt(sum);
   var left = r0(S.total - sum), over = r0(amt - sum), wo = $('dcWo') ? $('dcWo').value : '';
   $('dcInfo').innerHTML = (amt ? 'Гүйлгээний дүн <b>' + fmt(amt) + '</b>. ' : 'Гүйлгээгээ сонгоно уу. ') +
-    (over > 0.5 ? '<span style="color:#B45309">' + fmt(over) + ' хуваарилаагүй — эхний харилцагчийн илүү төлөлт (урьдчилгаа) болно.</span> ' : over < -0.5 ? '<span style="color:#E11D48">Хуваарилсан дүн гүйлгээнээс ' + fmt(-over) + '-өөр их байна.</span> ' : '') +
+    (over > 0.5 ? '<span style="color:var(--warning)">' + fmt(over) + ' хуваарилаагүй — эхний харилцагчийн илүү төлөлт (урьдчилгаа) болно.</span> ' : over < -0.5 ? '<span style="color:#E11D48">Хуваарилсан дүн гүйлгээнээс ' + fmt(-over) + '-өөр их байна.</span> ' : '') +
     (left > 0.5 ? (wo ? fmt(left) + ' нь ' + (wo === '7124' ? 'буухиагийн хөлс' : 'хөнгөлөлт') + ' болж бүрэн хаагдана.' : fmt(left) + ' нь ' + (S.k === 'r' ? 'авлага' : 'өглөг') + ' хэвээр үлдэнэ.') : 'Бүгд бүрэн хаагдана.');
 }
 function dcSave() {

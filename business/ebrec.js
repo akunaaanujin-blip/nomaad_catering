@@ -111,7 +111,7 @@ function ebRecView() {
     '<label class="b-btn ghost" style="cursor:pointer">Тайлан сонгох<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="ebRecFile(this)"></label>' +
     (ebRec.file ? ' <span class="muted">' + esc(ebRec.file) + '</span> <button class="mini" onclick="ebRec={rows:null,file:\'\',cols:\'\',err:\'\'};ebRecSave();render()">Арилгах</button>' : '') +
     (ebRec.cols ? '<p class="muted" style="font-size:12.5px;margin:6px 0 0">Танигдсан багана: ' + esc(ebRec.cols) + '</p>' : '') +
-    (ebRec.err ? '<p style="color:#B91C1C;margin:6px 0 0">' + esc(ebRec.err) + '</p>' : '') + '</div>';
+    (ebRec.err ? '<p style="color:var(--expense);margin:6px 0 0">' + esc(ebRec.err) + '</p>' : '') + '</div>';
   var sys = ebRecSys();
   if (!ebRec.rows) return head + '<div class="card"><p>Системд Буухиагаас цэвэр авах: <b>' + fmt(sys.tot) + '</b></p><p class="muted">Тайлан оруулсны дараа хүргэлт бүрээр тулгана.' + (!ebAdm.list ? ' Хүргэлтийн кодыг захиалгатай холбохын тулд «Борлуулалт → Хүргэлт» хуудсыг нэг удаа нээнэ үү.' : '') + '</p></div>';
   var seen = {}, rows = [], ts = 0, tr = 0, bad = 0;
@@ -124,7 +124,7 @@ function ebRecView() {
     ts += s; tr += x.net;
     rows.push('<tr><td>' + esc(code || '—') + '</td><td class="nw">' + esc(x.phone || (o ? o.phone : '')) + '</td><td>' + (o ? esc((o.customer ? o.customer + ' · ' : '') + o.date) : '<span class="muted">захиалга олдсонгүй</span>') + (x.st ? '<br><small class="muted">' + esc(x.st) + '</small>' : '') + '</td>' +
       '<td class="n">' + fmt(x.got) + '</td><td class="n">' + fmt(x.fee) + '</td><td class="n"><b>' + fmt(x.net) + '</b></td><td class="n">' + fmt(s) + '</td>' +
-      '<td class="n">' + (ok ? '<span style="color:#15803D">✓</span>' : '<span style="color:#B45309">⚠ ' + (d > 0 ? '+' : '−') + fmt(Math.abs(d)).slice(1) + '</span>') + '</td>' +
+      '<td class="n">' + (ok ? '<span style="color:var(--income)">✓</span>' : '<span style="color:var(--warning)">⚠ ' + (d > 0 ? '+' : '−') + fmt(Math.abs(d)).slice(1) + '</span>') + '</td>' +
       '<td class="n">' + (ok ? '' : '<button class="mini" onclick="ebRecFix(' + i + ')">Засах</button>') + '</td></tr>');
   });
   // Тайланд ороогүй ч системд үлдэгдэлтэй хүргэлт

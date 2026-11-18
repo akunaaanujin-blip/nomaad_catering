@@ -93,7 +93,7 @@ function openLoanSched(id) {
     (sc.late.n ? ' · <b style="color:var(--red)">хоцорсон ' + sc.late.days + ' хоног, ' + mny(sc.late.amt) + '</b>' : '') + '</p>' +
     '<div class="scroll" style="max-height:60vh"><table class="rep-t"><tr><th>№</th><th>Огноо</th><th class="n">Үндсэн</th><th class="n">Хүү</th><th class="n">Нийт</th><th class="n">Үлдсэн</th><th>Төлөв</th></tr>' +
     sc.rows.map(function (r, i) {
-      return '<tr' + (r.late ? ' style="background:#FDF2F2"' : '') + '><td>' + (i + 1) + '</td><td>' + r.d + '</td><td class="n">' + mny(r.p) + '</td><td class="n">' + mny(r.i) + '</td><td class="n">' + mny(r.t) + '</td>' +
+      return '<tr' + (r.late ? ' style="background:var(--expense-soft)"' : '') + '><td>' + (i + 1) + '</td><td>' + r.d + '</td><td class="n">' + mny(r.p) + '</td><td class="n">' + mny(r.i) + '</td><td class="n">' + mny(r.t) + '</td>' +
         '<td class="n">' + (r.left > 0.5 ? mny(r.left) : '') + '</td><td>' + (r.late ? '<span class="tag r">Хоцорсон</span>' : '<span class="tag' + (r.st === 'paid' ? '' : ' b') + '">' + lab[r.st] + '</span>') + '</td></tr>';
     }).join('') + '</table></div><button class="btn ghost" onclick="gClose()">Хаах</button>');
 }

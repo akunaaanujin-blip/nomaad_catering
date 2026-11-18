@@ -439,7 +439,7 @@ function trashView() {
     '<div class="card rep"><div class="rep-cap"><b>Хогийн сав</b><span>сүүлийн 30 хоногт цуцалсан · ' + L.length + '</span></div><div class="scroll"><table class="rep-t"><tr><th>Цуцалсан</th><th>Хэн</th><th>Төрөл</th><th>Юу</th><th></th></tr>' +
     (L.map(function (x) {
       return '<tr><td data-l="Цуцалсан" class="nw">' + esc(x.r.at.slice(0, 16)) + '</td><td data-l="Хэн">' + esc(x.r.who || '—') + '</td><td data-l="Төрөл">' + K[x.kind] + '</td><td data-l="Юу">' + esc(x.r.note || '#' + x.r.id) + '</td>' +
-        (x.kind === 'ord' && ordNotCancelled(x.r.id) ? '<td class="n"><small style="color:#B45309">хэрэгжээгүй · ' + esc(ordNotCancelled(x.r.id)) + '</small> <button class="mini" onclick="ordCancelOpen(\'' + esc(x.r.id) + '\')">Дахин цуцлах</button></td></tr>' :
+        (x.kind === 'ord' && ordNotCancelled(x.r.id) ? '<td class="n"><small style="color:var(--warning)">хэрэгжээгүй · ' + esc(ordNotCancelled(x.r.id)) + '</small> <button class="mini" onclick="ordCancelOpen(\'' + esc(x.r.id) + '\')">Дахин цуцлах</button></td></tr>' :
         '<td class="n"><button class="mini" onclick="trashRestore(\'' + x.kind + '\',\'' + esc(x.r.id) + '\',' + esc(JSON.stringify(x.r.note || '')) + ')">Сэргээх</button></td></tr>');
     }).join('') || '<tr><td colspan="5" class="muted">Хогийн сав хоосон.</td></tr>') + '</table></div></div>';
 }
