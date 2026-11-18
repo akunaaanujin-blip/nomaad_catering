@@ -74,16 +74,20 @@ function mrepData(E, f, t) {
 }
 // Нийт хөрөнгө: дансны үлдэгдэл бүрээр (санхүүгийн байдлын тайлантай ижил) — нэг ч данс орхигдохгүй.
 // Аяллын дэлгүүрт Cozy-ийн посын мөнгийг мөнгө, өглөг хоёроос хасна (сарын тайлантай ижил — нэг мөнгө хоёр компанид тоологдохгүй).
-function mrepWorth(E, td, b) {
-  var g = function (k) { return b[k] || 0; }, pos = state.biz === POS_SHARE.to ? mrPos(E, td, state.biz) : 0;
+function mrepWorth(E, td, b) {   // мөр бүр [нэр, дүн, задрал] — дүн дээр дарахад тэр дүн юунаас бүрдсэнийг харуулна
+  var g = function (k) { return b[k] || 0; }, pos = state.biz === POS_SHARE.to ? mrPos(E, td, state.biz) : 0, xp = pos ? POS_SHARE.pay : undefined;
   var nm = function (k) { return k === '1201' ? 'Авлага (бусдаас авах)' : MR_ACC[k] || accName(k); };
-  var money = cashCodes().reduce(function (a, k) { return a + g(k); }, 0) - pos;
-  var A = [['Мөнгө (касс, данснууд)', money]].concat(ACCOUNTS.filter(function (a) { return a[2] === 'asset' && a[3] !== 'cash'; }).map(function (a) { return [nm(a[0]), g(a[0])]; }));
-  var L = accsOf('liab').map(function (k) { return [nm(k), -g(k) - (k === '3101' ? pos : 0)]; });
+  var sp = function (acc, sign, grp, t) { return { acc: acc, to: td, sign: sign, grp: grp, xpartner: xp, t: t }; };
+  var grpOf = function (k) { return /^12/.test(k) || /^3[18]/.test(k) || /^35/.test(k) ? 'partner' : 'cat'; };
+  var cash = cashCodes(), money = cash.reduce(function (a, k) { return a + g(k); }, 0) - pos;
+  var A = [['Мөнгө (касс, данснууд)', money, sp(cash, 1, 'acc', 'Мөнгө (касс, данснууд)'), cash]].concat(ACCOUNTS.filter(function (a) { return a[2] === 'asset' && a[3] !== 'cash'; })
+    .map(function (a) { return [nm(a[0]), g(a[0]), sp([a[0]], 1, grpOf(a[0]), nm(a[0])), [a[0]]]; }));
+  var L = accsOf('liab').map(function (k) { return [nm(k), -g(k) - (k === '3101' ? pos : 0), sp([k], -1, grpOf(k), nm(k)), [k]]; });
   var live = function (x) { return Math.abs(x[1]) >= 1; }, s = function (X) { return X.reduce(function (a, x) { return a + x[1]; }, 0); };
-  A.forEach(function (x) { if (x[0] === nm('1290') && x[1] < 0) { L.push(['Компани хооронд өгөх', -x[1]]); x[1] = 0; } });   // хасах үлдэгдэл = бидний өгөх өр
+  A.forEach(function (x) { if (x[3][0] === '1290' && x[1] < 0) { L.push(['Компани хооронд өгөх', -x[1], sp(['1290'], -1, 'partner', 'Компани хооронд өгөх'), ['1290']]); x[1] = 0; } });   // хасах үлдэгдэл = бидний өгөх өр
   A = A.filter(live); L = L.filter(live);
-  return { A: A, L: L, a: s(A), l: s(L) };
+  var codes = function (X) { return X.reduce(function (a, x) { return a.concat(x[3]); }, []); }, ca = codes(A), cl = codes(L).filter(function (k) { return ca.indexOf(k) < 0; });
+  return { A: A, L: L, a: s(A), l: s(L), sA: sp(ca, 1, 'acc', 'Нийт хөрөнгө'), sN: sp(ca.concat(cl), 1, 'acc', 'Цэвэр хөрөнгө (хөрөнгө − өр төлбөр)') };
 }
 function repMgmt(E, f, t) {   // Excel, хэвлэх
   var D = mrepData(E, f, t), p = D.p, rows = [], h = function (n) { rows.push({ name: n, v: '', _b: 1 }); }, l = function (n, v) { rows.push({ name: n, v: r0(v) }); };
@@ -106,8 +110,9 @@ function mrepView() {
   var top = D.exps.slice(0, 6), rest = D.exps.slice(6).reduce(function (a, x) { return a + x[1]; }, 0);
   var sent = 'Энэ хугацаанд <b>' + mny(p.net) + '</b>-ийн борлуулалт хийж, <b>' + mny(spent) + '</b> зарцуулаад ' +
     (p.profit >= 0 ? '<b class="pos">' + mny(p.profit) + '</b> ашигтай' : '<b class="neg">' + mny(-p.profit) + '</b> алдагдалтай') + ' ажилласан. Өнөөдөр данснуудад <b>' + mny(D.money) + '</b> байна.';
-  var W = D.nw, worth = card('Нийт хөрөнгө (өнөөдөр)', W.A.map(function (x) { return ln(x[0], x[1]); }).join('') + ln('Нийт хөрөнгө', W.a, 'tot') +
-    W.L.map(function (x) { return ln('Хасах: ' + x[0], -x[1]); }).join('') + ln('Цэвэр хөрөнгө', W.a - W.l, 'tot'), 'finance/balance', 'Санхүүгийн байдал');
+  var lnd = function (n, v, spec, cls) { return '<tr' + (cls ? ' class="' + cls + '"' : '') + '><td>' + esc(n) + '</td><td class="n' + (v < -0.5 ? ' neg' : '') + '">' + dl(spec, mny(v)) + '</td></tr>'; };
+  var W = D.nw, worth = card('Нийт хөрөнгө (өнөөдөр)', W.A.map(function (x) { return lnd(x[0], x[1], x[2]); }).join('') + lnd('Нийт хөрөнгө', W.a, W.sA, 'tot') +
+    W.L.map(function (x) { return lnd('Хасах: ' + x[0], -x[1], x[2]); }).join('') + lnd('Цэвэр хөрөнгө', W.a - W.l, W.sN, 'tot'), 'finance/balance', 'Санхүүгийн байдал');
   return worth + '<div class="fn-kpis">' + kp('Борлуулалт', p.net, 'pos') + kp('Зарцуулсан', spent, 'neg') + kp(p.profit >= 0 ? 'Ашиг' : 'Алдагдал', Math.abs(p.profit), p.profit >= 0 ? 'pos' : 'neg') + kp('Мөнгө (өнөөдөр)', D.money) + '</div>' +
     '<div class="card"><p class="mr-s">' + sent + '</p></div>' +
     '<div class="grid2">' +

@@ -57,6 +57,7 @@ function drillLines(s, E) {
     var inD = !!A[e.dr], inC = !!A[e.cr];
     if (inD === inC || e.date > to) return;
     if (s.partner !== undefined && (e.partner || '(харилцагч заагаагүй)') !== s.partner) return;
+    if (s.xpartner && e.partner === s.xpartner) return;   // аяллын дэлгүүр: Cozy-ийн посын мөнгийг тоолохгүй
     if (s.tag && !hasTag(e.desc, s.tag)) return;   // зээл / захиалгын «#ID»
     var raw = inD ? e.amount : -e.amount;
     var x = { date: e.date, time: e.time || '', ref: e.ref || '', doc: e.doc, desc: e.desc, partner: e.partner, acc: inD ? e.dr : e.cr, other: inD ? e.cr : e.dr, raw: raw, v: raw * (s.sign || 1) };
