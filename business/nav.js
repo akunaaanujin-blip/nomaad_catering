@@ -633,10 +633,12 @@ function ordCancelVerify(id) {
   var o = (window.adminOrders || []).filter(function (x) { return x.id === id; })[0];
   if (o && o.status !== 'Цуцалсан') alert('Сервер захиалгын төлвийг «Цуцалсан» болгосонгүй (одоо: ' + o.status + ').\nApps Script-ийн сүүлийн хувилбар deploy хийгдсэн эсэхийг шалгаад дахин цуцлана уу.');
 }
-// 15 минут идэвхгүй бол удирдлагын хуудаснаас автоматаар гарна
+// 15 минут идэвхгүй бол удирдлагын хуудаснаас автоматаар гарна — «Энэ төхөөрөмжийг санах» (adm|… токен) бол гарахгүй:
+// logout() серверт токеныг хүчингүй болгож, localStorage-оос устгадаг тул нэг идэвхгүй таб бүх табын 7 хоногийн нэвтрэлтийг алдагдуулж байсан (11-19)
 var IDLE = { t: Date.now() };
 ['click', 'keydown', 'mousemove', 'touchstart', 'scroll'].forEach(function (ev) { document.addEventListener(ev, function () { IDLE.t = Date.now(); }, { passive: true }); });
 setInterval(function () {
+  if (/^adm\|/.test(String(typeof token === 'string' ? token : ''))) return;   // санасан төхөөрөмж
   if (API_URL && $('main') && $('main').style.display !== 'none' && Date.now() - IDLE.t > 15 * 60000) { IDLE.t = Date.now(); toast('15 минут идэвхгүй байсан тул гарлаа'); logout(); }
 }, 60000);
 
