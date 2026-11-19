@@ -182,7 +182,7 @@ function post(body, cb) {
   INFLIGHT[key] = 1;
   var btn = document.activeElement && /^(BUTTON|A)$/.test(document.activeElement.tagName) ? document.activeElement : null;
   if (btn) btn.disabled = true;
-  var rd = /^(admin_read|admin_audit)$/.test(body.type) || (body.type === 'admin_eb' && body.op === 'sync') || (body.type === 'admin_research' && !body.statusId);   // уншилт — «Ачаалж байна…», товч түгжихгүй
+  var rd = /^(admin_read|admin_audit)$/.test(body.type) || (body.type === 'admin_eb' && body.op === 'sync') || (body.type === 'admin_research' && !body.statusId) || (body.type === 'admin_shop' && body.get);   // уншилт — «Ачаалж байна…», товч түгжихгүй
   if (rd && btn) { btn.disabled = false; btn = null; }
   busySet(1, rd ? 'Ачаалж байна…' : 'Хадгалж байна…', !rd);
   var done = function (err, d, quiet) { delete INFLIGHT[key]; if (btn) btn.disabled = false; busySet(-1, '', !rd); if (!quiet) cb(err, d); };
@@ -2529,6 +2529,7 @@ function openProduct(name) {
   if (name && !p) { $('pdName').value = name; $('pdName').readOnly = true; }   // үлдэгдэлд байгаа нэрээр нь бүртгэнэ — нэр зөрвөл үлдэгдэл, өртөг тусдаа болно
   var cats = {}; BUSINESSES[biz].products.forEach(function (x) { if (x.cat) cats[x.cat] = 1; });
   $('pdCats').innerHTML = Object.keys(cats).sort().map(function (k) { return '<option value="' + esc(k) + '">'; }).join('');
+  if (typeof shopAdmOpen === 'function') shopAdmOpen(p ? p.name : name || '');   // вэб дэлгүүр: зураг, тайлбар
   openSheet('productSheet');
 }
 function saveProduct() {
@@ -2545,7 +2546,8 @@ function saveProduct() {
   }
   post({ type: 'admin_product', product: p, by: ownerName }, function (err) {
     if (err) { toast('Алдаа: ' + err); return; }
-    closeSheet('productSheet'); toast('Хадгалагдлаа'); if (typeof prNewRender === 'function') prNewRender(p.name); refresh();
+    var fin = function () { closeSheet('productSheet'); toast('Хадгалагдлаа'); if (typeof prNewRender === 'function') prNewRender(p.name); refresh(); };
+    if (typeof shopAdmSave === 'function') shopAdmSave(p.name, fin); else fin();
   });
 }
 

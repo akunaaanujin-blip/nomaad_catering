@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261119v">
+<link rel="stylesheet" href="style.css?v=20261119x">
 <link rel="stylesheet" href="fin.css?v=20261119l">
 </head>
 <body class="bz-admin">
@@ -329,6 +329,17 @@
     </div>
     <label style="display:flex;gap:8px;align-items:center;margin-top:14px"><input type="checkbox" id="pdOff" style="width:auto"> Идэвхгүй (дэлгүүрт зарахгүй, жагсаалтаас нуух)</label>
     <p class="muted" style="font-size:12.5px;margin-top:8px">Өртөг нь «Орлого авах»-аар орсон үнээс автоматаар (хөдөлгөөнт дундаж) тооцогдоно.</p>
+    <div id="pdShop" class="ps-box" style="display:none">
+      <div class="ps-head"><b>🌐 Вэб дэлгүүр</b><a id="psLink" href="../cozy/" target="_blank" rel="noopener">Вэбэд харах ↗</a></div>
+      <label class="ps-chk"><input type="checkbox" id="psShow" checked onchange="shopAdmDirty()"> Вэб дэлгүүрт харуулах</label>
+      <label class="ps-chk"><input type="checkbox" id="psHot" onchange="shopAdmDirty()"> Онцлох (эхэнд харуулна)</label>
+      <label for="psDesc">Тайлбар (үйлчлүүлэгчид харагдана)</label>
+      <textarea id="psDesc" rows="4" maxlength="3000" placeholder="Хэмжээ, материал, онцлог, хэрэглэх заавар…" oninput="shopAdmDirty()"></textarea>
+      <label>Зураг — 5 хүртэл, эхнийх нь нүүр зураг</label>
+      <div id="psImgs" class="ps-imgs"></div>
+      <input type="file" id="psFile" accept="image/*" multiple style="display:none" onchange="shopAdmAdd(this.files);this.value=''">
+      <p class="muted" id="psMsg" style="font-size:12.5px;margin:6px 0 0"></p>
+    </div>
     <button class="btn" onclick="saveProduct()">Хадгалах</button>
     <button class="btn ghost" onclick="closeSheet('productSheet')">Болих</button>
   </div>
@@ -407,6 +418,7 @@
 <script src="loans.js?v=20261119j"></script>
 <script src="po.js?v=20261119q"></script>
 <script src="research.js?v=20261119v"></script>
+<script src="shopadm.js?v=20261119x"></script>
 <script src="assets.js?v=20261105g"></script>
 <script src="dash.js?v=20261119k"></script>
 <script src="ops.js?v=20261022o"></script>
@@ -414,7 +426,7 @@
 <script src="ebrec.js?v=20261119j"></script>
 <script src="ads.js?v=20261104f"></script>
 <script src="boostbud.js?v=20261116k"></script>
-<script src="admin.js?v=20261119v"></script>
+<script src="admin.js?v=20261119x"></script>
 <script src="ebset.js?v=20261116e"></script>
 <script src="nav.js?v=20261119v"></script>
 <script src="mrep.js?v=20261119i"></script>

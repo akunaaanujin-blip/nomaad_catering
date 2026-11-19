@@ -1864,3 +1864,17 @@ body.pos10 #saleSheet .cl1 .cl-dprice:not(:placeholder-shown){border-color:var(-
 .res-n{white-space:pre-line;color:#374151}
 .res-r{background:#F1F5F9;border-radius:6px;padding:6px 8px}
 .res-t .res-th{width:56px;height:56px}
+/* Вэб дэлгүүр — барааны цонх (shopadm.js) */
+.ps-box{margin:16px 0 4px;padding:12px;border:1px solid #E5E7EB;border-radius:10px;background:#FAFAF9}
+.ps-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.ps-head a{font-size:12.5px;color:#7A5A2E;text-decoration:none}
+.ps-chk{display:flex!important;gap:8px;align-items:center;margin-top:6px}
+.ps-chk input{width:auto!important}
+.ps-imgs{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.ps-img,.ps-add{position:relative;width:84px;height:84px;border-radius:8px;overflow:hidden;border:1px solid #E5E7EB;background:#fff}
+.ps-img img{width:100%;height:100%;object-fit:cover;display:block}
+.ps-first{position:absolute;left:4px;bottom:4px;background:#7A5A2E;color:#fff;font-size:10.5px;padding:1px 6px;border-radius:4px}
+.ps-x,.ps-mv{position:absolute;top:3px;width:22px;height:22px;border:0;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:14px;line-height:22px;padding:0;cursor:pointer}
+.ps-x{right:3px}.ps-mv{left:3px;font-size:11px}
+.ps-add{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:22px;color:#6B7280;cursor:pointer;border-style:dashed}
+.ps-add small{font-size:11px}

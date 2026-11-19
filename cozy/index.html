@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cozy Home Ulaanbaatar — Онлайн дэлгүүр</title>
+<meta name="description" content="Гэр ахуй, гал тогооны чанартай бараа. Онлайнаар захиалаад гэртээ хүргүүлээрэй — Улаанбаатар болон орон нутагт.">
+<meta property="og:title" content="Cozy Home Ulaanbaatar — Онлайн дэлгүүр">
+<meta property="og:description" content="Гэр ахуй, гал тогооны бараа — онлайнаар захиалаад гэртээ хүргүүлээрэй.">
+<meta property="og:image" content="https://wise.ub.mn/business/icons/cozy-512.png">
+<meta name="theme-color" content="#7A5A2E">
+<link rel="icon" type="image/png" href="https://wise.ub.mn/business/icons/cozy-192.png">
+<link rel="apple-touch-icon" href="https://wise.ub.mn/business/icons/cozy-180.png">
+<link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFFFFF; --soft:#F7F3EE; --soft2:#EFE8DE; --line:#E7E0D6; --ink:#231F1C; --ink2:#5E5650; --muted:#8E857C;
+  --brand:#7A5A2E; --brand-d:#5E4422; --ok:#2F7A4B; --warn:#C2410C; --bad:#9CA3AF; --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Montserrat,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+img{max-width:100%;display:block}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+[hidden]{display:none!important}
+
+/* Толгой */
+.top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;gap:16px;height:64px}
+.logo{display:flex;align-items:center;gap:10px;flex:none}
+.logo-mark{width:38px;height:38px;border-radius:10px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:800;font-size:20px}
+.logo b{display:block;font-size:16px;letter-spacing:.14em;line-height:1.1}
+.logo small{display:block;font-size:9.5px;letter-spacing:.32em;color:var(--muted);font-weight:600}
+.nav{display:flex;gap:28px;margin:0 auto}
+.nav a{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);padding:6px 0;border-bottom:2px solid transparent}
+.nav a.on{color:var(--ink);border-color:var(--ink)}
+.acts{display:flex;gap:6px;align-items:center}
+.ic{position:relative;width:40px;height:40px;border:0;background:none;border-radius:50%;display:grid;place-items:center;cursor:pointer}
+.ic:hover{background:var(--soft)}
+.ic svg{width:21px;height:21px}
+.badge{position:absolute;top:2px;right:0;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--warn);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+.badge:empty{display:none}
+.search{padding-bottom:12px}
+.search input{width:100%;height:44px;border:1px solid var(--line);border-radius:var(--r);padding:0 14px;background:var(--soft);outline:none}
+.search input:focus{border-color:var(--brand);background:#fff}
+.mnav{display:none}
+
+/* Нүүр */
+.hero{display:grid;grid-template-columns:1.1fr 1fr;gap:24px;align-items:center;background:var(--soft);border-radius:16px;margin:20px 0 8px;padding:36px 40px;overflow:hidden}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.2;font-weight:800;letter-spacing:.01em;text-transform:uppercase}
+.hero p{margin:0 0 20px;color:var(--ink2);max-width:440px}
+.hero .chips{display:flex;flex-wrap:wrap;gap:8px}
+.hero .chips span{background:#fff;border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:12.5px;font-weight:600;color:var(--ink2)}
+.collage{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.collage div{aspect-ratio:1;border-radius:12px;background:#fff;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.collage div:nth-child(2){transform:translateY(-14px)}
+.collage div:nth-child(5){transform:translateY(-14px)}
+.collage img{width:100%;height:100%;object-fit:cover}
+.collage .ghost{background:var(--soft2)}
+
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:28px 0 14px}
+.bar h2{margin:0;font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.bar h2 small{color:var(--muted);font-weight:600;letter-spacing:0;text-transform:none;margin-left:6px}
+.sort{height:38px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:#fff;font-size:13px;font-weight:600;cursor:pointer}
+.cats{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin:-4px 0 14px}
+.cats button{flex:none;border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink2)}
+.cats button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 16px}
+.card{display:block;min-width:0}
+.ph{position:relative;aspect-ratio:1;background:var(--soft);border-radius:var(--r);overflow:hidden}
+.ph img{width:100%;height:100%;object-fit:cover;transition:transform .35s}
+.card:hover .ph img{transform:scale(1.04)}
+.noimg{width:100%;height:100%;display:grid;place-items:center;color:#C9BBA8}
+.noimg svg{width:34%;height:34%}
+.st{position:absolute;top:8px;right:8px;background:#fff;border-radius:4px;padding:2px 7px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.st.in{color:var(--ok)} .st.low{color:var(--warn)} .st.out{color:#fff;background:#6B7280}
+.hot{position:absolute;bottom:8px;left:8px;background:var(--brand);color:#fff;border-radius:4px;padding:2px 7px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.card.out .ph img,.card.out .noimg{opacity:.55}
+.nm{margin:10px 0 2px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pr{font-weight:700;font-size:15px}
+.sk .ph{animation:pulse 1.2s infinite ease-in-out}
+.sk .nm,.sk .pr{height:12px;background:var(--soft);border-radius:4px;margin-top:12px;width:80%}
+.sk .pr{width:40%}
+@keyframes pulse{50%{opacity:.55}}
+.empty{text-align:center;padding:60px 16px;color:var(--ink2)}
+.empty b{display:block;font-size:17px;color:var(--ink);margin-bottom:6px}
+
+/* Барааны хуудас */
+.crumb{font-size:12.5px;color:var(--muted);margin:18px 0}
+.crumb a:hover{color:var(--ink)}
+.pd{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
+.gal-main{aspect-ratio:1;background:var(--soft);border-radius:12px;overflow:hidden;position:relative}
+.gal-main img{width:100%;height:100%;object-fit:contain;background:#fff}
+.gal-th{display:flex;gap:8px;margin-top:10px;overflow-x:auto}
+.gal-th button{flex:none;width:68px;height:68px;border:2px solid transparent;border-radius:8px;overflow:hidden;padding:0;cursor:pointer;background:var(--soft)}
+.gal-th button.on{border-color:var(--ink)}
+.gal-th img{width:100%;height:100%;object-fit:cover}
+.pinfo h1{font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;margin:0 0 8px;line-height:1.3}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:4px;background:var(--soft);color:var(--ok)}
+.tag.low{color:var(--warn)} .tag.out{background:#6B7280;color:#fff}
+.price-lbl{font-size:12px;color:var(--muted);margin-top:18px}
+.price-big{font-size:26px;font-weight:800;margin-bottom:6px}
+.rows{border-top:1px solid var(--line);margin-top:16px}
+.rowi{display:grid;grid-template-columns:110px 1fr;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);font-size:14px}
+.rowi>b{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase}
+.rowi .desc{white-space:pre-line;color:var(--ink2)}
+.free{color:var(--warn);font-weight:700}
+.qty{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden;height:40px}
+.qty button{width:38px;height:100%;border:0;background:#fff;font-size:18px;cursor:pointer}
+.qty button:hover{background:var(--soft)}
+.qty button:disabled{opacity:.35;cursor:default}
+.qty span{min-width:34px;text-align:center;font-weight:700}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.btn{height:50px;border-radius:8px;border:1px solid var(--ink);background:#fff;font-weight:700;font-size:13.5px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 18px}
+.btn.dark{background:var(--ink);color:#fff}
+.btn.dark:hover{background:#000}
+.btn.brand{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.brand:hover{background:var(--brand-d)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.block{width:100%}
+.more{margin-top:44px}
+
+/* Сагс, захиалга */
+.steps{display:flex;align-items:center;gap:10px;margin:26px 0 22px;flex-wrap:wrap}
+.steps h1{font-size:20px;font-weight:800;text-transform:uppercase;margin:0 auto 0 0;letter-spacing:.04em}
+.stp{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.stp i{width:24px;height:24px;border-radius:50%;background:var(--soft2);color:var(--muted);display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:700}
+.stp.on{color:var(--warn)} .stp.on i{background:var(--warn);color:#fff}
+.stp.done{color:var(--ink)} .stp.done i{background:var(--ink);color:#fff}
+.stp-sep{width:28px;height:1px;background:var(--line)}
+.co{display:grid;grid-template-columns:1fr 340px;gap:28px;align-items:start}
+.sum{background:var(--soft);border-radius:12px;padding:18px;position:sticky;top:84px}
+.sum h3{margin:0 0 12px;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase}
+.sum-row{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:4px 0}
+.sum-row.t{border-top:1px solid var(--line);margin-top:10px;padding-top:12px;font-weight:800;font-size:17px}
+.sum-it{display:flex;gap:10px;align-items:center;font-size:13px;padding:6px 0}
+.sum-it .mini{width:40px;height:40px;border-radius:6px;overflow:hidden;background:#fff;flex:none;position:relative}
+.sum-it .mini img{width:100%;height:100%;object-fit:cover}
+.sum-it .mini em{position:absolute;top:-1px;left:-1px;background:var(--ink);color:#fff;font-style:normal;font-size:10px;font-weight:700;border-radius:0 0 6px 0;padding:0 5px}
+.sum-it span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sum .btn{margin-top:14px}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;font-weight:700;padding:0 0 10px;border-bottom:1px solid var(--line)}
+.tbl td{padding:14px 0;border-bottom:1px solid var(--line);vertical-align:middle}
+.ci{display:flex;gap:12px;align-items:center}
+.ci .mini{width:72px;height:72px;border-radius:8px;overflow:hidden;background:var(--soft);flex:none}
+.ci .mini img{width:100%;height:100%;object-fit:cover}
+.ci b{font-size:13px;text-transform:uppercase;display:block}
+.ci small{color:var(--muted)}
+.ci small.bad{color:var(--warn);font-weight:600}
+.rm{border:0;background:none;color:var(--muted);cursor:pointer;font-size:20px;width:32px;height:32px;border-radius:50%}
+.rm:hover{background:var(--soft);color:var(--ink)}
+.lt{font-weight:700;text-align:right;white-space:nowrap}
+.form h3{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 12px}
+.form .sec{border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fl{display:block;margin-bottom:12px}
+.fl>span{display:block;font-size:12.5px;font-weight:600;color:var(--ink2);margin-bottom:5px}
+.fl>span em{color:var(--warn);font-style:normal}
+.fl input,.fl select,.fl textarea{width:100%;height:46px;border:1px solid var(--line);border-radius:8px;padding:0 12px;background:#fff;outline:none;font-size:15px}
+.fl textarea{height:auto;padding:10px 12px;resize:vertical}
+.fl input:focus,.fl select:focus,.fl textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(122,90,46,.12)}
+.fl.err input,.fl.err select,.fl.err textarea{border-color:var(--warn)}
+.fl .msg{display:none;color:var(--warn);font-size:12px;margin-top:4px}
+.fl.err .msg{display:block}
+.pay{display:grid;gap:10px}
+.pay label{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:14px;cursor:pointer}
+.pay label.on{border-color:var(--ink);background:var(--soft)}
+.pay input{margin-top:3px;accent-color:var(--ink);width:18px;height:18px}
+.pay b{display:block;font-size:14px}
+.pay small{color:var(--ink2)}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.rv{border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+.rv h3{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px}
+.rv h3 a{font-size:12.5px;color:var(--brand);letter-spacing:0;text-transform:none;font-weight:600}
+.rv p{margin:2px 0;color:var(--ink2)}
+.note{background:#FFF7ED;border:1px solid #FED7AA;color:#9A3412;border-radius:10px;padding:12px 14px;font-size:13.5px;margin:12px 0}
+.okbox{max-width:620px;margin:40px auto;text-align:center}
+.okbox .tick{width:68px;height:68px;border-radius:50%;background:#E8F3EC;color:var(--ok);display:grid;place-items:center;margin:0 auto 16px}
+.okbox .tick svg{width:34px;height:34px}
+.okbox h1{font-size:22px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.03em}
+.okbox .code{font-size:30px;font-weight:800;letter-spacing:.08em;margin:6px 0 14px}
+.paybox{text-align:left;background:var(--soft);border-radius:12px;padding:18px;margin:18px 0}
+.paybox .k{font-size:12px;color:var(--muted);margin-top:8px}
+.paybox .v{font-weight:700;white-space:pre-line}
+.copy{border:1px solid var(--line);background:#fff;border-radius:6px;font-size:12px;font-weight:600;padding:3px 9px;cursor:pointer;margin-left:6px}
+
+/* Миний захиалга */
+.ord{border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
+.ord-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.ord-h b{font-size:15px;letter-spacing:.04em}
+.ord-h small{color:var(--muted)}
+.pill{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:20px;background:var(--soft);white-space:nowrap}
+.pill.p1{background:#FEF3C7;color:#92400E} .pill.p2{background:#DBEAFE;color:#1E40AF} .pill.p3{background:#DCFCE7;color:#166534} .pill.p4{background:#F3F4F6;color:#6B7280}
+.track{display:flex;margin:16px 0 6px}
+.track div{flex:1;text-align:center;font-size:11px;color:var(--muted);position:relative;padding-top:18px}
+.track div:before{content:"";position:absolute;top:4px;left:50%;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--soft2);z-index:1}
+.track div:after{content:"";position:absolute;top:8px;left:-50%;width:100%;height:2px;background:var(--soft2)}
+.track div:first-child:after{display:none}
+.track div.on{color:var(--ink);font-weight:600}
+.track div.on:before,.track div.on:after{background:var(--ok)}
+.ord-it{font-size:13px;color:var(--ink2);margin-top:8px}
+.look{max-width:520px}
+
+footer{margin-top:64px;background:var(--ink);color:#D6CFC6;padding:36px 0 28px;font-size:13.5px}
+footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
+footer b{color:#fff;letter-spacing:.12em}
+footer a{color:#fff}
+footer small{display:block;color:#958B80;margin-top:16px;width:100%}
+
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:50;display:flex;gap:12px;align-items:center;max-width:calc(100% - 32px)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+#toast a{color:#FCD34D;white-space:nowrap}
+
+@media (max-width:900px){
+  .grid{grid-template-columns:repeat(3,1fr)}
+  .co{grid-template-columns:1fr}
+  .sum{position:static}
+  .pd{grid-template-columns:1fr;gap:20px}
+}
+@media (max-width:640px){
+  body{font-size:14.5px}
+  .top-in{height:58px;gap:8px}
+  .nav{display:none}
+  .acts{margin-left:auto}
+  .mnav{display:flex;border-top:1px solid var(--line)}
+  .mnav a{flex:1;text-align:center;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:10px 0;color:var(--ink2);border-bottom:2px solid transparent}
+  .mnav a.on{color:var(--ink);border-color:var(--ink)}
+  .hero{grid-template-columns:1fr;padding:24px 20px;margin-top:14px;gap:18px}
+  .hero h1{font-size:22px}
+  .collage{grid-template-columns:repeat(3,1fr)}
+  .collage div:nth-child(n+4){display:none}
+  .grid{grid-template-columns:repeat(2,1fr);gap:18px 12px}
+  .bar{margin-top:22px}
+  .pinfo h1{font-size:19px}
+  .rowi{grid-template-columns:1fr;gap:4px}
+  .btns{position:sticky;bottom:0;background:#fff;padding:10px 0 12px;margin:14px 0 0;border-top:1px solid var(--line)}
+  .btn{height:48px;font-size:12.5px;padding:0 10px}
+  .f2{grid-template-columns:1fr;gap:0}
+  .tbl thead{display:none}
+  .tbl tr{display:grid;grid-template-columns:1fr auto;gap:8px 12px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .tbl td{border:0;padding:0}
+  .tbl td.c-q{grid-column:1}
+  .stp span{display:none}
+  .stp-sep{width:14px}
+  .steps h1{font-size:17px;width:100%}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-in">
+    <a href="#/" class="logo" aria-label="Cozy Home Ulaanbaatar — нүүр"><span class="logo-mark">C</span><span><b>COZY HOME</b><small>ULAANBAATAR</small></span></a>
+    <nav class="nav"><a href="#/" data-nav="home">Бэлэн бараа</a><a href="#/orders" data-nav="orders">Миний захиалга</a></nav>
+    <div class="acts">
+      <button class="ic" onclick="toggleSearch()" aria-label="Хайх"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+      <a class="ic" href="#/cart" aria-label="Сагс"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L20 8H6.2"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg><span class="badge" id="cartN"></span></a>
+    </div>
+  </div>
+  <div class="mnav"><a href="#/" data-nav="home">Бэлэн бараа</a><a href="#/orders" data-nav="orders">Миний захиалга</a></div>
+  <div class="wrap search" id="searchBar" hidden><input id="q" type="search" placeholder="Бараа хайх…" autocomplete="off" oninput="onSearch(this.value)"></div>
+</header>
+
+<main id="app" class="wrap"></main>
+
+<footer>
+  <div class="wrap">
+    <div><b>COZY HOME ULAANBAATAR</b><br>Гэр ахуй, гал тогооны бараа</div>
+    <div id="ftContact">Хүргэлт: Улаанбаатар хот, орон нутаг</div>
+    <small>© <span id="yr"></span> Cozy Home Ulaanbaatar</small>
+  </div>
+</footer>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ═══════════ COZY HOME — ОНЛАЙН ДЭЛГҮҮР ═══════════
+// Бараа, үнэ, үлдэгдэл — NOMAAD системийн серверээс (action=shop). Захиалга «Захиалга» хүснэгтэд «Шинэ» төлөвтэй орж,
+// Cozy-ийн ажилтан утсаар баталгаажуулаад буухиагаар хүргэнэ. Сагс, хаяг, захиалгын код зөвхөн энэ төхөөрөмжид хадгалагдана.
+var BIZ = 'cozy';
+// NOMAAD системийн сервер (business/config.js-ийн API_URL-тэй ижил). Хуудсыг өөр домайн руу зөөхөд энэ хэвээр ажиллана.
+var API = window.SHOP_API || 'https://script.google.com/macros/s/AKfycbzS1DKwIFDWPV2LBNCHKcrul_8bWFHUQHTc7ply7MeUbfBPl1YaRpfHudQMaYrSNpo8jg/exec';
+var SHOP_PHONE = '';   // үйлчлүүлэгчийн утас (хоосон бол харуулахгүй)
+var UB = ['Баянзүрх', 'Баянгол', 'Сүхбаатар', 'Чингэлтэй', 'Хан-Уул', 'Сонгинохайрхан', 'Налайх', 'Багануур', 'Багахангай'];
+var AIMAGS = {
+  'Архангай': ['Цэцэрлэг', 'Батцэнгэл', 'Тариат', 'Хашаат', 'Өгийнуур', 'Хотонт', 'Эрдэнэбулган'], 'Баян-Өлгий': ['Өлгий', 'Цэнгэл', 'Сагсай', 'Толбо', 'Улаанхус', 'Буянт'],
+  'Баянхонгор': ['Баянхонгор', 'Бууцагаан', 'Галуут', 'Эрдэнэцогт', 'Баянлиг'], 'Булган': ['Булган', 'Хутаг-Өндөр', 'Тэшиг', 'Рашаант'],
+  'Говь-Алтай': ['Алтай', 'Есөнбулаг', 'Тайшир', 'Халиун', 'Бигэр'], 'Говьсүмбэр': ['Чойр', 'Сүмбэр', 'Шивээговь'], 'Дархан-Уул': ['Дархан', 'Шарын гол', 'Хонгор'],
+  'Дорноговь': ['Сайншанд', 'Замын-Үүд', 'Хатанбулаг', 'Даланжаргалан'], 'Дорнод': ['Чойбалсан', 'Баяндун', 'Матад', 'Халхгол'],
+  'Дундговь': ['Мандалговь', 'Сайнцагаан', 'Гурвансайхан', 'Дэлгэрцогт', 'Луус'], 'Завхан': ['Улиастай', 'Тэлмэн', 'Их-Уул', 'Отгон'], 'Орхон': ['Эрдэнэт', 'Баян-Өндөр'],
+  'Өвөрхангай': ['Арвайхээр', 'Хархорин', 'Хужирт', 'Бат-Өлзий', 'Уянга'], 'Өмнөговь': ['Даланзадгад', 'Ханбогд', 'Цогтцэций', 'Гурвантэс', 'Ханхонгор', 'Баяндалай'],
+  'Сүхбаатар': ['Баруун-Урт', 'Эрдэнэцагаан', 'Онгон', 'Мөнххаан'], 'Сэлэнгэ': ['Мандал', 'Зүүнхараа', 'Ерөө', 'Шаамар', 'Алтанбулаг'],
+  'Төв': ['Зуунмод', 'Баянчандмань', 'Борнуур', 'Батсүмбэр', 'Сэргэлэн', 'Эрдэнэсант', 'Лүн'], 'Увс': ['Улаангом', 'Тэс', 'Наранбулаг', 'Малчин'],
+  'Ховд': ['Ховд', 'Мөст', 'Мянгад'], 'Хөвсгөл': ['Мөрөн', 'Хатгал', 'Ханх', 'Тариалан', 'Цагаан-Үүр'], 'Хэнтий': ['Чингис', 'Өндөрхаан', 'Бэрх', 'Баян-Адарга', 'Дадал']
+};
+var CITIES = ['Улаанбаатар'].concat(Object.keys(AIMAGS));
+var ST_TXT = { in: 'Үлдэгдэлтэй', low: 'Цөөхөн үлдсэн', out: 'Дууссан' };
+
+// ── Хадгалах (хөтөч хориглосон ч ажиллана) ──
+function lsGet(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+
+var S = { list: [], by: {}, thumbs: lsGet('cz_th', {}), big: {}, fee: 7000, pay: '', loaded: false, err: '', sort: 'hot', q: '', cat: '', sending: false, last: null, pq: {} };
+var cart = lsGet('cz_cart', []).filter(function (x) { return x && x.name && x.qty > 0; });   // [{ name, qty }]
+var form = Object.assign({ customer: '', phone: '', phone2: '', city: 'Улаанбаатар', district: '', khoroo: '', address: '', note: '', pay: 'transfer' }, lsGet('cz_me', {}));
+
+// ── Туслах ──
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function money(n) { return (Math.round(Number(n) || 0)).toLocaleString('en-US') + '₮'; }
+function pHref(name) { return '#/p/' + encodeURIComponent(name); }
+var NOIMG = '<div class="noimg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M10 20v-5h4v5"/></svg></div>';
+function imgTag(name) { var t = S.thumbs[name]; return t ? '<img src="' + t + '" alt="' + esc(name) + '" loading="lazy">' : NOIMG; }
+function toast(msg, link) {
+  var t = $('toast'); t.innerHTML = esc(msg) + (link ? ' <a href="' + link[1] + '">' + esc(link[0]) + '</a>' : '');
+  t.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(function () { t.classList.remove('show'); }, 3200);
+}
+function saveCart() { lsSet('cz_cart', cart); var n = cart.reduce(function (a, x) { return a + x.qty; }, 0); $('cartN').textContent = n ? n : ''; }
+function api(q) {
+  if (!API) return Promise.reject('noapi');
+  var u = API + '?' + Object.keys(q).map(function (k) { return k + '=' + encodeURIComponent(q[k]); }).join('&');
+  return fetch(u).then(function (r) { return r.json(); });
+}
+
+// ── Бараа ачаалах ──
+function applyCat(d) {
+  S.list = (d.products || []).slice(); S.by = {};
+  S.list.forEach(function (p) { S.by[p.name] = p; });
+  S.fee = Number(d.fee) || 0; S.pay = d.pay || ''; S.loaded = true; S.err = '';
+}
+function loadCat(quiet) {
+  var c = lsGet('cz_cat', null);
+  if (c && !S.loaded) { applyCat(c); render(); }
+  return api({ action: 'shop', biz: BIZ }).then(function (d) {
+    if (!d || d.status !== 'ok') throw (d && d.error) || 'error';
+    applyCat(d); lsSet('cz_cat', { products: d.products, fee: d.fee, pay: d.pay });
+    if (!quiet || /^(home|cart|product)$/.test(route().v)) render(true);
+  }).catch(function () {
+    if (!S.loaded) { S.err = 'Бараа ачаалж чадсангүй. Интернэтээ шалгаад хуудсаа дахин ачаална уу.'; render(); }
+  });
+}
+function loadThumbs() {
+  api({ action: 'shop', biz: BIZ, thumbs: 1 }).then(function (d) {
+    if (!d || d.status !== 'ok') return;
+    S.thumbs = d.thumbs || {};
+    if (!lsSet('cz_th', S.thumbs)) try { localStorage.removeItem('cz_th'); } catch (e) {}
+    document.querySelectorAll('[data-th]').forEach(function (el) { var n = el.getAttribute('data-th'); if (S.thumbs[n] && !el.querySelector('img')) el.innerHTML = imgTag(n) + (el.getAttribute('data-extra') || ''); });
+    if (route().v === 'home') renderHeroOnly();
+  }).catch(function () {});
+}
+
+// ── Чиглэл (#/…) ──
+function route() {
+  var h = location.hash.replace(/^#\/?/, ''), m;
+  if (!h) return { v: 'home' };
+  if ((m = h.match(/^p\/(.+)$/))) return { v: 'product', name: decodeURIComponent(m[1]) };
+  if (h === 'cart') return { v: 'cart' };
+  if (h === 'checkout') return { v: 'checkout' };
+  if (h === 'confirm') return { v: 'confirm' };
+  if ((m = h.match(/^done\/(\d{6})$/))) return { v: 'done', code: m[1] };
+  if (h === 'orders') return { v: 'orders' };
+  return { v: 'home' };
+}
+function render(keepScroll) {
+  var r = route(), app = $('app');
+  document.querySelectorAll('[data-nav]').forEach(function (a) { a.classList.toggle('on', (a.getAttribute('data-nav') === 'orders') === (r.v === 'orders') && /^(home|orders|product)$/.test(r.v)); });
+  if (r.v === 'checkout' || r.v === 'confirm') {   // хоосон сагстай хаяг руу орохгүй
+    if (!cart.length) { location.replace('#/cart'); return; }
+    if (r.v === 'confirm' && !formOk(false)) { location.replace('#/checkout'); return; }
+  }
+  var a = document.activeElement, fid = a && a.id && app.contains(a) ? a.id : '';
+  app.innerHTML = r.v === 'product' ? vProduct(r.name) : r.v === 'cart' ? vCart() : r.v === 'checkout' ? vCheckout() : r.v === 'confirm' ? vConfirm()
+    : r.v === 'done' ? vDone(r.code) : r.v === 'orders' ? vOrders() : vHome();
+  if (fid && $(fid)) $(fid).focus();
+  document.title = (r.v === 'product' ? r.name + ' — ' : r.v === 'cart' ? 'Миний сагс — ' : r.v === 'orders' ? 'Миний захиалга — ' : '') + 'Cozy Home Ulaanbaatar';
+  if (r.v === 'product') loadBig(r.name);
+  if (r.v === 'orders') refreshOrders();
+}
+
+// ── Нүүр ──
+function sorted() {
+  var q = S.q.trim().toLowerCase(), L = S.list.filter(function (p) { return (!q || p.name.toLowerCase().indexOf(q) >= 0 || (p.desc || '').toLowerCase().indexOf(q) >= 0) && (!S.cat || p.cat === S.cat); });
+  var so = { out: 2, low: 0, in: 0 };
+  L.sort(function (a, b) {
+    if (so[a.st] !== so[b.st]) return so[a.st] - so[b.st];   // дууссан нь хамгийн сүүлд
+    if (S.sort === 'asc') return a.price - b.price;
+    if (S.sort === 'desc') return b.price - a.price;
+    if (S.sort === 'new') return b.i - a.i;
+    if (a.hot !== b.hot) return a.hot ? -1 : 1;
+    if (!!S.thumbs[a.name] !== !!S.thumbs[b.name]) return S.thumbs[a.name] ? -1 : 1;   // зурагтай нь эхэнд
+    return b.i - a.i;
+  });
+  return L;
+}
+function heroHtml() {
+  var pics = S.list.filter(function (p) { return S.thumbs[p.name] && p.st !== 'out'; }).slice(0, 6);
+  var cells = ''; for (var i = 0; i < 6; i++) cells += pics[i] ? '<div><img src="' + S.thumbs[pics[i].name] + '" alt=""></div>' : '<div class="ghost"></div>';
+  return '<div><h1>Гэрээ илүү тохилог болгоё</h1><p>Гал тогоо, гэр ахуйн чанартай бараа. Онлайнаар захиалаад гэртээ хүргүүлээрэй.</p>' +
+    '<div class="chips"><span>🚚 Хүргэлттэй</span><span>🏠 Улаанбаатар, орон нутаг</span><span>✓ Бэлэн бараа</span></div></div><div class="collage" aria-hidden="true">' + cells + '</div>';
+}
+function renderHeroOnly() { var h = document.querySelector('.hero'); if (h) h.innerHTML = heroHtml(); }
+function card(p) {
+  var extra = '<span class="st ' + p.st + '">' + ST_TXT[p.st] + '</span>' + (p.hot ? '<span class="hot">Онцлох</span>' : '');
+  return '<a class="card' + (p.st === 'out' ? ' out' : '') + '" href="' + pHref(p.name) + '"><div class="ph" data-th="' + esc(p.name) + '" data-extra="' + esc(extra) + '">' + imgTag(p.name) + extra + '</div>' +
+    '<div class="nm">' + esc(p.name) + '</div><div class="pr">' + money(p.price) + '</div></a>';
+}
+function vHome() {
+  var h = (S.q ? '' : '<section class="hero">' + heroHtml() + '</section>');
+  if (S.err && !S.loaded) return h + '<div class="empty"><b>Уучлаарай</b>' + esc(S.err) + '<br><br><button class="btn" onclick="location.reload()">Дахин ачаалах</button></div>';
+  if (!S.loaded) { var sk = ''; for (var i = 0; i < 8; i++) sk += '<div class="card sk"><div class="ph"></div><div class="nm"></div><div class="pr"></div></div>'; return h + '<div class="bar"><h2>Бэлэн бараа</h2></div><div class="grid">' + sk + '</div>'; }
+  var cats = {}; S.list.forEach(function (p) { if (p.cat) cats[p.cat] = 1; }); cats = Object.keys(cats);
+  var L = sorted();
+  h += '<div class="bar"><h2>' + (S.q ? 'Хайлт: «' + esc(S.q) + '»' : 'Бэлэн бараа') + '<small>' + L.length + ' бараа</small></h2>' +
+    '<select class="sort" aria-label="Эрэмбэлэх" onchange="S.sort=this.value;render(true)">' +
+    [['hot', 'Онцлох'], ['new', 'Шинэ нь эхэндээ'], ['asc', 'Үнэ өсөхөөр'], ['desc', 'Үнэ буурахаар']].map(function (o) { return '<option value="' + o[0] + '"' + (S.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>';
+  if (cats.length > 1) h += '<div class="cats"><button class="' + (S.cat ? '' : 'on') + '" onclick="S.cat=\'\';render(true)">Бүгд</button>' + cats.map(function (c) { return '<button class="' + (S.cat === c ? 'on' : '') + '" onclick="S.cat=this.dataset.c;render(true)" data-c="' + esc(c) + '">' + esc(c) + '</button>'; }).join('') + '</div>';
+  if (!L.length) return h + '<div class="empty"><b>Бараа олдсонгүй</b>' + (S.q ? 'Өөр үгээр хайгаад үзээрэй.' : 'Удахгүй шинэ бараа нэмэгдэнэ.') + '</div>';
+  return h + '<div class="grid">' + L.map(card).join('') + '</div>';
+}
+function toggleSearch() { var b = $('searchBar'); b.hidden = !b.hidden; if (!b.hidden) { $('q').focus(); if (route().v !== 'home') location.hash = '#/'; } else if (S.q) { S.q = ''; $('q').value = ''; render(true); } }
+function onSearch(v) { S.q = v; if (route().v !== 'home') location.hash = '#/'; else render(true); }
+
+// ── Барааны хуудас ──
+function vProduct(name) {
+  var p = S.by[name];
+  if (!p) return S.loaded ? '<div class="empty"><b>Бараа олдсонгүй</b>Энэ бараа дууссан эсвэл хасагдсан байна.<br><br><a class="btn" href="#/">Бүх бараа үзэх</a></div>' : '<div class="empty">Ачаалж байна…</div>';
+  var q = S.pq[name] || 1, imgs = S.big[name] || [], main = imgs[0] || S.thumbs[name];
+  var g = '<div class="gal-main" id="galMain">' + (main ? '<img src="' + main + '" alt="' + esc(name) + '">' : NOIMG) + '</div>';
+  if (imgs.length > 1) g += '<div class="gal-th">' + imgs.map(function (s, i) { return '<button class="' + (i ? '' : 'on') + '" onclick="galPick(this,' + i + ')" aria-label="Зураг ' + (i + 1) + '"><img src="' + s + '" alt=""></button>'; }).join('') + '</div>';
+  var out = p.st === 'out';
+  var info = '<h1>' + esc(p.name) + '</h1><span class="tag ' + p.st + '">' + ST_TXT[p.st] + '</span>' +
+    '<div class="price-lbl">Үнэ</div><div class="price-big">' + money(p.price) + '</div>' +
+    '<div class="rows">' + (p.desc ? '<div class="rowi"><b>Тайлбар</b><div class="desc">' + esc(p.desc) + '</div></div>' : '') +
+    '<div class="rowi"><b>Хүргэлт</b><div>' + (S.fee ? 'Хүргэлтийн төлбөр <b>' + money(S.fee) + '</b> (нэг захиалгад)' : '<span class="free">Хүргэлт үнэгүй</span>') + '<br><small style="color:var(--muted)">Улаанбаатар хот болон орон нутагт хүргэнэ.</small></div></div>' +
+    (out ? '' : '<div class="rowi"><b>Тоо ширхэг</b><div><div class="qty"><button onclick="pQty(-1)" ' + (q <= 1 ? 'disabled' : '') + ' aria-label="Хасах">−</button><span id="pq">' + q + '</span><button onclick="pQty(1)" ' + (q >= 50 ? 'disabled' : '') + ' aria-label="Нэмэх">+</button></div></div></div>') + '</div>' +
+    '<div class="btns">' + (out ? '<button class="btn block" disabled style="grid-column:1/-1">Дууссан</button>' :
+      '<button class="btn" onclick="addCart(false)">Сагсанд нэмэх</button><button class="btn dark" onclick="addCart(true)">Худалдан авах</button>') + '</div>';
+  var more = S.list.filter(function (x) { return x.name !== name && x.st !== 'out'; }).sort(function (a, b) { return (S.thumbs[b.name] ? 1 : 0) - (S.thumbs[a.name] ? 1 : 0) || b.i - a.i; }).slice(0, 4);
+  return '<div class="crumb"><a href="#/">Бэлэн бараа</a> / ' + esc(p.name) + '</div><div class="pd"><div>' + g + '</div><div class="pinfo">' + info + '</div></div>' +
+    (more.length ? '<div class="more"><div class="bar"><h2>Танд таалагдаж магадгүй</h2></div><div class="grid">' + more.map(card).join('') + '</div></div>' : '');
+}
+function galPick(b, i) {
+  var name = route().name, imgs = S.big[name] || []; if (!imgs[i]) return;
+  $('galMain').innerHTML = '<img src="' + imgs[i] + '" alt="">';
+  b.parentNode.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+}
+function loadBig(name) {
+  var p = S.by[name]; if (!p || !p.imgs || S.big[name]) return;
+  S.big[name] = null;
+  api({ action: 'shop', biz: BIZ, img: name }).then(function (d) {
+    if (!d || d.status !== 'ok' || !d.imgs || !d.imgs.length) { delete S.big[name]; return; }
+    S.big[name] = d.imgs;
+    var r = route(); if (r.v === 'product' && r.name === name) render(true);
+  }).catch(function () { delete S.big[name]; });
+}
+function pQty(d) { var n = route().name, q = Math.max(1, Math.min(50, (S.pq[n] || 1) + d)); S.pq[n] = q; render(true); }
+function addCart(buy) {
+  var n = route().name, p = S.by[n]; if (!p || p.st === 'out') return;
+  var q = S.pq[n] || 1, ex = cart.filter(function (x) { return x.name === n; })[0];
+  if (ex) ex.qty = Math.min(50, ex.qty + q); else cart.push({ name: n, qty: q });
+  S.pq[n] = 1; saveCart();
+  if (buy) location.hash = '#/cart'; else { render(true); toast('Сагсанд нэмэгдлээ', ['Сагс үзэх →', '#/cart']); }
+}
+
+// ── Сагс ──
+function lines() {
+  return cart.map(function (x, i) { var p = S.by[x.name]; return { i: i, name: x.name, qty: x.qty, p: p, ok: !!p && p.st !== 'out', price: p ? p.price : 0 }; });
+}
+function totals() {
+  var L = lines(), sub = L.reduce(function (a, l) { return a + (l.ok ? l.qty * l.price : 0); }, 0), n = L.reduce(function (a, l) { return a + (l.ok ? l.qty : 0); }, 0);
+  return { L: L, sub: sub, n: n, fee: sub ? S.fee : 0, total: sub ? sub + S.fee : 0, bad: L.filter(function (l) { return !l.ok; }) };
+}
+function stepsHtml(title, k) {
+  var st = ['Миний сагс', 'Хүргэлтийн хаяг', 'Баталгаажуулах'];
+  return '<div class="steps"><h1>' + title + '</h1>' + st.map(function (s, i) { return (i ? '<span class="stp-sep"></span>' : '') + '<div class="stp ' + (i < k ? 'done' : i === k ? 'on' : '') + '"><i>' + (i < k ? '✓' : i + 1) + '</i><span>' + s + '</span></div>'; }).join('') + '</div>';
+}
+function sumHtml(t, btn) {
+  return '<aside class="sum"><h3>Бараа</h3>' + t.L.filter(function (l) { return l.ok; }).map(function (l) {
+    return '<div class="sum-it"><div class="mini">' + (S.thumbs[l.name] ? '<img src="' + S.thumbs[l.name] + '" alt="">' : '') + '<em>' + l.qty + '</em></div><span>' + esc(l.name) + '</span><b>' + money(l.qty * l.price) + '</b></div>';
+  }).join('') + '<div class="sum-row" style="margin-top:8px"><span>Барааны дүн</span><b>' + money(t.sub) + '</b></div>' +
+    '<div class="sum-row"><span>Хүргэлт</span><b>' + (t.fee ? money(t.fee) : 'Үнэгүй') + '</b></div>' +
+    '<div class="sum-row t"><span>Нийт төлөх</span><span>' + money(t.total) + '</span></div>' + (btn || '') + '</aside>';
+}
+function vCart() {
+  var t = totals();
+  if (!cart.length) return stepsHtml('Миний сагс', 0) + '<div class="empty"><b>Сагс хоосон байна</b>Таалагдсан бараагаа сагсандаа нэмээрэй.<br><br><a class="btn dark" href="#/">Бараа үзэх</a></div>';
+  var rows = t.L.map(function (l) {
+    return '<tr><td><div class="ci"><a class="mini" href="' + pHref(l.name) + '">' + (S.thumbs[l.name] ? '<img src="' + S.thumbs[l.name] + '" alt="">' : NOIMG) + '</a><div><b>' + esc(l.name) + '</b>' +
+      (l.ok ? '<small>' + money(l.price) + '</small>' : '<small class="bad">' + (S.loaded ? (l.p ? 'Дууссан' : 'Худалдаалагдахгүй болсон') + ' — хасна уу' : 'Шалгаж байна…') + '</small>') + '</div></div></td>' +
+      '<td class="c-q">' + (l.ok ? '<div class="qty"><button onclick="cQty(' + l.i + ',-1)" ' + (l.qty <= 1 ? 'disabled' : '') + ' aria-label="Хасах">−</button><span>' + l.qty + '</span><button onclick="cQty(' + l.i + ',1)" ' + (l.qty >= 50 ? 'disabled' : '') + ' aria-label="Нэмэх">+</button></div>' : '') + '</td>' +
+      '<td class="lt">' + (l.ok ? money(l.qty * l.price) : '') + ' <button class="rm" onclick="cDel(' + l.i + ')" aria-label="Хасах">×</button></td></tr>';
+  }).join('');
+  var can = t.n > 0 && !t.bad.length && S.loaded;
+  return stepsHtml('Миний сагс', 0) + '<div class="co"><div><table class="tbl"><thead><tr><th>Бүтээгдэхүүн</th><th>Тоо ширхэг</th><th style="text-align:right">Нийт дүн</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+    '<p style="margin-top:16px"><a href="#/" style="font-weight:600;font-size:13px">← Худалдан авалтаа үргэлжлүүлэх</a></p></div>' +
+    sumHtml(t, '<button class="btn dark block" onclick="location.hash=\'#/checkout\'" ' + (can ? '' : 'disabled') + '>Үргэлжлүүлэх</button>' + (t.bad.length ? '<p style="font-size:12.5px;color:var(--warn);margin:8px 0 0">Дууссан барааг сагснаас хасна уу.</p>' : '')) + '</div>';
+}
+function cQty(i, d) { var x = cart[i]; if (!x) return; x.qty = Math.max(1, Math.min(50, x.qty + d)); saveCart(); render(true); }
+function cDel(i) { cart.splice(i, 1); saveCart(); render(true); }
+
+// ── Хүргэлтийн хаяг ──
+function fld(id, label, html, req, msg) { return '<label class="fl" id="w_' + id + '"><span>' + label + (req ? ' <em>*</em>' : '') + '</span>' + html + '<div class="msg">' + (msg || 'Бөглөнө үү') + '</div></label>'; }
+function inp(id, attrs) { return '<input id="f_' + id + '" value="' + esc(form[id]) + '" oninput="fSet(\'' + id + '\',this.value)" ' + (attrs || '') + '>'; }
+function vCheckout() {
+  var t = totals(), ub = form.city === 'Улаанбаатар';
+  var dist = ub ? '<select id="f_district" onchange="fSet(\'district\',this.value)"><option value="">Дүүрэг сонгох</option>' + UB.map(function (d) { return '<option' + (form.district === d ? ' selected' : '') + '>' + d + '</option>'; }).join('') + '</select>'
+    : inp('district', 'list="sumList" placeholder="Сум" autocomplete="off"') + '<datalist id="sumList">' + (AIMAGS[form.city] || []).map(function (s) { return '<option value="' + esc(s) + '">'; }).join('') + '</datalist>';
+  var h = '<div class="co"><div class="form">' +
+    '<div class="sec"><h3>Хүлээн авагч</h3><div class="f2">' +
+    fld('customer', 'Нэр', inp('customer', 'autocomplete="name" maxlength="60" placeholder="Таны нэр"'), 1) +
+    fld('phone', 'Утасны дугаар', inp('phone', 'type="tel" inputmode="numeric" autocomplete="tel" maxlength="8" placeholder="8 оронтой"'), 1, '8 оронтой утасны дугаар оруулна уу') + '</div>' +
+    fld('phone2', 'Нэмэлт утас', inp('phone2', 'type="tel" inputmode="numeric" maxlength="8" placeholder="Заавал биш"'), 0, '8 оронтой дугаар') + '</div>' +
+    '<div class="sec"><h3>Хүргэлтийн хаяг</h3><div class="f2">' +
+    fld('city', 'Хот / аймаг', '<select id="f_city" onchange="fSet(\'city\',this.value);form.district=\'\';form.khoroo=\'\';render(true)">' + CITIES.map(function (c) { return '<option' + (form.city === c ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select>', 1) +
+    fld('district', ub ? 'Дүүрэг' : 'Сум', dist, ub) + '</div>' +
+    (ub ? fld('khoroo', 'Хороо', inp('khoroo', 'type="number" inputmode="numeric" min="1" max="45" placeholder="Жишээ: 12"'), 0, 'Хорооны дугаар') : '') +
+    fld('address', 'Дэлгэрэнгүй хаяг', '<textarea id="f_address" rows="3" maxlength="300" placeholder="Байр, орц, давхар, тоот / гудамж, хашаа, ойролцоох тэмдэглэгээ" oninput="fSet(\'address\',this.value)">' + esc(form.address) + '</textarea>', 1, 'Хаягаа дэлгэрэнгүй бичнэ үү') +
+    fld('note', 'Нэмэлт тэмдэглэл', '<textarea id="f_note" rows="2" maxlength="300" placeholder="Хүргэх цаг, хүсэлт (заавал биш)" oninput="fSet(\'note\',this.value)">' + esc(form.note) + '</textarea>', 0) + '</div>' +
+    '<div class="sec"><h3>Төлбөрийн хэлбэр</h3><div class="pay">' +
+    payOpt('transfer', 'Дансаар шилжүүлэх', 'Захиалга өгсний дараа дансны мэдээлэл гарч ирнэ.') +
+    payOpt('cod', 'Хүргэлтээр төлөх', 'Бараагаа хүлээн авахдаа бэлнээр эсвэл шилжүүлгээр төлнө.') + '</div></div>' +
+    '<label class="hp" aria-hidden="true">Вэбсайт<input id="f_website" tabindex="-1" autocomplete="off"></label>' +
+    '<p><a href="#/cart" style="font-weight:600;font-size:13px">← Сагс руу буцах</a></p></div>' +
+    sumHtml(t, '<button class="btn dark block" onclick="goConfirm()">Үргэлжлүүлэх</button>') + '</div>';
+  return stepsHtml('Хүргэлтийн хаяг', 1) + h;
+}
+function payOpt(v, t, s) { return '<label class="' + (form.pay === v ? 'on' : '') + '"><input type="radio" name="pay" value="' + v + '"' + (form.pay === v ? ' checked' : '') + ' onchange="fSet(\'pay\',this.value);render(true)"><span><b>' + t + '</b><small>' + s + '</small></span></label>'; }
+function fSet(k, v) { form[k] = v; var w = $('w_' + k); if (w) w.classList.remove('err'); lsSet('cz_me', form); }
+function digits(s) { return String(s || '').replace(/\D/g, ''); }
+function formOk(mark) {
+  var bad = [];
+  if (String(form.customer).trim().length < 2) bad.push('customer');
+  if (!/^[5-9]\d{7}$/.test(digits(form.phone))) bad.push('phone');
+  if (form.phone2 && !/^\d{8}$/.test(digits(form.phone2))) bad.push('phone2');
+  if (!form.city) bad.push('city');
+  if (form.city === 'Улаанбаатар' && !form.district) bad.push('district');
+  if (String(form.address).trim().length < 4) bad.push('address');
+  if (mark) { bad.forEach(function (k) { var w = $('w_' + k); if (w) w.classList.add('err'); }); if (bad.length) { var f = $('f_' + bad[0]); if (f) { f.focus(); f.scrollIntoView({ block: 'center', behavior: 'smooth' }); } } }
+  return !bad.length;
+}
+function goConfirm() {
+  if ($('f_website') && $('f_website').value) S.hp = $('f_website').value;
+  form.phone = digits(form.phone); form.phone2 = digits(form.phone2);
+  if (!formOk(true)) return;
+  lsSet('cz_me', form); location.hash = '#/confirm';
+}
+
+// ── Баталгаажуулах ──
+function addrLine(f) { return [f.city, f.district, f.city === 'Улаанбаатар' && f.khoroo ? f.khoroo + '-р хороо' : '', f.address].filter(Boolean).join(', '); }
+function vConfirm() {
+  var t = totals();
+  var h = '<div class="co"><div>' +
+    '<div class="rv"><h3>Хүлээн авагч <a href="#/checkout">Засах</a></h3><p><b>' + esc(form.customer) + '</b></p><p>' + esc(form.phone) + (form.phone2 ? ', ' + esc(form.phone2) : '') + '</p></div>' +
+    '<div class="rv"><h3>Хүргэлтийн хаяг <a href="#/checkout">Засах</a></h3><p>' + esc(addrLine(form)) + '</p>' + (form.note ? '<p><i>' + esc(form.note) + '</i></p>' : '') + '</div>' +
+    '<div class="rv"><h3>Төлбөр <a href="#/checkout">Засах</a></h3><p>' + (form.pay === 'cod' ? 'Хүргэлтээр төлөх (бэлэн / шилжүүлэг)' : 'Дансаар шилжүүлэх') + '</p></div>' +
+    '<div class="rv"><h3>Бараа <a href="#/cart">Засах</a></h3>' + t.L.filter(function (l) { return l.ok; }).map(function (l) { return '<p style="display:flex;justify-content:space-between;gap:10px"><span>' + esc(l.name) + ' × ' + l.qty + '</span><b>' + money(l.qty * l.price) + '</b></p>'; }).join('') + '</div>' +
+    '<p style="font-size:12.5px;color:var(--muted)">«Захиалах» дарснаар манай ажилтан тантай утсаар холбогдож захиалгыг баталгаажуулна.</p></div>' +
+    sumHtml(t, '<button class="btn brand block" id="sendBtn" onclick="sendOrder()" ' + (S.sending || t.bad.length || !t.n ? 'disabled' : '') + '>' + (S.sending ? 'Илгээж байна…' : 'Захиалах') + '</button>') + '</div>';
+  return stepsHtml('Баталгаажуулах', 2) + h;
+}
+function sendOrder() {
+  var t = totals(); if (S.sending || !t.n || t.bad.length) return;
+  if (!API) { toast('Сервертэй холбогдоогүй байна'); return; }
+  S.sending = true; render(true);
+  var body = { type: 'shop_order', biz: BIZ, customer: form.customer, phone: digits(form.phone), phone2: digits(form.phone2), city: form.city, district: form.district,
+    khoroo: form.city === 'Улаанбаатар' ? form.khoroo : '', address: form.address, note: form.note, pay: form.pay === 'cod' ? 'cod' : 'transfer',
+    items: t.L.filter(function (l) { return l.ok; }).map(function (l) { return { name: l.name, qty: l.qty }; }), total: t.total, website: S.hp || '' };
+  fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) }).then(function (r) { return r.json(); }).then(function (d) {
+    S.sending = false;
+    if (d && d.status === 'ok') {
+      S.last = { code: d.code, amount: d.amount, pay: d.pay, cod: body.pay === 'cod', phone: body.phone, items: d.items || [] };
+      var my = lsGet('cz_orders', []); my.unshift({ code: d.code, phone: body.phone, at: new Date().toISOString().slice(0, 10), amount: d.amount }); ORD.list = my.slice(0, 30); ORD.done = false; lsSet('cz_orders', ORD.list);
+      cart = []; saveCart(); location.hash = '#/done/' + d.code; return;
+    }
+    var e = d && d.error;
+    if (e === 'price' || e === 'items') { toast(e === 'price' ? 'Үнэ шинэчлэгдсэн байна — шалгаад дахин захиална уу' : 'Зарим бараа дууссан байна — сагсаа шалгана уу'); loadCat(true).then(function () { location.hash = '#/cart'; render(true); }); return; }
+    if (e === 'phone' || e === 'phone2' || e === 'fields') { toast('Мэдээллээ шалгана уу'); location.hash = '#/checkout'; setTimeout(function () { formOk(true); }, 50); return; }
+    toast(e === 'rate' ? 'Түр хүлээгээд дахин оролдоно уу' : 'Захиалга илгээгдсэнгүй. Дахин оролдоно уу.'); render(true);
+  }).catch(function () { S.sending = false; toast('Интернэт холболтоо шалгаад дахин оролдоно уу'); render(true); });
+}
+function vDone(code) {
+  var o = S.last && S.last.code === code ? S.last : null;
+  var h = '<div class="okbox"><div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>' +
+    '<h1>Захиалга хүлээн авлаа</h1><div style="color:var(--muted)">Захиалгын дугаар</div><div class="code">' + esc(code) + '</div>' +
+    '<p>Манай ажилтан ажлын цагаар тантай утсаар холбогдож захиалгыг баталгаажуулна.</p>';
+  if (o && !o.cod) {
+    h += '<div class="paybox"><b>Төлбөр шилжүүлэх</b>' + (o.pay ? '<div class="k">Дансны мэдээлэл</div><div class="v">' + esc(o.pay) + '</div>' : '<div class="k">Дансны мэдээллийг ажилтан утсаар хэлж өгнө.</div>') +
+      '<div class="k">Төлөх дүн</div><div class="v">' + money(o.amount) + '</div>' +
+      '<div class="k">Гүйлгээний утга</div><div class="v">' + esc(code + ' ' + o.phone) + ' <button class="copy" onclick="copyTxt(\'' + esc(code + ' ' + o.phone) + '\')">Хуулах</button></div></div>';
+  } else if (o) h += '<div class="paybox"><b>Хүргэлтээр төлөх</b><div class="k">Бараагаа хүлээн авахдаа төлөх дүн</div><div class="v">' + money(o.amount) + '</div></div>';
+  return h + '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="btn" href="#/orders">Миний захиалга</a><a class="btn dark" href="#/">Үргэлжлүүлэн үзэх</a></div></div>';
+}
+function copyTxt(s) { try { navigator.clipboard.writeText(s).then(function () { toast('Хуулагдлаа'); }); } catch (e) {} }
+
+// ── Миний захиалга ──
+var ORD = { list: lsGet('cz_orders', []), info: {}, busy: false, msg: '' };
+var TRACK = ['Хүлээн авсан', 'Хүргэлтэд гарсан', 'Хүргэгдсэн'];
+function refreshOrders() {
+  if (ORD.busy || !ORD.list.length || !API) return;
+  var by = {}; ORD.list.forEach(function (o) { (by[o.phone] = by[o.phone] || []).push(o.code); });
+  ORD.busy = true;
+  Promise.all(Object.keys(by).map(function (ph) {
+    return api({ action: 'shop', biz: BIZ, phone: ph, order: by[ph].join(',') }).then(function (d) { if (d && d.status === 'ok') d.orders.forEach(function (o) { ORD.info[o.code] = o; }); }).catch(function () {});
+  })).then(function () { ORD.busy = false; ORD.done = true; if (route().v === 'orders') $('app').innerHTML = vOrders(); });
+}
+function vOrders() {
+  var h = '<div class="steps"><h1>Миний захиалга</h1></div>';
+  if (ORD.list.length) {
+    h += ORD.list.map(function (o) {
+      var x = ORD.info[o.code], st = x ? x.status : (ORD.done ? '—' : 'Шалгаж байна…'), k = TRACK.indexOf(st), cls = k === 0 ? 'p1' : k === 1 ? 'p2' : k === 2 ? 'p3' : 'p4';
+      return '<div class="ord"><div class="ord-h"><div><b>№ ' + esc(o.code) + '</b><br><small>' + esc((x && x.date) || o.at) + ' · ' + money(x ? x.amount : o.amount) + (x ? ' · ' + esc(x.payType) + (x.paid ? ' (төлсөн)' : '') : '') + '</small></div><span class="pill ' + cls + '">' + esc(st) + '</span></div>' +
+        (k >= 0 ? '<div class="track">' + TRACK.map(function (s, i) { return '<div class="' + (i <= k ? 'on' : '') + '">' + s + '</div>'; }).join('') + '</div>' : '') +
+        (x ? '<div class="ord-it">' + x.items.filter(function (i) { return i.name !== 'Хүргэлтийн төлбөр'; }).map(function (i) { return esc(i.name) + ' × ' + i.qty; }).join(' · ') + '</div>' : '') + '</div>';
+    }).join('');
+  } else h += '<p style="color:var(--ink2)">Энэ төхөөрөмжөөс өгсөн захиалга алга.</p>';
+  h += '<div class="rv look" style="margin-top:24px"><h3>Захиалга хайх</h3><p style="font-size:13px;margin-bottom:12px">Өөр төхөөрөмжөөс захиалсан бол утасны дугаар, захиалгын дугаараа оруулна уу.</p>' +
+    '<div class="f2"><label class="fl"><span>Утасны дугаар</span><input id="lkPhone" type="tel" inputmode="numeric" maxlength="8" value="' + esc(form.phone) + '"></label>' +
+    '<label class="fl"><span>Захиалгын дугаар</span><input id="lkCode" inputmode="numeric" maxlength="6" placeholder="6 оронтой"></label></div>' +
+    '<button class="btn dark" onclick="lookOrder()">Хайх</button>' + (ORD.msg ? '<p style="color:var(--warn);font-size:13px">' + esc(ORD.msg) + '</p>' : '') + '</div>';
+  return h;
+}
+function lookOrder() {
+  var ph = digits($('lkPhone').value), cd = digits($('lkCode').value);
+  if (ph.length !== 8 || cd.length !== 6) { ORD.msg = '8 оронтой утас, 6 оронтой захиалгын дугаар оруулна уу'; $('app').innerHTML = vOrders(); return; }
+  api({ action: 'shop', biz: BIZ, phone: ph, order: cd }).then(function (d) {
+    if (d && d.status === 'ok' && d.orders.length) {
+      var o = d.orders[0]; ORD.info[o.code] = o; ORD.msg = '';
+      if (!ORD.list.some(function (x) { return x.code === o.code; })) { ORD.list.unshift({ code: o.code, phone: ph, at: o.date, amount: o.amount }); lsSet('cz_orders', ORD.list.slice(0, 30)); }
+    } else ORD.msg = d && d.error === 'rate' ? 'Түр хүлээгээд дахин оролдоно уу' : 'Захиалга олдсонгүй. Дугаараа шалгана уу.';
+    $('app').innerHTML = vOrders();
+  }).catch(function () { ORD.msg = 'Интернэт холболтоо шалгана уу'; $('app').innerHTML = vOrders(); });
+}
+
+// ── Эхлэх ──
+window.addEventListener('hashchange', function () { render(); window.scrollTo(0, 0); });
+window.addEventListener('storage', function (e) { if (e.key === 'cz_cart') { cart = lsGet('cz_cart', []); saveCart(); render(true); } });
+$('yr').textContent = new Date().getFullYear();
+if (SHOP_PHONE) $('ftContact').innerHTML = 'Утас: <a href="tel:' + SHOP_PHONE + '">' + SHOP_PHONE + '</a><br>Хүргэлт: Улаанбаатар хот, орон нутаг';
+saveCart(); render(); loadCat(); loadThumbs();
+setInterval(function () { if (!document.hidden && /^(home|product|cart)$/.test(route().v)) loadCat(true); }, 5 * 60000);   // үнэ, үлдэгдэл шинэчлэх
+</script>
+</body>
+</html>
