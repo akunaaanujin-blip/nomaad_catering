@@ -1878,3 +1878,6 @@ body.pos10 #saleSheet .cl1 .cl-dprice:not(:placeholder-shown){border-color:var(-
 .ps-x{right:3px}.ps-mv{left:3px;font-size:11px}
 .ps-add{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:22px;color:#6B7280;cursor:pointer;border-style:dashed}
 .ps-add small{font-size:11px}
+/* Вэб дэлгүүрээс ирсэн захиалга (orders.js) */
+.web-tag{display:inline-block;background:#FEF3C7;color:#92400E;border-radius:4px;padding:0 6px;font-weight:700;font-size:11px;line-height:18px}
+.web-note{color:#92400E;font-style:italic}

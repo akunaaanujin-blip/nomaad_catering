@@ -294,9 +294,13 @@ function shipOrders(ids, to, done) {
 }
 
 // ── Жагсаалт ──
-var ORD_TABS = [['new', 'Илгээх'], ['sent', 'Хүргэлтэд'], ['ret', 'Буухиа буцаалт'], ['back', 'Буцаасан, цуцалсан'], ['all', 'Бүгд']];   // «Бараа буцаж ирэх» — хүргэлтэд гарсан ч буцсан, бараа хүлээн аваагүй   // «Төлбөр ороогүй» таб нуусан (2026-11-12)
+var ORD_TABS = [['new', 'Илгээх'], ['web', '🌐 Вэбээс ирсэн'], ['sent', 'Хүргэлтэд'], ['ret', 'Буухиа буцаалт'], ['back', 'Буцаасан, цуцалсан'], ['all', 'Бүгд']];   // «Бараа буцаж ирэх» — хүргэлтэд гарсан ч буцсан, бараа хүлээн аваагүй   // «Төлбөр ороогүй» таб нуусан (2026-11-12)
+// Вэб дэлгүүрээс (wise.ub.mn/cozy/) үйлчлүүлэгч өөрөө өгсөн захиалга — сервер ажилтныг «Вэб захиалга» гэж бичнэ
+function ordIsWeb(o) { return o.staff === 'Вэб захиалга'; }
+function ordWebOn() { return (typeof BIZ_KEY !== 'undefined' && BIZ_KEY === 'cozy') || orders.some(ordIsWeb); }
 function ordFilter(o) {
-  if (ordTab === 'bills') return false;   // өнөөдрийн баримт — тусдаа жагсаалт (todayList)
+  if (ordTab === 'bills') return false;
+  if (ordTab === 'web') return ordIsWeb(o);   // өнөөдрийн баримт — тусдаа жагсаалт (todayList)
   if (ordTab === 'new') return o.status === 'Шинэ';
   if (ordTab === 'sent') return o.status === 'Буухиад өгсөн';
   if (ordTab === 'ret') return ordEbRet(o);
@@ -335,7 +339,11 @@ function renderOrders() {
     if (t === 'bills') { var k = {}; (typeof todayRecords === 'function' ? todayRecords() : []).forEach(function (r) { if (r.type === 'sale') k[billKey(r)] = 1; }); return Object.keys(k).length; }
     var keep = ordTab; ordTab = t; var n = orders.filter(ordFilter).length; ordTab = keep; return n; };
   var bills = ordTab === 'bills';
-  $('orderTabs').innerHTML = ORD_TABS.map(function (t) { var n = cnt(t[0]), wait = t[0] === 'ret' ? orders.filter(ordAwaitReturn).length : 0;   // буцаалт: ирээгүй бараа байвал улаан тоогоор
+  if (ordTab === 'web' && !ordWebOn()) ordTab = 'new';
+  $('orderTabs').innerHTML = ORD_TABS.filter(function (t) { return t[0] !== 'web' || ordWebOn(); }).map(function (t) {
+    if (t[0] === 'web') { var wn = orders.filter(function (o) { return ordIsWeb(o) && o.status === 'Шинэ'; }).length;   // шинэ вэб захиалга байвал улаанаар
+      return '<button class="' + (ordTab === 'web' ? 'on' : '') + (wn ? ' tab-alert' : '') + '" onclick="ordTab=\'web\';renderOrders()"' + (wn ? ' title="' + wn + ' шинэ вэб захиалга — утсаар баталгаажуулна уу"' : '') + '>' + t[1] + ' <small>' + (wn ? wn + ' шинэ · ' : '') + cnt('web') + '</small></button>'; }
+    var n = cnt(t[0]), wait = t[0] === 'ret' ? orders.filter(ordAwaitReturn).length : 0;   // буцаалт: ирээгүй бараа байвал улаан тоогоор
     return '<button class="' + (ordTab === t[0] ? 'on' : '') + (wait ? ' tab-alert' : '') + '" onclick="ordTab=\'' + t[0] + '\';renderOrders()"' + (wait ? ' title="' + wait + ' захиалгын бараа хүлээн аваагүй"' : '') + '>' + t[1] + ' <small>' + (wait ? wait + ' ирээгүй · ' + n : n) + '</small></button>'; }).join('');
   if (typeof renderNav === 'function') renderNav();
   var list = (ordQ.trim() ? orders : orders.filter(ordFilter)).filter(ordMatch).sort(function (a, b) { var w = ordTab === 'ret' ? (ordAwaitReturn(b) ? 1 : 0) - (ordAwaitReturn(a) ? 1 : 0) : 0; return w || ((b.date + b.time) < (a.date + a.time) ? -1 : 1); });   // буцаалт: ирээгүй нь дээр
@@ -355,7 +363,8 @@ function renderOrders() {
       : o.saleDone === 'returned' ? '<small style="color:#15803D">Бараа буцаж ирсэн</small>' : ordDead(o) ? '<small class="muted">Хүргэлтэд гараагүй</small>' : '';
     return '<tr' + (ordAwaitReturn(o) ? ' class="tr-ret"' : '') + '>' +
       '<td class="c-d" data-l="Огноо">' + esc(String(o.date || '').slice(5).replace('-', '/')) + '<small>' + esc(o.time || '') + '</small></td>' +
-      '<td class="c-p" data-l="Хэрэглэгч" onclick="openOrder(\'' + o.id + '\')"><b>' + (ordIsDup(o) ? '<span title="' + esc(ordDupOf(o)) + '" style="color:#B45309">⚠ </span>' : '') + esc(o.phone) + '</b><small>' + esc(o.customer || '') + '</small></td>' +
+      '<td class="c-p" data-l="Хэрэглэгч" onclick="openOrder(\'' + o.id + '\')"><b>' + (ordIsDup(o) ? '<span title="' + esc(ordDupOf(o)) + '" style="color:#B45309">⚠ </span>' : '') + esc(o.phone) + '</b><small>' + esc(o.customer || '') + '</small>' +
+        (ordIsWeb(o) ? '<small><span class="web-tag" title="Үйлчлүүлэгч вэб дэлгүүрээс өөрөө захиалсан — утсаар баталгаажуулна уу">🌐 Вэб</span> ' + esc(o.payType || '') + '</small>' + (String(o.note || '').indexOf('🌐 Вэб захиалга · ') === 0 ? '<small class="web-note">«' + esc(String(o.note).slice('🌐 Вэб захиалга · '.length)) + '»</small>' : '') : '') + '</td>' +
       '<td class="c-a" data-l="Хаяг">' + esc([o.city && o.city !== 'Улаанбаатар' ? o.city : '', o.district, o.address].filter(Boolean).join(' ')).slice(0, 80) + '</td>' +
       '<td class="c-i" data-l="Бараа">' + esc(ordItemsText(o)) + '</td>' +
       '<td class="c-m num" data-l="Дүн">' + fmt(o.amount) + (fee ? '<small>хүргэлт ' + fmt(fee) + '</small>' : '') + '</td>' +
