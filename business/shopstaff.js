@@ -45,7 +45,7 @@ function wsRender() {
     return '<button type="button" class="ws-card' + (p.show ? '' : ' off') + '" onclick="wsOpen(' + k + ')">' +
       '<span class="ws-ph">' + (p.thumb ? '<img src="' + p.thumb + '" alt="" loading="lazy">' : '<i>📷</i><small>Зураг алга</small>') +
       (p.hot ? '<em class="ws-hot">Онцлох</em>' : '') + (p.show ? '' : '<em class="ws-off">Нуусан</em>') + '</span>' +
-      '<b>' + esc(p.name) + '</b><small>' + fmt(p.price) + ' · ' + (p.imgs ? p.imgs + ' зураг' : 'зураггүй') + (p.desc ? ' · тайлбартай' : '') + (p.cat ? ' · ' + esc(p.cat) : '') + '</small></button>';
+      '<b>' + esc(p.name) + '</b><small>' + fmt(p.price) + ' · ' + (p.imgs ? p.imgs + ' зураг' : 'зураггүй') + (p.desc ? ' · тайлбартай' : '') + (p.cat ? ' · ' + esc(p.cat) : '') + ((p.colors || []).length ? ' · ' + p.colors.length + ' өнгө' : '') + (p.sale ? ' · хямдралтай' : '') + '</small></button>';
   }).join('');
 }
 function wsCats() { var o = {}; (wsList || []).forEach(function (p) { if (p.cat) o[p.cat] = 1; }); return Object.keys(o).sort(); }
@@ -61,6 +61,8 @@ function wsOpen(k) {
     '<label class="ps-chk"><input type="checkbox" id="wsShow"' + (p.show ? ' checked' : '') + ' onchange="wsCur.dirty=true"> Вэб дэлгүүрт харуулах</label>' +
     '<label class="ps-chk"><input type="checkbox" id="wsHot"' + (p.hot ? ' checked' : '') + ' onchange="wsCur.dirty=true"> Онцлох (эхэнд харуулна)</label>' +
     '<label for="wsCat">Вэб ангилал</label><input id="wsCat" list="wsCats" maxlength="40" value="' + esc(p.cat || '') + '" placeholder="Жишээ: Тогоо, сав суулга" oninput="wsCur.dirty=true"><datalist id="wsCats">' + wsCats().map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist>' +
+    '<label for="wsColors">Өнгө — таслалаар (үйлчлүүлэгч сонгоно)</label><input id="wsColors" maxlength="200" value="' + esc((p.colors || []).join(', ')) + '" placeholder="Жишээ: Хар, Цагаан, Ногоон" oninput="wsCur.dirty=true">' +
+    (p.sale ? '<p class="muted" style="font-size:12.5px;margin:4px 0 0">Хямдралтай: ' + fmt(p.sale) + (p.until ? ' · ' + esc(p.until) + ' хүртэл' : '') + ' (удирдлага тохируулна)</p>' : '') +
     '<label for="wsDesc">Тайлбар (үйлчлүүлэгчид харагдана)</label><textarea id="wsDesc" rows="4" maxlength="3000" placeholder="Хэмжээ, материал, онцлог, хэрэглэх заавар…" oninput="wsCur.dirty=true">' + esc(p.desc || '') + '</textarea>' +
     '<label>Зураг — 5 хүртэл, эхнийх нь нүүр зураг</label><div id="wsImgs" class="ps-imgs"></div>' +
     '<input type="file" id="wsFile" accept="image/*" multiple style="display:none" onchange="wsAdd(this.files);this.value=\'\'">' +
@@ -126,7 +128,7 @@ function wsSave() {
   var s = wsCur; if (!s) return;
   if (s.loading) { toast('Зургийг ачаалж дуусахыг хүлээнэ үү'); return; }
   if (!s.dirty) { closeSheet('wsSheet'); return; }
-  var body = { type: 'staff_shop', name: s.name, show: $('wsShow').checked, hot: $('wsHot').checked, desc: $('wsDesc').value.trim(), cat: $('wsCat').value.trim() };
+  var body = { type: 'staff_shop', name: s.name, show: $('wsShow').checked, hot: $('wsHot').checked, desc: $('wsDesc').value.trim(), cat: $('wsCat').value.trim(), colors: $('wsColors').value.trim() };
   var go = function () {
     if (!API_URL) { toast('Туршилтын горим — хадгалагдсангүй'); return; }
     $('wsBtn').disabled = true; $('wsMsg').textContent = 'Хадгалж байна…';
@@ -135,7 +137,7 @@ function wsSave() {
       $('wsBtn').disabled = false;
       if (err) { $('wsMsg').textContent = 'Хадгалагдсангүй — ' + wsErr(err); return; }
       var p = wsList[s.k];
-      if (p && p.name === s.name) { p.show = body.show; p.hot = body.hot; p.desc = body.desc; p.cat = body.cat; if (body.imgs) { p.imgs = body.imgs.length; p.thumb = body.thumb || ''; } }
+      if (p && p.name === s.name) { p.show = body.show; p.hot = body.hot; p.desc = body.desc; p.cat = body.cat; p.colors = body.colors.split(/[,;]+/).map(function (x) { return x.trim(); }).filter(String); if (body.imgs) { p.imgs = body.imgs.length; p.thumb = body.thumb || ''; } }
       closeSheet('wsSheet'); wsRender(); toast('Хадгалагдлаа — 5 минутын дотор вэбэд гарна');
     });
   };

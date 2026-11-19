@@ -8,7 +8,7 @@ function shopAdmOpen(name) {
   shopAdm = url ? { biz: state.biz, name: name || '', imgs: [], dirty: false, imgDirty: false, loading: false } : null;
   if (!url) return;
   $('psLink').href = url + (name ? '#/p/' + encodeURIComponent(name) : '');
-  $('psShow').checked = true; $('psHot').checked = false; $('psDesc').value = ''; $('psCat').value = ''; $('psMsg').textContent = '';
+  $('psShow').checked = true; $('psHot').checked = false; $('psDesc').value = ''; $('psCat').value = ''; $('psColors').value = ''; $('psSale').value = ''; $('psUntil').value = ''; $('psMsg').textContent = ''; shopAdmSalePct();
   shopAdmRender();
   if (!name || !API_URL) return;
   shopAdm.loading = true; $('psMsg').textContent = 'Вэбийн мэдээллийг ачаалж байна…'; shopAdmRender();
@@ -18,7 +18,7 @@ function shopAdmOpen(name) {
     my.loading = false;
     if (err) { $('psMsg').textContent = 'Вэбийн мэдээллийг ачаалж чадсангүй (' + err + ')'; shopAdmRender(); return; }
     var s = d.shop;
-    if (s && !my.dirty) { $('psShow').checked = s.show !== false; $('psHot').checked = !!s.hot; $('psDesc').value = s.desc || ''; $('psCat').value = s.cat || ''; }
+    if (s && !my.dirty) { $('psShow').checked = s.show !== false; $('psHot').checked = !!s.hot; $('psDesc').value = s.desc || ''; $('psCat').value = s.cat || ''; $('psColors').value = (s.colors || []).join(', '); $('psSale').value = s.sale || ''; $('psUntil').value = s.until || ''; shopAdmSalePct(); }
     $('psCats').innerHTML = (d.cats || []).map(function (c) { return '<option value="' + esc(c) + '">'; }).join('');
     if (!my.imgDirty) my.imgs = (d.imgs || []).slice(0, SHOP_IMG_MAX);
     $('psMsg').textContent = s ? '' : 'Вэбэд одоогоор зураг, тайлбаргүй харагдаж байна.';
@@ -26,6 +26,11 @@ function shopAdmOpen(name) {
   });
 }
 function shopAdmDirty() { if (shopAdm) shopAdm.dirty = true; }
+function shopAdmSalePct() {   // хямдралын хувь
+  var el = $('psSalePct'); if (!el) return;
+  var pr = Number($('pdPrice').value) || 0, sv = Number($('psSale').value) || 0;
+  el.textContent = sv && pr ? (sv < pr ? 'Хямдрал: −' + Math.round((pr - sv) / pr * 100) + '% (' + (pr - sv).toLocaleString('en-US') + '₮). Вэбэд хуучин үнэ зураастай харагдана.' : 'Хямдралтай үнэ үндсэн үнээс бага байх ёстой') : '';
+}
 function shopAdmRender() {
   var el = $('psImgs'); if (!el || !shopAdm) return;
   var h = shopAdm.imgs.map(function (src, i) {
@@ -76,7 +81,9 @@ function shopShrink(src, max, q, cb) {
 function shopAdmSave(name, cb) {
   var s = shopAdm;
   if (!s || !s.dirty || !API_URL || s.loading) { cb(); return; }
-  var body = { type: 'admin_shop', biz: s.biz, name: name, show: $('psShow').checked, hot: $('psHot').checked, desc: $('psDesc').value.trim(), cat: $('psCat').value.trim() };
+  var body = { type: 'admin_shop', biz: s.biz, name: name, show: $('psShow').checked, hot: $('psHot').checked, desc: $('psDesc').value.trim(), cat: $('psCat').value.trim(), colors: $('psColors').value.trim(), sale: Number($('psSale').value) || 0, until: $('psUntil').value || '' };
+  var pr = Number($('pdPrice').value) || 0;
+  if (body.sale && pr && body.sale >= pr) { toast('Хямдралтай үнэ үндсэн үнээс бага байх ёстой'); cb(); return; }
   var send = function () {
     post(body, function (err) {
       if (err) toast('Бараа хадгалагдсан, вэбийн зураг/тайлбар хадгалагдсангүй: ' + err);

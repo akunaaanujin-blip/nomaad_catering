@@ -24,7 +24,7 @@ function ordGoods(o) { return ordItems(o).filter(function (i) { return !isNonGoo
 function ordDiscLines(o) { return o && o.items ? ordItems(o).filter(function (i) { return baseItem(i.name) === DISC_ITEM; }) : []; }   // засварт хөнгөлөлт хадгалагдана
 function ordCourier(o) { return o && (o.courier === 'Бусад' || o.ebCode === 'бусад') ? 'Бусад' : 'Буухиа'; }   // захиалга дээр сонгосон хүргэлтийн компани (хоосон = Буухиа)
 function ordFee(o) { return ordItems(o).filter(function (i) { return isFee(i.name); }).reduce(function (a, i) { return a + (Number(i.price) || 0) * (Number(i.qty) || 1); }, 0); }
-function ordItemsText(o) { return ordGoods(o).map(function (i) { return i.name + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); }
+function ordItemsText(o) { return ordGoods(o).map(function (i) { return i.name + (i.opt ? ' (' + i.opt + ')' : '') + (i.qty > 1 ? ' x' + i.qty : ''); }).join(', '); }   // opt — вэбээс сонгосон өнгө
 
 // ── Сервертэй ──
 function ordPost(body, cb) {

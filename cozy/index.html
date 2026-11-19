@@ -7,21 +7,21 @@
 <meta name="description" content="Гэр ахуй, гал тогооны чанартай бараа. Онлайнаар захиалаад гэртээ хүргүүлээрэй — Улаанбаатар болон орон нутагт.">
 <meta property="og:title" content="Cozy Home Ulaanbaatar — Онлайн дэлгүүр">
 <meta property="og:description" content="Гэр ахуй, гал тогооны бараа — онлайнаар захиалаад гэртээ хүргүүлээрэй.">
-<meta property="og:image" content="https://wise.ub.mn/business/icons/cozy-512.png">
-<meta name="theme-color" content="#FAF7F2">
-<link rel="icon" type="image/png" href="https://wise.ub.mn/business/icons/cozy-192.png">
-<link rel="apple-touch-icon" href="https://wise.ub.mn/business/icons/cozy-180.png">
+<meta property="og:image" content="https://wise.ub.mn/cozy/img/logo-600.jpg">
+<meta name="theme-color" content="#2E4054">
+<link rel="icon" type="image/png" href="img/favicon-64.png">
+<link rel="apple-touch-icon" href="img/apple-180.png">
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#FAF7F2; --card:#FFFFFF; --sand:#F2ECE3; --sand2:#E9E0D3; --line:#E7DFD3;
-  --ink:#2A211B; --ink2:#5C5048; --muted:#8C7F73;
-  --brand:#7A5A2E; --brand-d:#5E4422; --terra:#B4532A; --sage:#5E7A5F; --sage-bg:#EAF0E8; --warn-bg:#FBEDE5;
-  --r:14px; --r-sm:10px; --shadow:0 1px 2px rgba(42,33,27,.05),0 6px 20px rgba(42,33,27,.06);
-  --serif:Lora,Georgia,"Times New Roman",serif; --sans:Manrope,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --bg:#F6F5F2; --card:#FFFFFF; --sand:#EDEBE6; --sand2:#E1DED7; --line:#E3E0D9;
+  --ink:#1F2833; --ink2:#4A5563; --muted:#7D8693;
+  --brand:#2E4054; --brand-d:#22303F; --brand-l:#E6EBF0; --warm:#E8C6A2; --terra:#C0603A; --sage:#4F7458; --sage-bg:#E7EFE8; --warn-bg:#FBEDE5;
+  --r:14px; --r-sm:10px; --shadow:0 1px 2px rgba(31,40,51,.05),0 6px 20px rgba(31,40,51,.07);
+  --serif:Montserrat,system-ui,-apple-system,"Segoe UI",sans-serif; --sans:Manrope,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
@@ -34,20 +34,20 @@ svg{flex:none}
 .serif{font-family:var(--serif)}
 
 /* Зарлал, толгой */
-.ann{background:var(--brand);color:#F6EEE3;font-size:12.5px;font-weight:600;text-align:center;padding:7px 16px;letter-spacing:.01em}
-.top{position:sticky;top:0;z-index:20;background:rgba(250,247,242,.94);backdrop-filter:saturate(1.3) blur(10px);border-bottom:1px solid var(--line)}
+.ann{background:var(--brand-d);color:#E3E8EE;font-size:12.5px;font-weight:600;text-align:center;padding:7px 16px;letter-spacing:.01em}
+.top{position:sticky;top:0;z-index:20;background:rgba(246,245,242,.94);backdrop-filter:saturate(1.3) blur(10px);border-bottom:1px solid var(--line)}
 .top-in{display:flex;align-items:center;gap:20px;height:68px}
 .logo{display:flex;align-items:center;gap:10px;flex:none}
-.logo-mark{width:40px;height:40px;border-radius:12px;background:var(--brand);color:#FBF5EC;display:grid;place-items:center;font-family:var(--serif);font-weight:700;font-size:21px}
-.logo b{display:block;font-family:var(--serif);font-size:19px;font-weight:700;line-height:1.05;letter-spacing:.01em}
-.logo small{display:block;font-size:9.5px;letter-spacing:.3em;color:var(--muted);font-weight:700;margin-top:2px}
+.logo-mark{width:44px;height:44px;border-radius:11px;object-fit:cover;flex:none}
+.logo b{display:block;font-family:var(--serif);font-size:16px;font-weight:800;line-height:1.05;letter-spacing:.14em;color:var(--brand)}
+.logo small{display:block;font-size:9.5px;letter-spacing:.32em;color:var(--muted);font-weight:600;margin-top:3px}
 .nav{display:flex;gap:6px;margin-left:24px}
 .nav a{font-size:14px;font-weight:600;color:var(--ink2);padding:8px 14px;border-radius:999px}
 .nav a:hover{background:var(--sand)}
-.nav a.on{background:var(--ink);color:#fff}
+.nav a.on{background:var(--brand);color:#fff}
 .srch{flex:1;max-width:340px;margin-left:auto;position:relative}
 .srch input{width:100%;height:42px;border:1px solid var(--line);border-radius:999px;background:#fff;padding:0 16px 0 40px;outline:none;font-size:14px}
-.srch input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(122,90,46,.12)}
+.srch input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(46,64,84,.14)}
 .srch svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted)}
 .acts{display:flex;gap:4px;align-items:center}
 .ic{position:relative;width:42px;height:42px;border:0;background:none;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--ink)}
@@ -60,24 +60,29 @@ svg{flex:none}
 .mnav{display:none}
 
 /* Нүүр */
-.hero{display:grid;grid-template-columns:1.05fr 1fr;gap:40px;align-items:center;margin:28px 0 8px;padding:44px 48px;background:var(--sand);border-radius:24px;overflow:hidden;position:relative}
-.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brand)}
+.hero{display:grid;grid-template-columns:1.05fr 1fr;gap:40px;align-items:center;margin:28px 0 8px;padding:48px 52px;background:var(--brand);color:#F2F4F7;border-radius:24px;overflow:hidden;position:relative}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--warm)}
 .eyebrow:before{content:"";width:22px;height:1.5px;background:currentColor}
-.hero h1{font-family:var(--serif);font-size:44px;line-height:1.12;font-weight:600;margin:14px 0 14px;letter-spacing:-.01em}
-.hero h1 em{font-style:italic;color:var(--brand)}
-.hero p{margin:0 0 26px;color:var(--ink2);font-size:16px;max-width:440px}
+.hero h1{font-family:var(--serif);font-size:40px;line-height:1.15;font-weight:800;margin:14px 0 14px;letter-spacing:-.01em}
+.hero h1 em{font-style:normal;color:var(--warm)}
+.hero p{margin:0 0 26px;color:#C6CFD9;font-size:16px;max-width:440px}
+.hero .btn{border-color:rgba(255,255,255,.55);color:#fff}
+.hero .btn:hover{background:#fff;color:var(--brand)}
+.hero .btn.dark{background:#fff;border-color:#fff;color:var(--brand)}
+.hero .btn.dark:hover{background:var(--warm);border-color:var(--warm)}
 .hero-btns{display:flex;gap:10px;flex-wrap:wrap}
 .mosaic{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px;aspect-ratio:1.15}
-.mosaic div{border-radius:18px;overflow:hidden;background:#fff;box-shadow:var(--shadow)}
+.mosaic div{border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.18)}
 .mosaic div:first-child{grid-row:span 2}
 .mosaic img{width:100%;height:100%;object-fit:cover}
 .mosaic .deco{display:grid;place-items:center;box-shadow:none}
 .mosaic .deco svg{width:42%;height:42%;opacity:.9}
-.d1{background:#E5D6C1!important;color:var(--brand)} .d2{background:#DCE4D8!important;color:var(--sage)} .d3{background:#EFD9CB!important;color:var(--terra)}
+.d1{background:#2E4054!important} .d2{background:#3A4F66!important;color:var(--warm)} .d3{background:#E8C6A2!important;color:var(--brand)}
+.mosaic .emb img{width:100%;height:100%;object-fit:cover}
 
 .perks{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0 6px}
 .perk{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
-.perk i{width:40px;height:40px;border-radius:12px;background:var(--sand);color:var(--brand);display:grid;place-items:center;flex:none}
+.perk i{width:40px;height:40px;border-radius:12px;background:var(--brand-l);color:var(--brand);display:grid;place-items:center;flex:none}
 .perk i svg{width:20px;height:20px}
 .perk b{display:block;font-size:14px}
 .perk small{color:var(--muted);font-size:12.5px}
@@ -88,7 +93,9 @@ svg{flex:none}
 .sort{height:40px;border:1px solid var(--line);border-radius:999px;padding:0 14px;background:#fff;font-size:13.5px;font-weight:600;cursor:pointer}
 .cats{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin:-4px 0 16px;scrollbar-width:none}
 .cats button{flex:none;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 16px;font-size:13.5px;font-weight:600;cursor:pointer;color:var(--ink2)}
-.cats button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.cats button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.cats button.sale{color:var(--terra);border-color:#EBC3B1}
+.cats button.sale.on{background:var(--terra);border-color:var(--terra);color:#fff}
 
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px 20px}
 .card{position:relative;display:block;min-width:0}
@@ -100,6 +107,7 @@ svg{flex:none}
 .pill{position:absolute;left:10px;top:10px;display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.94);border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:700}
 .pill:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
 .pill.in{color:var(--sage)} .pill.low{color:var(--terra)} .pill.out{color:#6B6158}
+.off{position:absolute;right:10px;top:10px;background:var(--terra);color:#fff;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:800}
 .hot{position:absolute;right:10px;top:10px;background:var(--brand);color:#fff;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:700}
 .qadd{position:absolute;right:10px;bottom:10px;width:40px;height:40px;border-radius:50%;border:0;background:#fff;color:var(--ink);display:grid;place-items:center;box-shadow:0 2px 10px rgba(42,33,27,.15);cursor:pointer;transition:transform .15s,background .15s}
 .qadd:hover{background:var(--ink);color:#fff;transform:scale(1.06)}
@@ -107,6 +115,11 @@ svg{flex:none}
 .card.out .ph img,.card.out .noimg{opacity:.5;filter:grayscale(.4)}
 .nm{margin:12px 0 3px;font-size:14.5px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .pr{font-weight:800;font-size:16px}
+.pr s,.price-big s,.ci s{color:var(--muted);font-weight:600;font-size:.82em;margin-left:6px}
+.pr.sale,.price-big.sale{color:var(--terra)}
+.cdots{display:flex;align-items:center;gap:4px;margin-top:6px}
+.cdots i{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
+.cdots small{font-size:11.5px;color:var(--muted);margin-left:2px}
 .sk .ph{animation:pulse 1.2s infinite ease-in-out}
 .sk .nm,.sk .pr{height:13px;background:var(--sand);border-radius:6px;margin-top:14px;width:80%}
 .sk .pr{width:40%}
@@ -117,10 +130,12 @@ svg{flex:none}
 /* Товч */
 .btn{height:50px;border-radius:999px;border:1.5px solid var(--ink);background:transparent;font-weight:700;font-size:14.5px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 24px;transition:background .15s,color .15s}
 .btn:hover{background:var(--ink);color:#fff}
-.btn.dark{background:var(--ink);color:#fff}
-.btn.dark:hover{background:#000}
-.btn.brand{background:var(--brand);border-color:var(--brand);color:#fff}
-.btn.brand:hover{background:var(--brand-d);border-color:var(--brand-d)}
+.btn{border-color:var(--brand);color:var(--brand)}
+.btn:hover{background:var(--brand);color:#fff}
+.btn.dark{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.dark:hover{background:var(--brand-d);border-color:var(--brand-d)}
+.btn.brand{background:var(--terra);border-color:var(--terra);color:#fff}
+.btn.brand:hover{background:#A84F2D;border-color:#A84F2D}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .btn.block{width:100%}
 .btn svg{width:18px;height:18px}
@@ -136,7 +151,7 @@ svg{flex:none}
 .gal-strip{display:none}
 .gal-th{display:flex;gap:10px;margin-top:12px;overflow-x:auto}
 .gal-th button{flex:none;width:76px;height:76px;border:2px solid transparent;border-radius:12px;overflow:hidden;padding:0;cursor:pointer;background:#fff}
-.gal-th button.on{border-color:var(--ink)}
+.gal-th button.on{border-color:var(--brand)}
 .gal-th img{width:100%;height:100%;object-fit:cover}
 .pinfo h1{font-family:var(--serif);font-size:34px;font-weight:600;line-height:1.2;margin:0 0 12px}
 .tag{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding:4px 12px;border-radius:999px;background:var(--sage-bg);color:var(--sage)}
@@ -153,6 +168,18 @@ svg{flex:none}
 .qty button:disabled{opacity:.3;cursor:default}
 .qty span{min-width:30px;text-align:center;font-weight:800}
 .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.opts{margin:2px 0 14px}
+.opts>span{display:block;font-size:14px;font-weight:600;color:var(--ink2);margin-bottom:8px}
+.opts>span b{color:var(--ink)}
+.opts.need>span{color:var(--terra)}
+.sw{display:flex;flex-wrap:wrap;gap:8px}
+.swc{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font-size:13.5px;font-weight:600;cursor:pointer}
+.swc i{width:16px;height:16px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
+.swc.on{border-color:var(--brand);background:var(--brand-l)}
+.opts.need .swc{border-color:#EBC3B1}
+.sale-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
+.sale-row .off{position:static}
+.ci .opt{display:block;font-size:12.5px;color:var(--ink2);margin-top:1px}
 .desc{margin-top:26px}
 .desc h3,.info h3{font-family:var(--serif);font-size:19px;font-weight:600;margin:0 0 8px}
 .desc p{margin:0;white-space:pre-line;color:var(--ink2)}
@@ -168,7 +195,7 @@ svg{flex:none}
 .steps h1{font-family:var(--serif);font-size:30px;font-weight:600;margin:0 auto 0 0}
 .stp{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--muted)}
 .stp i{width:26px;height:26px;border-radius:50%;background:var(--sand2);color:var(--muted);display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:800}
-.stp.on{color:var(--ink)} .stp.on i{background:var(--brand);color:#fff}
+.stp.on{color:var(--brand)} .stp.on i{background:var(--brand);color:#fff}
 .stp.done{color:var(--ink2)} .stp.done i{background:var(--ink);color:#fff}
 .stp-sep{width:26px;height:1.5px;background:var(--line)}
 .co{display:grid;grid-template-columns:1fr 360px;gap:28px;align-items:start}
@@ -208,14 +235,14 @@ svg{flex:none}
 .fl>span em{color:var(--terra);font-style:normal}
 .fl input,.fl select,.fl textarea{width:100%;height:48px;border:1px solid var(--line);border-radius:12px;padding:0 14px;background:#fff;outline:none;font-size:15px}
 .fl textarea{height:auto;padding:12px 14px;resize:vertical}
-.fl input:focus,.fl select:focus,.fl textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(122,90,46,.12)}
+.fl input:focus,.fl select:focus,.fl textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(46,64,84,.14)}
 .fl.err input,.fl.err select,.fl.err textarea{border-color:var(--terra);background:#FFFBF8}
 .fl .msg{display:none;color:var(--terra);font-size:12.5px;margin-top:5px;font-weight:600}
 .fl.err .msg{display:block}
 .pay{display:grid;gap:10px}
 .pay label{display:flex;gap:12px;align-items:flex-start;border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer;background:#fff}
-.pay label.on{border-color:var(--ink);background:var(--bg)}
-.pay input{margin-top:3px;accent-color:var(--ink);width:18px;height:18px}
+.pay label.on{border-color:var(--brand);background:var(--brand-l)}
+.pay input{margin-top:3px;accent-color:var(--brand);width:18px;height:18px}
 .pay b{display:block;font-size:15px}
 .pay small{color:var(--ink2)}
 .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
@@ -253,22 +280,22 @@ svg{flex:none}
 .look{max-width:560px;margin-top:24px}
 
 /* Утасны доод сагс */
-.mcart{position:fixed;left:12px;right:12px;bottom:12px;z-index:30;display:none;align-items:center;gap:12px;background:var(--ink);color:#fff;border-radius:18px;padding:10px 10px 10px 18px;box-shadow:0 10px 30px rgba(42,33,27,.25)}
+.mcart{position:fixed;left:12px;right:12px;bottom:12px;z-index:30;display:none;align-items:center;gap:12px;background:var(--brand);color:#fff;border-radius:18px;padding:10px 10px 10px 18px;box-shadow:0 10px 30px rgba(42,33,27,.25)}
 .mcart div{flex:1;min-width:0;font-size:13px;line-height:1.3}
 .mcart div b{display:block;font-size:16px}
-.mcart a{background:#fff;color:var(--ink);font-weight:800;font-size:14px;border-radius:12px;padding:12px 16px;white-space:nowrap}
+.mcart a{background:#fff;color:var(--brand);font-weight:800;font-size:14px;border-radius:12px;padding:12px 16px;white-space:nowrap}
 
-footer{margin-top:80px;background:var(--ink);color:#CFC4B8;padding:44px 0 30px;font-size:14px}
+footer{margin-top:80px;background:var(--brand);color:#C6CFD9;padding:44px 0 30px;font-size:14px}
 footer .wrap{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:28px}
-footer .fb{font-family:var(--serif);font-size:22px;color:#fff;font-weight:600}
+footer .fb img{width:132px;height:132px;border-radius:14px;margin:-10px 0 4px -10px}
 footer h4{margin:0 0 10px;color:#fff;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
 footer a{color:#fff}
 footer p{margin:4px 0}
-footer small{grid-column:1/-1;color:#8F8378;border-top:1px solid rgba(255,255,255,.1);padding-top:18px;margin-top:6px}
+footer small{grid-column:1/-1;color:#8E9AA8;border-top:1px solid rgba(255,255,255,.1);padding-top:18px;margin-top:6px}
 
-#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:14px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:50;display:flex;gap:12px;align-items:center;width:max-content;max-width:calc(100% - 32px);box-shadow:0 10px 30px rgba(42,33,27,.25)}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--brand-d);color:#fff;padding:12px 18px;border-radius:14px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:50;display:flex;gap:12px;align-items:center;width:max-content;max-width:calc(100% - 32px);box-shadow:0 10px 30px rgba(42,33,27,.25)}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
-#toast a{color:#F2C99B;white-space:nowrap}
+#toast a{color:var(--warm);white-space:nowrap}
 
 @media (max-width:980px){
   .grid{grid-template-columns:repeat(3,1fr)}
@@ -293,9 +320,9 @@ footer small{grid-column:1/-1;color:#8F8378;border-top:1px solid rgba(255,255,25
   .msrch input{width:100%;height:44px;border:1px solid var(--line);border-radius:999px;background:#fff;padding:0 16px;outline:none}
   .mnav{display:flex;gap:6px;padding:0 0 10px}
   .mnav a{flex:1;text-align:center;font-size:13px;font-weight:700;padding:8px 0;border-radius:999px;color:var(--ink2);background:var(--sand)}
-  .mnav a.on{background:var(--ink);color:#fff}
+  .mnav a.on{background:var(--brand);color:#fff}
   .hero{padding:28px 22px;margin-top:16px;border-radius:20px;gap:22px}
-  .hero h1{font-size:30px}
+  .hero h1{font-size:27px}
   .hero p{font-size:15px;margin-bottom:20px}
   .hero-btns .btn{flex:1;padding:0 14px;height:46px;font-size:14px}
   .perks{grid-template-columns:1fr;gap:8px}
@@ -340,7 +367,7 @@ footer small{grid-column:1/-1;color:#8F8378;border-top:1px solid rgba(255,255,25
 <header class="top">
   <div class="wrap">
     <div class="top-in">
-      <a href="#/" class="logo" aria-label="Cozy Home Ulaanbaatar — нүүр"><span class="logo-mark">C</span><span><b>Cozy Home</b><small>ULAANBAATAR</small></span></a>
+      <a href="#/" class="logo" aria-label="Cozy Home Ulaanbaatar — нүүр"><img class="logo-mark" src="img/mark-256.jpg" alt="" width="44" height="44"><span><b>COZY HOME</b><small>ULAANBAATAR</small></span></a>
       <nav class="nav"><a href="#/" data-nav="home">Бэлэн бараа</a><a href="#/orders" data-nav="orders">Миний захиалга</a></nav>
       <label class="srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Бараа хайх…" autocomplete="off" oninput="onSearch(this.value)" aria-label="Бараа хайх"></label>
       <div class="acts">
@@ -359,7 +386,7 @@ footer small{grid-column:1/-1;color:#8F8378;border-top:1px solid rgba(255,255,25
 
 <footer>
   <div class="wrap">
-    <div><div class="fb">Cozy Home</div><p>Гэр ахуй, гал тогооны чанартай бараа.</p><p>Улаанбаатар хот, орон нутагт хүргэнэ.</p></div>
+    <div><div class="fb"><img src="img/logo-600.jpg" alt="Cozy Home Ulaanbaatar" loading="lazy"></div><p>Гэр ахуй, гал тогооны чанартай бараа.</p><p>Улаанбаатар хот, орон нутагт хүргэнэ.</p></div>
     <div><h4>Дэлгүүр</h4><p><a href="#/">Бэлэн бараа</a></p><p><a href="#/cart">Сагс</a></p><p><a href="#/orders">Миний захиалга</a></p></div>
     <div id="ftContact"><h4>Төлбөр</h4><p>Дансаар шилжүүлэх</p><p>Хүргэлтээр төлөх</p></div>
     <small>© <span id="yr"></span> Cozy Home Ulaanbaatar</small>
@@ -404,7 +431,7 @@ var IC = {   // шугаман дүрс
 function lsGet(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
 function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
 
-var S = { list: [], by: {}, thumbs: lsGet('cz_th', {}), big: {}, fee: 7000, free: 0, pixel: '', pay: '', loaded: false, err: '', sort: 'hot', q: '', cat: '', sending: false, last: null, pq: {} };
+var S = { list: [], by: {}, thumbs: lsGet('cz_th', {}), big: {}, fee: 7000, free: 0, pixel: '', pay: '', loaded: false, err: '', sort: 'hot', q: '', cat: '', sending: false, last: null, pq: {}, po: {} };
 var cart = lsGet('cz_cart', []).filter(function (x) { return x && x.name && x.qty > 0; });   // [{ name, qty }]
 var form = Object.assign({ customer: '', phone: '', phone2: '', city: 'Улаанбаатар', district: '', khoroo: '', address: '', note: '', pay: 'transfer' }, lsGet('cz_me', {}));
 
@@ -439,6 +466,15 @@ function px(ev, p) { try { if (window.fbq) fbq('track', ev, Object.assign({ curr
   } catch (e) {}
 })();
 function srcNow() { var x = lsGet('cz_src', null); return x && Date.now() - x.t < 30 * 864e5 ? x.s : ''; }
+function unitP(p) { return p ? p.sale || p.price : 0; }   // хямдралтай бол хямдралын үнэ
+function pctOff(p) { return p && p.sale ? Math.round((p.price - p.sale) / p.price * 100) : 0; }
+function untilTxt(p) { return p && p.until ? Number(p.until.slice(5, 7)) + '-р сарын ' + Number(p.until.slice(8, 10)) + ' хүртэл' : ''; }
+function priceHtml(p, cls) { return '<div class="' + cls + (p.sale ? ' sale' : '') + '">' + money(unitP(p)) + (p.sale ? '<s>' + money(p.price) + '</s>' : '') + '</div>'; }
+// Өнгөний нэрээр дугуй тэмдэг (танихгүй бол тэмдэггүй)
+var SW = [['нил ягаан', '#7E4BA8'], ['усан ягаан', '#F2B8C6'], ['улбар', '#E07B39'], ['цөцгий', '#F1E6D0'], ['цагаан', '#FFFFFF'], ['хар', '#1F1F1F'], ['саарал', '#9AA1A9'], ['мөнгө', '#C9CDD2'],
+  ['ногоон', '#4F7A57'], ['улаан', '#B33A3A'], ['номин', '#1E3A8A'], ['цэнхэр', '#2F6FB5'], ['хөх', '#2F5DA8'], ['шаргал', '#E8C77A'], ['шар', '#E2B33C'], ['ягаан', '#E9A6BE'],
+  ['хүрэн', '#6B3E26'], ['бор', '#8A5A3B'], ['беж', '#D9C6A5'], ['алт', '#C9A23F'], ['хув', '#C98A3A'], ['black', '#1F1F1F'], ['white', '#FFFFFF'], ['grey', '#9AA1A9'], ['gray', '#9AA1A9']];
+function swatch(c) { var k = String(c).toLowerCase(), x = SW.filter(function (w) { return k.indexOf(w[0]) >= 0; })[0]; return x ? x[1] : ''; }
 function cartCount() { return cart.reduce(function (a, x) { return a + x.qty; }, 0); }
 function saveCart() { lsSet('cz_cart', cart); var n = cartCount(); $('cartN').textContent = n ? n : ''; mcart(); }
 function mcart() {   // утсан дээр доод талын сагсны мөр (нүүр, барааны хуудсанд)
@@ -457,7 +493,7 @@ function applyCat(d) {
   S.list = (d.products || []).slice(); S.by = {};
   S.list.forEach(function (p) { S.by[p.name] = p; });
   S.fee = Number(d.fee) || 0; S.free = Number(d.free) || 0; S.pay = d.pay || ''; S.loaded = true; S.err = '';
-  $('ann').textContent = 'Улаанбаатар хот болон орон нутагт хүргэлттэй · ' + feeText();
+  $('ann').textContent = S.free && S.fee ? money(S.free) + '-өөс дээш захиалгад хүргэлт үнэгүй' : 'Улаанбаатар хот, орон нутагт хүргэлттэй' + (S.fee ? ' · ' + money(S.fee) : '');
   if (d.pixel && d.pixel !== S.pixel) { S.pixel = d.pixel; pxInit(d.pixel); }
 }
 function loadCat(quiet) {
@@ -506,7 +542,7 @@ function render(keepScroll) {
     : r.v === 'done' ? vDone(r.code) : r.v === 'orders' ? vOrders() : vHome();
   if (fid && $(fid)) $(fid).focus();
   document.title = (r.v === 'product' ? cap(r.name) + ' — ' : r.v === 'cart' ? 'Миний сагс — ' : r.v === 'orders' ? 'Миний захиалга — ' : '') + 'Cozy Home Ulaanbaatar';
-  if (r.v === 'product') { loadBig(r.name); galDots(); var pp = S.by[r.name]; if (pp) px('ViewContent', { content_name: r.name, content_ids: [r.name], content_type: 'product', value: pp.price }); }
+  if (r.v === 'product') { loadBig(r.name); galDots(); var pp = S.by[r.name]; if (pp) px('ViewContent', { content_name: r.name, content_ids: [r.name], content_type: 'product', value: unitP(pp) }); }
   if (r.v === 'checkout') px('InitiateCheckout', { value: totals().total, num_items: totals().n });
   if (window.fbq && r.v !== 'product') try { fbq('track', 'PageView'); } catch (e) {}
   if (r.v === 'orders') refreshOrders();
@@ -515,14 +551,15 @@ function render(keepScroll) {
 
 // ── Нүүр ──
 function sorted() {
-  var q = S.q.trim().toLowerCase(), L = S.list.filter(function (p) { return (!q || p.name.toLowerCase().indexOf(q) >= 0 || (p.desc || '').toLowerCase().indexOf(q) >= 0) && (!S.cat || p.cat === S.cat); });
+  var q = S.q.trim().toLowerCase(), L = S.list.filter(function (p) { return (!q || p.name.toLowerCase().indexOf(q) >= 0 || (p.desc || '').toLowerCase().indexOf(q) >= 0) && (!S.cat || (S.cat === '__sale' ? !!p.sale : p.cat === S.cat)); });
   var so = { out: 2, low: 0, in: 0 };
   L.sort(function (a, b) {
     if (so[a.st] !== so[b.st]) return so[a.st] - so[b.st];   // дууссан нь хамгийн сүүлд
-    if (S.sort === 'asc') return a.price - b.price;
-    if (S.sort === 'desc') return b.price - a.price;
+    if (S.sort === 'asc') return unitP(a) - unitP(b);
+    if (S.sort === 'desc') return unitP(b) - unitP(a);
     if (S.sort === 'new') return b.i - a.i;
     if (a.hot !== b.hot) return a.hot ? -1 : 1;
+    if (!!a.sale !== !!b.sale) return a.sale ? -1 : 1;   // хямдралтай нь эхэнд
     if (!!S.thumbs[a.name] !== !!S.thumbs[b.name]) return S.thumbs[a.name] ? -1 : 1;   // зурагтай нь эхэнд
     return b.i - a.i;
   });
@@ -531,7 +568,8 @@ function sorted() {
 function heroHtml() {
   var pics = S.list.filter(function (p) { return S.thumbs[p.name] && p.st !== 'out'; }).sort(function (a, b) { return (b.hot ? 1 : 0) - (a.hot ? 1 : 0); }).slice(0, 3);
   var deco = [['d1', IC.pot], ['d2', IC.mug], ['d3', IC.home]], cells = '';
-  for (var i = 0; i < 3; i++) cells += pics[i] ? '<div><img src="' + S.thumbs[pics[i].name] + '" alt="' + esc(cap(pics[i].name)) + '"></div>' : '<div class="deco ' + deco[i][0] + '">' + deco[i][1] + '</div>';
+  for (var i = 0; i < 3; i++) cells += pics[i] ? '<div><img src="' + S.thumbs[pics[i].name] + '" alt="' + esc(cap(pics[i].name)) + '"></div>'
+    : i === 0 ? '<div class="emb"><img src="img/mark-256.jpg" alt=""></div>' : '<div class="deco ' + deco[i][0] + '">' + deco[i][1] + '</div>';   // зураг дутвал лого
   return '<div><span class="eyebrow">Гэр ахуй · Гал тогоо</span><h1>Гэрээ илүү <em>дулаахан,</em> тохилог болгоё</h1>' +
     '<p>Өдөр тутам хэрэглэх гал тогоо, гэр ахуйн чанартай бараа. Онлайнаар захиалаад гэртээ хүргүүлээрэй.</p>' +
     '<div class="hero-btns"><a class="btn dark" href="#/" onclick="toGrid(event)">Бараа үзэх</a><a class="btn" href="#/orders">Миний захиалга</a></div></div>' +
@@ -546,17 +584,18 @@ function perksHtml() {
     '<div class="perk"><i>' + IC.box + '</i><span><b>Захиалгаа хянана</b><small>«Миний захиалга» хэсгээс</small></span></div></section>';
 }
 function card(p) {
-  var extra = '<span class="pill ' + p.st + '">' + ST_TXT[p.st] + '</span>' + (p.hot ? '<span class="hot">Онцлох</span>' : '') +
+  var extra = '<span class="pill ' + p.st + '">' + ST_TXT[p.st] + '</span>' + (p.sale ? '<span class="off">−' + pctOff(p) + '%</span>' : p.hot ? '<span class="hot">Онцлох</span>' : '') +
     (p.st === 'out' ? '' : '<button class="qadd" type="button" aria-label="Сагсанд нэмэх" onclick="quickAdd(event,' + JSON.stringify(p.name).replace(/"/g, '&quot;') + ')">' + IC.plus + '</button>');
   return '<a class="card' + (p.st === 'out' ? ' out' : '') + '" href="' + pHref(p.name) + '"><div class="ph" data-th="' + esc(p.name) + '" data-extra="' + esc(extra) + '">' + imgTag(p.name) + extra + '</div>' +
-    '<div class="nm">' + esc(cap(p.name)) + '</div><div class="pr">' + money(p.price) + '</div></a>';
+    '<div class="nm">' + esc(cap(p.name)) + '</div>' + priceHtml(p, 'pr') + ((p.colors || []).length ? '<div class="cdots">' + p.colors.slice(0, 6).map(function (c) { var w = swatch(c); return w ? '<i style="background:' + w + '" title="' + esc(c) + '"></i>' : ''; }).join('') + '<small>' + p.colors.length + ' өнгө</small></div>' : '') + '</a>';
 }
 function quickAdd(e, n) {
   e.preventDefault(); e.stopPropagation();
   var p = S.by[n]; if (!p || p.st === 'out') return;
-  var ex = cart.filter(function (x) { return x.name === n; })[0];
+  if ((p.colors || []).length) { location.hash = pHref(n); toast('Өнгөө сонгоод сагсанд нэмнэ үү'); return; }   // өнгөтэй бараа — барааны хуудсанд сонгоно
+  var ex = cart.filter(function (x) { return x.name === n && !x.opt; })[0];
   if (ex) ex.qty = Math.min(50, ex.qty + 1); else cart.push({ name: n, qty: 1 });
-  saveCart(); px('AddToCart', { content_name: n, content_ids: [n], content_type: 'product', value: p.price }); toast(cap(n) + ' сагсанд нэмэгдлээ', ['Сагс үзэх →', '#/cart']);
+  saveCart(); px('AddToCart', { content_name: n, content_ids: [n], content_type: 'product', value: unitP(p) }); toast(cap(n) + ' сагсанд нэмэгдлээ', ['Сагс үзэх →', '#/cart']);
 }
 function vHome() {
   var h = S.q ? '' : '<section class="hero">' + heroHtml() + '</section>' + perksHtml();
@@ -567,7 +606,9 @@ function vHome() {
   h += '<div class="bar" id="shop"><h2>' + (S.q ? '«' + esc(S.q) + '»' : 'Бэлэн бараа') + '<small>' + L.length + ' бараа</small></h2>' +
     '<select class="sort" aria-label="Эрэмбэлэх" onchange="S.sort=this.value;render(true)">' +
     [['hot', 'Онцлох'], ['new', 'Шинэ нь эхэндээ'], ['asc', 'Үнэ өсөхөөр'], ['desc', 'Үнэ буурахаар']].map(function (o) { return '<option value="' + o[0] + '"' + (S.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>';
-  if (cats.length > 1) h += '<div class="cats"><button class="' + (S.cat ? '' : 'on') + '" onclick="S.cat=\'\';render(true)">Бүгд</button>' + cats.map(function (c) { return '<button class="' + (S.cat === c ? 'on' : '') + '" onclick="S.cat=this.dataset.c;render(true)" data-c="' + esc(c) + '">' + esc(cap(c)) + '</button>'; }).join('') + '</div>';
+  var nSale = S.list.filter(function (p) { return p.sale && p.st !== 'out'; }).length;
+  if (cats.length > 1 || nSale) h += '<div class="cats"><button class="' + (S.cat ? '' : 'on') + '" onclick="S.cat=\'\';render(true)">Бүгд</button>' +
+    (nSale ? '<button class="sale' + (S.cat === '__sale' ? ' on' : '') + '" onclick="S.cat=\'__sale\';render(true)">Хямдрал · ' + nSale + '</button>' : '') + (cats.length > 1 ? cats : []).map(function (c) { return '<button class="' + (S.cat === c ? 'on' : '') + '" onclick="S.cat=this.dataset.c;render(true)" data-c="' + esc(c) + '">' + esc(cap(c)) + '</button>'; }).join('') + '</div>';
   if (!L.length) return h + '<div class="empty"><b>Бараа олдсонгүй</b>' + (S.q ? 'Өөр үгээр хайгаад үзээрэй.' : 'Удахгүй шинэ бараа нэмэгдэнэ.') + '</div>';
   return h + '<div class="grid">' + L.map(card).join('') + '</div>';
 }
@@ -585,8 +626,10 @@ function vProduct(name) {
   g += '<div class="gal-strip" id="galStrip" onscroll="galDots()">' + (imgs.length ? imgs.map(function (s) { return '<div><img src="' + s + '" alt=""></div>'; }).join('') : '<div>' + NOIMG + '</div>') + '</div>' +
     (imgs.length > 1 ? '<div class="gal-dots" id="galDots">' + imgs.map(function (s, i) { return '<span class="' + (i ? '' : 'on') + '"></span>'; }).join('') + '</div>' : '') + '</div>';
   var info = '<h1>' + esc(cap(p.name)) + '</h1><span class="tag ' + p.st + '">' + ST_TXT[p.st] + '</span>' +
-    '<div class="price-big">' + money(p.price) + '</div><div class="price-note">' + feeText() + '</div>' +
+    priceHtml(p, 'price-big') + (p.sale ? '<div class="sale-row"><span class="off">−' + pctOff(p) + '%</span><span class="price-note">Хямдрал' + (p.until ? ' · ' + untilTxt(p) : '') + '</span></div>' : '') + '<div class="price-note">' + feeText() + '</div>' +
     '<div class="buy">' + (out ? '<div class="buy-row"><span>Энэ бараа одоогоор дууссан байна.</span></div>' :
+      ((p.colors || []).length ? '<div class="opts" id="opts"><span>Өнгө: <b id="optName">' + esc(S.po[name] || 'сонгоно уу') + '</b></span><div class="sw">' + p.colors.map(function (c, i) { var w = swatch(c);
+        return '<button type="button" class="swc' + (S.po[name] === c ? ' on' : '') + '" onclick="pickOpt(' + i + ')">' + (w ? '<i style="background:' + w + '"></i>' : '') + esc(c) + '</button>'; }).join('') + '</div></div>' : '') +
       '<div class="buy-row"><span>Тоо ширхэг</span><div class="qty"><button onclick="pQty(-1)" ' + (q <= 1 ? 'disabled' : '') + ' aria-label="Хасах">−</button><span id="pq">' + q + '</span><button onclick="pQty(1)" ' + (q >= 50 ? 'disabled' : '') + ' aria-label="Нэмэх">+</button></div></div>' +
       '<div class="btns"><button class="btn" onclick="addCart(false)">Сагсанд нэмэх</button><button class="btn dark" onclick="addCart(true)">Худалдан авах</button></div>') + '</div>' +
     (p.desc ? '<div class="desc"><h3>Тайлбар</h3><p>' + esc(p.desc) + '</p></div>' : '') +
@@ -616,18 +659,25 @@ function loadBig(name) {
     var r = route(); if (r.v === 'product' && r.name === name) render(true);
   }).catch(function () { delete S.big[name]; });
 }
+function pickOpt(i) { var n = route().name, p = S.by[n]; if (!p || !p.colors[i]) return; S.po[n] = p.colors[i]; var o = $('opts'); if (o) { o.classList.remove('need'); o.querySelectorAll('.swc').forEach(function (b, k) { b.classList.toggle('on', k === i); }); } $('optName').textContent = p.colors[i]; }
 function pQty(d) { var n = route().name, q = Math.max(1, Math.min(50, (S.pq[n] || 1) + d)); S.pq[n] = q; var e = $('pq'); if (e) { e.textContent = q; e.previousSibling.disabled = q <= 1; e.nextSibling.disabled = q >= 50; } }
 function addCart(buy) {
   var n = route().name, p = S.by[n]; if (!p || p.st === 'out') return;
-  var q = S.pq[n] || 1, ex = cart.filter(function (x) { return x.name === n; })[0];
-  if (ex) ex.qty = Math.min(50, ex.qty + q); else cart.push({ name: n, qty: q });
-  S.pq[n] = 1; saveCart(); px('AddToCart', { content_name: n, content_ids: [n], content_type: 'product', value: p.price * q });
+  var opt = (p.colors || []).length ? S.po[n] || '' : '';
+  if ((p.colors || []).length && !opt) { var o = $('opts'); if (o) { o.classList.add('need'); o.scrollIntoView({ block: 'center', behavior: 'smooth' }); } toast('Өнгөө сонгоно уу'); return; }
+  var q = S.pq[n] || 1, ex = cart.filter(function (x) { return x.name === n && (x.opt || '') === opt; })[0];
+  if (ex) ex.qty = Math.min(50, ex.qty + q); else cart.push(opt ? { name: n, qty: q, opt: opt } : { name: n, qty: q });
+  S.pq[n] = 1; saveCart(); px('AddToCart', { content_name: n, content_ids: [n], content_type: 'product', value: unitP(p) * q });
   if (buy) location.hash = '#/cart'; else { var e = $('pq'); if (e) e.textContent = 1; toast('Сагсанд нэмэгдлээ', ['Сагс үзэх →', '#/cart']); }
 }
 
 // ── Сагс ──
 function lines() {
-  return cart.map(function (x, i) { var p = S.by[x.name]; return { i: i, name: x.name, qty: x.qty, p: p, ok: !!p && p.st !== 'out', price: p ? p.price : 0 }; });
+  return cart.map(function (x, i) {
+    var p = S.by[x.name], cs = p ? p.colors || [] : [], opt = x.opt || '';
+    var optBad = !!p && (cs.length ? cs.indexOf(opt) < 0 : !!opt);   // өнгө солигдсон / сонгоогүй
+    return { i: i, name: x.name, opt: opt, qty: x.qty, p: p, ok: !!p && p.st !== 'out' && !optBad, optBad: optBad, price: unitP(p), list: p ? p.price : 0 };
+  });
 }
 function totals() {
   var L = lines(), sub = L.reduce(function (a, l) { return a + (l.ok ? l.qty * l.price : 0); }, 0), n = L.reduce(function (a, l) { return a + (l.ok ? l.qty : 0); }, 0);
@@ -640,7 +690,7 @@ function stepsHtml(title, k) {
 }
 function sumHtml(t, btn) {
   return '<aside class="sum"><h3>Таны захиалга</h3>' + t.L.filter(function (l) { return l.ok; }).map(function (l) {
-    return '<div class="sum-it"><div class="mini">' + (S.thumbs[l.name] ? '<img src="' + S.thumbs[l.name] + '" alt="">' : '') + '<em>' + l.qty + '</em></div><span>' + esc(cap(l.name)) + '</span><b>' + money(l.qty * l.price) + '</b></div>';
+    return '<div class="sum-it"><div class="mini">' + (S.thumbs[l.name] ? '<img src="' + S.thumbs[l.name] + '" alt="">' : '') + '<em>' + l.qty + '</em></div><span>' + esc(cap(l.name)) + (l.opt ? ' · ' + esc(l.opt) : '') + '</span><b>' + money(l.qty * l.price) + '</b></div>';
   }).join('') + '<div class="sum-row" style="margin-top:10px"><span>Барааны дүн</span><b>' + money(t.sub) + '</b></div>' +
     '<div class="sum-row"><span>Хүргэлт</span><b>' + (t.fee ? money(t.fee) : 'Үнэгүй') + '</b></div>' +
     (S.free && S.fee && t.sub ? (t.sub < S.free ? '<div class="freebar"><span>Үнэгүй хүргэлт хүртэл <b>' + money(S.free - t.sub) + '</b> дутуу</span><i><em style="width:' + Math.min(100, Math.round(t.sub / S.free * 100)) + '%"></em></i></div>'
@@ -652,14 +702,15 @@ function vCart() {
   if (!cart.length) return stepsHtml('Миний сагс', 0) + '<div class="empty"><b>Сагс хоосон байна</b>Таалагдсан бараагаа сагсандаа нэмээрэй.<br><br><a class="btn dark" href="#/">Бараа үзэх</a></div>';
   var rows = t.L.map(function (l) {
     return '<div class="ci"><a class="mini" href="' + pHref(l.name) + '">' + (S.thumbs[l.name] ? '<img src="' + S.thumbs[l.name] + '" alt="">' : NOIMG) + '</a>' +
-      '<div><b>' + esc(cap(l.name)) + '</b>' + (l.ok ? '<small>' + money(l.price) + ' / ширхэг</small>' : '<small class="bad">' + (S.loaded ? (l.p ? 'Дууссан' : 'Худалдаалагдахгүй болсон') + ' — хасна уу' : 'Шалгаж байна…') + '</small>') +
+      '<div><b>' + esc(cap(l.name)) + '</b>' + (l.opt ? '<span class="opt">Өнгө: ' + esc(l.opt) + '</span>' : '') +
+      (l.ok ? '<small>' + money(l.price) + (l.list > l.price ? '<s>' + money(l.list) + '</s>' : '') + ' / ширхэг</small>' : '<small class="bad">' + (S.loaded ? (!l.p ? 'Худалдаалагдахгүй болсон' : l.optBad ? 'Өнгө сонгоогүй эсвэл дууссан' : 'Дууссан') + ' — хасна уу' : 'Шалгаж байна…') + '</small>') +
       '<br><button class="rm" onclick="cDel(' + l.i + ')">Хасах</button></div>' +
       '<div class="ci-r">' + (l.ok ? '<div class="qty"><button onclick="cQty(' + l.i + ',-1)" ' + (l.qty <= 1 ? 'disabled' : '') + ' aria-label="Хасах">−</button><span>' + l.qty + '</span><button onclick="cQty(' + l.i + ',1)" ' + (l.qty >= 50 ? 'disabled' : '') + ' aria-label="Нэмэх">+</button></div><span class="lt">' + money(l.qty * l.price) + '</span>' : '') + '</div></div>';
   }).join('');
   var can = t.n > 0 && !t.bad.length && S.loaded;
   return stepsHtml('Миний сагс', 0) + '<div class="co"><div><div class="panel">' + rows + '</div>' +
     '<p style="margin-top:16px"><a class="link" href="#/">← Худалдан авалтаа үргэлжлүүлэх</a></p></div>' +
-    sumHtml(t, '<button class="btn dark block" onclick="location.hash=\'#/checkout\'" ' + (can ? '' : 'disabled') + '>Үргэлжлүүлэх</button>' + (t.bad.length ? '<p style="font-size:13px;color:var(--terra);margin:10px 0 0;font-weight:600">Дууссан барааг сагснаас хасна уу.</p>' : '')) + '</div>';
+    sumHtml(t, '<button class="btn dark block" onclick="location.hash=\'#/checkout\'" ' + (can ? '' : 'disabled') + '>Үргэлжлүүлэх</button>' + (t.bad.length ? '<p style="font-size:13px;color:var(--terra);margin:10px 0 0;font-weight:600">Тэмдэглэгдсэн барааг сагснаас хасна уу.</p>' : '')) + '</div>';
 }
 function cQty(i, d) { var x = cart[i]; if (!x) return; x.qty = Math.max(1, Math.min(50, x.qty + d)); saveCart(); render(true); }
 function cDel(i) { cart.splice(i, 1); saveCart(); render(true); }
@@ -719,7 +770,7 @@ function vConfirm() {
     '<div class="rv"><h3>Хүлээн авагч <a href="#/checkout">Засах</a></h3><p><b>' + esc(form.customer) + '</b></p><p>' + esc(form.phone) + (form.phone2 ? ', ' + esc(form.phone2) : '') + '</p></div>' +
     '<div class="rv"><h3>Хүргэлтийн хаяг <a href="#/checkout">Засах</a></h3><p>' + esc(addrLine(form)) + '</p>' + (form.note ? '<p><i>' + esc(form.note) + '</i></p>' : '') + '</div>' +
     '<div class="rv"><h3>Төлбөр <a href="#/checkout">Засах</a></h3><p>' + (form.pay === 'cod' ? 'Хүргэлтээр төлөх (бэлэн / шилжүүлэг)' : 'Дансаар шилжүүлэх') + '</p></div>' +
-    '<div class="rv" style="margin:0"><h3>Бараа <a href="#/cart">Засах</a></h3>' + t.L.filter(function (l) { return l.ok; }).map(function (l) { return '<p style="display:flex;justify-content:space-between;gap:10px"><span>' + esc(cap(l.name)) + ' × ' + l.qty + '</span><b>' + money(l.qty * l.price) + '</b></p>'; }).join('') + '</div></div>' +
+    '<div class="rv" style="margin:0"><h3>Бараа <a href="#/cart">Засах</a></h3>' + t.L.filter(function (l) { return l.ok; }).map(function (l) { return '<p style="display:flex;justify-content:space-between;gap:10px"><span>' + esc(cap(l.name)) + (l.opt ? ' (' + esc(l.opt) + ')' : '') + ' × ' + l.qty + '</span><b>' + money(l.qty * l.price) + '</b></p>'; }).join('') + '</div></div>' +
     '<p style="font-size:13px;color:var(--muted);margin-top:14px">«Захиалах» дарснаар манай ажилтан тантай утсаар холбогдож захиалгыг баталгаажуулна.</p></div>' +
     sumHtml(t, '<button class="btn brand block" id="sendBtn" onclick="sendOrder()" ' + (S.sending || t.bad.length || !t.n ? 'disabled' : '') + '>' + (S.sending ? 'Илгээж байна…' : 'Захиалах') + '</button>') + '</div>';
   return stepsHtml('Баталгаажуулах', 2) + h;
@@ -730,7 +781,7 @@ function sendOrder() {
   S.sending = true; render(true);
   var body = { type: 'shop_order', biz: BIZ, customer: form.customer, phone: digits(form.phone), phone2: digits(form.phone2), city: form.city, district: form.district,
     khoroo: form.city === 'Улаанбаатар' ? form.khoroo : '', address: form.address, note: form.note, pay: form.pay === 'cod' ? 'cod' : 'transfer',
-    items: t.L.filter(function (l) { return l.ok; }).map(function (l) { return { name: l.name, qty: l.qty }; }), total: t.total, website: S.hp || '', src: srcNow() };
+    items: t.L.filter(function (l) { return l.ok; }).map(function (l) { return l.opt ? { name: l.name, qty: l.qty, opt: l.opt } : { name: l.name, qty: l.qty }; }), total: t.total, website: S.hp || '', src: srcNow() };
   fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) }).then(function (r) { return r.json(); }).then(function (d) {
     S.sending = false;
     if (d && d.status === 'ok') {
@@ -778,7 +829,7 @@ function vOrders() {
       var x = ORD.info[o.code], st = x ? x.status : (ORD.done ? '—' : 'Шалгаж байна…'), k = TRACK.indexOf(st), cls = k === 0 ? 'p1' : k === 1 ? 'p2' : k === 2 ? 'p3' : 'p4';
       return '<div class="ord"><div class="ord-h"><div><b>№ ' + esc(o.code) + '</b><br><small>' + esc((x && x.date) || o.at) + ' · ' + money(x ? x.amount : o.amount) + (x ? ' · ' + esc(x.payType) + (x.paid ? ' (төлсөн)' : '') : '') + '</small></div><span class="st ' + cls + '">' + esc(st) + '</span></div>' +
         (k >= 0 ? '<div class="track">' + TRACK.map(function (s, i) { return '<div class="' + (i <= k ? 'on' : '') + '">' + s + '</div>'; }).join('') + '</div>' : '') +
-        (x ? '<div class="ord-it">' + x.items.filter(function (i) { return i.name !== 'Хүргэлтийн төлбөр'; }).map(function (i) { return esc(cap(i.name)) + ' × ' + i.qty; }).join(' · ') + '</div>' : '') + '</div>';
+        (x ? '<div class="ord-it">' + x.items.filter(function (i) { return i.name !== 'Хүргэлтийн төлбөр' && i.name !== 'Хөнгөлөлт'; }).map(function (i) { return esc(cap(i.name)) + (i.opt ? ' (' + esc(i.opt) + ')' : '') + ' × ' + i.qty; }).join(' · ') + '</div>' : '') + '</div>';
     }).join('');
   } else h += '<p style="color:var(--ink2)">Энэ төхөөрөмжөөс өгсөн захиалга алга.</p>';
   h += '<div class="panel look"><h3 class="serif" style="font-size:19px;font-weight:600;margin:0 0 6px">Захиалга хайх</h3><p style="font-size:13.5px;margin:0 0 14px;color:var(--ink2)">Өөр утас, компьютерээс захиалсан бол утасны дугаараа, мөн захиалгын дугаар <b>эсвэл</b> захиалахдаа бичсэн нэрээ оруулна уу. Дугаараа мартсан бол нэрээрээ хайгаарай.</p>' +
