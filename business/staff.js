@@ -1610,15 +1610,15 @@ var aiOpen = false;
 function aiRender(L) {
   var btn = $('aiFab'), pan = $('aiPanel');
   if (!btn) {
-    btn = document.createElement('button'); btn.id = 'aiFab'; btn.className = 'ai-fab'; btn.setAttribute('aria-label', 'Болормаа (AI) — асуулт');
+    btn = document.createElement('button'); btn.id = 'aiFab'; btn.className = 'ai-fab'; btn.setAttribute('aria-label', 'AI туслах — асуулт');
     btn.onclick = function () { aiOpen = !aiOpen; $('aiPanel').style.display = aiOpen ? 'flex' : 'none'; };
     pan = document.createElement('div'); pan.id = 'aiPanel'; pan.className = 'ai-panel';
     document.body.appendChild(pan); document.body.appendChild(btn);
   }
   btn.style.display = L.length ? '' : 'none';
-  btn.innerHTML = '<span class="ai-av">Б</span><b>' + L.length + '</b>';
+  btn.innerHTML = '<span class="ai-av">AI</span><b>' + L.length + '</b>';
   if (!L.length) { aiOpen = false; pan.style.display = 'none'; return; }
-  pan.innerHTML = '<div class="ai-head"><span class="ai-av">Б</span><div><b>Болормаа</b><small>AI нягтлан · асуулт</small></div><button class="ai-x" onclick="aiOpen=false;$(\'aiPanel\').style.display=\'none\'">✕</button></div>' +
+  pan.innerHTML = '<div class="ai-head"><span class="ai-av">AI</span><div><b>AI туслах</b><small>Асуулт</small></div><button class="ai-x" onclick="aiOpen=false;$(\'aiPanel\').style.display=\'none\'">✕</button></div>' +
     '<div class="ai-body">' + L.map(function (t) {
       return '<div class="ai-msg">' + esc(t.title) + (t.note ? '<small>' + esc(String(t.note).replace(/\s*—\s*Болормаа.*$/, '')) + '</small>' : '') + '</div>' +
         '<div class="ai-ans"><input id="tkA_' + t.id + '" placeholder="Хариултаа бичнэ үү" onkeydown="if(event.key===\'Enter\')taskDone(\'' + t.id + '\')"><button onclick="taskDone(\'' + t.id + '\')">Илгээх</button></div>';
