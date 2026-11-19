@@ -1594,7 +1594,9 @@ function loadTasks() {
 function renderTasks() {
   var box = $('taskBox');
   if (!box) { box = document.createElement('div'); box.id = 'taskBox'; var anchor = document.querySelector('#main .big-btns'); anchor.parentNode.insertBefore(box, anchor); }
-  var open = myTasks.filter(function (t) { return t.status === 'Шинэ'; });
+  var isAi = function (t) { return /\(AI\)/.test(String(t.from || '')); };
+  var all = myTasks.filter(function (t) { return t.status === 'Шинэ'; }), open = all.filter(function (t) { return !isAi(t); });
+  aiRender(all.filter(isAi));
   var nq = open.filter(function (t) { return t.kind === 'Асуулт'; }).length;
   box.innerHTML = open.length ? '<div class="card task-card"><h2>' + (nq === open.length ? 'Удирдлагаас ирсэн асуулт' : nq ? 'Удирдлагаас ирсэн даалгавар, асуулт' : 'Удирдлагаас ирсэн даалгавар') + ' (' + open.length + ')</h2><ul class="list">' + open.map(function (t) {
     var late = t.due && t.due < todayStr();
@@ -1602,6 +1604,26 @@ function renderTasks() {
       (t.kind === 'Асуулт' ? '<span class="tk-ans"><input id="tkA_' + t.id + '" placeholder="Хариултаа бичнэ үү"><button class="mini" style="color:var(--green)" onclick="taskDone(\'' + t.id + '\')">Хариулах</button></span>'
         : '<button class="mini" style="color:var(--green)" onclick="taskDone(\'' + t.id + '\')">Хийсэн</button>') + '</li>';
   }).join('') + '</ul></div>' : '';
+}
+// ── AI туслах (Болормаа) — асуултууд баруун доод буланд чат цонхоор ──
+var aiOpen = false;
+function aiRender(L) {
+  var btn = $('aiFab'), pan = $('aiPanel');
+  if (!btn) {
+    btn = document.createElement('button'); btn.id = 'aiFab'; btn.className = 'ai-fab'; btn.setAttribute('aria-label', 'Болормаа (AI) — асуулт');
+    btn.onclick = function () { aiOpen = !aiOpen; $('aiPanel').style.display = aiOpen ? 'flex' : 'none'; };
+    pan = document.createElement('div'); pan.id = 'aiPanel'; pan.className = 'ai-panel';
+    document.body.appendChild(pan); document.body.appendChild(btn);
+  }
+  btn.style.display = L.length ? '' : 'none';
+  btn.innerHTML = '<span class="ai-av">Б</span><b>' + L.length + '</b>';
+  if (!L.length) { aiOpen = false; pan.style.display = 'none'; return; }
+  pan.innerHTML = '<div class="ai-head"><span class="ai-av">Б</span><div><b>Болормаа</b><small>AI нягтлан · асуулт</small></div><button class="ai-x" onclick="aiOpen=false;$(\'aiPanel\').style.display=\'none\'">✕</button></div>' +
+    '<div class="ai-body">' + L.map(function (t) {
+      return '<div class="ai-msg">' + esc(t.title) + (t.note ? '<small>' + esc(String(t.note).replace(/\s*—\s*Болормаа.*$/, '')) + '</small>' : '') + '</div>' +
+        '<div class="ai-ans"><input id="tkA_' + t.id + '" placeholder="Хариултаа бичнэ үү" onkeydown="if(event.key===\'Enter\')taskDone(\'' + t.id + '\')"><button onclick="taskDone(\'' + t.id + '\')">Илгээх</button></div>';
+    }).join('') + '</div>';
+  pan.style.display = aiOpen ? 'flex' : 'none';
 }
 function taskDone(id) {
   var a = $('tkA_' + id), ans = a ? a.value.trim() : '';

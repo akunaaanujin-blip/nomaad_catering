@@ -1829,3 +1829,18 @@ body.pos10 #saleSheet .cl1 .cl-dprice:not(:placeholder-shown){border-color:var(-
 .task-card .tk-ans{display:flex;gap:6px;align-items:center;flex:1 1 240px;max-width:420px}
 .task-card .tk-ans input{flex:1;min-width:0;padding:8px 10px;font-size:14px}
 .task-card .list li{flex-wrap:wrap}
+
+/* AI туслах (Болормаа) — баруун доод буланд */
+.ai-fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:15;display:flex;align-items:center;gap:6px;padding:6px 12px 6px 6px;border:0;border-radius:999px;background:#7C3AED;color:#fff;font-weight:700;box-shadow:0 6px 18px rgba(124,58,237,.35);cursor:pointer}
+.ai-fab b{background:#fff;color:#7C3AED;border-radius:999px;min-width:20px;height:20px;line-height:20px;font-size:12px;text-align:center;padding:0 5px}
+.ai-av{width:30px;height:30px;border-radius:50%;background:#EDE9FE;color:#7C3AED;display:inline-flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+.ai-panel{position:fixed;right:16px;bottom:calc(66px + env(safe-area-inset-bottom));z-index:16;width:min(360px,calc(100vw - 32px));max-height:min(70vh,520px);display:none;flex-direction:column;background:#fff;border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.18);overflow:hidden}
+.ai-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #EEE}
+.ai-head small{display:block;color:var(--muted);font-size:12px}
+.ai-x{margin-left:auto;border:0;background:none;font-size:16px;cursor:pointer;color:var(--muted)}
+.ai-body{padding:12px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.ai-msg{background:#F5F3FF;border-radius:12px 12px 12px 4px;padding:10px 12px;font-size:14px;line-height:1.4}
+.ai-msg small{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+.ai-ans{display:flex;gap:6px;margin-bottom:6px}
+.ai-ans input{flex:1;min-width:0;padding:8px 10px;font-size:14px;border:1px solid #DDD;border-radius:10px}
+.ai-ans button{border:0;border-radius:10px;background:#7C3AED;color:#fff;font-weight:700;padding:0 12px;cursor:pointer}
