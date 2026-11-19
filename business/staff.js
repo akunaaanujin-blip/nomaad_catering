@@ -131,7 +131,8 @@ function navMenu() {   // зөвхөн хуудсууд — үйлдлийн т�
   if (BIZ.orders) g.push(['orders', 'Захиалга', function () { showView('orders'); }]);
   if (BIZ.orders && typeof renderDlv === 'function') g.push(['dlv', 'Хүргэлт', function () { showView('dlv'); }]);   // буухиа (ebuuhia API)   // захиалга — дэлгүүрийн борлуулалтаас тусдаа хуудас
   g = g.concat([['stock', 'Барааны үлдэгдэл', function () { showView('stock'); }], ['recv', 'Бараа ирсэн, карго', function () { showView('recv'); }],
-           ['count', 'Тооллого', function () { showView('count'); }], ['req', 'Зардал, хүсэлт', function () { showView('req'); }]]);
+           ['count', 'Тооллого', function () { showView('count'); }], ['req', 'Зардал, хүсэлт', function () { showView('req'); }],
+           ['research', 'Шинэ бараа', function () { showView('research'); }]]);
   if (BIZ.boost && $('boostView')) g.push(['boost', 'Boost төсөв', function () { showView('boost'); }]);
   return [{ t: '', items: g }];
 }
@@ -161,7 +162,14 @@ function buildShell() {
         '<p class="muted" style="margin-top:8px">Бараа бүрийг тоолоод бодит тоог бичнэ. Тоолоогүй барааг хоосон үлдээнэ. Илгээсний дараа удирдлага системийн үлдэгдэлтэй тулгаж баталдаг.</p>' +
         '<button class="btn" onclick="submitCount()">Тооллого илгээх</button></div></div>' +
       '<div data-view="req" id="reqView" style="display:none"><div class="card"><div class="ord-bar"><button class="btn sm" onclick="openExpense(\'req\')">＋ Мөнгөний хүсэлт</button><button class="btn sm ghost" onclick="openExpense(\'cash\')">＋ Кассаас зардал</button>' +
-        '<button class="link" onclick="loadRequests()">Шинэчлэх</button></div><ul class="list" id="reqList" style="margin-top:8px"></ul></div></div>';
+        '<button class="link" onclick="loadRequests()">Шинэчлэх</button></div><ul class="list" id="reqList" style="margin-top:8px"></ul></div></div>' +
+      '<div data-view="research" id="resView" style="display:none"><div class="card"><div class="ord-bar res-bar"><button class="btn sm" onclick="openResearch()">＋ Шинэ бараа</button>' +
+        '<input type="search" id="resQ" placeholder="Хайх: нэр, нийлүүлэгч, тэмдэглэл…" oninput="resF.q=this.value;renderResearch()">' +
+        '<select id="resBiz" onchange="resF.biz=this.value;renderResearch()"><option value="">Бүх дэлгүүр</option></select>' +
+        '<select id="resSt" onchange="resF.st=this.value;renderResearch()"><option value="">Бүх төлөв</option><option>Шинэ</option><option>Судалж байна</option><option>Захиалах</option><option>Татгалзсан</option></select>' +
+        '<button class="link" onclick="loadResearch()">Шинэчлэх</button></div>' +
+        '<p class="muted" style="font-size:12.5px;margin:6px 0 0">Шинэ барааны санаа, судалгааг бүх дэлгүүрийн ажилтан харна. Удирдлага шийдвэрээ төлөвөөр өгнө. <span id="resCount"></span></p>' +
+        '<div id="resList" style="margin-top:10px"></div></div></div>';
     if (pend) pend.insertAdjacentHTML('beforebegin', html); else wrap.insertAdjacentHTML('beforeend', html);
   }
   renderNav(); showView('dash');
@@ -192,11 +200,12 @@ function showView(v, tab) {
     el.style.display = (el.getAttribute('data-view') || 'dash') === v ? '' : 'none';
   });
   var w = document.querySelector('#main .wrap'); if (w) w.classList.toggle('ep-wide', v === 'orders');
-  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : v === 'stock' ? 'Барааны үлдэгдэл' : v === 'boost' ? 'Boost төсөв' : v === 'recv' ? 'Бараа ирсэн, карго' : v === 'count' ? 'Тооллого' : v === 'req' ? 'Зардал, хүсэлт' : v === 'dlv' ? 'Хүргэлт' : 'Борлуулалт';
+  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : v === 'stock' ? 'Барааны үлдэгдэл' : v === 'boost' ? 'Boost төсөв' : v === 'recv' ? 'Бараа ирсэн, карго' : v === 'count' ? 'Тооллого' : v === 'req' ? 'Зардал, хүсэлт' : v === 'dlv' ? 'Хүргэлт' : v === 'research' ? 'Шинэ барааны судалгаа' : 'Борлуулалт';
   if (v === 'stock') renderStockPage();
   if (v === 'count') renderCount();
   if (v === 'recv') loadPoIn();
   if (v === 'req') loadRequests();
+  if (v === 'research') loadResearch();
   if (v === 'boost') renderBoost();
   if (v === 'dlv') renderDlv();
   renderNav(); window.scrollTo(0, 0);
@@ -1619,22 +1628,29 @@ function aiRender(L) {
   btn.innerHTML = '<span class="ai-av">AI</span>' + (Q.length ? '<b>' + Q.length + '</b>' : '<span style="padding-right:4px">Асуух</span>');
   pan.innerHTML = '<div class="ai-head"><span class="ai-av">AI</span><div><b>AI туслах</b><small>Асуулт</small></div><button class="ai-x" onclick="aiOpen=false;$(\'aiPanel\').style.display=\'none\'">✕</button></div>' +
     '<div class="ai-body">' + Mine.map(function (t) {
-      return '<div class="ai-me">' + esc(t.title) + '</div>' + (t.answer ? '<div class="ai-msg">' + esc(t.answer) + '</div>' : '<small class="muted" style="align-self:flex-end">Хариу хүлээгдэж байна…</small>');
+      return '<div class="ai-me">' + esc(t.title) + '</div>' + (t.answer ? '<div class="ai-msg" style="white-space:pre-line">' + esc(t.answer) + '</div>' : '<small class="muted" style="align-self:flex-end">' + (t.wait ? 'AI бодож байна…' : 'Хариу хүлээгдэж байна…') + '</small>');
     }).join('') + Q.map(function (t) {
       return '<div class="ai-msg">' + esc(t.title) + (t.note ? '<small>' + esc(String(t.note).replace(/\s*—\s*Болормаа.*$/, '')) + '</small>' : '') + '</div>' +
         '<div class="ai-ans"><input id="tkA_' + t.id + '" placeholder="Хариултаа бичнэ үү" onkeydown="if(event.key===\'Enter\')taskDone(\'' + t.id + '\')"><button onclick="taskDone(\'' + t.id + '\')">Илгээх</button></div>';
     }).join('') + (L.length ? '' : '<small class="muted">Бараа, захиалга, касс, бүртгэлийн талаар асуух зүйлээ бичээрэй. Хариулт энд ирнэ.</small>') + '</div>' +
     '<div class="ai-ask"><input id="aiAskIn" placeholder="AI туслахаас асуух…" maxlength="500" onkeydown="if(event.key===\'Enter\')aiAsk()"><button onclick="aiAsk()">Илгээх</button></div>';
   pan.style.display = aiOpen ? 'flex' : 'none';
+  var bd = pan.querySelector('.ai-body'); if (bd) bd.scrollTop = bd.scrollHeight;
 }
 function aiAsk() {
   var i = $('aiAskIn'), q = i ? i.value.trim() : '';
   if (q.length < 2) { toast('Асуултаа бичнэ үү'); return; }
   if (!API_URL || !session || !session.token) { toast('Нэвтэрсэн байх шаардлагатай'); return; }
-  i.disabled = true;
+  var tmp = { id: 'tmp' + Date.now(), kind: 'Ажилтнаас', title: q, from: session.name, staffId: session.staffId || '', status: 'Шинэ', answer: '', wait: 1 };
+  myTasks = (myTasks || []).concat([tmp]); aiOpen = true; renderTasks();   // асуулт шууд харагдана, хариуг хүлээх зуур «бодож байна»
+  var j = $('aiAskIn'); if (j) { j.disabled = true; j.placeholder = 'AI бодож байна…'; }
+  var drop = function () { myTasks = myTasks.filter(function (t) { return t !== tmp; }); };
   fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'staff_ask', text: q, token: session.token }) })
-    .then(function (r) { return r.json(); }).then(function (d) { i.disabled = false; if (d && d.status === 'ok') { toast('Асуулт илгээгдлээ — хариулт энд ирнэ'); aiOpen = true; loadTasks(); } else toast('Алдаа гарлаа'); })
-    .catch(function () { i.disabled = false; toast('Интернэт холболтоо шалгана уу'); });
+    .then(function (r) { return r.json(); }).then(function (d) {
+      if (d && d.status === 'ok') { tmp.id = d.id || tmp.id; tmp.wait = 0; tmp.answer = d.answer || ''; if (!d.answer) toast('Асуулт илгээгдлээ — хариулт энд ирнэ'); renderTasks(); loadTasks(); }
+      else { drop(); renderTasks(); var k = $('aiAskIn'); if (k) k.value = q; toast('Алдаа гарлаа'); }
+    })
+    .catch(function () { drop(); renderTasks(); var k = $('aiAskIn'); if (k) k.value = q; toast('Интернэт холболтоо шалгана уу'); });
 }
 function taskDone(id) {
   var a = $('tkA_' + id), ans = a ? a.value.trim() : '';
@@ -1658,3 +1674,114 @@ function noticeShow() {
   }).join('');
 }
 document.addEventListener('DOMContentLoaded', noticeShow);
+
+// ── Шинэ барааны судалгаа: аль ч ажилтан санаа оруулна, бүх дэлгүүрийн ажилтанд харагдана; эзэн самбараас төлөв өгнө ──
+var resItems = null, resMe = '', resF = { q: '', biz: '', st: '' }, RES_CURS = [['MNT', '₮'], ['CNY', '¥'], ['USD', '$'], ['KRW', '₩']];
+var RES_ST_C = { 'Шинэ': 'n', 'Судалж байна': 'b', 'Захиалах': 'g', 'Татгалзсан': 'r' };
+function resCurSym(c) { var x = RES_CURS.filter(function (k) { return k[0] === c; })[0]; return x ? x[1] : ''; }
+function resMoney(n, c) { return n ? (c && c !== 'MNT' ? resCurSym(c) + Number(n).toLocaleString('en-US') : fmt(n)) : ''; }
+function loadResearch() {
+  if (!API_URL || !session || !session.token) { renderResearch(); return; }
+  if (!resItems) $('resList').innerHTML = '<p class="muted">Ачаалж байна…</p>';
+  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'research', token: session.token }) })
+    .then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || d.status !== 'ok') { toast('Судалгаа ачаалсангүй'); return; }
+      resItems = d.items || []; resMe = d.me || ''; renderResearch();
+    }).catch(function () { toast('Интернэт холболтоо шалгана уу'); });
+}
+function renderResearch() {
+  var el = $('resList'); if (!el) return;
+  var L = resItems || [], bz = {}; L.forEach(function (r) { bz[r.biz] = r.bizName || r.biz; });
+  var fb = $('resBiz'); if (fb) fb.innerHTML = '<option value="">Бүх дэлгүүр</option>' + Object.keys(bz).map(function (k) { return '<option value="' + esc(k) + '"' + (resF.biz === k ? ' selected' : '') + '>' + esc(bz[k]) + '</option>'; }).join('');
+  var q = resF.q.toLowerCase().trim();
+  var V = L.filter(function (r) {
+    return (!resF.biz || r.biz === resF.biz) && (!resF.st || r.status === resF.st) &&
+      (!q || [r.name, r.supplier, r.note, r.by, r.link].join(' ').toLowerCase().indexOf(q) >= 0);
+  });
+  $('resCount').textContent = L.length ? V.length + ' / ' + L.length : '';
+  el.innerHTML = V.length ? V.map(function (r) {
+    var mine = r.staffId === resMe, mnt = r.cur === 'MNT' || !r.cur, mg = mnt && r.buy && r.sell ? r.sell - r.buy : null;
+    var host = ''; try { host = r.link ? new URL(r.link).hostname.replace(/^www\./, '') : ''; } catch (e) {}
+    return '<div class="res-it">' +
+      (r.thumb ? '<img class="res-th" src="' + esc(r.thumb) + '" alt="" onclick="resImgOpen(\'' + r.id + '\')">' : '<div class="res-th res-noimg">Зураггүй</div>') +
+      '<div class="res-b"><div class="res-top"><b>' + esc(r.name) + '</b><span class="st ' + (RES_ST_C[r.status] || 'n') + '">' + esc(r.status) + '</span></div>' +
+      '<div class="res-p">' + (r.buy ? '<span>Авах: <b>' + resMoney(r.buy, r.cur) + '</b></span>' : '') + (r.sell ? '<span>Зарах (таамаг): <b>' + fmt(r.sell) + '</b></span>' : '') +
+        (mg != null ? '<span>Зөрүү: <b>' + fmt(mg) + '</b>' + (r.buy > 0 ? ' (' + Math.round(mg / r.buy * 100) + '%)' : '') + '</span>' : '') + '</div>' +
+      (r.supplier || host ? '<div class="res-s">' + (r.supplier ? 'Нийлүүлэгч: ' + esc(r.supplier) : '') + (host ? (r.supplier ? ' · ' : '') + '<a href="' + esc(r.link) + '" target="_blank" rel="noopener">' + esc(host) + ' ↗</a>' : '') + '</div>' : '') +
+      (r.note ? '<div class="res-n">' + esc(r.note) + '</div>' : '') +
+      (r.reply ? '<div class="res-r">Удирдлага: ' + esc(r.reply) + '</div>' : '') +
+      '<small class="muted">' + esc(r.by) + ' · ' + esc(r.bizName || r.biz) + ' · ' + esc(r.at) + '</small>' +
+      (mine && r.status === 'Шинэ' ? ' <button class="link" onclick="resCancel(\'' + r.id + '\')">Цуцлах</button>' : '') + '</div></div>';
+  }).join('') : '<p class="muted">' + (L.length ? 'Хайлтад тохирох бараа алга.' : 'Одоогоор судалгаа алга. «＋ Шинэ бараа» дарж эхний санаагаа оруулаарай.') + '</p>';
+}
+function resSheetEl() {
+  var s = $('resSheet');
+  if (!s) { s = document.createElement('div'); s.className = 'sheet'; s.id = 'resSheet'; s.onclick = function (e) { if (e.target === s) closeSheet('resSheet'); }; s.innerHTML = '<div class="panel"></div>'; document.body.appendChild(s); }
+  return s.querySelector('.panel');
+}
+function openResearch() {
+  resSheetEl().innerHTML = '<h2>Шинэ бараа</h2>' +
+    '<label for="rsName">Барааны нэр *</label><input id="rsName" maxlength="120" placeholder="Жишээ: Аяллын дэр, хийтэй">' +
+    '<label for="rsImg">Зураг</label><input id="rsImg" type="file" accept="image/*">' +
+    '<label for="rsLink">Холбоос (1688, Taobao, сайт)</label><input id="rsLink" type="url" inputmode="url" placeholder="https://…">' +
+    '<label for="rsSup">Нийлүүлэгч</label><input id="rsSup" maxlength="120" placeholder="Дэлгүүр, хүний нэр, утас">' +
+    '<div class="row2"><div><label for="rsBuy">Авах үнэ</label><input id="rsBuy" type="number" inputmode="decimal" min="0"></div>' +
+    '<div><label for="rsCur">Валют</label><select id="rsCur">' + RES_CURS.map(function (c) { return '<option value="' + c[0] + '">' + c[1] + ' ' + c[0] + '</option>'; }).join('') + '</select></div></div>' +
+    '<label for="rsSell">Зарах үнэ (таамаг, ₮)</label><input id="rsSell" type="number" inputmode="numeric" min="0">' +
+    '<label for="rsNote">Тэмдэглэл</label><textarea id="rsNote" rows="3" maxlength="1000" placeholder="Яагаад зарагдах вэ, хэн авах вэ, өрсөлдөгчийн үнэ, тоо ширхэг…"></textarea>' +
+    '<button class="btn" id="rsBtn" onclick="submitResearch()">Хадгалах</button><button class="btn ghost" onclick="closeSheet(\'resSheet\')">Болих</button>';
+  openSheet('resSheet');
+}
+function resShrink(file, max, q, cb) {   // зургийг max px, JPEG болгоно
+  var r = new FileReader();
+  r.onload = function () {
+    var im = new Image();
+    im.onload = function () {
+      var k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas');
+      c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+      var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+      cb(c.toDataURL('image/jpeg', q));
+    };
+    im.onerror = function () { cb(''); };
+    im.src = r.result;
+  };
+  r.onerror = function () { cb(''); };
+  r.readAsDataURL(file);
+}
+function submitResearch() {
+  var a = { name: $('rsName').value.trim(), link: $('rsLink').value.trim(), supplier: $('rsSup').value.trim(), buy: $('rsBuy').value, cur: $('rsCur').value, sell: $('rsSell').value, note: $('rsNote').value.trim() };
+  if (a.name.length < 2) { toast('Барааны нэрээ бичнэ үү'); $('rsName').focus(); return; }
+  if (a.link && !/^https?:\/\//i.test(a.link)) a.link = 'https://' + a.link;
+  if (!API_URL || !session || !session.token) { toast('Нэвтэрсэн байх шаардлагатай'); return; }
+  var f = ($('rsImg').files || [])[0], btn = $('rsBtn');
+  btn.disabled = true; btn.textContent = 'Хадгалж байна…';
+  var send = function () {
+    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'research', add: a, token: session.token }) })
+      .then(function (r) { return r.json(); }).then(function (d) {
+        btn.disabled = false; btn.textContent = 'Хадгалах';
+        if (!d || d.status !== 'ok') { toast(d && d.error === 'size' ? 'Зураг хэт том байна' : 'Хадгалж чадсангүй'); return; }
+        closeSheet('resSheet'); toast('✓ Судалгаа хадгалагдлаа'); loadResearch();
+      }).catch(function () { btn.disabled = false; btn.textContent = 'Хадгалах'; toast('Интернэт холболтоо шалгана уу'); });
+  };
+  if (!f) { send(); return; }
+  resShrink(f, 200, 0.6, function (th) {
+    resShrink(f, 1000, 0.72, function (big) { a.thumb = th; a.img = big; send(); });
+  });
+}
+function resCancel(id) {
+  if (!confirm('Энэ судалгааг цуцлах уу?')) return;
+  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'research', cancelId: id, token: session.token }) })
+    .then(function (r) { return r.json(); }).then(function (d) { if (d && d.status === 'ok') { toast('Цуцаллаа'); loadResearch(); } else toast('Алдаа гарлаа'); })
+    .catch(function () { toast('Интернэт холболтоо шалгана уу'); });
+}
+function resImgOpen(id) {
+  var r = (resItems || []).filter(function (x) { return x.id === id; })[0]; if (!r) return;
+  var p = resSheetEl();
+  p.innerHTML = '<h2>' + esc(r.name) + '</h2><img id="rsBig" src="' + esc(r.thumb) + '" alt="" style="width:100%;border-radius:8px">' +
+    (r.img ? '<p class="muted" id="rsBigMsg">Том зураг ачаалж байна…</p>' : '') + '<button class="btn ghost" onclick="closeSheet(\'resSheet\')">Хаах</button>';
+  openSheet('resSheet');
+  if (!r.img) return;
+  fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'research', img: id, token: session.token }) })
+    .then(function (x) { return x.json(); }).then(function (d) { var m = $('rsBigMsg'); if (d && d.status === 'ok' && $('rsBig')) { $('rsBig').src = d.img; if (m) m.remove(); } else if (m) m.textContent = 'Том зураг ачаалсангүй'; })
+    .catch(function () {});
+}

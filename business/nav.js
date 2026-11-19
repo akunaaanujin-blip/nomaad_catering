@@ -19,7 +19,7 @@ var MNAV = [
   ['Буухиа', 'truck', [['sales/buuhia', 'Хүргэлт', 'Буухиа хүргэлт'], ['finance/ebset', 'Тооцоо', 'Буухиа тооцоо'], ['sales/ebrec', 'Тулгалт', 'Буухиатай тулгах']]],
   ['Boost', 'boost', [['sales/boostp', 'Boost'], ['sales/boostbud', 'Төсөв', 'Boost төсөв'], ['sales/boost', 'Үр дүн', 'Boost үр дүн']]],
   ['Бараа', 'products', [['products/catalog', 'Бараа, үнэ'], ['products/stock', 'Үлдэгдэл'], ['products/po', 'Худалдан авалт'], ['products/suppliers', 'Нийлүүлэгчид'],
-    ['products/counts', 'Тооллого'], ['products/move', 'Хөдөлгөөн']]],
+    ['products/counts', 'Тооллого'], ['products/move', 'Хөдөлгөөн'], ['products/research', 'Шинэ барааны судалгаа']]],
   ['Мөнгө', 'money', [['finance/cashacc', 'Данснууд'], ['finance/stmt', 'Дансны хуулга'], ['finance/bank', 'Банк тулгах'], ['finance/vouchers', 'Касс'], ['finance/requests', 'Мөнгөний хүсэлт']]],
   ['Тооцоо', 'people', [['finance/recv', 'Авлага'], ['finance/payb', 'Өглөг'], ['finance/partners', 'Харилцагчид'], ['finance/loans', 'Зээл'], ['finance/fixed', 'Тогтмол зардал, төлбөр'], ['finance/payroll', 'Цалин, НДШ']]],
   ['Тайлан', 'reports', [['finance/mrep', 'Удирдлагын тайлан'], ['finance/monrep', 'Сарын тайлан'], ['finance/daily', 'Өдрийн орлого'], ['finance/months', '12 сарын дүн'], ['finance/expcat', 'Зардлын задаргаа'],

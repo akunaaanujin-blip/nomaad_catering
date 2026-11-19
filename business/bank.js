@@ -656,8 +656,48 @@ function apiView(biz) {
     (B.orders ? row('Буухиа (ebuuhia)', !!window.ebOnAll, 'Захиалгыг хүргэлтэд илгээх, төлөв, авсан мөнгө татах') : '') +
     row('StorePay', !!(window.spAll || {})[biz], 'Хэрэглэгчийн зээлийн эрх шалгах, нэхэмжлэх илгээх') +
     row('И-баримт (PosAPI)', B.ebarimt === false ? 'Ашиглахгүй' : 'Касс компьютер дээр', 'Касс компьютер дээрх PosAPI-аар баримт хэвлэх (дэлгүүр бүрт)') +
+    row('AI туслах (Claude)', aiStLabel(), 'Ажилтны «AI туслах» асуултад шууд хариулах') +
     '</table></div></div>' + '<h2 class="sec-title" style="font-size:16px;margin:16px 0 8px">Банкны данс холбох</h2><div style="margin-bottom:8px"><button class="b-btn primary" onclick="openBankLink()">+ Данс холбох</button></div>' + bankLinkView() +
-    ebSettingsCard(biz) + spSettingsCard(biz);
+    ebSettingsCard(biz) + spSettingsCard(biz) + aiSettingsCard();
+}
+// AI туслах (Claude API, Haiku) — ажилтны «AI туслах» асуултад шууд хариулна. Түлхүүр зөвхөн серверт (дахин харагдахгүй), сарын $ хязгаартай.
+function aiStLabel() { var a = window.aiAll || {}; return !a.key ? 'Тохируулаагүй' : !a.on ? 'Унтраасан' : a.spent >= a.limit ? 'Сарын хязгаарт хүрсэн' : true; }
+function aiSettingsCard() {
+  if (typeof isOwner === 'function' && !isOwner()) return '';
+  var a = window.aiAll || {}, lab = aiStLabel(), lim = a.limit || 10;
+  var Q = (typeof tasks !== 'undefined' ? tasks : []).filter(function (t) { return t.kind === 'Ажилтнаас'; }).slice(-15).reverse();
+  var qst = function (t) { return t.status === 'Хариулсан' ? 'Хариулсан' : t.answer ? 'Удирдлагад шилжсэн' : 'Хүлээгдэж'; };
+  return '<div class="card"><h2>AI туслах (Claude API) <small class="muted" style="font-weight:400">· ' + (lab === true ? 'асаалттай' : lab.toLowerCase()) + '</small></h2>' +
+    '<p class="muted" style="font-size:12.5px;margin:-4px 0 10px">Ажилтны хуудасны «AI туслах» цонхонд бичсэн асуултад шууд хариулна (Claude Haiku). Цалин, банкны үлдэгдэл зэрэг нууц мэдээлэл өгөхгүй; удирдлагын шийдвэр шаардсан асуултыг «Удирдлагад шилжсэн» гэж үлдээнэ. Сарын хязгаарт хүрвэл AI зогсож, асуулт хуучин шигээ хүлээгдэнэ. Түлхүүр зөвхөн серверт хадгалагдаж, дахин харагдахгүй.</p>' +
+    '<table class="rep-t"><tr><td>Энэ сар (' + esc(a.month || '') + ')</td><td class="n"><b>$' + Number(a.spent || 0).toFixed(2) + '</b> / $' + lim + '</td></tr>' +
+    '<tr><td>AI хариулсан</td><td class="n">' + (a.n || 0) + (a.esc ? ' · удирдлагад шилжүүлсэн ' + a.esc : '') + '</td></tr>' +
+    (a.err ? '<tr><td>Сүүлийн алдаа</td><td class="n" style="white-space:normal">' + esc(a.err) + ' · ' + esc(a.errAt || '') + '</td></tr>' : '') + '</table>' +
+    '<div class="row2" style="margin-top:10px"><div><label>Anthropic API түлхүүр</label><input id="aiKey" type="password" autocomplete="new-password" placeholder="' + (a.key ? 'тохируулсан — солих бол бичнэ' : 'sk-ant-…') + '"></div>' +
+    '<div><label>Сарын дээд хязгаар ($)</label><input id="aiLimit" type="number" min="1" max="200" step="1" value="' + lim + '"></div></div>' +
+    '<div class="bar-row" style="margin-top:10px"><button class="b-btn" onclick="aiSave()">Хадгалаад шалгах</button>' +
+      (a.key ? (a.on ? '<button class="b-btn ghost" onclick="aiSave(true)">Унтраах</button>' : '<button class="b-btn ghost" onclick="aiSave(false)">Асаах</button>') : '') + '<small class="muted" id="aiMsg"></small></div>' +
+    (Q.length ? '<h3 style="font-size:14px;margin:14px 0 6px">Ажилтны сүүлийн асуултууд</h3><div class="scroll"><table class="rep-t"><tr><th>Цаг</th><th>Ажилтан</th><th>Асуулт</th><th>Хариулт</th><th>Төлөв</th></tr>' + Q.map(function (t) {
+      return '<tr><td data-l="Цаг" class="nw">' + esc(String(t.created || '').slice(5)) + '</td><td data-l="Ажилтан">' + esc(t.staffName || t.from || '') + '<br><small class="muted">' + esc(BIZ_NAMES_C(t.biz)) + '</small></td>' +
+        '<td data-l="Асуулт" style="white-space:normal;min-width:160px">' + esc(t.title) + '</td><td data-l="Хариулт" style="white-space:pre-line;min-width:200px">' + esc(t.answer || '') + '</td><td data-l="Төлөв" class="nw">' + qst(t) + '</td></tr>';
+    }).join('') + '</table></div>' : '') + '</div>';
+}
+function aiSave(off) {
+  var v = {}, k = ($('aiKey') || {}).value || '', L = ($('aiLimit') || {}).value || '';
+  k = k.trim();
+  if (off === true) { if (!confirm('AI туслахыг унтраах уу? Асуултууд хуучин шигээ хүлээгдэнэ.')) return; v.off = true; }
+  else if (off === false) v.off = false;
+  else {
+    if (k && !/^sk-ant-/.test(k)) { $('aiMsg').textContent = 'Түлхүүр «sk-ant-»-ээр эхэлнэ — Console-оос бүтнээр нь хуулж тавина уу'; return; }
+    if (!k && !(window.aiAll || {}).key) { $('aiMsg').textContent = 'Түлхүүрээ бичнэ үү'; return; }
+    if (k) v.key = k; v.limit = L;
+  }
+  if (!API_URL) { toast('Google Sheet-тэй холбогдсон үед ажиллана'); return; }
+  $('aiMsg').textContent = off == null ? 'Хадгалаад шалгаж байна…' : 'Хадгалж байна…';
+  post({ type: 'admin_setting', key: 'ai', value: v, test: off == null }, function (err, d) {
+    if (err) { $('aiMsg').textContent = err === 'key' ? 'Түлхүүр буруу хэлбэртэй байна' : err === 'limit' ? 'Хязгаар $1–200 байна' : 'Алдаа: ' + err; return; }
+    window.aiAll = d.ai || window.aiAll; render();
+    var m = $('aiMsg'); if (m) m.textContent = d.test === 'ok' ? '✓ Холбогдлоо — AI хариулж байна' : d.test ? 'Шалгалт амжилтгүй: ' + d.test : '✓ Хадгаллаа';
+  });
 }
 // StorePay merchant API — түлхүүрийг зөвхөн серверт хадгална (энд хэзээ ч буцааж харуулахгүй); хоосон талбар хуучныг хэвээр үлдээнэ
 function spSettingsCard(biz) {

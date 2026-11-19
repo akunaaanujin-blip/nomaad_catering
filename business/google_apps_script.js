@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v8.16 (менежер/AI ажилтны асуултад хариулах эрх — answerId; v8.15 ажилтан «AI туслах» цонхоор асуулт бичнэ — staff_ask, AI admin_task answerId-аар хариулна; v8.14 AI ажилтан — Болормаа/Батаа өөрийн түлхүүрээр менежерийн эрхтэй (бүх дэлгүүр): асуулт, даалгавар, тулгалт; цалин, тохиргоо, батлах эрхгүй; v8.13 зөвхөн зурагтай ноорог захиалга: Ноорог → бараа бөглөхөд Батлах → эзэн батлахад Захиалсан; v8.12 бараа захиалгад дэлгэцийн зураг хавсаргах — «Захиалгын зураг» хуудас; ажилтнаас асуух: даалгаврын «Асуулт» төрөл, ажилтан хариу бичнэ — Даалгавар sheet «Төрөл», «Хариулт»; банкны мессеж: «Утсыг холбох» — 10 минутын дотор ирсэн түлхүүрийг авна; мессежийн түлхүүрийн зай/шинэ мөрийг тоохгүй, буруу түлхүүрийг оношлогоонд; ажилтанд санамж: admin_setting notice, products → notices; Хаан банкны мессежийн бодит загвар; банкны мэдэгдлээр автоматаар оруулах: шилжүүлгийн баримтын и-мэйл bankMailScan, утаснаас дамжуулсан мессеж bank_sms, тохиргоо admin_setting bankauto, хуулгатай нийлүүлэх admin_bank updates.fix; admin_read: poLog — ажилтны шийдэгдсэн бүртгэл; Буухиагийн сайтаас устгасан хүргэлтийг дахин илгээх: eb_unlink; Буухиа руу үнийн дүнтэй / дүнгүй илгээх: noAmt, «Буухиа дүн» багана; ажилтны «Бараа ирсэн»-д каргоны дүн; «Бараа ирсэн», карго — удирдлага батална: staff_po, staff_po_in, admin_po inboxId; буухиа: Cozy-ийн бүртгэлтэй хүргэлт NOMAAD-д харагдахгүй — EB_HOME; засах: барааны хөдөлгөөн admin_stock editId, зарлага admin_record editId, харилцагч admin_partner editId / delId; цуцалсан/буцаасан захиалгын бараа үлдэгдэлд зөвхөн «Бараа буцаж ирсэн»-ээр — буухиа цуцлахад шууд нэмэхгүй; Boost төсөв: удирдлага BOOST_BUD-д гаргана, ажилтан boost_bud-аар төсөв + задаргаагаа харна; хуучин JS хувилбарын хүсэлтийг бичихгүй — MIN_JS; ажилтны нэвтрэлт 11-02-оос өмнөх шигээ: нэвтрэх нэр + код, нийтлэг эрх зөвшөөрнө, 4 оронтой код, PIN албадан солихгүй; Boost нэхэмжлэх: олон компанийн мөр, Meta баримтын зураг «Boost баримт», admin_boost; буухиа руу илгээхэд дүүрэг/сум заавал биш; захиалгын хүргэлтийн төлбөр, хөнгөлөлт засахад борлуулалтын мөр дагана — orderSyncAdj; удирдлагаас хүргэлт/хөнгөлөлт засах, «Хүргэлтийн компани» багана; банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v8.17 (шинэ барааны судалгаа — research / admin_research, «Барааны судалгаа» sheet, бүх ажилтанд харагдана; AI туслах Claude API-аар шууд хариулна — Haiku, сарын хязгаар AI_CFG/AI_USE, түгжээний гадна; v8.16 менежер/AI ажилтны асуултад хариулах эрх — answerId; v8.15 ажилтан «AI туслах» цонхоор асуулт бичнэ — staff_ask, AI admin_task answerId-аар хариулна; v8.14 AI ажилтан — Болормаа/Батаа өөрийн түлхүүрээр менежерийн эрхтэй (бүх дэлгүүр): асуулт, даалгавар, тулгалт; цалин, тохиргоо, батлах эрхгүй; v8.13 зөвхөн зурагтай ноорог захиалга: Ноорог → бараа бөглөхөд Батлах → эзэн батлахад Захиалсан; v8.12 бараа захиалгад дэлгэцийн зураг хавсаргах — «Захиалгын зураг» хуудас; ажилтнаас асуух: даалгаврын «Асуулт» төрөл, ажилтан хариу бичнэ — Даалгавар sheet «Төрөл», «Хариулт»; банкны мессеж: «Утсыг холбох» — 10 минутын дотор ирсэн түлхүүрийг авна; мессежийн түлхүүрийн зай/шинэ мөрийг тоохгүй, буруу түлхүүрийг оношлогоонд; ажилтанд санамж: admin_setting notice, products → notices; Хаан банкны мессежийн бодит загвар; банкны мэдэгдлээр автоматаар оруулах: шилжүүлгийн баримтын и-мэйл bankMailScan, утаснаас дамжуулсан мессеж bank_sms, тохиргоо admin_setting bankauto, хуулгатай нийлүүлэх admin_bank updates.fix; admin_read: poLog — ажилтны шийдэгдсэн бүртгэл; Буухиагийн сайтаас устгасан хүргэлтийг дахин илгээх: eb_unlink; Буухиа руу үнийн дүнтэй / дүнгүй илгээх: noAmt, «Буухиа дүн» багана; ажилтны «Бараа ирсэн»-д каргоны дүн; «Бараа ирсэн», карго — удирдлага батална: staff_po, staff_po_in, admin_po inboxId; буухиа: Cozy-ийн бүртгэлтэй хүргэлт NOMAAD-д харагдахгүй — EB_HOME; засах: барааны хөдөлгөөн admin_stock editId, зарлага admin_record editId, харилцагч admin_partner editId / delId; цуцалсан/буцаасан захиалгын бараа үлдэгдэлд зөвхөн «Бараа буцаж ирсэн»-ээр — буухиа цуцлахад шууд нэмэхгүй; Boost төсөв: удирдлага BOOST_BUD-д гаргана, ажилтан boost_bud-аар төсөв + задаргаагаа харна; хуучин JS хувилбарын хүсэлтийг бичихгүй — MIN_JS; ажилтны нэвтрэлт 11-02-оос өмнөх шигээ: нэвтрэх нэр + код, нийтлэг эрх зөвшөөрнө, 4 оронтой код, PIN албадан солихгүй; Boost нэхэмжлэх: олон компанийн мөр, Meta баримтын зураг «Boost баримт», admin_boost; буухиа руу илгээхэд дүүрэг/сум заавал биш; захиалгын хүргэлтийн төлбөр, хөнгөлөлт засахад борлуулалтын мөр дагана — orderSyncAdj; удирдлагаас хүргэлт/хөнгөлөлт засах, «Хүргэлтийн компани» багана; банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -108,7 +108,7 @@ function doPost(e) {
   try { const sp = JSON.parse(e.postData.contents); if (/^storepay_/.test(String(sp.type))) return json(storePay(sp)); } catch (e0) {}
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
-  let drop = null;
+  let drop = null, aiQ = null, out = null;
   try {
     const data = JSON.parse(e.postData.contents);
     if (oldJs(data)) return json({ status: 'error', error: 'old', msg: 'Хуудсаа шинэчилнэ үү (Ctrl+Shift+R)' });
@@ -122,13 +122,16 @@ function doPost(e) {
     }
     const res = route(data);
     if (res && res.status === 'ok') try { audit(data, res); } catch (eA) {}   // өөрчлөлтийн түүх (амжилттай бичилт)
-    return json(res);
+    if (!res || !res._ai) return json(res);
+    aiQ = res._ai; delete res._ai; out = res;   // AI туслах — түгжээ суллагдсаны дараа хариулна
   } catch (err) {
     return json({ status: 'error', error: err.message });
   } finally {
     try { if (drop) { SpreadsheetApp.flush(); cacheDrop(drop); } } catch (e2) {}   // бичилтийг дуусгаад кэш цэвэрлэнэ (зэрэг уншилт хуучныг кэшлэхгүй)
     lock.releaseLock();
   }
+  try { const a = aiReply(aiQ); if (a) { out.answer = a.answer; out.esc = a.esc; } } catch (eAi) {}
+  return json(out);
 }
 // Хүсэлтийг төрлөөр нь гүйцэтгэнэ (doPost — түгжээ, эрх, түүх)
 function route(data) {
@@ -153,6 +156,8 @@ function route(data) {
   if (data.type === 'barcode_set') return barcodeSet(data);
   if (data.type === 'task_done') return staffTaskDone(data);
   if (data.type === 'staff_ask') return staffAsk(data);
+  if (data.type === 'research') return staffResearch(data);
+  if (data.type === 'admin_research') return isAdmin(data) ? adminResearch(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_reminder') return isAdmin(data) ? adminReminder(data) : { status: 'error', error: 'auth' };
   if (data.type === 'order_save') return orderSave(data);
   if (data.type === 'staff_pin') return staffPin(data);
@@ -213,6 +218,8 @@ function auditLabel(d) {
   if (t === 'order_delete') return 'Захиалга бүр устгасан';
   if (t === 'orders_ship') return 'Захиалга → ' + String(d.to || '');
   if (t === 'stock_count') return 'Тооллого илгээсэн';
+  if (t === 'research') return d.add ? 'Шинэ барааны судалгаа нэмсэн: ' + String(d.add.name || '').slice(0, 60) : 'Барааны судалгаа цуцалсан';
+  if (t === 'admin_research') return d.add ? 'Шинэ барааны судалгаа нэмсэн: ' + String(d.add.name || '').slice(0, 60) : d.cancelId ? 'Барааны судалгаа цуцалсан' : 'Барааны судалгаа → ' + String(d.status || '');
   if (t === 'admin_eb' || /^eb_/.test(t)) return 'Буухиа: ' + String(d.op || t.replace('eb_', ''));
   return ({ admin_bank: 'Банкны хуулга', admin_product: 'Бараа, үнэ', admin_partner: 'Харилцагч', admin_loan: 'Зээл', admin_pf: 'Хувийн санхүү', admin_po: 'Бараа захиалга', admin_staff: 'Ажилтан',
     admin_salary: 'Цалин', admin_order: 'Захиалгын төлбөр', admin_task: 'Даалгавар', admin_reminder: 'Сануулга', admin_doc: 'Маягт', admin_contract: 'Гэрээ', admin_close: 'Он хаасан',
@@ -232,12 +239,14 @@ function audit(d, res) {
   const t = String(d.type || '');
   if (!t || AUDIT_SKIP[t] || CACHE_READ[t] || (t === 'admin_eb' && !/^(send|del|other|unlink)$/.test(String(d.op || '')))) return;
   if (t === 'requests' && !d.add) return;
+  if ((t === 'research' || t === 'admin_research') && !d.add && !d.cancelId && !d.statusId) return;   // жагсаалт, зураг унших
   let who = '', biz = String(d.biz || (d.entry && d.entry.biz) || (d.order && d.order.biz) || '');
   if (d._who) who = String(d.by || d._who.id || '');
   else { const s = checkStaff(d.token); if (s) { who = s.staff.name; biz = biz || s.biz; } }
   const det = auditClean(d, 0);
   if (t === 'admin_setting') { delete det.value; if (/^(lock|review|targets|company)$/.test(String(d.key))) det.value = auditClean(d.value, 1); }   // түлхүүр, нууц тохиргоог бичихгүй
   delete det.type; delete det.by;
+  if (det.add) { delete det.add.thumb; delete det.add.img; }
   const id = String(d.cancelId || d.editId || d.delId || d.approveId || d.statusId || d.restoreId || (d.order && d.order.id) || (t === 'admin_order' ? d.id : '') || '');
   auditSheet().appendRow(['\'' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss'), who.slice(0, 40), biz, auditLabel(d), String(d.what || '').slice(0, 200), t, id, JSON.stringify(det).slice(0, 3000)]);
 }
@@ -278,7 +287,7 @@ function adminRestore(d) {
 const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'imp', 'rule', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf', 'pf'];
 const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_other: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_unlink: ['ord'], eb_send: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord', 'rec'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
   staff_po_in: ['mov', 'stk', 'jr', 'po'], admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr', 'bank'], admin_bank: ['bank', 'jr', 'ord', 'imp', 'rule'], bank_sms: ['bank'], admin_partner: ['pt'], admin_reminder: ['rem'],
-  admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], staff_ask: ['task'], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_pf: ['pf'], admin_po: ['po', 'jr'],
+  admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], staff_ask: ['task'], research: [], admin_research: [], admin_product: ['prod', 'price'], admin_loan: ['loan', 'jr'], admin_pf: ['pf'], admin_po: ['po', 'jr'],
   admin_restore: ['rec', 'stk', 'mov', 'jr'], admin_staff: ['adm', 'stf'], staff_pin: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
 const CACHE_READ = { admin_logout: 1, staff_po: 1, admin_audit: 1, eb_sync: 1, requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
 function cacheKeysFor(d) {
@@ -325,7 +334,7 @@ function adminWho(data) {
 }
 // Менежер: зөвхөн өөрийн дэлгүүрийн борлуулалт, бараа, захиалга, банк, кассын баримт. Цалин, ажилчид, тохиргоо, зээл, удирдлагын санхүү — эзэнд.
 const MGR_TYPES = { admin_read: 1, admin_order: 1, admin_stock: 1, admin_product: 1, admin_bank: 1, admin_journal: 1, admin_partner: 1, admin_po: 1, admin_po_img: 1,
-                    admin_task: 1, admin_reminder: 1, admin_record: 1, admin_import_cozy: 1, admin_setting: 1, admin_eb: 1, admin_boost: 1 };
+                    admin_task: 1, admin_reminder: 1, admin_record: 1, admin_import_cozy: 1, admin_setting: 1, admin_eb: 1, admin_boost: 1, admin_research: 1 };
 function mgrCan(who, b) { b = String(b || ''); return who.biz === 'all' ? (!!BIZ_NAMES[b] && b !== 'mgmt') : staffIn(who, b); }
 function mgrGuard(d, who) {
   if (!MGR_TYPES[d.type]) return 'role';
@@ -381,6 +390,7 @@ function mgrGuard(d, who) {
     return (d.edit || []).every(function (x) { return ok(B[String(x.id)]); }) ? '' : 'role';
   }
   if (t === 'admin_eb') return ok(d.biz) ? '' : 'role';
+  if (t === 'admin_research') return d.statusId ? 'role' : d.add && !ok(d.add.biz) ? 'role' : '';   // харах, нэмэх, өөрийнхийг цуцлах; шийдвэр (төлөв) — зөвхөн эзэн
   if (t === 'admin_setting') return d.key === 'minstock' && ok(d.biz) ? '' : 'role';   // менежер зөвхөн өөрийн дэлгүүрийн доод үлдэгдлийг
   return 'role';
 }
@@ -449,6 +459,7 @@ function adminRead(d) {
   a.payInfo = payInfoAll();
   a.notices = staffNoticeList();
   a.storepay = {}; Object.keys(BIZ_NAMES).forEach(function (b) { a.storepay[b] = spOn(b); });
+  a.ai = aiState();   // AI туслах: асаалттай эсэх, сарын зарцуулалт (түлхүүр буцаахгүй)
   a.ebuuhia = ebOn();   // буухиа API асаалттай эсэх (түлхүүр буцаахгүй)   // зөвхөн асаалттай эсэх — түлхүүр буцаахгүй
   a.orders = cacheGet('ord', orderRows).map(function (o) { delete o.row; return o; });
   a.tasks = a.tasks.map(function (t) { delete t.row; return t; });
@@ -1744,6 +1755,7 @@ function adminOrder(d) {
 function adminSetting(d) {
   if (d.key === 'storepay') return storePaySetting(d);
   if (d.key === 'ebuuhia') return ebSetting(d);
+  if (d.key === 'ai') return aiSetting(d);
   if (d.key === 'bankauto') return bankAutoSetting(d);
   if (d.key === 'notice') return staffNoticeSet(d);
   if (d.key === 'accounts') { PropertiesService.getScriptProperties().setProperty('ACCOUNTS_X', JSON.stringify(d.value || []).slice(0, 8000)); return { status: 'ok' }; }
@@ -2443,14 +2455,14 @@ function staffTasks(d) {
     return t.biz === who.biz && (t.staffId === 'all' || t.staffId === who.staff.id) && (t.status === 'Шинэ' || t.doneAt.slice(0, 10) >= since);
   }).map(function (t) { delete t.row; return t; }) };
 }
-function staffAsk(d) {   // ажилтан «AI туслах»-аас асууна — AI (Болормаа/Батаа) дараа нь хариулна
+function staffAsk(d) {   // ажилтан «AI туслах»-аас асууна — Claude API шууд хариулна (aiReply), чадахгүй бол Болормаа/Батаа дараа нь
   const who = checkStaff(d.token);
   if (!who) return { status: 'error', error: 'auth' };
   const q = String(d.text || '').trim().slice(0, 500);
   if (q.length < 2) return { status: 'error', error: 'fields' };
   const id = 'T' + Date.now();
   taskSheet().appendRow([id, Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), who.biz, who.staff.id, who.staff.name, q, '', 'Шинэ', '', '', who.staff.name, '', 'Ажилтнаас', '']);
-  return { status: 'ok', id: id };
+  return { status: 'ok', id: id, _ai: { id: id, biz: who.biz, staffId: who.staff.id, staffName: who.staff.name, text: q } };   // doPost түгжээний дараа aiReply
 }
 function staffTaskDone(d) {
   const who = checkStaff(d.token);
@@ -2462,6 +2474,199 @@ function staffTaskDone(d) {
   taskSheet().getRange(t.row, 8, 1, 3).setValues([['Хийсэн', who.staff.name, Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')]]);
   if (ans) taskSheet().getRange(t.row, 14).setValue(ans);
   return { status: 'ok' };
+}
+
+// ═══════════ AI ТУСЛАХ — Claude API (Haiku) ═══════════
+// Ажилтны «AI туслах» асуултад шууд хариулна. Түлхүүрийг эзэн «Тохиргоо → Холболт»-оос оруулна (Script Properties AI_CFG — хэзээ ч буцаахгүй).
+// Түлхүүргүй, унтраасан, сарын хязгаар (анхдагч $10) хэтэрсэн, алдаа гарсан үед асуулт «Шинэ» хэвээр — Болормаа/Батаа (Claude чат) хариулна.
+// Удирдлагын шийдвэр шаардсан асуултад AI түр хариу бичээд «Шинэ» хэвээр үлдээнэ (удирдлага хариулна).
+const AI_MODEL = 'claude-haiku-5-5', AI_LIMIT = 10;   // $ / сар
+function aiCfg() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('AI_CFG') || '{}'); } catch (e) { return {}; } }
+function aiMonth() { return Utilities.formatDate(new Date(), TZ, 'yyyy-MM'); }
+function aiUse() {
+  let u = {}; try { u = JSON.parse(PropertiesService.getScriptProperties().getProperty('AI_USE') || '{}'); } catch (e) {}
+  return u.m === aiMonth() ? u : { m: aiMonth(), usd: 0, n: 0, esc: 0, err: u.err || '', errAt: u.errAt || '' };
+}
+function aiState() {
+  const c = aiCfg(), u = aiUse();
+  return { on: !!c.key && !c.off, key: !!c.key, limit: Number(c.limit) || AI_LIMIT, spent: Math.round((u.usd || 0) * 10000) / 10000, n: u.n || 0, esc: u.esc || 0, month: u.m, model: AI_MODEL, err: u.err || '', errAt: u.errAt || '' };
+}
+function aiUsd(u) {   // Haiku 5.5: ≤100K токен — $0.10 / $0.50, түүнээс урт — $0.50 / $2.50 (1 сая токенд)
+  if (!u) return 0;
+  const big = (Number(u.input_tokens) || 0) + (Number(u.cache_read_input_tokens) || 0) + (Number(u.cache_creation_input_tokens) || 0) > 100000, pin = big ? 0.5 : 0.1, pout = big ? 2.5 : 0.5;
+  return ((Number(u.input_tokens) || 0) * pin + (Number(u.cache_creation_input_tokens) || 0) * pin * 1.25 + (Number(u.cache_read_input_tokens) || 0) * pin * 0.1 + (Number(u.output_tokens) || 0) * pout) / 1e6;
+}
+function aiNote(usd, err, esc) {   // зарцуулалт, алдааг тэмдэглэнэ (түгжээтэй үед дуудна)
+  const u = aiUse();
+  if (usd) { u.usd = (u.usd || 0) + usd; u.n = (u.n || 0) + 1; }
+  if (esc) u.esc = (u.esc || 0) + 1;
+  if (err) { u.err = String(err).slice(0, 200); u.errAt = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'); } else if (usd) { u.err = ''; u.errAt = ''; }
+  PropertiesService.getScriptProperties().setProperty('AI_USE', JSON.stringify(u));
+}
+function aiCall(key, system, messages) {
+  let r;
+  try {
+    r = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      headers: { 'x-api-key': key, 'anthropic-version': '2026-10-21' },
+      payload: JSON.stringify({ model: AI_MODEL, max_tokens: 2000, output_config: { effort: 'low' }, system: system, messages: messages }) });
+  } catch (e) { return { err: 'network: ' + String(e.message || e).slice(0, 150) }; }
+  const code = r.getResponseCode(); let j = {}; try { j = JSON.parse(r.getContentText()); } catch (e) {}
+  if (code !== 200) return { err: 'HTTP ' + code + (j.error ? ' ' + String(j.error.type || '') + ': ' + String(j.error.message || '').slice(0, 150) : '') };
+  const usd = aiUsd(j.usage);
+  if (j.stop_reason === 'refusal') return { usd: usd, err: 'refusal' };
+  const text = (j.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text; }).join('').trim();
+  return text ? { usd: usd, text: text } : { usd: usd, err: 'empty (' + String(j.stop_reason || '') + ')' };
+}
+function aiSystem(biz, name) {
+  const P = cacheGet('prod', productRows).filter(function (p) { return p.biz === biz && !p.off && !/^(Хүргэлтийн төлбөр|Хөнгөлөлт|Төлбөр хуваалт)$/.test(p.name); }).slice(0, 300)
+    .map(function (p) { return p.name + (Number(p.price) ? ' — ' + Number(p.price).toLocaleString('en-US') + '₮' : ''); });
+  return [
+    'Чи NOMAAD-ийн «' + (BIZ_NAMES[biz] || biz) + '» дэлгүүрийн ажилтнуудад туслах «AI туслах» байна. Одоо ажилтан ' + name + ' асууж байна.',
+    'Монголоор, энгийн, товч хариул (ихэвчлэн 2–6 өгүүлбэр, 700 тэмдэгтээс бага). Markdown, од (*), гарчиг, emoji бүү хэрэглэ. Алхам хэрэгтэй бол «1. … 2. …» гэж мөр мөрөөр.',
+    'Ажилтны хуудасны цэс: Борлуулалт (касс, баримт, касс хаах), Захиалга, Хүргэлт (Буухиа), Барааны үлдэгдэл, Бараа ирсэн, карго, Тооллого, Зардал, хүсэлт (кассаас зардал, мөнгөний хүсэлт), Шинэ бараа (барааны судалгаа), Boost төсөв. Хуудсыг яаж ашиглах, бараа, борлуулалт, хэрэглэгчтэй харилцах асуултад туслана.',
+    'Чамд үлдэгдэл, борлуулалт, мөнгөний бодит тоо харагдахгүй — ийм асуултад хуудасны аль хэсгээс харахыг зааж өг. Тоо, баримт зохиож бүү хэл.',
+    'Цалин, урамшуулал, банкны данс, үлдэгдэл, компанийн орлого, ашиг, бусад ажилтны хувийн мэдээллийн талаар бүү ярь — «Удирдлагаас асуугаарай» гэж хэл.',
+    'Хэрэв асуулт удирдлагын шийдвэр, зөвшөөрөл шаардвал (мөнгө гаргах, үнэ өөрчлөх, хөнгөлөлт, буцаалт зөвшөөрөх, ажлын цаг, чөлөө, 500,000₮-өөс дээш зүйл, гомдол, ажилтны асуудал) эсвэл чи сайн мэдэхгүй бол хариултаа яг «[УДИРДЛАГА]» гэж эхлүүлээд, удирдлагад дамжуулснаа, хариу энэ цонхонд ирнэ гэдгийг товч хэл.',
+    'Дэлгүүрийн бараа, зарах үнэ:' + (P.length ? '\n' + P.join('\n') : ' (жагсаалт алга)')
+  ].join('\n');
+}
+// doPost-оос түгжээ суллагдсаны дараа дуудна (API 2–6 секунд — бусад бичилтийг саатуулахгүй). q: staffAsk-ийн _ai.
+function aiReply(q) {
+  const c = aiCfg(); if (!c.key || c.off) return null;
+  const st = aiState(); if (st.spent >= st.limit) return null;   // сарын хязгаар — Claude чат хариулна
+  const since = Utilities.formatDate(new Date(Date.now() - 3 * 864e5), TZ, 'yyyy-MM-dd'), msgs = [];
+  taskRows().filter(function (t) { return t.kind === 'Ажилтнаас' && t.staffId === q.staffId && t.id !== q.id && t.answer && t.created >= since; }).slice(-3)
+    .forEach(function (t) { msgs.push({ role: 'user', content: t.title }, { role: 'assistant', content: t.answer }); });
+  msgs.push({ role: 'user', content: q.text });
+  const r = aiCall(c.key, aiSystem(q.biz, q.staffName), msgs);
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    let ans = String(r.text || ''), esc = false;
+    const m = ans.match(/^\s*\[УДИРДЛАГА\]\s*/); if (m) { esc = true; ans = ans.slice(m[0].length); }
+    ans = ans.replace(/\*\*/g, '').trim().slice(0, 1000);
+    aiNote(r.usd || 0, r.text ? '' : r.err, esc && !!ans);
+    if (!ans) return null;
+    const t = taskRows().filter(function (x) { return x.id === q.id; })[0];
+    if (!t || t.status !== 'Шинэ' || t.answer) return null;   // энэ хооронд хариулсан / цуцалсан
+    const sh = taskSheet();
+    if (esc) sh.getRange(t.row, 12).setValue('AI: удирдлагад шилжүүлсэн');
+    else sh.getRange(t.row, 8, 1, 3).setValues([['Хариулсан', 'AI туслах', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')]]);
+    sh.getRange(t.row, 14).setValue(ans);
+    SpreadsheetApp.flush(); cacheDrop(['task']);
+    return { answer: ans, esc: esc };
+  } finally { lock.releaseLock(); }
+}
+// Удирдлага (зөвхөн Эзэн): түлхүүр (хоосон бол хуучнаараа), сарын хязгаар, асаах/унтраах; test — нэг богино асуулт илгээж шалгана. Түлхүүрийг буцаахгүй.
+function aiSetting(d) {
+  if (!d._who || d._who.role !== 'Эзэн') return { status: 'error', error: 'role' };
+  const c = aiCfg(), v = d.value || {}, k = String(v.key || '').trim();
+  if (k) { if (!/^sk-ant-[\w-]{20,}$/.test(k)) return { status: 'error', error: 'key' }; c.key = k.slice(0, 300); }
+  if (v.limit != null && String(v.limit) !== '') { const L = Number(v.limit); if (!(L >= 1 && L <= 200)) return { status: 'error', error: 'limit' }; c.limit = L; }
+  if (v.off === true) c.off = true;
+  if (v.off === false) delete c.off;
+  if (v.remove) { delete c.key; delete c.off; }
+  PropertiesService.getScriptProperties().setProperty('AI_CFG', JSON.stringify(c));
+  const out = { status: 'ok' };
+  if (d.test && c.key) {
+    const r = aiCall(c.key, 'Товч хариул.', [{ role: 'user', content: 'Сайн уу? Ганц үгээр хариул.' }]);
+    aiNote(r.usd || 0, r.text ? '' : r.err);
+    out.test = r.text ? 'ok' : r.err;
+  }
+  out.ai = aiState();
+  return out;
+}
+
+// ═══════════ ШИНЭ БАРААНЫ СУДАЛГАА ═══════════
+// Аль ч ажилтан шинэ барааны санаа оруулна — БҮХ дэлгүүрийн ажилтанд харагдана. Эзэн төлөв (Судалж байна / Захиалах / Татгалзсан), хариу бичнэ.
+// Жижиг зураг (≤200px) мөртөө, том зураг «Судалгааны зураг»-д хэсэглэж хадгална (жагсаалт хөнгөн).
+const SHEET_RES = 'Барааны судалгаа', SHEET_RESIMG = 'Судалгааны зураг', RESIMG_CHUNK = 45000, RESIMG_MAX = 8;
+const RES_HEAD = ['ID', 'Огноо', 'biz', 'Ажилтан ID', 'Ажилтан', 'Бараа', 'Холбоос', 'Нийлүүлэгч', 'Авах үнэ', 'Валют', 'Зарах үнэ (таамаг)', 'Тэмдэглэл', 'Төлөв', 'Удирдлагын хариу', 'Шийдсэн', 'Жижиг зураг', 'Том зураг'];
+const RES_ST = { 'Шинэ': 1, 'Судалж байна': 1, 'Захиалах': 1, 'Татгалзсан': 1 }, RES_CUR = { MNT: 1, CNY: 1, USD: 1, KRW: 1 };
+function resSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_RES);
+  if (!sh) { sh = ss.insertSheet(SHEET_RES); sh.appendRow(RES_HEAD); styleHead(sh, RES_HEAD.length, '#2F5B8E'); sh.getRange('B:B').setNumberFormat('@'); sh.getRange('O:O').setNumberFormat('@'); }
+  return sh;
+}
+function resImgSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_RESIMG);
+  if (!sh) { sh = ss.insertSheet(SHEET_RESIMG); sh.appendRow(['Судалгаа ID', 'Огноо', 'Хэсэг', 'Зураг']); sh.setFrozenRows(1); }
+  return sh;
+}
+function resRows() {
+  const sh = resSheet(), last = sh.getLastRow();
+  if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, RES_HEAD.length).getValues().map(function (v, i) {
+    return { row: i + 2, id: String(v[0]), at: fmtDate(v[1], 'yyyy-MM-dd HH:mm'), biz: String(v[2]), staffId: String(v[3]), by: String(v[4]), name: String(v[5]), link: String(v[6]),
+             supplier: String(v[7]), buy: Number(v[8]) || 0, cur: String(v[9] || 'MNT'), sell: Number(v[10]) || 0, note: String(v[11]), status: String(v[12] || 'Шинэ'),
+             reply: String(v[13]), decided: fmtDate(v[14], 'yyyy-MM-dd HH:mm'), thumb: String(v[15] || ''), img: String(v[16]) === '1' };
+  }).filter(function (r) { return r.id && r.status !== 'Цуцалсан'; });
+}
+function resList() { return resRows().map(function (r) { delete r.row; r.bizName = BIZ_NAMES[r.biz] || r.biz; return r; }).reverse(); }   // шинэ нь эхэнд
+function resImg(id) {
+  const sh = resImgSheet(), last = sh.getLastRow(); if (last < 2) return { status: 'error', error: 'not_found' };
+  const v = sh.getRange(2, 1, last - 1, Math.min(sh.getLastColumn(), 3 + RESIMG_MAX)).getValues();
+  for (let i = v.length - 1; i >= 0; i--) if (String(v[i][0]) === String(id)) return { status: 'ok', img: v[i].slice(3, 3 + (Number(v[i][2]) || 1)).join('') };
+  return { status: 'error', error: 'not_found' };
+}
+// Нэмэх — ажилтан (өөрийн дэлгүүр) эсвэл удирдлага (a.biz). u: { biz, id, name }
+function resAdd(a, u) {
+  const name = String(a.name || '').trim().slice(0, 120);
+  if (name.length < 2) return { status: 'error', error: 'fields' };
+  const link = String(a.link || '').trim().slice(0, 500);
+  if (link && !/^https?:\/\//i.test(link)) return { status: 'error', error: 'link' };
+  const thumb = String(a.thumb || ''), img = String(a.img || '');
+  if (thumb && (!/^data:image\/(jpeg|png|webp);base64,/.test(thumb) || thumb.length > 45000)) return { status: 'error', error: 'img' };
+  if (img && !/^data:image\/(jpeg|png|webp);base64,/.test(img)) return { status: 'error', error: 'img' };
+  const parts = []; for (let i = 0; i < img.length; i += RESIMG_CHUNK) parts.push(img.slice(i, i + RESIMG_CHUNK));
+  if (parts.length > RESIMG_MAX) return { status: 'error', error: 'size' };
+  const num = function (x) { const n = Math.round(Number(String(x == null ? '' : x).replace(/[^\d.]/g, '')) * 100) / 100; return n > 0 && n < 1e10 ? n : ''; };
+  const id = 'R' + Date.now(), now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
+  resSheet().appendRow([id, now, u.biz, u.id, String(u.name || '').slice(0, 40), name, link, String(a.supplier || '').trim().slice(0, 120), num(a.buy), RES_CUR[a.cur] ? a.cur : 'MNT', num(a.sell),
+    String(a.note || '').trim().slice(0, 1000), 'Шинэ', '', '', thumb, parts.length ? '1' : '']);
+  if (parts.length) {
+    const sh = resImgSheet(), last = sh.getLastRow();
+    if (sh.getMaxColumns() < 3 + parts.length) sh.insertColumnsAfter(sh.getMaxColumns(), 3 + parts.length - sh.getMaxColumns());
+    sh.getRange(last + 1, 1, 1, 3 + parts.length).setValues([[id, now, parts.length].concat(parts)]);
+  }
+  return { status: 'ok', id: id };
+}
+function resCancel(id, uid, owner) {   // өөрийн оруулсныг (эзэн — бүгдийг) цуцлах
+  const r = resRows().filter(function (x) { return x.id === String(id); })[0];
+  if (!r) return { status: 'error', error: 'not_found' };
+  if (!owner && r.staffId !== String(uid)) return { status: 'error', error: 'role' };
+  resSheet().getRange(r.row, 13).setValue('Цуцалсан');
+  return { status: 'ok' };
+}
+// Ажилтан: жагсаалт (бүх дэлгүүрийн), нэмэх (add), өөрийн оруулсныг цуцлах (cancelId), том зураг (img)
+function staffResearch(d) {
+  const who = checkStaff(d.token);
+  if (!who) return { status: 'error', error: 'auth' };
+  if (d.img) return resImg(d.img);
+  if (d.cancelId) return resCancel(d.cancelId, who.staff.id, false);
+  if (d.add) return resAdd(d.add, { biz: who.biz, id: who.staff.id, name: who.staff.name });
+  return { status: 'ok', items: resList(), me: who.staff.id };
+}
+// Удирдлага: жагсаалт, том зураг (img), нэмэх (add.biz), цуцлах (cancelId — өөрийнхийг, эзэн бүгдийг), төлөв + хариу (statusId, status, reply — зөвхөн Эзэн)
+function adminResearch(d) {
+  const w = d._who || {}, owner = w.role === 'Эзэн';
+  if (d.img) return resImg(d.img);
+  if (d.add) {
+    const b = String(d.add.biz || '');
+    if (!BIZ_NAMES[b] || b === 'mgmt') return { status: 'error', error: 'fields' };
+    return resAdd(d.add, { biz: b, id: String(w.id || ''), name: String(d.by || w.name || 'Удирдлага') });
+  }
+  if (d.cancelId) return resCancel(d.cancelId, w.id, owner);
+  if (d.statusId) {
+    if (!owner) return { status: 'error', error: 'role' };
+    const r = resRows().filter(function (x) { return x.id === String(d.statusId); })[0];
+    if (!r) return { status: 'error', error: 'not_found' };
+    if (!RES_ST[d.status]) return { status: 'error', error: 'fields' };
+    resSheet().getRange(r.row, 13, 1, 3).setValues([[d.status, d.reply != null ? String(d.reply).trim().slice(0, 500) : r.reply, Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + ' ' + String(d.by || 'Удирдлага').slice(0, 40)]]);
+    return { status: 'ok' };
+  }
+  return { status: 'ok', items: resList(), me: String(w.id || '') };
 }
 
 // ═══════════ ЗАХИАЛГА ═══════════

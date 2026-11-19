@@ -1848,3 +1848,19 @@ body.pos10 #saleSheet .cl1 .cl-dprice:not(:placeholder-shown){border-color:var(-
 .ai-ask{display:flex;gap:6px;padding:10px 14px;border-top:1px solid #EEE}
 .ai-ask input{flex:1;min-width:0;padding:8px 10px;font-size:14px;border:1px solid #DDD;border-radius:10px}
 .ai-ask button{border:0;border-radius:10px;background:#7C3AED;color:#fff;font-weight:700;padding:0 12px;cursor:pointer}
+/* Шинэ барааны судалгаа (ажилтан «Шинэ бараа», удирдлага «Бараа → Шинэ барааны судалгаа») */
+.res-bar{flex-wrap:wrap}
+.res-bar input[type=search]{flex:1 1 180px;min-width:0;width:auto;padding:8px 10px;font-size:14px}
+.res-bar select{width:auto;padding:8px 10px;font-size:14px}
+.res-it{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line,#E5E7EB)}
+.res-it:first-child{border-top:0}
+.res-th{width:72px;height:72px;flex:0 0 72px;object-fit:cover;border-radius:8px;border:1px solid var(--line,#E5E7EB);cursor:zoom-in;background:#F8FAFC;display:block}
+.res-noimg{display:flex;align-items:center;justify-content:center;font-size:11px;color:#94A3B8;cursor:default}
+.res-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;font-size:14px}
+.res-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.res-top b{font-size:15px}
+.res-p{display:flex;flex-wrap:wrap;gap:2px 14px}
+.res-s a{color:var(--accent);text-decoration:none}
+.res-n{white-space:pre-line;color:#374151}
+.res-r{background:#F1F5F9;border-radius:6px;padding:6px 8px}
+.res-t .res-th{width:56px;height:56px}
