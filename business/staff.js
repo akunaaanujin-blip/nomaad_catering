@@ -132,7 +132,7 @@ function navMenu() {   // зөвхөн хуудсууд — үйлдлийн т�
   if (BIZ.orders && typeof renderDlv === 'function') g.push(['dlv', 'Хүргэлт', function () { showView('dlv'); }]);   // буухиа (ebuuhia API)   // захиалга — дэлгүүрийн борлуулалтаас тусдаа хуудас
   g = g.concat([['stock', 'Барааны үлдэгдэл', function () { showView('stock'); }], ['recv', 'Бараа ирсэн, карго', function () { showView('recv'); }],
            ['count', 'Тооллого', function () { showView('count'); }], ['req', 'Зардал, хүсэлт', function () { showView('req'); }],
-           ['research', 'Шинэ бараа', function () { showView('research'); }]]);
+           ['research', 'Шинэ барааны судалгаа', function () { showView('research'); }]]);
   if (BIZ.boost && $('boostView')) g.push(['boost', 'Boost төсөв', function () { showView('boost'); }]);
   return [{ t: '', items: g }];
 }
@@ -1720,7 +1720,7 @@ function resSheetEl() {
   return s.querySelector('.panel');
 }
 function openResearch() {
-  resSheetEl().innerHTML = '<h2>Шинэ бараа</h2>' +
+  resSheetEl().innerHTML = '<h2>Шинэ барааны судалгаа</h2>' +
     '<label for="rsName">Барааны нэр *</label><input id="rsName" maxlength="120" placeholder="Жишээ: Аяллын дэр, хийтэй">' +
     '<label for="rsImg">Зураг</label><input id="rsImg" type="file" accept="image/*">' +
     '<label for="rsLink">Холбоос (1688, Taobao, сайт)</label><input id="rsLink" type="url" inputmode="url" placeholder="https://…">' +
