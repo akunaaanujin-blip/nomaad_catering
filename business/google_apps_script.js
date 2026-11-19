@@ -1,4 +1,4 @@
-// NOMAAD Бизнесүүд — Google Apps Script v8.18 (вэб дэлгүүр — wise.ub.mn/cozy/: action=shop (бараа, зураг, захиалгын төлөв), shop_order (үйлчлүүлэгчийн захиалга → «Захиалга» Шинэ), admin_shop (зураг, тайлбар, харуулах — «Вэб дэлгүүр», «Вэб зураг»); v8.17 шинэ барааны судалгаа — research / admin_research, «Барааны судалгаа» sheet, бүх ажилтанд харагдана; AI туслах Claude API-аар шууд хариулна — Haiku, сарын хязгаар AI_CFG/AI_USE, түгжээний гадна; v8.16 менежер/AI ажилтны асуултад хариулах эрх — answerId; v8.15 ажилтан «AI туслах» цонхоор асуулт бичнэ — staff_ask, AI admin_task answerId-аар хариулна; v8.14 AI ажилтан — Болормаа/Батаа өөрийн түлхүүрээр менежерийн эрхтэй (бүх дэлгүүр): асуулт, даалгавар, тулгалт; цалин, тохиргоо, батлах эрхгүй; v8.13 зөвхөн зурагтай ноорог захиалга: Ноорог → бараа бөглөхөд Батлах → эзэн батлахад Захиалсан; v8.12 бараа захиалгад дэлгэцийн зураг хавсаргах — «Захиалгын зураг» хуудас; ажилтнаас асуух: даалгаврын «Асуулт» төрөл, ажилтан хариу бичнэ — Даалгавар sheet «Төрөл», «Хариулт»; банкны мессеж: «Утсыг холбох» — 10 минутын дотор ирсэн түлхүүрийг авна; мессежийн түлхүүрийн зай/шинэ мөрийг тоохгүй, буруу түлхүүрийг оношлогоонд; ажилтанд санамж: admin_setting notice, products → notices; Хаан банкны мессежийн бодит загвар; банкны мэдэгдлээр автоматаар оруулах: шилжүүлгийн баримтын и-мэйл bankMailScan, утаснаас дамжуулсан мессеж bank_sms, тохиргоо admin_setting bankauto, хуулгатай нийлүүлэх admin_bank updates.fix; admin_read: poLog — ажилтны шийдэгдсэн бүртгэл; Буухиагийн сайтаас устгасан хүргэлтийг дахин илгээх: eb_unlink; Буухиа руу үнийн дүнтэй / дүнгүй илгээх: noAmt, «Буухиа дүн» багана; ажилтны «Бараа ирсэн»-д каргоны дүн; «Бараа ирсэн», карго — удирдлага батална: staff_po, staff_po_in, admin_po inboxId; буухиа: Cozy-ийн бүртгэлтэй хүргэлт NOMAAD-д харагдахгүй — EB_HOME; засах: барааны хөдөлгөөн admin_stock editId, зарлага admin_record editId, харилцагч admin_partner editId / delId; цуцалсан/буцаасан захиалгын бараа үлдэгдэлд зөвхөн «Бараа буцаж ирсэн»-ээр — буухиа цуцлахад шууд нэмэхгүй; Boost төсөв: удирдлага BOOST_BUD-д гаргана, ажилтан boost_bud-аар төсөв + задаргаагаа харна; хуучин JS хувилбарын хүсэлтийг бичихгүй — MIN_JS; ажилтны нэвтрэлт 11-02-оос өмнөх шигээ: нэвтрэх нэр + код, нийтлэг эрх зөвшөөрнө, 4 оронтой код, PIN албадан солихгүй; Boost нэхэмжлэх: олон компанийн мөр, Meta баримтын зураг «Boost баримт», admin_boost; буухиа руу илгээхэд дүүрэг/сум заавал биш; захиалгын хүргэлтийн төлбөр, хөнгөлөлт засахад борлуулалтын мөр дагана — orderSyncAdj; удирдлагаас хүргэлт/хөнгөлөлт засах, «Хүргэлтийн компани» багана; банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
+// NOMAAD Бизнесүүд — Google Apps Script v8.19 (өдөр бүрийн нөөц «NOMAAD нөөц» хавтаст, 30 өдөр + сар бүрийн 12 сар — installBackup; ажилтан вэб дэлгүүрийн зураг, тайлбар — staff_shop; v8.18 вэб дэлгүүр — wise.ub.mn/cozy/: action=shop (бараа, зураг, захиалгын төлөв), shop_order (үйлчлүүлэгчийн захиалга → «Захиалга» Шинэ), admin_shop (зураг, тайлбар, харуулах — «Вэб дэлгүүр», «Вэб зураг»); v8.17 шинэ барааны судалгаа — research / admin_research, «Барааны судалгаа» sheet, бүх ажилтанд харагдана; AI туслах Claude API-аар шууд хариулна — Haiku, сарын хязгаар AI_CFG/AI_USE, түгжээний гадна; v8.16 менежер/AI ажилтны асуултад хариулах эрх — answerId; v8.15 ажилтан «AI туслах» цонхоор асуулт бичнэ — staff_ask, AI admin_task answerId-аар хариулна; v8.14 AI ажилтан — Болормаа/Батаа өөрийн түлхүүрээр менежерийн эрхтэй (бүх дэлгүүр): асуулт, даалгавар, тулгалт; цалин, тохиргоо, батлах эрхгүй; v8.13 зөвхөн зурагтай ноорог захиалга: Ноорог → бараа бөглөхөд Батлах → эзэн батлахад Захиалсан; v8.12 бараа захиалгад дэлгэцийн зураг хавсаргах — «Захиалгын зураг» хуудас; ажилтнаас асуух: даалгаврын «Асуулт» төрөл, ажилтан хариу бичнэ — Даалгавар sheet «Төрөл», «Хариулт»; банкны мессеж: «Утсыг холбох» — 10 минутын дотор ирсэн түлхүүрийг авна; мессежийн түлхүүрийн зай/шинэ мөрийг тоохгүй, буруу түлхүүрийг оношлогоонд; ажилтанд санамж: admin_setting notice, products → notices; Хаан банкны мессежийн бодит загвар; банкны мэдэгдлээр автоматаар оруулах: шилжүүлгийн баримтын и-мэйл bankMailScan, утаснаас дамжуулсан мессеж bank_sms, тохиргоо admin_setting bankauto, хуулгатай нийлүүлэх admin_bank updates.fix; admin_read: poLog — ажилтны шийдэгдсэн бүртгэл; Буухиагийн сайтаас устгасан хүргэлтийг дахин илгээх: eb_unlink; Буухиа руу үнийн дүнтэй / дүнгүй илгээх: noAmt, «Буухиа дүн» багана; ажилтны «Бараа ирсэн»-д каргоны дүн; «Бараа ирсэн», карго — удирдлага батална: staff_po, staff_po_in, admin_po inboxId; буухиа: Cozy-ийн бүртгэлтэй хүргэлт NOMAAD-д харагдахгүй — EB_HOME; засах: барааны хөдөлгөөн admin_stock editId, зарлага admin_record editId, харилцагч admin_partner editId / delId; цуцалсан/буцаасан захиалгын бараа үлдэгдэлд зөвхөн «Бараа буцаж ирсэн»-ээр — буухиа цуцлахад шууд нэмэхгүй; Boost төсөв: удирдлага BOOST_BUD-д гаргана, ажилтан boost_bud-аар төсөв + задаргаагаа харна; хуучин JS хувилбарын хүсэлтийг бичихгүй — MIN_JS; ажилтны нэвтрэлт 11-02-оос өмнөх шигээ: нэвтрэх нэр + код, нийтлэг эрх зөвшөөрнө, 4 оронтой код, PIN албадан солихгүй; Boost нэхэмжлэх: олон компанийн мөр, Meta баримтын зураг «Boost баримт», admin_boost; буухиа руу илгээхэд дүүрэг/сум заавал биш; захиалгын хүргэлтийн төлбөр, хөнгөлөлт засахад борлуулалтын мөр дагана — orderSyncAdj; удирдлагаас хүргэлт/хөнгөлөлт засах, «Хүргэлтийн компани» багана; банкны хуулга: ImportLog, Rules, импорт буцаах, Банк-д import_id/Бичилт; төлбөрийн хэлбэр засах admin_record payId — касс хаасан өдрийн бэлэн, И-баримттай баримт хориглоно; цуцлахад борлуулалт шууд буцна — давхар буцаалтгүй; ажилтан утас + 6 оронтой PIN, нийтлэг эрх хориглох, staff_pin; буухиа руу хаяг: хот/аймаг заавал, хороо дугаараар; буухиа цуцалсан/буцаасан → захиалга «Буцаасан», шалтгаантай; удирдлагаас «Бараа буцаж ирсэн»; удирдлагаас захиалга засах; бичилтийн дараа flush; түүхийн цаг текстээр; удирдлага захиалга цуцлах + буцаалт, сэргээх; буухиа өмнөх үеийн тэмдэглэгээ EB_OLD; буухиагийн дүнг ₮/таслалтай ч уншина; буухиа ↔ «Шинэ» захиалга утас+огноо+дүнгээр холбох, гараар холбох ebCode; компанийн мэдээлэл COMPANY; өөрчлөлтийн түүх «Түүх» sheet, хогийн сав: цуцалсныг сэргээх; мөнгөний хүсэлт «Батлагдсан» → банкны хуулгаар төлсөн; шинээр эхлэх: admin_reset; ажилтанд өмнөх өдрүүдийн борлуулалт; буухиа тооцоо давхар бичихгүй; ebuuhia API: хүргэлт илгээх, бүх хүргэлтийн төлөв/мэдээлэл, удирдлагад харах; захиалгын «Буухиа код») (тооллого: тоолсон хүн, цаг; ажилтны тооллого батлах, мөнгөний хүсэлт; удирдлагын тойм — дүгнэлт REVIEW; boost бараагаар; баркод; хөнгөлөлт, хуваан төлөх, борлуулалтын зорилт; ажилтны уншилт кэштэй; StorePay merchant API; хүргэлтийн төлбөр үлдэгдэлд орохгүй, Буцаасан төлөв; серверийн кэш; KPI бонус; өдрийн тойм и-мэйл; менежерийн эрх, KPI, үндсэн хөрөнгө, доод үлдэгдэл, ирц, үнийн түүх, харилцагчийн түүх, өдрийн тойм)
 // Махны дэлгүүр · Cozy Home Ulaanbaatar · NOMAAD аяллын дэлгүүр
 //
 // Суулгах: script.google.com дээр шинэ төсөл → энэ кодыг хуулна →
@@ -160,6 +160,7 @@ function route(data) {
   if (data.type === 'admin_research') return isAdmin(data) ? adminResearch(data) : { status: 'error', error: 'auth' };
   if (data.type === 'admin_reminder') return isAdmin(data) ? adminReminder(data) : { status: 'error', error: 'auth' };
   if (data.type === 'shop_order') return shopOrder(data);
+  if (data.type === 'staff_shop') return staffShop(data);
   if (data.type === 'admin_shop') return isAdmin(data) ? adminShop(data) : { status: 'error', error: 'auth' };
   if (data.type === 'order_save') return orderSave(data);
   if (data.type === 'staff_pin') return staffPin(data);
@@ -223,7 +224,7 @@ function auditLabel(d) {
   if (t === 'research') return d.add ? 'Шинэ барааны судалгаа нэмсэн: ' + String(d.add.name || '').slice(0, 60) : 'Барааны судалгаа цуцалсан';
   if (t === 'admin_research') return d.add ? 'Шинэ барааны судалгаа нэмсэн: ' + String(d.add.name || '').slice(0, 60) : d.cancelId ? 'Барааны судалгаа цуцалсан' : 'Барааны судалгаа → ' + String(d.status || '');
   if (t === 'admin_eb' || /^eb_/.test(t)) return 'Буухиа: ' + String(d.op || t.replace('eb_', ''));
-  return ({ admin_bank: 'Банкны хуулга', admin_product: 'Бараа, үнэ', admin_shop: 'Вэб дэлгүүр (зураг, тайлбар)', admin_partner: 'Харилцагч', admin_loan: 'Зээл', admin_pf: 'Хувийн санхүү', admin_po: 'Бараа захиалга', admin_staff: 'Ажилтан',
+  return ({ admin_bank: 'Банкны хуулга', admin_product: 'Бараа, үнэ', admin_shop: 'Вэб дэлгүүр (зураг, тайлбар)', staff_shop: 'Вэб дэлгүүр (ажилтан: зураг, тайлбар)', admin_partner: 'Харилцагч', admin_loan: 'Зээл', admin_pf: 'Хувийн санхүү', admin_po: 'Бараа захиалга', admin_staff: 'Ажилтан',
     admin_salary: 'Цалин', admin_order: 'Захиалгын төлбөр', admin_task: 'Даалгавар', admin_reminder: 'Сануулга', admin_doc: 'Маягт', admin_contract: 'Гэрээ', admin_close: 'Он хаасан',
     admin_reset: 'Шинээр эхэлсэн', admin_import_cozy: 'Cozy импорт', admin_digest: 'Өдрийн тойм', task_done: 'Даалгавар биелүүлсэн', staff_ask: 'AI туслахаас асуусан', requests: 'Мөнгөний хүсэлт' })[t] || t;
 }
@@ -249,7 +250,7 @@ function audit(d, res) {
   if (t === 'admin_setting') { delete det.value; if (/^(lock|review|targets|company)$/.test(String(d.key))) det.value = auditClean(d.value, 1); }   // түлхүүр, нууц тохиргоог бичихгүй
   delete det.type; delete det.by;
   if (det.add) { delete det.add.thumb; delete det.add.img; }
-  if (t === 'admin_shop') { if (d.get) return; delete det.thumb; delete det.imgs; }
+  if (t === 'admin_shop' || t === 'staff_shop') { if (d.get || d.list) return; delete det.thumb; delete det.imgs; delete det.token; det.imgN = Array.isArray(d.imgs) ? d.imgs.length : undefined; }
   const id = String(d.cancelId || d.editId || d.delId || d.approveId || d.statusId || d.restoreId || (d.order && d.order.id) || (t === 'admin_order' ? d.id : '') || '');
   auditSheet().appendRow(['\'' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss'), who.slice(0, 40), biz, auditLabel(d), String(d.what || '').slice(0, 200), t, id, JSON.stringify(det).slice(0, 3000)]);
 }
@@ -290,7 +291,7 @@ function adminRestore(d) {
 const CACHE_ALL = ['adm', 'rec', 'stk', 'mov', 'jr', 'pt', 'rem', 'bank', 'imp', 'rule', 'docs', 'task', 'ord', 'prod', 'loan', 'po', 'price', 'stf', 'pf', 'shop'];
 const CACHE_MAP = { admin_eb: ['ord', 'rec', 'stk'], eb_other: ['ord', 'rec', 'stk'], eb_del: ['ord'], eb_unlink: ['ord'], eb_send: ['ord', 'rec', 'stk'], stock_count: ['mov', 'stk'], admin_record: ['rec', 'stk'], record_receipt: ['rec', 'stk'], order_save: ['ord', 'rec'], order_delete: ['ord'], orders_ship: ['ord', 'rec', 'stk'], admin_order: ['ord', 'jr', 'bank', 'rec', 'stk'],
   staff_po_in: ['mov', 'stk', 'jr', 'po'], admin_import_cozy: ['ord'], admin_stock: ['mov', 'stk'], admin_journal: ['jr', 'bank'], admin_bank: ['bank', 'jr', 'ord', 'imp', 'rule'], bank_sms: ['bank'], admin_partner: ['pt'], admin_reminder: ['rem'],
-  admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], staff_ask: ['task'], research: [], admin_research: [], admin_product: ['prod', 'price', 'shop'], admin_shop: ['shop', 'shopth'], shop_order: ['ord'], admin_loan: ['loan', 'jr'], admin_pf: ['pf'], admin_po: ['po', 'jr'],
+  admin_doc: ['docs'], admin_task: ['task'], task_done: ['task'], staff_ask: ['task'], research: [], admin_research: [], admin_product: ['prod', 'price', 'shop'], admin_shop: ['shop', 'shopth'], staff_shop: ['shop', 'shopth'], shop_order: ['ord'], admin_loan: ['loan', 'jr'], admin_pf: ['pf'], admin_po: ['po', 'jr'],
   admin_restore: ['rec', 'stk', 'mov', 'jr'], admin_staff: ['adm', 'stf'], staff_pin: ['adm', 'stf'], admin_salary: ['adm'], admin_contract: ['adm', 'stf'], register: ['adm', 'stf'] };
 const CACHE_READ = { admin_logout: 1, staff_po: 1, admin_audit: 1, eb_sync: 1, requests: 1, staff_today: 1, admin_read: 1, admin_login: 1, orders: 1, order_hist: 1, tasks: 1, admin_setting: 1, admin_digest: 1, admin_backup: 1 };
 function cacheKeysFor(d) {
@@ -299,7 +300,7 @@ function cacheKeysFor(d) {
   if (d.type === 'admin_eb' && d.op !== 'send' && d.op !== 'del' && d.op !== 'other' && d.op !== 'unlink') return null;
   if (d.type === 'admin_boost' && !d.edit) return null;   // зураг унших
   if (d.type === 'boost_img' || d.type === 'admin_po_img') return null;
-  if (d.type === 'admin_shop' && d.get) return null;   // вэб дэлгүүрийн зураг унших   // зураг — үндсэн өгөгдлийн кэшэд нөлөөгүй   // төлөв татах — бичвэл ebuuhia() өөрөө кэш цэвэрлэнэ
+  if ((d.type === 'admin_shop' || d.type === 'staff_shop') && (d.get || d.list)) return null;   // вэб дэлгүүрийн зураг, жагсаалт унших   // зураг — үндсэн өгөгдлийн кэшэд нөлөөгүй   // төлөв татах — бичвэл ebuuhia() өөрөө кэш цэвэрлэнэ
   return CACHE_MAP[d.type] || CACHE_ALL;   // мэдэгдэхгүй бичилт (он хаах г.м) — бүгдийг
 }
 const CACHE_OFF = {};   // 2026-11-01: нөөцийн кэш (stk, mov) дахин асаасан — бичилт бүр cacheKeysFor-оор цэвэрлэнэ.  Хуучин: «ТҮР УНТРААСАН:   // ТҮР УНТРААСАН: нөөцийн кэш (сайжруулалт дуустал) — дахин асаахдаа энэ жагсаалтаас хасна
@@ -1210,21 +1211,52 @@ function cancelRow(sh, id, col) {
 }
 
 // ═══════════ НӨӨЦ ХУУЛБАР (AI-гүйгээр өөрөө ажиллана) ═══════════
-// installBackup()-ийг редактороос НЭГ удаа ажиллуулахад долоо хоног бүрийн Даваа гарагт Sheet-ийг бүтнээр нь хуулна.
+// installBackup()-ийг редактороос НЭГ удаа ажиллуулна (Google Drive-ын эрх асууна — эзэн «Allow» дарна):
+// өдөр бүр 03:00-д Sheet-ийг бүтнээр нь Drive-ийн «NOMAAD нөөц» хавтаст хуулна.
+// Хадгалах хугацаа: сүүлийн 30 өдрийн нөөц + сар бүрийн 1-ний нөөц 12 сар. Гараар авсан нөөц, он хаасан архивыг хэзээ ч устгахгүй.
+const BACKUP_FOLDER = 'NOMAAD нөөц', BACKUP_KEEP_DAYS = 30, BACKUP_KEEP_MONTHS = 12;
 function installBackup() {
-  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'weeklyBackup') ScriptApp.deleteTrigger(t); });
-  ScriptApp.newTrigger('weeklyBackup').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(3).create();
-  return weeklyBackup();
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (/^(weeklyBackup|dailyBackup)$/.test(t.getHandlerFunction())) ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('dailyBackup').timeBased().everyDays(1).atHour(3).create();
+  const f = backupFolder(), it = DriveApp.searchFiles('(title contains "NOMAAD нөөц" or title contains "NOMAAD архив") and mimeType = "application/vnd.google-apps.spreadsheet" and trashed = false');
+  let moved = 0;   // өмнөх 7 хоногийн нөөцүүдийг хавтас руу цуглуулна
+  while (it.hasNext()) { const x = it.next(); if (!x.getParents().hasNext() || x.getParents().next().getId() !== f.getId()) { x.moveTo(f); moved++; } }
+  const c = dailyBackup();
+  Logger.log('Өдөр бүрийн нөөц асаалаа. Хавтас: ' + f.getUrl() + ' · зөөсөн хуучин нөөц: ' + moved + ' · шинэ: ' + c.getName());
+  return c;
 }
-function weeklyBackup() { return backupCopy('NOMAAD нөөц ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')); }
-// Drive-ын нэмэлт эрх шаардахгүйн тулд Sheet-ийн өөрийн хуулах функцийг ашиглана (хуулбар Drive-ийн «Миний Drive»-д үүснэ).
-// Хуучин нөөцийг Drive дээрээс «NOMAAD нөөц» гэж хайгаад гараар устгаж болно (жилд ~52 жижиг файл).
+function weeklyBackup() { return dailyBackup(); }   // хуучин 7 хоногийн триггер үлдсэн бол мөн адил ажиллана
+function dailyBackup() {
+  const c = backupCopy('NOMAAD нөөц ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'));
+  try { backupPrune(); } catch (e) { Logger.log('Хуучин нөөц цэвэрлэж чадсангүй: ' + e); }
+  return c;
+}
+function backupFolder() {
+  const pr = PropertiesService.getScriptProperties(), id = pr.getProperty('BACKUP_FOLDER_ID');
+  if (id) try { const f0 = DriveApp.getFolderById(id); if (!f0.isTrashed()) return f0; } catch (e) {}
+  const it = DriveApp.getFoldersByName(BACKUP_FOLDER), f = it.hasNext() ? it.next() : DriveApp.createFolder(BACKUP_FOLDER);
+  pr.setProperty('BACKUP_FOLDER_ID', f.getId());
+  return f;
+}
 function backupCopy(name) {
   const copy = SpreadsheetApp.openById(SHEET_ID).copy(name);
   const pr = PropertiesService.getScriptProperties();
+  let url = 'https://drive.google.com/drive/search?q=NOMAAD%20%D0%BD%D3%A9%D3%A9%D1%86';
+  try { const f = backupFolder(); DriveApp.getFileById(copy.getId()).moveTo(f); url = f.getUrl(); } catch (e) { Logger.log('Нөөцийг хавтас руу зөөж чадсангүй: ' + e); }
   pr.setProperty('LAST_BACKUP', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'));
-  pr.setProperty('BACKUP_FOLDER_URL', 'https://drive.google.com/drive/search?q=NOMAAD%20%D0%BD%D3%A9%D3%A9%D1%86');
+  pr.setProperty('BACKUP_FOLDER_URL', url);
   return copy;
+}
+// «NOMAAD нөөц yyyy-MM-dd HH:mm» нэртэй (автомат) нөөцийг л цэвэрлэнэ — хогийн саванд (30 хоног сэргээж болно)
+function backupPrune() {
+  const files = backupFolder().getFiles(), now = Date.now(); let n = 0;
+  while (files.hasNext()) {
+    const x = files.next(), m = x.getName().match(/^NOMAAD нөөц (\d{4})-(\d{2})-(\d{2}) \d{2}:\d{2}$/);
+    if (!m) continue;
+    const age = (now - new Date(+m[1], +m[2] - 1, +m[3]).getTime()) / 864e5;
+    if (age > BACKUP_KEEP_DAYS && !(m[3] === '01' && age <= BACKUP_KEEP_MONTHS * 31)) { x.setTrashed(true); n++; }
+  }
+  return n;
 }
 function adminBackup() {
   const c = backupCopy('NOMAAD нөөц ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + ' (гараар)');
@@ -3157,6 +3189,22 @@ function shopOrder(d) {
               saleDone: '', confirmed: '', ebCode: '', courier: '', ebCod: '' };
   orderSheet().appendRow(ORDER_KEYS.map(function (k) { return o[k]; }));
   return { status: 'ok', code: id.slice(-6), amount: amount, items: items, pay: pay === 'Шилжүүлэг' ? shopPay(biz) : '' };
+}
+// Ажилтан (вэб дэлгүүртэй дэлгүүр): барааны вэб зураг, тайлбар, харуулах — удирдлагын «Вэб дэлгүүр»-тэй ижил, зөвхөн өөрийн дэлгүүрийн бараанд.
+// list — бүх идэвхтэй бараа + вэб мэдээлэл (жижиг зурагтай); get — нэг барааны том зургууд; эс бөгөөс хадгална. Хэн хийснийг «Түүх»-д бичнэ.
+function staffShop(d) {
+  const who = checkStaff(d.token);
+  if (!who) return { status: 'error', error: 'auth' };
+  if (!SHOP_BIZ[who.biz]) return { status: 'error', error: 'biz' };
+  const prods = productRows().filter(function (p) { return p.biz === who.biz && !p.off && p.price > 0 && !shopNonGoods(p); });
+  if (d.list) {
+    const meta = {}; shopRows().forEach(function (r) { if (r.biz === who.biz) meta[r.name.toLowerCase()] = r; });
+    return { status: 'ok', products: prods.map(function (p, i) { const m = meta[p.name.toLowerCase()] || {};
+      return { name: p.name, price: p.price, show: m.show !== false, hot: !!m.hot, desc: m.desc || '', imgs: m.imgs || 0, thumb: m.thumb || '', i: i }; }) };
+  }
+  const p = prods.filter(function (x) { return x.name.toLowerCase() === String(d.name || '').trim().toLowerCase(); })[0];
+  if (!p) return { status: 'error', error: 'not_found' };
+  return adminShop({ biz: who.biz, name: p.name, get: d.get, show: d.show, hot: d.hot, desc: d.desc, imgs: d.imgs, thumb: d.thumb, by: who.staff.name });
 }
 // Удирдлага: барааны вэб мэдээлэл унших (get) / хадгалах. imgs — бүх зургийг (дарааллаар) дахин илгээнэ; илгээгээгүй бол хуучин зураг хэвээр.
 function adminShop(d) {

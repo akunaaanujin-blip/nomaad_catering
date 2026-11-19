@@ -1881,3 +1881,18 @@ body.pos10 #saleSheet .cl1 .cl-dprice:not(:placeholder-shown){border-color:var(-
 /* Вэб дэлгүүрээс ирсэн захиалга (orders.js) */
 .web-tag{display:inline-block;background:#FEF3C7;color:#92400E;border-radius:4px;padding:0 6px;font-weight:700;font-size:11px;line-height:18px}
 .web-note{color:#92400E;font-style:italic}
+/* Вэб дэлгүүр — ажилтан (shopstaff.js) */
+.ws-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ws-bar input{flex:1 1 180px;min-width:0}
+.ws-bar select{flex:0 0 auto;width:auto}
+.ws-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-top:12px}
+.ws-card{display:flex;flex-direction:column;gap:2px;text-align:left;border:1px solid #E5E7EB;border-radius:10px;background:#fff;padding:8px;cursor:pointer;font:inherit;color:inherit}
+.ws-card:hover{border-color:#7A5A2E}
+.ws-card.off{opacity:.6}
+.ws-card b{font-size:13px;line-height:1.3;margin-top:6px}
+.ws-card small{font-size:11.5px;color:#6B7280}
+.ws-ph{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#F5F1EA;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9C8B73}
+.ws-ph img{width:100%;height:100%;object-fit:cover}
+.ws-ph i{font-style:normal;font-size:26px}
+.ws-hot,.ws-off{position:absolute;left:6px;bottom:6px;font-style:normal;font-size:10.5px;font-weight:700;color:#fff;background:#7A5A2E;border-radius:4px;padding:1px 6px}
+.ws-off{left:auto;right:6px;background:#6B7280}

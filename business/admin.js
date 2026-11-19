@@ -2693,7 +2693,7 @@ function closeView() {
   var info = '<div class="kpis">' + kpi('Хаагдсан', meta.closed ? (/-12-31$/.test(meta.closed) ? meta.closed.slice(0, 4) + ' он хүртэл' : meta.closed + ' хүртэл') : 'Хаагаагүй') +
     kpi('Сүүлийн нөөц хуулбар', meta.lastBackup || '<span style="color:var(--red)">Аваагүй</span>') +
     kpi('Үндсэн Sheet дэх мөр', fmt(records.length + moves.length + journal.length + salary.length).slice(1)) + '</div>';
-  var backup = '<div class="card"><h2>Нөөц хуулбар</h2><p class="muted">Долоо хоног бүрийн Даваа гарагт Sheet бүтнээрээ Google Drive-д «NOMAAD нөөц огноо» нэрээр автоматаар хуулагдана. ' +
+  var backup = '<div class="card"><h2>Нөөц хуулбар</h2><p class="muted">Өдөр бүр шөнийн 3 цагт Sheet бүтнээрээ Google Drive-ийн «NOMAAD нөөц» хавтаст «NOMAAD нөөц огноо» нэрээр автоматаар хуулагдана. Сүүлийн 30 өдрийн нөөц, сар бүрийн 1-ний нөөц (12 сар) хадгалагдаж, хуучин нь өөрөө цэвэрлэгдэнэ. ' +
     'Том өөрчлөлтийн өмнө гараар ч авч болно.</p><div class="pg-act" style="margin-top:10px"><button class="b-btn primary" onclick="doBackup()">Одоо нөөц авах</button>' +
     (meta.backupUrl ? '<a class="b-btn" href="' + esc(meta.backupUrl) + '" target="_blank" rel="noopener">Drive-д нөөцүүдийг харах</a>' : '') + '</div></div>';
   var close = '<div class="card"><h2>Он хаах</h2>';
@@ -2920,6 +2920,9 @@ function archiveAlerts() {
     out.push('<div class="alert' + (late ? ' bad' : '') + '"><div><b>' + open.join(', ') + ' оныг хаах хугацаа болсон.</b> ' +
       (late ? 'Хоцорч байна — ' : '') + 'Он хаавал тайлангууд архивлагдаж, Sheet хөнгөрнө. 1-р сарын эхний 7 хоногт хийхийг зөвлөж байна.</div>' + go + '</div>');
   }
+  // Нөөц 2 хоногоос дээш аваагүй (өдөр бүр автомат) — триггер зогссон байж болзошгүй
+  if (API_URL && meta.lastBackup && (Date.now() - new Date(meta.lastBackup.replace(' ', 'T') + ':00').getTime()) / 864e5 > 2)
+    out.push('<div class="alert bad"><div><b>Нөөц хуулбар ' + esc(meta.lastBackup) + '-аас хойш аваагүй байна.</b> Өдөр бүрийн автомат нөөц зогссон байж болзошгүй — «Одоо нөөц авах» дарж, Батаад хэлээрэй.</div>' + go + '</div>');
   // 4) Sheet дүүрч байна
   var rows = records.length + moves.length + journal.length + salary.length;
   if (rows > SHEET_ROW_WARN) out.push('<div class="alert bad"><div><b>Google Sheet-д ' + fmt(rows).slice(1) + ' мөр байна.</b> Удахгүй удааширна — он хаах, эсвэл өгөгдлийн сан руу шилжих тухай бодох хэрэгтэй.</div>' + go + '</div>');

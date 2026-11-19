@@ -133,6 +133,7 @@ function navMenu() {   // зөвхөн хуудсууд — үйлдлийн т�
   g = g.concat([['stock', 'Барааны үлдэгдэл', function () { showView('stock'); }], ['recv', 'Бараа ирсэн, карго', function () { showView('recv'); }],
            ['count', 'Тооллого', function () { showView('count'); }], ['req', 'Зардал, хүсэлт', function () { showView('req'); }],
            ['research', 'Шинэ барааны судалгаа', function () { showView('research'); }]]);
+  if (typeof shopStaffOn === 'function' && shopStaffOn()) g.push(['web', 'Вэб дэлгүүр', function () { showView('web'); }]);   // зураг, тайлбар (shopstaff.js)
   if (BIZ.boost && $('boostView')) g.push(['boost', 'Boost төсөв', function () { showView('boost'); }]);
   return [{ t: '', items: g }];
 }
@@ -169,7 +170,8 @@ function buildShell() {
         '<select id="resSt" onchange="resF.st=this.value;renderResearch()"><option value="">Бүх төлөв</option><option>Шинэ</option><option>Судалж байна</option><option>Захиалах</option><option>Татгалзсан</option></select>' +
         '<button class="link" onclick="loadResearch()">Шинэчлэх</button></div>' +
         '<p class="muted" style="font-size:12.5px;margin:6px 0 0">Шинэ барааны санаа, судалгааг бүх дэлгүүрийн ажилтан харна. Удирдлага шийдвэрээ төлөвөөр өгнө. <span id="resCount"></span></p>' +
-        '<div id="resList" style="margin-top:10px"></div></div></div>';
+        '<div id="resList" style="margin-top:10px"></div></div></div>' +
+      '<div data-view="web" id="webView" style="display:none"></div>';
     if (pend) pend.insertAdjacentHTML('beforebegin', html); else wrap.insertAdjacentHTML('beforeend', html);
   }
   renderNav(); showView('dash');
@@ -200,12 +202,13 @@ function showView(v, tab) {
     el.style.display = (el.getAttribute('data-view') || 'dash') === v ? '' : 'none';
   });
   var w = document.querySelector('#main .wrap'); if (w) w.classList.toggle('ep-wide', v === 'orders');
-  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : v === 'stock' ? 'Барааны үлдэгдэл' : v === 'boost' ? 'Boost төсөв' : v === 'recv' ? 'Бараа ирсэн, карго' : v === 'count' ? 'Тооллого' : v === 'req' ? 'Зардал, хүсэлт' : v === 'dlv' ? 'Хүргэлт' : v === 'research' ? 'Шинэ барааны судалгаа' : 'Борлуулалт';
+  var t = $('epTitle'); if (t) t.textContent = v === 'orders' ? 'Захиалга' : v === 'stock' ? 'Барааны үлдэгдэл' : v === 'boost' ? 'Boost төсөв' : v === 'recv' ? 'Бараа ирсэн, карго' : v === 'count' ? 'Тооллого' : v === 'req' ? 'Зардал, хүсэлт' : v === 'dlv' ? 'Хүргэлт' : v === 'research' ? 'Шинэ барааны судалгаа' : v === 'web' ? 'Вэб дэлгүүр — зураг, тайлбар' : 'Борлуулалт';
   if (v === 'stock') renderStockPage();
   if (v === 'count') renderCount();
   if (v === 'recv') loadPoIn();
   if (v === 'req') loadRequests();
   if (v === 'research') loadResearch();
+  if (v === 'web' && typeof shopStaffLoad === 'function') shopStaffLoad();
   if (v === 'boost') renderBoost();
   if (v === 'dlv') renderDlv();
   renderNav(); window.scrollTo(0, 0);
