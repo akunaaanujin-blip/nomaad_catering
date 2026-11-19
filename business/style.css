@@ -1844,3 +1844,7 @@ body.pos10 #saleSheet .cl1 .cl-dprice:not(:placeholder-shown){border-color:var(-
 .ai-ans{display:flex;gap:6px;margin-bottom:6px}
 .ai-ans input{flex:1;min-width:0;padding:8px 10px;font-size:14px;border:1px solid #DDD;border-radius:10px}
 .ai-ans button{border:0;border-radius:10px;background:#7C3AED;color:#fff;font-weight:700;padding:0 12px;cursor:pointer}
+.ai-me{align-self:flex-end;max-width:85%;background:#7C3AED;color:#fff;border-radius:12px 12px 4px 12px;padding:8px 12px;font-size:14px}
+.ai-ask{display:flex;gap:6px;padding:10px 14px;border-top:1px solid #EEE}
+.ai-ask input{flex:1;min-width:0;padding:8px 10px;font-size:14px;border:1px solid #DDD;border-radius:10px}
+.ai-ask button{border:0;border-radius:10px;background:#7C3AED;color:#fff;font-weight:700;padding:0 12px;cursor:pointer}
