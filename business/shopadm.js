@@ -8,7 +8,7 @@ function shopAdmOpen(name) {
   shopAdm = url ? { biz: state.biz, name: name || '', imgs: [], dirty: false, imgDirty: false, loading: false } : null;
   if (!url) return;
   $('psLink').href = url + (name ? '#/p/' + encodeURIComponent(name) : '');
-  $('psShow').checked = true; $('psHot').checked = false; $('psDesc').value = ''; $('psMsg').textContent = '';
+  $('psShow').checked = true; $('psHot').checked = false; $('psDesc').value = ''; $('psCat').value = ''; $('psMsg').textContent = '';
   shopAdmRender();
   if (!name || !API_URL) return;
   shopAdm.loading = true; $('psMsg').textContent = 'Вэбийн мэдээллийг ачаалж байна…'; shopAdmRender();
@@ -18,7 +18,8 @@ function shopAdmOpen(name) {
     my.loading = false;
     if (err) { $('psMsg').textContent = 'Вэбийн мэдээллийг ачаалж чадсангүй (' + err + ')'; shopAdmRender(); return; }
     var s = d.shop;
-    if (s && !my.dirty) { $('psShow').checked = s.show !== false; $('psHot').checked = !!s.hot; $('psDesc').value = s.desc || ''; }
+    if (s && !my.dirty) { $('psShow').checked = s.show !== false; $('psHot').checked = !!s.hot; $('psDesc').value = s.desc || ''; $('psCat').value = s.cat || ''; }
+    $('psCats').innerHTML = (d.cats || []).map(function (c) { return '<option value="' + esc(c) + '">'; }).join('');
     if (!my.imgDirty) my.imgs = (d.imgs || []).slice(0, SHOP_IMG_MAX);
     $('psMsg').textContent = s ? '' : 'Вэбэд одоогоор зураг, тайлбаргүй харагдаж байна.';
     shopAdmRender();
@@ -75,7 +76,7 @@ function shopShrink(src, max, q, cb) {
 function shopAdmSave(name, cb) {
   var s = shopAdm;
   if (!s || !s.dirty || !API_URL || s.loading) { cb(); return; }
-  var body = { type: 'admin_shop', biz: s.biz, name: name, show: $('psShow').checked, hot: $('psHot').checked, desc: $('psDesc').value.trim() };
+  var body = { type: 'admin_shop', biz: s.biz, name: name, show: $('psShow').checked, hot: $('psHot').checked, desc: $('psDesc').value.trim(), cat: $('psCat').value.trim() };
   var send = function () {
     post(body, function (err) {
       if (err) toast('Бараа хадгалагдсан, вэбийн зураг/тайлбар хадгалагдсангүй: ' + err);
@@ -86,4 +87,26 @@ function shopAdmSave(name, cb) {
   body.imgs = s.imgs.slice();
   if (!body.imgs.length) { body.thumb = ''; send(); return; }
   shopShrink(body.imgs[0], 400, 0.75, function (t) { body.thumb = t; send(); });
+}
+
+// ── Тохиргоо (Санхүү → API холболт): хүргэлтийн төлбөр, үнэгүй хүргэлтийн босго, шинэ захиалгын и-мэйл, Meta Pixel ──
+function shopSettingsCard(biz) {
+  if (!SHOP_BIZES[biz] || (typeof isOwner === 'function' && !isOwner())) return '';
+  var c = (window.shopCfgAll || {})[biz] || { fee: 7000, free: 0, notify: '', pixel: '' };
+  return '<div class="card"><h2>Вэб дэлгүүр <small class="muted" style="font-weight:400">· <a href="' + SHOP_BIZES[biz] + '" target="_blank" rel="noopener">нээх ↗</a></small></h2>' +
+    '<p class="muted" style="font-size:12.5px;margin:-4px 0 10px">Үйлчлүүлэгчийн онлайн захиалгын тохиргоо. Хадгалмагц вэбэд шууд хэрэгжинэ.</p>' +
+    '<div class="row2"><div><label for="scFee">Хүргэлтийн төлбөр (₮)</label><input id="scFee" type="number" inputmode="numeric" min="0" value="' + (Number(c.fee) || 0) + '"></div>' +
+    '<div><label for="scFree">Үнэгүй хүргэлт — барааны дүн (₮)</label><input id="scFree" type="number" inputmode="numeric" min="0" value="' + (Number(c.free) || 0) + '" placeholder="0 = үнэгүй хүргэлтгүй"></div></div>' +
+    '<p class="muted" style="font-size:12px;margin:2px 0 8px">Жишээ: 100000 гэвэл 100,000₮-өөс дээш захиалгад хүргэлт үнэгүй. 0 бол үргэлж төлбөртэй.</p>' +
+    '<label for="scMail">Шинэ захиалгын мэдэгдэл — и-мэйл (таслалаар, 5 хүртэл)</label><input id="scMail" type="text" autocomplete="off" value="' + esc(c.notify || '') + '" placeholder="жишээ: ажилтан@gmail.com, эзэн@gmail.com">' +
+    '<label for="scPixel">Meta (Facebook) Pixel ID — зарын хэмжилт</label><input id="scPixel" inputmode="numeric" autocomplete="off" value="' + esc(c.pixel || '') + '" placeholder="Events Manager → Data sources → Pixel ID (15–16 оронтой)">' +
+    '<div class="bar-row" style="margin-top:10px"><button class="b-btn primary" onclick="shopCfgSave(\'' + biz + '\')">Хадгалах</button><small class="muted" id="scMsg"></small></div></div>';
+}
+function shopCfgSave(biz) {
+  var v = { fee: Number($('scFee').value) || 0, free: Number($('scFree').value) || 0, notify: $('scMail').value.trim(), pixel: $('scPixel').value.trim() };
+  if (!API_URL) { window.shopCfgAll = window.shopCfgAll || {}; window.shopCfgAll[biz] = v; toast('Хадгалагдлаа (туршилт)'); return; }
+  post({ type: 'admin_setting', key: 'shop', biz: biz, value: v }, function (err, d) {
+    if (err) { toast(err === 'email' ? 'И-мэйл хаяг буруу байна' : err === 'pixel' ? 'Pixel ID зөвхөн тоо байна' : 'Алдаа: ' + err); return; }
+    window.shopCfgAll = window.shopCfgAll || {}; window.shopCfgAll[biz] = d.cfg || v; toast('Вэб дэлгүүрийн тохиргоо хадгалагдлаа');
+  });
 }

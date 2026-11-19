@@ -42,10 +42,23 @@ function loadOrders() {
       var keep = orders.filter(function (x) { return x.pending || x.failed; });   // хадгалагдаж байгаа шинэ захиалгыг алдахгүй
       orders = d.orders.concat(keep); save(LS_ORD, orders.filter(function (x) { return !x.pending; }));
     }
-    renderOrders();
+    renderOrders(); ordWebCheck();
     if (typeof syncToday === 'function') syncToday();
   });
 }
+// Шинэ вэб захиалга: 2 минут тутам шалгаж (хуудас харагдаж байхад), шинэ ирвэл мэдэгдэнэ; цонхны гарчигт тоо
+var ordWebSeen = null;
+function ordWebCheck() {
+  if (!ordWebOn()) return;
+  var ids = orders.filter(function (o) { return ordIsWeb(o) && o.status === 'Шинэ'; }).map(function (o) { return o.id; });
+  if (ordWebSeen) { var nw = ids.filter(function (id) { return ordWebSeen.indexOf(id) < 0; }); if (nw.length) toast('🌐 ' + nw.length + ' шинэ вэб захиалга ирлээ — Захиалга → «Вэбээс ирсэн»'); }
+  ordWebSeen = ids;
+  document.title = (ids.length ? '(' + ids.length + ') ' : '') + document.title.replace(/^\(\d+\) /, '');
+}
+setInterval(function () {
+  if (document.hidden || !API_URL || typeof session === 'undefined' || !session || !session.token || !ordWebOn()) return;
+  loadOrders();
+}, 120000);
 function saveOrder(o, done) {
   var body = { type: 'order_save', order: Object.assign({}, o, { biz: BIZ_KEY, items: typeof o.items === 'string' ? o.items : JSON.stringify(o.items || []) }) };
   if (!API_URL) {

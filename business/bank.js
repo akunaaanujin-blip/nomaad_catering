@@ -658,7 +658,7 @@ function apiView(biz) {
     row('И-баримт (PosAPI)', B.ebarimt === false ? 'Ашиглахгүй' : 'Касс компьютер дээр', 'Касс компьютер дээрх PosAPI-аар баримт хэвлэх (дэлгүүр бүрт)') +
     row('AI туслах (Claude)', aiStLabel(), 'Ажилтны «AI туслах» асуултад шууд хариулах') +
     '</table></div></div>' + '<h2 class="sec-title" style="font-size:16px;margin:16px 0 8px">Банкны данс холбох</h2><div style="margin-bottom:8px"><button class="b-btn primary" onclick="openBankLink()">+ Данс холбох</button></div>' + bankLinkView() +
-    ebSettingsCard(biz) + spSettingsCard(biz) + aiSettingsCard();
+    (typeof shopSettingsCard === 'function' ? shopSettingsCard(biz) : '') + ebSettingsCard(biz) + spSettingsCard(biz) + aiSettingsCard();
 }
 // AI туслах (Claude API, Haiku) — ажилтны «AI туслах» асуултад шууд хариулна. Түлхүүр зөвхөн серверт (дахин харагдахгүй), сарын $ хязгаартай.
 function aiStLabel() { var a = window.aiAll || {}; return !a.key ? 'Тохируулаагүй' : !a.on ? 'Унтраасан' : a.spent >= a.limit ? 'Сарын хязгаарт хүрсэн' : true; }

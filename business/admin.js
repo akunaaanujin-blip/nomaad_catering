@@ -129,6 +129,7 @@ function applyRead(d) {
   window.PF_RAW = [d.pf || {}, d.pfcfg || {}]; if (typeof pfApply === 'function') pfApply(PF_RAW[0], PF_RAW[1]);   // хувийн санхүү (зөвхөн Эзэнд ирнэ)
   reminders = d.reminders || []; window.adminOrders = d.orders || []; window.loans = d.loans || []; window.pos = d.pos || []; window.bankLinks = d.bankLinks || []; window.bankAuto = d.bankAuto || {};
   window.importLog = d.importLog || []; window.bankRules = d.bankRules || [];
+  window.shopCfgAll = d.shopCfg || {};   // вэб дэлгүүрийн тохиргоо (shopadm.js)
   window.bankDeleted = (d.bank || []).filter(function (l) { return l.status === 'Устгасан'; }); bankLines = (d.bank || []).filter(function (l) { return l.status !== 'Устгасан'; }); window.payInfoAll = d.payInfo || {}; window.staffNotices = d.notices || window.staffNotices || []; window.spAll = d.storepay || {}; window.ebOnAll = d.ebuuhia != null ? !!d.ebuuhia : !!window.ebOnAll; window.aiAll = d.ai || window.aiAll || {};   // хариунд байхгүй бол өмнөхийг хадгална («Хүргэлт» цэс алга болохгүй)
    window.salesTargets = d.targets || {}; window.boostBud = d.boostbud || []; tasks = d.tasks || []; taxCfg = d.taxcfg || {}; customDocs = d.docs || [];
   accountsX = d.accountsX || []; applyCustomAccounts(accountsX); meta.lock = d.lock || '';
