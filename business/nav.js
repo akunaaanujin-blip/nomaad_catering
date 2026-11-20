@@ -13,25 +13,28 @@ ICONS.truck = '<path d="M2.5 6.5h11v10h-11z"/><path d="M13.5 10h4l3.5 3.5v3h-7.5
 ICONS.book = '<path d="M4.5 4.5A2 2 0 016.5 3H20v15H6.5a2 2 0 00-2 2z"/><path d="M4.5 20a2 2 0 002 2H20v-4"/><path d="M9 8h7M9 11.5h5"/>';
 // Зарчим: нэг сэдэв — нэг газар. Албан ёсны тайлан (журнал, баланс, орлогын тайлан…) зөвхөн «Нягтлан»-д; «Тайлан» — энгийн үгээр.
 // Зүйл: [түлхүүр, цэсний нэр, (хуудасны гарчиг — цэсний нэрнээс өөр бол)]
+// 2026-11-20 шинэ загвар: эзэнд 8 бүлэг + доор нь тусдаа «Нягтлан» (Болормаа). Хуудас хасаагүй — зөвхөн бүлэглэл өөрчлөгдсөн.
+ICONS.box = '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/>';
 var MNAV = [
   ['Нүүр', 'home', [['home', 'Өнөөдөр'], ['finance/monthly', 'Хийх ажил (сар бүр)'], ['v:cal', 'Календарь']]],
-  ['Борлуулалт', 'sales', [['sales/orders', 'Захиалга'], ['sales/shop', 'Борлуулалтын баримт'], ['sales/disc', 'Буцаалт, хөнгөлөлт']]],
-  ['Буухиа', 'truck', [['sales/buuhia', 'Хүргэлт', 'Буухиа хүргэлт'], ['finance/ebset', 'Тооцоо', 'Буухиа тооцоо'], ['sales/ebrec', 'Тулгалт', 'Буухиатай тулгах']]],
-  ['Boost', 'boost', [['sales/boostp', 'Boost'], ['sales/boostbud', 'Төсөв', 'Boost төсөв'], ['sales/boost', 'Үр дүн', 'Boost үр дүн']]],
+  ['Борлуулалт', 'sales', [['sales/shop', 'Борлуулалтын баримт'], ['sales/disc', 'Буцаалт, хөнгөлөлт'], ['sales/item', 'Борлуулалтын тайлан'],
+    ['—', 'Boost'], ['sales/boostp', 'Boost'], ['sales/boostbud', 'Төсөв', 'Boost төсөв'], ['sales/boost', 'Үр дүн', 'Boost үр дүн']]],
+  ['Захиалга', 'box', [['sales/orders', 'Захиалга'], ['sales/buuhia', 'Буухиа хүргэлт'], ['finance/ebset', 'Буухиа тооцоо'], ['sales/ebrec', 'Буухиа тулгалт', 'Буухиатай тулгах']]],
   ['Бараа', 'products', [['products/catalog', 'Бараа, үнэ'], ['products/stock', 'Үлдэгдэл'], ['products/po', 'Худалдан авалт'], ['products/suppliers', 'Нийлүүлэгчид'],
     ['products/counts', 'Тооллого'], ['products/move', 'Хөдөлгөөн'], ['products/research', 'Шинэ барааны судалгаа']]],
-  ['Мөнгө', 'money', [['finance/cashacc', 'Данснууд'], ['finance/stmt', 'Дансны хуулга'], ['finance/bank', 'Банк тулгах'], ['finance/vouchers', 'Касс'], ['finance/requests', 'Мөнгөний хүсэлт']]],
-  ['Тооцоо', 'people', [['finance/recv', 'Авлага'], ['finance/payb', 'Өглөг'], ['finance/partners', 'Харилцагчид'], ['finance/loans', 'Зээл'], ['finance/fixed', 'Тогтмол зардал, төлбөр'], ['finance/payroll', 'Цалин, НДШ']]],
+  ['Мөнгө', 'money', [['finance/cashacc', 'Данснууд'], ['finance/stmt', 'Дансны хуулга'], ['finance/bank', 'Банк тулгах'], ['finance/vouchers', 'Касс'], ['finance/requests', 'Мөнгөний хүсэлт'],
+    ['—', 'Тооцоо'], ['finance/recv', 'Авлага'], ['finance/payb', 'Өглөг'], ['finance/partners', 'Харилцагчид'], ['finance/loans', 'Зээл'], ['finance/fixed', 'Тогтмол зардал, төлбөр']]],
+  ['Ажилчид', 'people', [['v:staff', 'Ажилчид, эрх'], ['finance/payroll', 'Цалин, НДШ']]],
   ['Тайлан', 'reports', [['finance/mrep', 'Удирдлагын тайлан'], ['finance/monrep', 'Сарын тайлан'], ['finance/daily', 'Өдрийн орлого'], ['finance/months', '12 сарын дүн'], ['finance/expcat', 'Зардлын задаргаа'],
-    ['finance/profit', 'Барааны ашиг'], ['sales/item', 'Борлуулалтын тайлан']]],
-  ['Нягтлан', 'book', [['finance/pl', 'Орлогын тайлан'], ['finance/balance', 'Санхүүгийн байдал'], ['finance/cashflow', 'Мөнгөн гүйлгээний тайлан'], ['finance/equity', 'Өмчийн өөрчлөлт'],
-    ['v:tax:entpl', 'Нэгтгэсэн орлогын тайлан'], ['finance/trial', 'Гүйлгээ баланс'], ['finance/gl', 'Ерөнхий дэвтэр'], ['finance/journal', 'Журнал'], ['finance/aging_r', 'Насжилт'],
-    ['finance/assets', 'Үндсэн хөрөнгө'], ['finance/dash', 'Бүртгэлийн шалгалт']]],
-  ['Татвар', 'tax', [['v:tax:calendar', 'Татварын хуанли'], ['v:tax:nd8', 'НДШ тайлан'], ['v:tax:tt11', 'ХХОАТ (ТТ-11)'], ['v:tax:tt02', 'ААНОАТ (ТТ-02)'],
-    ['v:tax:ebalance', 'Жилийн тайлан (e-Balance)'], ['sales/ebarimt', 'И-баримт']]],
-  ['Тохиргоо', 'gear', [['finance/company', 'Компанийн мэдээлэл'], ['v:staff', 'Ажилчид, эрх'], ['finance/accounts', 'Дансны төлөвлөгөө'], ['finance/opening', 'Эхний үлдэгдэл'], ['finance/lock', 'Гүйлгээ түгжих'],
+    ['finance/profit', 'Барааны ашиг']]],
+  ['Тохиргоо', 'gear', [['finance/company', 'Компанийн мэдээлэл'], ['finance/accounts', 'Дансны төлөвлөгөө'], ['finance/opening', 'Эхний үлдэгдэл'], ['finance/lock', 'Гүйлгээ түгжих'],
     ['finance/close', 'Он хаах, нөөц'], ['finance/api', 'Холболт (банк, буухиа, StorePay)'], ['finance/digest', 'Өдрийн тойм и-мэйл'],
     ['finance/audit', 'Өөрчлөлтийн түүх'], ['finance/trash', 'Хогийн сав'], ['v:docs', 'Маягт, загвар'], ['finance/glossary', 'Нэр томьёо']]],
+  ['Нягтлан', 'book', [['finance/pl', 'Орлогын тайлан'], ['finance/balance', 'Санхүүгийн байдал'], ['finance/cashflow', 'Мөнгөн гүйлгээний тайлан'], ['finance/equity', 'Өмчийн өөрчлөлт'],
+    ['v:tax:entpl', 'Нэгтгэсэн орлогын тайлан'], ['finance/trial', 'Гүйлгээ баланс'], ['finance/gl', 'Ерөнхий дэвтэр'], ['finance/journal', 'Журнал'], ['finance/aging_r', 'Насжилт'],
+    ['finance/assets', 'Үндсэн хөрөнгө'], ['finance/dash', 'Бүртгэлийн шалгалт'],
+    ['—', 'Татвар'], ['v:tax:calendar', 'Татварын хуанли'], ['v:tax:nd8', 'НДШ тайлан'], ['v:tax:tt11', 'ХХОАТ (ТТ-11)'], ['v:tax:tt02', 'ААНОАТ (ТТ-02)'],
+    ['v:tax:ebalance', 'Жилийн тайлан (e-Balance)'], ['sales/ebarimt', 'И-баримт']]],
 ];
 // Нэг сэдвийн хуудсууд — цэсэнд нэг мөр, хуудас дотор таб. Эхний таб нь цэсний зүйл.
 var PAGE_TABS = {}, PAGE_TITLE = {}, NAV_ALIAS = {};
@@ -103,40 +106,42 @@ subnavHtml = function () {
     return brand + '<div class="fn-g"><div class="fn-h"><span>Компаниуд</span></div><ul>' + ALL_KEYS.filter(function (k) { return BUSINESSES[k]; }).map(function (k) {
       return '<li><button onclick="state.module=\'home\';go(\'company\',\'' + k + '\')"><span class="fn-i">' + ico('home') + '</span><span>' + esc(BUSINESSES[k].name) + '</span></button></li>'; }).join('') + '</ul></div>';
   }
-  // Зүүн багана: 8 бүлэг (icon + нэр); хажууд нь сонгосон бүлгийн хуудсууд самбар болж нээгдэнэ (нэг удаад нэг бүлэг)
+  // 2026-11-20: нэг баганатай цагаан цэс — бүлэг бүр нэг мөр (дүрс + нэр); идэвхтэй бүлгийн хуудсууд доор нь нээгдэнэ. «Нягтлан» доор тусдаа.
   var biz = state.biz, G = MNAV.map(function (g, gi) {
     var items = g[2].filter(function (it) { return it[0] === '—' ? !BUSINESSES[biz].finOnly : navOk(biz, it[0]); }), real = items.filter(function (it) { return it[0] !== '—'; });
-    return { g: g, gi: gi, items: items, real: real, on: real.some(function (it) { return navItemOn(it[0]); }), badge: real.reduce(function (a, it) { return a + (it[0] === 'sales/shop' ? 0 : navCountOf(it[0])); }, 0) };   // өнөөдрийн борлуулалтын тоо хийх ажил биш — бүлгийн тоонд нэмэхгүй
+    return { g: g, gi: gi, items: items, real: real, on: real.some(function (it) { return navItemOn(it[0]); }), badge: real.reduce(function (a, it) { return a + (it[0] === 'sales/shop' ? 0 : navCountOf(it[0])); }, 0) };   // өнөөдрийн борлуулалтын тоо хийх ажил биш — бүлгийн тоонд
   }).filter(function (x) { return x.real.length; });
   var act = G.filter(function (x) { return x.on; })[0];
   if (state.navG == null || !G.some(function (x) { return x.gi === state.navG; })) state.navG = act ? act.gi : G[0].gi;
-  var cur = G.filter(function (x) { return x.gi === state.navG; })[0];
-  var col = G.map(function (x) {
-    return '<button class="fn-gb' + (x.gi === state.navG ? ' sel' : '') + (x.on ? ' on' : '') + '" onclick="fnOpen(' + x.gi + ')" title="' + x.g[0] + '"><span class="fn-i">' + ico(x.g[1]) + '</span><span>' + x.g[0] + '</span>' +
-      (x.badge ? '<i class="fn-badge">' + x.badge + '</i>' : '') + '</button>';
-  }).join('');
-  // Дэд гарчигтай бүлэг (Тайлан): дэд бүлэг бүр тусдаа нээгдэж/хаагдана (анхдагч — бүгд нээлттэй), идэвхтэй хуудасных үргэлж нээлттэй
   var shut = {}; try { shut = JSON.parse(localStorage.getItem('nb_fn_subs') || '{}') || {}; } catch (e) {}
-  var hdr = '', activeSub = '';
-  cur.items.forEach(function (it) { if (it[0] === '—') hdr = it[1]; else if (navItemOn(it[0])) activeSub = hdr; });
-  hdr = '';
-  // дэд бүлэг бүр өөрийн <ul> — хаалттай бол hidden (aria-expanded="false"), товч aria-controls-оор холбогдоно
-  var gi2 = 0, li = function (it) { var n = navCountOf(it[0]);
+  var li = function (it) { var n = navCountOf(it[0]);
     return '<li><button class="' + (navItemOn(it[0]) ? 'on' : '') + '" onclick="navGo(\'' + it[0] + '\')"><span>' + it[1] + '</span>' + (n ? '<i class="fn-badge">' + n + '</i>' : '') + '</button></li>'; };
-  var html = '', open = false;
-  cur.items.forEach(function (it) {
-    if (it[0] === '—') {
-      if (open) html += '</ul></li>';
-      hdr = it[1]; var op = !shut[hdr], id = 'fnsg' + (gi2++);
-      html += '<li class="fn-sg"><button class="fn-subh" aria-expanded="' + op + '" aria-controls="' + id + '" data-h="' + esc(hdr) + '" onclick="fnSub(this)"><span>' + hdr + '</span><span class="fn-car2">' + (op ? '▾' : '▸') + '</span></button>' +
-        '<ul id="' + id + '"' + (op ? '' : ' hidden') + '>';
-      open = true; return;
-    }
-    html += li(it);
-  });
-  if (open) html += '</ul></li>';
-  var panel = '<div class="fn-ph">' + cur.g[0] + '</div><ul>' + html + '</ul>';
-  return brand + '<div class="fn-2"><nav class="fn-col">' + col + '</nav><div class="fn-panel">' + panel + '</div></div>';
+  // бүлгийн хуудсууд; «—» дэд гарчиг (жишээ нь Татвар) — доор нь харагдах хуудасгүй бол гарчгийг ч харуулахгүй
+  var pages = function (x) {
+    var html = '', open = false, gi2 = 0;
+    x.items.forEach(function (it, i) {
+      if (it[0] === '—') {
+        var rest = x.items.slice(i + 1), nx = -1; rest.some(function (r, j) { if (r[0] === '—') { nx = j; return true; } return false; });
+        if (!(nx < 0 ? rest : rest.slice(0, nx)).length) return;
+        if (open) html += '</ul></li>';
+        var hdr = it[1], op = !shut[hdr], id = 'fnsg' + x.gi + '_' + (gi2++);
+        html += '<li class="fn-sg"><button class="fn-subh" aria-expanded="' + op + '" aria-controls="' + id + '" data-h="' + esc(hdr) + '" onclick="fnSub(this)"><span>' + hdr + '</span><span class="fn-car2">' + (op ? '▾' : '▸') + '</span></button>' +
+          '<ul id="' + id + '"' + (op ? '' : ' hidden') + '>';
+        open = true; return;
+      }
+      html += li(it);
+    });
+    if (open) html += '</ul></li>';
+    return '<ul class="fn-pages">' + html + '</ul>';
+  };
+  var rows = G.map(function (x) {
+    var cur = x.gi === state.navG, many = x.real.length > 1;
+    return (x.g[1] === 'book' ? '<div class="fn-sep" role="separator"></div>' : '') +
+      '<div class="fn-grp' + (cur ? ' open' : '') + '"><button class="fn-gr' + (x.on ? ' on' : '') + '" onclick="fnOpen(' + x.gi + ')"' + (many ? ' aria-expanded="' + cur + '"' : '') + '>' +
+      '<span class="fn-i">' + ico(x.g[1]) + '</span><span class="fn-t">' + x.g[0] + '</span>' + (x.badge ? '<i class="fn-badge">' + x.badge + '</i>' : '') + '</button>' +
+      (cur && many ? pages(x) : '') + '</div>';
+  }).join('');
+  return brand + '<nav class="fn-1" aria-label="Үндсэн цэс">' + rows + '</nav>';
 };
 function fnSub(btn) {   // зөвхөн тэр дэд бүлгийг нээж/хаана (бүх цэсийг дахин зурахгүй)
   var h = btn.getAttribute('data-h'), s = {}; try { s = JSON.parse(localStorage.getItem('nb_fn_subs') || '{}') || {}; } catch (e) {}
@@ -146,11 +151,13 @@ function fnSub(btn) {   // зөвхөн тэр дэд бүлгийг нээж/х
   btn.setAttribute('aria-expanded', String(op)); btn.querySelector('.fn-car2').textContent = op ? '▾' : '▸';
   if (ul) ul.hidden = !op;
 }
-// Бүлэг дарахад самбар нь солигдоно (хуудас солихгүй); нэг хуудастай бүлэг бол шууд нээнэ
+// Бүлэг дарахад: өөр бүлэг бол түүний эхний хуудсыг нээнэ (доор нь хуудсууд нээгдэнэ); идэвхтэй бүлэг бол зөвхөн нээж/хаана
 function fnOpen(gi) {
   var g = MNAV[gi], real = g[2].filter(function (it) { return it[0] !== '—' && navOk(state.biz, it[0]); });
+  if (!real.length) return;
+  var here = real.some(function (it) { return navItemOn(it[0]); });
+  if (!here) { navGo(real[0][0]); return; }
   state.navG = gi;
-  if (real.length === 1) { navGo(real[0][0]); return; }
   $('subnav').innerHTML = subnavHtml();
 }
 railHtml = function () { return ''; };
@@ -295,7 +302,7 @@ function homeView() {
   var lastBk = (typeof bankLines !== 'undefined' ? bankLines : []).filter(function (l) { return l.biz === biz && !bankProv(l); }).map(function (l) { return String(l.date).slice(0, 10); }).sort().pop() || '';
   daily.push({ txt: 'Банкны хуулга оруулж тулгах', ok: !navCount('bank') && lastBk >= todayStr(new Date(Date.now() - 7 * 864e5)), fn: "navGo('finance/bank')", hint: lastBk ? 'сүүлд ' + lastBk : 'хуулга оруулаагүй' });
   if (!B.finOnly) daily.push({ txt: 'Мөнгөний хүсэлт шийдэх', ok: !pendRequests(biz).length, fn: "navGo('finance/requests')" });
-  var todo = '<div class="card"><h2>Өнөөдөр хийх ажил</h2>' + (L.length ? L.map(function (a) {
+  var todo = '<div class="card"><h2>Хийх ажил</h2>' + (L.length ? L.map(function (a) {
       return '<div class="fn-todo' + (a.bad ? ' bad' : ' warn') + '"><span class="fn-ck">!</span><span>' + esc(a.txt) + '</span><button class="link" onclick="' + a.fn + '">Шийдэх →</button></div>'; }).join('') : '') +
     daily.filter(function (d) { return !d.ok && !L.some(function (a) { return a.fn === d.fn; }); }).map(function (d) { return '<div class="fn-todo"><span class="fn-ck fn-o">○</span><span>' + d.txt + (d.hint ? ' <small class="muted">· ' + esc(d.hint) + '</small>' : '') + '</span><button class="link" onclick="' + d.fn + '">Хийх →</button></div>'; }).join('') +
     daily.filter(function (d) { return d.ok; }).map(function (d) { return '<div class="fn-todo ok"><span class="fn-ck">✓</span><span>' + d.txt + '</span></div>'; }).join('') +
@@ -309,13 +316,15 @@ function homeView() {
       '<rect x="' + (x + 1 + w) + '" y="' + (H - hx) + '" width="' + w + '" height="' + hx + '" fill="var(--expense)"/>' +
       (i % 5 === 0 || i === keys.length - 1 ? '<text x="' + (x + bw / 2) + '" y="' + (H + 14) + '" text-anchor="middle">' + k.slice(8) + '</text>' : '') + '</g>';
   }).join('') + '</svg>';
-  var chart = '<div class="card"><h2>Өдрийн орлого, зардал · ' + t.slice(0, 7) + '</h2><div class="fn-leg"><span><i style="background:var(--income)"></i>Орлого</span><span><i style="background:var(--expense)"></i>Зардал</span></div>' + svg + '</div>';
+  var chart = '<div class="card"><h2>Энэ сар · өдрөөр</h2><div class="fn-leg"><span><i style="background:var(--income)"></i>Орлого</span><span><i style="background:var(--expense)"></i>Зардал</span></div>' + svg + '</div>';
   // Сүүлийн мөнгөний 10 гүйлгээ — нягтлангийн данс, дебет/кредитгүй: хэзээ, юу, хэд орсон, хэд гарсан
   var last = drillLines({ acc: cashCodes(), to: t, sign: 1, grp: 'type' }, E).lines.filter(function (x) { return x.key !== 'Данс хооронд'; }).slice().sort(function (a, b) { var p = a.date + (a.time || ''), q = b.date + (b.time || ''); return p < q ? 1 : p > q ? -1 : 0; }).slice(0, 10);
   var tx = '<div class="card"><h2>Сүүлийн мөнгөний гүйлгээ</h2>' + (last.length ? '<div class="scroll"><table class="rep-t"><tr><th>Огноо</th><th>Төрөл</th><th>Тайлбар</th><th class="n">Орсон</th><th class="n">Гарсан</th></tr>' + last.map(function (x) {
       return '<tr><td class="nw">' + x.date + '</td><td>' + esc(x.key) + '</td><td class="fn-ell" title="' + esc(stmtDesc(x.desc)) + '">' + esc(stmtDesc(x.desc)) + '</td><td class="n">' + (x.v > 0 ? mny(x.v) : '') + '</td><td class="n">' + (x.v < 0 ? mny(-x.v) : '') + '</td></tr>'; }).join('') + '</table></div>'
     : '<p class="muted">Гүйлгээ алга.</p>') + '</div>';
-  return '<div class="pg-head"><div><h1>Нүүр</h1><p class="pg-desc">' + esc(B.name) + ' · ' + t + ' — өнөөдөр юу хийх, энэ сарын дүн.</p></div></div>' + todo + kpis + chart + tx;
+  // 2026-11-20 шинэ загвар: огноо + нэр → 4 том тоо → хийх ажил, график зэрэгцээ → сүүлийн гүйлгээ
+  var wd = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'][new Date(t + 'T00:00:00').getDay()];
+  return '<div class="pg-head fn-home-h"><div><small class="fn-date">' + wd + ' · ' + t + '</small><h1>' + esc(B.name) + '</h1></div></div>' + kpis + '<div class="fn-home2">' + todo + chart + '</div>' + tx;
 }
 
 // ═══════════ Аюулгүй байдал, хурдан оруулах ═══════════

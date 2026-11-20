@@ -1,0 +1,149 @@
+/* ═══════════ ui2 · Шинэ загвар (2026-11-20, эзэн баталсан: claude.ai/artifact/58x8NKSMXsid7bRJvQztPe) ═══════════
+   Хамгийн сүүлд ачаална (style.css, fin.css-ийн дараа) — хуучин давхаргуудыг энд дарна. Буцаах бол энэ файлын <link>-ийг хасахад болно.
+   Зарчим: цагаан + цайвар саарал суурь, нэг бараан бичгийн өнгө, брэнд бүр нэг өнгө, үг цөөн, тоо том, зай чөлөөтэй. Өнгө зөвхөн утга (орлого/зардал/анхааруулга). */
+
+/* ── Удирдлага: өнгө, фонт ── */
+body.bz-admin{
+  --bg:#F5F4F1;--surface:#FFFFFF;--surface-alt:#F7F6F3;--border:#E6E3DD;--border-strong:#D6D2CA;
+  --text:#1B2230;--text-2:#5E6573;--text-3:#8A909C;
+  --primary:#1B2230;--on-primary:#FFFFFF;--primary-hover:#000000;--primary-soft:#EEEDE9;--sidebar:#FFFFFF;
+  --row-l1:#1B2230;--row-l2:#EEEDE9;--row-tot:#F2F1ED;--sub-line:#8A909C;
+  --income:#1E6B46;--income-soft:#EAF3EE;--expense:#A23B2C;--expense-soft:#F8E9E6;
+  --warning:#9A5B13;--warning-soft:#FBF1E2;--info:#1B2230;--info-soft:#EEEDE9;--neutral-soft:#F2F1ED;
+  --nav-2:#FFFFFF;--nav-ink:#3D4452;--nav-ink-2:#5E6573;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) body.bz-admin{
+    --bg:#121417;--surface:#1A1D21;--surface-alt:#20242A;--border:#2A2E35;--border-strong:#3A3F47;
+    --text:#ECEDEE;--text-2:#A6ACB6;--text-3:#7C838E;
+    --primary:#E6E3DD;--on-primary:#121417;--primary-hover:#FFFFFF;--primary-soft:#262A30;--sidebar:#1A1D21;
+    --row-l1:#2B3038;--row-l2:#22262C;--row-tot:#22262C;--sub-line:#7C838E;
+    --income:#6FCF97;--income-soft:#16261D;--expense:#F08A7A;--expense-soft:#2B1A17;
+    --warning:#E8B45A;--warning-soft:#2A2214;--info:#E6E3DD;--info-soft:#262A30;--neutral-soft:#22262C;
+    --nav-2:#1A1D21;--nav-ink:#C9CDD3;--nav-ink-2:#A6ACB6;
+  }
+}
+:root[data-theme="dark"] body.bz-admin{
+  --bg:#121417;--surface:#1A1D21;--surface-alt:#20242A;--border:#2A2E35;--border-strong:#3A3F47;
+  --text:#ECEDEE;--text-2:#A6ACB6;--text-3:#7C838E;
+  --primary:#E6E3DD;--on-primary:#121417;--primary-hover:#FFFFFF;--primary-soft:#262A30;--sidebar:#1A1D21;
+  --row-l1:#2B3038;--row-l2:#22262C;--row-tot:#22262C;--sub-line:#7C838E;
+  --income:#6FCF97;--income-soft:#16261D;--expense:#F08A7A;--expense-soft:#2B1A17;
+  --warning:#E8B45A;--warning-soft:#2A2214;--info:#E6E3DD;--info-soft:#262A30;--neutral-soft:#22262C;
+  --nav-2:#1A1D21;--nav-ink:#C9CDD3;--nav-ink-2:#A6ACB6;
+}
+body.bz-admin,.bz-admin button,.bz-admin input,.bz-admin select,.bz-admin textarea{font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif}
+body.bz-admin{background:var(--bg);color:var(--text);font-size:14.5px}
+.bz-admin b,.bz-admin strong,.bz-admin th,.bz-admin h1,.bz-admin h2,.bz-admin h3{font-weight:600}
+
+/* ── Удирдлага: зүүн цэс (нэг багана, цагаан) ── */
+.bz-admin .bz,.bz-admin .bz.has-sub{grid-template-columns:248px 1fr}
+.bz-admin .subnav{display:flex;flex-direction:column;background:var(--surface);border-right:1px solid var(--border);color:var(--text);padding:0}
+.bz-admin .fn-brand{background:var(--surface);border-bottom:0;height:60px;padding:0 20px}
+.bz-admin .fn-brand b{color:var(--text);font-size:15px;font-weight:700;letter-spacing:.03em}
+.bz-admin .fn-logo{background:var(--text);color:var(--surface);border-radius:8px;width:30px;height:30px;font-weight:700}
+.fn-1{display:flex;flex-direction:column;gap:2px;padding:4px 12px 24px;overflow-y:auto;flex:1;min-height:0}
+.fn-gr{display:flex;align-items:center;gap:12px;width:100%;height:40px;padding:0 12px;border:0;border-radius:8px;background:none;font:inherit;font-size:14.5px;font-weight:500;color:var(--nav-ink);cursor:pointer;text-align:left}
+.fn-gr .fn-i{display:grid;place-items:center;width:20px;color:inherit}
+.fn-gr .fn-i svg{width:20px;height:20px}
+.fn-gr .fn-t{flex:1;min-width:0}
+.fn-gr:hover{background:var(--surface-alt);color:var(--text)}
+.fn-gr.on{background:var(--primary-soft);color:var(--text);font-weight:600}
+.fn-gr .fn-badge,.fn-pages .fn-badge{margin-left:auto;background:var(--text);color:var(--surface);font-size:11.5px;font-weight:600;border-radius:999px;min-width:20px;height:20px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+.fn-pages{list-style:none;margin:2px 0 8px;padding:0}
+.fn-pages li button{display:flex;align-items:center;gap:8px;width:100%;min-height:34px;border:0;background:none;font:inherit;font-size:13.5px;color:var(--text-2);padding:6px 10px 6px 44px;border-radius:8px;cursor:pointer;text-align:left}
+.fn-pages li button:hover{background:var(--surface-alt);color:var(--text)}
+.fn-pages li button.on{color:var(--text);font-weight:600;background:none;box-shadow:inset 2px 0 0 var(--text)}
+.fn-pages ul{list-style:none;margin:0;padding:0}
+.fn-pages .fn-subh{display:flex;align-items:center;gap:6px;width:100%;border:0;background:none;font:inherit;font-size:12px;font-weight:600;color:var(--text-3);padding:10px 10px 4px 44px;cursor:pointer;text-align:left}
+.fn-pages .fn-car2{font-size:10px}
+.fn-sep{height:1px;background:var(--border);margin:12px 8px}
+@media(max-width:760px){.bz-admin .subnav{width:280px}}
+
+/* ── Удирдлага: дээд мөр, хуудас ── */
+.bz-admin .bz-head{background:var(--surface);border-bottom:1px solid var(--border);height:60px}
+.bz-admin .fn-co{height:40px;border-radius:10px;font-weight:600}
+.bz-admin #view{padding:28px 32px 48px}
+.bz-admin .pg-head{margin-bottom:20px}
+.bz-admin .pg-head h1{font-size:26px;font-weight:650;letter-spacing:-.01em;color:var(--text)}
+.bz-admin .pg-desc{font-size:13px;color:var(--text-2)}
+.fn-date{display:block;font-size:13px;color:var(--text-2);margin-bottom:2px}
+
+/* ── Карт, том тоо ── */
+.bz-admin .card,.bz-admin .co-card,.bz-admin .st-card{border:1px solid var(--border);border-radius:14px;box-shadow:none;background:var(--surface)}
+.bz-admin .card{padding:18px 20px}
+.bz-admin .card h2{font-size:15px;font-weight:600;margin-bottom:12px}
+.fn-kpis{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:16px}
+.fn-kpi{border-radius:14px;padding:18px 20px}
+.fn-kpi small{font-size:13px;color:var(--text-2);margin-bottom:6px}
+.fn-kpi b{font-size:clamp(22px,2.3vw,28px);font-weight:650;letter-spacing:-.01em}
+.bz-admin .dk2{border-radius:14px;padding:18px 20px}
+.bz-admin .dk2 b{font-size:26px;font-weight:650}
+.bz-admin .dk2:first-child{background:var(--surface);border-color:var(--border)}
+.bz-admin .dk2:first-child small{color:var(--text-2)}.bz-admin .dk2:first-child b{color:var(--text)}
+.fn-home2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start}
+.fn-home2 > .card{margin-top:0}
+.fn-todo{min-height:44px;border-radius:10px}
+.fn-chart rect[fill="var(--expense)"]{opacity:.55}
+
+/* ── Хүснэгт ── */
+.bz-admin #view table.rep-t th,.bz-admin #view .fd-t th{background:var(--surface-alt);color:var(--text-2);font-weight:500;border-bottom:1px solid var(--border)}
+.bz-admin #view table.rep-t td,.bz-admin #view .fd-t td{border-bottom-color:var(--border)}
+.bz-admin #view table.rep-t tbody tr:hover td,.bz-admin #view table.rep-t tr:hover td{background:var(--surface-alt)}
+.bz-admin #view table.rep-t tr.tot td{background:var(--row-tot);border-top-color:var(--border-strong)}
+
+/* ── Товч, сонголт ── */
+.bz-admin .b-btn,.bz-admin .btn{min-height:40px;border-radius:10px;font-weight:500}
+.bz-admin .b-btn.primary,.bz-admin .btn{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.bz-admin .fn-seg{background:var(--neutral-soft);border-radius:10px;padding:3px}
+.bz-admin .fn-seg button{border-radius:8px}
+.bz-admin .fn-seg button.on{background:var(--surface);border-color:transparent;color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(27,34,48,.08)}
+.bz-admin .tabs button{height:36px;border-radius:10px}
+.bz-admin .tabs button.on{background:var(--text);border-color:var(--text);color:var(--surface)}
+.bz-admin input,.bz-admin select,.bz-admin textarea{border-radius:10px}
+
+/* ═══════════ Ажилтны хуудас (body.pos10) — цагаан цэс, брэнд бүр нэг өнгө ═══════════ */
+body.pos10,body.pos10.biz-cozy,body.pos10.biz-meat,body.pos10.biz-travel{
+  --bg:#F5F4F1;--ln:#E6E3DD;--ink:#1B2230;--mut:#5E6573;--ok:#1E6B46;--bad:#A23B2C;
+  font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+body.pos10.biz-cozy{--p:#2E4054;--p-d:#223142;--p-50:#E9EDF2;--accent:#2E4054}
+body.pos10.biz-travel{--p:#1E4D3B;--p-d:#163A2C;--p-50:#E6EFEA;--accent:#1E4D3B}
+body.pos10.biz-meat{--p:#7A2E2E;--p-d:#5E2323;--p-50:#F4E8E8;--accent:#7A2E2E}
+/* цэс */
+body.pos10 .ep-nav{background:#FFFFFF;border-right:1px solid var(--ln)}
+body.pos10 .ep-brand{color:var(--ink);border-bottom-color:var(--ln)}
+body.pos10 .ep-brand .mono{background:var(--p)!important;color:#fff!important;border-radius:8px}
+body.pos10 .ep-grp-t{color:var(--mut)}
+body.pos10 .ep-it{color:#3D4452}
+body.pos10 .ep-it:hover{background:#F2F1ED;color:var(--ink)}
+body.pos10 .ep-it.on{background:#EEEDE9;color:var(--p);font-weight:600}
+body.pos10 .ep-it.on::after{background:var(--p)}
+body.pos10 .ep-foot{color:var(--mut)}
+/* дээд мөр */
+body.pos10 .top{background:#FFFFFF;border-bottom:1px solid var(--ln)}
+body.pos10 .top h1,body.pos10 .ep-title{color:var(--ink);font-weight:650;letter-spacing:-.01em}
+/* том товч */
+body.pos10 .big,body.pos10 .big.exp,body.pos10 .big.close,body.pos10 .big.ord-btn,body.pos10 .big.buu-btn{background:#FFFFFF;color:var(--ink);border:1px solid var(--ln);border-radius:16px;box-shadow:none;min-height:96px}
+body.pos10 .big:hover{border-color:#D6D2CA;background:#FFFFFF}
+body.pos10 .big span{background:#F2F1ED;color:var(--ink);border-radius:10px}
+body.pos10 .big.sale{background:var(--p);border-color:var(--p);color:#fff}
+body.pos10 .big.sale:hover{background:var(--p-d)}
+body.pos10 .big.sale span{background:rgba(255,255,255,.18);color:#fff}
+body.pos10 .big.close span,body.pos10 .big.ord-btn span,body.pos10 .big.buu-btn span{background:var(--p-50);color:var(--p)}
+body.pos10 .big.exp span{background:#F8E9E6;color:var(--bad)}
+/* өнөөдрийн дүн */
+body.pos10 .sum>div,body.pos10 .sum>div:nth-child(n){background:#FFFFFF;border:1px solid var(--ln);border-radius:14px}
+body.pos10 .sum>div b{font-size:24px;font-weight:700;letter-spacing:-.01em}
+body.pos10 .sum>div:nth-child(n)>b.g{color:var(--ok)!important}body.pos10 .sum>div:nth-child(n)>b.r{color:var(--bad)!important}body.pos10 .sum>div:nth-child(n)>b.k{color:var(--ink)!important}
+/* карт, товч, оролт */
+body.pos10 .card{background:#FFFFFF;border:1px solid var(--ln);border-radius:16px;box-shadow:none}
+body.pos10 .btn,body:not(.bz-admin).pos10 .btn{background:var(--p);border-radius:10px}
+body.pos10 .btn:hover{background:var(--p-d)}
+body.pos10 .btn.ghost{background:transparent;color:var(--mut)}
+body.pos10 input:focus,body.pos10 select:focus,body.pos10 textarea:focus{border-color:var(--p);box-shadow:0 0 0 3px var(--p-50)}
+body.pos10 .chip.on,body.pos10 .seg button.on{background:var(--p);border-color:var(--p);color:#fff}
+body.pos10 .top .right button,body.pos10 .mini{color:var(--p)}
+/* утсан дээр ч товч 2 баганаар (загвар шиг), касс хаах бүтэн мөр */
+body.pos10 .big-btns{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+body.pos10 .big-btns .big.close{grid-column:1/-1;min-height:64px}
+body.pos10 .big.sale{box-shadow:none}
